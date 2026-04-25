@@ -2005,11 +2005,24 @@ void main() {
 
         // The bundle JSON was written to disk under the wakeRunKey path
         // before upload, by the legacy-payload codepath that uses
-        // pathBuilder=relativeAgentBundlePath.
+        // pathBuilder=relativeAgentBundlePath. Decode it to catch
+        // regressions in _savePayloadToDisk / inline-encode.
         final file = File(
           '${documentsDirectory.path}/agent_bundles/run-bundle.json',
         );
         expect(file.existsSync(), isTrue);
+        final onDisk =
+            SyncMessage.fromJson(
+                  json.decode(file.readAsStringSync()) as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        expect(onDisk.agentId, 'agent-bundle');
+        expect(onDisk.wakeRunKey, 'run-bundle');
+        // The on-disk file carries the original inline child (the Matrix
+        // text event is what gets stripped down to a descriptor).
+        expect(onDisk.entities, hasLength(1));
+        expect(onDisk.entities.single.agentEntity?.id, 'state-bundle');
+        expect(onDisk.jsonPath, isNull);
       },
     );
 

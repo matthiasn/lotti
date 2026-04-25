@@ -1751,7 +1751,7 @@
   "maintenanceRecreateFts5Description": "Volltextsuchindex neu erstellen",
   "maintenanceRecreateFts5Message": "Möchtest du den Volltextindex wirklich neu erstellen? Dies kann einige Zeit dauern.",
   "maintenanceReSync": "Nachrichten erneut synchronisieren",
-  "maintenanceReSyncAgentEntities": "Agent-Entitäten",
+  "maintenanceReSyncAgentEntities": "Agenten-Entitäten",
   "maintenanceReSyncDescription": "Nachrichten vom Server erneut synchronisieren",
   "maintenanceReSyncEntityTypes": "Entitätstypen",
   "maintenanceReSyncJournalEntities": "Journal-Einträge",

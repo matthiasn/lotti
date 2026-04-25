@@ -240,6 +240,11 @@ class AgentSyncService {
   }
 
   void _logWakeFlushFailure(Object error, StackTrace stackTrace) {
+    // The `isRegistered` guard mirrors the defensive pattern used elsewhere
+    // for late-teardown safety. The sibling `_enqueueOrBufferPostWrite`
+    // logger call below could throw in the same window; tracked separately
+    // — keeping this site defensive is cheap and matches the swallow+log
+    // intent of the wake terminator.
     if (!getIt.isRegistered<DomainLogger>()) return;
     getIt<DomainLogger>().error(
       LogDomains.sync,
@@ -250,6 +255,20 @@ class AgentSyncService {
     );
   }
 
+  /// Awaits [_flushWakeInterceptor] and routes any failure through
+  /// [_logWakeFlushFailure] without re-throwing. Both terminal paths in
+  /// [runInWakeCycle] use this so the swallow+log policy stays consistent
+  /// across success and failure.
+  Future<void> _safeFlushWakeInterceptor(
+    AgentWakeSyncInterceptor interceptor,
+  ) async {
+    try {
+      await _flushWakeInterceptor(interceptor);
+    } catch (flushError, flushStackTrace) {
+      _logWakeFlushFailure(flushError, flushStackTrace);
+    }
+  }
+
   /// Runs [action] inside a wake-cycle sync aggregation scope.
   ///
   /// Agent entity/link writes made through this service are persisted
@@ -258,6 +277,13 @@ class AgentSyncService {
   /// entity/link versions are flushed as one [SyncAgentBundle]. If the process
   /// dies before terminal flush, normal maintenance/backfill paths can still
   /// resurface the committed rows because the database writes already happened.
+  ///
+  /// **Nesting contract:** when called inside an active wake scope this method
+  /// returns [action] directly without installing a second interceptor — the
+  /// inner action's writes are bundled under the *outer* `agentId`/
+  /// `wakeRunKey`. In production the wake serializer ensures only one wake
+  /// runs per agent at a time, so callers must only nest with the *same*
+  /// `agentId` and `wakeRunKey` (asserted in debug builds).
   Future<T> runInWakeCycle<T>({
     required String agentId,
     required String wakeRunKey,
@@ -265,6 +291,15 @@ class AgentSyncService {
   }) async {
     final existingInterceptor = _currentWakeInterceptor;
     if (existingInterceptor != null) {
+      assert(
+        existingInterceptor.agentId == agentId &&
+            existingInterceptor.wakeRunKey == wakeRunKey,
+        'Nested runInWakeCycle must share agentId/wakeRunKey with the '
+        'enclosing scope; otherwise the inner messages are bundled under '
+        'the outer agent metadata. '
+        'outer=${existingInterceptor.agentId}/${existingInterceptor.wakeRunKey}, '
+        'inner=$agentId/$wakeRunKey',
+      );
       return action();
     }
 
@@ -280,11 +315,7 @@ class AgentSyncService {
           zoneValues: {_wakeKey: interceptor},
         );
       } catch (error, stackTrace) {
-        try {
-          await _flushWakeInterceptor(interceptor);
-        } catch (flushError, flushStackTrace) {
-          _logWakeFlushFailure(flushError, flushStackTrace);
-        }
+        await _safeFlushWakeInterceptor(interceptor);
         Error.throwWithStackTrace(error, stackTrace);
       }
 
@@ -292,11 +323,7 @@ class AgentSyncService {
       // peer convergence (maintenance/backfill will resurface the committed
       // rows). Don't fail an otherwise-successful wake on a sync hiccup —
       // matches the swallow+log policy of `_enqueueOrBufferPostWrite`.
-      try {
-        await _flushWakeInterceptor(interceptor);
-      } catch (flushError, flushStackTrace) {
-        _logWakeFlushFailure(flushError, flushStackTrace);
-      }
+      await _safeFlushWakeInterceptor(interceptor);
       return result;
     } finally {
       interceptor.clear();

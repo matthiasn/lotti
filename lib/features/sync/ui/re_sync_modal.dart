@@ -93,6 +93,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
           ),
           if (!_includeJournalEntities && !_includeAgentEntities)
             Padding(
+              key: const Key('reSyncSelectAtLeastOneError'),
               padding: const EdgeInsets.only(top: 4, bottom: 12),
               child: Text(
                 context.messages.maintenanceReSyncSelectAtLeastOne,

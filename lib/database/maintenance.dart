@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
@@ -55,10 +56,15 @@ class Maintenance {
 
     if (includeJournalEntities) {
       // 1. Re-sync journal entities and their links.
-      final count = await _db.countJournalEntries().getSingle();
-      final pages = (count / pageSize).ceil();
-
-      for (var page = 0; page <= pages; page++) {
+      //
+      // The unbounded `countJournalEntries()` precount was misleading
+      // (it counts every entry, not just the interval) and unnecessary
+      // because the page loop already terminates on the first empty page.
+      // Drive the pagination off the empty-page sentinel instead, and
+      // batch link lookups per page so a single round-trip serves the
+      // whole page instead of one query per entry (was N+1 on long
+      // intervals).
+      for (var page = 0; ; page++) {
         final dbEntities = await _db
             .orderedJournalInterval(start, end, pageSize, page * pageSize)
             .get();
@@ -67,6 +73,12 @@ class Maintenance {
         }
 
         final entries = entityStreamMapper(dbEntities);
+        final pageEntryIds = entries.map((e) => e.meta.id).toSet();
+        final allPageLinks = await _db.linksForEntryIds(pageEntryIds);
+        final linksByFromId = <String, List<EntryLink>>{};
+        for (final link in allPageLinks) {
+          linksByFromId.putIfAbsent(link.fromId, () => []).add(link);
+        }
 
         for (final entry in entries) {
           final jsonPath = relativeEntityPath(entry);
@@ -81,7 +93,7 @@ class Maintenance {
             ),
           );
 
-          final entryLinks = await _db.linksForEntryIds({entry.meta.id});
+          final entryLinks = linksByFromId[entry.meta.id] ?? const [];
           for (final entryLink in entryLinks) {
             await outboxService.enqueueMessage(
               SyncMessage.entryLink(

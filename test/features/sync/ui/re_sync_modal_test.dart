@@ -181,14 +181,23 @@ void main() {
         find.widgetWithText(LottiSecondaryButton, 'Start'),
       );
       expect(startButton.onPressed, isNull);
+      // The user-visible signal that explains the disabled state.
+      expect(
+        find.byKey(const Key('reSyncSelectAtLeastOneError')),
+        findsOneWidget,
+      );
 
-      // Re-tick journal — start should re-enable.
+      // Re-tick journal — start should re-enable and the hint disappears.
       await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
       await tester.pump();
       final startButtonAfter = tester.widget<LottiSecondaryButton>(
         find.widgetWithText(LottiSecondaryButton, 'Start'),
       );
       expect(startButtonAfter.onPressed, isNotNull);
+      expect(
+        find.byKey(const Key('reSyncSelectAtLeastOneError')),
+        findsNothing,
+      );
     },
   );
 

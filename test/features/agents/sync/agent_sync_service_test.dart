@@ -503,17 +503,18 @@ void main() {
       });
 
       test('reentrant call reuses the active interceptor', () async {
+        // Nested runInWakeCycle MUST share agentId/wakeRunKey with the
+        // outer scope (asserted in debug). The inner call returns
+        // action() directly without installing a second interceptor, so
+        // the inner action's writes land in the outer buffer.
         await syncService.runInWakeCycle(
-          agentId: 'agent-outer',
-          wakeRunKey: 'run-outer',
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
           action: () async {
             await syncService.upsertEntity(testEntity);
-            // Nested runInWakeCycle must NOT install a second interceptor
-            // — its action runs against the outer buffer and emits no
-            // separate bundle.
             await syncService.runInWakeCycle(
-              agentId: 'agent-inner',
-              wakeRunKey: 'run-inner',
+              agentId: 'agent-1',
+              wakeRunKey: 'run-1',
               action: () async {
                 await syncService.upsertLink(testBasicLink);
               },
@@ -524,15 +525,35 @@ void main() {
         final captured = verify(
           () => mockOutboxService.enqueueMessage(captureAny()),
         ).captured;
-        // Only the OUTER bundle is flushed (one enqueue), and it contains
-        // the inner cycle's link too.
+        // Only one bundle is flushed (no inner interceptor was installed),
+        // and it carries both the outer entity and the inner link.
         expect(captured, hasLength(1));
         final bundle = captured.single as SyncAgentBundle;
-        expect(bundle.agentId, 'agent-outer');
-        expect(bundle.wakeRunKey, 'run-outer');
+        expect(bundle.agentId, 'agent-1');
+        expect(bundle.wakeRunKey, 'run-1');
         expect(bundle.entities, hasLength(1));
         expect(bundle.links, hasLength(1));
       });
+
+      test(
+        'nested call with mismatched agentId/wakeRunKey trips the debug assert',
+        () async {
+          await expectLater(
+            () => syncService.runInWakeCycle(
+              agentId: 'agent-outer',
+              wakeRunKey: 'run-outer',
+              action: () async {
+                await syncService.runInWakeCycle(
+                  agentId: 'agent-inner',
+                  wakeRunKey: 'run-inner',
+                  action: () async {},
+                );
+              },
+            ),
+            throwsA(isA<AssertionError>()),
+          );
+        },
+      );
 
       test(
         'success-path bundle flush failure is swallowed and logged',
