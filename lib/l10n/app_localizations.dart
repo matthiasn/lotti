@@ -11185,6 +11185,48 @@ abstract class AppLocalizations {
   /// **'Unassigned'**
   String get tasksQuickFilterUnassignedLabel;
 
+  /// No description provided for @tasksSavedFilterDeleteConfirmTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap again to delete'**
+  String get tasksSavedFilterDeleteConfirmTooltip;
+
+  /// No description provided for @tasksSavedFilterDeleteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete saved filter'**
+  String get tasksSavedFilterDeleteTooltip;
+
+  /// No description provided for @tasksSavedFilterDragHandleSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get tasksSavedFilterDragHandleSemantics;
+
+  /// No description provided for @tasksSavedFilterRenameSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename saved filter'**
+  String get tasksSavedFilterRenameSemantics;
+
+  /// No description provided for @tasksSavedFiltersAddTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save current filter'**
+  String get tasksSavedFiltersAddTooltip;
+
+  /// No description provided for @tasksSavedFiltersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved filters yet. Adjust the task filter, then tap Save.'**
+  String get tasksSavedFiltersEmpty;
+
+  /// No description provided for @tasksSavedFiltersSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved filters'**
+  String get tasksSavedFiltersSectionTitle;
+
   /// No description provided for @tasksSearchModeLabel.
   ///
   /// In en, this message translates to:

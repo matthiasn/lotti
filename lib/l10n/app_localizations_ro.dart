@@ -6460,6 +6460,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksQuickFilterUnassignedLabel => 'Neatribuit';
 
   @override
+  String get tasksSavedFilterDeleteConfirmTooltip =>
+      'Apăsați din nou pentru a șterge';
+
+  @override
+  String get tasksSavedFilterDeleteTooltip => 'Ștergeți filtrul salvat';
+
+  @override
+  String get tasksSavedFilterDragHandleSemantics => 'Trageți pentru a reordona';
+
+  @override
+  String get tasksSavedFilterRenameSemantics => 'Redenumiți filtrul salvat';
+
+  @override
+  String get tasksSavedFiltersAddTooltip => 'Salvați filtrul curent';
+
+  @override
+  String get tasksSavedFiltersEmpty =>
+      'Niciun filtru salvat încă. Ajustați filtrul de sarcini, apoi apăsați Salvați.';
+
+  @override
+  String get tasksSavedFiltersSectionTitle => 'Filtre salvate';
+
+  @override
   String get tasksSearchModeLabel => 'Mod de căutare';
 
   @override
