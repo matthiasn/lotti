@@ -117,6 +117,26 @@ void main() {
       final list = container.read(savedTaskFiltersControllerProvider).value!;
       expect(list.map((e) => e.name), ['A', 'B']);
     });
+
+    test(
+      'waits for initial load before mutating to avoid wiping data',
+      () async {
+        stubPersisted(const [
+          SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+        ]);
+        final container = makeContainer();
+
+        // Invoke create() without awaiting the build future first; the mutation
+        // must internally await it so the persisted entry is preserved.
+        final notifier = container.read(
+          savedTaskFiltersControllerProvider.notifier,
+        );
+        await notifier.create(name: 'B', filter: _filterB);
+
+        final list = container.read(savedTaskFiltersControllerProvider).value!;
+        expect(list.map((e) => e.name), ['A', 'B']);
+      },
+    );
   });
 
   group('rename', () {

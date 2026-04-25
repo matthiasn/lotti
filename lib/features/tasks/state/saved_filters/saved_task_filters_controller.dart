@@ -32,12 +32,12 @@ class SavedTaskFiltersController extends _$SavedTaskFiltersController {
     required String name,
     required TasksFilter filter,
   }) async {
+    final current = await future;
     final saved = SavedTaskFilter(
       id: _uuid.v4(),
       name: name,
       filter: filter,
     );
-    final current = state.value ?? const <SavedTaskFilter>[];
     final next = [...current, saved];
     state = AsyncData(next);
     await _persistence.save(next);
@@ -50,7 +50,7 @@ class SavedTaskFiltersController extends _$SavedTaskFiltersController {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
-    final current = state.value ?? const <SavedTaskFilter>[];
+    final current = await future;
     final idx = current.indexWhere((SavedTaskFilter f) => f.id == id);
     if (idx < 0) return;
     if (current[idx].name == trimmed) return;
@@ -66,7 +66,7 @@ class SavedTaskFiltersController extends _$SavedTaskFiltersController {
   /// Used when "Update '`<name>`'" is invoked from the modal — the saved view
   /// keeps its name and id but takes on the currently-active filter shape.
   Future<void> updateFilter(String id, TasksFilter filter) async {
-    final current = state.value ?? const <SavedTaskFilter>[];
+    final current = await future;
     final idx = current.indexWhere((SavedTaskFilter f) => f.id == id);
     if (idx < 0) return;
 
@@ -78,7 +78,7 @@ class SavedTaskFiltersController extends _$SavedTaskFiltersController {
 
   /// Removes the saved filter with [id]. No-op when missing.
   Future<void> delete(String id) async {
-    final current = state.value ?? const <SavedTaskFilter>[];
+    final current = await future;
     if (!current.any((SavedTaskFilter f) => f.id == id)) return;
     final next = current
         .where((SavedTaskFilter f) => f.id != id)
@@ -93,7 +93,7 @@ class SavedTaskFiltersController extends _$SavedTaskFiltersController {
   Future<void> reorder(String dragId, String targetId) async {
     if (dragId == targetId) return;
 
-    final current = state.value ?? const <SavedTaskFilter>[];
+    final current = await future;
     final fromIdx = current.indexWhere((SavedTaskFilter f) => f.id == dragId);
     final toIdx = current.indexWhere((SavedTaskFilter f) => f.id == targetId);
     if (fromIdx < 0 || toIdx < 0) return;
