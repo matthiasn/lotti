@@ -5026,7 +5026,9 @@ void main() {
 
         final companion = captured.first as OutboxCompanion;
         expect(companion.subject.value, 'agentBundle:agent-1:run-1');
-        expect(companion.outboxEntryId.value, 'run-1');
+        // Composite key (agentId:wakeRunKey) prevents two distinct agents
+        // that share a wakeRunKey from cross-wiring their pending rows.
+        expect(companion.outboxEntryId.value, 'agent-1:run-1');
 
         final storedMessage =
             SyncMessage.fromJson(
@@ -5118,7 +5120,7 @@ void main() {
 
         final companion = captured.first as OutboxCompanion;
         expect(companion.subject.value, 'agentBundle:agent-1:run-fallback');
-        expect(companion.outboxEntryId.value, 'run-fallback');
+        expect(companion.outboxEntryId.value, 'agent-1:run-fallback');
 
         final storedMessage =
             SyncMessage.fromJson(

@@ -1189,8 +1189,14 @@ void main() {
 
       await processor.process(event: event, journalDb: journalDb);
 
-      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
-      verify(() => mockAgentRepo.upsertLink(link)).called(1);
+      // verifyInOrder asserts BOTH calls happened AND in this order. An
+      // agent_task link can only restore a wake subscription after its
+      // identity entity has been upserted, so entities must be applied
+      // before links within a bundle.
+      verifyInOrder([
+        () => mockAgentRepo.upsertEntity(entity),
+        () => mockAgentRepo.upsertLink(link),
+      ]);
       verify(
         () => updateNotifications.notify(
           {'agent-1', 'AGENT_CHANGED'},
@@ -2210,8 +2216,10 @@ void main() {
 
         await processor.process(event: event, journalDb: journalDb);
 
-        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
-        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+        verifyInOrder([
+          () => mockAgentRepo.upsertEntity(entity),
+          () => mockAgentRepo.upsertLink(link),
+        ]);
       });
 
       test('skips agent entity with no entity and no jsonPath', () async {

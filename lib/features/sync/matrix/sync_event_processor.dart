@@ -1506,7 +1506,14 @@ class SyncEventProcessor {
           ? child.copyWith(originatingHostId: origin)
           : child;
       final resolvedEntity = await _resolveAgentEntity(normalized);
-      if (resolvedEntity == null) continue;
+      if (resolvedEntity == null) {
+        _trace(
+          'agentBundle.entity.skipped id=${normalized.agentEntity?.id} '
+          'jsonPath=${normalized.jsonPath}',
+          subDomain: 'processor.resolve.bundle',
+        );
+        continue;
+      }
       entities.add(
         PreparedAgentEntitySync(
           message: normalized,
@@ -1521,7 +1528,14 @@ class SyncEventProcessor {
           ? child.copyWith(originatingHostId: origin)
           : child;
       final resolvedLink = await _resolveAgentLink(normalized);
-      if (resolvedLink == null) continue;
+      if (resolvedLink == null) {
+        _trace(
+          'agentBundle.link.skipped id=${normalized.agentLink?.id} '
+          'jsonPath=${normalized.jsonPath}',
+          subDomain: 'processor.resolve.bundle',
+        );
+        continue;
+      }
       links.add(
         PreparedAgentLinkSync(
           message: normalized,
