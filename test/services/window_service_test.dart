@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -145,13 +146,15 @@ void main() {
       // Should not throw
     });
 
-    test('disposeServicesOnly skips database close calls', () async {
+    test('disposeServicesOnly skips Drift database close calls', () async {
       await disposer.disposeServicesOnly();
 
       verify(mockBackfill.dispose).called(1);
       verify(mockEmbeddingService.stop).called(1);
       verify(mockOutbox.dispose).called(1);
       verify(mockMatrix.dispose).called(1);
+      // ObjectBox embedding store is safe to close on macOS — see service_disposer.
+      verify(mockEmbeddingStore.close).called(1);
 
       verifyNever(mockJournalDb.close);
       verifyNever(mockSyncDb.close);
@@ -159,7 +162,6 @@ void main() {
       verifyNever(mockEditorDb.close);
       verifyNever(mockFts5Db.close);
       verifyNever(mockSettingsDb.close);
-      verifyNever(mockEmbeddingStore.close);
     });
 
     test('logs errors via the provided callback', () async {
@@ -263,6 +265,77 @@ void main() {
       final exitCode = await exitCompleter.future;
       expect(exitCode, equals(0));
     });
+
+    test('detached lifecycle event triggers macOS shutdown sequence', () async {
+      final exitCompleter = Completer<int>();
+      final playerDisposed = Completer<void>();
+
+      WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => true,
+        exitOverride: exitCompleter.complete,
+        playerDisposerOverride: () async {
+          playerDisposed.complete();
+        },
+      ).didChangeAppLifecycleState(AppLifecycleState.detached);
+
+      await playerDisposed.future;
+      final exitCode = await exitCompleter.future;
+      expect(exitCode, equals(0));
+    });
+
+    test('non-detached lifecycle events do not trigger shutdown', () async {
+      var exitCalls = 0;
+
+      final service = WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => true,
+        exitOverride: (_) => exitCalls++,
+        playerDisposerOverride: () async {},
+      );
+
+      const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.paused,
+        AppLifecycleState.resumed,
+        AppLifecycleState.hidden,
+      ].forEach(service.didChangeAppLifecycleState);
+
+      // Yield once so any unawaited futures from a (mistaken) trigger
+      // would have a chance to run.
+      await Future<void>.delayed(Duration.zero);
+
+      expect(exitCalls, equals(0));
+    });
+
+    test(
+      'second shutdown trigger is ignored (window-close + detached)',
+      () async {
+        var exitCalls = 0;
+        var playerDisposeCalls = 0;
+        final firstExit = Completer<void>();
+
+        final service = WindowService(
+          skipWindowManagerSetup: true,
+          isMacOSOverride: () => true,
+          exitOverride: (_) {
+            exitCalls++;
+            if (!firstExit.isCompleted) firstExit.complete();
+          },
+          playerDisposerOverride: () async {
+            playerDisposeCalls++;
+          },
+        )..onWindowClose();
+
+        await firstExit.future;
+        // Now fire the lifecycle event that races with onWindowClose.
+        service.didChangeAppLifecycleState(AppLifecycleState.detached);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(exitCalls, equals(1));
+        expect(playerDisposeCalls, equals(1));
+      },
+    );
 
     test('non-macOS shutdown calls disposeAll', () async {
       // Track when the last service disposal completes so we can

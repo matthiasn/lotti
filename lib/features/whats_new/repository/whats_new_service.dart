@@ -138,4 +138,7 @@ class WhatsNewService {
 
     return null;
   }
+
+  /// Closes the underlying HTTP client and any keep-alive connections it holds.
+  void close() => _httpClient.close();
 }

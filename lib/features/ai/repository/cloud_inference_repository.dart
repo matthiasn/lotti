@@ -649,9 +649,23 @@ class CloudInferenceRepository {
         );
     }
   }
+
+  /// Closes HTTP clients held by sub-repositories that this instance owns.
+  ///
+  /// Ollama/Gemini/DashScope are sourced from their own providers and are
+  /// closed by their own `ref.onDispose` hooks.
+  void close() {
+    _mistralRepository.close();
+    _mistralTranscriptionRepository.close();
+    _whisperRepository.close();
+    _voxtralRepository.close();
+    _openAiTranscriptionRepository.close();
+  }
 }
 
 @riverpod
 CloudInferenceRepository cloudInferenceRepository(Ref ref) {
-  return CloudInferenceRepository(ref);
+  final repo = CloudInferenceRepository(ref);
+  ref.onDispose(repo.close);
+  return repo;
 }
