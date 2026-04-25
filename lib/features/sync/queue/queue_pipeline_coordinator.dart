@@ -13,6 +13,7 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/queue/attachment_aware_bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/bootstrap_sink.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
@@ -873,7 +874,7 @@ class QueuePipelineCoordinator {
   }) async {
     final innerSink = _attachmentIngestor == null
         ? QueueBootstrapSink(queue: _queue, logging: _logging)
-        : _AttachmentAwareBootstrapSink(
+        : AttachmentAwareBootstrapSink(
                 inner: QueueBootstrapSink(queue: _queue, logging: _logging),
                 processAttachment: _processAttachment,
               )
@@ -919,7 +920,7 @@ class QueuePipelineCoordinator {
     // skip cascade we just fixed.
     final innerSink = _attachmentIngestor == null
         ? QueueBootstrapSink(queue: _queue, logging: _logging)
-        : _AttachmentAwareBootstrapSink(
+        : AttachmentAwareBootstrapSink(
                 inner: QueueBootstrapSink(queue: _queue, logging: _logging),
                 processAttachment: _processAttachment,
               )
@@ -1163,42 +1164,6 @@ class _ProgressForwardingSink implements BootstrapSink {
       onProgress?.call(info);
     } catch (_) {
       // Intentionally empty: progress is diagnostic, not load-bearing.
-    }
-    return _inner.onPage(events, info);
-  }
-}
-
-/// Bootstrap sink wrapper that funnels each paginated event through
-/// the coordinator's attachment ingestor *before* forwarding to the
-/// inner sink. This is the catch-up equivalent of the live-stream
-/// `_handleLiveEvent` hook: every attachment descriptor observed
-/// during `collectHistoryForBootstrap` is recorded + downloaded so
-/// the companion sync-payload events that the inner sink enqueues
-/// have their JSON on disk by the time the worker applies them.
-///
-/// `processAttachment` is fire-and-forget — the ingestor queues its
-/// own downloads and must not block pagination. The inner sink's
-/// return value flows through unchanged.
-class _AttachmentAwareBootstrapSink implements BootstrapSink {
-  _AttachmentAwareBootstrapSink({
-    required BootstrapSink inner,
-    required Future<void> Function(Event event) processAttachment,
-  }) : _inner = inner,
-       _processAttachment = processAttachment;
-
-  final BootstrapSink _inner;
-  final Future<void> Function(Event event) _processAttachment;
-
-  @override
-  int? get lastAcceptedCount => _inner.lastAcceptedCount;
-
-  @override
-  Future<bool> onPage(List<Event> events, BootstrapPageInfo info) async {
-    for (final event in events) {
-      // `processAttachment` is internally a no-op for non-attachment
-      // events (the ingestor checks `content['relativePath']`). Fire
-      // them all and let the ingestor decide.
-      unawaited(_processAttachment(event));
     }
     return _inner.onPage(events, info);
   }

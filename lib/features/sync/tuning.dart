@@ -167,6 +167,20 @@ class SyncTuning {
   // commits are expected to take roughly chunkSize × per-event cost.
   static const int processOrderedChunkSize = 20;
 
+  // Maximum number of attachment-descriptor events that the bootstrap
+  // catch-up sink processes concurrently. The inner queue sink does not
+  // wait for attachment work (fire-and-forget by contract), but the pre-
+  // existing loop fired `unawaited(_processAttachment(event))` per event
+  // in a page — which, on a 200-event page, means 200 async bodies run
+  // up to their first await synchronously on the main isolate before it
+  // gets to yield. On slow disks (Parallels-backed Linux) this shows up
+  // as visible UI stalls during catch-up. Cap the fan-out to a small
+  // worker pool so the main isolate can breathe between attachments.
+  // Downloads themselves stay gated by AttachmentIngestor's own
+  // `_maxConcurrentDownloads` — this bound is purely about scheduling
+  // cost per page.
+  static const int bootstrapAttachmentConcurrency = 4;
+
   // Size of the batch the InboundWorker drains in a single
   // `runWithDeferredMissingEntries` window. Matches
   // [processOrderedChunkSize] so the one-worker model keeps today's
