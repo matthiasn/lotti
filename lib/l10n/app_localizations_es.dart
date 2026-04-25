@@ -6518,6 +6518,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksQuickFilterUnassignedLabel => 'Sin asignar';
 
   @override
+  String get tasksSavedFilterDeleteConfirmTooltip =>
+      'Toca otra vez para eliminar';
+
+  @override
+  String get tasksSavedFilterDeleteTooltip => 'Eliminar filtro guardado';
+
+  @override
+  String get tasksSavedFilterDragHandleSemantics => 'Arrastra para reordenar';
+
+  @override
+  String get tasksSavedFilterRenameSemantics => 'Renombrar filtro guardado';
+
+  @override
+  String get tasksSavedFiltersAddTooltip => 'Guardar filtro actual';
+
+  @override
+  String get tasksSavedFiltersEmpty =>
+      'Aún no tienes filtros guardados. Ajusta el filtro de tareas y toca Guardar.';
+
+  @override
+  String get tasksSavedFiltersSectionTitle => 'Filtros guardados';
+
+  @override
   String get tasksSearchModeLabel => 'Modo de búsqueda';
 
   @override

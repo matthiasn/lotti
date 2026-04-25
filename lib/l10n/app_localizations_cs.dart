@@ -6420,6 +6420,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksQuickFilterUnassignedLabel => 'Nepřiřazeno';
 
   @override
+  String get tasksSavedFilterDeleteConfirmTooltip => 'Klepni znovu pro smazání';
+
+  @override
+  String get tasksSavedFilterDeleteTooltip => 'Smazat uložený filtr';
+
+  @override
+  String get tasksSavedFilterDragHandleSemantics => 'Přetáhni pro změnu pořadí';
+
+  @override
+  String get tasksSavedFilterRenameSemantics => 'Přejmenovat uložený filtr';
+
+  @override
+  String get tasksSavedFiltersAddTooltip => 'Uložit aktuální filtr';
+
+  @override
+  String get tasksSavedFiltersEmpty =>
+      'Zatím žádné uložené filtry. Uprav filtr úkolů a klepni na Uložit.';
+
+  @override
+  String get tasksSavedFiltersSectionTitle => 'Uložené filtry';
+
+  @override
   String get tasksSearchModeLabel => 'Režim hledání';
 
   @override
