@@ -2596,6 +2596,118 @@ void main() {
         expect(message, contains('entity-y'));
       });
 
+      test(
+        'omits Active Running Timer section when no timer is active',
+        () async {
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Active Running Timer')));
+        },
+      );
+
+      test(
+        'includes full Active Running Timer details when timer is for THIS '
+        'task',
+        () async {
+          final timeService = getIt<TimeService>();
+          final task = Task(
+            meta: Metadata(
+              id: taskId,
+              dateFrom: DateTime(2024, 6),
+              dateTo: DateTime(2024, 6),
+              createdAt: DateTime(2024, 6),
+              updatedAt: DateTime(2024, 6),
+            ),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: taskId,
+                createdAt: DateTime(2024, 6),
+                utcOffset: 0,
+              ),
+              dateFrom: DateTime(2024, 6),
+              dateTo: DateTime(2024, 6),
+              statusHistory: [],
+              title: 'Active task',
+            ),
+          );
+          final timerEntry = JournalEntry(
+            meta: Metadata(
+              id: 'timer-entry-007',
+              dateFrom: DateTime(2024, 6, 14, 10),
+              dateTo: DateTime(2024, 6, 14, 10, 5),
+              createdAt: DateTime(2024, 6, 14, 10),
+              updatedAt: DateTime(2024, 6, 14, 10),
+            ),
+            entryText: const EntryText(plainText: 'wip notes'),
+          );
+          await timeService.start(timerEntry, task);
+          addTearDown(timeService.stop);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, contains('## Active Running Timer'));
+          expect(message, contains('running for THIS task'));
+          expect(message, contains('timerId: timer-entry-007'));
+          expect(message, contains('current text: "wip notes"'));
+          expect(message, contains('update_running_timer'));
+        },
+      );
+
+      test(
+        'exposes only tracked range when timer belongs to a DIFFERENT task',
+        () async {
+          final timeService = getIt<TimeService>();
+          final otherTask = Task(
+            meta: Metadata(
+              id: 'other-task-id',
+              dateFrom: DateTime(2024, 6),
+              dateTo: DateTime(2024, 6),
+              createdAt: DateTime(2024, 6),
+              updatedAt: DateTime(2024, 6),
+            ),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'other-task-id',
+                createdAt: DateTime(2024, 6),
+                utcOffset: 0,
+              ),
+              dateFrom: DateTime(2024, 6),
+              dateTo: DateTime(2024, 6),
+              statusHistory: [],
+              title: 'Other task',
+            ),
+          );
+          final timerEntry = JournalEntry(
+            meta: Metadata(
+              id: 'other-timer-id',
+              dateFrom: DateTime(2024, 6, 14, 9),
+              dateTo: DateTime(2024, 6, 14, 9, 30),
+              createdAt: DateTime(2024, 6, 14, 9),
+              updatedAt: DateTime(2024, 6, 14, 9),
+            ),
+            entryText: const EntryText(plainText: 'secret notes'),
+          );
+          await timeService.start(timerEntry, otherTask);
+          addTearDown(timeService.stop);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, contains('## Active Running Timer'));
+          expect(message, contains('DIFFERENT task'));
+          expect(message, contains('tracked elsewhere:'));
+          // Detail leakage guards: no other-task identity, no timer id, no
+          // entry text, and update_running_timer is unavailable for this
+          // wake.
+          expect(message, isNot(contains('other-task-id')));
+          expect(message, isNot(contains('other-timer-id')));
+          expect(message, isNot(contains('secret notes')));
+          expect(message, contains('update_running_timer` is NOT available'));
+        },
+      );
+
       test('omits trigger section when empty', () async {
         final message = await executeAndCaptureMessage();
 

@@ -51,6 +51,7 @@ abstract final class TaskAgentToolNames {
 
   // Time tracking tools.
   static const createTimeEntry = 'create_time_entry';
+  static const updateRunningTimer = 'update_running_timer';
 
   // Legacy single-item aliases (dispatched to batch handlers).
   static const addChecklistItem = 'add_checklist_item';
@@ -90,6 +91,7 @@ class AgentToolRegistry {
     TaskAgentToolNames.createFollowUpTask,
     TaskAgentToolNames.migrateChecklistItems,
     TaskAgentToolNames.createTimeEntry,
+    TaskAgentToolNames.updateRunningTimer,
   };
 
   /// Batch tools that should be exploded into individual change item entries.
@@ -347,15 +349,21 @@ class AgentToolRegistry {
     AgentToolDefinition(
       name: TaskAgentToolNames.createTimeEntry,
       description:
-          'Create a time tracking entry for a work session on the current '
-          'task. Use ONLY when the user has JUST NOW (within the last few '
-          'minutes to ~1 hour) dictated what they worked on. The dictation '
-          'must be from the current recording session — NEVER create entries '
-          'based on old transcripts, historical context, or text from '
-          'previous wakes. If unsure whether the dictation is recent, do NOT '
-          'call this tool. Supports two modes: (1) completed session with '
-          'start and end times, (2) running timer with start time only '
-          '(omit endTime).',
+          'Create a time tracking entry for a PAST work session on the '
+          'current task. Use ONLY when the user has JUST NOW (within the last '
+          'few minutes to ~1 hour) dictated what they worked on. The '
+          'dictation must be from the current recording session — NEVER '
+          'create entries based on old transcripts, historical context, or '
+          'text from previous wakes. If unsure whether the dictation is '
+          'recent, do NOT call this tool. Supports two modes: (1) completed '
+          'session with start and end times (today or any earlier day), '
+          '(2) running timer with start time only (omit endTime). '
+          'IMPORTANT: if the wake context contains an "Active Running Timer" '
+          'section for this task, do NOT call this tool to describe the '
+          'work covered by that timer — call update_running_timer instead. '
+          'create_time_entry is for sessions that are clearly distinct from '
+          'the active timer (e.g. earlier today before the timer started, '
+          'or any prior day).',
       parameters: {
         'type': 'object',
         'properties': {
@@ -363,8 +371,10 @@ class AgentToolRegistry {
             'type': 'string',
             'description':
                 'Start time in local ISO 8601 format with explicit time and '
-                "no timezone suffix (e.g., '2026-03-17T14:00:00'). Must be "
-                "today's date. Resolve spoken times like '2 PM' or '14:00' "
+                "no timezone suffix (e.g., '2026-03-17T14:00:00'). May be "
+                'today or any earlier day for completed sessions; for a '
+                "running timer (no endTime) it must be today's date. Resolve "
+                "spoken times like '2 PM' or '14:00' or 'yesterday at 4 PM' "
                 'to a full local timestamp using the current date from '
                 'context.',
           },
@@ -373,8 +383,8 @@ class AgentToolRegistry {
             'description':
                 'End time in local ISO 8601 format with explicit time and no '
                 'timezone suffix. Omit to start a running timer. Must be '
-                'after startTime and on the same day. Must not be after the '
-                'current wake timestamp.',
+                'after startTime and on the same day as startTime. Must not '
+                'be after the current wake timestamp.',
           },
           'summary': {
             'type': 'string',
@@ -386,6 +396,42 @@ class AgentToolRegistry {
           },
         },
         'required': ['startTime', 'summary'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: TaskAgentToolNames.updateRunningTimer,
+      description:
+          'Propose a richer text description for the currently running '
+          'timer on this task. Call this INSTEAD of create_time_entry when '
+          'the wake context contains an "Active Running Timer" section: the '
+          'user already started a timer with an empty or terse description, '
+          'and the agent should update it with a distilled summary of what '
+          'has been worked on so far. The proposal is user-gated; the user '
+          'sees a diff between the current text and your proposed text '
+          'before accepting. Replaces the timer entry text outright (the '
+          'user can still edit before accepting).',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'timerId': {
+            'type': 'string',
+            'description':
+                'The ID of the running timer entry, taken verbatim from the '
+                '"Active Running Timer" section of the wake context. Must '
+                'match the currently running timer at execution time.',
+          },
+          'summary': {
+            'type': 'string',
+            'maxLength': 500,
+            'description':
+                'A distilled 1-2 sentence summary of what the user has '
+                'worked on during the running session so far. Extract the '
+                'essence from the dictation — do not copy verbatim. Write '
+                "in the task's content language.",
+          },
+        },
+        'required': ['timerId', 'summary'],
         'additionalProperties': false,
       },
     ),

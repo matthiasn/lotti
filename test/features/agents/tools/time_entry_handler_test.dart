@@ -583,6 +583,41 @@ void main() {
         },
       );
 
+      test('accepts completed session from a prior day', () async {
+        // The agent must be allowed to log work from yesterday or further
+        // back when the user dictates it during the current wake. Only the
+        // future-cutoff is enforced at wake time.
+        await withClock(Clock.fixed(testNow), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'startTime': '2026-03-15T09:00:00',
+              'endTime': '2026-03-15T10:00:00',
+              'summary': 'Two days ago',
+            },
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('09:00–10:00'));
+        });
+      });
+
+      test('accepts completed session from yesterday', () async {
+        await withClock(Clock.fixed(testNow), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'startTime': '2026-03-16T16:00:00',
+              'endTime': '2026-03-16T16:45:00',
+              'summary': 'Yesterday afternoon',
+            },
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('16:00–16:45'));
+        });
+      });
+
       test(
         'still rejects completed session when endTime spills into the next '
         'day (same-day constraint is preserved)',

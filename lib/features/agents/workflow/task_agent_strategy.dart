@@ -934,6 +934,12 @@ class TaskAgentStrategy extends ConversationStrategy {
         final timeRange = hasEndTime ? '$startStr–$endStr' : 'from $startStr';
         return 'Time entry $timeRange: "$summary"';
       }(),
+      TaskAgentToolNames.updateRunningTimer => () {
+        final summary = args['summary'] is String
+            ? (args['summary'] as String).trim()
+            : '';
+        return 'Update running timer text: "$summary"';
+      }(),
       _ => '$toolName(${args.keys.join(", ")})',
     };
   }
