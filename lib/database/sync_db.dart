@@ -49,6 +49,28 @@ enum SyncSequenceStatus {
   'CREATE INDEX idx_outbox_status_priority_created_at '
   'ON outbox (status, priority, created_at)',
 )
+// Hot-path partial that keeps `oldestOutboxItems` and
+// `claimNextOutboxItem` focused on actionable rows even when the
+// `sent` ledger has accumulated tens of thousands of entries (the
+// 7-day retention window settles at ~30 k on heavy desktops). The
+// non-partial index above stays for the full-status `watchOutboxItems`
+// stream that the diagnostics UI reads.
+//
+// Status literals (0 and 3) intentionally mirror the current
+// `OutboxStatus` enum order in
+// `lib/features/sync/state/outbox_state_controller.dart`:
+//   index 0 = pending, index 1 = sent, index 2 = error, index 3 = sending
+// `@TableIndex.sql` only accepts a const string, so the indices cannot
+// be derived from the enum at compile time. Drift safety: a guard test
+// in `test/database/sync_db_test.dart` asserts the two indices used
+// here match `OutboxStatus.pending.index` and `OutboxStatus.sending.index`,
+// so any future enum reordering breaks the test instead of silently
+// indexing the wrong rows.
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_actionable_priority_created_at '
+  'ON outbox (priority, created_at) '
+  'WHERE status IN (0, 3)',
+)
 class Outbox extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -94,6 +116,25 @@ class Outbox extends Table {
   'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at '
   'ON sync_sequence_log (status, created_at) '
   'WHERE status IN (1, 2)',
+)
+// Companion partial keyed on `updated_at` so
+// `retireAgedOutRequestedEntries` (which filters on `updated_at <
+// cutoff`) does not fall back to the autoindex on (host_id, counter)
+// and effectively scan every row that ever held status IN (1, 2).
+// Both partials cover overlapping rows but with different sort keys.
+@TableIndex.sql(
+  'CREATE INDEX idx_sync_sequence_log_actionable_status_updated_at '
+  'ON sync_sequence_log (status, updated_at) '
+  'WHERE status IN (1, 2)',
+)
+// Covering index for `getBackfillStats`. The previous SUM-of-CASE
+// formulation full-scanned 700 k+ rows on production devices
+// (858 s/day on a real desktop). With this index, GROUP BY
+// (host_id, status) becomes index-only and emits only ~80 rows
+// (≈ hosts × statuses) which the Dart side pivots cheaply.
+@TableIndex.sql(
+  'CREATE INDEX idx_sync_sequence_log_host_status '
+  'ON sync_sequence_log (host_id, status)',
 )
 @TableIndex.sql(
   'CREATE INDEX idx_sync_sequence_log_payload_resolution '
@@ -233,6 +274,17 @@ class HostActivity extends Table {
 @TableIndex.sql(
   'CREATE INDEX idx_inbound_event_queue_abandoned_path '
   'ON inbound_event_queue (json_path) '
+  '''WHERE status = 'abandoned' ''',
+)
+// Companion partial for `resurrectByReason`, which fires on every
+// `JournalDb.updateStream` event to un-park abandoned rows whose
+// last retry reason matches. Without it, the predicate
+// `status='abandoned' AND last_error_reason=?` falls through to a
+// table scan over the full applied ledger (23 k+ rows on production
+// devices, 298 s of cumulative DB time per day on desktop).
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_abandoned_reason '
+  'ON inbound_event_queue (last_error_reason) '
   '''WHERE status = 'abandoned' ''',
 )
 class InboundEventQueue extends Table {
@@ -915,8 +967,49 @@ class SyncDatabase extends _$SyncDatabase {
 
   /// Get backfill statistics grouped by host.
   /// Returns counts of entries in each status per host.
+  ///
+  /// Implementation note: the previous `SUM(CASE WHEN status=…)`
+  /// formulation forced a full table scan of `sync_sequence_log`
+  /// (700 k+ rows on production devices, 858 s of cumulative DB time
+  /// per day on a real desktop). With the v15
+  /// `idx_sync_sequence_log_host_status` covering index, GROUP BY
+  /// `(host_id, status)` is an index-only scan that emits ~80 rows
+  /// (≈ hosts × statuses), and the per-host pivot happens cheaply in
+  /// Dart.
   Future<BackfillStats> getBackfillStats() async {
-    // Use enum indices for status values to stay correct if enum order changes
+    final hostStatusCounts = await customSelect(
+      '''
+      SELECT host_id, status, COUNT(*) AS cnt
+      FROM sync_sequence_log
+      GROUP BY host_id, status
+      ''',
+      readsFrom: {syncSequenceLog},
+    ).get();
+
+    if (hostStatusCounts.isEmpty) {
+      return BackfillStats.fromHostStats(const []);
+    }
+
+    final perHost = <String, Map<int, int>>{};
+    for (final row in hostStatusCounts) {
+      final host = row.read<String>('host_id');
+      final status = row.read<int>('status');
+      final count = row.read<int>('cnt');
+      perHost.putIfAbsent(host, () => <int, int>{})[status] = count;
+    }
+
+    // Only fetch host_activity rows for hosts that actually appear in
+    // the stats result. `host_activity` is small in practice (one row
+    // per peer the device has ever seen), but the filtered lookup
+    // avoids materialising every row when the caller only needs
+    // last-seen for the hosts being reported on.
+    final hostActivityRows = await (select(
+      hostActivity,
+    )..where((t) => t.hostId.isIn(perHost.keys))).get();
+    final lastSeenByHost = {
+      for (final row in hostActivityRows) row.hostId: row.lastSeenAt,
+    };
+
     final received = SyncSequenceStatus.received.index;
     final missing = SyncSequenceStatus.missing.index;
     final requested = SyncSequenceStatus.requested.index;
@@ -924,38 +1017,19 @@ class SyncDatabase extends _$SyncDatabase {
     final deleted = SyncSequenceStatus.deleted.index;
     final unresolvable = SyncSequenceStatus.unresolvable.index;
 
-    // Get all unique hosts with their status counts
-    final query = customSelect(
-      '''
-      SELECT
-        ssl.host_id,
-        SUM(CASE WHEN ssl.status = $received THEN 1 ELSE 0 END) as received_count,
-        SUM(CASE WHEN ssl.status = $missing THEN 1 ELSE 0 END) as missing_count,
-        SUM(CASE WHEN ssl.status = $requested THEN 1 ELSE 0 END) as requested_count,
-        SUM(CASE WHEN ssl.status = $backfilled THEN 1 ELSE 0 END) as backfilled_count,
-        SUM(CASE WHEN ssl.status = $deleted THEN 1 ELSE 0 END) as deleted_count,
-        SUM(CASE WHEN ssl.status = $unresolvable THEN 1 ELSE 0 END) as unresolvable_count,
-        ha.last_seen_at
-      FROM sync_sequence_log ssl
-      LEFT JOIN host_activity ha ON ssl.host_id = ha.host_id
-      GROUP BY ssl.host_id
-      ORDER BY ssl.host_id
-      ''',
-      readsFrom: {syncSequenceLog, hostActivity},
-    );
-
-    final results = await query.get();
-    final hostStats = results.map((row) {
-      return BackfillHostStats(
-        receivedCount: row.read<int>('received_count'),
-        missingCount: row.read<int>('missing_count'),
-        requestedCount: row.read<int>('requested_count'),
-        backfilledCount: row.read<int>('backfilled_count'),
-        deletedCount: row.read<int>('deleted_count'),
-        unresolvableCount: row.read<int>('unresolvable_count'),
-        lastSeenAt: row.readNullable<DateTime>('last_seen_at'),
-      );
-    }).toList();
+    final hostIds = perHost.keys.toList()..sort();
+    final hostStats = [
+      for (final host in hostIds)
+        BackfillHostStats(
+          receivedCount: perHost[host]![received] ?? 0,
+          missingCount: perHost[host]![missing] ?? 0,
+          requestedCount: perHost[host]![requested] ?? 0,
+          backfilledCount: perHost[host]![backfilled] ?? 0,
+          deletedCount: perHost[host]![deleted] ?? 0,
+          unresolvableCount: perHost[host]![unresolvable] ?? 0,
+          lastSeenAt: lastSeenByHost[host],
+        ),
+    ];
 
     return BackfillStats.fromHostStats(hostStats);
   }
@@ -1352,7 +1426,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration {
@@ -1544,6 +1618,57 @@ class SyncDatabase extends _$SyncDatabase {
             'idx_inbound_event_queue_active_ready_at '
             'ON inbound_event_queue (next_due_at, lease_until) '
             '''WHERE status IN ('enqueued', 'retrying', 'leased')''',
+          );
+        }
+        if (from < 15) {
+          // 1. `resurrectByReason` was the #2 desktop slow query
+          //    (298 s total, 5.9 s max). It filters
+          //    `status='abandoned' AND last_error_reason=?` but no
+          //    matching index existed, so it scanned 23 k+ rows of
+          //    the applied ledger on every fire. Mirrors the existing
+          //    `idx_inbound_event_queue_abandoned_path` shape.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_abandoned_reason '
+            'ON inbound_event_queue (last_error_reason) '
+            '''WHERE status = 'abandoned' ''',
+          );
+          // 2. `retireAgedOutRequestedEntries` filters on `updated_at`
+          //    but the existing actionable partial index is keyed on
+          //    `created_at`, so the WHERE picked the autoindex on
+          //    (host_id, counter) and effectively scanned every row
+          //    that ever held status IN (1,2). Add a partial keyed on
+          //    the column the WHERE actually needs.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_actionable_status_updated_at '
+            'ON sync_sequence_log (status, updated_at) '
+            'WHERE status IN (1, 2)',
+          );
+          // 3. `getBackfillStats`' `SUM(CASE WHEN status=…)` GROUP BY
+          //    host_id was a full table scan of 700 k+ rows
+          //    (858 s total on desktop). With this covering index the
+          //    plan becomes an index-only scan, GROUP BY (host_id,
+          //    status) collapses to ~80 rows total, and the per-host
+          //    aggregation in Dart is trivially fast.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_host_status '
+            'ON sync_sequence_log (host_id, status)',
+          );
+          // 4. `oldestOutboxItems` and `claimNextOutboxItem` both
+          //    scan via `idx_outbox_status_priority_created_at`, but
+          //    with 32 k+ `sent` rows accumulated on desktop the
+          //    index pages are dominated by terminal rows. A partial
+          //    index limited to actionable statuses keeps the hot
+          //    `sendNext` lookup focused on the ~6 rows that matter.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_outbox_actionable_priority_created_at '
+            'ON outbox (priority, created_at) '
+            'WHERE status IN '
+            // pending=0, sending=3 — values must match OutboxStatus.
+            '(${OutboxStatus.pending.index}, $_outboxSendingStatus)',
           );
         }
       },

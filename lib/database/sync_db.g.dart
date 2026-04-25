@@ -2941,9 +2941,21 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_outbox_status_priority_created_at',
     'CREATE INDEX idx_outbox_status_priority_created_at ON outbox (status, priority, created_at)',
   );
+  late final Index idxOutboxActionablePriorityCreatedAt = Index(
+    'idx_outbox_actionable_priority_created_at',
+    'CREATE INDEX idx_outbox_actionable_priority_created_at ON outbox (priority, created_at) WHERE status IN (0, 3)',
+  );
   late final Index idxSyncSequenceLogActionableStatusCreatedAt = Index(
     'idx_sync_sequence_log_actionable_status_created_at',
     'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at ON sync_sequence_log (status, created_at) WHERE status IN (1, 2)',
+  );
+  late final Index idxSyncSequenceLogActionableStatusUpdatedAt = Index(
+    'idx_sync_sequence_log_actionable_status_updated_at',
+    'CREATE INDEX idx_sync_sequence_log_actionable_status_updated_at ON sync_sequence_log (status, updated_at) WHERE status IN (1, 2)',
+  );
+  late final Index idxSyncSequenceLogHostStatus = Index(
+    'idx_sync_sequence_log_host_status',
+    'CREATE INDEX idx_sync_sequence_log_host_status ON sync_sequence_log (host_id, status)',
   );
   late final Index idxSyncSequenceLogPayloadResolution = Index(
     'idx_sync_sequence_log_payload_resolution',
@@ -2973,6 +2985,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_inbound_event_queue_abandoned_path',
     'CREATE INDEX idx_inbound_event_queue_abandoned_path ON inbound_event_queue (json_path) WHERE status = \'abandoned\'',
   );
+  late final Index idxInboundEventQueueAbandonedReason = Index(
+    'idx_inbound_event_queue_abandoned_reason',
+    'CREATE INDEX idx_inbound_event_queue_abandoned_reason ON inbound_event_queue (last_error_reason) WHERE status = \'abandoned\'',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2984,7 +3000,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     inboundEventQueue,
     queueMarkers,
     idxOutboxStatusPriorityCreatedAt,
+    idxOutboxActionablePriorityCreatedAt,
     idxSyncSequenceLogActionableStatusCreatedAt,
+    idxSyncSequenceLogActionableStatusUpdatedAt,
+    idxSyncSequenceLogHostStatus,
     idxSyncSequenceLogPayloadResolution,
     idxSyncSequenceLogHostEntryStatusCounter,
     idxInboundEventQueueReady,
@@ -2992,6 +3011,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxInboundEventQueueRoom,
     idxInboundEventQueueActiveRoomTs,
     idxInboundEventQueueAbandonedPath,
+    idxInboundEventQueueAbandonedReason,
   ];
 }
 

@@ -3384,9 +3384,36 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 14', () {
-      expect(db.schemaVersion, 14);
+    test('schema version is 15', () {
+      expect(db.schemaVersion, 15);
     });
+
+    test(
+      'OutboxStatus indices used by the partial-index annotation '
+      'on the Outbox table stay aligned with the enum — `@TableIndex.sql` '
+      'is a const-string annotation that cannot reference the enum at '
+      'compile time, so the literals (0, 3) used in '
+      '`idx_outbox_actionable_priority_created_at` would silently '
+      'index the wrong rows if `OutboxStatus` were ever reordered. '
+      'This guard fails loudly instead.',
+      () {
+        expect(
+          OutboxStatus.pending.index,
+          0,
+          reason:
+              'pending must be index 0 — used as a literal in the '
+              'partial-index WHERE clause.',
+        );
+        expect(
+          OutboxStatus.sending.index,
+          3,
+          reason:
+              'sending must be index 3 — used as a literal in the '
+              'partial-index WHERE clause and as `_outboxSendingStatus` '
+              'in sync_db.dart.',
+        );
+      },
+    );
   });
 
   group('Outbox Priority Ordering - ', () {

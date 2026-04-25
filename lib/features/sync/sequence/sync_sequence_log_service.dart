@@ -1182,7 +1182,11 @@ class SyncSequenceLogService {
       return false;
     }
 
-    // Mark as backfilled
+    // Mark as backfilled. Preserve `existing.createdAt` so post-mortems
+    // and the slow-query-friendly `(status, created_at)` partial index
+    // continue to reflect when gap detection first flagged this counter
+    // — overwriting it with `now` was hiding the real detection time
+    // behind the verify timestamp (see the 2026-04-25 catch-up audit).
     final now = DateTime.now();
     await _syncDatabase.recordSequenceEntry(
       SyncSequenceLogCompanion(
@@ -1191,7 +1195,7 @@ class SyncSequenceLogService {
         entryId: Value(entryId),
         payloadType: Value(payloadType.index),
         status: Value(SyncSequenceStatus.backfilled.index),
-        createdAt: Value(now),
+        createdAt: Value(existing.createdAt),
         updatedAt: Value(now),
       ),
     );
