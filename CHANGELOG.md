@@ -29,6 +29,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already adds the current clock to `coveredVectorClocks` downstream and the
   receiver's `_filterCoveredVectorClocks` strips it again before pre-marking
   covered counters.
+- Matrix verification emoji sequence now wraps onto multiple lines on narrow
+  phone viewports. The 7-emoji row was overflowing horizontally on Samsung
+  devices in portrait (`RIGHT OVERFLOWED BY 24 PIXELS`), cutting off the
+  last cell. `VerificationEmojisRow` now uses a `Wrap` layout so the cells
+  flow onto a second line when the screen width is constrained while
+  keeping centered alignment on wide screens.
+- Resync Settings (Sync → Maintenance → Re-sync messages) now has an "Entity
+  types" section with two checkboxes — "Journal entities" and "Agent
+  entities" — both on by default. Unticking "Agent entities" lets the user
+  bypass the agent-entity sweep when catching up a fresh device, where the
+  agent corpus can otherwise enqueue ~20k entries and dominate the backfill
+  cost. The Start button disables and an error hint shows when neither
+  checkbox is selected; `Maintenance.reSyncInterval` enforces the same
+  contract and emits a single `MAINTENANCE/reSyncInterval` log line if the
+  call is invoked with both flags off.
 - Linux: emojis no longer render as tofu in agent reports, journal text, or
   any widget consuming a design-system text token. The token generator now
   emits `fontFamilyFallback: ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto

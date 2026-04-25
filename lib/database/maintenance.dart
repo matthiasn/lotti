@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
@@ -20,95 +21,133 @@ import 'package:lotti/utils/file_utils.dart';
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
 
+  /// Re-enqueue persisted entries within [start]..[end] so peers can backfill.
+  ///
+  /// [includeJournalEntities] controls whether the journal+entry-link sweep
+  /// runs. [includeAgentEntities] controls whether the agent entity+link sweep
+  /// runs. Both default to `true` to preserve the original behavior; the
+  /// Resync Settings UI exposes these as checkboxes so the user can skip the
+  /// agent sweep when it would otherwise enqueue tens of thousands of agent
+  /// rows during a fresh device's catch-up.
+  ///
+  /// At least one flag must be `true`; if both are `false` the call is a
+  /// no-op and emits a single MAINTENANCE log entry so the skip is visible
+  /// in the sync log.
   Future<void> reSyncInterval({
     required DateTime start,
     required DateTime end,
     required AgentRepository agentRepository,
+    bool includeJournalEntities = true,
+    bool includeAgentEntities = true,
   }) async {
+    if (!includeJournalEntities && !includeAgentEntities) {
+      getIt<LoggingService>().captureEvent(
+        'reSyncInterval skipped — both entity-type filters disabled',
+        domain: 'MAINTENANCE',
+        subDomain: 'reSyncInterval',
+      );
+      return;
+    }
+
     final outboxService = getIt<OutboxService>();
     final vectorClockService = getIt<VectorClockService>();
     final hostId = await vectorClockService.getHost();
     const pageSize = 100;
 
-    // 1. Re-sync journal entities and their links.
-    final count = await _db.countJournalEntries().getSingle();
-    final pages = (count / pageSize).ceil();
+    if (includeJournalEntities) {
+      // 1. Re-sync journal entities and their links.
+      //
+      // The unbounded `countJournalEntries()` precount was misleading
+      // (it counts every entry, not just the interval) and unnecessary
+      // because the page loop already terminates on the first empty page.
+      // Drive the pagination off the empty-page sentinel instead, and
+      // batch link lookups per page so a single round-trip serves the
+      // whole page instead of one query per entry (was N+1 on long
+      // intervals).
+      for (var page = 0; ; page++) {
+        final dbEntities = await _db
+            .orderedJournalInterval(start, end, pageSize, page * pageSize)
+            .get();
+        if (dbEntities.isEmpty) {
+          break;
+        }
 
-    for (var page = 0; page <= pages; page++) {
-      final dbEntities = await _db
-          .orderedJournalInterval(start, end, pageSize, page * pageSize)
-          .get();
-      if (dbEntities.isEmpty) {
-        break;
-      }
+        final entries = entityStreamMapper(dbEntities);
+        final pageEntryIds = entries.map((e) => e.meta.id).toSet();
+        final allPageLinks = await _db.linksForEntryIds(pageEntryIds);
+        final linksByFromId = <String, List<EntryLink>>{};
+        for (final link in allPageLinks) {
+          linksByFromId.putIfAbsent(link.fromId, () => []).add(link);
+        }
 
-      final entries = entityStreamMapper(dbEntities);
+        for (final entry in entries) {
+          final jsonPath = relativeEntityPath(entry);
 
-      for (final entry in entries) {
-        final jsonPath = relativeEntityPath(entry);
-
-        await outboxService.enqueueMessage(
-          SyncMessage.journalEntity(
-            id: entry.id,
-            vectorClock: entry.meta.vectorClock,
-            jsonPath: jsonPath,
-            status: SyncEntryStatus.update,
-            originatingHostId: hostId,
-          ),
-        );
-
-        final entryLinks = await _db.linksForEntryIds({entry.meta.id});
-        for (final entryLink in entryLinks) {
           await outboxService.enqueueMessage(
-            SyncMessage.entryLink(
+            SyncMessage.journalEntity(
+              id: entry.id,
+              vectorClock: entry.meta.vectorClock,
+              jsonPath: jsonPath,
               status: SyncEntryStatus.update,
-              entryLink: entryLink,
+              originatingHostId: hostId,
             ),
           );
+
+          final entryLinks = linksByFromId[entry.meta.id] ?? const [];
+          for (final entryLink in entryLinks) {
+            await outboxService.enqueueMessage(
+              SyncMessage.entryLink(
+                status: SyncEntryStatus.update,
+                entryLink: entryLink,
+              ),
+            );
+          }
         }
       }
     }
 
-    // 2. Re-sync agent entities and links updated in the same interval.
-    await _reSyncPaginated(
-      countFetcher: () => agentRepository.countEntitiesInInterval(
-        start: start,
-        end: end,
-      ),
-      itemsFetcher: (limit, offset) => agentRepository.getEntitiesInInterval(
-        start: start,
-        end: end,
-        limit: limit,
-        offset: offset,
-      ),
-      enqueueAction: (entity) => outboxService.enqueueMessage(
-        SyncMessage.agentEntity(
-          agentEntity: entity,
-          status: SyncEntryStatus.update,
+    if (includeAgentEntities) {
+      // 2. Re-sync agent entities and links updated in the same interval.
+      await _reSyncPaginated(
+        countFetcher: () => agentRepository.countEntitiesInInterval(
+          start: start,
+          end: end,
         ),
-      ),
-      pageSize: pageSize,
-    );
+        itemsFetcher: (limit, offset) => agentRepository.getEntitiesInInterval(
+          start: start,
+          end: end,
+          limit: limit,
+          offset: offset,
+        ),
+        enqueueAction: (entity) => outboxService.enqueueMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        pageSize: pageSize,
+      );
 
-    await _reSyncPaginated(
-      countFetcher: () => agentRepository.countLinksInInterval(
-        start: start,
-        end: end,
-      ),
-      itemsFetcher: (limit, offset) => agentRepository.getLinksInInterval(
-        start: start,
-        end: end,
-        limit: limit,
-        offset: offset,
-      ),
-      enqueueAction: (link) => outboxService.enqueueMessage(
-        SyncMessage.agentLink(
-          agentLink: link,
-          status: SyncEntryStatus.update,
+      await _reSyncPaginated(
+        countFetcher: () => agentRepository.countLinksInInterval(
+          start: start,
+          end: end,
         ),
-      ),
-      pageSize: pageSize,
-    );
+        itemsFetcher: (limit, offset) => agentRepository.getLinksInInterval(
+          start: start,
+          end: end,
+          limit: limit,
+          offset: offset,
+        ),
+        enqueueAction: (link) => outboxService.enqueueMessage(
+          SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        pageSize: pageSize,
+      );
+    }
   }
 
   Future<void> _reSyncPaginated<T>({

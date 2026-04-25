@@ -23,37 +23,85 @@ void main() {
       expect(find.byType(Column), findsWidgets);
     });
 
-    testWidgets('renders empty row when emojis is null', (tester) async {
+    testWidgets('renders empty wrap when emojis is null', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const VerificationEmojisRow(null),
         ),
       );
 
-      // Should render the Row but with no emoji children
-      expect(find.byType(Row), findsOneWidget);
+      // Should render the Wrap with no emoji children.
+      final wrap = tester.widget<Wrap>(find.byType(Wrap));
+      expect(wrap.children, isEmpty);
     });
 
-    testWidgets('renders empty row when emojis is empty', (tester) async {
+    testWidgets('renders empty wrap when emojis is empty', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const VerificationEmojisRow([]),
         ),
       );
 
-      expect(find.byType(Row), findsOneWidget);
+      final wrap = tester.widget<Wrap>(find.byType(Wrap));
+      expect(wrap.children, isEmpty);
     });
 
-    testWidgets('centers emojis in row', (tester) async {
+    testWidgets('centers emojis in the wrap', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           VerificationEmojisRow([KeyVerificationEmoji(0)]),
         ),
       );
 
-      final row = tester.widget<Row>(find.byType(Row));
+      final wrap = tester.widget<Wrap>(find.byType(Wrap));
 
-      expect(row.mainAxisAlignment, MainAxisAlignment.center);
+      expect(wrap.alignment, WrapAlignment.center);
+      expect(wrap.runAlignment, WrapAlignment.center);
     });
+
+    testWidgets(
+      'wraps the 7-emoji verification sequence onto multiple lines '
+      'on a narrow Samsung-sized viewport without overflowing',
+      (tester) async {
+        // The Matrix verification sequence is 7 emojis. On a narrow phone
+        // (≈360 dp wide) the row would overflow horizontally if rendered
+        // as a single Row — the Wrap layout must spill onto a second line.
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = const Size(360, 800);
+
+        final emojis = List<KeyVerificationEmoji>.generate(
+          7,
+          KeyVerificationEmoji.new,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            SizedBox(
+              width: 360,
+              child: VerificationEmojisRow(emojis),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // No overflow should be reported by the framework.
+        expect(tester.takeException(), isNull);
+
+        // All 7 emoji cells render.
+        final wrap = tester.widget<Wrap>(find.byType(Wrap));
+        expect(wrap.children, hasLength(7));
+
+        // At least one cell wraps onto a row below the first cell — proving
+        // the layout actually spilled onto a second line on this width.
+        final cellTops = wrap.children
+            .map(
+              (child) => tester.getTopLeft(find.byWidget(child)).dy,
+            )
+            .toSet();
+        expect(cellTops.length, greaterThan(1));
+      },
+    );
   });
 }

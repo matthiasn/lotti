@@ -4162,8 +4162,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get maintenanceReSync => 'Resynchroniser les messages';
 
   @override
+  String get maintenanceReSyncAgentEntities => 'Entités d\'agent';
+
+  @override
   String get maintenanceReSyncDescription =>
       'Resynchroniser les messages depuis le serveur';
+
+  @override
+  String get maintenanceReSyncEntityTypes => 'Types d\'entités';
+
+  @override
+  String get maintenanceReSyncJournalEntities => 'Entrées du journal';
+
+  @override
+  String get maintenanceReSyncSelectAtLeastOne =>
+      'Sélectionne au moins un type d\'entité';
 
   @override
   String get maintenanceSyncDefinitions =>

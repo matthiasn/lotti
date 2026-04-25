@@ -5219,15 +5219,22 @@ void main() {
       'SyncAgentBundle merges with existing pending row by composite key',
       () async {
         final sampleDate = DateTime(2024, 3, 15);
+        // Build the seed message via the real factory + toJson so the test
+        // breaks loudly if the freezed runtimeType discriminator or any
+        // required SyncAgentBundle field changes — instead of silently
+        // round-tripping a stale literal.
         final existingItem = OutboxItem(
           id: 99,
           createdAt: sampleDate,
           updatedAt: sampleDate,
           status: OutboxStatus.pending.index,
           retries: 0,
-          message:
-              '{"runtimeType":"agentBundle","agentId":"agent-merge",'
-              '"wakeRunKey":"run-merge"}',
+          message: json.encode(
+            const SyncMessage.agentBundle(
+              agentId: 'agent-merge',
+              wakeRunKey: 'run-merge',
+            ).toJson(),
+          ),
           subject: 'agentBundle:agent-merge:run-merge',
           filePath: null,
           outboxEntryId: 'agent-merge:run-merge',

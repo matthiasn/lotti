@@ -634,6 +634,145 @@ void main() {
         );
         expect(linkMessages.first.agentLink?.id, equals('combo-link-1'));
       });
+
+      test(
+        'reSyncInterval skips agent sweep when includeAgentEntities=false',
+        () async {
+          final baseDate = DateTime(2024, 6);
+          final insideDate = baseDate;
+
+          // Seed both a journal entry and an agent entity inside the
+          // window. With includeAgentEntities=false the journal entry must
+          // still be enqueued but no agent messages should appear.
+          final journal = _buildJournalEntry(
+            id: 'journal-only-1',
+            timestamp: insideDate,
+            text: 'inside',
+          );
+          await _insertEntries(journalDb, [journal]);
+
+          final agentEntity = AgentDomainEntity.agent(
+            id: 'agent-skip-1',
+            agentId: 'agent-skip-1',
+            kind: 'task_agent',
+            displayName: 'Skip Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: insideDate,
+            updatedAt: insideDate,
+            vectorClock: const VectorClock({'node': 1}),
+          );
+          final agentLink = agent_model.AgentLink.basic(
+            id: 'agent-skip-link',
+            fromId: 'agent-skip-1',
+            toId: 'state-1',
+            createdAt: insideDate,
+            updatedAt: insideDate,
+            vectorClock: const VectorClock({'node': 1}),
+          );
+          await populateAgentDb(
+            entities: [agentEntity],
+            links: [agentLink],
+          );
+
+          await maintenance.reSyncInterval(
+            start: baseDate.subtract(const Duration(days: 1)),
+            end: baseDate.add(const Duration(days: 1)),
+            agentRepository: agentRepo,
+            includeAgentEntities: false,
+          );
+
+          // Journal sweep ran.
+          expect(
+            sentMessages.whereType<SyncJournalEntity>().toList(),
+            isNotEmpty,
+          );
+          // Agent sweep did NOT run.
+          expect(
+            sentMessages.whereType<SyncAgentEntity>().toList(),
+            isEmpty,
+          );
+          expect(
+            sentMessages.whereType<SyncAgentLink>().toList(),
+            isEmpty,
+          );
+        },
+      );
+
+      test(
+        'reSyncInterval skips journal sweep when includeJournalEntities=false',
+        () async {
+          final baseDate = DateTime(2024, 7);
+          final insideDate = baseDate;
+
+          final journal = _buildJournalEntry(
+            id: 'journal-skip-1',
+            timestamp: insideDate,
+            text: 'inside',
+          );
+          await _insertEntries(journalDb, [journal]);
+
+          final agentEntity = AgentDomainEntity.agent(
+            id: 'agent-only-1',
+            agentId: 'agent-only-1',
+            kind: 'task_agent',
+            displayName: 'Only Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: insideDate,
+            updatedAt: insideDate,
+            vectorClock: const VectorClock({'node': 1}),
+          );
+          await populateAgentDb(entities: [agentEntity], links: []);
+
+          await maintenance.reSyncInterval(
+            start: baseDate.subtract(const Duration(days: 1)),
+            end: baseDate.add(const Duration(days: 1)),
+            agentRepository: agentRepo,
+            includeJournalEntities: false,
+          );
+
+          // No journal messages enqueued.
+          expect(
+            sentMessages.whereType<SyncJournalEntity>().toList(),
+            isEmpty,
+          );
+          // Agent message present.
+          expect(
+            sentMessages.whereType<SyncAgentEntity>().toList(),
+            hasLength(1),
+          );
+        },
+      );
+
+      test(
+        'reSyncInterval is a no-op and logs when both filters are off',
+        () async {
+          final baseDate = DateTime(2024, 8);
+          await maintenance.reSyncInterval(
+            start: baseDate.subtract(const Duration(days: 1)),
+            end: baseDate.add(const Duration(days: 1)),
+            agentRepository: agentRepo,
+            includeJournalEntities: false,
+            includeAgentEntities: false,
+          );
+
+          expect(sentMessages, isEmpty);
+          verify(
+            () => loggingService.captureEvent(
+              'reSyncInterval skipped — both entity-type filters disabled',
+              domain: 'MAINTENANCE',
+              subDomain: 'reSyncInterval',
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('database deletion helpers', () {

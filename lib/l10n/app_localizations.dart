@@ -7282,11 +7282,35 @@ abstract class AppLocalizations {
   /// **'Re-sync messages'**
   String get maintenanceReSync;
 
+  /// No description provided for @maintenanceReSyncAgentEntities.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent entities'**
+  String get maintenanceReSyncAgentEntities;
+
   /// No description provided for @maintenanceReSyncDescription.
   ///
   /// In en, this message translates to:
   /// **'Re-sync messages from server'**
   String get maintenanceReSyncDescription;
+
+  /// No description provided for @maintenanceReSyncEntityTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity types'**
+  String get maintenanceReSyncEntityTypes;
+
+  /// No description provided for @maintenanceReSyncJournalEntities.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal entities'**
+  String get maintenanceReSyncJournalEntities;
+
+  /// No description provided for @maintenanceReSyncSelectAtLeastOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one entity type'**
+  String get maintenanceReSyncSelectAtLeastOne;
 
   /// No description provided for @maintenanceSyncDefinitions.
   ///

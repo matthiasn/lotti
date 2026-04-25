@@ -17,6 +17,8 @@ class ReSyncModalContent extends ConsumerStatefulWidget {
 class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
   DateTime? _dateFrom;
   DateTime? _dateTo;
+  bool _includeJournalEntities = true;
+  bool _includeAgentEntities = true;
 
   @override
   void initState() {
@@ -26,6 +28,11 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     _dateTo = now;
   }
 
+  bool get _canStart =>
+      _dateFrom != null &&
+      _dateTo != null &&
+      (_includeJournalEntities || _includeAgentEntities);
+
   @override
   Widget build(BuildContext context) {
     final dateFrom = _dateFrom;
@@ -34,6 +41,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DateTimeField(
             dateTime: _dateFrom,
@@ -55,9 +63,49 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
             },
           ),
           const SizedBox(height: 20),
+          Text(
+            context.messages.maintenanceReSyncEntityTypes,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          CheckboxListTile(
+            key: const Key('reSyncJournalEntitiesCheckbox'),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            title: Text(context.messages.maintenanceReSyncJournalEntities),
+            value: _includeJournalEntities,
+            onChanged: (value) {
+              setState(() {
+                _includeJournalEntities = value ?? false;
+              });
+            },
+          ),
+          CheckboxListTile(
+            key: const Key('reSyncAgentEntitiesCheckbox'),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            title: Text(context.messages.maintenanceReSyncAgentEntities),
+            value: _includeAgentEntities,
+            onChanged: (value) {
+              setState(() {
+                _includeAgentEntities = value ?? false;
+              });
+            },
+          ),
+          if (!_includeJournalEntities && !_includeAgentEntities)
+            Padding(
+              key: const Key('reSyncSelectAtLeastOneError'),
+              padding: const EdgeInsets.only(top: 4, bottom: 12),
+              child: Text(
+                context.messages.maintenanceReSyncSelectAtLeastOne,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ),
+          const SizedBox(height: 20),
           RoundedButton(
             'Start',
-            onPressed: dateFrom != null && dateTo != null
+            onPressed: _canStart && dateFrom != null && dateTo != null
                 ? () {
                     ref
                         .read(maintenanceProvider)
@@ -65,6 +113,8 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
                           start: dateFrom,
                           end: dateTo,
                           agentRepository: ref.read(agentRepositoryProvider),
+                          includeJournalEntities: _includeJournalEntities,
+                          includeAgentEntities: _includeAgentEntities,
                         );
                     Navigator.of(context).pop();
                   }

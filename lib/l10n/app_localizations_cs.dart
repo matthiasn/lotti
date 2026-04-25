@@ -4088,8 +4088,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get maintenanceReSync => 'Znovu synchronizovat zprávy';
 
   @override
+  String get maintenanceReSyncAgentEntities => 'Entity agentů';
+
+  @override
   String get maintenanceReSyncDescription =>
       'Znovu synchronizovat zprávy ze serveru';
+
+  @override
+  String get maintenanceReSyncEntityTypes => 'Typy entit';
+
+  @override
+  String get maintenanceReSyncJournalEntities => 'Záznamy v deníku';
+
+  @override
+  String get maintenanceReSyncSelectAtLeastOne =>
+      'Vyber alespoň jeden typ entity';
 
   @override
   String get maintenanceSyncDefinitions =>
