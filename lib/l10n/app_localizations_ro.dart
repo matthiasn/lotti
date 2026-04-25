@@ -4112,8 +4112,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenanceReSync => 'Resincronizați mesajele';
 
   @override
+  String get maintenanceReSyncAgentEntities => 'Entități agent';
+
+  @override
   String get maintenanceReSyncDescription =>
       'Resincronizează mesajele de pe server';
+
+  @override
+  String get maintenanceReSyncEntityTypes => 'Tipuri de entități';
+
+  @override
+  String get maintenanceReSyncJournalEntities => 'Intrări jurnal';
+
+  @override
+  String get maintenanceReSyncSelectAtLeastOne =>
+      'Selectați cel puțin un tip de entitate';
 
   @override
   String get maintenanceSyncDefinitions =>

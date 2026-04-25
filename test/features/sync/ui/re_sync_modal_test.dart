@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
@@ -28,6 +29,8 @@ void main() {
         start: any(named: 'start'),
         end: any(named: 'end'),
         agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
       ),
     ).thenAnswer((_) async {});
   });
@@ -71,9 +74,123 @@ void main() {
         start: start,
         end: end,
         agentRepository: mockAgentRepository,
+        includeJournalEntities: true,
+        includeAgentEntities: true,
       ),
     ).called(1);
   });
+
+  testWidgets(
+    'unchecking agent entities passes includeAgentEntities=false',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ReSyncModalContent(),
+          overrides: [
+            maintenanceProvider.overrideWithValue(mockMaintenance),
+            agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Untick the "Agent entities" checkbox.
+      await tester.tap(find.byKey(const Key('reSyncAgentEntitiesCheckbox')));
+      await tester.pump();
+
+      final startButtonFinder = find.widgetWithText(
+        LottiSecondaryButton,
+        'Start',
+      );
+      expect(startButtonFinder, findsOneWidget);
+      await tester.tap(startButtonFinder);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockMaintenance.reSyncInterval(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          agentRepository: mockAgentRepository,
+          includeJournalEntities: true,
+          includeAgentEntities: false,
+        ),
+      ).called(1);
+    },
+  );
+
+  testWidgets(
+    'unchecking journal entities passes includeJournalEntities=false',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ReSyncModalContent(),
+          overrides: [
+            maintenanceProvider.overrideWithValue(mockMaintenance),
+            agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
+      await tester.pump();
+
+      final startButtonFinder = find.widgetWithText(
+        LottiSecondaryButton,
+        'Start',
+      );
+      await tester.tap(startButtonFinder);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockMaintenance.reSyncInterval(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          agentRepository: mockAgentRepository,
+          includeJournalEntities: false,
+          includeAgentEntities: true,
+        ),
+      ).called(1);
+    },
+  );
+
+  testWidgets(
+    'start button disables when neither entity type is selected',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const ReSyncModalContent(),
+          overrides: [
+            maintenanceProvider.overrideWithValue(mockMaintenance),
+            agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Untick both checkboxes.
+      await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('reSyncAgentEntitiesCheckbox')));
+      await tester.pump();
+
+      final startButton = tester.widget<LottiSecondaryButton>(
+        find.widgetWithText(LottiSecondaryButton, 'Start'),
+      );
+      expect(startButton.onPressed, isNull);
+
+      // Re-tick journal — start should re-enable.
+      await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
+      await tester.pump();
+      final startButtonAfter = tester.widget<LottiSecondaryButton>(
+        find.widgetWithText(LottiSecondaryButton, 'Start'),
+      );
+      expect(startButtonAfter.onPressed, isNotNull);
+    },
+  );
 
   testWidgets('start button enabled with default dates', (tester) async {
     await tester.pumpWidget(
