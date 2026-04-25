@@ -6344,7 +6344,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'No saved filters yet. Adjust the task filter, then tap Save.';
 
   @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Save';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Cancel';
+
+  @override
+  String tasksSavedFiltersSavePopupHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filters active. Saved to sidebar under Tasks.',
+      one: '1 filter active. Saved to sidebar under Tasks.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksSavedFiltersSavePopupHint => 'e.g. Blocked or on hold';
+
+  @override
+  String get tasksSavedFiltersSavePopupSave => 'Save';
+
+  @override
+  String get tasksSavedFiltersSavePopupTitle => 'Name this filter';
+
+  @override
   String get tasksSavedFiltersSectionTitle => 'Saved filters';
+
+  @override
+  String get tasksSavedFilterToastDeleted => 'Filter deleted';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return 'Saved \'$name\'';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return 'Updated \'$name\'';
+  }
 
   @override
   String get tasksSearchModeLabel => 'Search mode';

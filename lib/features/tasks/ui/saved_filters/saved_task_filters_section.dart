@@ -31,6 +31,7 @@ class SavedTaskFiltersSection extends ConsumerWidget {
     required this.onAddPressed,
     this.canAdd = false,
     this.counts,
+    this.onDeleted,
     super.key,
   });
 
@@ -53,6 +54,11 @@ class SavedTaskFiltersSection extends ConsumerWidget {
   /// Optional live counts keyed by saved-filter id. Missing ids are rendered
   /// without a count.
   final Map<String, int>? counts;
+
+  /// Fired after a saved filter is deleted. The caller typically uses this to
+  /// show a transient confirmation toast — the section itself only handles
+  /// the controller mutation.
+  final VoidCallback? onDeleted;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,6 +130,7 @@ class SavedTaskFiltersSection extends ConsumerWidget {
               await ref
                   .read(savedTaskFiltersControllerProvider.notifier)
                   .delete(id);
+              onDeleted?.call();
             },
             onReorder: (dragId, targetId) async {
               await ref

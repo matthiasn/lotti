@@ -6538,7 +6538,48 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aún no tienes filtros guardados. Ajusta el filtro de tareas y toca Guardar.';
 
   @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Guardar';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Cancelar';
+
+  @override
+  String tasksSavedFiltersSavePopupHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count filtros activos. Guardados en la barra lateral, bajo Tareas.',
+      one: '1 filtro activo. Guardado en la barra lateral, bajo Tareas.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksSavedFiltersSavePopupHint => 'p. ej. Bloqueadas o en pausa';
+
+  @override
+  String get tasksSavedFiltersSavePopupSave => 'Guardar';
+
+  @override
+  String get tasksSavedFiltersSavePopupTitle =>
+      'Asigna un nombre a este filtro';
+
+  @override
   String get tasksSavedFiltersSectionTitle => 'Filtros guardados';
+
+  @override
+  String get tasksSavedFilterToastDeleted => 'Filtro eliminado';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return 'Guardado «$name»';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return 'Actualizado «$name»';
+  }
 
   @override
   String get tasksSearchModeLabel => 'Modo de búsqueda';

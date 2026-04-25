@@ -16,6 +16,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
@@ -132,6 +135,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
             children: [
               TabSectionHeader(
                 title: context.messages.navTabTitleTasks,
+                titleSuffix: _SavedFilterTitleSuffix(),
                 query: state.match,
                 searchHint: context.messages.searchTasksHint,
                 filterTooltip: context.messages.tasksFilterTitle,
@@ -498,5 +502,32 @@ Future<void> _defaultCreateTaskPressed(
   if (task != null) {
     unawaited(autoAssignCategoryAgentWith(agentService, task));
     getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
+  }
+}
+
+/// Inline "· {savedFilterName}" suffix appended to the Tasks header when an
+/// active saved filter matches the live filter shape.
+class _SavedFilterTitleSuffix extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeId = ref.watch(currentSavedTaskFilterIdProvider);
+    if (activeId == null) return const SizedBox.shrink();
+    final saved =
+        ref.watch(savedTaskFiltersControllerProvider).value ?? const [];
+    final match = saved
+        .where((f) => f.id == activeId)
+        .cast<SavedTaskFilter?>()
+        .firstWhere((_) => true, orElse: () => null);
+    if (match == null) return const SizedBox.shrink();
+    final tokens = context.designTokens;
+    return Text(
+      '· ${match.name}',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.body.bodyMedium.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
+        fontWeight: FontWeight.w500,
+      ),
+    );
   }
 }

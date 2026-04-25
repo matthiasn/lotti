@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
@@ -90,9 +91,15 @@ void main() {
     ).thenAnswer((_) async => <ProjectEntry>[]);
 
     getIt.allowReassignment = true;
+    final mockSettingsDb = MockSettingsDb();
+    when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
+    when(
+      () => mockSettingsDb.saveSettingsItem(any(), any()),
+    ).thenAnswer((_) async => 1);
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<JournalDb>(mockJournalDb);
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<SettingsDb>(mockSettingsDb);
   });
 
   tearDown(getIt.reset);

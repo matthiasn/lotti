@@ -2689,7 +2689,37 @@
   "tasksSavedFilterRenameSemantics": "Renommer le filtre enregistré",
   "tasksSavedFiltersAddTooltip": "Enregistrer le filtre actuel",
   "tasksSavedFiltersEmpty": "Aucun filtre enregistré pour l'instant. Ajuste le filtre des tâches, puis appuie sur Enregistrer.",
+  "tasksSavedFiltersSaveButtonLabel": "Enregistrer",
+  "tasksSavedFiltersSavePopupCancel": "Annuler",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtre actif. Enregistré dans la barre latérale, sous Tâches.} other{{count} filtres actifs. Enregistrés dans la barre latérale, sous Tâches.}}",
+  "@tasksSavedFiltersSavePopupHelper": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersSavePopupHint": "ex. : Bloquées ou en pause",
+  "tasksSavedFiltersSavePopupSave": "Enregistrer",
+  "tasksSavedFiltersSavePopupTitle": "Nomme ce filtre",
   "tasksSavedFiltersSectionTitle": "Filtres enregistrés",
+  "tasksSavedFilterToastDeleted": "Filtre supprimé",
+  "tasksSavedFilterToastSaved": "« {name} » enregistré",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "« {name} » mis à jour",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSearchModeLabel": "Mode de recherche",
   "tasksShowCoverArt": "Afficher la couverture sur les cartes",
   "tasksShowCreationDate": "Afficher la date de création sur les cartes",

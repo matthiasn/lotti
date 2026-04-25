@@ -11221,11 +11221,65 @@ abstract class AppLocalizations {
   /// **'No saved filters yet. Adjust the task filter, then tap Save.'**
   String get tasksSavedFiltersEmpty;
 
+  /// No description provided for @tasksSavedFiltersSaveButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get tasksSavedFiltersSaveButtonLabel;
+
+  /// No description provided for @tasksSavedFiltersSavePopupCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get tasksSavedFiltersSavePopupCancel;
+
+  /// No description provided for @tasksSavedFiltersSavePopupHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}'**
+  String tasksSavedFiltersSavePopupHelper(int count);
+
+  /// No description provided for @tasksSavedFiltersSavePopupHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Blocked or on hold'**
+  String get tasksSavedFiltersSavePopupHint;
+
+  /// No description provided for @tasksSavedFiltersSavePopupSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get tasksSavedFiltersSavePopupSave;
+
+  /// No description provided for @tasksSavedFiltersSavePopupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this filter'**
+  String get tasksSavedFiltersSavePopupTitle;
+
   /// No description provided for @tasksSavedFiltersSectionTitle.
   ///
   /// In en, this message translates to:
   /// **'Saved filters'**
   String get tasksSavedFiltersSectionTitle;
+
+  /// No description provided for @tasksSavedFilterToastDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter deleted'**
+  String get tasksSavedFilterToastDeleted;
+
+  /// No description provided for @tasksSavedFilterToastSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved \'{name}\''**
+  String tasksSavedFilterToastSaved(String name);
+
+  /// No description provided for @tasksSavedFilterToastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated \'{name}\''**
+  String tasksSavedFilterToastUpdated(String name);
 
   /// No description provided for @tasksSearchModeLabel.
   ///

@@ -2689,7 +2689,37 @@
   "tasksSavedFilterRenameSemantics": "Redenumiți filtrul salvat",
   "tasksSavedFiltersAddTooltip": "Salvați filtrul curent",
   "tasksSavedFiltersEmpty": "Niciun filtru salvat încă. Ajustați filtrul de sarcini, apoi apăsați Salvați.",
+  "tasksSavedFiltersSaveButtonLabel": "Salvați",
+  "tasksSavedFiltersSavePopupCancel": "Anulați",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtru activ. Salvat în bara laterală, sub Sarcini.} other{{count} filtre active. Salvate în bara laterală, sub Sarcini.}}",
+  "@tasksSavedFiltersSavePopupHelper": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersSavePopupHint": "ex.: Blocate sau în așteptare",
+  "tasksSavedFiltersSavePopupSave": "Salvați",
+  "tasksSavedFiltersSavePopupTitle": "Denumiți acest filtru",
   "tasksSavedFiltersSectionTitle": "Filtre salvate",
+  "tasksSavedFilterToastDeleted": "Filtru șters",
+  "tasksSavedFilterToastSaved": "Salvat „{name}”",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Actualizat „{name}”",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSearchModeLabel": "Mod de căutare",
   "tasksShowCoverArt": "Afișează coperta pe carduri",
   "tasksShowCreationDate": "Afișează data creării pe carduri",

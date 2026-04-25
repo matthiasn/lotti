@@ -6480,7 +6480,46 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun filtru salvat încă. Ajustați filtrul de sarcini, apoi apăsați Salvați.';
 
   @override
+  String get tasksSavedFiltersSaveButtonLabel => 'Salvați';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Anulați';
+
+  @override
+  String tasksSavedFiltersSavePopupHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filtre active. Salvate în bara laterală, sub Sarcini.',
+      one: '1 filtru activ. Salvat în bara laterală, sub Sarcini.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksSavedFiltersSavePopupHint => 'ex.: Blocate sau în așteptare';
+
+  @override
+  String get tasksSavedFiltersSavePopupSave => 'Salvați';
+
+  @override
+  String get tasksSavedFiltersSavePopupTitle => 'Denumiți acest filtru';
+
+  @override
   String get tasksSavedFiltersSectionTitle => 'Filtre salvate';
+
+  @override
+  String get tasksSavedFilterToastDeleted => 'Filtru șters';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return 'Salvat „$name”';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return 'Actualizat „$name”';
+  }
 
   @override
   String get tasksSearchModeLabel => 'Mod de căutare';

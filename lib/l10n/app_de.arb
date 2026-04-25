@@ -2689,7 +2689,37 @@
   "tasksSavedFilterRenameSemantics": "Gespeicherten Filter umbenennen",
   "tasksSavedFiltersAddTooltip": "Aktuellen Filter speichern",
   "tasksSavedFiltersEmpty": "Noch keine gespeicherten Filter. Pass den Aufgabenfilter an und tippe auf Speichern.",
+  "tasksSavedFiltersSaveButtonLabel": "Speichern",
+  "tasksSavedFiltersSavePopupCancel": "Abbrechen",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.} other{{count} Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.}}",
+  "@tasksSavedFiltersSavePopupHelper": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersSavePopupHint": "z. B. Blockiert oder pausiert",
+  "tasksSavedFiltersSavePopupSave": "Speichern",
+  "tasksSavedFiltersSavePopupTitle": "Diesen Filter benennen",
   "tasksSavedFiltersSectionTitle": "Gespeicherte Filter",
+  "tasksSavedFilterToastDeleted": "Filter gelöscht",
+  "tasksSavedFilterToastSaved": "„{name}“ gespeichert",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "„{name}“ aktualisiert",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSearchModeLabel": "Suchmodus",
   "tasksShowCoverArt": "Titelbild auf Karten anzeigen",
   "tasksShowCreationDate": "Erstellungsdatum auf Karten anzeigen",

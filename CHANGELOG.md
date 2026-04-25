@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.977] - 2026-04-25
+### Added
+- Saved filters for the Tasks tab. Build a filter (status, priority,
+  category, agent, etc.) in the Tasks Filter modal, tap the new **Save**
+  button next to Apply, give it a name, and pin it under "Tasks" in the
+  expanded sidebar. Saved filters live in `SavedTaskFiltersController`
+  (Riverpod, `keepAlive: true`), persist as a JSON list under
+  `SAVED_TASK_FILTERS` in `SettingsDb`, and surface as a treeview with
+  active-state highlight, hover-revealed two-tap delete, double-click
+  inline rename, drag-to-reorder, and a "Tasks · {filter name}" indicator
+  in the tasks pane header. Activating a saved filter applies it via
+  `JournalPageController.applyBatchFilterUpdate` while preserving the
+  ephemeral search query.
+
 ## [0.9.976] - 2026-04-25
 ### Changed
 - Agent wake cycles now sync as one bundled Matrix payload instead of emitting
