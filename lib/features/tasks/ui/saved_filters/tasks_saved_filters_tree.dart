@@ -34,8 +34,19 @@ class TasksSavedFiltersTree extends ConsumerWidget {
         );
         await SavedTaskFilterActivator(controller).activate(saved);
       },
-      onAddPressed: () => showTaskFilterModal(context, showTasks: true),
-      onDeleted: () => showSavedTaskFilterDeletedToast(context),
+      // The section's onAddPressed fires synchronously from a button press, so
+      // the mounted guard is technically redundant — kept for symmetry with
+      // onDeleted, which fires after an awaited controller mutation and could
+      // re-enter this closure with a defunct context if the user navigated
+      // away mid-flight.
+      onAddPressed: () {
+        if (!context.mounted) return;
+        showTaskFilterModal(context, showTasks: true);
+      },
+      onDeleted: () {
+        if (!context.mounted) return;
+        showSavedTaskFilterDeletedToast(context);
+      },
     );
   }
 }

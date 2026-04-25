@@ -6490,7 +6490,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filtre active. Salvate în bara laterală, sub Sarcini.',
+      other: '$count de filtre active. Salvate în bara laterală, sub Sarcini.',
+      few: '$count filtre active. Salvate în bara laterală, sub Sarcini.',
       one: '1 filtru activ. Salvat în bara laterală, sub Sarcini.',
     );
     return '$_temp0';

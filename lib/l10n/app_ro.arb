@@ -2691,7 +2691,7 @@
   "tasksSavedFiltersEmpty": "Niciun filtru salvat încă. Ajustați filtrul de sarcini, apoi apăsați Salvați.",
   "tasksSavedFiltersSaveButtonLabel": "Salvați",
   "tasksSavedFiltersSavePopupCancel": "Anulați",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtru activ. Salvat în bara laterală, sub Sarcini.} other{{count} filtre active. Salvate în bara laterală, sub Sarcini.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtru activ. Salvat în bara laterală, sub Sarcini.} few{{count} filtre active. Salvate în bara laterală, sub Sarcini.} other{{count} de filtre active. Salvate în bara laterală, sub Sarcini.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {
