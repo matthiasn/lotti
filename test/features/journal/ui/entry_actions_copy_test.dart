@@ -19,6 +19,8 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 
+import '../../../widget_test_utils.dart';
+
 // A lightweight test controller that returns a minimal entry state and
 // exposes the base copy methods via super.* for coverage.
 class TestEntryController extends EntryController {
@@ -77,6 +79,7 @@ Widget _wrapWithApp(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: overrides,
     child: MaterialApp(
+      theme: resolveTestTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Navigator(
@@ -200,6 +203,7 @@ void main() {
           entryControllerProvider(id: 'e3').overrideWith(() => controller),
         ],
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             ...AppLocalizations.localizationsDelegates,
             quill_localizations.FlutterQuillLocalizations.delegate,
@@ -226,6 +230,7 @@ void main() {
           entryControllerProvider(id: 'e4').overrideWith(() => controller),
         ],
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             ...AppLocalizations.localizationsDelegates,
             quill_localizations.FlutterQuillLocalizations.delegate,

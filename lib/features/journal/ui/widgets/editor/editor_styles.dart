@@ -1,78 +1,72 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 DefaultStyles customEditorStyles({
   required ThemeData themeData,
+  required DsTokens tokens,
 }) {
   final textColor = themeData.textTheme.bodyLarge?.color;
-  final codeBlockBackground = themeData.primaryColorLight;
+  final styles = tokens.typography.styles;
+  final boldWeight = tokens.typography.weight.bold;
+  final codeBackground = Color.alphaBlend(
+    tokens.colors.surface.enabled,
+    tokens.colors.background.level02,
+  );
+  final codeBorderColor = tokens.colors.decorative.level01;
+  final codeTextColor = tokens.colors.text.highEmphasis;
 
-  TextStyle inter({
-    required double fontSize,
-    Color? color,
-    FontWeight? fontWeight,
-  }) {
-    return TextStyle(
-      fontFamily: 'Inter',
-      fontSize: fontSize,
-      color: color,
-      fontWeight: fontWeight,
-    );
-  }
+  final paragraphStyle = styles.body.bodySmall.copyWith(color: textColor);
+  final monoFontSize = styles.body.bodySmall.fontSize;
 
   return DefaultStyles(
     h1: DefaultTextBlockStyle(
-      inter(fontSize: fontSizeLarge, color: textColor),
+      styles.heading.heading3.copyWith(color: textColor),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
     h2: DefaultTextBlockStyle(
-      inter(fontSize: 20, color: textColor),
+      styles.subtitle.subtitle1.copyWith(color: textColor),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
     h3: DefaultTextBlockStyle(
-      inter(fontSize: 18, color: textColor),
+      styles.subtitle.subtitle2.copyWith(color: textColor),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
     paragraph: DefaultTextBlockStyle(
-      inter(fontSize: fontSizeMedium, color: textColor),
+      paragraphStyle,
       const HorizontalSpacing(2, 0),
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
     placeHolder: DefaultTextBlockStyle(
-      inter(fontSize: fontSizeMedium, color: textColor?.withAlpha(72)),
+      paragraphStyle.copyWith(color: textColor?.withAlpha(72)),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
     ),
-    bold: inter(
-      fontSize: fontSizeMedium,
-      color: textColor,
-      fontWeight: FontWeight.w900,
-    ),
+    bold: paragraphStyle.copyWith(fontWeight: boldWeight),
     inlineCode: InlineCodeStyle(
-      radius: const Radius.circular(2),
+      radius: const Radius.circular(4),
       style: GoogleFonts.inconsolata(
-        fontSize: fontSizeMedium,
-        color: Colors.black,
+        fontSize: monoFontSize,
+        color: codeTextColor,
       ),
-      backgroundColor: codeBlockBackground,
+      backgroundColor: codeBackground,
     ),
     lists: DefaultListBlockStyle(
-      inter(fontSize: fontSizeMedium, color: textColor),
+      paragraphStyle,
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
@@ -81,15 +75,16 @@ DefaultStyles customEditorStyles({
     ),
     code: DefaultTextBlockStyle(
       GoogleFonts.inconsolata(
-        fontSize: fontSizeMedium,
-        color: Colors.black,
+        fontSize: monoFontSize,
+        color: codeTextColor,
       ),
       HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       BoxDecoration(
-        color: codeBlockBackground,
+        color: codeBackground,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: codeBorderColor),
       ),
     ),
   );

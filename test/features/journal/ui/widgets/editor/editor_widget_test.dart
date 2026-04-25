@@ -567,6 +567,7 @@ Widget buildEditorTestWidget({
     child: MediaQuery(
       data: const MediaQueryData(),
       child: MaterialApp(
+        theme: resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,
