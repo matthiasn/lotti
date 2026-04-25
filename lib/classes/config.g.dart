@@ -24,6 +24,7 @@ _SyncProvisioningBundle _$SyncProvisioningBundleFromJson(
   Map<String, dynamic> json,
 ) => _SyncProvisioningBundle(
   v: (json['v'] as num).toInt(),
+  kind: $enumDecode(_$SyncBundleKindEnumMap, json['kind']),
   homeServer: json['homeServer'] as String,
   user: json['user'] as String,
   password: json['password'] as String,
@@ -34,8 +35,14 @@ Map<String, dynamic> _$SyncProvisioningBundleToJson(
   _SyncProvisioningBundle instance,
 ) => <String, dynamic>{
   'v': instance.v,
+  'kind': _$SyncBundleKindEnumMap[instance.kind]!,
   'homeServer': instance.homeServer,
   'user': instance.user,
   'password': instance.password,
   'roomId': instance.roomId,
+};
+
+const _$SyncBundleKindEnumMap = {
+  SyncBundleKind.provisioned: 'provisioned',
+  SyncBundleKind.handover: 'handover',
 };

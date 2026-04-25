@@ -276,7 +276,7 @@ as String,
 /// @nodoc
 mixin _$SyncProvisioningBundle {
 
- int get v; String get homeServer; String get user; String get password; String get roomId;
+ int get v; SyncBundleKind get kind; String get homeServer; String get user; String get password; String get roomId;
 /// Create a copy of SyncProvisioningBundle
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -289,12 +289,12 @@ $SyncProvisioningBundleCopyWith<SyncProvisioningBundle> get copyWith => _$SyncPr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncProvisioningBundle&&(identical(other.v, v) || other.v == v)&&(identical(other.homeServer, homeServer) || other.homeServer == homeServer)&&(identical(other.user, user) || other.user == user)&&(identical(other.password, password) || other.password == password)&&(identical(other.roomId, roomId) || other.roomId == roomId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncProvisioningBundle&&(identical(other.v, v) || other.v == v)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.homeServer, homeServer) || other.homeServer == homeServer)&&(identical(other.user, user) || other.user == user)&&(identical(other.password, password) || other.password == password)&&(identical(other.roomId, roomId) || other.roomId == roomId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,v,homeServer,user,password,roomId);
+int get hashCode => Object.hash(runtimeType,v,kind,homeServer,user,password,roomId);
 
 
 
@@ -305,7 +305,7 @@ abstract mixin class $SyncProvisioningBundleCopyWith<$Res>  {
   factory $SyncProvisioningBundleCopyWith(SyncProvisioningBundle value, $Res Function(SyncProvisioningBundle) _then) = _$SyncProvisioningBundleCopyWithImpl;
 @useResult
 $Res call({
- int v, String homeServer, String user, String password, String roomId
+ int v, SyncBundleKind kind, String homeServer, String user, String password, String roomId
 });
 
 
@@ -322,10 +322,11 @@ class _$SyncProvisioningBundleCopyWithImpl<$Res>
 
 /// Create a copy of SyncProvisioningBundle
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? v = null,Object? homeServer = null,Object? user = null,Object? password = null,Object? roomId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? v = null,Object? kind = null,Object? homeServer = null,Object? user = null,Object? password = null,Object? roomId = null,}) {
   return _then(_self.copyWith(
 v: null == v ? _self.v : v // ignore: cast_nullable_to_non_nullable
-as int,homeServer: null == homeServer ? _self.homeServer : homeServer // ignore: cast_nullable_to_non_nullable
+as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as SyncBundleKind,homeServer: null == homeServer ? _self.homeServer : homeServer // ignore: cast_nullable_to_non_nullable
 as String,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as String,password: null == password ? _self.password : password // ignore: cast_nullable_to_non_nullable
 as String,roomId: null == roomId ? _self.roomId : roomId // ignore: cast_nullable_to_non_nullable
@@ -414,10 +415,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int v,  String homeServer,  String user,  String password,  String roomId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int v,  SyncBundleKind kind,  String homeServer,  String user,  String password,  String roomId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SyncProvisioningBundle() when $default != null:
-return $default(_that.v,_that.homeServer,_that.user,_that.password,_that.roomId);case _:
+return $default(_that.v,_that.kind,_that.homeServer,_that.user,_that.password,_that.roomId);case _:
   return orElse();
 
 }
@@ -435,10 +436,10 @@ return $default(_that.v,_that.homeServer,_that.user,_that.password,_that.roomId)
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int v,  String homeServer,  String user,  String password,  String roomId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int v,  SyncBundleKind kind,  String homeServer,  String user,  String password,  String roomId)  $default,) {final _that = this;
 switch (_that) {
 case _SyncProvisioningBundle():
-return $default(_that.v,_that.homeServer,_that.user,_that.password,_that.roomId);case _:
+return $default(_that.v,_that.kind,_that.homeServer,_that.user,_that.password,_that.roomId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -455,10 +456,10 @@ return $default(_that.v,_that.homeServer,_that.user,_that.password,_that.roomId)
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int v,  String homeServer,  String user,  String password,  String roomId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int v,  SyncBundleKind kind,  String homeServer,  String user,  String password,  String roomId)?  $default,) {final _that = this;
 switch (_that) {
 case _SyncProvisioningBundle() when $default != null:
-return $default(_that.v,_that.homeServer,_that.user,_that.password,_that.roomId);case _:
+return $default(_that.v,_that.kind,_that.homeServer,_that.user,_that.password,_that.roomId);case _:
   return null;
 
 }
@@ -470,10 +471,11 @@ return $default(_that.v,_that.homeServer,_that.user,_that.password,_that.roomId)
 @JsonSerializable()
 
 class _SyncProvisioningBundle extends SyncProvisioningBundle {
-  const _SyncProvisioningBundle({required this.v, required this.homeServer, required this.user, required this.password, required this.roomId}): super._();
+  const _SyncProvisioningBundle({required this.v, required this.kind, required this.homeServer, required this.user, required this.password, required this.roomId}): super._();
   factory _SyncProvisioningBundle.fromJson(Map<String, dynamic> json) => _$SyncProvisioningBundleFromJson(json);
 
 @override final  int v;
+@override final  SyncBundleKind kind;
 @override final  String homeServer;
 @override final  String user;
 @override final  String password;
@@ -492,12 +494,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SyncProvisioningBundle&&(identical(other.v, v) || other.v == v)&&(identical(other.homeServer, homeServer) || other.homeServer == homeServer)&&(identical(other.user, user) || other.user == user)&&(identical(other.password, password) || other.password == password)&&(identical(other.roomId, roomId) || other.roomId == roomId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SyncProvisioningBundle&&(identical(other.v, v) || other.v == v)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.homeServer, homeServer) || other.homeServer == homeServer)&&(identical(other.user, user) || other.user == user)&&(identical(other.password, password) || other.password == password)&&(identical(other.roomId, roomId) || other.roomId == roomId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,v,homeServer,user,password,roomId);
+int get hashCode => Object.hash(runtimeType,v,kind,homeServer,user,password,roomId);
 
 
 
@@ -508,7 +510,7 @@ abstract mixin class _$SyncProvisioningBundleCopyWith<$Res> implements $SyncProv
   factory _$SyncProvisioningBundleCopyWith(_SyncProvisioningBundle value, $Res Function(_SyncProvisioningBundle) _then) = __$SyncProvisioningBundleCopyWithImpl;
 @override @useResult
 $Res call({
- int v, String homeServer, String user, String password, String roomId
+ int v, SyncBundleKind kind, String homeServer, String user, String password, String roomId
 });
 
 
@@ -525,10 +527,11 @@ class __$SyncProvisioningBundleCopyWithImpl<$Res>
 
 /// Create a copy of SyncProvisioningBundle
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? v = null,Object? homeServer = null,Object? user = null,Object? password = null,Object? roomId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? v = null,Object? kind = null,Object? homeServer = null,Object? user = null,Object? password = null,Object? roomId = null,}) {
   return _then(_SyncProvisioningBundle(
 v: null == v ? _self.v : v // ignore: cast_nullable_to_non_nullable
-as int,homeServer: null == homeServer ? _self.homeServer : homeServer // ignore: cast_nullable_to_non_nullable
+as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as SyncBundleKind,homeServer: null == homeServer ? _self.homeServer : homeServer // ignore: cast_nullable_to_non_nullable
 as String,user: null == user ? _self.user : user // ignore: cast_nullable_to_non_nullable
 as String,password: null == password ? _self.password : password // ignore: cast_nullable_to_non_nullable
 as String,roomId: null == roomId ? _self.roomId : roomId // ignore: cast_nullable_to_non_nullable
