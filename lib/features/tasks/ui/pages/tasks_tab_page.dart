@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -16,7 +17,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
-import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
@@ -514,10 +514,7 @@ class _SavedFilterTitleSuffix extends ConsumerWidget {
     if (activeId == null) return const SizedBox.shrink();
     final saved =
         ref.watch(savedTaskFiltersControllerProvider).value ?? const [];
-    final match = saved
-        .where((f) => f.id == activeId)
-        .cast<SavedTaskFilter?>()
-        .firstWhere((_) => true, orElse: () => null);
+    final match = saved.firstWhereOrNull((f) => f.id == activeId);
     if (match == null) return const SizedBox.shrink();
     final tokens = context.designTokens;
     return Text(

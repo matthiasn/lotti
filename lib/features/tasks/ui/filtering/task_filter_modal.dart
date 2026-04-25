@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -55,38 +56,26 @@ Future<void> showTaskFilterModal(
     projectsWithCategories: allProjectsWithCategories,
   );
 
-  // Snapshot the saved-filter state for the Save flow. Wrapped in a guard so
-  // narrowly-scoped tests (and any environment without the saved-filter
-  // dependencies wired up) gracefully fall back to "no save UX" rather than
-  // blocking the whole filter modal from opening.
-  var canSave = false;
-  String? currentSavedId;
-  String? currentSavedName;
-  try {
-    final savedFilters =
-        container.read(savedTaskFiltersControllerProvider).value ??
-        const <SavedTaskFilter>[];
-    currentSavedId = container.read(currentSavedTaskFilterIdProvider);
-    final hasUnsavedClauses = container.read(
-      tasksFilterHasUnsavedClausesProvider,
-    );
-    canSave = hasUnsavedClauses || currentSavedId != null;
-    currentSavedName = currentSavedId == null
-        ? null
-        : savedFilters
-              .firstWhere(
-                (f) => f.id == currentSavedId,
-                orElse: () => savedFilters.first,
-              )
-              .name;
-  } on Object {
-    // Fall back to no-save UX when saved-filter providers can't initialise.
-    canSave = false;
-    currentSavedId = null;
-    currentSavedName = null;
-  }
-  final initialSavedId = currentSavedId;
-  final initialSavedName = currentSavedName;
+  // Snapshot the saved-filter state for the Save flow.
+  final savedFilters =
+      container.read(savedTaskFiltersControllerProvider).value ??
+      const <SavedTaskFilter>[];
+  final matchedId = container.read(currentSavedTaskFilterIdProvider);
+  final hasUnsavedClauses = container.read(
+    tasksFilterHasUnsavedClausesProvider,
+  );
+  // Resolve the active id to a name. If the id no longer points at any saved
+  // filter (concurrent delete/rename), degrade to the create flow rather than
+  // updating a stale id.
+  final matchedName = matchedId == null
+      ? null
+      : savedFilters
+            .where((f) => f.id == matchedId)
+            .map((f) => f.name)
+            .firstOrNull;
+  final initialSavedId = matchedName == null ? null : matchedId;
+  final initialSavedName = matchedName;
+  final canSave = hasUnsavedClauses || initialSavedId != null;
 
   await showDesignSystemFilterModal(
     context: context,

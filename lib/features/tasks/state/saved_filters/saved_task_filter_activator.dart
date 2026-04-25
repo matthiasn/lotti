@@ -55,66 +55,17 @@ TasksFilter _liveFilterFor(JournalPageState pageState) {
 /// Treat two [TasksFilter]s as equivalent when their saved-filter-relevant
 /// fields agree. Display-only and persistence-only fields are ignored.
 bool _matches(TasksFilter saved, TasksFilter live) {
-  return saved.selectedCategoryIds
-          .toSet()
-          .difference(
-            live.selectedCategoryIds.toSet(),
-          )
-          .isEmpty &&
-      live.selectedCategoryIds
-          .toSet()
-          .difference(
-            saved.selectedCategoryIds.toSet(),
-          )
-          .isEmpty &&
-      saved.selectedProjectIds
-          .toSet()
-          .difference(
-            live.selectedProjectIds.toSet(),
-          )
-          .isEmpty &&
-      live.selectedProjectIds
-          .toSet()
-          .difference(
-            saved.selectedProjectIds.toSet(),
-          )
-          .isEmpty &&
-      saved.selectedTaskStatuses
-          .toSet()
-          .difference(
-            live.selectedTaskStatuses.toSet(),
-          )
-          .isEmpty &&
-      live.selectedTaskStatuses
-          .toSet()
-          .difference(
-            saved.selectedTaskStatuses.toSet(),
-          )
-          .isEmpty &&
-      saved.selectedLabelIds
-          .toSet()
-          .difference(
-            live.selectedLabelIds.toSet(),
-          )
-          .isEmpty &&
-      live.selectedLabelIds
-          .toSet()
-          .difference(
-            saved.selectedLabelIds.toSet(),
-          )
-          .isEmpty &&
-      saved.selectedPriorities
-          .toSet()
-          .difference(
-            live.selectedPriorities.toSet(),
-          )
-          .isEmpty &&
-      live.selectedPriorities
-          .toSet()
-          .difference(
-            saved.selectedPriorities.toSet(),
-          )
-          .isEmpty &&
+  bool eq(Iterable<String> a, Iterable<String> b) {
+    final sA = a.toSet();
+    final sB = b.toSet();
+    return sA.length == sB.length && sA.containsAll(sB);
+  }
+
+  return eq(saved.selectedCategoryIds, live.selectedCategoryIds) &&
+      eq(saved.selectedProjectIds, live.selectedProjectIds) &&
+      eq(saved.selectedTaskStatuses, live.selectedTaskStatuses) &&
+      eq(saved.selectedLabelIds, live.selectedLabelIds) &&
+      eq(saved.selectedPriorities, live.selectedPriorities) &&
       saved.sortOption == live.sortOption &&
       saved.showCreationDate == live.showCreationDate &&
       saved.showDueDate == live.showDueDate &&
@@ -124,13 +75,18 @@ bool _matches(TasksFilter saved, TasksFilter live) {
 /// Returns true when the live tasks filter has at least one active clause
 /// — non-empty selection sets, a non-default agent mode, or a non-default
 /// sort. Display toggles do not count.
+///
+/// Sort is included because [_matches] also compares it: a saved filter that
+/// differs only by sort would otherwise leave Save disabled even though the
+/// live shape doesn't match any saved entry.
 bool _hasActiveClauses(TasksFilter live) {
   return live.selectedTaskStatuses.isNotEmpty ||
       live.selectedCategoryIds.isNotEmpty ||
       live.selectedProjectIds.isNotEmpty ||
       live.selectedLabelIds.isNotEmpty ||
       live.selectedPriorities.isNotEmpty ||
-      live.agentAssignmentFilter != AgentAssignmentFilter.all;
+      live.agentAssignmentFilter != AgentAssignmentFilter.all ||
+      live.sortOption != TaskSortOption.byPriority;
 }
 
 /// id of the saved filter whose persisted shape matches the live tasks-page

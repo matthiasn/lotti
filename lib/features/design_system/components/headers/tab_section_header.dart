@@ -79,7 +79,7 @@ class TabSectionHeader extends StatelessWidget {
                         ),
                       ),
                       if (titleSuffix != null) ...[
-                        const SizedBox(width: 8),
+                        SizedBox(width: tokens.spacing.step3),
                         Flexible(child: titleSuffix!),
                       ],
                     ],

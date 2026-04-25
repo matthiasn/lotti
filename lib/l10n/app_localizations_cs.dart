@@ -6450,6 +6450,7 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Aktivních $count filtrů. Uloženo na boční panel pod Úkoly.',
+      few: 'Aktivní $count filtry. Uloženo na boční panel pod Úkoly.',
       one: 'Aktivní 1 filtr. Uloženo na boční panel pod Úkoly.',
     );
     return '$_temp0';

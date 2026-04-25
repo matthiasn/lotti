@@ -131,6 +131,9 @@ void main() {
       DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
     );
     await tester.enterText(field, '  My filter  ');
+    // Pump so the controller listener flips _canCommit to true and the
+    // FilledButton re-enables before we tap it.
+    await tester.pump();
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
     );

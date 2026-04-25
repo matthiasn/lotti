@@ -12,6 +12,9 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -115,6 +118,14 @@ void main() {
             journalPageControllerProvider(
               true,
             ).overrideWith(() => fakeController),
+            savedTaskFiltersControllerProvider.overrideWith(
+              () => _StubSavedTaskFiltersController(const []),
+            ),
+            currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
+            tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+            liveTasksFilterProvider.overrideWith(
+              (ref) => const TasksFilter(),
+            ),
           ],
           child: const Scaffold(
             body: TaskFilterIcon(),
@@ -174,4 +185,12 @@ void main() {
       expect(find.text('Tasks Filter'), findsNothing);
     });
   });
+}
+
+class _StubSavedTaskFiltersController extends SavedTaskFiltersController {
+  _StubSavedTaskFiltersController(this._seed);
+  final List<SavedTaskFilter> _seed;
+
+  @override
+  Future<List<SavedTaskFilter>> build() async => _seed;
 }

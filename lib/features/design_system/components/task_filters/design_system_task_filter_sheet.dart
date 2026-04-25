@@ -974,10 +974,12 @@ class _SaveNamePopupState extends State<_SaveNamePopup> {
     text: widget.initialValue,
   );
   final FocusNode _focusNode = FocusNode();
+  late bool _canCommit = _controller.text.trim().isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    _controller.addListener(_handleTextChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _controller.selection = TextSelection(
@@ -990,15 +992,23 @@ class _SaveNamePopupState extends State<_SaveNamePopup> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller
+      ..removeListener(_handleTextChanged)
+      ..dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
+  void _handleTextChanged() {
+    final next = _controller.text.trim().isNotEmpty;
+    if (next != _canCommit) {
+      setState(() => _canCommit = next);
+    }
+  }
+
   void _commit() {
-    final trimmed = _controller.text.trim();
-    if (trimmed.isEmpty) return;
-    widget.onCommit(trimmed);
+    if (!_canCommit) return;
+    widget.onCommit(_controller.text.trim());
   }
 
   @override
@@ -1095,7 +1105,7 @@ class _SaveNamePopupState extends State<_SaveNamePopup> {
               Expanded(
                 child: FilledButton(
                   key: DesignSystemTaskFilterActionBar.saveNamePopupCommitKey,
-                  onPressed: _commit,
+                  onPressed: _canCommit ? _commit : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: tokens.colors.interactive.enabled,
                     foregroundColor: tokens.colors.text.onInteractiveAlert,

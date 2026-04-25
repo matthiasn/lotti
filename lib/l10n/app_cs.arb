@@ -2428,7 +2428,7 @@
   "tasksSavedFiltersEmpty": "Zatím žádné uložené filtry. Uprav filtr úkolů a klepni na Uložit.",
   "tasksSavedFiltersSaveButtonLabel": "Uložit",
   "tasksSavedFiltersSavePopupCancel": "Zrušit",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{Aktivní 1 filtr. Uloženo na boční panel pod Úkoly.} other{Aktivních {count} filtrů. Uloženo na boční panel pod Úkoly.}}",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{Aktivní 1 filtr. Uloženo na boční panel pod Úkoly.} few{Aktivní {count} filtry. Uloženo na boční panel pod Úkoly.} other{Aktivních {count} filtrů. Uloženo na boční panel pod Úkoly.}}",
   "@tasksSavedFiltersSavePopupHelper": {
     "placeholders": {
       "count": {
