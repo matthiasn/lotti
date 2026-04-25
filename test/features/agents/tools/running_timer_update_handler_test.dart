@@ -185,6 +185,36 @@ void main() {
     );
 
     test(
+      'task ownership is checked before timerId comparison so the active '
+      'timer id is never disclosed across tasks',
+      () async {
+        // An agent waking for task A submits an arbitrary `timerId` while a
+        // timer is actually running for task B. The handler must short-circuit
+        // on the source-task mismatch and produce a generic message — it
+        // must NOT fall through to the timerId comparison branch, which
+        // would otherwise echo task B's real timer id back to the caller.
+        when(() => mockTimeService.getCurrent()).thenReturn(makeRunningTimer());
+        when(
+          () => mockTimeService.linkedFrom,
+        ).thenReturn(makeSourceTask(id: otherTaskId));
+
+        final result = await handler.handle(
+          sourceTaskId,
+          {'timerId': 'guessed-id', 'summary': 'Working on API'},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Timer source task mismatch');
+        // Real timer id must not appear anywhere in the user-visible output.
+        expect(result.output, isNot(contains(timerId)));
+        verifyNever(
+          () =>
+              mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
+        );
+      },
+    );
+
+    test(
       'returns failure when active entity is not a JournalEntry',
       () async {
         // Defensive: TimeService is supposed to always hold a JournalEntry,

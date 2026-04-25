@@ -68,16 +68,11 @@ class RunningTimerUpdateHandler {
       );
     }
 
-    if (current.meta.id != timerId) {
-      return ToolExecutionResult(
-        success: false,
-        output:
-            'Error: timerId "$timerId" does not match the currently running '
-            'timer (${current.meta.id})',
-        errorMessage: 'Timer id mismatch',
-      );
-    }
-
+    // Order matters: validate task ownership BEFORE comparing IDs. If the
+    // active timer belongs to a different task, return a generic mismatch
+    // error that never names the real timer id — otherwise an agent waking
+    // for task A could probe with arbitrary `timerId` values and read the
+    // currently running id for task B out of the error message.
     if (_timeService.linkedFrom?.id != sourceTaskId) {
       return const ToolExecutionResult(
         success: false,
@@ -85,6 +80,16 @@ class RunningTimerUpdateHandler {
             'Error: the running timer belongs to a different task and '
             'cannot be updated from this wake',
         errorMessage: 'Timer source task mismatch',
+      );
+    }
+
+    if (current.meta.id != timerId) {
+      return ToolExecutionResult(
+        success: false,
+        output:
+            'Error: timerId "$timerId" does not match the currently running '
+            'timer (${current.meta.id})',
+        errorMessage: 'Timer id mismatch',
       );
     }
 

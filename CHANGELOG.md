@@ -4,24 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.974] - 2026-04-25
+## [0.9.975] - 2026-04-25
 ### Added
 - Task Agent now sees the active running timer when one is running. If the
-  timer is for the task being woken, the agent gets full details (id,
-  started, tracked range, current entry text) and can propose a richer
-  description via the new `update_running_timer` tool instead of stacking
-  a parallel `create_time_entry` — user-gated and replaces the timer entry
-  text outright on approval. If the timer is for a different task, only
-  its tracked range is exposed (no id, no other-task identity) so the
-  agent can avoid proposing `create_time_entry` entries on this task that
-  overlap with what is already being tracked elsewhere.
+  timer is for the task being woken, the agent gets full details (timer
+  id, started, live tracked range, elapsed minutes, current entry text)
+  and can propose a richer description via the new `update_running_timer`
+  tool instead of stacking a parallel `create_time_entry` — user-gated,
+  replaces the timer entry text outright on approval, and keeps the
+  in-memory `TimeService` snapshot in sync with the persisted `entryText`,
+  `dateTo`, and `updatedAt`. If the timer is for a different task, only
+  the live tracked range is exposed (no id, no other-task identity, no
+  entry text) so the agent can avoid proposing `create_time_entry`
+  intervals on this task that overlap with what is already being tracked
+  elsewhere. Source-task ownership is checked before the `timerId`
+  comparison so the active timer id is never echoed across task boundaries.
 
 ### Changed
-- `create_time_entry` no longer rejects completed sessions whose start day is
-  earlier than the wake day. The agent can now log a session the user
+- `create_time_entry` no longer rejects completed sessions whose start day
+  is earlier than the wake day. The agent can now log a session the user
   dictates from yesterday or further back; the same-day constraint between
   `startTime` and `endTime` (no entries spanning midnight) and the
   not-in-the-future cutoff at wake time are preserved.
+- `PersistenceLogic.updateJournalEntityText` now returns `false` when its
+  catch block fires, mirroring the contract of `updateJournalEntity`. A
+  caught exception during the update no longer surfaces as a silently-true
+  result with only a logged exception, so callers (including the new
+  `update_running_timer` flow) can rely on the boolean to decide whether to
+  proceed with downstream side effects.
+
+## [0.9.974] - 2026-04-25
+### Changed
 - Task Details typography pass: the entry editor, AI summary (TLDR + expanded
   report), Task Agent reports/conversations markdown, linked-task titles, and
   agent suggestion items now pull font family, sizes, and weights directly
