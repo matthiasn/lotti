@@ -4979,6 +4979,82 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'SyncAgentBundle enqueues one row and stores child payloads in a file',
+      () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-1',
+          agentId: 'agent-1',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 2}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: link,
+                )
+                as SyncAgentLink,
+          ],
+        );
+
+        await service.enqueueMessage(message);
+
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
+
+        final companion = captured.first as OutboxCompanion;
+        expect(companion.subject.value, 'agentBundle:agent-1:run-1');
+        expect(companion.outboxEntryId.value, 'run-1');
+
+        final storedMessage =
+            SyncMessage.fromJson(
+                  json.decode(companion.message.value) as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        expect(storedMessage.jsonPath, '/agent_bundles/run-1.json');
+        expect(storedMessage.entities, isEmpty);
+        expect(storedMessage.links, isEmpty);
+        expect(storedMessage.originatingHostId, 'hostA');
+
+        final bundleFile = File(
+          '${documentsDirectory.path}/agent_bundles/run-1.json',
+        );
+        expect(bundleFile.existsSync(), isTrue);
+        final fileMessage =
+            SyncMessage.fromJson(
+                  json.decode(bundleFile.readAsStringSync())
+                      as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        expect(fileMessage.entities.single.agentEntity, entity);
+        expect(fileMessage.links.single.agentLink, link);
+        expect(fileMessage.entities.single.originatingHostId, 'hostA');
+        expect(fileMessage.links.single.originatingHostId, 'hostA');
+      },
+    );
+
     test('SyncAgentLink merges with existing pending item', () async {
       final link = AgentLink.agentTask(
         id: 'link-abc',

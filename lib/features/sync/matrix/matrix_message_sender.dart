@@ -87,6 +87,25 @@ class MatrixMessageSender {
       return message.copyWith(originatingHostId: host);
     }
 
+    if (message is SyncAgentBundle) {
+      final origin = message.originatingHostId ?? host;
+      return message.copyWith(
+        originatingHostId: origin,
+        entities: [
+          for (final child in message.entities)
+            child.originatingHostId == null
+                ? child.copyWith(originatingHostId: origin)
+                : child,
+        ],
+        links: [
+          for (final child in message.links)
+            child.originatingHostId == null
+                ? child.copyWith(originatingHostId: origin)
+                : child,
+        ],
+      );
+    }
+
     return message;
   }
 
@@ -502,9 +521,10 @@ class MatrixMessageSender {
   ///
   /// For legacy items (inline payload but no jsonPath), saves the payload to
   /// disk first. Then uploads the file and returns the message with jsonPath
-  /// set. Agent entities are stripped (file-only, as they can be large); agent
-  /// links are kept inline (small, like entry links) so receivers can use them
-  /// immediately without waiting for the file download to complete.
+  /// set. Agent entities and wake bundles are stripped (file-only, as they can
+  /// be large); agent links are kept inline (small, like entry links) so
+  /// receivers can use them immediately without waiting for the file download
+  /// to complete.
   /// Returns the original [message] unchanged for non-agent types.
   /// Returns null on upload failure.
   Future<SyncMessage?> _enrichAndUploadAgentPayload({
@@ -531,6 +551,13 @@ class MatrixMessageSender {
         jsonPath = msg.jsonPath;
         pathBuilder = relativeAgentLinkPath;
         logLabel = 'agentLink';
+      case final SyncAgentBundle msg:
+        inlineJson = msg.entities.isNotEmpty || msg.links.isNotEmpty
+            ? json.encode(msg.copyWith(jsonPath: null).toJson())
+            : null;
+        jsonPath = msg.jsonPath;
+        pathBuilder = relativeAgentBundlePath;
+        logLabel = 'agentBundle';
       default:
         return message;
     }
@@ -541,6 +568,7 @@ class MatrixMessageSender {
       final id = switch (message) {
         final SyncAgentEntity m => m.agentEntity!.id,
         final SyncAgentLink m => m.agentLink!.id,
+        final SyncAgentBundle m => m.wakeRunKey,
         _ => throw StateError('unreachable'),
       };
       enrichedPath = pathBuilder(id);
@@ -575,6 +603,12 @@ class MatrixMessageSender {
       // Agent links are small (like entry links) — keep inline for
       // reliable sync, avoiding race conditions with file downloads.
       final SyncAgentLink m => m.copyWith(jsonPath: enrichedPath),
+      // Bundles contain many child payloads — strip inline and use file only.
+      final SyncAgentBundle m => m.copyWith(
+        jsonPath: enrichedPath,
+        entities: const [],
+        links: const [],
+      ),
       _ => throw StateError('unreachable'),
     };
   }

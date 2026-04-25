@@ -158,6 +158,20 @@ sealed class SyncMessage with _$SyncMessage {
     List<VectorClock>? coveredVectorClocks,
   }) = SyncAgentLink;
 
+  /// A wake-scoped bundle of agent entity/link mutations.
+  ///
+  /// Outbound wake runs write many agent entities and links in one logical
+  /// cycle. The bundle keeps the per-item sync semantics intact while allowing
+  /// the outbox to send a single sync envelope for the completed wake.
+  const factory SyncMessage.agentBundle({
+    required String agentId,
+    required String wakeRunKey,
+    @Default(<SyncAgentEntity>[]) List<SyncAgentEntity> entities,
+    @Default(<SyncAgentLink>[]) List<SyncAgentLink> links,
+    String? jsonPath,
+    String? originatingHostId,
+  }) = SyncAgentBundle;
+
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);
 }

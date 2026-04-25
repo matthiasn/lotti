@@ -236,3 +236,33 @@ Map<String, dynamic> _$SyncAgentLinkToJson(SyncAgentLink instance) =>
       'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
     };
+
+SyncAgentBundle _$SyncAgentBundleFromJson(Map<String, dynamic> json) =>
+    SyncAgentBundle(
+      agentId: json['agentId'] as String,
+      wakeRunKey: json['wakeRunKey'] as String,
+      entities:
+          (json['entities'] as List<dynamic>?)
+              ?.map((e) => SyncAgentEntity.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <SyncAgentEntity>[],
+      links:
+          (json['links'] as List<dynamic>?)
+              ?.map((e) => SyncAgentLink.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <SyncAgentLink>[],
+      jsonPath: json['jsonPath'] as String?,
+      originatingHostId: json['originatingHostId'] as String?,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncAgentBundleToJson(SyncAgentBundle instance) =>
+    <String, dynamic>{
+      'agentId': instance.agentId,
+      'wakeRunKey': instance.wakeRunKey,
+      'entities': instance.entities,
+      'links': instance.links,
+      'jsonPath': instance.jsonPath,
+      'originatingHostId': instance.originatingHostId,
+      'runtimeType': instance.$type,
+    };

@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.974] - 2026-04-25
 ### Changed
+- Agent wake cycles now sync as one bundled Matrix payload instead of emitting
+  one outbox row per agent entity/link mutation. `AgentSyncService` wraps wake
+  execution in an in-memory interceptor keyed by the wake run, buffers only
+  agent entity/link messages, preserves superseded child vector clocks, and
+  flushes a descriptor-backed `SyncAgentBundle` when the wake exits. Receivers
+  resolve the bundle attachment, apply entities before links through the
+  existing agent sync handlers, and record each child payload in the sequence
+  log so the convergence/backfill contract stays unchanged while wake traffic
+  collapses to one message.
 - Task Details typography pass: the entry editor, AI summary (TLDR + expanded
   report), Task Agent reports/conversations markdown, linked-task titles, and
   agent suggestion items now pull font family, sizes, and weights directly

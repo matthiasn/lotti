@@ -447,6 +447,13 @@ class MockAgentService extends Mock implements AgentService {}
 class MockAgentSyncService extends Mock implements AgentSyncService {
   @override
   Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+
+  @override
+  Future<T> runInWakeCycle<T>({
+    required String agentId,
+    required String wakeRunKey,
+    required Future<T> Function() action,
+  }) => action();
 }
 
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}

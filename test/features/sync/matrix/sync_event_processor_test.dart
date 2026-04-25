@@ -1149,6 +1149,62 @@ void main() {
       ).called(1);
     });
 
+    test('processes agent bundle entities before links', () async {
+      final entity = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        revision: 5,
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: const VectorClock({'host-a': 1}),
+      );
+      final link = AgentLink.basic(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: const VectorClock({'host-a': 2}),
+      );
+      final message = SyncMessage.agentBundle(
+        agentId: 'agent-1',
+        wakeRunKey: 'run-1',
+        originatingHostId: 'host-a',
+        entities: [
+          SyncMessage.agentEntity(
+                agentEntity: entity,
+                status: SyncEntryStatus.update,
+              )
+              as SyncAgentEntity,
+        ],
+        links: [
+          SyncMessage.agentLink(
+                agentLink: link,
+                status: SyncEntryStatus.update,
+              )
+              as SyncAgentLink,
+        ],
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(() => mockAgentRepo.upsertLink(link)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'state-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
     test(
       'processes agent link variants (agentState, messagePrev, etc)',
       () async {
@@ -2099,6 +2155,62 @@ void main() {
 
         await processor.process(event: event, journalDb: journalDb);
 
+        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+      });
+
+      test('resolves agent bundle from jsonPath on disk', () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-disk',
+          agentId: 'agent-disk',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-disk',
+          fromId: 'agent-disk',
+          toId: 'state-disk',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 2}),
+        );
+
+        final fileBundle = SyncMessage.agentBundle(
+          agentId: 'agent-disk',
+          wakeRunKey: 'run-disk',
+          originatingHostId: 'host-a',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: link,
+                )
+                as SyncAgentLink,
+          ],
+        );
+        const relativePath = '/agent_bundles/run-disk.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(fileBundle.toJson()));
+
+        const message = SyncMessage.agentBundle(
+          agentId: 'agent-disk',
+          wakeRunKey: 'run-disk',
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         verify(() => mockAgentRepo.upsertLink(link)).called(1);
       });
 

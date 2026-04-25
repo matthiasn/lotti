@@ -160,6 +160,7 @@ class OutboxListItemViewModel {
         backfillResponse: (_) => messages.syncPayloadBackfillResponse,
         agentEntity: (_) => messages.syncPayloadAgentEntity,
         agentLink: (_) => messages.syncPayloadAgentLink,
+        agentBundle: (_) => messages.syncPayloadAgentEntity,
       );
     } catch (_) {
       return messages.syncListUnknownPayload;

@@ -919,8 +919,9 @@ class SyncEventProcessor {
   // ---------------------------------------------------------------------------
 
   /// Dispatches the prepare phase per sync message family. Only
-  /// [SyncJournalEntity], [SyncAgentEntity], and [SyncAgentLink] need I/O
-  /// (attachment resolution); every other family is a passthrough.
+  /// [SyncJournalEntity], [SyncAgentEntity], [SyncAgentLink], and
+  /// [SyncAgentBundle] need I/O (attachment resolution); every other family is
+  /// a passthrough.
   Future<PreparedSyncEvent> _prepareForMessage({
     required Event event,
     required SyncMessage syncMessage,
@@ -941,6 +942,13 @@ class SyncEventProcessor {
           event: event,
           syncMessage: msg,
           resolvedAgentLink: resolved,
+        );
+      case final SyncAgentBundle msg:
+        final resolved = await _resolveAgentBundle(msg);
+        return PreparedSyncEvent._(
+          event: event,
+          syncMessage: msg,
+          resolvedAgentBundle: resolved,
         );
       default:
         return PreparedSyncEvent._(event: event, syncMessage: syncMessage);
@@ -1469,6 +1477,231 @@ class SyncEventProcessor {
         typeName: 'agentLink',
       );
 
+  Future<PreparedAgentSyncBundle?> _resolveAgentBundle(
+    SyncAgentBundle msg,
+  ) async {
+    var bundle = msg;
+    if (bundle.entities.isEmpty && bundle.links.isEmpty) {
+      final resolved = await _resolveAgentPayload<SyncAgentBundle>(
+        inline: null,
+        jsonPath: msg.jsonPath,
+        fromJson: (json) {
+          final decoded = SyncMessage.fromJson(json);
+          if (decoded is SyncAgentBundle) return decoded;
+          throw const FormatException('agentBundle payload expected');
+        },
+        typeName: 'agentBundle',
+      );
+      if (resolved == null) return null;
+      bundle = resolved.copyWith(
+        originatingHostId: resolved.originatingHostId ?? msg.originatingHostId,
+        jsonPath: resolved.jsonPath ?? msg.jsonPath,
+      );
+    }
+
+    final origin = bundle.originatingHostId ?? msg.originatingHostId;
+    final entities = <PreparedAgentEntitySync>[];
+    for (final child in bundle.entities) {
+      final normalized = child.originatingHostId == null && origin != null
+          ? child.copyWith(originatingHostId: origin)
+          : child;
+      final resolvedEntity = await _resolveAgentEntity(normalized);
+      if (resolvedEntity == null) continue;
+      entities.add(
+        PreparedAgentEntitySync(
+          message: normalized,
+          entity: resolvedEntity,
+        ),
+      );
+    }
+
+    final links = <PreparedAgentLinkSync>[];
+    for (final child in bundle.links) {
+      final normalized = child.originatingHostId == null && origin != null
+          ? child.copyWith(originatingHostId: origin)
+          : child;
+      final resolvedLink = await _resolveAgentLink(normalized);
+      if (resolvedLink == null) continue;
+      links.add(
+        PreparedAgentLinkSync(
+          message: normalized,
+          link: resolvedLink,
+        ),
+      );
+    }
+
+    return PreparedAgentSyncBundle(entities: entities, links: links);
+  }
+
+  Future<void> _applyAgentEntityMessage({
+    required SyncAgentEntity msg,
+    required AgentDomainEntity? resolvedEntity,
+  }) async {
+    if (resolvedEntity == null) {
+      return;
+    }
+    if (agentRepository != null) {
+      await agentRepository!.upsertEntity(resolvedEntity);
+      // Remove wake subscriptions when an agent is paused or destroyed
+      // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
+      // locally.
+      if (wakeOrchestrator != null &&
+          resolvedEntity is AgentIdentityEntity &&
+          resolvedEntity.lifecycle != AgentLifecycle.active) {
+        wakeOrchestrator!.removeSubscriptions(resolvedEntity.agentId);
+      }
+      // Restore wake subscriptions when an agent is resumed remotely —
+      // mirrors what TaskAgentService.restoreSubscriptionsForAgent does
+      // locally after AgentService.resumeAgent.
+      if (wakeOrchestrator != null &&
+          resolvedEntity is AgentIdentityEntity &&
+          resolvedEntity.lifecycle == AgentLifecycle.active &&
+          resolvedEntity.kind == 'task_agent') {
+        final links = await agentRepository!.getLinksFrom(
+          resolvedEntity.agentId,
+          type: 'agent_task',
+        );
+        for (final link in links) {
+          wakeOrchestrator!.addSubscription(
+            AgentSubscription(
+              id: '${resolvedEntity.agentId}_task_${link.toId}',
+              agentId: resolvedEntity.agentId,
+              matchEntityIds: {link.toId},
+            ),
+          );
+        }
+      }
+      _updateNotifications.notify(
+        {
+          resolvedEntity.agentId,
+          // Include templateId so template-level aggregate providers
+          // refresh when token usage or reports arrive from other devices.
+          if (resolvedEntity is WakeTokenUsageEntity &&
+              resolvedEntity.templateId != null)
+            resolvedEntity.templateId!,
+          agentNotification,
+        },
+        fromSync: true,
+      );
+      _trace(
+        'apply agentEntity id=${resolvedEntity.id}',
+        subDomain: 'processor.apply',
+      );
+
+      // Record in sequence log for gap detection (self-healing sync)
+      if (_sequenceLogService != null &&
+          resolvedEntity.vectorClock != null &&
+          msg.originatingHostId != null) {
+        try {
+          final gaps = await _sequenceLogService.recordReceivedEntry(
+            entryId: resolvedEntity.id,
+            vectorClock: resolvedEntity.vectorClock!,
+            originatingHostId: msg.originatingHostId!,
+            coveredVectorClocks: msg.coveredVectorClocks,
+            payloadType: SyncSequencePayloadType.agentEntity,
+            jsonPath: msg.jsonPath,
+          );
+          if (gaps.isNotEmpty) {
+            _trace(
+              'apply.agentEntity.gapsDetected count=${gaps.length} '
+              'for entity=${resolvedEntity.id}',
+              subDomain: 'processor.gapDetection',
+            );
+          }
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: st,
+          );
+        }
+      }
+    } else {
+      _trace(
+        'agentEntity.ignored no repository',
+        subDomain: 'processor.apply',
+      );
+    }
+  }
+
+  Future<void> _applyAgentLinkMessage({
+    required SyncAgentLink msg,
+    required AgentLink? resolvedLink,
+  }) async {
+    if (resolvedLink == null) {
+      return;
+    }
+    if (agentRepository != null) {
+      await agentRepository!.upsertLink(resolvedLink);
+      // Restore wake subscription when an agent_task link arrives for an
+      // active task_agent. This handles the case where the link arrives
+      // after the identity — the SyncAgentEntity handler queries existing
+      // links, which may be empty if the link hasn't been synced yet.
+      // addSubscription is idempotent (replaces by ID), so both handlers
+      // firing for the same agent is harmless.
+      if (wakeOrchestrator != null &&
+          resolvedLink is AgentTaskLink &&
+          resolvedLink.deletedAt == null) {
+        final agent = await agentRepository!.getEntity(resolvedLink.fromId);
+        if (agent is AgentIdentityEntity &&
+            agent.lifecycle == AgentLifecycle.active &&
+            agent.kind == 'task_agent') {
+          wakeOrchestrator!.addSubscription(
+            AgentSubscription(
+              id: '${resolvedLink.fromId}_task_${resolvedLink.toId}',
+              agentId: resolvedLink.fromId,
+              matchEntityIds: {resolvedLink.toId},
+            ),
+          );
+        }
+      }
+      _updateNotifications.notify(
+        {resolvedLink.fromId, resolvedLink.toId, agentNotification},
+        fromSync: true,
+      );
+      _trace(
+        'apply agentLink id=${resolvedLink.id}',
+        subDomain: 'processor.apply',
+      );
+
+      // Record in sequence log for gap detection (self-healing sync)
+      if (_sequenceLogService != null &&
+          resolvedLink.vectorClock != null &&
+          msg.originatingHostId != null) {
+        try {
+          final gaps = await _sequenceLogService.recordReceivedEntry(
+            entryId: resolvedLink.id,
+            vectorClock: resolvedLink.vectorClock!,
+            originatingHostId: msg.originatingHostId!,
+            coveredVectorClocks: msg.coveredVectorClocks,
+            payloadType: SyncSequencePayloadType.agentLink,
+            jsonPath: msg.jsonPath,
+          );
+          if (gaps.isNotEmpty) {
+            _trace(
+              'apply.agentLink.gapsDetected count=${gaps.length} '
+              'for link=${resolvedLink.id}',
+              subDomain: 'processor.gapDetection',
+            );
+          }
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: st,
+          );
+        }
+      }
+    } else {
+      _trace(
+        'agentLink.ignored no repository',
+        subDomain: 'processor.apply',
+      );
+    }
+  }
+
   Future<SyncApplyDiagnostics?> _applyMessage({
     required PreparedSyncEvent prepared,
     required JournalDb journalDb,
@@ -1622,165 +1855,30 @@ class SyncEventProcessor {
       // concurrent conflicting edits don't arise in practice.
       // Maintenance sync serves as catch-up for missed messages.
       case final SyncAgentEntity msg:
-        final resolvedEntity = prepared.resolvedAgentEntity;
-        if (resolvedEntity == null) {
-          return null;
-        }
-        if (agentRepository != null) {
-          await agentRepository!.upsertEntity(resolvedEntity);
-          // Remove wake subscriptions when an agent is paused or destroyed
-          // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
-          // locally.
-          if (wakeOrchestrator != null &&
-              resolvedEntity is AgentIdentityEntity &&
-              resolvedEntity.lifecycle != AgentLifecycle.active) {
-            wakeOrchestrator!.removeSubscriptions(resolvedEntity.agentId);
-          }
-          // Restore wake subscriptions when an agent is resumed remotely —
-          // mirrors what TaskAgentService.restoreSubscriptionsForAgent does
-          // locally after AgentService.resumeAgent.
-          if (wakeOrchestrator != null &&
-              resolvedEntity is AgentIdentityEntity &&
-              resolvedEntity.lifecycle == AgentLifecycle.active &&
-              resolvedEntity.kind == 'task_agent') {
-            final links = await agentRepository!.getLinksFrom(
-              resolvedEntity.agentId,
-              type: 'agent_task',
-            );
-            for (final link in links) {
-              wakeOrchestrator!.addSubscription(
-                AgentSubscription(
-                  id: '${resolvedEntity.agentId}_task_${link.toId}',
-                  agentId: resolvedEntity.agentId,
-                  matchEntityIds: {link.toId},
-                ),
-              );
-            }
-          }
-          _updateNotifications.notify(
-            {
-              resolvedEntity.agentId,
-              // Include templateId so template-level aggregate providers
-              // refresh when token usage or reports arrive from other devices.
-              if (resolvedEntity is WakeTokenUsageEntity &&
-                  resolvedEntity.templateId != null)
-                resolvedEntity.templateId!,
-              agentNotification,
-            },
-            fromSync: true,
-          );
-          _trace(
-            'apply agentEntity id=${resolvedEntity.id}',
-            subDomain: 'processor.apply',
-          );
-
-          // Record in sequence log for gap detection (self-healing sync)
-          if (_sequenceLogService != null &&
-              resolvedEntity.vectorClock != null &&
-              msg.originatingHostId != null) {
-            try {
-              final gaps = await _sequenceLogService.recordReceivedEntry(
-                entryId: resolvedEntity.id,
-                vectorClock: resolvedEntity.vectorClock!,
-                originatingHostId: msg.originatingHostId!,
-                coveredVectorClocks: msg.coveredVectorClocks,
-                payloadType: SyncSequencePayloadType.agentEntity,
-                jsonPath: msg.jsonPath,
-              );
-              if (gaps.isNotEmpty) {
-                _trace(
-                  'apply.agentEntity.gapsDetected count=${gaps.length} '
-                  'for entity=${resolvedEntity.id}',
-                  subDomain: 'processor.gapDetection',
-                );
-              }
-            } catch (e, st) {
-              _loggingService.captureException(
-                e,
-                domain: 'SYNC_SEQUENCE',
-                subDomain: 'recordReceived',
-                stackTrace: st,
-              );
-            }
-          }
-        } else {
-          _trace(
-            'agentEntity.ignored no repository',
-            subDomain: 'processor.apply',
-          );
-        }
+        await _applyAgentEntityMessage(
+          msg: msg,
+          resolvedEntity: prepared.resolvedAgentEntity,
+        );
         return null;
       case final SyncAgentLink msg:
-        final resolvedLink = prepared.resolvedAgentLink;
-        if (resolvedLink == null) {
-          return null;
+        await _applyAgentLinkMessage(
+          msg: msg,
+          resolvedLink: prepared.resolvedAgentLink,
+        );
+        return null;
+      case SyncAgentBundle():
+        final bundle = prepared.resolvedAgentBundle;
+        if (bundle == null) return null;
+        for (final item in bundle.entities) {
+          await _applyAgentEntityMessage(
+            msg: item.message,
+            resolvedEntity: item.entity,
+          );
         }
-        if (agentRepository != null) {
-          await agentRepository!.upsertLink(resolvedLink);
-          // Restore wake subscription when an agent_task link arrives for an
-          // active task_agent. This handles the case where the link arrives
-          // after the identity — the SyncAgentEntity handler queries existing
-          // links, which may be empty if the link hasn't been synced yet.
-          // addSubscription is idempotent (replaces by ID), so both handlers
-          // firing for the same agent is harmless.
-          if (wakeOrchestrator != null &&
-              resolvedLink is AgentTaskLink &&
-              resolvedLink.deletedAt == null) {
-            final agent = await agentRepository!.getEntity(resolvedLink.fromId);
-            if (agent is AgentIdentityEntity &&
-                agent.lifecycle == AgentLifecycle.active &&
-                agent.kind == 'task_agent') {
-              wakeOrchestrator!.addSubscription(
-                AgentSubscription(
-                  id: '${resolvedLink.fromId}_task_${resolvedLink.toId}',
-                  agentId: resolvedLink.fromId,
-                  matchEntityIds: {resolvedLink.toId},
-                ),
-              );
-            }
-          }
-          _updateNotifications.notify(
-            {resolvedLink.fromId, resolvedLink.toId, agentNotification},
-            fromSync: true,
-          );
-          _trace(
-            'apply agentLink id=${resolvedLink.id}',
-            subDomain: 'processor.apply',
-          );
-
-          // Record in sequence log for gap detection (self-healing sync)
-          if (_sequenceLogService != null &&
-              resolvedLink.vectorClock != null &&
-              msg.originatingHostId != null) {
-            try {
-              final gaps = await _sequenceLogService.recordReceivedEntry(
-                entryId: resolvedLink.id,
-                vectorClock: resolvedLink.vectorClock!,
-                originatingHostId: msg.originatingHostId!,
-                coveredVectorClocks: msg.coveredVectorClocks,
-                payloadType: SyncSequencePayloadType.agentLink,
-                jsonPath: msg.jsonPath,
-              );
-              if (gaps.isNotEmpty) {
-                _trace(
-                  'apply.agentLink.gapsDetected count=${gaps.length} '
-                  'for link=${resolvedLink.id}',
-                  subDomain: 'processor.gapDetection',
-                );
-              }
-            } catch (e, st) {
-              _loggingService.captureException(
-                e,
-                domain: 'SYNC_SEQUENCE',
-                subDomain: 'recordReceived',
-                stackTrace: st,
-              );
-            }
-          }
-        } else {
-          _trace(
-            'agentLink.ignored no repository',
-            subDomain: 'processor.apply',
+        for (final item in bundle.links) {
+          await _applyAgentLinkMessage(
+            msg: item.message,
+            resolvedLink: item.link,
           );
         }
         return null;
@@ -1836,6 +1934,7 @@ class PreparedSyncEvent {
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
+    this.resolvedAgentBundle,
   });
 
   PreparedSyncEvent._({
@@ -1846,6 +1945,7 @@ class PreparedSyncEvent {
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
+    this.resolvedAgentBundle,
   });
 
   final Event event;
@@ -1875,4 +1975,38 @@ class PreparedSyncEvent {
   /// Resolved link when [syncMessage] is a [SyncAgentLink]. Same null
   /// semantics as [resolvedAgentEntity].
   final AgentLink? resolvedAgentLink;
+
+  /// Resolved wake bundle when [syncMessage] is a [SyncAgentBundle]. Null
+  /// means the bundle payload could not be resolved and apply will skip it.
+  final PreparedAgentSyncBundle? resolvedAgentBundle;
+}
+
+class PreparedAgentSyncBundle {
+  PreparedAgentSyncBundle({
+    required this.entities,
+    required this.links,
+  });
+
+  final List<PreparedAgentEntitySync> entities;
+  final List<PreparedAgentLinkSync> links;
+}
+
+class PreparedAgentEntitySync {
+  PreparedAgentEntitySync({
+    required this.message,
+    required this.entity,
+  });
+
+  final SyncAgentEntity message;
+  final AgentDomainEntity entity;
+}
+
+class PreparedAgentLinkSync {
+  PreparedAgentLinkSync({
+    required this.message,
+    required this.link,
+  });
+
+  final SyncAgentLink message;
+  final AgentLink link;
 }

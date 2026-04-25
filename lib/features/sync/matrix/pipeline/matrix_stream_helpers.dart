@@ -27,8 +27,9 @@ String? extractRuntimeTypeFromEvent(Event ev) {
 }
 
 /// Extracts a JSON path from a sync payload carried in the event text
-/// (base64 JSON). Supports `journalEntity`, `agentEntity`, and `agentLink`
-/// runtime types. Returns null when not present or not a supported type.
+/// (base64 JSON). Supports `journalEntity`, `agentEntity`, `agentLink`, and
+/// `agentBundle` runtime types. Returns null when not present or not a
+/// supported type.
 String? extractJsonPathFromEvent(Event ev) {
   try {
     final txt = ev.text;
@@ -37,7 +38,10 @@ String? extractJsonPathFromEvent(Event ev) {
     final obj = json.decode(decoded);
     if (obj is Map<String, dynamic>) {
       final rt = obj['runtimeType'];
-      if (rt == 'journalEntity' || rt == 'agentEntity' || rt == 'agentLink') {
+      if (rt == 'journalEntity' ||
+          rt == 'agentEntity' ||
+          rt == 'agentLink' ||
+          rt == 'agentBundle') {
         final jp = obj['jsonPath'];
         return jp is String ? jp : null;
       }

@@ -431,6 +431,78 @@ void main() {
       });
     });
 
+    group('runInWakeCycle', () {
+      test(
+        'buffers agent messages and flushes one bundle on completion',
+        () async {
+          await syncService.runInWakeCycle(
+            agentId: 'agent-1',
+            wakeRunKey: 'run-1',
+            action: () async {
+              await syncService.upsertEntity(testEntity);
+              await syncService.upsertLink(testBasicLink);
+
+              verifyNever(() => mockOutboxService.enqueueMessage(any()));
+            },
+          );
+
+          final captured = verify(
+            () => mockOutboxService.enqueueMessage(captureAny()),
+          ).captured;
+          expect(captured, hasLength(1));
+          final bundle = captured.single as SyncAgentBundle;
+          expect(bundle.agentId, 'agent-1');
+          expect(bundle.wakeRunKey, 'run-1');
+          expect(bundle.entities, hasLength(1));
+          expect(bundle.links, hasLength(1));
+        },
+      );
+
+      test('transaction messages join the active wake bundle', () async {
+        await syncService.runInWakeCycle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
+          action: () async {
+            await syncService.runInTransaction(() async {
+              await syncService.upsertEntity(testEntity);
+              await syncService.upsertLink(testBasicLink);
+            });
+
+            verifyNever(() => mockOutboxService.enqueueMessage(any()));
+          },
+        );
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        final bundle = captured.single as SyncAgentBundle;
+        expect(bundle.entities.single.agentEntity, isNotNull);
+        expect(bundle.links.single.agentLink, isNotNull);
+      });
+
+      test('flushes buffered messages when the wake fails', () async {
+        await expectLater(
+          () => syncService.runInWakeCycle<void>(
+            agentId: 'agent-1',
+            wakeRunKey: 'run-failed',
+            action: () async {
+              await syncService.upsertEntity(testEntity);
+              throw StateError('wake failed');
+            },
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        final bundle = captured.single as SyncAgentBundle;
+        expect(bundle.wakeRunKey, 'run-failed');
+        expect(bundle.entities, hasLength(1));
+        expect(bundle.links, isEmpty);
+      });
+    });
+
     group('runInTransaction', () {
       test('delegates to repository', () async {
         var called = false;

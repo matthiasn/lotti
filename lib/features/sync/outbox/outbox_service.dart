@@ -406,6 +406,10 @@ class OutboxService {
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncAgentBundle msg => _enqueueAgentBundle(
+          msg: msg,
+          commonFields: commonFields,
+        ),
       };
 
       _syncLog(
@@ -435,6 +439,7 @@ class OutboxService {
       SyncBackfillResponse() => OutboxPriority.normal.index,
       SyncAgentEntity() => OutboxPriority.normal.index,
       SyncAgentLink() => OutboxPriority.normal.index,
+      SyncAgentBundle() => OutboxPriority.normal.index,
       SyncThemingSelection() => OutboxPriority.normal.index,
       SyncEntityDefinition() => OutboxPriority.low.index,
       SyncAiConfig() => OutboxPriority.low.index,
@@ -838,6 +843,37 @@ class OutboxService {
     return linkMsg;
   }
 
+  /// Prepares a SyncAgentBundle by applying normal agent entity/link
+  /// preparation to every child message.
+  SyncAgentBundle _prepareAgentBundle(SyncAgentBundle msg, String? host) {
+    var bundle = msg;
+    final originatingHostId = bundle.originatingHostId ?? host;
+    if (originatingHostId != null && bundle.originatingHostId == null) {
+      bundle = bundle.copyWith(originatingHostId: originatingHostId);
+    }
+
+    SyncAgentEntity seedEntityOrigin(SyncAgentEntity child) =>
+        child.originatingHostId == null && originatingHostId != null
+        ? child.copyWith(originatingHostId: originatingHostId)
+        : child;
+
+    SyncAgentLink seedLinkOrigin(SyncAgentLink child) =>
+        child.originatingHostId == null && originatingHostId != null
+        ? child.copyWith(originatingHostId: originatingHostId)
+        : child;
+
+    return bundle.copyWith(
+      entities: [
+        for (final child in bundle.entities)
+          _prepareAgentEntity(seedEntityOrigin(child), host),
+      ],
+      links: [
+        for (final child in bundle.links)
+          _prepareAgentLink(seedLinkOrigin(child), host),
+      ],
+    );
+  }
+
   /// Routes message preparation based on type.
   Future<SyncMessage> _prepareMessage(SyncMessage message, String? host) async {
     return switch (message) {
@@ -845,6 +881,7 @@ class OutboxService {
       final SyncEntryLink msg => await _prepareEntryLink(msg, host),
       final SyncAgentEntity msg => _prepareAgentEntity(msg, host),
       final SyncAgentLink msg => _prepareAgentLink(msg, host),
+      final SyncAgentBundle msg => _prepareAgentBundle(msg, host),
       _ => message,
     };
   }
@@ -1441,6 +1478,102 @@ class OutboxService {
     );
   }
 
+  Future<bool> _enqueueAgentBundle({
+    required SyncAgentBundle msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    if (msg.entities.isEmpty && msg.links.isEmpty && msg.jsonPath == null) {
+      _loggingService.captureEvent(
+        'enqueue.skip agentBundle is empty',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      return false;
+    }
+
+    final relativePath =
+        msg.jsonPath ?? relativeAgentBundlePath(msg.wakeRunKey);
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final docsRoot = p.normalize(_documentsDirectory.path);
+    final fullPath = p.normalize(p.join(docsRoot, relativeJoined));
+    final subject = 'agentBundle:${msg.agentId}:${msg.wakeRunKey}';
+
+    if (!p.isWithin(docsRoot, fullPath)) {
+      _loggingService.captureEvent(
+        'enqueue.skip invalid agent bundle path: $relativePath',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      return false;
+    }
+
+    try {
+      final bundlePayload = msg.copyWith(jsonPath: null);
+      await _saveJson(fullPath, json.encode(bundlePayload.toJson()));
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage.saveAgentBundle',
+        stackTrace: stackTrace,
+      );
+      await _syncDatabase.addOutboxItem(
+        commonFields.copyWith(
+          subject: Value(subject),
+          outboxEntryId: Value(msg.wakeRunKey),
+        ),
+      );
+      await _recordAgentBundleSent(msg);
+      return false;
+    }
+
+    final outboxMsg = msg.copyWith(
+      jsonPath: relativePath,
+      entities: const [],
+      links: const [],
+    );
+    final outboxJson = json.encode(outboxMsg.toJson());
+    final outboxSize = utf8.encode(outboxJson).length;
+    final existingItem = await _syncDatabase.findPendingByEntryId(
+      msg.wakeRunKey,
+    );
+
+    if (existingItem != null) {
+      final affectedRows = await _syncDatabase.updateOutboxMessage(
+        itemId: existingItem.id,
+        newMessage: outboxJson,
+        newSubject: subject,
+        payloadSize: outboxSize,
+        priority: math.min(existingItem.priority, commonFields.priority.value),
+      );
+      if (affectedRows > 0) {
+        await _recordAgentBundleSent(msg);
+        unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
+        return true;
+      }
+    }
+
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(
+        subject: Value(subject),
+        message: Value(outboxJson),
+        outboxEntryId: Value(msg.wakeRunKey),
+        payloadSize: Value(outboxSize),
+      ),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncAgentBundle subject=$subject '
+      'entities=${msg.entities.length} links=${msg.links.length}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+
+    await _recordAgentBundleSent(msg);
+    return false;
+  }
+
   /// Shared implementation for enqueuing agent entities and links.
   /// Saves [payloadJson] to disk, builds an enriched outbox message from
   /// [enrichedMessage], and either merges into an existing pending item or
@@ -1706,6 +1839,27 @@ class OutboxService {
           stackTrace: st,
         );
       }
+    }
+  }
+
+  Future<void> _recordAgentBundleSent(SyncAgentBundle msg) async {
+    for (final entityMsg in msg.entities) {
+      final entity = entityMsg.agentEntity;
+      if (entity == null) continue;
+      await _recordAgentSent(
+        entryId: entity.id,
+        vectorClock: entity.vectorClock,
+        payloadType: SyncSequencePayloadType.agentEntity,
+      );
+    }
+    for (final linkMsg in msg.links) {
+      final link = linkMsg.agentLink;
+      if (link == null) continue;
+      await _recordAgentSent(
+        entryId: link.id,
+        vectorClock: link.vectorClock,
+        payloadType: SyncSequencePayloadType.agentLink,
+      );
     }
   }
 

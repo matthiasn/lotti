@@ -589,4 +589,80 @@ void main() {
       expect(decodedMsg.jsonPath, isNull);
     });
   });
+
+  group('SyncAgentBundle serialization', () {
+    test('round-trips inline child messages', () {
+      final testDate = DateTime(2024, 3, 15);
+      final entity = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        revision: 2,
+        slots: const AgentSlots(),
+        updatedAt: testDate,
+        vectorClock: const VectorClock({'host-a': 10}),
+      );
+      final link = AgentLink.basic(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: const VectorClock({'host-a': 11}),
+      );
+
+      final msg = SyncMessage.agentBundle(
+        agentId: 'agent-1',
+        wakeRunKey: 'run-1',
+        originatingHostId: 'host-a',
+        entities: [
+          SyncMessage.agentEntity(
+                status: SyncEntryStatus.update,
+                agentEntity: entity,
+                originatingHostId: 'host-a',
+              )
+              as SyncAgentEntity,
+        ],
+        links: [
+          SyncMessage.agentLink(
+                status: SyncEntryStatus.update,
+                agentLink: link,
+                originatingHostId: 'host-a',
+              )
+              as SyncAgentLink,
+        ],
+      );
+
+      final encoded = jsonEncode(msg.toJson());
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+      );
+
+      expect(decoded, isA<SyncAgentBundle>());
+      final bundle = decoded as SyncAgentBundle;
+      expect(bundle.agentId, 'agent-1');
+      expect(bundle.wakeRunKey, 'run-1');
+      expect(bundle.originatingHostId, 'host-a');
+      expect(bundle.entities.single.agentEntity, entity);
+      expect(bundle.links.single.agentLink, link);
+    });
+
+    test('round-trips descriptor-only bundle with jsonPath', () {
+      const msg = SyncMessage.agentBundle(
+        agentId: 'agent-1',
+        wakeRunKey: 'run-1',
+        jsonPath: '/agent_bundles/run-1.json',
+      );
+
+      final encoded = jsonEncode(msg.toJson());
+      final decoded = SyncMessage.fromJson(
+        jsonDecode(encoded) as Map<String, dynamic>,
+      );
+
+      expect(decoded, isA<SyncAgentBundle>());
+      final bundle = decoded as SyncAgentBundle;
+      expect(bundle.entities, isEmpty);
+      expect(bundle.links, isEmpty);
+      expect(bundle.jsonPath, '/agent_bundles/run-1.json');
+    });
+  });
 }
