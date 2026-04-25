@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -70,9 +71,8 @@ class LinkedTaskCard extends StatelessWidget {
             Expanded(
               child: Text(
                 task.data.title,
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: textColor,
-                ),
+                style: context.designTokens.typography.styles.subtitle.subtitle2
+                    .copyWith(color: textColor),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
