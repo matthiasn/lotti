@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -176,6 +177,45 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.errorMessage, 'Timer source task mismatch');
+        verifyNever(
+          () =>
+              mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
+        );
+      },
+    );
+
+    test(
+      'returns failure when active entity is not a JournalEntry',
+      () async {
+        // Defensive: TimeService is supposed to always hold a JournalEntry,
+        // but if a different JournalEntity subtype somehow ends up there
+        // (e.g. via UI state corruption), the handler must refuse cleanly
+        // rather than try to update via the wrong code path.
+        final notAJournalEntry = JournalEntity.measurement(
+          meta: Metadata(
+            id: timerId,
+            dateFrom: DateTime(2026, 3, 17, 14),
+            dateTo: DateTime(2026, 3, 17, 15, 29),
+            createdAt: DateTime(2026, 3, 17, 14),
+            updatedAt: DateTime(2026, 3, 17, 14),
+          ),
+          data: MeasurementData(
+            dateFrom: DateTime(2026, 3, 17, 14),
+            dateTo: DateTime(2026, 3, 17, 14),
+            value: 1,
+            dataTypeId: 'type-1',
+          ),
+        );
+        when(() => mockTimeService.getCurrent()).thenReturn(notAJournalEntry);
+        when(() => mockTimeService.linkedFrom).thenReturn(makeSourceTask());
+
+        final result = await handler.handle(
+          sourceTaskId,
+          {'timerId': timerId, 'summary': 'Working on API'},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Unsupported timer entity type');
         verifyNever(
           () =>
               mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
