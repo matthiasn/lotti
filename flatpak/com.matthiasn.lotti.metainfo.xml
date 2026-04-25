@@ -35,6 +35,7 @@
       <description>
           <p>Task Details typography pass: the entry editor, AI summary (TLDR plus expanded report), Task Agent reports/conversations markdown, linked-task titles, and agent suggestion items now pull font family, sizes, and weights directly from the design-system tokens. The editor body and agent markdown body share body.bodySmall (Inter, 14pt, w400); editor headings map to heading.heading3 / subtitle.subtitle1 / subtitle.subtitle2; linked-task titles use subtitle.subtitle2.</p>
           <p>Code blocks gain a subtle theme-aware surface (background.level02 lifted by the surface.enabled overlay), a 1-px low-emphasis border, and DS radii (radii.xs inline / radii.s block). The Task Agent markdown checkbox is now compact, non-interactive (no hover overlay or click cursor), and shares the checklist row's radii.xs rounded shape, low-emphasis border, and interactive.enabled fill.</p>
+          <p>The AI Coding Prompt and AI Image Prompt card on Task Details now renders both its TLDR summary and its expanded full-prompt body through the shared AgentMarkdownView, so its typography, links, and code-block surfaces match the agent report and entry editor (body.bodySmall body text, design-system heading mapping, low-emphasis checkbox style) instead of the package-default GptMarkdown styling.</p>
       </description>
     </release>
     <release version="0.9.973" date="2026-04-24">

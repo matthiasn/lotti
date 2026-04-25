@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../test_helper.dart';
 
@@ -123,8 +125,33 @@ Please provide step-by-step guidance.
       // Full prompt label should not be visible when collapsed
       expect(find.text('Full Prompt:'), findsNothing);
 
-      // GptMarkdown for full prompt should not be visible
-      expect(find.byType(GptMarkdown), findsNothing);
+      // Only the TLDR AgentMarkdownView is mounted while collapsed.
+      expect(find.byType(AgentMarkdownView), findsOneWidget);
+    });
+
+    testWidgets('TLDR renders via AgentMarkdownView with body.bodySmall', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: GeneratedPromptCard(
+            testAiResponseEntry,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      final markdownFinder = find.byType(AgentMarkdownView);
+      expect(markdownFinder, findsOneWidget);
+
+      final markdownContext = tester.element(markdownFinder);
+      final expected =
+          markdownContext.designTokens.typography.styles.body.bodySmall;
+      final gptContext = tester.element(find.byType(GptMarkdown));
+      final effectiveStyle = DefaultTextStyle.of(gptContext).style;
+      expect(effectiveStyle.fontSize, expected.fontSize);
+      expect(effectiveStyle.fontWeight, expected.fontWeight);
+      expect(effectiveStyle.fontFamily, expected.fontFamily);
     });
 
     testWidgets('expands to show full prompt when chevron is tapped', (
@@ -151,8 +178,43 @@ Please provide step-by-step guidance.
       // Full prompt label should now be visible
       expect(find.text('Full Prompt:'), findsOneWidget);
 
-      // GptMarkdown should now be visible with the prompt content
-      expect(find.byType(GptMarkdown), findsOneWidget);
+      // Both TLDR and full prompt now render via AgentMarkdownView, each
+      // wrapping a single GptMarkdown.
+      expect(find.byType(AgentMarkdownView), findsNWidgets(2));
+      expect(find.byType(GptMarkdown), findsNWidgets(2));
+    });
+
+    testWidgets('expanded full prompt uses AgentMarkdownView typography', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: GeneratedPromptCard(
+            testAiResponseEntry,
+            linkedFromId: 'test-id',
+          ),
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.expand_more));
+      await tester.pumpAndSettle();
+
+      final markdowns = tester.widgetList<AgentMarkdownView>(
+        find.byType(AgentMarkdownView),
+      );
+      expect(markdowns.length, 2);
+
+      // The second AgentMarkdownView corresponds to the expanded full prompt.
+      final fullPromptElement = tester
+          .elementList(find.byType(AgentMarkdownView))
+          .last;
+      final expected =
+          fullPromptElement.designTokens.typography.styles.body.bodySmall;
+      final gptContext = tester.elementList(find.byType(GptMarkdown)).last;
+      final effectiveStyle = DefaultTextStyle.of(gptContext).style;
+      expect(effectiveStyle.fontSize, expected.fontSize);
+      expect(effectiveStyle.fontWeight, expected.fontWeight);
+      expect(effectiveStyle.fontFamily, expected.fontFamily);
     });
 
     testWidgets('collapses back when chevron is tapped again', (tester) async {
@@ -298,10 +360,13 @@ And more content.
       await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pumpAndSettle();
 
-      // Full prompt should now be visible via GptMarkdown
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data, contains('Full detailed prompt here'));
-      expect(gptMarkdown.data, contains('And more content'));
+      // Full prompt should now be visible via the second AgentMarkdownView
+      // (the first one carries the TLDR/summary).
+      final fullPrompt = tester
+          .widgetList<AgentMarkdownView>(find.byType(AgentMarkdownView))
+          .last;
+      expect(fullPrompt.text, contains('Full detailed prompt here'));
+      expect(fullPrompt.text, contains('And more content'));
     });
 
     testWidgets('updates content when aiResponse changes via didUpdateWidget', (

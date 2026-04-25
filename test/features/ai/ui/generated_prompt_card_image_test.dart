@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 
@@ -118,8 +119,8 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       // Full prompt label should not be visible when collapsed
       expect(find.text('Full Image Prompt:'), findsNothing);
 
-      // GptMarkdown for full prompt should not be visible
-      expect(find.byType(GptMarkdown), findsNothing);
+      // Only the TLDR AgentMarkdownView is mounted while collapsed.
+      expect(find.byType(AgentMarkdownView), findsOneWidget);
     });
 
     testWidgets('expands to show full prompt when chevron is tapped', (
@@ -146,8 +147,10 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       // Full prompt label should now be visible (image-specific label)
       expect(find.text('Full Image Prompt:'), findsOneWidget);
 
-      // GptMarkdown should now be visible with the prompt content
-      expect(find.byType(GptMarkdown), findsOneWidget);
+      // Both TLDR and full prompt now render via AgentMarkdownView, each
+      // wrapping a single GptMarkdown.
+      expect(find.byType(AgentMarkdownView), findsNWidgets(2));
+      expect(find.byType(GptMarkdown), findsNWidgets(2));
     });
 
     testWidgets('copy button triggers clipboard copy with image prompt', (
@@ -233,10 +236,13 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pumpAndSettle();
 
-      // Full prompt should now be visible via GptMarkdown
-      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
-      expect(gptMarkdown.data, contains('medieval fortress'));
-      expect(gptMarkdown.data, contains('Monument Valley'));
+      // Full prompt should now be visible via the second AgentMarkdownView
+      // (the first one carries the TLDR/summary).
+      final fullPrompt = tester
+          .widgetList<AgentMarkdownView>(find.byType(AgentMarkdownView))
+          .last;
+      expect(fullPrompt.text, contains('medieval fortress'));
+      expect(fullPrompt.text, contains('Monument Valley'));
     });
 
     testWidgets('shows copy button in expanded section', (tester) async {
