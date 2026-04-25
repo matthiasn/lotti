@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -30,7 +32,7 @@ Future<void> _pumpSection(
   Map<String, int>? counts,
 }) async {
   await tester.pumpWidget(
-    makeTestableWidget(
+    makeTestableWidgetWithScaffold(
       SavedTaskFiltersSection(
         activeId: activeId,
         canAdd: canAdd,
@@ -167,6 +169,89 @@ void main() {
     );
 
     expect(find.text('12'), findsOneWidget);
+  });
+
+  testWidgets('onRename writes the renamed filter to settings', (
+    tester,
+  ) async {
+    stubPersisted(const [
+      SavedTaskFilter(id: 'sv-1', name: 'Alpha', filter: _filterA),
+    ]);
+
+    await _pumpSection(
+      tester,
+      onActivate: (_) {},
+      onAddPressed: () {},
+    );
+
+    // Double-tap the row to enter rename mode.
+    final rowFinder = find.byKey(SavedTaskFilterRowKeys.root('sv-1'));
+    await tester.tap(rowFinder);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(rowFinder);
+    await tester.pump(_afterDoubleTapTimeout);
+
+    await tester.enterText(
+      find.byKey(SavedTaskFilterRowKeys.renameField('sv-1')),
+      'Beta',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    // Allow the controller's async save to settle.
+    await tester.pumpAndSettle();
+
+    // Verify the controller persisted the renamed filter.
+    final captured = verify(
+      () => mocks.settingsDb.saveSettingsItem(
+        SavedTaskFiltersPersistence.storageKey,
+        captureAny(),
+      ),
+    ).captured;
+    expect(captured, isNotEmpty);
+    final stored = captured.last as String;
+    expect(stored, contains('"name":"Beta"'));
+  });
+
+  testWidgets('onDelete removes the filter via the controller', (
+    tester,
+  ) async {
+    stubPersisted(const [
+      SavedTaskFilter(id: 'sv-1', name: 'Alpha', filter: _filterA),
+      SavedTaskFilter(id: 'sv-2', name: 'Bravo', filter: _filterB),
+    ]);
+
+    await _pumpSection(
+      tester,
+      onActivate: (_) {},
+      onAddPressed: () {},
+    );
+
+    // Reveal the delete button via hover, then two-tap to commit.
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(gesture.removePointer);
+    await gesture.addPointer();
+    await gesture.moveTo(
+      tester.getCenter(find.byKey(SavedTaskFilterRowKeys.root('sv-1'))),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byKey(SavedTaskFilterRowKeys.deleteButton('sv-1')));
+    await tester.pump(_afterDoubleTapTimeout);
+    await tester.tap(find.byKey(SavedTaskFilterRowKeys.deleteButton('sv-1')));
+    await tester.pump(_afterDoubleTapTimeout);
+    await tester.pumpAndSettle();
+
+    final captured = verify(
+      () => mocks.settingsDb.saveSettingsItem(
+        SavedTaskFiltersPersistence.storageKey,
+        captureAny(),
+      ),
+    ).captured;
+    expect(captured, isNotEmpty);
+    final stored = captured.last as String;
+    // sv-1 is deleted, sv-2 remains.
+    expect(stored, isNot(contains('"id":"sv-1"')));
+    expect(stored, contains('"id":"sv-2"'));
   });
 
   testWidgets('marks the active filter row when activeId matches', (
