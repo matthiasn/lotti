@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/checklist_migration_handler.dart';
 import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
+import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
@@ -157,6 +158,9 @@ class TaskToolDispatcher {
 
       case TaskAgentToolNames.createTimeEntry:
         return _handleCreateTimeEntry(args, taskId);
+
+      case TaskAgentToolNames.updateRunningTimer:
+        return _handleUpdateRunningTimer(args, taskId);
 
       default:
         return ToolExecutionResult(
@@ -559,6 +563,18 @@ class TaskToolDispatcher {
     final handler = TimeEntryHandler(
       persistenceLogic: persistenceLogic,
       journalDb: journalDb,
+      timeService: timeService,
+      domainLogger: domainLogger,
+    );
+    return handler.handle(taskId, args);
+  }
+
+  Future<ToolExecutionResult> _handleUpdateRunningTimer(
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final handler = RunningTimerUpdateHandler(
+      persistenceLogic: persistenceLogic,
       timeService: timeService,
       domainLogger: domainLogger,
     );

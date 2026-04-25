@@ -618,6 +618,29 @@ void main() {
       );
 
       test(
+        'update_running_timer delegates to RunningTimerUpdateHandler',
+        () async {
+          // Dispatcher does a top-level task lookup before routing.
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => _makeTestTask(taskId));
+          // No timer running — handler returns early with "No active timer",
+          // which proves the dispatch route reaches RunningTimerUpdateHandler
+          // (and that no other handler intercepted the call).
+          when(() => mockTimeService.getCurrent()).thenReturn(null);
+
+          final result = await dispatcher.dispatch(
+            'update_running_timer',
+            {'timerId': 'timer-xyz', 'summary': 'Refined description'},
+            taskId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.errorMessage, 'No active timer');
+        },
+      );
+
+      test(
         'migrate_checklist_item delegates to ChecklistMigrationHandler',
         () async {
           // The handler needs the checklist item, source task, and target task.

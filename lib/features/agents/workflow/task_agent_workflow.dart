@@ -283,6 +283,7 @@ class TaskAgentWorkflow {
       triggerTokens: triggerTokens,
       taskId: taskId,
       ledger: ledger,
+      timeService: getIt<TimeService>(),
     );
 
     // 6. Create conversation and run with strategy.
@@ -1285,6 +1286,7 @@ to keep the user-facing suggestion list clean and trustworthy:
     required Set<String> triggerTokens,
     required String taskId,
     ProposalLedger ledger = const ProposalLedger.empty(),
+    TimeService? timeService,
   }) async {
     final buffer = StringBuffer();
 
@@ -1345,6 +1347,11 @@ to keep the user-facing suggestion list clean and trustworthy:
       ..writeln(taskDetailsJson)
       ..writeln('```')
       ..writeln();
+
+    final activeTimerSection = _buildActiveTimerSection(timeService, taskId);
+    if (activeTimerSection.isNotEmpty) {
+      buffer.write(activeTimerSection);
+    }
 
     if (projectContextJson.isNotEmpty && projectContextJson != '{}') {
       buffer
@@ -1716,6 +1723,87 @@ to keep the user-facing suggestion list clean and trustworthy:
       }
       buffer.writeln();
     }
+  }
+
+  /// Renders an "Active Running Timer" section describing whatever timer
+  /// is currently running.
+  ///
+  /// Two shapes:
+  ///
+  /// - **Same task** — the timer belongs to the task being woken. The agent
+  ///   gets the timerId, started time, tracked range, elapsed minutes, and
+  ///   current entry text, and is told to propose `update_running_timer`
+  ///   instead of a parallel `create_time_entry` for that ongoing work.
+  /// - **Other task** — the timer belongs to a different task. The agent is
+  ///   only told the tracked range (no id, no source task, no entry text)
+  ///   so it can avoid proposing `create_time_entry` entries for this task
+  ///   that overlap with that range. Details about the other task are
+  ///   intentionally withheld.
+  ///
+  /// Returns an empty string when no timer is active.
+  String _buildActiveTimerSection(TimeService? timeService, String taskId) {
+    if (timeService == null) return '';
+    final current = timeService.getCurrent();
+    if (current is! JournalEntry) return '';
+
+    final dateFrom = current.meta.dateFrom;
+    final now = clock.now();
+    // [TimeService.start] only emits live `dateTo` updates on its broadcast
+    // stream; the in-memory `_current` entity returned by `getCurrent()`
+    // still carries the original `dateTo` recorded when the timer was
+    // started. Use `now` as the running endpoint so the prompt — and the
+    // overlap guard for the cross-task branch — reflects the actual
+    // tracked range. If `current.meta.dateTo` is somehow ahead of `now`
+    // (e.g. an injected fixture), respect it as a defensive upper bound.
+    final dateTo = current.meta.dateTo.isAfter(now) ? current.meta.dateTo : now;
+    final elapsedMinutes = dateTo.difference(dateFrom).inMinutes;
+    final isSameTask = timeService.linkedFrom?.id == taskId;
+
+    final buffer = StringBuffer()..writeln('## Active Running Timer');
+
+    if (isSameTask) {
+      final entryText = current.entryText?.plainText.trim() ?? '';
+      buffer
+        ..writeln(
+          'A timer is currently running for THIS task. Do NOT propose a '
+          'new `create_time_entry` for the work covered by this timer — '
+          'propose `update_running_timer` instead with a richer description. '
+          '`create_time_entry` is still appropriate for clearly distinct '
+          'past sessions (earlier today before the timer started, or any '
+          'prior day).',
+        )
+        ..writeln('- timerId: ${current.meta.id}')
+        ..writeln('- started: ${dateFrom.toIso8601String()}')
+        ..writeln(
+          '- tracked: ${dateFrom.toIso8601String()} → '
+          '${dateTo.toIso8601String()} '
+          '(~$elapsedMinutes min elapsed)',
+        )
+        ..writeln(
+          '- current text: '
+          '${entryText.isEmpty ? '(empty)' : '"$entryText"'}',
+        );
+    } else {
+      buffer
+        ..writeln(
+          'A timer is currently running for a DIFFERENT task. Details '
+          'about that task are intentionally withheld. Do NOT propose '
+          '`create_time_entry` entries on this task whose [startTime, '
+          'endTime] interval overlaps the tracked range below — that '
+          'time is already being recorded elsewhere. You may still '
+          'propose entries for non-overlapping intervals (earlier today, '
+          'or any prior day). `update_running_timer` is NOT available in '
+          'this wake because the timer is not for this task.',
+        )
+        ..writeln(
+          '- tracked elsewhere: ${dateFrom.toIso8601String()} → '
+          '${dateTo.toIso8601String()} '
+          '(~$elapsedMinutes min elapsed)',
+        );
+    }
+
+    buffer.writeln();
+    return buffer.toString();
   }
 
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible

@@ -1799,6 +1799,68 @@ void main() {
         },
       );
 
+      test(
+        'generates correct human summary for update_running_timer',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-update-timer',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_running_timer',
+                arguments: jsonEncode({
+                  'timerId': 'timer-123',
+                  'summary': '  Refined description of work in progress  ',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(1));
+          expect(csBuilder.items.first.toolName, 'update_running_timer');
+          expect(
+            csBuilder.items.first.humanSummary,
+            'Update running timer text: '
+            '"Refined description of work in progress"',
+          );
+        },
+      );
+
+      test(
+        'handles malformed update_running_timer summary without crashing',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-malformed-update',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_running_timer',
+                arguments: jsonEncode({
+                  'timerId': 'timer-123',
+                  'summary': 99,
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(1));
+          expect(
+            csBuilder.items.first.humanSummary,
+            'Update running timer text: ""',
+          );
+        },
+      );
+
       test('handles malformed labels arg without crashing', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(

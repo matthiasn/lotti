@@ -129,20 +129,10 @@ class TimeEntryHandler {
         );
       }
     } else {
-      if (!_isSameDay(startTime, completedReference.timestamp)) {
-        return ToolExecutionResult(
-          success: false,
-          output:
-              'Error: completed-session startTime must be on the same day '
-              'as the ${completedReference.label} '
-              '(${_formatDate(completedReference.timestamp)})',
-          errorMessage: 'startTime is not on ${completedReference.label} day',
-        );
-      }
-      // At approval time (deferred execution), the user is the authority and
-      // may intentionally confirm an entry whose start/end drifted past the
-      // wake timestamp (e.g. a meeting the agent estimated would end at
-      // 13:00). Only enforce the "not in the future" cutoff at wake time.
+      // Completed sessions may be on the wake day OR any earlier day — the
+      // user often dictates work from yesterday or further back. We only
+      // enforce that the entry is not in the future (and at approval time
+      // even that cutoff is relaxed; see below).
       if (completedReference.enforceFutureCutoff &&
           startTime.isAfter(completedReference.timestamp)) {
         return ToolExecutionResult(
@@ -319,7 +309,4 @@ class TimeEntryHandler {
       enforceFutureCutoff: false,
     );
   }
-
-  static String _formatDate(DateTime dt) =>
-      dt.toIso8601String().split('T').first;
 }

@@ -404,6 +404,15 @@ The task wake prompt is assembled from:
 - prior observation messages
 - linked-task context
 - pending change sets for the same task
+- the active running timer, when one is running. If the timer's source task
+  matches the wake's task, the agent gets full details (id, started, tracked
+  range, elapsed minutes, current entry text) and is steered toward
+  `update_running_timer` instead of a parallel `create_time_entry`. If the
+  timer belongs to a different task, only the tracked range is exposed (no
+  id, no other-task identity, no entry text) so the agent can avoid
+  proposing `create_time_entry` intervals on this task that overlap with
+  what is already being tracked elsewhere. See `_buildActiveTimerSection`
+  in `task_agent_workflow.dart`.
 
 The linked-task context is not only raw task metadata. The workflow also pulls
 in the latest task-agent report for linked tasks when available, so one task
@@ -429,7 +438,12 @@ The current deferred task tools are:
 - `assign_task_labels`
 - `create_follow_up_task`
 - `migrate_checklist_items`
-- `create_time_entry`
+- `create_time_entry` *(for past sessions: today before the running timer
+  started, or any prior day; same-day-as-startTime constraint is preserved
+  for the entry itself)*
+- `update_running_timer` *(proposes a richer description for the active
+  timer when one is running for this task; user-gated; replaces entry text
+  outright)*
 
 There are no other immediate task-mutating tools today. Non-local task writes
 go through `AgentToolExecutor`, which enforces the agent's allowed category set,
