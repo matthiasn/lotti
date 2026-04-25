@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -115,7 +116,7 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 8),
       title: Text(
         _suggestion.item.humanSummary,
-        style: context.textTheme.bodyMedium,
+        style: context.designTokens.typography.styles.body.bodySmall,
       ),
       trailing: _busy
           ? const SizedBox(
