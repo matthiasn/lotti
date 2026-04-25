@@ -65,27 +65,9 @@ class AgentMarkdownView extends StatelessWidget {
         style: bodyStyle,
         child: GptMarkdown(
           text,
+          style: bodyStyle,
           onLinkTap: handleMarkdownLinkTap,
-          linkBuilder: (context, span, url, style) {
-            final linkColor = Theme.of(context).colorScheme.primary;
-            return Semantics(
-              link: true,
-              child: InkWell(
-                onTap: () => handleMarkdownLinkTap(url, ''),
-                mouseCursor: SystemMouseCursors.click,
-                child: Text.rich(
-                  TextSpan(
-                    children: [span],
-                    style: style.copyWith(
-                      color: linkColor,
-                      decoration: TextDecoration.underline,
-                      decorationColor: linkColor,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
+          linkBuilder: buildMarkdownLink,
         ),
       ),
     );

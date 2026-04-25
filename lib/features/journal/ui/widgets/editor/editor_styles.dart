@@ -56,9 +56,9 @@ DefaultStyles customEditorStyles({
       VerticalSpacing.zero,
       null,
     ),
-    bold: paragraphStyle.copyWith(fontWeight: boldWeight),
+    bold: TextStyle(fontWeight: boldWeight),
     inlineCode: InlineCodeStyle(
-      radius: const Radius.circular(4),
+      radius: Radius.circular(tokens.radii.xs),
       style: GoogleFonts.inconsolata(
         fontSize: monoFontSize,
         color: codeTextColor,
@@ -83,7 +83,7 @@ DefaultStyles customEditorStyles({
       VerticalSpacing.zero,
       BoxDecoration(
         color: codeBackground,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
         border: Border.all(color: codeBorderColor),
       ),
     ),
