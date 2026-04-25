@@ -155,7 +155,7 @@ void main() {
   late MockVectorClockService vectorClockService;
   late MockUserActivityService userActivityService;
   late Directory documentsDirectory;
-  late OutboxService service;
+  late TestableOutboxService service;
   late bool hadDirectoryRegistered;
   Directory? previousDirectory;
 
@@ -5052,6 +5052,104 @@ void main() {
         expect(fileMessage.links.single.agentLink, link);
         expect(fileMessage.entities.single.originatingHostId, 'hostA');
         expect(fileMessage.links.single.originatingHostId, 'hostA');
+        expect(service.enqueueCalls, 1);
+      },
+    );
+
+    test(
+      'SyncAgentBundle enqueues inline fallback when saveJson fails',
+      () async {
+        final failingService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+          saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
+        );
+
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-fallback',
+          agentId: 'agent-1',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-fallback',
+          fromId: 'agent-1',
+          toId: 'state-fallback',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 2}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-fallback',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: link,
+                )
+                as SyncAgentLink,
+          ],
+        );
+
+        await failingService.enqueueMessage(message);
+
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
+
+        final companion = captured.first as OutboxCompanion;
+        expect(companion.subject.value, 'agentBundle:agent-1:run-fallback');
+        expect(companion.outboxEntryId.value, 'run-fallback');
+
+        final storedMessage =
+            SyncMessage.fromJson(
+                  json.decode(companion.message.value) as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        expect(storedMessage.jsonPath, isNull);
+        expect(storedMessage.entities.single.agentEntity, entity);
+        expect(storedMessage.links.single.agentLink, link);
+        expect(
+          companion.payloadSize.value,
+          utf8.encode(companion.message.value).length,
+        );
+        expect(
+          File(
+            '${documentsDirectory.path}/agent_bundles/run-fallback.json',
+          ).existsSync(),
+          isFalse,
+        );
+        expect(failingService.enqueueCalls, 1);
+
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage.saveAgentBundle',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+
+        await failingService.dispose();
       },
     );
 

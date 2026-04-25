@@ -2201,6 +2201,7 @@
   "syncListUnknownPayload": "Neznámý obsah",
   "syncNoRoomsFound": "Žádné existující synchronizační místnosti nalezeny.\nMůžete vytvořit novou místnost pro zahájení synchronizace.",
   "syncNotLoggedInToast": "Synchronizace není přihlášena",
+  "syncPayloadAgentBundle": "Balíček agenta",
   "syncPayloadAgentEntity": "Entita agenta",
   "syncPayloadAgentLink": "Propojení agenta",
   "syncPayloadAiConfig": "Nastavení AI",

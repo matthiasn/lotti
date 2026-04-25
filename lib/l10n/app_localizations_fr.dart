@@ -6022,6 +6022,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncNotLoggedInToast => 'La synchronisation n\'est pas connectée';
 
   @override
+  String get syncPayloadAgentBundle => 'Lot d\'agent';
+
+  @override
   String get syncPayloadAgentEntity => 'Entité d\'agent';
 
   @override

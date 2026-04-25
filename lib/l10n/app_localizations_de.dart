@@ -5916,6 +5916,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncNotLoggedInToast => 'Sync ist nicht angemeldet';
 
   @override
+  String get syncPayloadAgentBundle => 'Agent-Bündel';
+
+  @override
   String get syncPayloadAgentEntity => 'Agent-Entität';
 
   @override

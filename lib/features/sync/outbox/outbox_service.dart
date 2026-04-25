@@ -1519,10 +1519,17 @@ class OutboxService {
         subDomain: 'enqueueMessage.saveAgentBundle',
         stackTrace: stackTrace,
       );
+      // Fallback: enqueue the full bundle inline so MatrixMessageSender can
+      // write and upload the attachment when the outbox row is processed.
+      final inlineBundle = msg.copyWith(jsonPath: null);
+      final inlineJson = json.encode(inlineBundle.toJson());
+      final inlineSize = utf8.encode(inlineJson).length;
       await _syncDatabase.addOutboxItem(
         commonFields.copyWith(
           subject: Value(subject),
+          message: Value(inlineJson),
           outboxEntryId: Value(msg.wakeRunKey),
+          payloadSize: Value(inlineSize),
         ),
       );
       await _recordAgentBundleSent(msg);
@@ -1571,7 +1578,7 @@ class OutboxService {
     );
 
     await _recordAgentBundleSent(msg);
-    return false;
+    return false; // Fresh inserts are scheduled by enqueueMessage().
   }
 
   /// Shared implementation for enqueuing agent entities and links.

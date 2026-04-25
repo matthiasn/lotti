@@ -6011,6 +6011,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncNotLoggedInToast => 'La sincronización no está conectada';
 
   @override
+  String get syncPayloadAgentBundle => 'Paquete de agente';
+
+  @override
   String get syncPayloadAgentEntity => 'Entidad de agente';
 
   @override

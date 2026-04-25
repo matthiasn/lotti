@@ -2463,6 +2463,7 @@
   "syncListUnknownPayload": "Carga útil desconocida",
   "syncNoRoomsFound": "No se encontraron salas de sincronización.\nPuede crear una nueva sala para comenzar a sincronizar.",
   "syncNotLoggedInToast": "La sincronización no está conectada",
+  "syncPayloadAgentBundle": "Paquete de agente",
   "syncPayloadAgentEntity": "Entidad de agente",
   "syncPayloadAgentLink": "Enlace de agente",
   "syncPayloadAiConfig": "Configuración AI",

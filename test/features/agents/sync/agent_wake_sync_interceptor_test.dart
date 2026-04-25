@@ -89,31 +89,30 @@ void main() {
   });
 
   test('keeps latest payload and covers superseded vector clocks', () {
-    final interceptor = AgentWakeSyncInterceptor(
-      agentId: 'agent-1',
-      wakeRunKey: 'run-1',
-    );
-
-    interceptor
-      ..add(
-        SyncMessage.agentEntity(
-          status: SyncEntryStatus.update,
-          agentEntity: identity(
-            id: 'agent-1',
-            vectorClock: const VectorClock({'host': 1}),
-          ),
-        ),
-      )
-      ..add(
-        SyncMessage.agentEntity(
-          status: SyncEntryStatus.update,
-          agentEntity: identity(
-            id: 'agent-1',
-            currentStateId: 'state-2',
-            vectorClock: const VectorClock({'host': 3}),
-          ),
-        ),
-      );
+    final interceptor =
+        AgentWakeSyncInterceptor(
+            agentId: 'agent-1',
+            wakeRunKey: 'run-1',
+          )
+          ..add(
+            SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              agentEntity: identity(
+                id: 'agent-1',
+                vectorClock: const VectorClock({'host': 1}),
+              ),
+            ),
+          )
+          ..add(
+            SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              agentEntity: identity(
+                id: 'agent-1',
+                currentStateId: 'state-2',
+                vectorClock: const VectorClock({'host': 3}),
+              ),
+            ),
+          );
 
     final bundledEntity = interceptor.buildBundle()!.entities.single;
     final coveredCounters = bundledEntity.coveredVectorClocks!

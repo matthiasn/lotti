@@ -53,6 +53,7 @@ class InitProviderBench {
     required this.mockProjectActivityMonitor,
     required this.mockProjectRepository,
     required this.mockSoulDocumentService,
+    required this.mockSyncService,
   });
 
   /// Creates a fully-stubbed bench.  Calls [setUpTestGetIt] internally, so
@@ -75,6 +76,7 @@ class InitProviderBench {
       mockProjectActivityMonitor: MockProjectActivityMonitor(),
       mockProjectRepository: MockProjectRepository(),
       mockSoulDocumentService: MockSoulDocumentService(),
+      mockSyncService: MockAgentSyncService(),
     ).._stubDefaults();
     return bench;
   }
@@ -93,6 +95,7 @@ class InitProviderBench {
   final MockProjectActivityMonitor mockProjectActivityMonitor;
   final MockProjectRepository mockProjectRepository;
   final MockSoulDocumentService mockSoulDocumentService;
+  final MockAgentSyncService mockSyncService;
 
   void _stubDefaults() {
     when(() => mockOrchestrator.start(any())).thenAnswer((_) async {});
@@ -153,6 +156,7 @@ class InitProviderBench {
         soulDocumentServiceProvider.overrideWithValue(
           mockSoulDocumentService,
         ),
+        agentSyncServiceProvider.overrideWithValue(mockSyncService),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         scheduledWakeManagerProvider.overrideWithValue(
           mockScheduledWakeManager,

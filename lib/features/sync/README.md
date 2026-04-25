@@ -315,6 +315,11 @@ Non-agent messages do not enter the wake buffer. Nested transactions inside the
 wake still delay their post-commit messages until the outer transaction commits,
 then hand those messages to the active wake interceptor.
 
+If a wake throws after committing some agent rows, `runInWakeCycle` still
+flushes the buffered bundle before rethrowing. That keeps peers convergent with
+the local database state, but it also means peers can briefly observe the
+partial wake snapshot until a later successful wake advances the agent state.
+
 `OutboxProcessor` then:
 
 1. atomically claims the pending head (`pending` → `sending`) via

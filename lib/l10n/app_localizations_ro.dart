@@ -5957,6 +5957,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncNotLoggedInToast => 'Sincronizarea nu este conectată';
 
   @override
+  String get syncPayloadAgentBundle => 'Pachet agent';
+
+  @override
   String get syncPayloadAgentEntity => 'Entitate agent';
 
   @override

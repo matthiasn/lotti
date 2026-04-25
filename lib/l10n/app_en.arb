@@ -2756,6 +2756,7 @@
   "syncListUnknownPayload": "Unknown payload",
   "syncNoRoomsFound": "No existing sync rooms found.\nYou can create a new room to start syncing.",
   "syncNotLoggedInToast": "Sync is not logged in",
+  "syncPayloadAgentBundle": "Agent bundle",
   "syncPayloadAgentEntity": "Agent entity",
   "syncPayloadAgentLink": "Agent link",
   "syncPayloadAiConfig": "AI configuration",

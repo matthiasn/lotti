@@ -2463,6 +2463,7 @@
   "syncListUnknownPayload": "Conținut necunoscut",
   "syncNoRoomsFound": "Nu s-au găsit camere de sincronizare.\nPoți crea o cameră nouă pentru a începe sincronizarea.",
   "syncNotLoggedInToast": "Sincronizarea nu este conectată",
+  "syncPayloadAgentBundle": "Pachet agent",
   "syncPayloadAgentEntity": "Entitate agent",
   "syncPayloadAgentLink": "Legătură agent",
   "syncPayloadAiConfig": "Configurare AI",

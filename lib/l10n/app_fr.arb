@@ -2463,6 +2463,7 @@
   "syncListUnknownPayload": "Contenu inconnu",
   "syncNoRoomsFound": "Aucune salle de synchronisation trouvée.\nTu peux créer une nouvelle salle pour commencer la synchronisation.",
   "syncNotLoggedInToast": "La synchronisation n'est pas connectée",
+  "syncPayloadAgentBundle": "Lot d'agent",
   "syncPayloadAgentEntity": "Entité d'agent",
   "syncPayloadAgentLink": "Lien d'agent",
   "syncPayloadAiConfig": "Configuration AI",
