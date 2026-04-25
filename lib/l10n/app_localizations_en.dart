@@ -6325,6 +6325,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksQuickFilterUnassignedLabel => 'Unassigned';
 
   @override
+  String get tasksSavedFilterDeleteConfirmTooltip => 'Tap again to delete';
+
+  @override
+  String get tasksSavedFilterDeleteTooltip => 'Delete saved filter';
+
+  @override
+  String get tasksSavedFilterDragHandleSemantics => 'Drag to reorder';
+
+  @override
+  String get tasksSavedFilterRenameSemantics => 'Rename saved filter';
+
+  @override
+  String get tasksSavedFiltersAddTooltip => 'Save current filter';
+
+  @override
+  String get tasksSavedFiltersEmpty =>
+      'No saved filters yet. Adjust the task filter, then tap Save.';
+
+  @override
+  String get tasksSavedFiltersSectionTitle => 'Saved filters';
+
+  @override
   String get tasksSearchModeLabel => 'Search mode';
 
   @override
