@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/markdown_link_utils.dart';
 
 /// Displays the contents of an agent report with an expandable TLDR section.
 ///
@@ -91,32 +90,6 @@ class _AgentReportSectionState extends State<AgentReportSection>
     });
   }
 
-  Widget _buildLink(
-    BuildContext context,
-    InlineSpan text,
-    String url,
-    TextStyle style,
-  ) {
-    final linkColor = Theme.of(context).colorScheme.primary;
-    return Semantics(
-      link: true,
-      child: InkWell(
-        onTap: () => handleMarkdownLinkTap(url, ''),
-        mouseCursor: SystemMouseCursors.click,
-        child: Text.rich(
-          TextSpan(
-            children: [text],
-            style: style.copyWith(
-              color: linkColor,
-              decoration: TextDecoration.underline,
-              decorationColor: linkColor,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final hasContent = widget.content.trim().isNotEmpty;
@@ -135,11 +108,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
               children: [
                 // TLDR content (always visible)
                 SelectionArea(
-                  child: GptMarkdown(
-                    parsed.tldr,
-                    onLinkTap: handleMarkdownLinkTap,
-                    linkBuilder: _buildLink,
-                  ),
+                  child: AgentMarkdownView(parsed.tldr),
                 ),
                 // Expandable additional content
                 if (parsed.additional != null)
@@ -162,11 +131,7 @@ class _AgentReportSectionState extends State<AgentReportSection>
                       children: [
                         const SizedBox(height: 16),
                         SelectionArea(
-                          child: GptMarkdown(
-                            parsed.additional!,
-                            onLinkTap: handleMarkdownLinkTap,
-                            linkBuilder: _buildLink,
-                          ),
+                          child: AgentMarkdownView(parsed.additional!),
                         ),
                       ],
                     ),

@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.974] - 2026-04-25
+### Changed
+- Task Details typography pass: the entry editor, AI summary (TLDR + expanded
+  report), Task Agent reports/conversations markdown, linked-task titles, and
+  agent suggestion items now pull font family, sizes, and weights directly
+  from the design-system tokens. The editor body and agent markdown body share
+  `body.bodySmall` (Inter, 14pt, w400); editor headings map to
+  `heading.heading3` / `subtitle.subtitle1` / `subtitle.subtitle2`;
+  linked-task titles use `subtitle.subtitle2`. Code blocks gain a subtle
+  theme-aware surface (`background.level02` lifted by the `surface.enabled`
+  overlay), a 1-px low-emphasis border, and DS radii (`radii.xs` inline /
+  `radii.s` block). The Task Agent markdown checkbox is now compact,
+  non-interactive (no hover overlay or click cursor), and shares the
+  checklist row's `radii.xs` rounded shape, low-emphasis border, and
+  `interactive.enabled` fill.
+
 ## [0.9.973] - 2026-04-24
 ### Fixed
 - `VectorClockService` now advances its persisted counter only after the

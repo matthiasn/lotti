@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
@@ -172,6 +173,7 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
                   keyboardAppearance: Theme.of(context).brightness,
                   customStyles: customEditorStyles(
                     themeData: Theme.of(context),
+                    tokens: context.designTokens,
                   ),
                   contextMenuBuilder: (context, rawEditorState) =>
                       _buildContextMenu(

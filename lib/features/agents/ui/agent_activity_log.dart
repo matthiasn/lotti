@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -260,7 +260,7 @@ class AgentReportHistoryLog extends ConsumerWidget {
 ///
 /// When collapsed, shows only the TLDR section extracted from the report.
 /// When expanded, renders the full [AgentReportEntity.content] via
-/// [GptMarkdown].
+/// [AgentMarkdownView].
 class _ReportSnapshotCard extends StatefulWidget {
   const _ReportSnapshotCard({
     required this.report,
@@ -347,8 +347,8 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
                 Padding(
                   padding: const EdgeInsets.only(top: AppTheme.spacingSmall),
                   child: _expanded
-                      ? GptMarkdown(report.content)
-                      : GptMarkdown(
+                      ? AgentMarkdownView(report.content)
+                      : AgentMarkdownView(
                           parseReportContent(report.content).tldr,
                         ),
                 ),
