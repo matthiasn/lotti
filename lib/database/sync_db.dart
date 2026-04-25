@@ -55,10 +55,20 @@ enum SyncSequenceStatus {
 // 7-day retention window settles at ~30 k on heavy desktops). The
 // non-partial index above stays for the full-status `watchOutboxItems`
 // stream that the diagnostics UI reads.
+//
+// Status literals (0 and 3) intentionally mirror the current
+// `OutboxStatus` enum order in
+// `lib/features/sync/state/outbox_state_controller.dart`:
+//   index 0 = pending, index 1 = sent, index 2 = error, index 3 = sending
+// `@TableIndex.sql` only accepts a const string, so the indices cannot
+// be derived from the enum at compile time. Drift safety: a guard test
+// in `test/database/sync_db_test.dart` asserts the two indices used
+// here match `OutboxStatus.pending.index` and `OutboxStatus.sending.index`,
+// so any future enum reordering breaks the test instead of silently
+// indexing the wrong rows.
 @TableIndex.sql(
   'CREATE INDEX idx_outbox_actionable_priority_created_at '
   'ON outbox (priority, created_at) '
-  // pending=0, sending=3 — values must match OutboxStatus enum.
   'WHERE status IN (0, 3)',
 )
 class Outbox extends Table {
@@ -980,7 +990,22 @@ class SyncDatabase extends _$SyncDatabase {
       return BackfillStats.fromHostStats(const []);
     }
 
-    final hostActivityRows = await select(hostActivity).get();
+    final perHost = <String, Map<int, int>>{};
+    for (final row in hostStatusCounts) {
+      final host = row.read<String>('host_id');
+      final status = row.read<int>('status');
+      final count = row.read<int>('cnt');
+      perHost.putIfAbsent(host, () => <int, int>{})[status] = count;
+    }
+
+    // Only fetch host_activity rows for hosts that actually appear in
+    // the stats result. `host_activity` is small in practice (one row
+    // per peer the device has ever seen), but the filtered lookup
+    // avoids materialising every row when the caller only needs
+    // last-seen for the hosts being reported on.
+    final hostActivityRows = await (select(
+      hostActivity,
+    )..where((t) => t.hostId.isIn(perHost.keys))).get();
     final lastSeenByHost = {
       for (final row in hostActivityRows) row.hostId: row.lastSeenAt,
     };
@@ -991,14 +1016,6 @@ class SyncDatabase extends _$SyncDatabase {
     final backfilled = SyncSequenceStatus.backfilled.index;
     final deleted = SyncSequenceStatus.deleted.index;
     final unresolvable = SyncSequenceStatus.unresolvable.index;
-
-    final perHost = <String, Map<int, int>>{};
-    for (final row in hostStatusCounts) {
-      final host = row.read<String>('host_id');
-      final status = row.read<int>('status');
-      final count = row.read<int>('cnt');
-      perHost.putIfAbsent(host, () => <int, int>{})[status] = count;
-    }
 
     final hostIds = perHost.keys.toList()..sort();
     final hostStats = [
