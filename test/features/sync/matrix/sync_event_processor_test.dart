@@ -1651,6 +1651,110 @@ void main() {
         ).called(1);
       });
 
+      test('logs gap detection for agent link', () async {
+        const vc = VectorClock({'host-D': 12});
+        final link = AgentLink.basic(
+          id: 'link-gap-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-D',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            (hostId: 'host-D', counter: 9),
+            (hostId: 'host-D', counter: 10),
+          ],
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => loggingService.captureEvent(
+            contains('apply.agentLink.gapsDetected count=2'),
+            domain: LogDomains.sync,
+            subDomain: 'processor.gapDetection',
+          ),
+        ).called(1);
+      });
+
+      test('handles recordReceivedEntry exception for agent link', () async {
+        const vc = VectorClock({'host-E': 7});
+        final link = AgentLink.basic(
+          id: 'link-err-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-E',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenThrow(Exception('seq log error link'));
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        // Link should still be upserted despite seq log error.
+        verify(() => mockAgentRepoSeq.upsertLink(link)).called(1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
       test('skips sequence log when vectorClock is null', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-no-vc',

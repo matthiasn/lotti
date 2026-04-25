@@ -5301,6 +5301,75 @@ void main() {
       },
     );
 
+    test(
+      'SyncAgentBundle enrichment skips children with null inner payload',
+      () async {
+        // Children whose inner agentEntity / agentLink is null cannot be
+        // enriched from the sequence log (no entry id to look up). The
+        // helper must take the early-return branch and pass the child
+        // through unchanged. Construct a bundle that mixes a null-payload
+        // child with a real one to exercise both branches.
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-skip',
+          agentId: 'agent-skip',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-skip',
+          fromId: 'agent-skip',
+          toId: 'state-skip',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 2}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-skip',
+          wakeRunKey: 'run-skip',
+          entities: [
+            // Null-payload child — must be carried through verbatim.
+            const SyncMessage.agentEntity(status: SyncEntryStatus.update)
+                as SyncAgentEntity,
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            const SyncMessage.agentLink(status: SyncEntryStatus.update)
+                as SyncAgentLink,
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: link,
+                )
+                as SyncAgentLink,
+          ],
+        );
+
+        await service.enqueueMessage(message);
+
+        final bundleFile = File(
+          '${documentsDirectory.path}/agent_bundles/run-skip.json',
+        );
+        expect(bundleFile.existsSync(), isTrue);
+
+        final fileBundle =
+            SyncMessage.fromJson(
+                  json.decode(bundleFile.readAsStringSync())
+                      as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        // Both null-payload entries are preserved alongside the real ones.
+        expect(fileBundle.entities, hasLength(2));
+        expect(fileBundle.links, hasLength(2));
+        expect(fileBundle.entities.first.agentEntity, isNull);
+        expect(fileBundle.links.first.agentLink, isNull);
+      },
+    );
+
     test('SyncAgentLink merges with existing pending item', () async {
       final link = AgentLink.agentTask(
         id: 'link-abc',
