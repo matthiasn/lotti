@@ -619,6 +619,38 @@ void main() {
       expect(updated.data.habitId, 'flossing-habit-id');
       expect(logic.updateMetadataCalls, 1);
     });
+
+    test(
+      'returns false when an exception is thrown during the update',
+      () async {
+        // Force the lookup to throw so the body runs into the catch block.
+        // Per the contract documented on updateJournalEntityText (mirroring
+        // updateJournalEntity), a caught exception means the write did not
+        // commit and callers must see `false`, not a silently-true result.
+        when(
+          () => journalDb.journalEntityById('boom-id'),
+        ).thenThrow(StateError('boom'));
+
+        logic = TestPersistenceLogic();
+
+        const newText = EntryText(plainText: 'whatever');
+        final result = await logic.updateJournalEntityText(
+          'boom-id',
+          newText,
+          DateTime(2024, 3, 15, 10, 35),
+        );
+
+        expect(result, isFalse);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'persistence_logic',
+            subDomain: 'updateJournalEntityText',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('updateTask - orElse path', () {

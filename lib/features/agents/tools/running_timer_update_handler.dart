@@ -115,11 +115,18 @@ class RunningTimerUpdateHandler {
       );
     }
 
-    // Keep the in-memory TimeService snapshot in sync with the new text so
-    // the UI's running-timer indicator and the next wake's context both see
-    // the updated description without waiting for a reload.
+    // Keep the in-memory TimeService snapshot in sync with what was just
+    // persisted — text, dateTo, and updatedAt — so the UI's running-timer
+    // indicator and the next wake's context see the same values that
+    // landed in the DB without waiting for a reload.
     _timeService.updateCurrent(
-      current.copyWith(entryText: newEntryText),
+      current.copyWith(
+        entryText: newEntryText,
+        meta: current.meta.copyWith(
+          dateTo: dateTo,
+          updatedAt: dateTo,
+        ),
+      ),
     );
 
     _domainLogger?.log(

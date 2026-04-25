@@ -2652,6 +2652,12 @@ void main() {
           expect(message, contains('timerId: timer-entry-007'));
           expect(message, contains('current text: "wip notes"'));
           expect(message, contains('update_running_timer'));
+          // The end of the tracked range must be a live "now" timestamp, not
+          // the stale `dateTo` carried on the in-memory entity (which
+          // [TimeService] only updates on its broadcast stream, not on the
+          // entity returned by [getCurrent]). The fixture's stale dateTo
+          // (10:05 on a 2024 date) must not leak into the prompt.
+          expect(message, isNot(contains('2024-06-14T10:05')));
         },
       );
 
@@ -2705,6 +2711,11 @@ void main() {
           expect(message, isNot(contains('other-timer-id')));
           expect(message, isNot(contains('secret notes')));
           expect(message, contains('update_running_timer` is NOT available'));
+          // The cross-task overlap guard relies on a live tracked-end
+          // timestamp; the stale fixture `dateTo` (09:30 on a 2024 date)
+          // must not appear in the prompt or the agent could under-report
+          // the interval already being tracked elsewhere.
+          expect(message, isNot(contains('2024-06-14T09:30')));
         },
       );
 

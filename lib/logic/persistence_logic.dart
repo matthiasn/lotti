@@ -587,6 +587,10 @@ class PersistenceLogic {
         subDomain: 'updateJournalEntityText',
         stackTrace: stackTrace,
       );
+      // Mirror updateJournalEntity's contract: a caught exception means the
+      // write did not commit, so callers must see a failure return rather
+      // than a silently-true result with a logged exception.
+      return false;
     }
     return true;
   }

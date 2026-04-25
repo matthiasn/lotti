@@ -253,11 +253,18 @@ void main() {
           verify(
             () => mockTimeService.updateCurrent(
               any(
-                that: isA<JournalEntry>().having(
-                  (e) => e.entryText?.plainText,
-                  'plainText',
-                  'Refined description [generated]',
-                ),
+                that: isA<JournalEntry>()
+                    .having(
+                      (e) => e.entryText?.plainText,
+                      'plainText',
+                      'Refined description [generated]',
+                    )
+                    .having((e) => e.meta.dateTo, 'meta.dateTo', testNow)
+                    .having(
+                      (e) => e.meta.updatedAt,
+                      'meta.updatedAt',
+                      testNow,
+                    ),
               ),
             ),
           ).called(1);

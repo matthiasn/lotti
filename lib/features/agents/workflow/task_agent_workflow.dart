@@ -1747,9 +1747,16 @@ to keep the user-facing suggestion list clean and trustworthy:
     if (current is! JournalEntry) return '';
 
     final dateFrom = current.meta.dateFrom;
-    final dateTo = current.meta.dateTo;
     final now = clock.now();
-    final elapsedMinutes = now.difference(dateFrom).inMinutes;
+    // [TimeService.start] only emits live `dateTo` updates on its broadcast
+    // stream; the in-memory `_current` entity returned by `getCurrent()`
+    // still carries the original `dateTo` recorded when the timer was
+    // started. Use `now` as the running endpoint so the prompt — and the
+    // overlap guard for the cross-task branch — reflects the actual
+    // tracked range. If `current.meta.dateTo` is somehow ahead of `now`
+    // (e.g. an injected fixture), respect it as a defensive upper bound.
+    final dateTo = current.meta.dateTo.isAfter(now) ? current.meta.dateTo : now;
+    final elapsedMinutes = dateTo.difference(dateFrom).inMinutes;
     final isSameTask = timeService.linkedFrom?.id == taskId;
 
     final buffer = StringBuffer()..writeln('## Active Running Timer');
