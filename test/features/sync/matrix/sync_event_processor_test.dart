@@ -2222,6 +2222,56 @@ void main() {
         ]);
       });
 
+      test(
+        'agent bundle resolver skips and traces unresolvable children',
+        () async {
+          // A bundled child entity with no entity AND no jsonPath cannot be
+          // resolved — the bundle resolver must skip it (not crash) and
+          // emit a `agentBundle.entity.skipped` trace. Same for an
+          // unresolvable child link.
+          const message = SyncMessage.agentBundle(
+            agentId: 'agent-skip',
+            wakeRunKey: 'run-skip',
+            originatingHostId: 'host-a',
+            entities: [
+              SyncMessage.agentEntity(
+                    status: SyncEntryStatus.update,
+                  )
+                  as SyncAgentEntity,
+            ],
+            links: [
+              SyncMessage.agentLink(
+                    status: SyncEntryStatus.update,
+                  )
+                  as SyncAgentLink,
+            ],
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          // Neither child reached the repository.
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          verifyNever(() => mockAgentRepo.upsertLink(any()));
+
+          // Both skip traces fired.
+          verify(
+            () => loggingService.captureEvent(
+              any<String>(that: contains('agentBundle.entity.skipped')),
+              domain: 'sync',
+              subDomain: 'processor.resolve.bundle',
+            ),
+          ).called(1);
+          verify(
+            () => loggingService.captureEvent(
+              any<String>(that: contains('agentBundle.link.skipped')),
+              domain: 'sync',
+              subDomain: 'processor.resolve.bundle',
+            ),
+          ).called(1);
+        },
+      );
+
       test('skips agent entity with no entity and no jsonPath', () async {
         const message = SyncMessage.agentEntity(
           status: SyncEntryStatus.update,

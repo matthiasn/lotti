@@ -131,6 +131,116 @@ void main() {
     expect(interceptor.entityCount, 1);
   });
 
+  test('link merge keeps latest payload and covers superseded clock', () {
+    final interceptor =
+        AgentWakeSyncInterceptor(
+            agentId: 'agent-1',
+            wakeRunKey: 'run-1',
+          )
+          ..add(
+            SyncMessage.agentLink(
+              status: SyncEntryStatus.update,
+              agentLink: basicLink(
+                id: 'link-1',
+                vectorClock: const VectorClock({'host': 1}),
+              ),
+            ),
+          )
+          ..add(
+            SyncMessage.agentLink(
+              status: SyncEntryStatus.update,
+              originatingHostId: 'host-from-second',
+              agentLink: basicLink(
+                id: 'link-1',
+                vectorClock: const VectorClock({'host': 4}),
+              ),
+            ),
+          );
+
+    final bundle = interceptor.buildBundle()!;
+    final bundledLink = bundle.links.single;
+    final coveredCounters = bundledLink.coveredVectorClocks!
+        .map((clock) => clock.vclock['host'])
+        .whereType<int>()
+        .toSet();
+
+    expect(bundledLink.agentLink!.vectorClock, const VectorClock({'host': 4}));
+    expect(coveredCounters, {1});
+    expect(bundledLink.originatingHostId, 'host-from-second');
+    expect(interceptor.linkCount, 1);
+  });
+
+  test('isNotEmpty mirrors isEmpty', () {
+    final interceptor = AgentWakeSyncInterceptor(
+      agentId: 'agent-1',
+      wakeRunKey: 'run-1',
+    );
+
+    expect(interceptor.isEmpty, isTrue);
+    expect(interceptor.isNotEmpty, isFalse);
+
+    interceptor.add(
+      SyncMessage.agentLink(
+        status: SyncEntryStatus.update,
+        agentLink: basicLink(
+          id: 'link-1',
+          vectorClock: const VectorClock({'host': 1}),
+        ),
+      ),
+    );
+
+    expect(interceptor.isEmpty, isFalse);
+    expect(interceptor.isNotEmpty, isTrue);
+  });
+
+  test('add returns false for entity message with no entity payload', () {
+    final interceptor = AgentWakeSyncInterceptor(
+      agentId: 'agent-1',
+      wakeRunKey: 'run-1',
+    );
+
+    expect(
+      interceptor.add(
+        const SyncMessage.agentEntity(status: SyncEntryStatus.update),
+      ),
+      isFalse,
+    );
+    expect(interceptor.entityCount, 0);
+  });
+
+  test('add returns false for link message with no link payload', () {
+    final interceptor = AgentWakeSyncInterceptor(
+      agentId: 'agent-1',
+      wakeRunKey: 'run-1',
+    );
+
+    expect(
+      interceptor.add(
+        const SyncMessage.agentLink(status: SyncEntryStatus.update),
+      ),
+      isFalse,
+    );
+    expect(interceptor.linkCount, 0);
+  });
+
+  test('add returns false for non-agent sync messages', () {
+    final interceptor = AgentWakeSyncInterceptor(
+      agentId: 'agent-1',
+      wakeRunKey: 'run-1',
+    );
+
+    expect(
+      interceptor.add(
+        const SyncMessage.backfillRequest(
+          entries: [],
+          requesterId: 'host-a',
+        ),
+      ),
+      isFalse,
+    );
+    expect(interceptor.bufferedMessageCount, 0);
+  });
+
   test('clear releases buffered messages', () {
     final interceptor =
         AgentWakeSyncInterceptor(

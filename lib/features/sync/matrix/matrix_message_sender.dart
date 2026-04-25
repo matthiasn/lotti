@@ -673,6 +673,11 @@ class MatrixMessageSender {
     required Room room,
     required SyncMessage message,
   }) => _enrichAndUploadAgentPayload(room: room, message: message);
+
+  @visibleForTesting
+  Future<SyncMessage> ensureOriginatingHostIdForTesting(
+    SyncMessage message,
+  ) => _ensureOriginatingHostId(message);
 }
 
 class MatrixMessageContext {

@@ -5155,6 +5155,152 @@ void main() {
       },
     );
 
+    test(
+      'SyncAgentBundle skips empty bundle without writing to outbox',
+      () async {
+        const message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-empty',
+        );
+
+        await service.enqueueMessage(message);
+
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+        verify(
+          () => loggingService.captureEvent(
+            'enqueue.skip agentBundle is empty',
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'SyncAgentBundle rejects jsonPath that escapes documents root',
+      () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-escape',
+          agentId: 'agent-1',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-escape',
+          jsonPath: '/agent_bundles/../../etc/passwd',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+        );
+
+        await service.enqueueMessage(message);
+
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(
+              that: contains('enqueue.skip invalid agent bundle path'),
+            ),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'SyncAgentBundle merges with existing pending row by composite key',
+      () async {
+        final sampleDate = DateTime(2024, 3, 15);
+        final existingItem = OutboxItem(
+          id: 99,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message:
+              '{"runtimeType":"agentBundle","agentId":"agent-merge",'
+              '"wakeRunKey":"run-merge"}',
+          subject: 'agentBundle:agent-merge:run-merge',
+          filePath: null,
+          outboxEntryId: 'agent-merge:run-merge',
+          priority: OutboxPriority.normal.index,
+        );
+
+        when(
+          () => syncDatabase.findPendingByEntryId('agent-merge:run-merge'),
+        ).thenAnswer((_) async => existingItem);
+
+        String? capturedMessage;
+        String? capturedSubject;
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedMessage = invocation.namedArguments[#newMessage] as String?;
+          capturedSubject = invocation.namedArguments[#newSubject] as String?;
+          return 1;
+        });
+
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-merge',
+          agentId: 'agent-merge',
+          revision: 7,
+          slots: const AgentSlots(),
+          updatedAt: sampleDate,
+          vectorClock: const VectorClock({'hostA': 9}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-merge',
+          wakeRunKey: 'run-merge',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+        );
+
+        await service.enqueueMessage(message);
+
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 99,
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+
+        expect(capturedSubject, 'agentBundle:agent-merge:run-merge');
+        final merged =
+            SyncMessage.fromJson(
+                  json.decode(capturedMessage!) as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        // Merged outbox row carries the descriptor pointer, never inline
+        // children.
+        expect(merged.jsonPath, '/agent_bundles/run-merge.json');
+        expect(merged.entities, isEmpty);
+        expect(merged.links, isEmpty);
+      },
+    );
+
     test('SyncAgentLink merges with existing pending item', () async {
       final link = AgentLink.agentTask(
         id: 'link-abc',

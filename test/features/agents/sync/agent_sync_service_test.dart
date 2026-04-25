@@ -501,6 +501,170 @@ void main() {
         expect(bundle.entities, hasLength(1));
         expect(bundle.links, isEmpty);
       });
+
+      test('reentrant call reuses the active interceptor', () async {
+        await syncService.runInWakeCycle(
+          agentId: 'agent-outer',
+          wakeRunKey: 'run-outer',
+          action: () async {
+            await syncService.upsertEntity(testEntity);
+            // Nested runInWakeCycle must NOT install a second interceptor
+            // — its action runs against the outer buffer and emits no
+            // separate bundle.
+            await syncService.runInWakeCycle(
+              agentId: 'agent-inner',
+              wakeRunKey: 'run-inner',
+              action: () async {
+                await syncService.upsertLink(testBasicLink);
+              },
+            );
+          },
+        );
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        // Only the OUTER bundle is flushed (one enqueue), and it contains
+        // the inner cycle's link too.
+        expect(captured, hasLength(1));
+        final bundle = captured.single as SyncAgentBundle;
+        expect(bundle.agentId, 'agent-outer');
+        expect(bundle.wakeRunKey, 'run-outer');
+        expect(bundle.entities, hasLength(1));
+        expect(bundle.links, hasLength(1));
+      });
+
+      test(
+        'success-path bundle flush failure is swallowed and logged',
+        () async {
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenThrow(StateError('outbox down'));
+
+          // Wake action returns normally — flush failure must NOT propagate.
+          final result = await syncService.runInWakeCycle<String>(
+            agentId: 'agent-1',
+            wakeRunKey: 'run-flush-fail',
+            action: () async {
+              await syncService.upsertEntity(testEntity);
+              return 'ok';
+            },
+          );
+
+          expect(result, 'ok');
+          // Flush was attempted exactly once with a bundle.
+          verify(
+            () => mockOutboxService.enqueueMessage(
+              any(that: isA<SyncAgentBundle>()),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'failure-path bundle flush failure is swallowed; original error wins',
+        () async {
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenThrow(StateError('outbox down'));
+
+          // Action throws AND flush throws. Caller sees the action error,
+          // not the flush error.
+          await expectLater(
+            () => syncService.runInWakeCycle<void>(
+              agentId: 'agent-1',
+              wakeRunKey: 'run-double-fail',
+              action: () async {
+                await syncService.upsertEntity(testEntity);
+                throw const FormatException('original wake error');
+              },
+            ),
+            throwsA(isA<FormatException>()),
+          );
+
+          verify(
+            () => mockOutboxService.enqueueMessage(
+              any(that: isA<SyncAgentBundle>()),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('flushes nothing when no agent messages were buffered', () async {
+        await syncService.runInWakeCycle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-empty',
+          action: () async {
+            // Wake produced no agent writes — buffer stays empty so no
+            // bundle is enqueued.
+          },
+        );
+
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      });
+    });
+
+    group('insertLinkExclusive', () {
+      test('stamps clock and enqueues outside of wake/transaction', () async {
+        await syncService.insertLinkExclusive(testBasicLink);
+
+        final stampedLink = testBasicLink.copyWith(vectorClock: testClock);
+        verify(() => mockRepository.insertLinkExclusive(stampedLink)).called(1);
+        verify(
+          () => mockOutboxService.enqueueMessage(
+            any(
+              that: isA<SyncAgentLink>().having(
+                (m) => m.agentLink?.vectorClock,
+                'vectorClock',
+                testClock,
+              ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('preserves original clock when fromSync is true', () async {
+        final synced = testBasicLink.copyWith(
+          vectorClock: const VectorClock({'remote': 9}),
+        );
+        await syncService.insertLinkExclusive(synced, fromSync: true);
+
+        verify(() => mockRepository.insertLinkExclusive(synced)).called(1);
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      });
+
+      test('buffers into wake bundle when called inside wake cycle', () async {
+        await syncService.runInWakeCycle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
+          action: () async {
+            await syncService.insertLinkExclusive(testBasicLink);
+          },
+        );
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        final bundle = captured.single as SyncAgentBundle;
+        expect(bundle.links, hasLength(1));
+        expect(
+          bundle.links.single.agentLink?.vectorClock,
+          testClock,
+        );
+      });
+
+      test('defers enqueue until transaction commit', () async {
+        await syncService.runInTransaction(() async {
+          await syncService.insertLinkExclusive(testBasicLink);
+          verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        });
+
+        verify(
+          () => mockOutboxService.enqueueMessage(
+            any(that: isA<SyncAgentLink>()),
+          ),
+        ).called(1);
+      });
     });
 
     group('runInTransaction', () {
