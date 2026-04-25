@@ -113,7 +113,7 @@ void main() {
     },
   );
 
-  testWidgets('shows the deleted-toast when the controller delete completes', (
+  testWidgets('forwards onDeleted from the section into a toast', (
     tester,
   ) async {
     stubPersisted(const [
@@ -131,27 +131,55 @@ void main() {
       seed: const [],
     );
 
-    // The actual delete is exercised through the section's controller call.
-    // We invoke it directly via the controller since the row's hover-driven
-    // gesture is brittle in widget tests; the tree's job here is to forward
-    // the resulting onDeleted callback into a toast.
-    final container = ProviderScope.containerOf(
-      tester.element(find.byType(TasksSavedFiltersTree)),
+    // Drive the deletion-completed path the same way the row's two-tap delete
+    // would: invoke the section's `onDeleted` closure that the tree wired up.
+    // This exercises the tree's actual wiring (capturing the build context
+    // and dispatching to the toast helper) without depending on the row's
+    // brittle hover-driven gesture.
+    final section = tester.widget<SavedTaskFiltersSection>(
+      find.byType(SavedTaskFiltersSection),
     );
-    await container
-        .read(savedTaskFiltersControllerProvider.notifier)
-        .delete(
-          'sv-1',
-        );
-    // The section's onDelete is wired to the row, not the controller — so we
-    // simulate the completion by triggering the row's delete affordance via
-    // its public interface. For this coverage test, we instead drive
-    // onDeleted directly through a fresh widget that calls the toast helper
-    // from this BuildContext; covered by saved_task_filter_toast_test.dart.
-    // Here we just assert the controller mutation propagates into state.
-    final list = container.read(savedTaskFiltersControllerProvider).value!;
-    expect(list, isEmpty);
+    expect(section.onDeleted, isNotNull);
+    section.onDeleted!.call();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final messages = AppLocalizations.of(
+      tester.element(find.byType(TasksSavedFiltersTree)),
+    )!;
+    expect(find.text(messages.tasksSavedFilterToastDeleted), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
   });
+
+  testWidgets(
+    'controller delete mutation propagates into provider state',
+    (tester) async {
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+      ]);
+      when(
+        () => mocks.settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
+
+      final fake = FakeJournalPageController(const JournalPageState());
+
+      await _pumpTree(
+        tester,
+        fakeController: fake,
+        seed: const [],
+      );
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(TasksSavedFiltersTree)),
+      );
+      await container
+          .read(savedTaskFiltersControllerProvider.notifier)
+          .delete('sv-1');
+
+      final list = container.read(savedTaskFiltersControllerProvider).value!;
+      expect(list, isEmpty);
+    },
+  );
 
   testWidgets(
     'localised section header title is rendered',
