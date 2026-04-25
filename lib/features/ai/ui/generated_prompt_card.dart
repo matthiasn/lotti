@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -221,10 +221,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             );
           },
           child: SelectionArea(
-            child: Text(
-              _summary,
-              style: context.textTheme.bodyMedium,
-            ),
+            child: AgentMarkdownView(_summary),
           ),
         ),
         // Expandable full prompt
@@ -281,7 +278,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: SelectionArea(
-                  child: GptMarkdown(_fullPrompt),
+                  child: AgentMarkdownView(_fullPrompt),
                 ),
               ),
             ],

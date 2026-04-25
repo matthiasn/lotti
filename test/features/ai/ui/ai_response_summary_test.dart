@@ -194,8 +194,15 @@ Help me implement OAuth 2.0 authentication in my Flutter app.
       // Should use GeneratedPromptCard for prompt generation
       expect(find.byType(GeneratedPromptCard), findsOneWidget);
 
-      // Should not use GptMarkdown directly (it's inside GeneratedPromptCard)
-      expect(find.byType(GptMarkdown), findsNothing);
+      // Any GptMarkdown is nested inside GeneratedPromptCard (the card renders
+      // its TLDR via AgentMarkdownView/GptMarkdown), not at the top level.
+      expect(
+        find.descendant(
+          of: find.byType(GeneratedPromptCard),
+          matching: find.byType(GptMarkdown),
+        ),
+        findsWidgets,
+      );
     });
 
     testWidgets(
@@ -230,8 +237,16 @@ Style: isometric digital art. --ar 16:9
         // Should use GeneratedPromptCard for image prompt generation
         expect(find.byType(GeneratedPromptCard), findsOneWidget);
 
-        // Should not use GptMarkdown directly (it's inside GeneratedPromptCard)
-        expect(find.byType(GptMarkdown), findsNothing);
+        // Any GptMarkdown is nested inside GeneratedPromptCard (the card
+        // renders its TLDR via AgentMarkdownView/GptMarkdown), not at the
+        // top level.
+        expect(
+          find.descendant(
+            of: find.byType(GeneratedPromptCard),
+            matching: find.byType(GptMarkdown),
+          ),
+          findsWidgets,
+        );
       },
     );
 

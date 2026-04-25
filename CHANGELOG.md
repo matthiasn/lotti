@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-interactive (no hover overlay or click cursor), and shares the
   checklist row's `radii.xs` rounded shape, low-emphasis border, and
   `interactive.enabled` fill.
+- The AI Coding Prompt / AI Image Prompt card on Task Details now renders
+  both its TLDR summary and its expanded full-prompt body through the shared
+  `AgentMarkdownView`, so its typography, links, and code-block surfaces
+  match the agent report and entry editor (`body.bodySmall` body text, DS
+  heading mapping, low-emphasis checkbox style) instead of the package-default
+  `GptMarkdown` styling.
 
 ## [0.9.973] - 2026-04-24
 ### Fixed
