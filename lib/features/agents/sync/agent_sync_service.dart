@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/sync/agent_wake_sync_interceptor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
@@ -17,6 +18,9 @@ class _TransactionContext {
 
 /// Zone key used to look up the active [_TransactionContext].
 const Symbol _txKey = #AgentSyncService_txKey;
+
+/// Zone key used to look up the active wake-cycle sync interceptor.
+const Symbol _wakeKey = #AgentSyncService_wakeKey;
 
 /// Sync-aware write wrapper around [AgentRepository].
 ///
@@ -67,6 +71,11 @@ class AgentSyncService {
   static _TransactionContext? get _currentTxContext =>
       Zone.current[_txKey] as _TransactionContext?;
 
+  /// Returns the active wake-cycle interceptor from the current [Zone], or
+  /// `null` when writes are not part of an agent wake run.
+  static AgentWakeSyncInterceptor? get _currentWakeInterceptor =>
+      Zone.current[_wakeKey] as AgentWakeSyncInterceptor?;
+
   /// Upsert an [AgentDomainEntity] and enqueue a sync message unless
   /// [fromSync] is `true`.
   ///
@@ -100,7 +109,7 @@ class AgentSyncService {
       if (txCtx != null) {
         txCtx.pendingMessages.add(message);
       } else {
-        await _enqueuePostWrite(
+        await _enqueueOrBufferPostWrite(
           message,
           subDomain: 'upsertEntity.enqueue',
         );
@@ -140,7 +149,7 @@ class AgentSyncService {
       if (txCtx != null) {
         txCtx.pendingMessages.add(message);
       } else {
-        await _enqueuePostWrite(
+        await _enqueueOrBufferPostWrite(
           message,
           subDomain: 'upsertLink.enqueue',
         );
@@ -178,7 +187,7 @@ class AgentSyncService {
       if (txCtx != null) {
         txCtx.pendingMessages.add(message);
       } else {
-        await _enqueuePostWrite(
+        await _enqueueOrBufferPostWrite(
           message,
           subDomain: 'insertLinkExclusive.enqueue',
         );
@@ -194,12 +203,12 @@ class AgentSyncService {
   /// a release — re-handing the same counter to a different entity on the
   /// next reservation (cross-entity collision on disk). Log, swallow,
   /// return. The gap on receivers is transient and backfill resolves it.
-  Future<void> _enqueuePostWrite(
+  Future<void> _enqueueOrBufferPostWrite(
     SyncMessage message, {
     required String subDomain,
   }) async {
     try {
-      await _outboxService.enqueueMessage(message);
+      await _enqueueOrBufferPostCommit(message);
     } catch (exception, stackTrace) {
       getIt<DomainLogger>().error(
         LogDomains.sync,
@@ -208,6 +217,89 @@ class AgentSyncService {
         stackTrace: stackTrace,
         subDomain: subDomain,
       );
+    }
+  }
+
+  /// Delivers a post-commit message either into the active wake buffer or
+  /// directly into the outbox. This variant intentionally propagates direct
+  /// outbox errors so transaction callers keep their existing semantics.
+  Future<void> _enqueueOrBufferPostCommit(SyncMessage message) async {
+    final wakeInterceptor = _currentWakeInterceptor;
+    if (wakeInterceptor != null && wakeInterceptor.add(message)) {
+      return;
+    }
+    await _outboxService.enqueueMessage(message);
+  }
+
+  Future<void> _flushWakeInterceptor(
+    AgentWakeSyncInterceptor interceptor,
+  ) async {
+    final bundle = interceptor.buildBundle();
+    if (bundle == null) return;
+    await _outboxService.enqueueMessage(bundle);
+  }
+
+  void _logWakeFlushFailure(Object error, StackTrace stackTrace) {
+    if (!getIt.isRegistered<DomainLogger>()) return;
+    getIt<DomainLogger>().error(
+      LogDomains.sync,
+      'wake sync bundle flush failed after wake failure',
+      error: error,
+      stackTrace: stackTrace,
+      subDomain: 'wakeBundle.flush',
+    );
+  }
+
+  /// Runs [action] inside a wake-cycle sync aggregation scope.
+  ///
+  /// Agent entity/link writes made through this service are persisted
+  /// immediately, but their sync messages are intercepted in memory. When the
+  /// wake reaches a terminal state (success or exception), the buffered latest
+  /// entity/link versions are flushed as one [SyncAgentBundle]. If the process
+  /// dies before terminal flush, normal maintenance/backfill paths can still
+  /// resurface the committed rows because the database writes already happened.
+  Future<T> runInWakeCycle<T>({
+    required String agentId,
+    required String wakeRunKey,
+    required Future<T> Function() action,
+  }) async {
+    final existingInterceptor = _currentWakeInterceptor;
+    if (existingInterceptor != null) {
+      return action();
+    }
+
+    final interceptor = AgentWakeSyncInterceptor(
+      agentId: agentId,
+      wakeRunKey: wakeRunKey,
+    );
+    try {
+      late final T result;
+      try {
+        result = await runZoned(
+          action,
+          zoneValues: {_wakeKey: interceptor},
+        );
+      } catch (error, stackTrace) {
+        try {
+          await _flushWakeInterceptor(interceptor);
+        } catch (flushError, flushStackTrace) {
+          _logWakeFlushFailure(flushError, flushStackTrace);
+        }
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+
+      // DB writes have already committed; a flush failure here only delays
+      // peer convergence (maintenance/backfill will resurface the committed
+      // rows). Don't fail an otherwise-successful wake on a sync hiccup —
+      // matches the swallow+log policy of `_enqueueOrBufferPostWrite`.
+      try {
+        await _flushWakeInterceptor(interceptor);
+      } catch (flushError, flushStackTrace) {
+        _logWakeFlushFailure(flushError, flushStackTrace);
+      }
+      return result;
+    } finally {
+      interceptor.clear();
     }
   }
 
@@ -270,7 +362,7 @@ class AgentSyncService {
         // same counter to another entity on the next write.
         for (final msg in ctx.pendingMessages) {
           try {
-            await _outboxService.enqueueMessage(msg);
+            await _enqueueOrBufferPostCommit(msg);
           } catch (e, s) {
             deferredEnqueueError ??= e;
             deferredEnqueueStack ??= s;

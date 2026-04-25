@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -57,6 +58,8 @@ class _MockCoordinator extends Mock implements SyncLifecycleCoordinator {}
 
 class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}
 
+class _FakeMatrixMessageContext extends Fake implements MatrixMessageContext {}
+
 void main() {
   late _MockGateway gateway;
   late LoggingService loggingService;
@@ -97,6 +100,10 @@ void main() {
         applied: false,
       ),
     );
+    registerFallbackValue(
+      const SyncMessage.agentBundle(agentId: 'fb', wakeRunKey: 'fb'),
+    );
+    registerFallbackValue(_FakeMatrixMessageContext());
   });
 
   setUp(() {
@@ -233,6 +240,46 @@ void main() {
       expect(service.messageCounts['journalEntity'], 2);
       expect(service.messageCounts['entryLink'], 1);
     });
+
+    test(
+      'sendMatrixMsg increments agentBundle bucket on successful send',
+      () async {
+        when(() => roomManager.currentRoom).thenReturn(null);
+        when(() => roomManager.currentRoomId).thenReturn(null);
+        when(() => client.getRoomById(any())).thenReturn(null);
+        when(
+          () => messageSender.sendMatrixMessage(
+            message: any(named: 'message'),
+            context: any(named: 'context'),
+            onSent: any(named: 'onSent'),
+          ),
+        ).thenAnswer((invocation) async {
+          // Invoke the onSent callback so the matrix-type bucket is
+          // incremented for `agentBundle`.
+          final onSent =
+              invocation.namedArguments[#onSent]
+                  as void Function(String, SyncMessage);
+          onSent(
+            r'$evt-bundle',
+            invocation.namedArguments[#message] as SyncMessage,
+          );
+          return true;
+        });
+
+        final service = createService();
+        const bundle = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
+        );
+        final result = await service.sendMatrixMsg(
+          bundle,
+          myRoomId: '!room:s',
+        );
+
+        expect(result, isTrue);
+        expect(service.messageCounts['agentBundle'], 1);
+      },
+    );
 
     test('messageCountsController emits stats', () async {
       final service = createService();

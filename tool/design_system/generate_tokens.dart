@@ -668,9 +668,17 @@ const DsTokens dsTokensDark = ${_emitGroupInitializer(root, isDark: true)};
 
   String _emitTextStyle(_TextStyleSpec spec) {
     final height = spec.lineHeight / spec.fontSize;
+    // `fontFamilyFallback` chains the platform's color emoji font after the
+    // primary text family. Without it, widgets that consume these tokens
+    // (e.g. `AgentMarkdownView`) bypass the ThemeData-level fallback and
+    // render emoji as tofu — Linux is the most visible failure mode because
+    // Skia does not auto-fall-back to a system color emoji font there. The
+    // names cover Linux (Noto Color Emoji), macOS/iOS (Apple Color Emoji),
+    // Windows (Segoe UI Emoji), and Android (Noto Color Emoji again).
     return '''
 TextStyle(
   fontFamily: ${_emitString(spec.fontFamily)},
+  fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],
   fontSize: ${_emitDouble(spec.fontSize)},
   fontWeight: ${spec.fontWeightLiteral},
   height: ${_emitDouble(height)},

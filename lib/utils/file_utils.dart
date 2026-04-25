@@ -163,13 +163,19 @@ const agentEntitiesSegment = '/agent_entities/';
 /// Path segment for agent link files.
 const agentLinksSegment = '/agent_links/';
 
-/// Returns `true` if [relativePath] points to an agent entity or link file.
+/// Path segment for wake-scoped agent sync bundle files.
+const agentBundlesSegment = '/agent_bundles/';
+
+/// Returns `true` if [relativePath] points to an agent sync payload file.
 ///
-/// Agent payloads use the entity ID in the path and can be legitimately
+/// Entity/link payloads use the entity ID in the path and can be legitimately
 /// updated in-place (e.g. a ChangeSetEntity moving from pending to resolved).
+/// Wake bundles are immutable by run key, but they use the same attachment
+/// retry path.
 bool isAgentPayloadPath(String relativePath) =>
     relativePath.contains(agentEntitiesSegment) ||
-    relativePath.contains(agentLinksSegment);
+    relativePath.contains(agentLinksSegment) ||
+    relativePath.contains(agentBundlesSegment);
 
 /// Returns the documents-directory-relative path for an agent entity JSON
 /// file, including a leading `/`. Uses `/agent_entities/<id>.json`.
@@ -181,6 +187,12 @@ String relativeAgentEntityPath(String entityId) {
 /// file, including a leading `/`. Uses `/agent_links/<id>.json`.
 String relativeAgentLinkPath(String linkId) {
   return '$agentLinksSegment$linkId.json';
+}
+
+/// Returns the documents-directory-relative path for an agent wake bundle JSON
+/// file, including a leading `/`.
+String relativeAgentBundlePath(String wakeRunKey) {
+  return '$agentBundlesSegment${Uri.encodeComponent(wakeRunKey)}.json';
 }
 
 Future<JournalEntity> readEntityFromJson(String jsonPath) async {

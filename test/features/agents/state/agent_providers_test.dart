@@ -1745,6 +1745,251 @@ void main() {
     );
 
     test(
+      'wakeExecutor routes project agent to project workflow',
+      () async {
+        final identity = makeTestIdentity(
+          kind: AgentKinds.projectAgent,
+        );
+        final mutated = <String, VectorClock>{
+          'entry-project': const VectorClock({}),
+        };
+
+        when(
+          () => bench.mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => bench.mockProjectWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
+
+        final result = await capture.executor(
+          kTestAgentId,
+          'run-key-project',
+          {'tok-p'},
+          'thread-project',
+        );
+
+        expect(result, equals(mutated));
+        verify(
+          () => bench.mockProjectWorkflow.execute(
+            agentIdentity: identity,
+            runKey: 'run-key-project',
+            triggerTokens: {'tok-p'},
+            threadId: 'thread-project',
+          ),
+        ).called(1);
+
+        // Notification still fires for the project agent.
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notifyUiOnly(
+            {kTestAgentId, 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+
+        // Should NOT call task or improver workflow.
+        verifyNever(
+          () => bench.mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        );
+        verifyNever(
+          () => bench.mockImproverWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            threadId: any(named: 'threadId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'wakeExecutor throws when project workflow returns failure',
+      () async {
+        final identity = makeTestIdentity(
+          kind: AgentKinds.projectAgent,
+        );
+
+        when(
+          () => bench.mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => bench.mockProjectWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => const WakeResult(
+            success: false,
+            error: 'project failed',
+          ),
+        );
+
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
+
+        await expectLater(
+          capture.executor(
+            kTestAgentId,
+            'run-key-project-fail',
+            {'tok-p'},
+            'thread-project-fail',
+          ),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              'project failed',
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'wakeExecutor uses id tiebreaker when task links share createdAt',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-tie': const VectorClock({}),
+        };
+        // Two task links with the SAME createdAt — sort must fall back to
+        // id comparison (descending), so 'task-aaa' wins over 'task-bbb'
+        // (because the sort is `b.id.compareTo(a.id)`).
+        final timestamp = DateTime(2024, 3, 15, 10);
+
+        when(
+          () => bench.mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => bench.mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+        when(
+          () => bench.mockRepository.getLinksFrom(
+            kTestAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            model.AgentLink.agentTask(
+              id: 'task-link-aaa',
+              fromId: kTestAgentId,
+              toId: 'task-aaa',
+              createdAt: timestamp,
+              updatedAt: timestamp,
+              vectorClock: null,
+            ),
+            model.AgentLink.agentTask(
+              id: 'task-link-bbb',
+              fromId: kTestAgentId,
+              toId: 'task-bbb',
+              createdAt: timestamp,
+              updatedAt: timestamp,
+              vectorClock: null,
+            ),
+          ],
+        );
+
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
+
+        await capture.executor(
+          kTestAgentId,
+          'run-key-tie',
+          {'tok-tie'},
+          'thread-tie',
+        );
+
+        // After sort by id desc, 'task-link-bbb' wins (b > a). It should
+        // appear in the notification token set.
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notifyUiOnly(
+            {kTestAgentId, 'task-bbb', 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'wakeExecutor swallows getLinksFrom failure and still notifies',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-err': const VectorClock({}),
+        };
+
+        when(
+          () => bench.mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => bench.mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+        when(
+          () => bench.mockRepository.getLinksFrom(
+            kTestAgentId,
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenThrow(Exception('repo down'));
+
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
+
+        // The wake itself still succeeds — the catch swallows the repo
+        // failure and proceeds with the notification (without taskId).
+        final result = await capture.executor(
+          kTestAgentId,
+          'run-key-err',
+          {'tok-err'},
+          'thread-err',
+        );
+        expect(result, mutated);
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notifyUiOnly(
+            {kTestAgentId, 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'wakeExecutor throws when improver workflow returns failure',
       () async {
         final identity = makeTestIdentity(

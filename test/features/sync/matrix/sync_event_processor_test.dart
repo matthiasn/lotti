@@ -1149,6 +1149,68 @@ void main() {
       ).called(1);
     });
 
+    test('processes agent bundle entities before links', () async {
+      final entity = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        revision: 5,
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: const VectorClock({'host-a': 1}),
+      );
+      final link = AgentLink.basic(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: const VectorClock({'host-a': 2}),
+      );
+      final message = SyncMessage.agentBundle(
+        agentId: 'agent-1',
+        wakeRunKey: 'run-1',
+        originatingHostId: 'host-a',
+        entities: [
+          SyncMessage.agentEntity(
+                agentEntity: entity,
+                status: SyncEntryStatus.update,
+              )
+              as SyncAgentEntity,
+        ],
+        links: [
+          SyncMessage.agentLink(
+                agentLink: link,
+                status: SyncEntryStatus.update,
+              )
+              as SyncAgentLink,
+        ],
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      // verifyInOrder asserts BOTH calls happened AND in this order. An
+      // agent_task link can only restore a wake subscription after its
+      // identity entity has been upserted, so entities must be applied
+      // before links within a bundle.
+      verifyInOrder([
+        () => mockAgentRepo.upsertEntity(entity),
+        () => mockAgentRepo.upsertLink(link),
+      ]);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'state-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
     test(
       'processes agent link variants (agentState, messagePrev, etc)',
       () async {
@@ -1585,6 +1647,110 @@ void main() {
             coveredVectorClocks: null,
             payloadType: SyncSequencePayloadType.agentLink,
             jsonPath: any(named: 'jsonPath'),
+          ),
+        ).called(1);
+      });
+
+      test('logs gap detection for agent link', () async {
+        const vc = VectorClock({'host-D': 12});
+        final link = AgentLink.basic(
+          id: 'link-gap-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-D',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            (hostId: 'host-D', counter: 9),
+            (hostId: 'host-D', counter: 10),
+          ],
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => loggingService.captureEvent(
+            contains('apply.agentLink.gapsDetected count=2'),
+            domain: LogDomains.sync,
+            subDomain: 'processor.gapDetection',
+          ),
+        ).called(1);
+      });
+
+      test('handles recordReceivedEntry exception for agent link', () async {
+        const vc = VectorClock({'host-E': 7});
+        final link = AgentLink.basic(
+          id: 'link-err-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-E',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenThrow(Exception('seq log error link'));
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        // Link should still be upserted despite seq log error.
+        verify(() => mockAgentRepoSeq.upsertLink(link)).called(1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
         ).called(1);
       });
@@ -2101,6 +2267,114 @@ void main() {
 
         verify(() => mockAgentRepo.upsertLink(link)).called(1);
       });
+
+      test('resolves agent bundle from jsonPath on disk', () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-disk',
+          agentId: 'agent-disk',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-disk',
+          fromId: 'agent-disk',
+          toId: 'state-disk',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 2}),
+        );
+
+        final fileBundle = SyncMessage.agentBundle(
+          agentId: 'agent-disk',
+          wakeRunKey: 'run-disk',
+          originatingHostId: 'host-a',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: link,
+                )
+                as SyncAgentLink,
+          ],
+        );
+        const relativePath = '/agent_bundles/run-disk.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(fileBundle.toJson()));
+
+        const message = SyncMessage.agentBundle(
+          agentId: 'agent-disk',
+          wakeRunKey: 'run-disk',
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyInOrder([
+          () => mockAgentRepo.upsertEntity(entity),
+          () => mockAgentRepo.upsertLink(link),
+        ]);
+      });
+
+      test(
+        'agent bundle resolver skips and traces unresolvable children',
+        () async {
+          // A bundled child entity with no entity AND no jsonPath cannot be
+          // resolved — the bundle resolver must skip it (not crash) and
+          // emit a `agentBundle.entity.skipped` trace. Same for an
+          // unresolvable child link.
+          const message = SyncMessage.agentBundle(
+            agentId: 'agent-skip',
+            wakeRunKey: 'run-skip',
+            originatingHostId: 'host-a',
+            entities: [
+              SyncMessage.agentEntity(
+                    status: SyncEntryStatus.update,
+                  )
+                  as SyncAgentEntity,
+            ],
+            links: [
+              SyncMessage.agentLink(
+                    status: SyncEntryStatus.update,
+                  )
+                  as SyncAgentLink,
+            ],
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          // Neither child reached the repository.
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          verifyNever(() => mockAgentRepo.upsertLink(any()));
+
+          // Both skip traces fired.
+          verify(
+            () => loggingService.captureEvent(
+              any<String>(that: contains('agentBundle.entity.skipped')),
+              domain: 'sync',
+              subDomain: 'processor.resolve.bundle',
+            ),
+          ).called(1);
+          verify(
+            () => loggingService.captureEvent(
+              any<String>(that: contains('agentBundle.link.skipped')),
+              domain: 'sync',
+              subDomain: 'processor.resolve.bundle',
+            ),
+          ).called(1);
+        },
+      );
 
       test('skips agent entity with no entity and no jsonPath', () async {
         const message = SyncMessage.agentEntity(

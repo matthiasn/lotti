@@ -416,6 +416,7 @@ class MatrixService {
       backfillResponse: (_) => 'backfillResponse',
       agentEntity: (_) => 'agentEntity',
       agentLink: (_) => 'agentLink',
+      agentBundle: (_) => 'agentBundle',
     );
 
     return _messageSender.sendMatrixMessage(

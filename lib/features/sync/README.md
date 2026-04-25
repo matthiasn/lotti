@@ -78,6 +78,7 @@ Current message families in `model/sync_message.dart`:
 - `backfillResponse`
 - `agentEntity`
 - `agentLink`
+- `agentBundle`
 
 Sequence-tracked payloads are narrower:
 
@@ -85,6 +86,10 @@ Sequence-tracked payloads are narrower:
 - `entryLink`
 - `agentEntity`
 - `agentLink`
+
+`agentBundle` is a transport wrapper, not its own sequence-log payload type.
+Its child `agentEntity` and `agentLink` messages keep their own vector clocks,
+covered clocks, originating host, and sequence-log recording.
 
 Those payloads can carry:
 
@@ -269,6 +274,51 @@ In this feature, vector clocks describe causal knowledge.
 `OutboxService` stages local work in `sync_db`, merges superseded work when it
 can, enriches sequence-aware payloads with covered clocks, and nudges a
 `ClientRunner`-driven `OutboxProcessor`.
+
+### Agent Wake-Cycle Bundling
+
+Agent wake execution enters `AgentSyncService.runInWakeCycle(...)` from the
+wake executor. The service installs a zone-local
+`AgentWakeSyncInterceptor` for the run key. Local agent writes still commit to
+`AgentRepository` immediately and still receive vector clocks at write time,
+but post-commit `agentEntity` and `agentLink` sync messages are intercepted
+instead of being pushed into the outbox one by one.
+
+The interceptor keeps one latest child message per entity/link id and merges
+superseded child vector clocks into that child's `coveredVectorClocks`. At the
+terminal edge of the wake scope, the service flushes one `agentBundle` to
+`OutboxService`. The outbox writes the full bundle to
+`/agent_bundles/<wakeRunKey>.json`, stores a small descriptor row in
+`sync_db`, and records each child entity/link in `SyncSequenceLogService` using
+the existing `agentEntity` and `agentLink` payload types.
+
+```mermaid
+sequenceDiagram
+  participant Wake as "Wake executor"
+  participant Sync as "AgentSyncService"
+  participant Buffer as "AgentWakeSyncInterceptor"
+  participant Repo as "AgentRepository"
+  participant Outbox as "OutboxService"
+
+  Wake->>Sync: runInWakeCycle(agentId, runKey)
+  Sync->>Buffer: install zone-local interceptor
+  Wake->>Sync: upsertEntity / upsertLink
+  Sync->>Repo: persist stamped entity/link
+  Sync->>Buffer: buffer post-commit sync message
+  Wake-->>Sync: action completes or throws
+  Sync->>Buffer: build SyncAgentBundle
+  Sync->>Outbox: enqueueMessage(agentBundle)
+  Outbox->>Outbox: write bundle JSON + descriptor row
+```
+
+Non-agent messages do not enter the wake buffer. Nested transactions inside the
+wake still delay their post-commit messages until the outer transaction commits,
+then hand those messages to the active wake interceptor.
+
+If a wake throws after committing some agent rows, `runInWakeCycle` still
+flushes the buffered bundle before rethrowing. That keeps peers convergent with
+the local database state, but it also means peers can briefly observe the
+partial wake snapshot until a later successful wake advances the agent state.
 
 `OutboxProcessor` then:
 

@@ -244,7 +244,7 @@ class QueueApplyAdapter {
   /// - Any `FileSystemException` (including `PathNotFoundException`)
   ///   whose path points inside one of the attachment-carrying
   ///   directories (`/audio/`, `/images/`, `/attachments/`,
-  ///   `/agent_entities/`, `/agent_links/`).
+  ///   `/agent_entities/`, `/agent_links/`, `/agent_bundles/`).
   ///
   /// Keeping the match textual rather than relying on a bespoke
   /// exception subtype means we do not have to plumb a new type
@@ -265,6 +265,7 @@ class QueueApplyAdapter {
         '/attachments/',
         '/agent_entities/',
         '/agent_links/',
+        '/agent_bundles/',
       ];
       for (final prefix in attachmentPrefixes) {
         if (path.contains(prefix)) return true;

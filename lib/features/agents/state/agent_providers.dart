@@ -391,114 +391,121 @@ void _wireWakeExecutor(
   TaskAgentWorkflow workflow,
   UpdateNotifications updateNotifications,
 ) {
-  orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) async {
-    final agentService = ref.read(agentServiceProvider);
-    final identity = await agentService.getAgent(agentId);
-    if (identity == null) return null;
-
-    // Route to appropriate workflow based on agent kind.
-    if (identity.kind == AgentKinds.templateImprover) {
-      final improverWorkflow = ref.read(improverAgentWorkflowProvider);
-      final result = await improverWorkflow.execute(
-        agentIdentity: identity,
-        runKey: runKey,
-        threadId: threadId,
-      );
-
-      if (!result.success) {
-        throw StateError(result.error ?? 'Improver agent wake failed');
-      }
-
-      await _notifyWakeCompletion(
-        ref,
-        agentId: agentId,
-        updateNotifications: updateNotifications,
-      );
-
-      return result.mutatedEntries;
-    }
-
-    if (identity.kind == AgentKinds.projectAgent) {
-      final projectWorkflow = ref.read(projectAgentWorkflowProvider);
-      final result = await projectWorkflow.execute(
-        agentIdentity: identity,
-        runKey: runKey,
-        triggerTokens: triggers,
-        threadId: threadId,
-      );
-
-      if (!result.success) {
-        throw StateError(result.error ?? 'Project agent wake failed');
-      }
-
-      await _notifyWakeCompletion(
-        ref,
-        agentId: agentId,
-        updateNotifications: updateNotifications,
-      );
-
-      return result.mutatedEntries;
-    }
-
-    // Default: task agent workflow.
-    final result = await workflow.execute(
-      agentIdentity: identity,
-      runKey: runKey,
-      triggerTokens: triggers,
-      threadId: threadId,
-    );
-
-    // Propagate workflow-level failures to the orchestrator by throwing.
-    // WakeOrchestrator converts executor exceptions into failed wake-run
-    // status, ensuring run-log accuracy.
-    if (!result.success) {
-      throw StateError(result.error ?? 'Task agent wake failed');
-    }
-
-    final extraTokens = <String>{};
-    try {
-      final taskLinks = await ref
-          .read(agentRepositoryProvider)
-          .getLinksFrom(
-            agentId,
-            type: AgentLinkTypes.agentTask,
-          );
-      if (taskLinks.isNotEmpty) {
-        final primaryTaskLink = taskLinks.toList()
-          ..sort((a, b) {
-            final byCreatedAt = b.createdAt.compareTo(a.createdAt);
-            if (byCreatedAt != 0) {
-              return byCreatedAt;
-            }
-            return b.id.compareTo(a.id);
-          });
-        final taskId = primaryTaskLink.first.toId;
-        extraTokens.add(taskId);
-
-        final project = await ref
-            .read(projectRepositoryProvider)
-            .getProjectForTask(taskId);
-        final projectId = project?.meta.id;
-        if (projectId != null) {
-          extraTokens.add(projectId);
-        }
-      }
-    } catch (error, stackTrace) {
-      developer.log(
-        'Failed to resolve task/project wake notification tokens: $error',
-        name: 'agentInitialization',
-        stackTrace: stackTrace,
-      );
-    }
-
-    await _notifyWakeCompletion(
-      ref,
+  orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+    final syncService = ref.read(agentSyncServiceProvider);
+    return syncService.runInWakeCycle(
       agentId: agentId,
-      updateNotifications: updateNotifications,
-      extraTokens: extraTokens,
-    );
+      wakeRunKey: runKey,
+      action: () async {
+        final agentService = ref.read(agentServiceProvider);
+        final identity = await agentService.getAgent(agentId);
+        if (identity == null) return null;
 
-    return result.mutatedEntries;
+        // Route to appropriate workflow based on agent kind.
+        if (identity.kind == AgentKinds.templateImprover) {
+          final improverWorkflow = ref.read(improverAgentWorkflowProvider);
+          final result = await improverWorkflow.execute(
+            agentIdentity: identity,
+            runKey: runKey,
+            threadId: threadId,
+          );
+
+          if (!result.success) {
+            throw StateError(result.error ?? 'Improver agent wake failed');
+          }
+
+          await _notifyWakeCompletion(
+            ref,
+            agentId: agentId,
+            updateNotifications: updateNotifications,
+          );
+
+          return result.mutatedEntries;
+        }
+
+        if (identity.kind == AgentKinds.projectAgent) {
+          final projectWorkflow = ref.read(projectAgentWorkflowProvider);
+          final result = await projectWorkflow.execute(
+            agentIdentity: identity,
+            runKey: runKey,
+            triggerTokens: triggers,
+            threadId: threadId,
+          );
+
+          if (!result.success) {
+            throw StateError(result.error ?? 'Project agent wake failed');
+          }
+
+          await _notifyWakeCompletion(
+            ref,
+            agentId: agentId,
+            updateNotifications: updateNotifications,
+          );
+
+          return result.mutatedEntries;
+        }
+
+        // Default: task agent workflow.
+        final result = await workflow.execute(
+          agentIdentity: identity,
+          runKey: runKey,
+          triggerTokens: triggers,
+          threadId: threadId,
+        );
+
+        // Propagate workflow-level failures to the orchestrator by throwing.
+        // WakeOrchestrator converts executor exceptions into failed wake-run
+        // status, ensuring run-log accuracy.
+        if (!result.success) {
+          throw StateError(result.error ?? 'Task agent wake failed');
+        }
+
+        final extraTokens = <String>{};
+        try {
+          final taskLinks = await ref
+              .read(agentRepositoryProvider)
+              .getLinksFrom(
+                agentId,
+                type: AgentLinkTypes.agentTask,
+              );
+          if (taskLinks.isNotEmpty) {
+            final primaryTaskLink = taskLinks.toList()
+              ..sort((a, b) {
+                final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+                if (byCreatedAt != 0) {
+                  return byCreatedAt;
+                }
+                return b.id.compareTo(a.id);
+              });
+            final taskId = primaryTaskLink.first.toId;
+            extraTokens.add(taskId);
+
+            final project = await ref
+                .read(projectRepositoryProvider)
+                .getProjectForTask(taskId);
+            final projectId = project?.meta.id;
+            if (projectId != null) {
+              extraTokens.add(projectId);
+            }
+          }
+        } catch (error, stackTrace) {
+          developer.log(
+            'Failed to resolve task/project wake notification tokens: $error',
+            name: 'agentInitialization',
+            stackTrace: stackTrace,
+          );
+        }
+
+        await _notifyWakeCompletion(
+          ref,
+          agentId: agentId,
+          updateNotifications: updateNotifications,
+          extraTokens: extraTokens,
+        );
+
+        return result.mutatedEntries;
+      },
+    );
   };
 }
 

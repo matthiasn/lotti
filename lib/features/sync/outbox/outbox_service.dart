@@ -406,6 +406,10 @@ class OutboxService {
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncAgentBundle msg => _enqueueAgentBundle(
+          msg: msg,
+          commonFields: commonFields,
+        ),
       };
 
       _syncLog(
@@ -435,6 +439,7 @@ class OutboxService {
       SyncBackfillResponse() => OutboxPriority.normal.index,
       SyncAgentEntity() => OutboxPriority.normal.index,
       SyncAgentLink() => OutboxPriority.normal.index,
+      SyncAgentBundle() => OutboxPriority.normal.index,
       SyncThemingSelection() => OutboxPriority.normal.index,
       SyncEntityDefinition() => OutboxPriority.low.index,
       SyncAiConfig() => OutboxPriority.low.index,
@@ -838,6 +843,37 @@ class OutboxService {
     return linkMsg;
   }
 
+  /// Prepares a SyncAgentBundle by applying normal agent entity/link
+  /// preparation to every child message.
+  SyncAgentBundle _prepareAgentBundle(SyncAgentBundle msg, String? host) {
+    var bundle = msg;
+    final originatingHostId = bundle.originatingHostId ?? host;
+    if (originatingHostId != null && bundle.originatingHostId == null) {
+      bundle = bundle.copyWith(originatingHostId: originatingHostId);
+    }
+
+    SyncAgentEntity seedEntityOrigin(SyncAgentEntity child) =>
+        child.originatingHostId == null && originatingHostId != null
+        ? child.copyWith(originatingHostId: originatingHostId)
+        : child;
+
+    SyncAgentLink seedLinkOrigin(SyncAgentLink child) =>
+        child.originatingHostId == null && originatingHostId != null
+        ? child.copyWith(originatingHostId: originatingHostId)
+        : child;
+
+    return bundle.copyWith(
+      entities: [
+        for (final child in bundle.entities)
+          _prepareAgentEntity(seedEntityOrigin(child), host),
+      ],
+      links: [
+        for (final child in bundle.links)
+          _prepareAgentLink(seedLinkOrigin(child), host),
+      ],
+    );
+  }
+
   /// Routes message preparation based on type.
   Future<SyncMessage> _prepareMessage(SyncMessage message, String? host) async {
     return switch (message) {
@@ -845,6 +881,7 @@ class OutboxService {
       final SyncEntryLink msg => await _prepareEntryLink(msg, host),
       final SyncAgentEntity msg => _prepareAgentEntity(msg, host),
       final SyncAgentLink msg => _prepareAgentLink(msg, host),
+      final SyncAgentBundle msg => _prepareAgentBundle(msg, host),
       _ => message,
     };
   }
@@ -1441,6 +1478,172 @@ class OutboxService {
     );
   }
 
+  Future<bool> _enqueueAgentBundle({
+    required SyncAgentBundle msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    if (msg.entities.isEmpty && msg.links.isEmpty && msg.jsonPath == null) {
+      _loggingService.captureEvent(
+        'enqueue.skip agentBundle is empty',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      return false;
+    }
+
+    final relativePath =
+        msg.jsonPath ?? relativeAgentBundlePath(msg.wakeRunKey);
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final docsRoot = p.normalize(_documentsDirectory.path);
+    final fullPath = p.normalize(p.join(docsRoot, relativeJoined));
+    final subject = 'agentBundle:${msg.agentId}:${msg.wakeRunKey}';
+    // Composite key so two distinct agents that happen to use the same
+    // wakeRunKey cannot cross-wire each other's pending outbox row via
+    // findPendingByEntryId.
+    final outboxEntryId = '${msg.agentId}:${msg.wakeRunKey}';
+
+    if (!p.isWithin(docsRoot, fullPath)) {
+      _loggingService.captureEvent(
+        'enqueue.skip invalid agent bundle path: $relativePath',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      return false;
+    }
+
+    // Each child carries its in-memory covered VCs, but a predecessor that
+    // was already drained from the outbox before the wake started is only
+    // remembered in the sequence log. Enrich every child with the last-sent
+    // VC for its id so receivers don't re-open false gaps for counters that
+    // we already shipped under a prior version of the same entity/link.
+    final enrichedBundle = await _enrichAgentBundleCoveredVcsFromSequenceLog(
+      msg,
+    );
+
+    try {
+      final bundlePayload = enrichedBundle.copyWith(jsonPath: null);
+      await _saveJson(fullPath, json.encode(bundlePayload.toJson()));
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage.saveAgentBundle',
+        stackTrace: stackTrace,
+      );
+      // Fallback: enqueue the full bundle inline so MatrixMessageSender can
+      // write and upload the attachment when the outbox row is processed.
+      final inlineBundle = enrichedBundle.copyWith(jsonPath: null);
+      final inlineJson = json.encode(inlineBundle.toJson());
+      final inlineSize = utf8.encode(inlineJson).length;
+      await _syncDatabase.addOutboxItem(
+        commonFields.copyWith(
+          subject: Value(subject),
+          message: Value(inlineJson),
+          outboxEntryId: Value(outboxEntryId),
+          payloadSize: Value(inlineSize),
+        ),
+      );
+      await _recordAgentBundleSent(enrichedBundle);
+      return false;
+    }
+
+    final outboxMsg = enrichedBundle.copyWith(
+      jsonPath: relativePath,
+      entities: const [],
+      links: const [],
+    );
+    final outboxJson = json.encode(outboxMsg.toJson());
+    final outboxSize = utf8.encode(outboxJson).length;
+    final existingItem = await _syncDatabase.findPendingByEntryId(
+      outboxEntryId,
+    );
+
+    if (existingItem != null) {
+      final affectedRows = await _syncDatabase.updateOutboxMessage(
+        itemId: existingItem.id,
+        newMessage: outboxJson,
+        newSubject: subject,
+        payloadSize: outboxSize,
+        priority: math.min(existingItem.priority, commonFields.priority.value),
+      );
+      if (affectedRows > 0) {
+        await _recordAgentBundleSent(enrichedBundle);
+        unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
+        return true;
+      }
+    }
+
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(
+        subject: Value(subject),
+        message: Value(outboxJson),
+        outboxEntryId: Value(outboxEntryId),
+        payloadSize: Value(outboxSize),
+      ),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncAgentBundle subject=$subject '
+      'entities=${enrichedBundle.entities.length} '
+      'links=${enrichedBundle.links.length}',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+
+    await _recordAgentBundleSent(enrichedBundle);
+    return false; // Fresh inserts are scheduled by enqueueMessage().
+  }
+
+  /// Enriches each child's `coveredVectorClocks` from
+  /// [SyncSequenceLogService.getLastSentVectorClockForEntry], mirroring
+  /// the enrichment that single-entity/link enqueues perform via
+  /// [_enrichCoveredVcsFromSequenceLog]. Without this, the first bundled
+  /// update of an entity whose predecessor has already been drained from
+  /// the outbox could omit that predecessor from coveredVectorClocks and
+  /// reopen a false gap on receivers.
+  Future<SyncAgentBundle> _enrichAgentBundleCoveredVcsFromSequenceLog(
+    SyncAgentBundle msg,
+  ) async {
+    final enrichedEntities = <SyncAgentEntity>[];
+    for (final child in msg.entities) {
+      final entityId = child.agentEntity?.id;
+      if (entityId == null) {
+        enrichedEntities.add(child);
+        continue;
+      }
+      final enriched = await _enrichCoveredVcsFromSequenceLog(
+        entityId,
+        child.coveredVectorClocks,
+      );
+      enrichedEntities.add(
+        identical(enriched, child.coveredVectorClocks)
+            ? child
+            : child.copyWith(coveredVectorClocks: enriched),
+      );
+    }
+
+    final enrichedLinks = <SyncAgentLink>[];
+    for (final child in msg.links) {
+      final linkId = child.agentLink?.id;
+      if (linkId == null) {
+        enrichedLinks.add(child);
+        continue;
+      }
+      final enriched = await _enrichCoveredVcsFromSequenceLog(
+        linkId,
+        child.coveredVectorClocks,
+      );
+      enrichedLinks.add(
+        identical(enriched, child.coveredVectorClocks)
+            ? child
+            : child.copyWith(coveredVectorClocks: enriched),
+      );
+    }
+
+    return msg.copyWith(entities: enrichedEntities, links: enrichedLinks);
+  }
+
   /// Shared implementation for enqueuing agent entities and links.
   /// Saves [payloadJson] to disk, builds an enriched outbox message from
   /// [enrichedMessage], and either merges into an existing pending item or
@@ -1706,6 +1909,27 @@ class OutboxService {
           stackTrace: st,
         );
       }
+    }
+  }
+
+  Future<void> _recordAgentBundleSent(SyncAgentBundle msg) async {
+    for (final entityMsg in msg.entities) {
+      final entity = entityMsg.agentEntity;
+      if (entity == null) continue;
+      await _recordAgentSent(
+        entryId: entity.id,
+        vectorClock: entity.vectorClock,
+        payloadType: SyncSequencePayloadType.agentEntity,
+      );
+    }
+    for (final linkMsg in msg.links) {
+      final link = linkMsg.agentLink;
+      if (link == null) continue;
+      await _recordAgentSent(
+        entryId: link.id,
+        vectorClock: link.vectorClock,
+        payloadType: SyncSequencePayloadType.agentLink,
+      );
     }
   }
 

@@ -296,6 +296,51 @@ void main() {
       );
     });
 
+    testWidgets('shows agent bundle payload label', (tester) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+
+      final item = OutboxItem(
+        id: 14,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        status: 0,
+        retries: 0,
+        priority: OutboxPriority.low.index,
+        message: jsonEncode({
+          'runtimeType': 'agentBundle',
+          'agentId': 'agent-001',
+          'wakeRunKey': 'run-001',
+          'entities': <Object?>[],
+          'links': <Object?>[],
+          'jsonPath': '/agent_bundles/run-001.json',
+        }),
+        subject: 'agentBundle:agent-001:run-001',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        viewModel.payloadKindLabel,
+        capturedContext.messages.syncPayloadAgentBundle,
+      );
+    });
+
     group('payloadSizeLabel', () {
       OutboxItem makeItem({int? payloadSize}) => OutboxItem(
         id: 100,

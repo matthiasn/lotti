@@ -155,7 +155,7 @@ void main() {
   late MockVectorClockService vectorClockService;
   late MockUserActivityService userActivityService;
   late Directory documentsDirectory;
-  late OutboxService service;
+  late TestableOutboxService service;
   late bool hadDirectoryRegistered;
   Directory? previousDirectory;
 
@@ -4978,6 +4978,397 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'SyncAgentBundle enqueues one row and stores child payloads in a file',
+      () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-1',
+          agentId: 'agent-1',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 2}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: link,
+                )
+                as SyncAgentLink,
+          ],
+        );
+
+        await service.enqueueMessage(message);
+
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
+
+        final companion = captured.first as OutboxCompanion;
+        expect(companion.subject.value, 'agentBundle:agent-1:run-1');
+        // Composite key (agentId:wakeRunKey) prevents two distinct agents
+        // that share a wakeRunKey from cross-wiring their pending rows.
+        expect(companion.outboxEntryId.value, 'agent-1:run-1');
+
+        final storedMessage =
+            SyncMessage.fromJson(
+                  json.decode(companion.message.value) as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        expect(storedMessage.jsonPath, '/agent_bundles/run-1.json');
+        expect(storedMessage.entities, isEmpty);
+        expect(storedMessage.links, isEmpty);
+        expect(storedMessage.originatingHostId, 'hostA');
+
+        final bundleFile = File(
+          '${documentsDirectory.path}/agent_bundles/run-1.json',
+        );
+        expect(bundleFile.existsSync(), isTrue);
+        final fileMessage =
+            SyncMessage.fromJson(
+                  json.decode(bundleFile.readAsStringSync())
+                      as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        expect(fileMessage.entities.single.agentEntity, entity);
+        expect(fileMessage.links.single.agentLink, link);
+        expect(fileMessage.entities.single.originatingHostId, 'hostA');
+        expect(fileMessage.links.single.originatingHostId, 'hostA');
+        expect(service.enqueueCalls, 1);
+      },
+    );
+
+    test(
+      'SyncAgentBundle enqueues inline fallback when saveJson fails',
+      () async {
+        final failingService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+          saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
+        );
+
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-fallback',
+          agentId: 'agent-1',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-fallback',
+          fromId: 'agent-1',
+          toId: 'state-fallback',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 2}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-fallback',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: link,
+                )
+                as SyncAgentLink,
+          ],
+        );
+
+        await failingService.enqueueMessage(message);
+
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
+
+        final companion = captured.first as OutboxCompanion;
+        expect(companion.subject.value, 'agentBundle:agent-1:run-fallback');
+        expect(companion.outboxEntryId.value, 'agent-1:run-fallback');
+
+        final storedMessage =
+            SyncMessage.fromJson(
+                  json.decode(companion.message.value) as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        expect(storedMessage.jsonPath, isNull);
+        expect(storedMessage.entities.single.agentEntity, entity);
+        expect(storedMessage.links.single.agentLink, link);
+        expect(
+          companion.payloadSize.value,
+          utf8.encode(companion.message.value).length,
+        );
+        expect(
+          File(
+            '${documentsDirectory.path}/agent_bundles/run-fallback.json',
+          ).existsSync(),
+          isFalse,
+        );
+        expect(failingService.enqueueCalls, 1);
+
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage.saveAgentBundle',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+
+        await failingService.dispose();
+      },
+    );
+
+    test(
+      'SyncAgentBundle skips empty bundle without writing to outbox',
+      () async {
+        const message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-empty',
+        );
+
+        await service.enqueueMessage(message);
+
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+        verify(
+          () => loggingService.captureEvent(
+            'enqueue.skip agentBundle is empty',
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'SyncAgentBundle rejects jsonPath that escapes documents root',
+      () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-escape',
+          agentId: 'agent-1',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-escape',
+          jsonPath: '/agent_bundles/../../etc/passwd',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+        );
+
+        await service.enqueueMessage(message);
+
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(
+              that: contains('enqueue.skip invalid agent bundle path'),
+            ),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'SyncAgentBundle merges with existing pending row by composite key',
+      () async {
+        final sampleDate = DateTime(2024, 3, 15);
+        final existingItem = OutboxItem(
+          id: 99,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message:
+              '{"runtimeType":"agentBundle","agentId":"agent-merge",'
+              '"wakeRunKey":"run-merge"}',
+          subject: 'agentBundle:agent-merge:run-merge',
+          filePath: null,
+          outboxEntryId: 'agent-merge:run-merge',
+          priority: OutboxPriority.normal.index,
+        );
+
+        when(
+          () => syncDatabase.findPendingByEntryId('agent-merge:run-merge'),
+        ).thenAnswer((_) async => existingItem);
+
+        String? capturedMessage;
+        String? capturedSubject;
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedMessage = invocation.namedArguments[#newMessage] as String?;
+          capturedSubject = invocation.namedArguments[#newSubject] as String?;
+          return 1;
+        });
+
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-merge',
+          agentId: 'agent-merge',
+          revision: 7,
+          slots: const AgentSlots(),
+          updatedAt: sampleDate,
+          vectorClock: const VectorClock({'hostA': 9}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-merge',
+          wakeRunKey: 'run-merge',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+        );
+
+        await service.enqueueMessage(message);
+
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 99,
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+
+        expect(capturedSubject, 'agentBundle:agent-merge:run-merge');
+        final merged =
+            SyncMessage.fromJson(
+                  json.decode(capturedMessage!) as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        // Merged outbox row carries the descriptor pointer, never inline
+        // children.
+        expect(merged.jsonPath, '/agent_bundles/run-merge.json');
+        expect(merged.entities, isEmpty);
+        expect(merged.links, isEmpty);
+      },
+    );
+
+    test(
+      'SyncAgentBundle enrichment skips children with null inner payload',
+      () async {
+        // Children whose inner agentEntity / agentLink is null cannot be
+        // enriched from the sequence log (no entry id to look up). The
+        // helper must take the early-return branch and pass the child
+        // through unchanged. Construct a bundle that mixes a null-payload
+        // child with a real one to exercise both branches.
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-skip',
+          agentId: 'agent-skip',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-skip',
+          fromId: 'agent-skip',
+          toId: 'state-skip',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'hostA': 2}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-skip',
+          wakeRunKey: 'run-skip',
+          entities: [
+            // Null-payload child — must be carried through verbatim.
+            const SyncMessage.agentEntity(status: SyncEntryStatus.update)
+                as SyncAgentEntity,
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: entity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            const SyncMessage.agentLink(status: SyncEntryStatus.update)
+                as SyncAgentLink,
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: link,
+                )
+                as SyncAgentLink,
+          ],
+        );
+
+        await service.enqueueMessage(message);
+
+        final bundleFile = File(
+          '${documentsDirectory.path}/agent_bundles/run-skip.json',
+        );
+        expect(bundleFile.existsSync(), isTrue);
+
+        final fileBundle =
+            SyncMessage.fromJson(
+                  json.decode(bundleFile.readAsStringSync())
+                      as Map<String, dynamic>,
+                )
+                as SyncAgentBundle;
+        // Both null-payload entries are preserved alongside the real ones.
+        expect(fileBundle.entities, hasLength(2));
+        expect(fileBundle.links, hasLength(2));
+        expect(fileBundle.entities.first.agentEntity, isNull);
+        expect(fileBundle.links.first.agentLink, isNull);
+      },
+    );
 
     test('SyncAgentLink merges with existing pending item', () async {
       final link = AgentLink.agentTask(

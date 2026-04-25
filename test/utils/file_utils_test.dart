@@ -274,4 +274,17 @@ void main() {
       );
     });
   });
+
+  group('agent sync payload paths', () {
+    test('builds encoded wake bundle paths', () {
+      expect(
+        relativeAgentBundlePath('run/1'),
+        '/agent_bundles/run%2F1.json',
+      );
+    });
+
+    test('recognizes wake bundles as agent sync payloads', () {
+      expect(isAgentPayloadPath('/agent_bundles/run-1.json'), isTrue);
+    });
+  });
 }

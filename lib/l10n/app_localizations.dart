@@ -10279,6 +10279,12 @@ abstract class AppLocalizations {
   /// **'Sync is not logged in'**
   String get syncNotLoggedInToast;
 
+  /// No description provided for @syncPayloadAgentBundle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent bundle'**
+  String get syncPayloadAgentBundle;
+
   /// No description provided for @syncPayloadAgentEntity.
   ///
   /// In en, this message translates to:

@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.976] - 2026-04-25
+### Changed
+- Agent wake cycles now sync as one bundled Matrix payload instead of emitting
+  one outbox row per agent entity/link mutation. `AgentSyncService` wraps wake
+  execution in a zone-local `AgentWakeSyncInterceptor` keyed by the wake run,
+  buffers only agent entity/link messages, deduplicates by id, preserves
+  superseded child vector clocks via `coveredVectorClocks`, and flushes a
+  descriptor-backed `SyncAgentBundle` to the outbox when the wake exits.
+  Receivers resolve the bundle attachment, apply entities before links through
+  the existing agent sync handlers, and record each child payload in the
+  sequence log so the convergence/backfill contract stays unchanged while wake
+  traffic collapses to one Matrix message.
+- `runInWakeCycle` is reentrant-safe (nested calls reuse the active
+  interceptor) and routes nested-transaction post-commit messages into the
+  wake buffer so multi-transaction wakes still ship as a single bundle.
+- The success-path bundle flush now swallows and logs outbox failures via
+  `DomainLogger` instead of failing the wake run — the database writes have
+  already committed, and maintenance/backfill paths can resurface the
+  committed rows. The failure-path flush continues to attempt one final
+  bundle send before re-throwing the original wake error.
+- The interceptor's merge step only carries forward the SUPERSEDED clock
+  (`previous.vectorClock`), since `OutboxService._prepareAgent{Entity,Link}`
+  already adds the current clock to `coveredVectorClocks` downstream and the
+  receiver's `_filterCoveredVectorClocks` strips it again before pre-marking
+  covered counters.
+- Linux: emojis no longer render as tofu in agent reports, journal text, or
+  any widget consuming a design-system text token. The token generator now
+  emits `fontFamilyFallback: ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto
+  Color Emoji']` on every `TextStyle` so widgets that bypass the
+  `ThemeData`-level fallback (e.g. `AgentMarkdownView`) still resolve the
+  correct emoji glyphs. The global theme's emoji fallback was widened from
+  Linux-only to all non-web platforms — fontconfig (or the equivalent on
+  each OS) ignores missing families so listing all three is harmless. The
+  previously-broken `linux/install_emoji_fonts.sh` now ships its
+  `flatpak/75-noto-color-emoji.conf` companion so the script runs without
+  errors on Ubuntu/Debian dev boxes.
+- New attachment family `/agent_bundles/<wakeRunKey>.json` is recognized by
+  `isAgentPayloadPath`, the matrix stream helpers' `extractJsonPathFromEvent`,
+  and the queue-apply adapter's transient attachment-error filter. Wake run
+  keys are URL-encoded in bundle file paths to keep them within the documents
+  directory.
+
 ## [0.9.975] - 2026-04-25
 ### Added
 - Task Agent now sees the active running timer when one is running. If the

@@ -5919,6 +5919,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncNotLoggedInToast => 'Synchronizace není přihlášena';
 
   @override
+  String get syncPayloadAgentBundle => 'Balíček agenta';
+
+  @override
   String get syncPayloadAgentEntity => 'Entita agenta';
 
   @override

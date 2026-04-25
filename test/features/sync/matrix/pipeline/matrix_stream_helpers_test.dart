@@ -76,6 +76,21 @@ void main() {
       );
     });
 
+    test('extractJsonPathFromEvent returns jsonPath for agentBundle', () {
+      final ev = MockEvent();
+      final jsonPayload = <String, dynamic>{
+        'runtimeType': 'agentBundle',
+        'jsonPath': '/agent_bundles/run-1.json',
+      };
+      final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+      when(() => ev.text).thenReturn(text);
+
+      expect(
+        extractJsonPathFromEvent(ev),
+        '/agent_bundles/run-1.json',
+      );
+    });
+
     test(
       'extractJsonPathFromEvent returns null for unsupported runtimeType',
       () {
