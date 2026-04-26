@@ -37,15 +37,14 @@ Future<Map<String, int>> savedTaskFilterCounts(Ref ref) async {
   final saved =
       ref.watch(savedTaskFiltersControllerProvider).value ??
       const <SavedTaskFilter>[];
+  if (saved.isEmpty) return const <String, int>{};
 
   final sub = getIt<UpdateNotifications>().updateStream.listen((affectedIds) {
     if (affectedIds.contains(taskNotification)) ref.invalidateSelf();
   });
   ref.onDispose(sub.cancel);
 
-  if (saved.isEmpty) return const <String, int>{};
-
-  final repo = ref.read(savedTaskFilterCountRepositoryProvider);
+  final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
   final counts = await Future.wait(
     saved.map((view) => repo.count(view.filter)),
   );

@@ -844,11 +844,11 @@ SELECT category, COUNT(*) AS task_count FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   GROUP BY category;
 
--- Mirrors the predicate set of `filteredTasksAllPrivateAllStarred` but
--- returns COUNT(*) instead of the full row, used by saved-filter sidebar
--- counts. Project and agent post-filters are applied in Dart on top of
--- this number — the SQL captures everything the live task list filters
--- on at the journal-table level.
+-- COUNT(*) variant used for saved-filter sidebar counts. Predicates:
+-- :privateStatuses (parameterised, like `filteredTasks`) + :taskStatuses
+-- + :categories + label/priority subselects. No starred predicate — saved
+-- filters never narrow by starred state. Project and agent post-filters
+-- are applied in Dart on top of the result.
 countFilteredTasks:
 SELECT COUNT(*) FROM journal
   WHERE type = 'Task'

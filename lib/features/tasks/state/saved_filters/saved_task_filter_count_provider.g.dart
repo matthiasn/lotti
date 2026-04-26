@@ -131,7 +131,7 @@ final class SavedTaskFilterCountsProvider
 }
 
 String _$savedTaskFilterCountsHash() =>
-    r'5587d162360a3b03b6d45ef9a508febbbb77fd52';
+    r'6e1128659993768ed428a33ef98e51ac8ddcbb98';
 
 /// Convenience family — reads a single saved filter's count from the
 /// aggregated map. Returns 0 when the id no longer resolves (concurrent
