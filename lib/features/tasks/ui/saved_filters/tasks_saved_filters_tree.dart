@@ -23,19 +23,8 @@ class TasksSavedFiltersTree extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeId = ref.watch(currentSavedTaskFilterIdProvider);
-
-    // Build a `Map<savedFilterId, int>` of live counts by watching the count
-    // provider for each saved filter. Each provider tracks task notifications
-    // and re-runs its own count, so individual changes don't cascade across
-    // unrelated rows.
-    final saved =
-        ref.watch(savedTaskFiltersControllerProvider).value ??
-        const <SavedTaskFilter>[];
-    final counts = <String, int>{};
-    for (final view in saved) {
-      final value = ref.watch(savedTaskFilterCountProvider(view.id)).value;
-      if (value != null) counts[view.id] = value;
-    }
+    final counts =
+        ref.watch(savedTaskFilterCountsProvider).value ?? const <String, int>{};
 
     return SavedTaskFiltersSection(
       activeId: activeId,

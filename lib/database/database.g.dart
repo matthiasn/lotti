@@ -6902,6 +6902,100 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
   }
 
+  Selectable<int> countFilteredTasks(
+    List<bool> privateStatuses,
+    List<String?> taskStatuses,
+    List<String> categories,
+    bool filterByLabels,
+    int labelFilterCount,
+    List<String> labelIds,
+    bool includeUnlabeled,
+    bool filterByPriorities,
+    int priorityFilterCount,
+    List<String?> priorities,
+  ) {
+    var $arrayStartIndex = 6;
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
+    $arrayStartIndex += privateStatuses.length;
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
+    $arrayStartIndex += taskStatuses.length;
+    final expandedcategories = $expandVar($arrayStartIndex, categories.length);
+    $arrayStartIndex += categories.length;
+    final expandedlabelIds = $expandVar($arrayStartIndex, labelIds.length);
+    $arrayStartIndex += labelIds.length;
+    final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
+    $arrayStartIndex += priorities.length;
+    return customSelect(
+      'SELECT COUNT(*) AS _c0 FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND private IN ($expandedprivateStatuses) AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c2 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))',
+      variables: [
+        Variable<bool>(filterByLabels),
+        Variable<int>(labelFilterCount),
+        Variable<bool>(includeUnlabeled),
+        Variable<bool>(filterByPriorities),
+        Variable<int>(priorityFilterCount),
+        for (var $ in privateStatuses) Variable<bool>($),
+        for (var $ in taskStatuses) Variable<String>($),
+        for (var $ in categories) Variable<String>($),
+        for (var $ in labelIds) Variable<String>($),
+        for (var $ in priorities) Variable<String>($),
+      ],
+      readsFrom: {journal, labeled},
+    ).map((QueryRow row) => row.read<int>('_c0'));
+  }
+
+  Selectable<String> selectFilteredTaskIds(
+    List<bool> privateStatuses,
+    List<String?> taskStatuses,
+    List<String> categories,
+    bool filterByLabels,
+    int labelFilterCount,
+    List<String> labelIds,
+    bool includeUnlabeled,
+    bool filterByPriorities,
+    int priorityFilterCount,
+    List<String?> priorities,
+  ) {
+    var $arrayStartIndex = 6;
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
+    $arrayStartIndex += privateStatuses.length;
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
+    $arrayStartIndex += taskStatuses.length;
+    final expandedcategories = $expandVar($arrayStartIndex, categories.length);
+    $arrayStartIndex += categories.length;
+    final expandedlabelIds = $expandVar($arrayStartIndex, labelIds.length);
+    $arrayStartIndex += labelIds.length;
+    final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
+    $arrayStartIndex += priorities.length;
+    return customSelect(
+      'SELECT id FROM journal WHERE type = \'Task\' AND deleted = FALSE AND task = 1 AND private IN ($expandedprivateStatuses) AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(NOT ?1 OR((?2 > 0 AND EXISTS (SELECT 1 AS _c0 FROM labeled WHERE labeled.journal_id = journal.id AND labeled.label_id IN ($expandedlabelIds)))OR(?3 AND NOT EXISTS (SELECT 1 AS _c1 FROM labeled WHERE labeled.journal_id = journal.id))))AND(NOT ?4 OR ?5 = 0 OR task_priority IN ($expandedpriorities))',
+      variables: [
+        Variable<bool>(filterByLabels),
+        Variable<int>(labelFilterCount),
+        Variable<bool>(includeUnlabeled),
+        Variable<bool>(filterByPriorities),
+        Variable<int>(priorityFilterCount),
+        for (var $ in privateStatuses) Variable<bool>($),
+        for (var $ in taskStatuses) Variable<String>($),
+        for (var $ in categories) Variable<String>($),
+        for (var $ in labelIds) Variable<String>($),
+        for (var $ in priorities) Variable<String>($),
+      ],
+      readsFrom: {journal, labeled},
+    ).map((QueryRow row) => row.read<String>('id'));
+  }
+
   Selectable<DashboardDefinitionDbEntity> allDashboards() {
     return customSelect(
       'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',

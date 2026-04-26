@@ -8,17 +8,15 @@ part of 'saved_task_filter_count_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Override hook so widget tests can provide a [SavedTaskFilterCountRepository]
-/// without going through GetIt. Production reads the live one from GetIt at
-/// build time.
+/// Override hook so widget tests can provide a fake repository without going
+/// through GetIt.
 
 @ProviderFor(savedTaskFilterCountRepository)
 final savedTaskFilterCountRepositoryProvider =
     SavedTaskFilterCountRepositoryProvider._();
 
-/// Override hook so widget tests can provide a [SavedTaskFilterCountRepository]
-/// without going through GetIt. Production reads the live one from GetIt at
-/// build time.
+/// Override hook so widget tests can provide a fake repository without going
+/// through GetIt.
 
 final class SavedTaskFilterCountRepositoryProvider
     extends
@@ -28,9 +26,8 @@ final class SavedTaskFilterCountRepositoryProvider
           SavedTaskFilterCountRepository
         >
     with $Provider<SavedTaskFilterCountRepository> {
-  /// Override hook so widget tests can provide a [SavedTaskFilterCountRepository]
-  /// without going through GetIt. Production reads the live one from GetIt at
-  /// build time.
+  /// Override hook so widget tests can provide a fake repository without going
+  /// through GetIt.
   SavedTaskFilterCountRepositoryProvider._()
     : super(
         from: null,
@@ -68,37 +65,91 @@ final class SavedTaskFilterCountRepositoryProvider
 }
 
 String _$savedTaskFilterCountRepositoryHash() =>
-    r'df8528f6e6e159cc103f77d2aee7dc9b2182522f';
+    r'0e7df05e8549069ba1778e04297051027703217a';
 
-/// Live count of tasks matching the saved filter with [savedFilterId].
+/// Live `{savedFilterId → matching task count}` for every persisted saved
+/// filter, recomputed when the filter list changes or when a task-shaped
+/// notification arrives.
 ///
-/// Resolves the saved filter from [savedTaskFiltersControllerProvider],
-/// delegates the count to [SavedTaskFilterCountRepository], and invalidates
-/// itself whenever a task-shaped change is broadcast on
-/// [UpdateNotifications.updateStream]. Returns 0 when the saved id no longer
-/// resolves (concurrent delete) so the sidebar doesn't show a stale number.
+/// `UpdateNotifications.updateStream` multiplexes both locally-originated
+/// notifications and sync-originated ones (the latter are debounced by
+/// `UpdateNotifications` and flushed onto the same controller), so counts
+/// stay in sync when tasks arrive from another device.
+
+@ProviderFor(savedTaskFilterCounts)
+final savedTaskFilterCountsProvider = SavedTaskFilterCountsProvider._();
+
+/// Live `{savedFilterId → matching task count}` for every persisted saved
+/// filter, recomputed when the filter list changes or when a task-shaped
+/// notification arrives.
+///
+/// `UpdateNotifications.updateStream` multiplexes both locally-originated
+/// notifications and sync-originated ones (the latter are debounced by
+/// `UpdateNotifications` and flushed onto the same controller), so counts
+/// stay in sync when tasks arrive from another device.
+
+final class SavedTaskFilterCountsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, int>>,
+          Map<String, int>,
+          FutureOr<Map<String, int>>
+        >
+    with $FutureModifier<Map<String, int>>, $FutureProvider<Map<String, int>> {
+  /// Live `{savedFilterId → matching task count}` for every persisted saved
+  /// filter, recomputed when the filter list changes or when a task-shaped
+  /// notification arrives.
+  ///
+  /// `UpdateNotifications.updateStream` multiplexes both locally-originated
+  /// notifications and sync-originated ones (the latter are debounced by
+  /// `UpdateNotifications` and flushed onto the same controller), so counts
+  /// stay in sync when tasks arrive from another device.
+  SavedTaskFilterCountsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'savedTaskFilterCountsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$savedTaskFilterCountsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, int>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, int>> create(Ref ref) {
+    return savedTaskFilterCounts(ref);
+  }
+}
+
+String _$savedTaskFilterCountsHash() =>
+    r'6e1128659993768ed428a33ef98e51ac8ddcbb98';
+
+/// Convenience family — reads a single saved filter's count from the
+/// aggregated map. Returns 0 when the id no longer resolves (concurrent
+/// delete) so the sidebar doesn't show a stale number.
 
 @ProviderFor(savedTaskFilterCount)
 final savedTaskFilterCountProvider = SavedTaskFilterCountFamily._();
 
-/// Live count of tasks matching the saved filter with [savedFilterId].
-///
-/// Resolves the saved filter from [savedTaskFiltersControllerProvider],
-/// delegates the count to [SavedTaskFilterCountRepository], and invalidates
-/// itself whenever a task-shaped change is broadcast on
-/// [UpdateNotifications.updateStream]. Returns 0 when the saved id no longer
-/// resolves (concurrent delete) so the sidebar doesn't show a stale number.
+/// Convenience family — reads a single saved filter's count from the
+/// aggregated map. Returns 0 when the id no longer resolves (concurrent
+/// delete) so the sidebar doesn't show a stale number.
 
 final class SavedTaskFilterCountProvider
     extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
     with $FutureModifier<int>, $FutureProvider<int> {
-  /// Live count of tasks matching the saved filter with [savedFilterId].
-  ///
-  /// Resolves the saved filter from [savedTaskFiltersControllerProvider],
-  /// delegates the count to [SavedTaskFilterCountRepository], and invalidates
-  /// itself whenever a task-shaped change is broadcast on
-  /// [UpdateNotifications.updateStream]. Returns 0 when the saved id no longer
-  /// resolves (concurrent delete) so the sidebar doesn't show a stale number.
+  /// Convenience family — reads a single saved filter's count from the
+  /// aggregated map. Returns 0 when the id no longer resolves (concurrent
+  /// delete) so the sidebar doesn't show a stale number.
   SavedTaskFilterCountProvider._({
     required SavedTaskFilterCountFamily super.from,
     required String super.argument,
@@ -143,15 +194,11 @@ final class SavedTaskFilterCountProvider
 }
 
 String _$savedTaskFilterCountHash() =>
-    r'f2298f1e85bca36edaf4d0bb3826274062289c43';
+    r'664ed3fc4c878ca9b41cce182db4d41f3d49f52a';
 
-/// Live count of tasks matching the saved filter with [savedFilterId].
-///
-/// Resolves the saved filter from [savedTaskFiltersControllerProvider],
-/// delegates the count to [SavedTaskFilterCountRepository], and invalidates
-/// itself whenever a task-shaped change is broadcast on
-/// [UpdateNotifications.updateStream]. Returns 0 when the saved id no longer
-/// resolves (concurrent delete) so the sidebar doesn't show a stale number.
+/// Convenience family — reads a single saved filter's count from the
+/// aggregated map. Returns 0 when the id no longer resolves (concurrent
+/// delete) so the sidebar doesn't show a stale number.
 
 final class SavedTaskFilterCountFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<int>, String> {
@@ -164,13 +211,9 @@ final class SavedTaskFilterCountFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Live count of tasks matching the saved filter with [savedFilterId].
-  ///
-  /// Resolves the saved filter from [savedTaskFiltersControllerProvider],
-  /// delegates the count to [SavedTaskFilterCountRepository], and invalidates
-  /// itself whenever a task-shaped change is broadcast on
-  /// [UpdateNotifications.updateStream]. Returns 0 when the saved id no longer
-  /// resolves (concurrent delete) so the sidebar doesn't show a stale number.
+  /// Convenience family — reads a single saved filter's count from the
+  /// aggregated map. Returns 0 when the id no longer resolves (concurrent
+  /// delete) so the sidebar doesn't show a stale number.
 
   SavedTaskFilterCountProvider call(String savedFilterId) =>
       SavedTaskFilterCountProvider._(argument: savedFilterId, from: this);

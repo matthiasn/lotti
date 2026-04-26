@@ -240,8 +240,13 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              for (var i = 0; i < categoryDotColors.length; i++) ...[
-                                if (i > 0) SizedBox(width: tokens.spacing.step1),
+                              for (
+                                var i = 0;
+                                i < categoryDotColors.length;
+                                i++
+                              ) ...[
+                                if (i > 0)
+                                  SizedBox(width: tokens.spacing.step1),
                                 Container(
                                   width: tokens.spacing.step3,
                                   height: tokens.spacing.step3,

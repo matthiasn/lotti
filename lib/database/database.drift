@@ -844,6 +844,69 @@ SELECT category, COUNT(*) AS task_count FROM journal
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   GROUP BY category;
 
+-- COUNT(*) variant used for saved-filter sidebar counts. Predicates:
+-- :privateStatuses (parameterised, like `filteredTasks`) + :taskStatuses
+-- + :categories + label/priority subselects. No starred predicate — saved
+-- filters never narrow by starred state. Project and agent post-filters
+-- are applied in Dart on top of the result.
+countFilteredTasks:
+SELECT COUNT(*) FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND task = 1
+  AND private IN :privateStatuses
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND (
+    NOT :filterByLabels
+    OR (
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
+      ))
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+      ))
+    )
+  )
+  AND (
+    NOT :filterByPriorities
+    OR :priorityFilterCount = 0
+    OR task_priority IN :priorities
+  );
+
+-- Same predicate as `countFilteredTasks`, but returns the task ids so the
+-- caller can intersect with project / agent post-filter id sets.
+selectFilteredTaskIds:
+SELECT id FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND task = 1
+  AND private IN :privateStatuses
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND (
+    NOT :filterByLabels
+    OR (
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
+      ))
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+      ))
+    )
+  )
+  AND (
+    NOT :filterByPriorities
+    OR :priorityFilterCount = 0
+    OR task_priority IN :priorities
+  );
+
 allDashboards:
 SELECT * FROM dashboard_definitions
   WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
