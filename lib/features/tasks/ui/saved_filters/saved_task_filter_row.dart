@@ -172,14 +172,17 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
         ? tokens.colors.interactive.enabled
         : tokens.colors.text.lowEmphasis;
 
-    // When the saved filter scopes to exactly one category, surface that
-    // category's color as a small dot left of the title. Multi-category and
-    // category-less filters get no dot — the visual would imply an
-    // ambiguous category.
+    // Surface each selected category's color as a small dot left of the
+    // title. Capped at three dots so the leading gutter stays compact;
+    // categories whose colour cannot be resolved (deleted, no colour set)
+    // are skipped.
     final categoryIds = widget.view.filter.selectedCategoryIds;
-    final categoryDotColor = categoryIds.length == 1
-        ? _categoryColor(categoryIds.first)
-        : null;
+    final categoryDotColors = <Color>[];
+    for (final id in categoryIds) {
+      if (categoryDotColors.length == 3) break;
+      final c = _categoryColor(id);
+      if (c != null) categoryDotColors.add(c);
+    }
 
     return MouseRegion(
       onEnter: (_) => _setHover(true),
@@ -220,24 +223,37 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
                   ),
                   child: Row(
                     children: [
-                      // Reserve the dot's column even when absent so the
-                      // label stays vertically aligned across rows. The
-                      // category dot is enlarged to step3 (8). Stays
-                      // visible on hover — the drag handle lives in its
-                      // own narrow column at the row's leading edge and
-                      // is bounded so the two glyphs do not overlap.
-                      SizedBox(
-                        width: tokens.spacing.step3,
-                        height: tokens.spacing.step3,
-                        child: categoryDotColor != null && !_editing
-                            ? DecoratedBox(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: categoryDotColor,
+                      // Reserve the dot column even when absent so the
+                      // label stays vertically aligned across rows. Each
+                      // dot is step3 (8) with a step1 (2) gap between
+                      // them; the column expands when multiple categories
+                      // are selected, which is the desired behaviour
+                      // (more dots = wider gutter).
+                      if (categoryDotColors.isEmpty || _editing)
+                        SizedBox(
+                          width: tokens.spacing.step3,
+                          height: tokens.spacing.step3,
+                        )
+                      else
+                        SizedBox(
+                          height: tokens.spacing.step3,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (var i = 0; i < categoryDotColors.length; i++) ...[
+                                if (i > 0) SizedBox(width: tokens.spacing.step1),
+                                Container(
+                                  width: tokens.spacing.step3,
+                                  height: tokens.spacing.step3,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: categoryDotColors[i],
+                                  ),
                                 ),
-                              )
-                            : null,
-                      ),
+                              ],
+                            ],
+                          ),
+                        ),
                       SizedBox(width: tokens.spacing.step3),
                       Expanded(
                         child: _editing
