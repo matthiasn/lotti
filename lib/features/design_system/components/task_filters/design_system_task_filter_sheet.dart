@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 List<T> _parseJsonList<T>(
   dynamic jsonList,
@@ -791,12 +794,15 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
 /// Sticky action bar for the filter sheet — Clear All + Apply buttons.
 ///
 /// Designed to be used as the `stickyActionBar` in a Wolt modal page.
-class DesignSystemTaskFilterActionBar extends StatelessWidget {
+class DesignSystemTaskFilterActionBar extends StatefulWidget {
   const DesignSystemTaskFilterActionBar({
     required this.state,
     required this.onChanged,
     this.onApplyPressed,
     this.onClearAllPressed,
+    this.onSavePressed,
+    this.canSave = false,
+    this.initialSaveName,
     super.key,
   });
 
@@ -805,11 +811,67 @@ class DesignSystemTaskFilterActionBar extends StatelessWidget {
   final ValueChanged<DesignSystemTaskFilterState>? onApplyPressed;
   final ValueChanged<DesignSystemTaskFilterState>? onClearAllPressed;
 
+  /// When supplied, a Save affordance is rendered between Clear All and
+  /// Apply. Tapping it opens an inline name popup; the trimmed name is
+  /// passed to this callback when the user commits.
+  final ValueChanged<String>? onSavePressed;
+
+  /// Whether the Save affordance is currently enabled.
+  final bool canSave;
+
+  /// Optional initial value for the Save name popup — typically the name
+  /// of the currently active saved filter, when the user is editing it.
+  final String? initialSaveName;
+
+  /// Stable test key for the Save action button.
+  @visibleForTesting
+  static const Key saveButtonKey = ValueKey(
+    'design-system-task-filter-save',
+  );
+
+  /// Stable test key for the Save name popup card.
+  @visibleForTesting
+  static const Key saveNamePopupKey = ValueKey(
+    'design-system-task-filter-save-popup',
+  );
+
+  /// Stable test key for the Save name popup text field.
+  @visibleForTesting
+  static const Key saveNamePopupFieldKey = ValueKey(
+    'design-system-task-filter-save-popup-field',
+  );
+
+  /// Stable test key for the popup commit button.
+  @visibleForTesting
+  static const Key saveNamePopupCommitKey = ValueKey(
+    'design-system-task-filter-save-popup-commit',
+  );
+
+  @override
+  State<DesignSystemTaskFilterActionBar> createState() =>
+      _DesignSystemTaskFilterActionBarState();
+}
+
+class _DesignSystemTaskFilterActionBarState
+    extends State<DesignSystemTaskFilterActionBar> {
+  final MenuController _saveMenu = MenuController();
+
+  void _openSavePopup() {
+    if (!widget.canSave) return;
+    if (_saveMenu.isOpen) {
+      _saveMenu.close();
+    } else {
+      _saveMenu.open();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final palette = DesignSystemFilterPalette.fromTokens(tokens);
     final spacing = tokens.spacing;
+    final messages = context.messages;
+    final showSaveButton = widget.onSavePressed != null;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -823,30 +885,238 @@ class DesignSystemTaskFilterActionBar extends StatelessWidget {
               key: const ValueKey(
                 'design-system-task-filter-clear',
               ),
-              label: state.clearAllLabel,
+              label: widget.state.clearAllLabel,
               palette: palette,
               highlighted: false,
               textStyle: tokens.typography.styles.subtitle.subtitle1,
               onTap: () {
-                final clearedState = state.clearAll();
-                onChanged(clearedState);
-                onClearAllPressed?.call(clearedState);
+                final clearedState = widget.state.clearAll();
+                widget.onChanged(clearedState);
+                widget.onClearAllPressed?.call(clearedState);
               },
             ),
           ),
+          if (showSaveButton) ...[
+            SizedBox(width: spacing.step5),
+            Expanded(
+              child: MenuAnchor(
+                controller: _saveMenu,
+                alignmentOffset: const Offset(0, -8),
+                menuChildren: [
+                  _SaveNamePopup(
+                    key: DesignSystemTaskFilterActionBar.saveNamePopupKey,
+                    initialValue: widget.initialSaveName ?? '',
+                    activeFilterCount: widget.state.appliedCount,
+                    tokens: tokens,
+                    messages: messages,
+                    onCancel: _saveMenu.close,
+                    onCommit: (name) {
+                      _saveMenu.close();
+                      widget.onSavePressed?.call(name);
+                    },
+                  ),
+                ],
+                builder: (ctx, controller, child) {
+                  return DesignSystemFilterActionButton(
+                    key: DesignSystemTaskFilterActionBar.saveButtonKey,
+                    label: messages.tasksSavedFiltersSaveButtonLabel,
+                    palette: palette,
+                    highlighted: false,
+                    textStyle: tokens.typography.styles.subtitle.subtitle1,
+                    onTap: _openSavePopup,
+                  );
+                },
+              ),
+            ),
+          ],
           SizedBox(width: spacing.step5),
           Expanded(
             child: DesignSystemFilterActionButton(
               key: const ValueKey(
                 'design-system-task-filter-apply',
               ),
-              label: state.applyLabel,
+              label: widget.state.applyLabel,
               palette: palette,
               highlighted: true,
-              counter: state.appliedCount,
+              counter: widget.state.appliedCount,
               textStyle: tokens.typography.styles.subtitle.subtitle1,
-              onTap: () => onApplyPressed?.call(state),
+              onTap: () => widget.onApplyPressed?.call(widget.state),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SaveNamePopup extends StatefulWidget {
+  const _SaveNamePopup({
+    required this.initialValue,
+    required this.activeFilterCount,
+    required this.tokens,
+    required this.messages,
+    required this.onCancel,
+    required this.onCommit,
+    super.key,
+  });
+
+  final String initialValue;
+  final int activeFilterCount;
+  final DsTokens tokens;
+  final AppLocalizations messages;
+  final VoidCallback onCancel;
+  final ValueChanged<String> onCommit;
+
+  @override
+  State<_SaveNamePopup> createState() => _SaveNamePopupState();
+}
+
+class _SaveNamePopupState extends State<_SaveNamePopup> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+  final FocusNode _focusNode = FocusNode();
+  late bool _canCommit = _controller.text.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_handleTextChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _controller.text.length,
+      );
+      _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_handleTextChanged)
+      ..dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleTextChanged() {
+    final next = _controller.text.trim().isNotEmpty;
+    if (next != _canCommit) {
+      setState(() => _canCommit = next);
+    }
+  }
+
+  void _commit() {
+    if (!_canCommit) return;
+    widget.onCommit(_controller.text.trim());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = widget.tokens;
+    final messages = widget.messages;
+    return Container(
+      width: 270,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            messages.tasksSavedFiltersSavePopupTitle,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Focus(
+            onKeyEvent: (node, event) {
+              if (event is KeyDownEvent &&
+                  event.logicalKey == LogicalKeyboardKey.escape) {
+                widget.onCancel();
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: TextField(
+              key: DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
+              controller: _controller,
+              focusNode: _focusNode,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _commit(),
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: messages.tasksSavedFiltersSavePopupHint,
+                hintStyle: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: tokens.colors.interactive.enabled,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: tokens.colors.interactive.enabled,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            messages.tasksSavedFiltersSavePopupHelper(
+              widget.activeFilterCount,
+            ),
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: widget.onCancel,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: tokens.colors.text.mediumEmphasis,
+                    side: BorderSide(color: tokens.colors.decorative.level01),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  child: Text(messages.tasksSavedFiltersSavePopupCancel),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: FilledButton(
+                  key: DesignSystemTaskFilterActionBar.saveNamePopupCommitKey,
+                  onPressed: _canCommit ? _commit : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: tokens.colors.interactive.enabled,
+                    foregroundColor: tokens.colors.text.onInteractiveAlert,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  child: Text(messages.tasksSavedFiltersSavePopupSave),
+                ),
+              ),
+            ],
           ),
         ],
       ),

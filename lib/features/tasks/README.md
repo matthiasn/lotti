@@ -370,6 +370,42 @@ Persistence uses:
 
 which keeps tasks-tab filter state separate from the journal tab. One subtle boundary here: project filtering is persisted in the same controller state, but the visible project filter controls are rendered by shared/project widgets rather than `lib/features/tasks/ui/filtering/`.
 
+### Saved Filters
+
+The tasks tab also supports user-saved filters surfaced as a treeview under the Tasks destination in the desktop sidebar. The model lives in `lib/features/tasks/state/saved_filters/`:
+
+- `SavedTaskFilter` (`{id, name, filter: TasksFilter}`) is a Freezed JSON-serializable model. The ephemeral `query` / `match` field on `JournalPageState` is intentionally NOT part of the saved payload — it stays on the live page state and is preserved across saved-filter activations.
+- `SavedTaskFiltersPersistence` writes the ordered list as a single JSON blob to `SettingsDb` under the `SAVED_TASK_FILTERS` key. Position in the list IS the sort order. Mirrors the dedup-on-write pattern of `JournalFilterPersistence`.
+- `savedTaskFiltersControllerProvider` (Riverpod `keepAlive: true` async notifier) exposes `create`, `rename`, `updateFilter`, `delete`, `reorder`. Each mutation persists.
+- `SavedTaskFilterActivator` applies a `SavedTaskFilter` to the live `JournalPageController` via `applyBatchFilterUpdate`.
+
+Three derived providers wire the UI to the live page state:
+
+- `currentSavedTaskFilterIdProvider` — id of the saved filter whose persisted shape matches the live filter (display-only fields like `showCoverArt`/`showProjectsHeader`/`showDistances` are ignored when matching), or `null` when nothing matches.
+- `tasksFilterHasUnsavedClausesProvider` — `true` when the live filter has clauses but doesn't match any saved filter; gates the sidebar `+` and modal Save button.
+- `liveTasksFilterProvider` — snapshot of the live `TasksFilter` shape; used by the Save flow to capture exactly what the user sees.
+
+Surfaces:
+
+1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. Empty state is a dashed pill instructing the user to adjust the filter and tap Save.
+2. Filter modal Save flow — `DesignSystemTaskFilterActionBar` gained an optional Save button next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
+3. Tasks pane named-filter indicator — `TabSectionHeader.titleSuffix` renders `· {savedFilterName}` next to "Tasks" when a saved filter is active.
+4. Save / update / delete confirmation toasts via `SnackBar` (`saved_task_filter_toast.dart`).
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoMatch
+  NoMatch: live filter has no saved match
+  Saved: live filter matches saved view
+  NoMatch --> Saved: activate saved row\n· filter applies\n· currentSavedId set
+  Saved --> NoMatch: user edits any field\n· currentSavedId clears
+  NoMatch --> Saved: user re-edits into\nan existing saved shape
+  NoMatch --> NoMatch: Save button →\nname popup → create
+  Saved --> Saved: Save with same name →\nupdateFilter (no rename)
+```
+
+Counts in the saved-filter rows are surfaced through the optional `counts: Map<String, int>?` parameter on `SavedTaskFiltersSection`. The current desktop wiring leaves this null pending a per-saved-filter task-count provider — the row hides the count when none is supplied.
+
 The redesigned browse page also preserves the existing non-filter runtime behavior:
 
 - pull-to-refresh

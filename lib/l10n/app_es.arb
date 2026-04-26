@@ -2689,7 +2689,36 @@
   "tasksSavedFilterRenameSemantics": "Renombrar filtro guardado",
   "tasksSavedFiltersAddTooltip": "Guardar filtro actual",
   "tasksSavedFiltersEmpty": "Aún no tienes filtros guardados. Ajusta el filtro de tareas y toca Guardar.",
-  "tasksSavedFiltersSectionTitle": "Filtros guardados",
+  "tasksSavedFiltersSaveButtonLabel": "Guardar",
+  "tasksSavedFiltersSavePopupCancel": "Cancelar",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtro activo. Guardado en la barra lateral, bajo Tareas.} other{{count} filtros activos. Guardados en la barra lateral, bajo Tareas.}}",
+  "@tasksSavedFiltersSavePopupHelper": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersSavePopupHint": "p. ej. Bloqueadas o en pausa",
+  "tasksSavedFiltersSavePopupSave": "Guardar",
+  "tasksSavedFiltersSavePopupTitle": "Asigna un nombre a este filtro",
+  "tasksSavedFilterToastDeleted": "Filtro eliminado",
+  "tasksSavedFilterToastSaved": "Guardado «{name}»",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Actualizado «{name}»",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSearchModeLabel": "Modo de búsqueda",
   "tasksShowCoverArt": "Mostrar imagen de portada en tarjetas",
   "tasksShowCreationDate": "Mostrar fecha de creación en tarjetas",

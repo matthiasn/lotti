@@ -10,11 +10,15 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -206,6 +210,16 @@ Future<void> _pumpAppScreen(
           ),
         ),
         shouldAutoShowWhatsNewProvider.overrideWith((ref) async => false),
+        // The Tasks destination's expanded subtree (TasksSavedFiltersTree)
+        // watches saved-filter providers. Override them with safe defaults so
+        // this test doesn't transitively trigger the real JournalPageController
+        // build chain (which needs Fts5Db etc. that aren't wired up here).
+        savedTaskFiltersControllerProvider.overrideWith(
+          () => _StubSavedTaskFiltersController(const []),
+        ),
+        currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
+        tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+        liveTasksFilterProvider.overrideWith((ref) => const TasksFilter()),
       ],
       child: MaterialApp.router(
         theme: withOverrides(ThemeData.dark(useMaterial3: true)),
@@ -634,4 +648,12 @@ void main() {
       await tester.pump();
     });
   });
+}
+
+class _StubSavedTaskFiltersController extends SavedTaskFiltersController {
+  _StubSavedTaskFiltersController(this._seed);
+  final List<SavedTaskFilter> _seed;
+
+  @override
+  Future<List<SavedTaskFilter>> build() async => _seed;
 }

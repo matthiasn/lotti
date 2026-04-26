@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.977" date="2026-04-25">
+      <description>
+          <p>Saved filters for the Tasks tab. Build a filter (status, priority, category, agent, etc.) in the Tasks Filter modal, tap the new Save button next to Apply, give it a name, and pin it under "Tasks" in the expanded sidebar. Saved filters live in SavedTaskFiltersController (Riverpod, keepAlive: true), persist as a JSON list under SAVED_TASK_FILTERS in SettingsDb, and surface as a treeview with active-state highlight, hover-revealed two-tap delete, double-click inline rename, drag-to-reorder, and a "Tasks · {filter name}" indicator in the tasks pane header. Activating a saved filter applies it via JournalPageController.applyBatchFilterUpdate while preserving the ephemeral search query.</p>
+      </description>
+    </release>
     <release version="0.9.976" date="2026-04-25">
       <description>
           <p>Agent wake cycles now sync as one bundled Matrix payload instead of emitting one outbox row per agent entity/link mutation. AgentSyncService wraps wake execution in a zone-local AgentWakeSyncInterceptor keyed by the wake run, buffers only agent entity/link messages, deduplicates by id, preserves superseded child vector clocks via coveredVectorClocks, and flushes a descriptor-backed SyncAgentBundle to the outbox when the wake exits. Receivers resolve the bundle attachment, apply entities before links through the existing agent sync handlers, and record each child payload in the sequence log so the convergence and backfill contract stays unchanged while wake traffic collapses to one Matrix message.</p>

@@ -22,6 +22,7 @@ class TabSectionHeader extends StatelessWidget {
     required this.onFilterPressed,
     required this.filterTooltip,
     this.titleTrailing,
+    this.titleSuffix,
     super.key,
   });
 
@@ -34,6 +35,10 @@ class TabSectionHeader extends StatelessWidget {
   final VoidCallback onFilterPressed;
   final String filterTooltip;
   final Widget? titleTrailing;
+
+  /// Optional inline suffix rendered after [title] — used by Tasks to show
+  /// "Tasks · {savedFilterName}" when a saved filter is active.
+  final Widget? titleSuffix;
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +67,22 @@ class TabSectionHeader extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    title,
-                    style: tokens.typography.styles.heading.heading3.copyWith(
-                      color: highText,
-                    ),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.heading.heading3
+                              .copyWith(color: highText),
+                        ),
+                      ),
+                      if (titleSuffix != null) ...[
+                        SizedBox(width: tokens.spacing.step3),
+                        Flexible(child: titleSuffix!),
+                      ],
+                    ],
                   ),
                 ),
                 effectiveTitleTrailing,

@@ -7,10 +7,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -107,9 +111,15 @@ void main() {
     ).thenAnswer((_) async => <ProjectEntry>[]);
 
     getIt.allowReassignment = true;
+    final mockSettingsDb = MockSettingsDb();
+    when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
+    when(
+      () => mockSettingsDb.saveSettingsItem(any(), any()),
+    ).thenAnswer((_) async => 1);
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<JournalDb>(mockJournalDb);
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<SettingsDb>(mockSettingsDb);
   });
 
   tearDown(getIt.reset);
@@ -124,6 +134,15 @@ void main() {
           journalPageControllerProvider(true).overrideWith(
             () => fakeController,
           ),
+          // Saved-filter providers depend on the live JournalPageController.
+          // Override them with safe defaults so this test exercises the
+          // existing filter UI without spinning up the saved-filter stack.
+          savedTaskFiltersControllerProvider.overrideWith(
+            () => _StubSavedTaskFiltersController(const []),
+          ),
+          currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
+          tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
+          liveTasksFilterProvider.overrideWith((ref) => const TasksFilter()),
         ],
         child: Scaffold(
           body: Builder(
@@ -386,4 +405,12 @@ void main() {
       expect(showCreation, findsOneWidget);
     });
   });
+}
+
+class _StubSavedTaskFiltersController extends SavedTaskFiltersController {
+  _StubSavedTaskFiltersController(this._seed);
+  final List<SavedTaskFilter> _seed;
+
+  @override
+  Future<List<SavedTaskFilter>> build() async => _seed;
 }

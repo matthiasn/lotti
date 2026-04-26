@@ -54,7 +54,7 @@ final class SavedTaskFiltersControllerProvider
 }
 
 String _$savedTaskFiltersControllerHash() =>
-    r'4b7cbbf71b29ae2167345e22369a8f1424ed1cd0';
+    r'9b4871c872a517e08789775bd7b8a29781247592';
 
 /// Riverpod controller backing the user's pinned task-filter list.
 ///

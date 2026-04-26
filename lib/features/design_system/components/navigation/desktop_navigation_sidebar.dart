@@ -15,6 +15,7 @@ class DesktopSidebarDestination {
     required this.label,
     required this.iconBuilder,
     this.trailingBuilder,
+    this.expandedChildBuilder,
   });
 
   /// Display label for this destination.
@@ -26,6 +27,16 @@ class DesktopSidebarDestination {
   /// Optional builder for a trailing widget (e.g. a count badge) rendered
   /// on the right side of the row, aligned with the label.
   final Widget Function({required bool active})? trailingBuilder;
+
+  /// Optional builder for a subtree rendered immediately below the
+  /// destination row when the sidebar is in its expanded layout.
+  ///
+  /// The builder is only invoked while the destination is the active tab —
+  /// the design system uses this to host the Tasks "Saved filters" treeview
+  /// without having to special-case the tasks destination in every consumer.
+  /// Subtrees stay collapsed when the sidebar is in its narrow icon-only
+  /// layout.
+  final Widget Function()? expandedChildBuilder;
 }
 
 /// Persistent left-hand navigation sidebar for the desktop layout.
@@ -131,6 +142,16 @@ class DesktopNavigationSidebar extends StatelessWidget {
                       collapsed: collapsed,
                       onTap: () => onDestinationSelected(i),
                     ),
+                    // Render the destination's expanded subtree only when
+                    // the destination is active and the sidebar is not
+                    // collapsed — keeps icon-only mode visually stable.
+                    if (!collapsed &&
+                        i == activeIndex &&
+                        !isSettingsActive &&
+                        destinations[i].expandedChildBuilder != null) ...[
+                      SizedBox(height: tokens.spacing.step3),
+                      destinations[i].expandedChildBuilder!(),
+                    ],
                     if (i < destinations.length - 1)
                       SizedBox(height: tokens.spacing.step6),
                   ],

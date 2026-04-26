@@ -2426,7 +2426,36 @@
   "tasksSavedFilterRenameSemantics": "Přejmenovat uložený filtr",
   "tasksSavedFiltersAddTooltip": "Uložit aktuální filtr",
   "tasksSavedFiltersEmpty": "Zatím žádné uložené filtry. Uprav filtr úkolů a klepni na Uložit.",
-  "tasksSavedFiltersSectionTitle": "Uložené filtry",
+  "tasksSavedFiltersSaveButtonLabel": "Uložit",
+  "tasksSavedFiltersSavePopupCancel": "Zrušit",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{Aktivní 1 filtr. Uloženo na boční panel pod Úkoly.} few{Aktivní {count} filtry. Uloženo na boční panel pod Úkoly.} other{Aktivních {count} filtrů. Uloženo na boční panel pod Úkoly.}}",
+  "@tasksSavedFiltersSavePopupHelper": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersSavePopupHint": "např. Blokované nebo pozastavené",
+  "tasksSavedFiltersSavePopupSave": "Uložit",
+  "tasksSavedFiltersSavePopupTitle": "Pojmenuj tento filtr",
+  "tasksSavedFilterToastDeleted": "Filtr smazán",
+  "tasksSavedFilterToastSaved": "Uloženo „{name}“",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Aktualizováno „{name}“",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSearchModeLabel": "Režim hledání",
   "tasksShowCoverArt": "Zobrazit obal na kartách",
   "tasksShowCreationDate": "Zobrazit datum vytvoření na kartách",

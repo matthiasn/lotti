@@ -476,6 +476,68 @@ void main() {
       expect(find.byIcon(Icons.add_rounded), findsNothing);
     });
 
+    testWidgets(
+      'expandedChildBuilder renders below the active destination row',
+      (tester) async {
+        const childKey = Key('expanded-subtree');
+        final destinations = [
+          DesktopSidebarDestination(
+            label: 'Journal',
+            iconBuilder: ({required bool active}) => const Icon(Icons.book),
+          ),
+          DesktopSidebarDestination(
+            label: 'Tasks',
+            iconBuilder: ({required bool active}) => const Icon(Icons.task_alt),
+            expandedChildBuilder: () => const Padding(
+              key: childKey,
+              padding: EdgeInsets.all(4),
+              child: Text('saved-filters'),
+            ),
+          ),
+        ];
+
+        // Inactive destination — subtree must not render.
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: destinations,
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byKey(childKey), findsNothing);
+
+        // Active destination — subtree renders.
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: destinations,
+              activeIndex: 1,
+              onDestinationSelected: (_) {},
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byKey(childKey), findsOneWidget);
+
+        // Collapsed mode — subtree stays hidden even when active.
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: destinations,
+              activeIndex: 1,
+              onDestinationSelected: (_) {},
+              collapsed: true,
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byKey(childKey), findsNothing);
+      },
+    );
+
     testWidgets('toggle icon is tappable and fires onToggleCollapsed', (
       tester,
     ) async {

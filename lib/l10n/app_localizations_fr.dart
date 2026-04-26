@@ -6552,7 +6552,44 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun filtre enregistré pour l\'instant. Ajuste le filtre des tâches, puis appuie sur Enregistrer.';
 
   @override
-  String get tasksSavedFiltersSectionTitle => 'Filtres enregistrés';
+  String get tasksSavedFiltersSaveButtonLabel => 'Enregistrer';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Annuler';
+
+  @override
+  String tasksSavedFiltersSavePopupHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count filtres actifs. Enregistrés dans la barre latérale, sous Tâches.',
+      one: '1 filtre actif. Enregistré dans la barre latérale, sous Tâches.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksSavedFiltersSavePopupHint => 'ex. : Bloquées ou en pause';
+
+  @override
+  String get tasksSavedFiltersSavePopupSave => 'Enregistrer';
+
+  @override
+  String get tasksSavedFiltersSavePopupTitle => 'Nomme ce filtre';
+
+  @override
+  String get tasksSavedFilterToastDeleted => 'Filtre supprimé';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return '« $name » enregistré';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return '« $name » mis à jour';
+  }
 
   @override
   String get tasksSearchModeLabel => 'Mode de recherche';

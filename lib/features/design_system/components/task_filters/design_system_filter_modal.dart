@@ -19,12 +19,20 @@ typedef DesignSystemFilterFieldHandler =
 /// The action bar (Clear All + Apply) is rendered as a sticky action bar that
 /// remains visible while the filter sections scroll. State is shared between
 /// the scrollable content and the sticky action bar via a [ValueNotifier].
+///
+/// When [onSavePressed] is supplied, an additional Save affordance is rendered
+/// next to Apply. Tapping it opens an inline name popup; the entered name is
+/// passed to [onSavePressed]. The button is disabled when [canSave] is false
+/// (typically because the filter has no clauses to save).
 Future<void> showDesignSystemFilterModal({
   required BuildContext context,
   required DesignSystemTaskFilterState initialState,
   required ValueChanged<DesignSystemTaskFilterState> onApplied,
   DesignSystemFilterFieldHandler? onFieldPressed,
   Widget Function(Widget)? modalDecorator,
+  ValueChanged<String>? onSavePressed,
+  bool canSave = false,
+  String? initialSaveName,
 }) async {
   final stateNotifier = ValueNotifier(initialState);
 
@@ -47,6 +55,9 @@ Future<void> showDesignSystemFilterModal({
                 Navigator.of(ctx).pop();
               },
               onClearAllPressed: (next) => stateNotifier.value = next,
+              onSavePressed: onSavePressed,
+              canSave: canSave,
+              initialSaveName: initialSaveName,
             );
           },
         );

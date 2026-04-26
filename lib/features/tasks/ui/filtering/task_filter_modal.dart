@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -8,8 +9,12 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
+import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_project_selection_modal.dart';
 import 'package:lotti/features/tasks/ui/filtering/tasks_filter_sheet_state.dart';
+import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_toast.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -51,9 +56,56 @@ Future<void> showTaskFilterModal(
     projectsWithCategories: allProjectsWithCategories,
   );
 
+  // Snapshot the saved-filter state for the Save flow.
+  final savedFilters =
+      container.read(savedTaskFiltersControllerProvider).value ??
+      const <SavedTaskFilter>[];
+  final matchedId = container.read(currentSavedTaskFilterIdProvider);
+  final hasUnsavedClauses = container.read(
+    tasksFilterHasUnsavedClausesProvider,
+  );
+  // Resolve the active id to a name. If the id no longer points at any saved
+  // filter (concurrent delete/rename), degrade to the create flow rather than
+  // updating a stale id.
+  final matchedName = matchedId == null
+      ? null
+      : savedFilters
+            .where((f) => f.id == matchedId)
+            .map((f) => f.name)
+            .firstOrNull;
+  final initialSavedId = matchedName == null ? null : matchedId;
+  final initialSavedName = matchedName;
+  final canSave = hasUnsavedClauses || initialSavedId != null;
+
   await showDesignSystemFilterModal(
     context: context,
     initialState: initialState,
+    canSave: showTasks && canSave,
+    initialSaveName: initialSavedName,
+    onSavePressed: !showTasks
+        ? null
+        : (rawName) async {
+            // The modal stays open after save (only the popup closes); the
+            // user can still tap Apply to commit the draft state.
+            final liveFilter = container.read(liveTasksFilterProvider);
+            final notifier = container.read(
+              savedTaskFiltersControllerProvider.notifier,
+            );
+            if (initialSavedId != null && rawName == initialSavedName) {
+              await notifier.updateFilter(initialSavedId, liveFilter);
+              if (context.mounted) {
+                showSavedTaskFilterUpdatedToast(context, name: rawName);
+              }
+            } else {
+              final created = await notifier.create(
+                name: rawName,
+                filter: liveFilter,
+              );
+              if (context.mounted) {
+                showSavedTaskFilterSavedToast(context, name: created.name);
+              }
+            }
+          },
     onApplied: (sheetState) {
       _applyFilterState(
         sheetState,

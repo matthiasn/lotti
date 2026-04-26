@@ -6439,7 +6439,44 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch keine gespeicherten Filter. Pass den Aufgabenfilter an und tippe auf Speichern.';
 
   @override
-  String get tasksSavedFiltersSectionTitle => 'Gespeicherte Filter';
+  String get tasksSavedFiltersSaveButtonLabel => 'Speichern';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Abbrechen';
+
+  @override
+  String tasksSavedFiltersSavePopupHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.',
+      one: '1 Filter aktiv. In der Seitenleiste unter „Aufgaben“ gespeichert.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksSavedFiltersSavePopupHint => 'z. B. Blockiert oder pausiert';
+
+  @override
+  String get tasksSavedFiltersSavePopupSave => 'Speichern';
+
+  @override
+  String get tasksSavedFiltersSavePopupTitle => 'Diesen Filter benennen';
+
+  @override
+  String get tasksSavedFilterToastDeleted => 'Filter gelöscht';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return '„$name“ gespeichert';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return '„$name“ aktualisiert';
+  }
 
   @override
   String get tasksSearchModeLabel => 'Suchmodus';

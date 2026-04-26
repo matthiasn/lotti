@@ -6439,7 +6439,45 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím žádné uložené filtry. Uprav filtr úkolů a klepni na Uložit.';
 
   @override
-  String get tasksSavedFiltersSectionTitle => 'Uložené filtry';
+  String get tasksSavedFiltersSaveButtonLabel => 'Uložit';
+
+  @override
+  String get tasksSavedFiltersSavePopupCancel => 'Zrušit';
+
+  @override
+  String tasksSavedFiltersSavePopupHelper(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Aktivních $count filtrů. Uloženo na boční panel pod Úkoly.',
+      few: 'Aktivní $count filtry. Uloženo na boční panel pod Úkoly.',
+      one: 'Aktivní 1 filtr. Uloženo na boční panel pod Úkoly.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksSavedFiltersSavePopupHint =>
+      'např. Blokované nebo pozastavené';
+
+  @override
+  String get tasksSavedFiltersSavePopupSave => 'Uložit';
+
+  @override
+  String get tasksSavedFiltersSavePopupTitle => 'Pojmenuj tento filtr';
+
+  @override
+  String get tasksSavedFilterToastDeleted => 'Filtr smazán';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return 'Uloženo „$name“';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return 'Aktualizováno „$name“';
+  }
 
   @override
   String get tasksSearchModeLabel => 'Režim hledání';
