@@ -46,9 +46,13 @@ import 'package:matrix/matrix.dart';
 class AppScreenConstants {
   const AppScreenConstants._();
 
-  static const double navigationPadding = 10;
+  static const double navigationPadding = 34;
   static const double navigationTimeIndicatorBottom = 0;
   static const double navigationAudioIndicatorRight = 100;
+
+  /// Amount by which the recording indicators visually overlap the top edge
+  /// of the bottom-nav pill so their flat bottoms tuck into it.
+  static const double navigationIndicatorPillOverlap = 6;
 }
 
 /// Check if the app is running inside Flatpak sandbox
@@ -455,9 +459,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           ),
       ],
     );
-    final overlayBottomInset = DesignSystemBottomNavigationBar.occupiedHeight(
-      context,
-    );
+    final overlayBottomInset =
+        DesignSystemBottomNavigationBar.pillTopFromScreenBottom(context);
 
     return Scaffold(
       extendBody: true,
@@ -478,7 +481,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             left: AppScreenConstants.navigationPadding,
             bottom:
                 AppScreenConstants.navigationTimeIndicatorBottom +
-                overlayBottomInset,
+                overlayBottomInset -
+                AppScreenConstants.navigationIndicatorPillOverlap,
             child: const TimeRecordingIndicator(),
           ),
           // Only show AudioRecordingIndicator when not running in Flatpak
@@ -488,7 +492,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               right: AppScreenConstants.navigationAudioIndicatorRight,
               bottom:
                   AppScreenConstants.navigationTimeIndicatorBottom +
-                  overlayBottomInset,
+                  overlayBottomInset -
+                  AppScreenConstants.navigationIndicatorPillOverlap,
               child: const AudioRecordingIndicator(),
             ),
         ],

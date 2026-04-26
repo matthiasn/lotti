@@ -55,7 +55,6 @@ class OutboxBadgeIcon extends ConsumerWidget {
         label,
         style: badgeStyle,
       ),
-      alignment: AlignmentDirectional.bottomEnd,
       backgroundColor: badgeColor,
       isLabelVisible: count > 0,
       child: effectiveIcon,

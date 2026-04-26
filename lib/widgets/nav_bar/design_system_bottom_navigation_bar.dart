@@ -44,6 +44,14 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
         itemHeight;
   }
 
+  /// Distance from the bottom of the screen to the top edge of the visible
+  /// nav-bar pill. Used by overlays (e.g. recording indicators) that should
+  /// dock flush against the pill rather than float above the outer bounds.
+  static double pillTopFromScreenBottom(BuildContext context) {
+    if (isDesktopLayout(context)) return 0;
+    return occupiedHeight(context) - padding(context).top;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(

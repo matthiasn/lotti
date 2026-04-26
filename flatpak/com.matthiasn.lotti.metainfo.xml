@@ -33,6 +33,7 @@
   <releases>
     <release version="0.9.977" date="2026-04-25">
       <description>
+          <p>Bottom navigation bar polish: the sync outbox badge on the Settings tab now sits in the top-right of the icon to match the Tasks badge, and the audio and time recording indicators dock flush against the visible nav-bar pill instead of floating above it.</p>
           <p>Saved filters for the Tasks tab. Build a filter (status, priority, category, agent, etc.) in the Tasks Filter modal, tap the new Save button next to Apply, give it a name, and pin it under "Tasks" in the expanded sidebar. Saved filters live in SavedTaskFiltersController (Riverpod, keepAlive: true), persist as a JSON list under SAVED_TASK_FILTERS in SettingsDb, and surface as a treeview with active-state highlight, hover-revealed two-tap delete, double-click inline rename, drag-to-reorder, and a "Tasks · {filter name}" indicator in the tasks pane header. Activating a saved filter applies it via JournalPageController.applyBatchFilterUpdate while preserving the ephemeral search query.</p>
       </description>
     </release>
