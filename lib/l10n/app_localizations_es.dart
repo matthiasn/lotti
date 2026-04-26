@@ -6566,9 +6566,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Asigna un nombre a este filtro';
 
   @override
-  String get tasksSavedFiltersSectionTitle => 'Filtros guardados';
-
-  @override
   String get tasksSavedFilterToastDeleted => 'Filtro eliminado';
 
   @override

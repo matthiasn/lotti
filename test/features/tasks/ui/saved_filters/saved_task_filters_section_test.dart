@@ -9,7 +9,6 @@ import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart'
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_row.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filters_section.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -26,19 +25,15 @@ const _afterDoubleTapTimeout = Duration(milliseconds: 350);
 Future<void> _pumpSection(
   WidgetTester tester, {
   required ValueChanged<SavedTaskFilter> onActivate,
-  required VoidCallback onAddPressed,
   String? activeId,
-  bool canAdd = false,
   Map<String, int>? counts,
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       SavedTaskFiltersSection(
         activeId: activeId,
-        canAdd: canAdd,
         counts: counts,
         onActivate: onActivate,
-        onAddPressed: onAddPressed,
       ),
     ),
   );
@@ -66,22 +61,18 @@ void main() {
     );
   }
 
-  testWidgets('renders the empty state when no saved filters exist', (
-    tester,
-  ) async {
-    await _pumpSection(
-      tester,
-      onActivate: (_) {},
-      onAddPressed: () {},
-    );
+  testWidgets(
+    'renders nothing when no saved filters exist (header is hidden too)',
+    (tester) async {
+      await _pumpSection(tester, onActivate: (_) {});
 
-    final emptyFinder = find.byKey(SavedTaskFiltersSectionKeys.emptyState);
-    expect(emptyFinder, findsOneWidget);
-
-    final messages = AppLocalizations.of(tester.element(emptyFinder))!;
-    expect(find.text(messages.tasksSavedFiltersEmpty), findsOneWidget);
-    expect(find.byKey(SavedTaskFiltersSectionKeys.list), findsNothing);
-  });
+      // Section root is still in the tree as a SizedBox.shrink — no header,
+      // no list, no empty-state pill. New filters are saved through the
+      // modal's Save button, so an empty placeholder adds noise.
+      expect(find.byKey(SavedTaskFiltersSectionKeys.root), findsOneWidget);
+      expect(find.byKey(SavedTaskFiltersSectionKeys.list), findsNothing);
+    },
+  );
 
   testWidgets('renders rows for each persisted saved filter', (tester) async {
     stubPersisted(const [
@@ -89,11 +80,7 @@ void main() {
       SavedTaskFilter(id: 'sv-2', name: 'B', filter: _filterB),
     ]);
 
-    await _pumpSection(
-      tester,
-      onActivate: (_) {},
-      onAddPressed: () {},
-    );
+    await _pumpSection(tester, onActivate: (_) {});
 
     expect(find.byKey(SavedTaskFiltersSectionKeys.list), findsOneWidget);
     expect(find.byKey(SavedTaskFilterRowKeys.root('sv-1')), findsOneWidget);
@@ -110,50 +97,12 @@ void main() {
     ]);
 
     SavedTaskFilter? activated;
-    await _pumpSection(
-      tester,
-      onActivate: (f) => activated = f,
-      onAddPressed: () {},
-    );
+    await _pumpSection(tester, onActivate: (f) => activated = f);
 
     await tester.tap(find.byKey(SavedTaskFilterRowKeys.root('sv-1')));
     await tester.pump(_afterDoubleTapTimeout);
 
     expect(activated?.id, 'sv-1');
-  });
-
-  testWidgets(
-    'add button is disabled and skips onAddPressed when canAdd=false',
-    (tester) async {
-      var pressed = 0;
-      await _pumpSection(
-        tester,
-        onActivate: (_) {},
-        onAddPressed: () => pressed++,
-      );
-
-      await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.addButton));
-      await tester.pump();
-
-      expect(pressed, 0);
-    },
-  );
-
-  testWidgets('add button invokes onAddPressed when canAdd=true', (
-    tester,
-  ) async {
-    var pressed = 0;
-    await _pumpSection(
-      tester,
-      onActivate: (_) {},
-      onAddPressed: () => pressed++,
-      canAdd: true,
-    );
-
-    await tester.tap(find.byKey(SavedTaskFiltersSectionKeys.addButton));
-    await tester.pump();
-
-    expect(pressed, 1);
   });
 
   testWidgets('passes counts through to rows', (tester) async {
@@ -164,7 +113,6 @@ void main() {
     await _pumpSection(
       tester,
       onActivate: (_) {},
-      onAddPressed: () {},
       counts: const {'sv-1': 12},
     );
 
@@ -178,11 +126,7 @@ void main() {
       SavedTaskFilter(id: 'sv-1', name: 'Alpha', filter: _filterA),
     ]);
 
-    await _pumpSection(
-      tester,
-      onActivate: (_) {},
-      onAddPressed: () {},
-    );
+    await _pumpSection(tester, onActivate: (_) {});
 
     // Double-tap the row to enter rename mode.
     final rowFinder = find.byKey(SavedTaskFilterRowKeys.root('sv-1'));
@@ -220,11 +164,7 @@ void main() {
       SavedTaskFilter(id: 'sv-2', name: 'Bravo', filter: _filterB),
     ]);
 
-    await _pumpSection(
-      tester,
-      onActivate: (_) {},
-      onAddPressed: () {},
-    );
+    await _pumpSection(tester, onActivate: (_) {});
 
     // Reveal the delete button via hover, then two-tap to commit.
     final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
@@ -265,7 +205,6 @@ void main() {
     await _pumpSection(
       tester,
       onActivate: (_) {},
-      onAddPressed: () {},
       activeId: 'sv-2',
     );
 

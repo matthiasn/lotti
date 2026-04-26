@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/color.dart';
 
 /// Stable test keys for the saved-filter row internals.
 @visibleForTesting
@@ -142,23 +145,41 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
     setState(() => _confirmDelete = true);
   }
 
+  /// Resolves the color stored on the `CategoryDefinition` keyed by [id], or
+  /// `null` when the category has been deleted or carries no color string.
+  Color? _categoryColor(String id) {
+    final hex = getIt<EntitiesCacheService>().getCategoryById(id)?.color;
+    if (hex == null || hex.isEmpty) return null;
+    return colorFromCssHex(hex);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final showDeleteAffordance = _hover && !_editing;
-    final showDragHandle =
-        (_hover || widget.active) && widget.dragHandle != null;
+    // Drag handle is hidden until the row is hovered — desktop-native pattern,
+    // matches macOS list affordances (no persistent grip on the active row).
+    final showDragHandle = _hover && widget.dragHandle != null;
 
     final background = widget.active
         ? tokens.colors.surface.selected
         : (_hover ? tokens.colors.surface.hover : Colors.transparent);
     final labelColor = widget.active
-        ? tokens.colors.text.highEmphasis
-        : tokens.colors.text.mediumEmphasis;
+        ? tokens.colors.text.mediumEmphasis
+        : tokens.colors.text.lowEmphasis;
     final countColor = widget.active
         ? tokens.colors.interactive.enabled
         : tokens.colors.text.lowEmphasis;
+
+    // When the saved filter scopes to exactly one category, surface that
+    // category's color as a small dot left of the title. Multi-category and
+    // category-less filters get no dot — the visual would imply an
+    // ambiguous category.
+    final categoryIds = widget.view.filter.selectedCategoryIds;
+    final categoryDotColor = categoryIds.length == 1
+        ? _categoryColor(categoryIds.first)
+        : null;
 
     return MouseRegion(
       onEnter: (_) => _setHover(true),
@@ -173,8 +194,11 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
           onDoubleTap: _editing ? null : _enterEditMode,
           child: Container(
             key: SavedTaskFilterRowKeys.root(widget.view.id),
-            margin: const EdgeInsetsDirectional.only(start: 4),
-            constraints: const BoxConstraints(minHeight: 32),
+            margin: EdgeInsetsDirectional.only(start: tokens.spacing.step2),
+            constraints: BoxConstraints(
+              // step6 + step1 → 26: same row min-height as before.
+              minHeight: tokens.spacing.step6 + tokens.spacing.step1,
+            ),
             decoration: BoxDecoration(
               color: background,
               borderRadius: BorderRadius.circular(tokens.radii.m),
@@ -182,48 +206,39 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                if (widget.active)
-                  Positioned.directional(
-                    textDirection: Directionality.of(context),
-                    start: 14,
-                    top: 7,
-                    bottom: 7,
-                    child: Container(
-                      width: 2,
-                      decoration: BoxDecoration(
-                        color: tokens.colors.interactive.enabled,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                if (!widget.active && !_hover)
-                  Positioned.directional(
-                    textDirection: Directionality.of(context),
-                    start: 9,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: Container(
-                        width: 3,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: tokens.colors.interactive.enabled.withValues(
-                            alpha: 0.4,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 Padding(
-                  padding: const EdgeInsetsDirectional.only(
-                    start: 30,
-                    end: 8,
-                    top: 7,
-                    bottom: 7,
+                  // start: step5 + step2 + step1 → 22 (restored to the
+                  // pre-refactor pill geometry the user signed off on).
+                  padding: EdgeInsetsDirectional.only(
+                    start:
+                        tokens.spacing.step5 +
+                        tokens.spacing.step2 +
+                        tokens.spacing.step1,
+                    end: tokens.spacing.step3,
+                    top: tokens.spacing.step2,
+                    bottom: tokens.spacing.step2,
                   ),
                   child: Row(
                     children: [
+                      // Reserve the dot's column even when absent so the
+                      // label stays vertically aligned across rows. The
+                      // category dot is enlarged to step3 (8). Stays
+                      // visible on hover — the drag handle lives in its
+                      // own narrow column at the row's leading edge and
+                      // is bounded so the two glyphs do not overlap.
+                      SizedBox(
+                        width: tokens.spacing.step3,
+                        height: tokens.spacing.step3,
+                        child: categoryDotColor != null && !_editing
+                            ? DecoratedBox(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: categoryDotColor,
+                                ),
+                              )
+                            : null,
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
                       Expanded(
                         child: _editing
                             ? _RenameField(
@@ -242,13 +257,8 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
                                 widget.view.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: tokens.typography.styles.body.bodyMedium
-                                    .copyWith(
-                                      color: labelColor,
-                                      fontWeight: widget.active
-                                          ? FontWeight.w600
-                                          : FontWeight.w500,
-                                    ),
+                                style: tokens.typography.styles.others.caption
+                                    .copyWith(color: labelColor),
                               ),
                       ),
                       if (!_editing)
@@ -262,8 +272,8 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
                                 opacity: showDeleteAffordance ? 0 : 1,
                                 duration: const Duration(milliseconds: 120),
                                 child: Padding(
-                                  padding: const EdgeInsetsDirectional.only(
-                                    start: 6,
+                                  padding: EdgeInsetsDirectional.only(
+                                    start: tokens.spacing.step2,
                                   ),
                                   child: Text(
                                     '${widget.count}',
@@ -312,9 +322,13 @@ class _SavedTaskFilterRowState extends State<SavedTaskFilterRow> {
                 if (showDragHandle)
                   Positioned.directional(
                     textDirection: Directionality.of(context),
-                    start: 4,
+                    start: tokens.spacing.step1,
                     top: 0,
                     bottom: 0,
+                    // Bound the handle to its own narrow column so it never
+                    // visually creeps into the dot's space (dot starts at
+                    // step5 + step2 + step1 = 22 from the row's left edge).
+                    width: tokens.spacing.step5,
                     child: Center(
                       child: KeyedSubtree(
                         key: SavedTaskFilterRowKeys.dragHandle(widget.view.id),

@@ -69,19 +69,23 @@ void main() {
     );
   }
 
-  testWidgets('renders the saved-filters section', (tester) async {
-    final fake = FakeJournalPageController(const JournalPageState());
+  testWidgets(
+    'renders nothing when no saved filters are persisted',
+    (tester) async {
+      final fake = FakeJournalPageController(const JournalPageState());
 
-    await _pumpTree(
-      tester,
-      fakeController: fake,
-      seed: const [],
-    );
+      await _pumpTree(
+        tester,
+        fakeController: fake,
+        seed: const [],
+      );
 
-    expect(find.byKey(SavedTaskFiltersSectionKeys.root), findsOneWidget);
-    // Empty state is visible when nothing is persisted.
-    expect(find.byKey(SavedTaskFiltersSectionKeys.emptyState), findsOneWidget);
-  });
+      // The section collapses to a SizedBox.shrink when the list is empty —
+      // there is no header, no list, no empty-state pill.
+      expect(find.byKey(SavedTaskFiltersSectionKeys.root), findsOneWidget);
+      expect(find.byKey(SavedTaskFiltersSectionKeys.list), findsNothing);
+    },
+  );
 
   testWidgets(
     'tapping a saved-filter row activates the filter on the page controller',
@@ -182,8 +186,11 @@ void main() {
   );
 
   testWidgets(
-    'localised section header title is rendered',
+    'renders a list (no header) when at least one saved filter is persisted',
     (tester) async {
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+      ]);
       final fake = FakeJournalPageController(const JournalPageState());
 
       await _pumpTree(
@@ -192,13 +199,10 @@ void main() {
         seed: const [],
       );
 
-      final messages = AppLocalizations.of(
-        tester.element(find.byKey(SavedTaskFiltersSectionKeys.root)),
-      )!;
-      expect(
-        find.text(messages.tasksSavedFiltersSectionTitle.toUpperCase()),
-        findsOneWidget,
-      );
+      // No section header — the rows live directly under the Tasks
+      // destination. The list and at least one row must be present.
+      expect(find.byKey(SavedTaskFiltersSectionKeys.list), findsOneWidget);
+      expect(find.byKey(SavedTaskFilterRowKeys.root('sv-1')), findsOneWidget);
     },
   );
 }

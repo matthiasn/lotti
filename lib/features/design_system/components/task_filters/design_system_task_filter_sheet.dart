@@ -898,33 +898,35 @@ class _DesignSystemTaskFilterActionBarState
           ),
           if (showSaveButton) ...[
             SizedBox(width: spacing.step5),
-            MenuAnchor(
-              controller: _saveMenu,
-              alignmentOffset: const Offset(0, -8),
-              menuChildren: [
-                _SaveNamePopup(
-                  key: DesignSystemTaskFilterActionBar.saveNamePopupKey,
-                  initialValue: widget.initialSaveName ?? '',
-                  activeFilterCount: widget.state.appliedCount,
-                  tokens: tokens,
-                  messages: messages,
-                  onCancel: _saveMenu.close,
-                  onCommit: (name) {
-                    _saveMenu.close();
-                    widget.onSavePressed?.call(name);
-                  },
-                ),
-              ],
-              builder: (ctx, controller, child) {
-                return DesignSystemFilterActionButton(
-                  key: DesignSystemTaskFilterActionBar.saveButtonKey,
-                  label: messages.tasksSavedFiltersSaveButtonLabel,
-                  palette: palette,
-                  highlighted: false,
-                  textStyle: tokens.typography.styles.subtitle.subtitle1,
-                  onTap: _openSavePopup,
-                );
-              },
+            Expanded(
+              child: MenuAnchor(
+                controller: _saveMenu,
+                alignmentOffset: const Offset(0, -8),
+                menuChildren: [
+                  _SaveNamePopup(
+                    key: DesignSystemTaskFilterActionBar.saveNamePopupKey,
+                    initialValue: widget.initialSaveName ?? '',
+                    activeFilterCount: widget.state.appliedCount,
+                    tokens: tokens,
+                    messages: messages,
+                    onCancel: _saveMenu.close,
+                    onCommit: (name) {
+                      _saveMenu.close();
+                      widget.onSavePressed?.call(name);
+                    },
+                  ),
+                ],
+                builder: (ctx, controller, child) {
+                  return DesignSystemFilterActionButton(
+                    key: DesignSystemTaskFilterActionBar.saveButtonKey,
+                    label: messages.tasksSavedFiltersSaveButtonLabel,
+                    palette: palette,
+                    highlighted: false,
+                    textStyle: tokens.typography.styles.subtitle.subtitle1,
+                    onTap: _openSavePopup,
+                  );
+                },
+              ),
             ),
           ],
           SizedBox(width: spacing.step5),

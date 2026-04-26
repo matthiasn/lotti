@@ -99,29 +99,32 @@ void main() {
     expect(find.text('In progress · P0'), findsOneWidget);
   });
 
-  testWidgets('renders the drag handle slot when one is supplied', (
-    tester,
-  ) async {
-    const handle = Icon(Icons.drag_indicator, size: 14, key: Key('handle'));
-    await tester.pumpWidget(
-      makeTestableWidget(
-        SavedTaskFilterRow(
-          view: _view,
-          active: true,
-          onActivate: () {},
-          onRename: (_) {},
-          onDelete: () {},
-          dragHandle: handle,
+  testWidgets(
+    'drag handle is hidden by default — even on the active row',
+    (tester) async {
+      const handle = Icon(Icons.drag_indicator, size: 14, key: Key('handle'));
+      await tester.pumpWidget(
+        makeTestableWidget(
+          SavedTaskFilterRow(
+            view: _view,
+            active: true,
+            onActivate: () {},
+            onRename: (_) {},
+            onDelete: () {},
+            dragHandle: handle,
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(
-      find.byKey(SavedTaskFilterRowKeys.dragHandle('sv-1')),
-      findsOneWidget,
-    );
-    expect(find.byKey(const Key('handle')), findsOneWidget);
-  });
+      // Desktop-native pattern: the grip only surfaces while the row is
+      // hovered. The active row gets its own surface tint, no persistent
+      // grip needed.
+      expect(
+        find.byKey(SavedTaskFilterRowKeys.dragHandle('sv-1')),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('hover reveals the delete affordance and drag handle', (
     tester,

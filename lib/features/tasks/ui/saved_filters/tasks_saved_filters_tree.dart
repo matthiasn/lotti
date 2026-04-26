@@ -4,7 +4,6 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
-import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_toast.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filters_section.dart';
 
@@ -13,36 +12,27 @@ import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filters_section
 /// Wires:
 /// - [savedTaskFiltersControllerProvider] for the persisted list,
 /// - [currentSavedTaskFilterIdProvider] to highlight the active row,
-/// - [tasksFilterHasUnsavedClausesProvider] to enable the `+` button,
-/// - [SavedTaskFilterActivator] to apply a saved filter to the live page,
-/// - [showTaskFilterModal] to open the modal when `+` is pressed (where
-///   the user names and saves the current filter).
+/// - [SavedTaskFilterActivator] to apply a saved filter to the live page.
+///
+/// New filters are saved through the Save button in the Tasks Filter modal,
+/// not from the sidebar — so the section deliberately has no `+` affordance.
 class TasksSavedFiltersTree extends ConsumerWidget {
   const TasksSavedFiltersTree({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeId = ref.watch(currentSavedTaskFilterIdProvider);
-    final canAdd = ref.watch(tasksFilterHasUnsavedClausesProvider);
 
     return SavedTaskFiltersSection(
       activeId: activeId,
-      canAdd: canAdd,
       onActivate: (SavedTaskFilter saved) async {
         final controller = ref.read(
           journalPageControllerProvider(true).notifier,
         );
         await SavedTaskFilterActivator(controller).activate(saved);
       },
-      // The section's onAddPressed fires synchronously from a button press, so
-      // the mounted guard is technically redundant — kept for symmetry with
-      // onDeleted, which fires after an awaited controller mutation and could
-      // re-enter this closure with a defunct context if the user navigated
-      // away mid-flight.
-      onAddPressed: () {
-        if (!context.mounted) return;
-        showTaskFilterModal(context, showTasks: true);
-      },
+      // onDeleted fires after an awaited controller mutation, so guard against
+      // a defunct context (the user could have navigated away mid-flight).
       onDeleted: () {
         if (!context.mounted) return;
         showSavedTaskFilterDeletedToast(context);

@@ -6466,9 +6466,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Diesen Filter benennen';
 
   @override
-  String get tasksSavedFiltersSectionTitle => 'Gespeicherte Filter';
-
-  @override
   String get tasksSavedFilterToastDeleted => 'Filter gelöscht';
 
   @override

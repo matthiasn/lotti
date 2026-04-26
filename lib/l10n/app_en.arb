@@ -2995,7 +2995,6 @@
   "tasksSavedFiltersSavePopupHint": "e.g. Blocked or on hold",
   "tasksSavedFiltersSavePopupSave": "Save",
   "tasksSavedFiltersSavePopupTitle": "Name this filter",
-  "tasksSavedFiltersSectionTitle": "Saved filters",
   "tasksSavedFilterToastDeleted": "Filter deleted",
   "tasksSavedFilterToastSaved": "Saved '{name}'",
   "@tasksSavedFilterToastSaved": {

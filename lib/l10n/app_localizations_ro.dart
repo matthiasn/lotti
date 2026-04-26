@@ -6507,9 +6507,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Denumiți acest filtru';
 
   @override
-  String get tasksSavedFiltersSectionTitle => 'Filtre salvate';
-
-  @override
   String get tasksSavedFilterToastDeleted => 'Filtru șters';
 
   @override

@@ -2702,7 +2702,6 @@
   "tasksSavedFiltersSavePopupHint": "p. ej. Bloqueadas o en pausa",
   "tasksSavedFiltersSavePopupSave": "Guardar",
   "tasksSavedFiltersSavePopupTitle": "Asigna un nombre a este filtro",
-  "tasksSavedFiltersSectionTitle": "Filtros guardados",
   "tasksSavedFilterToastDeleted": "Filtro eliminado",
   "tasksSavedFilterToastSaved": "Guardado «{name}»",
   "@tasksSavedFilterToastSaved": {

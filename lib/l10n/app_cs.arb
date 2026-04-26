@@ -2439,7 +2439,6 @@
   "tasksSavedFiltersSavePopupHint": "např. Blokované nebo pozastavené",
   "tasksSavedFiltersSavePopupSave": "Uložit",
   "tasksSavedFiltersSavePopupTitle": "Pojmenuj tento filtr",
-  "tasksSavedFiltersSectionTitle": "Uložené filtry",
   "tasksSavedFilterToastDeleted": "Filtr smazán",
   "tasksSavedFilterToastSaved": "Uloženo „{name}“",
   "@tasksSavedFilterToastSaved": {

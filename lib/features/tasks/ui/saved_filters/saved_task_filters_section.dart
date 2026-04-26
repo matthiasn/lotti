@@ -12,24 +12,20 @@ class SavedTaskFiltersSectionKeys {
   const SavedTaskFiltersSectionKeys._();
 
   static const Key root = Key('saved-filters-section');
-  static const Key header = Key('saved-filters-section-header');
   static const Key emptyState = Key('saved-filters-empty-state');
   static const Key list = Key('saved-filters-list');
-  static const Key addButton = Key('saved-filters-add-button');
 }
 
-/// Renders the "Saved filters" subtree under the Tasks destination.
+/// Renders the saved-filters subtree under the Tasks destination.
 ///
-/// Composition:
-/// - [SavedTaskFiltersSectionKeys.header] — overline label + add affordance
-/// - either [SavedTaskFiltersSectionKeys.emptyState] (dashed pill) or
-///   [SavedTaskFiltersSectionKeys.list] (reorderable rows)
+/// The section is rendered as a [SavedTaskFiltersSectionKeys.list] when at
+/// least one filter is persisted, or a `SizedBox.shrink` otherwise. There is
+/// no header — new filters are saved via the Save button in the Tasks Filter
+/// modal, not from the sidebar.
 class SavedTaskFiltersSection extends ConsumerWidget {
   const SavedTaskFiltersSection({
     required this.activeId,
     required this.onActivate,
-    required this.onAddPressed,
-    this.canAdd = false,
     this.counts,
     this.onDeleted,
     super.key,
@@ -43,14 +39,6 @@ class SavedTaskFiltersSection extends ConsumerWidget {
   /// activated filter so the caller can apply it to the live page state.
   final ValueChanged<SavedTaskFilter> onActivate;
 
-  /// Called when the `+` add affordance in the section header is tapped.
-  /// Typically opens the Tasks Filter modal at the save-name popup.
-  final VoidCallback onAddPressed;
-
-  /// Whether the add affordance is enabled. Pass `true` only when there is
-  /// an active filter that doesn't match any existing saved filter.
-  final bool canAdd;
-
   /// Optional live counts keyed by saved-filter id. Missing ids are rendered
   /// without a count.
   final Map<String, int>? counts;
@@ -63,154 +51,53 @@ class SavedTaskFiltersSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final messages = context.messages;
     final asyncList = ref.watch(savedTaskFiltersControllerProvider);
     // Treat loading and error states as "no data yet" so the section header
     // renders without flashing the empty state. Once data resolves, the body
     // switches between empty state and list.
     final list = asyncList.value;
 
+    // Hide the section entirely while the data is loading or when there are
+    // no saved filters — the user reaches the save flow through the Tasks
+    // Filter modal, so an empty placeholder in the sidebar adds noise
+    // without value.
+    if (list == null || list.isEmpty) {
+      return const SizedBox.shrink(key: SavedTaskFiltersSectionKeys.root);
+    }
+
     return Column(
       key: SavedTaskFiltersSectionKeys.root,
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _SectionHeader(
-          title: messages.tasksSavedFiltersSectionTitle,
-          tooltip: messages.tasksSavedFiltersAddTooltip,
-          enabled: canAdd,
-          onPressed: onAddPressed,
-          tokens: tokens,
+        // Small step1 (2px) breathing room above the first row, in lieu of
+        // the previous "Saved filters" overline header — the rows live
+        // immediately under the Tasks destination and need no extra label.
+        SizedBox(height: tokens.spacing.step1),
+        _ReorderableList(
+          key: SavedTaskFiltersSectionKeys.list,
+          items: list,
+          activeId: activeId,
+          counts: counts,
+          onActivate: onActivate,
+          onRename: (id, name) async {
+            await ref
+                .read(savedTaskFiltersControllerProvider.notifier)
+                .rename(id, name);
+          },
+          onDelete: (id) async {
+            await ref
+                .read(savedTaskFiltersControllerProvider.notifier)
+                .delete(id);
+            onDeleted?.call();
+          },
+          onReorder: (dragId, targetId) async {
+            await ref
+                .read(savedTaskFiltersControllerProvider.notifier)
+                .reorder(dragId, targetId);
+          },
         ),
-        if (list == null)
-          const SizedBox.shrink()
-        else if (list.isEmpty)
-          Padding(
-            key: SavedTaskFiltersSectionKeys.emptyState,
-            padding: const EdgeInsetsDirectional.only(
-              start: 30,
-              end: 8,
-              top: 4,
-              bottom: 4,
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: tokens.colors.surface.enabled,
-                borderRadius: BorderRadius.circular(tokens.radii.m),
-                border: Border.all(
-                  color: tokens.colors.decorative.level01,
-                ),
-              ),
-              child: Text(
-                messages.tasksSavedFiltersEmpty,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                  height: 1.4,
-                ),
-              ),
-            ),
-          )
-        else
-          _ReorderableList(
-            key: SavedTaskFiltersSectionKeys.list,
-            items: list,
-            activeId: activeId,
-            counts: counts,
-            onActivate: onActivate,
-            onRename: (id, name) async {
-              await ref
-                  .read(savedTaskFiltersControllerProvider.notifier)
-                  .rename(id, name);
-            },
-            onDelete: (id) async {
-              await ref
-                  .read(savedTaskFiltersControllerProvider.notifier)
-                  .delete(id);
-              onDeleted?.call();
-            },
-            onReorder: (dragId, targetId) async {
-              await ref
-                  .read(savedTaskFiltersControllerProvider.notifier)
-                  .reorder(dragId, targetId);
-            },
-          ),
       ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.tooltip,
-    required this.enabled,
-    required this.onPressed,
-    required this.tokens,
-  });
-
-  final String title;
-  final String tooltip;
-  final bool enabled;
-  final VoidCallback onPressed;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      key: SavedTaskFiltersSectionKeys.header,
-      padding: const EdgeInsetsDirectional.only(
-        start: 30,
-        end: 12,
-        top: 4,
-        bottom: 4,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title.toUpperCase(),
-              style: tokens.typography.styles.others.overline.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.3,
-              ),
-            ),
-          ),
-          Tooltip(
-            message: tooltip,
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: Material(
-                key: SavedTaskFiltersSectionKeys.addButton,
-                color: enabled
-                    ? tokens.colors.surface.selected
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(tokens.radii.s),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(tokens.radii.s),
-                  onTap: enabled ? onPressed : null,
-                  child: Center(
-                    child: Icon(
-                      Icons.add_rounded,
-                      size: 12,
-                      color: enabled
-                          ? tokens.colors.interactive.enabled
-                          : tokens.colors.text.lowEmphasis.withValues(
-                              alpha: 0.5,
-                            ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -256,22 +143,29 @@ class _ReorderableList extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final view = items[index];
-        return SavedTaskFilterRow(
+        // step2 (4px) breathing room between rows; the last row also gets it
+        // so the section has a small trailing gap before whatever follows in
+        // the sidebar column.
+        final tokens = context.designTokens;
+        return Padding(
           key: ValueKey(view.id),
-          view: view,
-          active: view.id == activeId,
-          count: counts?[view.id],
-          onActivate: () => onActivate(view),
-          onRename: (name) => onRename(view.id, name),
-          onDelete: () => onDelete(view.id),
-          dragHandle: Semantics(
-            button: true,
-            label: context.messages.tasksSavedFilterDragHandleSemantics,
-            child: ReorderableDragStartListener(
-              index: index,
-              child: const Icon(
-                Icons.drag_indicator,
-                size: 14,
+          padding: EdgeInsetsDirectional.only(bottom: tokens.spacing.step2),
+          child: SavedTaskFilterRow(
+            view: view,
+            active: view.id == activeId,
+            count: counts?[view.id],
+            onActivate: () => onActivate(view),
+            onRename: (name) => onRename(view.id, name),
+            onDelete: () => onDelete(view.id),
+            dragHandle: Semantics(
+              button: true,
+              label: context.messages.tasksSavedFilterDragHandleSemantics,
+              child: ReorderableDragStartListener(
+                index: index,
+                child: const Icon(
+                  Icons.drag_indicator,
+                  size: 14,
+                ),
               ),
             ),
           ),

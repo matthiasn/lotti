@@ -6467,9 +6467,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Pojmenuj tento filtr';
 
   @override
-  String get tasksSavedFiltersSectionTitle => 'Uložené filtry';
-
-  @override
   String get tasksSavedFilterToastDeleted => 'Filtr smazán';
 
   @override

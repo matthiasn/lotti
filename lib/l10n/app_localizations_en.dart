@@ -6370,9 +6370,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksSavedFiltersSavePopupTitle => 'Name this filter';
 
   @override
-  String get tasksSavedFiltersSectionTitle => 'Saved filters';
-
-  @override
   String get tasksSavedFilterToastDeleted => 'Filter deleted';
 
   @override

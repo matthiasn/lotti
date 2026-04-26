@@ -11257,12 +11257,6 @@ abstract class AppLocalizations {
   /// **'Name this filter'**
   String get tasksSavedFiltersSavePopupTitle;
 
-  /// No description provided for @tasksSavedFiltersSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Saved filters'**
-  String get tasksSavedFiltersSectionTitle;
-
   /// No description provided for @tasksSavedFilterToastDeleted.
   ///
   /// In en, this message translates to:
