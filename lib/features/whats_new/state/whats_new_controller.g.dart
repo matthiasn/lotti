@@ -53,7 +53,7 @@ final class WhatsNewServiceProvider
   }
 }
 
-String _$whatsNewServiceHash() => r'27677070cf0a2d1f1e8a639a38e3eb9dbc9b4dbb';
+String _$whatsNewServiceHash() => r'3b9088dc9154be3bed600fddce2b5b9ce55b97c0';
 
 /// Provider that checks if the What's New modal should auto-show.
 ///

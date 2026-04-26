@@ -2089,6 +2089,98 @@ class JournalDb extends _$JournalDb {
     return res.first;
   }
 
+  /// Counts tasks matching the journal-table-level predicates of a
+  /// `TasksFilter`. Project and agent filters are NOT applied here — the
+  /// caller is expected to intersect with project / agent ID sets after this
+  /// returns the gross count (for the common case both filters are empty
+  /// and this number IS the answer).
+  Future<int> getFilteredTasksCount({
+    required List<String> taskStatuses,
+    required List<String> categoryIds,
+    List<String>? labelIds,
+    List<String>? priorities,
+  }) async {
+    if (taskStatuses.isEmpty || categoryIds.isEmpty) return 0;
+    final p = await _filteredTaskParams(
+      taskStatuses: taskStatuses,
+      labelIds: labelIds,
+      priorities: priorities,
+    );
+    final res = await countFilteredTasks(
+      p.privateStatuses,
+      p.taskStatuses,
+      categoryIds,
+      p.filterByLabels,
+      p.labelFilterCount,
+      p.effectiveLabelIds,
+      p.includeUnlabeled,
+      p.filterByPriorities,
+      p.priorityFilterCount,
+      p.effectivePriorities,
+    ).get();
+    return res.first;
+  }
+
+  /// Same predicate set as [getFilteredTasksCount] but returns task ids so a
+  /// caller can intersect with project / agent post-filter id sets.
+  Future<List<String>> getFilteredTaskIds({
+    required List<String> taskStatuses,
+    required List<String> categoryIds,
+    List<String>? labelIds,
+    List<String>? priorities,
+  }) async {
+    if (taskStatuses.isEmpty || categoryIds.isEmpty) return const <String>[];
+    final p = await _filteredTaskParams(
+      taskStatuses: taskStatuses,
+      labelIds: labelIds,
+      priorities: priorities,
+    );
+    return selectFilteredTaskIds(
+      p.privateStatuses,
+      p.taskStatuses,
+      categoryIds,
+      p.filterByLabels,
+      p.labelFilterCount,
+      p.effectiveLabelIds,
+      p.includeUnlabeled,
+      p.filterByPriorities,
+      p.priorityFilterCount,
+      p.effectivePriorities,
+    ).get();
+  }
+
+  Future<_FilteredTaskParams> _filteredTaskParams({
+    required List<String> taskStatuses,
+    List<String>? labelIds,
+    List<String>? priorities,
+  }) async {
+    final selectedLabelIds = labelIds ?? const <String>[];
+    final includeUnlabeled = selectedLabelIds.contains('');
+    final filteredLabelIds = selectedLabelIds
+        .where((id) => id.isNotEmpty)
+        .toList();
+    final labelFilterCount = filteredLabelIds.length;
+    final selectedPriorities = priorities ?? const <String>[];
+    final filterByPriorities = selectedPriorities.isNotEmpty;
+    // Drift rejects empty IN lists; supply unreachable sentinels when the
+    // predicate is gated off so the query stays well-formed.
+    return _FilteredTaskParams(
+      privateStatuses: await _visiblePrivateStatuses(),
+      taskStatuses: taskStatuses.cast<String?>(),
+      filterByLabels: includeUnlabeled || labelFilterCount > 0,
+      labelFilterCount: labelFilterCount,
+      effectiveLabelIds: labelFilterCount == 0
+          ? const <String>['__no_label__']
+          : filteredLabelIds,
+      includeUnlabeled: includeUnlabeled,
+      filterByPriorities: filterByPriorities,
+      priorityFilterCount: selectedPriorities.length,
+      effectivePriorities: filterByPriorities
+          ? selectedPriorities.cast<String?>()
+          : const <String?>['__no_priority__'],
+    );
+  }
+
   Future<MeasurableDataType?> getMeasurableDataTypeById(String id) async {
     final res = await measurableTypeById(id).get();
     return res.map(measurableDataType).firstOrNull;
@@ -2989,4 +3081,28 @@ class _PendingRatingsWave {
   bool scheduled = false;
   final Completer<List<RatingsForTimeEntriesResult>> completer =
       Completer<List<RatingsForTimeEntriesResult>>.sync();
+}
+
+class _FilteredTaskParams {
+  _FilteredTaskParams({
+    required this.privateStatuses,
+    required this.taskStatuses,
+    required this.filterByLabels,
+    required this.labelFilterCount,
+    required this.effectiveLabelIds,
+    required this.includeUnlabeled,
+    required this.filterByPriorities,
+    required this.priorityFilterCount,
+    required this.effectivePriorities,
+  });
+
+  final List<bool> privateStatuses;
+  final List<String?> taskStatuses;
+  final bool filterByLabels;
+  final int labelFilterCount;
+  final List<String> effectiveLabelIds;
+  final bool includeUnlabeled;
+  final bool filterByPriorities;
+  final int priorityFilterCount;
+  final List<String?> effectivePriorities;
 }

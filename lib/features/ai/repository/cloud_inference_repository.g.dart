@@ -55,4 +55,4 @@ final class CloudInferenceRepositoryProvider
 }
 
 String _$cloudInferenceRepositoryHash() =>
-    r'3223bed2333313813c785dada91b960d0205de38';
+    r'9a806e9775d417b9c0c5d3f8b2118c557b6544fd';
