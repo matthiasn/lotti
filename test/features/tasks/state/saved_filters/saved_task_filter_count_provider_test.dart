@@ -2,14 +2,18 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_provider.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 class _FakeRepo implements SavedTaskFilterCountRepository {
@@ -173,6 +177,35 @@ void main() {
       await container.read(savedTaskFilterCountsProvider.future);
       expect(repo.calls, 1);
     });
+  });
+
+  group('savedTaskFilterCountRepositoryProvider', () {
+    test(
+      'wires JournalDb / EntitiesCacheService / AgentDatabase from GetIt',
+      () async {
+        // The default factory pulls services from GetIt. setUpTestGetIt
+        // already registers JournalDb and SettingsDb mocks; we add the
+        // remaining two (EntitiesCacheService + AgentDatabase) so the
+        // factory can construct a repository without going through the
+        // override hook.
+        final cache = MockEntitiesCacheService();
+        when(() => cache.sortedCategories).thenReturn(const []);
+        getIt
+          ..registerSingleton<EntitiesCacheService>(cache)
+          ..registerSingleton<AgentDatabase>(MockAgentDatabase());
+        addTearDown(() {
+          getIt
+            ..unregister<EntitiesCacheService>()
+            ..unregister<AgentDatabase>();
+        });
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final repo = container.read(savedTaskFilterCountRepositoryProvider);
+        expect(repo, isA<SavedTaskFilterCountRepository>());
+      },
+    );
   });
 
   group('savedTaskFilterCountProvider (single id)', () {

@@ -1128,6 +1128,182 @@ void main() {
         },
       );
 
+      group('getFilteredTasksCount / getFilteredTaskIds', () {
+        Future<void> seedTasks(DateTime base) async {
+          final inProgressP0 = JournalEntity.task(
+            meta: Metadata(
+              id: 'count-in-progress-p0',
+              createdAt: base,
+              updatedAt: base,
+              dateFrom: base,
+              dateTo: base,
+              categoryId: 'cat-1',
+            ),
+            data: testTask.data.copyWith(
+              status: TaskStatus.inProgress(
+                id: 'count-s1',
+                createdAt: base,
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              dateFrom: base,
+              dateTo: base,
+              title: 'in-progress p0',
+              priority: TaskPriority.p0Urgent,
+            ),
+            entryText: const EntryText(plainText: 'a'),
+          );
+          final inProgressP2 = JournalEntity.task(
+            meta: Metadata(
+              id: 'count-in-progress-p2',
+              createdAt: base.add(const Duration(minutes: 1)),
+              updatedAt: base.add(const Duration(minutes: 1)),
+              dateFrom: base.add(const Duration(minutes: 1)),
+              dateTo: base.add(const Duration(minutes: 1)),
+              categoryId: 'cat-1',
+            ),
+            data: testTask.data.copyWith(
+              status: TaskStatus.inProgress(
+                id: 'count-s2',
+                createdAt: base.add(const Duration(minutes: 1)),
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              dateFrom: base.add(const Duration(minutes: 1)),
+              dateTo: base.add(const Duration(minutes: 1)),
+              title: 'in-progress p2',
+              priority: TaskPriority.p2Medium,
+            ),
+            entryText: const EntryText(plainText: 'b'),
+          );
+          final doneP0 = JournalEntity.task(
+            meta: Metadata(
+              id: 'count-done-p0',
+              createdAt: base.add(const Duration(minutes: 2)),
+              updatedAt: base.add(const Duration(minutes: 2)),
+              dateFrom: base.add(const Duration(minutes: 2)),
+              dateTo: base.add(const Duration(minutes: 2)),
+              categoryId: 'cat-1',
+            ),
+            data: testTask.data.copyWith(
+              status: TaskStatus.done(
+                id: 'count-s3',
+                createdAt: base.add(const Duration(minutes: 2)),
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              dateFrom: base.add(const Duration(minutes: 2)),
+              dateTo: base.add(const Duration(minutes: 2)),
+              title: 'done p0',
+              priority: TaskPriority.p0Urgent,
+            ),
+            entryText: const EntryText(plainText: 'c'),
+          );
+          final inProgressOtherCat = JournalEntity.task(
+            meta: Metadata(
+              id: 'count-other-cat',
+              createdAt: base.add(const Duration(minutes: 3)),
+              updatedAt: base.add(const Duration(minutes: 3)),
+              dateFrom: base.add(const Duration(minutes: 3)),
+              dateTo: base.add(const Duration(minutes: 3)),
+              categoryId: 'cat-2',
+            ),
+            data: testTask.data.copyWith(
+              status: TaskStatus.inProgress(
+                id: 'count-s4',
+                createdAt: base.add(const Duration(minutes: 3)),
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              dateFrom: base.add(const Duration(minutes: 3)),
+              dateTo: base.add(const Duration(minutes: 3)),
+              title: 'cat-2 task',
+              priority: TaskPriority.p1High,
+            ),
+            entryText: const EntryText(plainText: 'd'),
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(inProgressP0));
+          await db!.upsertJournalDbEntity(toDbEntity(inProgressP2));
+          await db!.upsertJournalDbEntity(toDbEntity(doneP0));
+          await db!.upsertJournalDbEntity(toDbEntity(inProgressOtherCat));
+        }
+
+        test('count by status + category', () async {
+          await seedTasks(DateTime(2024, 8));
+
+          expect(
+            await db!.getFilteredTasksCount(
+              taskStatuses: const ['IN PROGRESS'],
+              categoryIds: const ['cat-1'],
+            ),
+            2,
+          );
+          expect(
+            await db!.getFilteredTasksCount(
+              taskStatuses: const ['DONE'],
+              categoryIds: const ['cat-1'],
+            ),
+            1,
+          );
+        });
+
+        test('count narrows by priority when supplied', () async {
+          await seedTasks(DateTime(2024, 8));
+
+          expect(
+            await db!.getFilteredTasksCount(
+              taskStatuses: const ['IN PROGRESS', 'DONE'],
+              categoryIds: const ['cat-1'],
+              priorities: const ['P0'],
+            ),
+            2,
+          );
+        });
+
+        test('count of zero on empty status list (fail-fast)', () async {
+          await seedTasks(DateTime(2024, 8));
+
+          expect(
+            await db!.getFilteredTasksCount(
+              taskStatuses: const [],
+              categoryIds: const ['cat-1'],
+            ),
+            0,
+          );
+          expect(
+            await db!.getFilteredTasksCount(
+              taskStatuses: const ['IN PROGRESS'],
+              categoryIds: const [],
+            ),
+            0,
+          );
+        });
+
+        test('selectFilteredTaskIds returns matching ids', () async {
+          await seedTasks(DateTime(2024, 8));
+
+          final ids = await db!.getFilteredTaskIds(
+            taskStatuses: const ['IN PROGRESS'],
+            categoryIds: const ['cat-1', 'cat-2'],
+          );
+          expect(
+            ids.toSet(),
+            {'count-in-progress-p0', 'count-in-progress-p2', 'count-other-cat'},
+          );
+        });
+
+        test(
+          'selectFilteredTaskIds returns empty list on empty filters',
+          () async {
+            await seedTasks(DateTime(2024, 8));
+            expect(
+              await db!.getFilteredTaskIds(
+                taskStatuses: const [],
+                categoryIds: const ['cat-1'],
+              ),
+              isEmpty,
+            );
+          },
+        );
+      });
+
       test(
         'getTasks returns consistent results and reflects writes',
         () async {
