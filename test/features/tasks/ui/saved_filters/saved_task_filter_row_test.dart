@@ -2,10 +2,15 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_row.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 const _view = SavedTaskFilter(
@@ -409,5 +414,175 @@ void main() {
     await tester.pump();
     expect(find.text('New Name'), findsOneWidget);
     expect(find.text('In progress · P0'), findsNothing);
+  });
+
+  group('category color dots', () {
+    late MockEntitiesCacheService mockCache;
+
+    CategoryDefinition makeCategory(String id, String? color) =>
+        CategoryDefinition(
+          id: id,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          name: 'Cat $id',
+          vectorClock: null,
+          private: false,
+          active: true,
+          color: color,
+        );
+
+    setUp(() {
+      mockCache = MockEntitiesCacheService();
+      if (!getIt.isRegistered<EntitiesCacheService>()) {
+        getIt.registerSingleton<EntitiesCacheService>(mockCache);
+      }
+    });
+
+    SavedTaskFilter viewWithCategories(Set<String> ids) => SavedTaskFilter(
+      id: 'sv-x',
+      name: 'Multi-cat',
+      filter: TasksFilter(selectedCategoryIds: ids),
+    );
+
+    testWidgets(
+      'renders one circular dot when exactly one category is selected',
+      (tester) async {
+        when(
+          () => mockCache.getCategoryById('cat-1'),
+        ).thenReturn(makeCategory('cat-1', '#FF0000'));
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            SavedTaskFilterRow(
+              view: viewWithCategories(const {'cat-1'}),
+              active: false,
+              onActivate: () {},
+              onRename: (_) {},
+              onDelete: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Exactly one circular DecoratedBox in the row's leading column.
+        final circles = find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).shape == BoxShape.circle,
+        );
+        expect(circles, findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders multiple dots (capped at three) when many categories are selected',
+      (tester) async {
+        when(
+          () => mockCache.getCategoryById('cat-1'),
+        ).thenReturn(makeCategory('cat-1', '#FF0000'));
+        when(
+          () => mockCache.getCategoryById('cat-2'),
+        ).thenReturn(makeCategory('cat-2', '#00FF00'));
+        when(
+          () => mockCache.getCategoryById('cat-3'),
+        ).thenReturn(makeCategory('cat-3', '#0000FF'));
+        when(
+          () => mockCache.getCategoryById('cat-4'),
+        ).thenReturn(makeCategory('cat-4', '#FFFF00'));
+
+        // LinkedHashSet preserves insertion order: cat-1..cat-4.
+        await tester.pumpWidget(
+          makeTestableWidget(
+            SavedTaskFilterRow(
+              view: viewWithCategories(const {
+                'cat-1',
+                'cat-2',
+                'cat-3',
+                'cat-4',
+              }),
+              active: false,
+              onActivate: () {},
+              onRename: (_) {},
+              onDelete: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final circles = find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).shape == BoxShape.circle,
+        );
+        expect(circles, findsNWidgets(3));
+      },
+    );
+
+    testWidgets(
+      'skips categories whose colour cannot be resolved',
+      (tester) async {
+        when(
+          () => mockCache.getCategoryById('cat-1'),
+        ).thenReturn(makeCategory('cat-1', null));
+        when(
+          () => mockCache.getCategoryById('cat-2'),
+        ).thenReturn(makeCategory('cat-2', '#00FF00'));
+        when(() => mockCache.getCategoryById('cat-missing')).thenReturn(null);
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            SavedTaskFilterRow(
+              view: viewWithCategories(const {
+                'cat-1',
+                'cat-missing',
+                'cat-2',
+              }),
+              active: false,
+              onActivate: () {},
+              onRename: (_) {},
+              onDelete: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Only the one category with a usable colour renders a dot.
+        final circles = find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).shape == BoxShape.circle,
+        );
+        expect(circles, findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders no dot column content when no categories are selected',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            SavedTaskFilterRow(
+              view: viewWithCategories(const {}),
+              active: false,
+              onActivate: () {},
+              onRename: (_) {},
+              onDelete: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final circles = find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).shape == BoxShape.circle,
+        );
+        expect(circles, findsNothing);
+      },
+    );
   });
 }

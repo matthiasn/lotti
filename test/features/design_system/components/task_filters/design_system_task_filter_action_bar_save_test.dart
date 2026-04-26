@@ -186,4 +186,68 @@ void main() {
 
     expect(find.text('In progress · P0'), findsOneWidget);
   });
+
+  testWidgets(
+    'commit button disables when the field is cleared after typing',
+    (tester) async {
+      await _pumpBar(
+        tester,
+        onSavePressed: (_) {},
+        canSave: true,
+      );
+
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+      );
+      await tester.pumpAndSettle();
+
+      final field = find.byKey(
+        DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
+      );
+      // Type a name → enabled.
+      await tester.enterText(field, 'Filter');
+      await tester.pump();
+      var commit = tester.widget<FilledButton>(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
+      );
+      expect(commit.onPressed, isNotNull);
+
+      // Clear the field → listener flips _canCommit back to false.
+      await tester.enterText(field, '');
+      await tester.pump();
+      commit = tester.widget<FilledButton>(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
+      );
+      expect(commit.onPressed, isNull);
+    },
+  );
+
+  testWidgets(
+    'closing the popup disposes the inner controller / focus node cleanly',
+    (tester) async {
+      await _pumpBar(
+        tester,
+        onSavePressed: (_) {},
+        canSave: true,
+      );
+
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the action button again to toggle the menu closed; this routes
+      // through the popup's State.dispose which removes the controller
+      // listener and disposes the controller + focus node.
+      await tester.tap(
+        find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+        findsNothing,
+      );
+    },
+  );
 }
