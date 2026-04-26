@@ -410,7 +410,7 @@ void main() {
       });
     }
 
-    testWidgets('lifts recording indicators above the design-system nav', (
+    testWidgets('docks recording indicators to the design-system nav pill', (
       tester,
     ) async {
       final mockNavService = MockNavService();
@@ -432,9 +432,17 @@ void main() {
       );
 
       final context = tester.element(find.byType(AppScreen));
-      final expectedBottom =
+      final pillTop = DesignSystemBottomNavigationBar.pillTopFromScreenBottom(
+        context,
+      );
+      final expectedTimeBottom =
           AppScreenConstants.navigationTimeIndicatorBottom +
-          DesignSystemBottomNavigationBar.occupiedHeight(context);
+          pillTop -
+          AppScreenConstants.navigationIndicatorPillOverlap;
+      final expectedAudioBottom =
+          AppScreenConstants.navigationTimeIndicatorBottom +
+          pillTop -
+          AppScreenConstants.navigationIndicatorPillOverlap;
       final timeIndicatorPositioned = tester.widget<Positioned>(
         find.ancestor(
           of: find.byType(TimeRecordingIndicator),
@@ -448,8 +456,8 @@ void main() {
         ),
       );
 
-      expect(timeIndicatorPositioned.bottom, expectedBottom);
-      expect(audioIndicatorPositioned.bottom, expectedBottom);
+      expect(timeIndicatorPositioned.bottom, expectedTimeBottom);
+      expect(audioIndicatorPositioned.bottom, expectedAudioBottom);
     });
   });
 

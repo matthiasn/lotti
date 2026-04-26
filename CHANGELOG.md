@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.977] - 2026-04-25
+### Fixed
+- Bottom navigation bar polish: the sync outbox badge on the Settings tab now
+  sits in the top-right of the icon to match the Tasks badge, and the audio
+  and time recording indicators dock flush against the visible nav-bar pill
+  instead of floating above it.
+
 ### Added
 - Saved filters for the Tasks tab. Build a filter (status, priority,
   category, agent, etc.) in the Tasks Filter modal, tap the new **Save**
