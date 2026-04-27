@@ -3200,6 +3200,161 @@ void main() {
           cg.stop();
         });
       });
+
+      test(
+        'drops mirror when persisted state shows the agent is no longer '
+        'awaiting content',
+        () {
+          fakeAsync((async) {
+            // Simulate a divergence: the in-memory mirror still says
+            // awaiting, but the persisted state has been cleared (e.g.,
+            // by another device via sync). The gate must drop the mirror
+            // so future notifications surface the normal countdown.
+            final clearedState = makeTestState(
+              agentId: 'agent-cg-stale',
+              slots: const AgentSlots(activeTaskId: 'task-stale'),
+            );
+            when(
+              () => mockRepository.getAgentState('agent-cg-stale'),
+            ).thenAnswer((_) async => clearedState);
+
+            final cg =
+                WakeOrchestrator(
+                    repository: mockRepository,
+                    queue: queue,
+                    runner: WakeRunner(),
+                    taskContentChecker: (taskId) async => true,
+                    wakeExecutor: (agentId, runKey, triggers, threadId) async =>
+                        null,
+                  )
+                  ..setAwaitingContent('agent-cg-stale', awaiting: true)
+                  ..enqueueManualWake(
+                    agentId: 'agent-cg-stale',
+                    reason: 'subscription',
+                  );
+
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+
+            expect(cg.isAwaitingContent('agent-cg-stale'), isFalse);
+
+            cg.stop();
+          });
+        },
+      );
+
+      test('drops mirror when no agent state is persisted', () {
+        fakeAsync((async) {
+          when(
+            () => mockRepository.getAgentState('agent-cg-missing'),
+          ).thenAnswer((_) async => null);
+
+          final cg =
+              WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: WakeRunner(),
+                  taskContentChecker: (taskId) async => true,
+                  wakeExecutor: (agentId, runKey, triggers, threadId) async =>
+                      null,
+                )
+                ..setAwaitingContent('agent-cg-missing', awaiting: true)
+                ..enqueueManualWake(
+                  agentId: 'agent-cg-missing',
+                  reason: 'subscription',
+                );
+
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          expect(cg.isAwaitingContent('agent-cg-missing'), isFalse);
+
+          cg.stop();
+        });
+      });
+
+      test(
+        'drops mirror when awaiting flag is set but no activeTaskId can '
+        'be gated on',
+        () {
+          fakeAsync((async) {
+            final state = makeTestState(
+              agentId: 'agent-cg-no-task',
+              awaitingContent: true,
+            );
+            when(
+              () => mockRepository.getAgentState('agent-cg-no-task'),
+            ).thenAnswer((_) async => state);
+
+            final cg =
+                WakeOrchestrator(
+                    repository: mockRepository,
+                    queue: queue,
+                    runner: WakeRunner(),
+                    taskContentChecker: (taskId) async => false,
+                    wakeExecutor: (agentId, runKey, triggers, threadId) async =>
+                        null,
+                  )
+                  ..setAwaitingContent('agent-cg-no-task', awaiting: true)
+                  ..enqueueManualWake(
+                    agentId: 'agent-cg-no-task',
+                    reason: 'creation',
+                  );
+
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+
+            expect(cg.isAwaitingContent('agent-cg-no-task'), isFalse);
+
+            cg.stop();
+          });
+        },
+      );
+
+      test(
+        'leaves mirror untouched when taskContentChecker is null (fail-open)',
+        () {
+          fakeAsync((async) {
+            final state = makeTestState(
+              agentId: 'agent-cg-fail-open',
+              awaitingContent: true,
+              slots: const AgentSlots(activeTaskId: 'task-fail-open'),
+            );
+            when(
+              () => mockRepository.getAgentState('agent-cg-fail-open'),
+            ).thenAnswer((_) async => state);
+
+            final cg =
+                WakeOrchestrator(
+                    repository: mockRepository,
+                    queue: queue,
+                    runner: WakeRunner(),
+                    // taskContentChecker is null
+                    wakeExecutor: (agentId, runKey, triggers, threadId) async =>
+                        null,
+                  )
+                  ..setAwaitingContent('agent-cg-fail-open', awaiting: true)
+                  ..enqueueManualWake(
+                    agentId: 'agent-cg-fail-open',
+                    reason: 'subscription',
+                  );
+
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+
+            // Indeterminate path — persisted flag still says awaiting, so
+            // the mirror should remain so that countdown suppression keeps
+            // matching the persisted truth.
+            expect(cg.isAwaitingContent('agent-cg-fail-open'), isTrue);
+
+            cg.stop();
+          });
+        },
+      );
     });
 
     group('agent execution zone', () {

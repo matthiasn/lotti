@@ -598,16 +598,39 @@ class WakeOrchestrator {
   ///
   /// When content IS found, clears the `awaitingContent` flag on the agent
   /// state so subsequent wakes proceed normally.
+  ///
+  /// Whenever this method returns `false` because the persisted state shows
+  /// the agent is no longer awaiting content (state missing, flag already
+  /// cleared, or no active task to gate on), the in-memory mirror is dropped
+  /// so it cannot stay falsely `true` and silence countdowns indefinitely.
+  /// Truly indeterminate paths (no `taskContentChecker`, exceptions) leave
+  /// the mirror untouched — they fail open without lying about state.
   Future<bool> _shouldSkipForAwaitingContent(WakeJob job) async {
     try {
       final state = await repository.getAgentState(job.agentId);
-      if (state == null || !state.awaitingContent) return false;
+      if (state == null || !state.awaitingContent) {
+        // Persisted state says not awaiting — drop any stale mirror entry
+        // so future notifications surface the normal countdown.
+        _agentsAwaitingContent.remove(job.agentId);
+        return false;
+      }
 
       final taskId = state.slots.activeTaskId;
-      if (taskId == null) return false;
+      if (taskId == null) {
+        // Awaiting flag is set but there is no task to gate on. The agent
+        // is about to run; drop the mirror so subsequent notifications use
+        // the normal throttle.
+        _agentsAwaitingContent.remove(job.agentId);
+        return false;
+      }
 
       final checker = taskContentChecker;
-      if (checker == null) return false;
+      if (checker == null) {
+        // Indeterminate — we can't verify content state. Fail open and
+        // leave the mirror as-is so the persisted flag still drives the
+        // countdown suppression.
+        return false;
+      }
 
       final hasContent = await checker(taskId);
       if (!hasContent) {
@@ -644,6 +667,9 @@ class WakeOrchestrator {
       return false;
     } catch (e, s) {
       // Don't let content-check errors block the wake — proceed normally.
+      // Mirror is intentionally left untouched: we don't know whether the
+      // persisted flag still applies, so we fail open without rewriting
+      // local state.
       _logError(
         'content-gate: error checking content for '
         '${DomainLogger.sanitizeId(job.agentId)}',
