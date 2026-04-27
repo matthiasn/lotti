@@ -160,15 +160,21 @@ class TaskAgentService {
     // Register subscription for changes to this task.
     _registerTaskSubscription(identity.agentId, taskId);
 
+    // Mirror the persisted awaitingContent flag in the orchestrator so that
+    // subscription notifications for a brand-new blank task do not surface a
+    // 2-minute throttle countdown in the UI.
+    //
     // Always enqueue the creation wake. The content gate in
     // WakeOrchestrator._shouldSkipForAwaitingContent() will defer execution
     // for blank tasks and immediately activate agents whose task already has
     // meaningful content.
-    orchestrator.enqueueManualWake(
-      agentId: identity.agentId,
-      reason: WakeReason.creation.name,
-      triggerTokens: {taskId},
-    );
+    orchestrator
+      ..setAwaitingContent(identity.agentId, awaiting: awaitContent)
+      ..enqueueManualWake(
+        agentId: identity.agentId,
+        reason: WakeReason.creation.name,
+        triggerTokens: {taskId},
+      );
 
     domainLogger?.log(
       LogDomains.agentRuntime,
@@ -292,12 +298,20 @@ class TaskAgentService {
 
   /// Read the persisted `nextWakeAt` from the agent's state entity and
   /// restore it into the orchestrator's in-memory throttle cache.
+  ///
+  /// Also mirrors the persisted `awaitingContent` flag so the orchestrator
+  /// can skip surfacing a 2-minute countdown for blank tasks across app
+  /// restarts.
   Future<void> _hydrateThrottleDeadline(String agentId) async {
     final state = await repository.getAgentState(agentId);
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
       orchestrator.setThrottleDeadline(agentId, deadline);
     }
+    orchestrator.setAwaitingContent(
+      agentId,
+      awaiting: state?.awaitingContent ?? false,
+    );
     // Note: we intentionally do NOT call clearThrottle when nextWakeAt is
     // null. A concurrent _onBatch notification may have already scheduled a
     // deferred drain timer for this agent (between _registerTaskSubscription

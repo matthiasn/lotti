@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.978]
+### Changed
+- Task agents now react immediately to recorded audio. Brand-new task agents
+  on a blank task no longer surface a "wake in 2:00" countdown — the
+  orchestrator skips the throttle deadline while the agent is awaiting
+  content, and the content gate keeps the agent from running until real
+  content arrives. The moment a transcription finishes (cloud or realtime),
+  the task agent is nudged via a manual wake that bypasses the standard
+  throttle, so the user does not wait through a 2-minute window after
+  speaking. Subsequent typing edits still go through the normal 2-minute
+  coalescing throttle. Implemented via a new `WakeReason.transcriptionComplete`
+  and an `awaitingContent` mirror in `WakeOrchestrator`, populated by
+  `TaskAgentService` on creation and restoration.
+
 ## [0.9.977] - 2026-04-25
 ### Fixed
 - Bottom navigation bar polish: the sync outbox badge on the Settings tab now

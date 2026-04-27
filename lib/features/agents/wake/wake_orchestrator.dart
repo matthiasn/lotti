@@ -129,6 +129,16 @@ class WakeOrchestrator {
   final _suppression = WakeSuppressionTracker();
   late final WakeThrottleCoordinator _throttle;
 
+  /// In-memory mirror of the persisted `awaitingContent` flag for each agent.
+  ///
+  /// Populated by the task-agent service when agents are created or their
+  /// subscriptions are restored, and cleared by [_shouldSkipForAwaitingContent]
+  /// once meaningful task content arrives. Used in [_onBatch] to suppress the
+  /// 2-minute throttle countdown for blank tasks — there is no point surfacing
+  /// a "wake in 2:00" timer when the content gate is going to skip the run
+  /// anyway.
+  final _agentsAwaitingContent = <String>{};
+
   // ── Throttle state ──────────────────────────────────────────────────────
 
   /// The minimum interval between subscription-triggered wakes for the
@@ -231,8 +241,28 @@ class WakeOrchestrator {
     _subscriptions.removeWhere((s) => s.agentId == agentId);
     _suppression.clearAgent(agentId);
     _wakeCounters.remove(agentId);
+    _agentsAwaitingContent.remove(agentId);
     clearThrottle(agentId);
   }
+
+  /// Mark [agentId] as awaiting-content (or not).
+  ///
+  /// While the flag is set, [_onBatch] will not call [_setThrottleDeadline]
+  /// for this agent — so subscription notifications coming in for a blank
+  /// task do not surface a 2-minute countdown timer in the UI. The job is
+  /// still enqueued and will be picked up by the safety-net drain or a
+  /// later notification once content arrives.
+  void setAwaitingContent(String agentId, {required bool awaiting}) {
+    if (awaiting) {
+      _agentsAwaitingContent.add(agentId);
+    } else {
+      _agentsAwaitingContent.remove(agentId);
+    }
+  }
+
+  /// Returns `true` when [agentId] is currently awaiting content.
+  bool isAwaitingContent(String agentId) =>
+      _agentsAwaitingContent.contains(agentId);
 
   // ── Self-notification suppression ──────────────────────────────────────────
 
@@ -503,6 +533,22 @@ class WakeOrchestrator {
         queue.enqueue(job);
       }
 
+      // Awaiting-content agents (newly-created task agents on blank tasks)
+      // do not get a throttle deadline — surfacing a 2-minute countdown for
+      // a task with nothing to analyze is just noise. The job stays in the
+      // queue and the content gate will skip it until real content arrives.
+      // Once content does arrive, _shouldSkipForAwaitingContent clears the
+      // flag and from then on the normal throttle applies.
+      if (_agentsAwaitingContent.contains(sub.agentId)) {
+        _log(
+          'skipping throttle deadline for '
+          '${DomainLogger.sanitizeId(sub.agentId)} '
+          '(awaiting content, no countdown surfaced)',
+          subDomain: 'awaitContent',
+        );
+        continue;
+      }
+
       // Defer-first: instead of dispatching immediately, set a throttle
       // deadline and schedule a deferred drain. This allows bursty edits
       // to coalesce into a single wake cycle.
@@ -552,16 +598,39 @@ class WakeOrchestrator {
   ///
   /// When content IS found, clears the `awaitingContent` flag on the agent
   /// state so subsequent wakes proceed normally.
+  ///
+  /// Whenever this method returns `false` because the persisted state shows
+  /// the agent is no longer awaiting content (state missing, flag already
+  /// cleared, or no active task to gate on), the in-memory mirror is dropped
+  /// so it cannot stay falsely `true` and silence countdowns indefinitely.
+  /// Truly indeterminate paths (no `taskContentChecker`, exceptions) leave
+  /// the mirror untouched — they fail open without lying about state.
   Future<bool> _shouldSkipForAwaitingContent(WakeJob job) async {
     try {
       final state = await repository.getAgentState(job.agentId);
-      if (state == null || !state.awaitingContent) return false;
+      if (state == null || !state.awaitingContent) {
+        // Persisted state says not awaiting — drop any stale mirror entry
+        // so future notifications surface the normal countdown.
+        _agentsAwaitingContent.remove(job.agentId);
+        return false;
+      }
 
       final taskId = state.slots.activeTaskId;
-      if (taskId == null) return false;
+      if (taskId == null) {
+        // Awaiting flag is set but there is no task to gate on. The agent
+        // is about to run; drop the mirror so subsequent notifications use
+        // the normal throttle.
+        _agentsAwaitingContent.remove(job.agentId);
+        return false;
+      }
 
       final checker = taskContentChecker;
-      if (checker == null) return false;
+      if (checker == null) {
+        // Indeterminate — we can't verify content state. Fail open and
+        // leave the mirror as-is so the persisted flag still drives the
+        // countdown suppression.
+        return false;
+      }
 
       final hasContent = await checker(taskId);
       if (!hasContent) {
@@ -592,9 +661,15 @@ class WakeOrchestrator {
       } else {
         await repository.upsertEntity(cleared);
       }
+      // Drop the in-memory mirror so subsequent subscription notifications
+      // get the normal throttle countdown.
+      _agentsAwaitingContent.remove(job.agentId);
       return false;
     } catch (e, s) {
       // Don't let content-check errors block the wake — proceed normally.
+      // Mirror is intentionally left untouched: we don't know whether the
+      // persisted flag still applies, so we fail open without rewriting
+      // local state.
       _logError(
         'content-gate: error checking content for '
         '${DomainLogger.sanitizeId(job.agentId)}',
