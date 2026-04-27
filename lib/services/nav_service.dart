@@ -277,11 +277,34 @@ class NavService {
   /// Reset the desktop task detail stack to either `[taskId]` or empty.
   /// Called from `TasksLocation` when the URL changes so the stack stays
   /// in sync with the route.
+  ///
+  /// Idempotent across Beamer rebuilds: if the stack is already anchored
+  /// at the given `taskId` (i.e. `stack.first == taskId`), the stack is
+  /// left untouched so a `pushDesktopTaskDetail`-built linked-task stack
+  /// is preserved when `buildPages` re-runs for the same URL (theme
+  /// changes, provider rebuilds, etc.).
   void resetDesktopTaskDetail(String? taskId) {
-    final next = taskId == null ? const <String>[] : <String>[taskId];
-    if (!listEquals(desktopTaskDetailStack.value, next)) {
-      desktopTaskDetailStack.value = next;
+    final current = desktopTaskDetailStack.value;
+    if (taskId == null) {
+      if (current.isNotEmpty) {
+        desktopTaskDetailStack.value = const <String>[];
+      }
+      if (desktopSelectedTaskId.value != null) {
+        desktopSelectedTaskId.value = null;
+      }
+      return;
     }
+
+    if (current.isNotEmpty && current.first == taskId) {
+      // Stack is already anchored at this base task — preserve any
+      // linked-task pushes layered on top of it.
+      if (desktopSelectedTaskId.value != current.last) {
+        desktopSelectedTaskId.value = current.last;
+      }
+      return;
+    }
+
+    desktopTaskDetailStack.value = <String>[taskId];
     if (desktopSelectedTaskId.value != taskId) {
       desktopSelectedTaskId.value = taskId;
     }

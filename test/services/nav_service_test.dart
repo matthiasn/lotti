@@ -324,6 +324,14 @@ void main() {
     });
 
     group('desktop task detail stack', () {
+      setUp(() {
+        // The NavService singleton is shared across tests. Clear the
+        // stack first so each test starts from a clean state and the
+        // idempotency guard in `resetDesktopTaskDetail` does not pick
+        // up state from a sibling test.
+        getIt<NavService>().resetDesktopTaskDetail(null);
+      });
+
       test('resetDesktopTaskDetail seeds the stack with one entry', () {
         final navService = getIt<NavService>()
           ..resetDesktopTaskDetail('task-a');
@@ -364,6 +372,23 @@ void main() {
 
           expect(navService.desktopTaskDetailStack.value, ['only']);
           expect(navService.desktopSelectedTaskId.value, 'only');
+        },
+      );
+
+      test(
+        'resetDesktopTaskDetail preserves a pushed linked-task stack '
+        'when the base task id is unchanged',
+        () {
+          // Simulates Beamer rebuilding `buildPages` for the same URL
+          // (theme change, provider change). The trailing reset must not
+          // clobber the linked-task layered on top of the base.
+          final navService = getIt<NavService>()
+            ..resetDesktopTaskDetail('base')
+            ..pushDesktopTaskDetail('linked')
+            ..resetDesktopTaskDetail('base');
+
+          expect(navService.desktopTaskDetailStack.value, ['base', 'linked']);
+          expect(navService.desktopSelectedTaskId.value, 'linked');
         },
       );
     });

@@ -44,7 +44,7 @@ class TasksRootPage extends ConsumerWidget {
                 final selectedTaskId = stack.isEmpty ? null : stack.last;
                 final child = selectedTaskId != null
                     ? TaskDetailsPage(
-                        key: ValueKey('${selectedTaskId}_${stack.length}'),
+                        key: ValueKey(selectedTaskId),
                         taskId: selectedTaskId,
                       )
                     : DesktopDetailEmptyState(

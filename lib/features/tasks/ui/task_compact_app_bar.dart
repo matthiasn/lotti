@@ -6,11 +6,9 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 /// Scroll offset at which the compact app bar surfaces the task title in
@@ -99,13 +97,9 @@ class TaskCompactAppBar extends ConsumerWidget {
 /// Leading widget for the compact task app bar.
 ///
 /// Mobile: always renders [BackWidget] which beams back to the task list.
-/// Desktop: renders a [GlassBackButton] only when the task detail stack
-/// has more than one entry (i.e. a linked task is currently shown on top
-/// of the base task). The base task on desktop hides the back arrow
-/// because the list pane is already visible to the left. The glass
-/// styling matches the expandable variant so the back affordance looks
-/// the same whether the task has cover art or not. When pressed on
-/// desktop, pops the desktop detail stack instead of beaming back.
+/// Desktop: delegates to [TaskDetailDesktopBackLeading], shared with the
+/// expandable bar so the back affordance is visually identical whether
+/// the task has cover art or not.
 class _TaskBackLeading extends StatelessWidget {
   const _TaskBackLeading({required this.isDesktop});
 
@@ -116,20 +110,7 @@ class _TaskBackLeading extends StatelessWidget {
     if (!isDesktop) {
       return const BackWidget();
     }
-    return ValueListenableBuilder<List<String>>(
-      valueListenable: getIt<NavService>().desktopTaskDetailStack,
-      builder: (context, stack, _) {
-        if (stack.length <= 1) {
-          return const SizedBox.shrink();
-        }
-        return Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: GlassBackButton(
-            onPressed: () => getIt<NavService>().popDesktopTaskDetail(),
-          ),
-        );
-      },
-    );
+    return const TaskDetailDesktopBackLeading();
   }
 }
 
