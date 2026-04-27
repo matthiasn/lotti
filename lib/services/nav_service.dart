@@ -64,9 +64,19 @@ class NavService {
   /// Set by `AppScreen` based on the current window width.
   bool isDesktopMode = false;
 
-  /// Selected item IDs for desktop split-pane views.
-  /// Updated by Beamer locations when the route contains an item ID.
-  /// Root pages listen to these to show the detail pane reactively.
+  /// Desktop split-pane task detail stack.
+  ///
+  /// Index 0 is the task selected from the list pane (the "base"). Tapping
+  /// a linked task from within a task's details pushes onto the stack so
+  /// the detail pane shows it without covering the list pane. Popping
+  /// returns to the previous task. URL-driven changes (Beamer location)
+  /// reset the stack to a single entry.
+  final ValueNotifier<List<String>> desktopTaskDetailStack =
+      ValueNotifier<List<String>>(const <String>[]);
+
+  /// Convenience notifier mirroring `desktopTaskDetailStack.last` (or
+  /// `null` when the stack is empty). Kept as a separate notifier so
+  /// existing listeners (selected-row highlighting, etc.) keep working.
   final ValueNotifier<String?> desktopSelectedTaskId = ValueNotifier<String?>(
     null,
   );
@@ -264,6 +274,63 @@ class NavService {
     return indexStreamController.stream;
   }
 
+  /// Reset the desktop task detail stack to either `[taskId]` or empty.
+  /// Called from `TasksLocation` when the URL changes so the stack stays
+  /// in sync with the route.
+  ///
+  /// Idempotent across Beamer rebuilds: if the stack is already anchored
+  /// at the given `taskId` (i.e. `stack.first == taskId`), the stack is
+  /// left untouched so a `pushDesktopTaskDetail`-built linked-task stack
+  /// is preserved when `buildPages` re-runs for the same URL (theme
+  /// changes, provider rebuilds, etc.).
+  void resetDesktopTaskDetail(String? taskId) {
+    final current = desktopTaskDetailStack.value;
+    if (taskId == null) {
+      if (current.isNotEmpty) {
+        desktopTaskDetailStack.value = const <String>[];
+      }
+      if (desktopSelectedTaskId.value != null) {
+        desktopSelectedTaskId.value = null;
+      }
+      return;
+    }
+
+    if (current.isNotEmpty && current.first == taskId) {
+      // Stack is already anchored at this base task — preserve any
+      // linked-task pushes layered on top of it.
+      if (desktopSelectedTaskId.value != current.last) {
+        desktopSelectedTaskId.value = current.last;
+      }
+      return;
+    }
+
+    desktopTaskDetailStack.value = <String>[taskId];
+    if (desktopSelectedTaskId.value != taskId) {
+      desktopSelectedTaskId.value = taskId;
+    }
+  }
+
+  /// Push a linked task onto the desktop detail stack so the right pane
+  /// shows it without covering the task list pane.
+  void pushDesktopTaskDetail(String taskId) {
+    desktopTaskDetailStack.value = <String>[
+      ...desktopTaskDetailStack.value,
+      taskId,
+    ];
+    desktopSelectedTaskId.value = taskId;
+  }
+
+  /// Pop the top of the desktop detail stack. No-op when the stack has
+  /// at most one entry — the base task always stays visible because the
+  /// list pane is still on screen.
+  void popDesktopTaskDetail() {
+    final stack = desktopTaskDetailStack.value;
+    if (stack.length <= 1) return;
+    final next = stack.sublist(0, stack.length - 1);
+    desktopTaskDetailStack.value = next;
+    desktopSelectedTaskId.value = next.last;
+  }
+
   void beamToNamed(String path, {Object? data}) {
     final normalizedPath = _normalizePath(path);
     setPath(normalizedPath);
@@ -285,6 +352,7 @@ class NavService {
   }
 
   Future<void> dispose() async {
+    desktopTaskDetailStack.dispose();
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
     desktopSelectedDashboardId.dispose();

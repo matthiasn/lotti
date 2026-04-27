@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
@@ -53,9 +55,8 @@ class TaskExpandableAppBar extends ConsumerWidget {
           toolbarHeight: 40,
           scrolledUnderElevation: 0,
           elevation: 0,
-          leading: const Padding(
-            padding: EdgeInsets.only(left: 8),
-            child: GlassBackButton(),
+          leading: _GlassTaskBackLeading(
+            isDesktop: isDesktopLayout(context),
           ),
           centerTitle: true,
           title: AnimatedSwitcher(
@@ -102,6 +103,29 @@ class TaskExpandableAppBar extends ConsumerWidget {
       ),
       const SizedBox(width: 10),
     ];
+  }
+}
+
+/// Glass-styled back button leading for the expandable task app bar.
+///
+/// Mobile: always renders [GlassBackButton] which pops the navigator.
+/// Desktop: delegates to [TaskDetailDesktopBackLeading], shared with the
+/// compact bar so the back affordance is visually identical whether the
+/// task has cover art or not.
+class _GlassTaskBackLeading extends StatelessWidget {
+  const _GlassTaskBackLeading({required this.isDesktop});
+
+  final bool isDesktop;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isDesktop) {
+      return const Padding(
+        padding: EdgeInsets.only(left: 8),
+        child: GlassBackButton(),
+      );
+    }
+    return const TaskDetailDesktopBackLeading();
   }
 }
 

@@ -7,7 +7,13 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/app_bar/glass_back_button.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 /// Test-only TaskAppBarController that emits a pinned scroll offset so the
 /// persistent-title threshold check can be exercised deterministically.
@@ -181,6 +187,79 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.text('Test Task'), findsOneWidget);
+      },
+    );
+  });
+
+  group('TaskCompactAppBar desktop back-arrow visibility', () {
+    late MockNavService mockNavService;
+    late ValueNotifier<List<String>> stackNotifier;
+
+    setUp(() {
+      mockNavService = MockNavService();
+      stackNotifier = ValueNotifier<List<String>>(<String>['task-base']);
+      when(
+        () => mockNavService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
+      when(() => mockNavService.popDesktopTaskDetail()).thenAnswer((_) {});
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+      getIt
+        ..allowReassignment = true
+        ..registerSingleton<NavService>(mockNavService);
+    });
+
+    tearDown(() {
+      stackNotifier.dispose();
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+    });
+
+    testWidgets(
+      'desktop with single-entry stack hides the back arrow',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final task = buildTask();
+        await tester.pumpWidget(buildTestWidget(task));
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.chevron_left), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'desktop with multi-entry stack shows a glass back button '
+      'and pops on tap',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        stackNotifier.value = <String>['task-base', 'task-linked'];
+
+        final task = buildTask(id: 'task-linked');
+        await tester.pumpWidget(buildTestWidget(task));
+        await tester.pumpAndSettle();
+
+        // Compact bar uses the same GlassBackButton style as the
+        // expandable bar on desktop pop, so the affordance stays
+        // visually consistent across linked-task navigation.
+        expect(find.byType(GlassBackButton), findsOneWidget);
+
+        await tester.tap(find.byType(GlassBackButton));
+        await tester.pump();
+
+        verify(() => mockNavService.popDesktopTaskDetail()).called(1);
+        verifyNever(() => mockNavService.beamBack(data: any(named: 'data')));
       },
     );
   });

@@ -22,7 +22,7 @@ class TasksLocation extends BeamLocation<BeamState> {
     final isDesktop = navService.isDesktopMode;
 
     if (isDesktop) {
-      navService.desktopSelectedTaskId.value = isUuid(taskId) ? taskId : null;
+      navService.resetDesktopTaskDetail(isUuid(taskId) ? taskId : null);
     }
 
     return [

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -41,14 +43,20 @@ class TaskCompactAppBar extends ConsumerWidget {
     final offset =
         ref.watch(taskAppBarControllerProvider(id: task.id)).value ?? 0;
     final showTitle = offset >= _persistentTitleScrollThreshold;
+    final isDesktop = isDesktopLayout(context);
+    // On desktop the back arrow is only rendered while a linked task
+    // sits on top of the detail stack — at that point we use the same
+    // glass-styled button (and matching 48px leading width) as the
+    // expandable bar so the affordance stays visually identical
+    // whether the task has cover art or not.
     return SliverAppBar(
       backgroundColor: context.designTokens.colors.background.level01,
-      leadingWidth: 100,
+      leadingWidth: isDesktop ? 48 : 100,
       titleSpacing: 0,
       toolbarHeight: 45,
       scrolledUnderElevation: 0,
       elevation: 0,
-      leading: const BackWidget(),
+      leading: _TaskBackLeading(isDesktop: isDesktop),
       centerTitle: true,
       title: AnimatedSwitcher(
         duration: const Duration(milliseconds: 160),
@@ -83,6 +91,26 @@ class TaskCompactAppBar extends ConsumerWidget {
       ),
       const SizedBox(width: 10),
     ];
+  }
+}
+
+/// Leading widget for the compact task app bar.
+///
+/// Mobile: always renders [BackWidget] which beams back to the task list.
+/// Desktop: delegates to [TaskDetailDesktopBackLeading], shared with the
+/// expandable bar so the back affordance is visually identical whether
+/// the task has cover art or not.
+class _TaskBackLeading extends StatelessWidget {
+  const _TaskBackLeading({required this.isDesktop});
+
+  final bool isDesktop;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isDesktop) {
+      return const BackWidget();
+    }
+    return const TaskDetailDesktopBackLeading();
   }
 }
 

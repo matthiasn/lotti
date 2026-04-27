@@ -38,9 +38,10 @@ class TasksRootPage extends ConsumerWidget {
                 .updateListPaneWidth(delta),
           ),
           Expanded(
-            child: ValueListenableBuilder<String?>(
-              valueListenable: getIt<NavService>().desktopSelectedTaskId,
-              builder: (context, selectedTaskId, _) {
+            child: ValueListenableBuilder<List<String>>(
+              valueListenable: getIt<NavService>().desktopTaskDetailStack,
+              builder: (context, stack, _) {
+                final selectedTaskId = stack.isEmpty ? null : stack.last;
                 final child = selectedTaskId != null
                     ? TaskDetailsPage(
                         key: ValueKey(selectedTaskId),

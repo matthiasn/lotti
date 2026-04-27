@@ -37,6 +37,9 @@ void main() {
         when(
           () => mockNavService.desktopSelectedTaskId,
         ).thenReturn(ValueNotifier<String?>(null));
+        when(
+          () => mockNavService.desktopTaskDetailStack,
+        ).thenReturn(ValueNotifier<List<String>>(const <String>[]));
         getIt
           ..registerSingleton<NavService>(mockNavService)
           ..registerSingleton<EntitiesCacheService>(
@@ -116,10 +119,10 @@ void main() {
     fakeController = FakeJournalPageController(state());
 
     final navService = getIt<NavService>() as MockNavService;
-    final selectedNotifier = ValueNotifier<String?>('task-42');
+    final stackNotifier = ValueNotifier<List<String>>(<String>['task-42']);
     when(
-      () => navService.desktopSelectedTaskId,
-    ).thenReturn(selectedNotifier);
+      () => navService.desktopTaskDetailStack,
+    ).thenReturn(stackNotifier);
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -139,8 +142,8 @@ void main() {
     expect(find.byType(DesktopDetailEmptyState), findsNothing);
     expect(find.byType(TaskDetailsPage), findsOneWidget);
     expect(
-      tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
-      const ValueKey('task-42'),
+      tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).taskId,
+      'task-42',
     );
 
     // Dispose the widget tree and flush pending timers from
@@ -155,10 +158,10 @@ void main() {
       fakeController = FakeJournalPageController(state());
 
       final navService = getIt<NavService>() as MockNavService;
-      final selectedNotifier = ValueNotifier<String?>('task-a');
+      final stackNotifier = ValueNotifier<List<String>>(<String>['task-a']);
       when(
-        () => navService.desktopSelectedTaskId,
-      ).thenReturn(selectedNotifier);
+        () => navService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -177,12 +180,12 @@ void main() {
       expect(find.byType(AnimatedSwitcher), findsOneWidget);
       expect(find.byType(TaskDetailsPage), findsOneWidget);
       expect(
-        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
-        const ValueKey('task-a'),
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).taskId,
+        'task-a',
       );
 
-      // Switch to a different task id — mid-transition both pages coexist.
-      selectedNotifier.value = 'task-b';
+      // Replace base task — mid-transition both pages coexist.
+      stackNotifier.value = <String>['task-b'];
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -192,8 +195,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 360));
       expect(find.byType(TaskDetailsPage), findsOneWidget);
       expect(
-        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
-        const ValueKey('task-b'),
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).taskId,
+        'task-b',
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -202,15 +205,73 @@ void main() {
   );
 
   testWidgets(
-    'does not animate when the selected task id stays the same',
+    'pushing onto the stack swaps to the linked task and crossfades',
     (tester) async {
       fakeController = FakeJournalPageController(state());
 
       final navService = getIt<NavService>() as MockNavService;
-      final selectedNotifier = ValueNotifier<String?>('task-stable');
+      final stackNotifier = ValueNotifier<List<String>>(<String>['base-task']);
       when(
-        () => navService.desktopSelectedTaskId,
-      ).thenReturn(selectedNotifier);
+        () => navService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const TasksRootPage(),
+          mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(true),
+            journalPageControllerProvider(
+              true,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).taskId,
+        'base-task',
+      );
+
+      // Simulate pushing a linked task onto the desktop stack.
+      stackNotifier.value = <String>['base-task', 'linked-task'];
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.byType(TaskDetailsPage), findsOneWidget);
+      expect(
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).taskId,
+        'linked-task',
+      );
+
+      // Pop returns to the base task.
+      stackNotifier.value = <String>['base-task'];
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).taskId,
+        'base-task',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'does not animate when the stack stays the same',
+    (tester) async {
+      fakeController = FakeJournalPageController(state());
+
+      final navService = getIt<NavService>() as MockNavService;
+      final stackNotifier = ValueNotifier<List<String>>(
+        <String>['task-stable'],
+      );
+      when(
+        () => navService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -228,17 +289,17 @@ void main() {
 
       expect(find.byType(TaskDetailsPage), findsOneWidget);
 
-      // Re-emit the same id — simulates a data-reload code path that
+      // Re-emit the same stack — simulates a data-reload code path that
       // happens to rebuild the outer ValueListenableBuilder.
-      selectedNotifier.notifyListeners();
+      stackNotifier.notifyListeners();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
       // Still exactly one TaskDetailsPage — no crossfade in flight.
       expect(find.byType(TaskDetailsPage), findsOneWidget);
       expect(
-        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).key,
-        const ValueKey('task-stable'),
+        tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).taskId,
+        'task-stable',
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
