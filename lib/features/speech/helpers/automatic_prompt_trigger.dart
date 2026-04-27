@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -54,6 +57,15 @@ class AutomaticPromptTrigger {
           domain: 'automatic_prompt_trigger',
           subDomain: 'triggerAutomaticPrompts',
         );
+        // A realtime transcript is still a completed transcription — nudge
+        // the agent so it processes the freshly-spoken content immediately
+        // instead of waiting through the standard 2-minute throttle.
+        if (realtimeTranscriptProvided) {
+          await _nudgeTaskAgent(
+            entryId: entryId,
+            linkedTaskId: linkedTaskId,
+          );
+        }
         return;
       }
 
@@ -70,11 +82,59 @@ class AutomaticPromptTrigger {
         automationResult: result,
         linkedTaskId: linkedTaskId,
       );
+
+      // Transcription added real content to the task — nudge the task agent
+      // immediately so it processes the new transcript without waiting out
+      // the standard 2-minute throttle. The manual wake clears any pending
+      // throttle deadline (and its UI countdown) and supersedes any queued
+      // subscription job.
+      await _nudgeTaskAgent(
+        entryId: entryId,
+        linkedTaskId: linkedTaskId,
+      );
     } catch (exception, stackTrace) {
       loggingService.captureException(
         exception,
         domain: 'automatic_prompt_trigger',
         subDomain: 'triggerAutomaticPrompts',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Enqueue a manual wake on the task's agent so a freshly-completed
+  /// transcription is processed immediately, bypassing the 2-minute
+  /// subscription throttle.
+  ///
+  /// No-op when no task agent is registered for [linkedTaskId]. Failures
+  /// are logged but never propagate — a missed nudge is recoverable via
+  /// the standard subscription path; throwing here would abort the caller.
+  Future<void> _nudgeTaskAgent({
+    required String entryId,
+    required String linkedTaskId,
+  }) async {
+    try {
+      final taskAgentService = ref.read(taskAgentServiceProvider);
+      final agent = await taskAgentService.getTaskAgentForTask(linkedTaskId);
+      if (agent == null) return;
+      ref
+          .read(wakeOrchestratorProvider)
+          .enqueueManualWake(
+            agentId: agent.agentId,
+            reason: WakeReason.transcriptionComplete.name,
+            triggerTokens: {linkedTaskId, entryId},
+          );
+      loggingService.captureEvent(
+        'Nudged task agent ${agent.agentId} after transcription '
+        'completion (task $linkedTaskId, entry $entryId)',
+        domain: 'automatic_prompt_trigger',
+        subDomain: 'nudgeTaskAgent',
+      );
+    } catch (exception, stackTrace) {
+      loggingService.captureException(
+        exception,
+        domain: 'automatic_prompt_trigger',
+        subDomain: 'nudgeTaskAgent',
         stackTrace: stackTrace,
       );
     }

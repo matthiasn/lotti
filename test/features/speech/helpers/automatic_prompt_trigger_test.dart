@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
@@ -11,15 +13,20 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 void main() {
   late MockLoggingService mockLoggingService;
   late MockProfileAutomationService mockProfileAutomationService;
   late MockSkillInferenceRunner mockRunner;
+  late MockTaskAgentService mockTaskAgentService;
+  late MockWakeOrchestrator mockWakeOrchestrator;
   late ProviderContainer container;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(AutomationResult.notHandled);
   });
 
@@ -52,6 +59,8 @@ void main() {
     mockLoggingService = MockLoggingService();
     mockProfileAutomationService = MockProfileAutomationService();
     mockRunner = MockSkillInferenceRunner();
+    mockTaskAgentService = MockTaskAgentService();
+    mockWakeOrchestrator = MockWakeOrchestrator();
 
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
@@ -82,12 +91,26 @@ void main() {
       ),
     ).thenAnswer((_) async => AutomationResult.notHandled);
 
+    when(
+      () => mockTaskAgentService.getTaskAgentForTask(any()),
+    ).thenAnswer((_) async => null);
+
+    when(
+      () => mockWakeOrchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+      ),
+    ).thenReturn(null);
+
     container = ProviderContainer(
       overrides: [
         profileAutomationServiceProvider.overrideWithValue(
           mockProfileAutomationService,
         ),
         skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
+        wakeOrchestratorProvider.overrideWithValue(mockWakeOrchestrator),
       ],
     );
   });
@@ -295,6 +318,173 @@ void main() {
           ),
         ).called(1);
       });
+    });
+
+    group('agent nudge on transcription completion', () {
+      test(
+        'enqueues a manual wake after a successful profile-driven '
+        'transcription so the user does not wait through the throttle',
+        () async {
+          const taskId = 'task-nudge';
+          const entryId = 'entry-nudge';
+          final skill = testSkill();
+          final result = AutomationResult(handled: true, skill: skill);
+          final agent = makeTestIdentity(agentId: 'agent-nudge');
+
+          when(
+            () => mockProfileAutomationService.tryTranscribe(
+              taskId: taskId,
+              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+            ),
+          ).thenAnswer((_) async => result);
+          when(
+            () => mockRunner.runTranscription(
+              audioEntryId: entryId,
+              automationResult: result,
+              linkedTaskId: taskId,
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockTaskAgentService.getTaskAgentForTask(taskId),
+          ).thenAnswer((_) async => agent);
+
+          final trigger = container.read(automaticPromptTriggerProvider);
+
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            stoppedState(),
+            linkedTaskId: taskId,
+          );
+
+          verify(
+            () => mockWakeOrchestrator.enqueueManualWake(
+              agentId: 'agent-nudge',
+              reason: 'transcriptionComplete',
+              triggerTokens: {taskId, entryId},
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'still nudges the agent when the realtime transcript was already '
+        'provided (cloud transcription is skipped, but the content is fresh)',
+        () async {
+          const taskId = 'task-rt';
+          const entryId = 'entry-rt';
+          final skill = testSkill();
+          final result = AutomationResult(handled: true, skill: skill);
+          final agent = makeTestIdentity(agentId: 'agent-rt');
+
+          when(
+            () => mockProfileAutomationService.tryTranscribe(
+              taskId: taskId,
+              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+            ),
+          ).thenAnswer((_) async => result);
+          when(
+            () => mockTaskAgentService.getTaskAgentForTask(taskId),
+          ).thenAnswer((_) async => agent);
+
+          final trigger = container.read(automaticPromptTriggerProvider);
+
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            stoppedState(),
+            linkedTaskId: taskId,
+            realtimeTranscriptProvided: true,
+          );
+
+          verifyNever(
+            () => mockRunner.runTranscription(
+              audioEntryId: any(named: 'audioEntryId'),
+              automationResult: any(named: 'automationResult'),
+              linkedTaskId: any(named: 'linkedTaskId'),
+            ),
+          );
+          verify(
+            () => mockWakeOrchestrator.enqueueManualWake(
+              agentId: 'agent-rt',
+              reason: 'transcriptionComplete',
+              triggerTokens: {taskId, entryId},
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'does not nudge when no task agent is registered for the task',
+        () async {
+          const taskId = 'task-orphan';
+          const entryId = 'entry-orphan';
+          final skill = testSkill();
+          final result = AutomationResult(handled: true, skill: skill);
+
+          when(
+            () => mockProfileAutomationService.tryTranscribe(
+              taskId: taskId,
+              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+            ),
+          ).thenAnswer((_) async => result);
+          when(
+            () => mockRunner.runTranscription(
+              audioEntryId: entryId,
+              automationResult: result,
+              linkedTaskId: taskId,
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockTaskAgentService.getTaskAgentForTask(taskId),
+          ).thenAnswer((_) async => null);
+
+          final trigger = container.read(automaticPromptTriggerProvider);
+
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            stoppedState(),
+            linkedTaskId: taskId,
+          );
+
+          verifyNever(
+            () => mockWakeOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'does not nudge when transcription was not handled by automation',
+        () async {
+          const taskId = 'task-skip';
+          const entryId = 'entry-skip';
+
+          when(
+            () => mockProfileAutomationService.tryTranscribe(
+              taskId: taskId,
+              enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+            ),
+          ).thenAnswer((_) async => AutomationResult.notHandled);
+
+          final trigger = container.read(automaticPromptTriggerProvider);
+
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            stoppedState(),
+            linkedTaskId: taskId,
+          );
+
+          verifyNever(
+            () => mockWakeOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+        },
+      );
     });
   });
 }

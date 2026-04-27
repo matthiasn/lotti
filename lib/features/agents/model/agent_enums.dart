@@ -114,6 +114,11 @@ enum WakeReason {
 
   /// Triggered by a scheduled timer (e.g., weekly one-on-one ritual).
   scheduled,
+
+  /// Triggered immediately after speech transcription completes for an
+  /// audio entry linked to a task — bypasses the throttle so the user
+  /// does not wait through a 2-minute countdown after speaking.
+  transcriptionComplete,
 }
 
 /// Status of an evolution session.

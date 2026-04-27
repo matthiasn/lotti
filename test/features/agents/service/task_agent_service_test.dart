@@ -299,6 +299,103 @@ void main() {
           throwsStateError,
         );
       });
+
+      test(
+        'mirrors awaitContent flag onto orchestrator awaiting-content cache',
+        () async {
+          final identity = makeIdentity();
+          when(
+            () => mockRepository.getLinksTo('task-blank', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          ).thenReturn(null);
+          when(
+            () => mockOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          ).thenReturn(null);
+
+          await service.createTaskAgent(
+            taskId: 'task-blank',
+            templateId: kTestTemplateId,
+            allowedCategoryIds: const {},
+            awaitContent: true,
+          );
+
+          verify(
+            () => mockOrchestrator.setAwaitingContent(
+              'agent-1',
+              awaiting: true,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'clears awaiting-content cache when task already has content',
+        () async {
+          final identity = makeIdentity();
+          when(
+            () => mockRepository.getLinksTo('task-warm', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          ).thenReturn(null);
+          when(
+            () => mockOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          ).thenReturn(null);
+
+          await service.createTaskAgent(
+            taskId: 'task-warm',
+            templateId: kTestTemplateId,
+            allowedCategoryIds: const {},
+          );
+
+          verify(
+            () => mockOrchestrator.setAwaitingContent(
+              'agent-1',
+              awaiting: false,
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('getTaskAgentForTask', () {
@@ -491,6 +588,35 @@ void main() {
           () => mockOrchestrator.setThrottleDeadline(any(), any()),
         );
       });
+
+      test(
+        'hydrates awaiting-content cache from persisted state',
+        () async {
+          final stateAwaiting = makeState().copyWith(awaitingContent: true);
+          when(
+            () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => stateAwaiting);
+          when(
+            () => mockOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          ).thenReturn(null);
+
+          await service.restoreSubscriptionsForAgent('agent-1');
+
+          verify(
+            () => mockOrchestrator.setAwaitingContent(
+              'agent-1',
+              awaiting: true,
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('restoreSubscriptions', () {

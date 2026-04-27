@@ -2199,6 +2199,109 @@ void main() {
       );
     });
 
+    group('awaiting-content cache', () {
+      test(
+        'setAwaitingContent suppresses throttle deadline on subscription wakes',
+        () {
+          fakeAsync((async) {
+            orchestrator
+              ..addSubscription(makeSub())
+              ..setAwaitingContent('agent-1', awaiting: true)
+              ..wakeExecutor = noOpExecutor;
+
+            final controller = StreamController<Set<String>>.broadcast();
+            orchestrator.start(controller.stream);
+
+            emitTokens(async, controller, {'entity-1'});
+
+            // Advance just shy of the safety-net interval. With no deferred
+            // drain timer scheduled (the throttle was skipped), nothing has
+            // surfaced a countdown via persisted nextWakeAt and the wake has
+            // not been dispatched.
+            async
+              ..elapse(
+                WakeOrchestrator.safetyNetInterval - const Duration(seconds: 1),
+              )
+              ..flushMicrotasks();
+
+            verifyNever(
+              () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+            );
+            verifyNever(
+              () => mockRepository.upsertEntity(
+                any(
+                  that: isA<AgentStateEntity>().having(
+                    (s) => s.nextWakeAt,
+                    'nextWakeAt',
+                    isNotNull,
+                  ),
+                ),
+              ),
+            );
+            expect(orchestrator.isAwaitingContent('agent-1'), isTrue);
+
+            controller.close();
+          });
+        },
+      );
+
+      test(
+        'content-gate clears the cache once real content arrives',
+        () {
+          fakeAsync((async) {
+            final state = makeTestState(
+              agentId: 'agent-cg-cache',
+              awaitingContent: true,
+              slots: const AgentSlots(activeTaskId: 'task-cache'),
+            );
+            when(
+              () => mockRepository.getAgentState('agent-cg-cache'),
+            ).thenAnswer((_) async => state);
+
+            final cg =
+                WakeOrchestrator(
+                    repository: mockRepository,
+                    queue: queue,
+                    runner: WakeRunner(),
+                    taskContentChecker: (taskId) async => true,
+                    wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                      return null;
+                    },
+                  )
+                  ..setAwaitingContent('agent-cg-cache', awaiting: true)
+                  ..enqueueManualWake(
+                    agentId: 'agent-cg-cache',
+                    reason: 'creation',
+                  );
+
+            expect(cg.isAwaitingContent('agent-cg-cache'), isTrue);
+
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+
+            // After the content gate finds content, the cache is cleared so
+            // subsequent subscription wakes get the normal countdown again.
+            expect(cg.isAwaitingContent('agent-cg-cache'), isFalse);
+
+            cg.stop();
+          });
+        },
+      );
+
+      test('removeSubscriptions drops the awaiting-content entry', () {
+        orchestrator
+          ..addSubscription(makeSub())
+          ..setAwaitingContent('agent-1', awaiting: true);
+
+        expect(orchestrator.isAwaitingContent('agent-1'), isTrue);
+
+        orchestrator.removeSubscriptions('agent-1');
+
+        expect(orchestrator.isAwaitingContent('agent-1'), isFalse);
+      });
+    });
+
     group('_scheduleDeferredDrain edge cases', () {
       test(
         'setThrottleDeadline with past deadline does not throttle agent',
