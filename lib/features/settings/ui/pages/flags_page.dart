@@ -10,15 +10,38 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/consts.dart';
 
-class FlagsPage extends ConsumerStatefulWidget {
+/// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome
+/// (title, back button, page-level padding) and delegates the
+/// content to [FlagsBody] so the same widget can be hosted inside the
+/// Settings V2 detail pane (plan step 7).
+class FlagsPage extends StatelessWidget {
   const FlagsPage({super.key});
 
   @override
-  ConsumerState<FlagsPage> createState() => _FlagsPageState();
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SliverBoxAdapterPage(
+      title: context.messages.settingsFlagsTitle,
+      showBackButton: true,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step4,
+      ),
+      child: const FlagsBody(),
+    );
+  }
 }
 
-class _FlagsPageState extends ConsumerState<FlagsPage> {
-  static const List<String> displayedItems = [
+/// Content body for the feature-flags settings. Extracted from
+/// [FlagsPage] so it can be rendered inside the V2 detail pane
+/// without the surrounding `SliverBoxAdapterPage` chrome. Embeds in
+/// a scroll view because the flag list grows with each added
+/// config flag and must not overflow the fixed-height V2 detail
+/// surface.
+class FlagsBody extends ConsumerWidget {
+  const FlagsBody({super.key});
+
+  static const List<String> _displayedItems = [
     privateFlag,
     enableNotificationsFlag,
     recordLocationFlag,
@@ -40,7 +63,6 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
     enableSettingsTreeFlag,
   ];
 
-  // Helper to get icon for each flag
   IconData _iconForFlag(String flagName) {
     switch (flagName) {
       case privateFlag:
@@ -86,7 +108,6 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
     }
   }
 
-  // Helper to get subtitle/description for each flag
   String _subtitleForFlag(BuildContext context, ConfigFlag flag) {
     switch (flag.name) {
       case privateFlag:
@@ -134,7 +155,6 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
     }
   }
 
-  // Helper to get title for each flag
   String _titleForFlag(BuildContext context, ConfigFlag flag) {
     switch (flag.name) {
       case privateFlag:
@@ -181,73 +201,58 @@ class _FlagsPageState extends ConsumerState<FlagsPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
 
     return StreamBuilder<Set<ConfigFlag>>(
       stream: getIt<JournalDb>().watchConfigFlags(),
-      builder:
-          (
-            BuildContext context,
-            AsyncSnapshot<Set<ConfigFlag>> snapshot,
-          ) {
-            final flagLookup = <String, ConfigFlag>{
-              for (final ConfigFlag flag in snapshot.data ?? {})
-                flag.name: flag,
-            };
+      builder: (context, snapshot) {
+        final flagLookup = <String, ConfigFlag>{
+          for (final flag in snapshot.data ?? <ConfigFlag>{}) flag.name: flag,
+        };
 
-            final orderedFlags = displayedItems
-                .map((name) => flagLookup[name])
-                .nonNulls
-                .toList();
+        final orderedFlags = _displayedItems
+            .map((name) => flagLookup[name])
+            .nonNulls
+            .toList();
 
-            return SliverBoxAdapterPage(
-              title: context.messages.settingsFlagsTitle,
-              showBackButton: true,
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step5,
-                vertical: tokens.spacing.step4,
-              ),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: tokens.colors.background.level02,
-                  borderRadius: BorderRadius.circular(tokens.radii.m),
-                  border: Border.all(color: tokens.colors.decorative.level01),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(tokens.radii.m),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (final (index, flag) in orderedFlags.indexed)
-                        DesignSystemListItem(
-                          title: _titleForFlag(context, flag),
-                          subtitle: _subtitleForFlag(context, flag),
-                          leading: SettingsIcon(
-                            icon: _iconForFlag(flag.name),
-                          ),
-                          trailing: Switch.adaptive(
-                            value: flag.status,
-                            onChanged: (bool status) {
-                              getIt<PersistenceLogic>().setConfigFlag(
-                                flag.copyWith(status: status),
-                              );
-                            },
-                          ),
-                          onTap: () {
-                            getIt<PersistenceLogic>().setConfigFlag(
-                              flag.copyWith(status: !flag.status),
-                            );
-                          },
-                          showDivider: index < orderedFlags.length - 1,
-                          dividerIndent: SettingsIcon.dividerIndent(tokens),
-                        ),
-                    ],
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: tokens.colors.background.level02,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            border: Border.all(color: tokens.colors.decorative.level01),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final (index, flag) in orderedFlags.indexed)
+                  DesignSystemListItem(
+                    title: _titleForFlag(context, flag),
+                    subtitle: _subtitleForFlag(context, flag),
+                    leading: SettingsIcon(icon: _iconForFlag(flag.name)),
+                    trailing: Switch.adaptive(
+                      value: flag.status,
+                      onChanged: (bool status) {
+                        getIt<PersistenceLogic>().setConfigFlag(
+                          flag.copyWith(status: status),
+                        );
+                      },
+                    ),
+                    onTap: () {
+                      getIt<PersistenceLogic>().setConfigFlag(
+                        flag.copyWith(status: !flag.status),
+                      );
+                    },
+                    showDivider: index < orderedFlags.length - 1,
+                    dividerIndent: SettingsIcon.dividerIndent(tokens),
                   ),
-                ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

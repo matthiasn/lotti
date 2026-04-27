@@ -139,8 +139,28 @@ void main() {
         '/settings/advanced/conflicts/:conflictId/edit',
         '/settings/advanced/conflicts',
         '/settings/advanced/maintenance',
+        // Legacy alias kept so hand-edited bookmarks that hit the
+        // pattern advertised on `main` still render the MaintenancePage.
+        '/settings/maintenance',
       ]);
     });
+
+    test(
+      'legacy /settings/maintenance alias still renders MaintenancePage',
+      () {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/maintenance'),
+        );
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+        // Settings root + MaintenancePage. The old URL never pushed an
+        // Advanced intermediate page, so the stack is 2 pages deep.
+        expect(pages.length, 2);
+        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[1].child, isA<MaintenancePage>());
+      },
+    );
 
     test('buildPages builds SettingsPage', () {
       final routeInformation = RouteInformation(uri: Uri.parse('/settings'));

@@ -51,6 +51,7 @@ List<SettingsNode> buildSettingsTree({
     IconData icon, {
     required List<SettingsNode> children,
     NodeBadge? badge,
+    String? panel,
   }) {
     final l = labels(id);
     return SettingsNode(
@@ -60,6 +61,7 @@ List<SettingsNode> buildSettingsTree({
       desc: l.desc,
       children: children,
       badge: badge,
+      panel: panel,
     );
   }
 
@@ -78,6 +80,7 @@ List<SettingsNode> buildSettingsTree({
     branch(
       'ai',
       Icons.psychology_rounded,
+      panel: 'ai',
       children: [
         leaf('ai/profiles', Icons.tune_rounded, panel: 'ai-profiles'),
       ],
@@ -86,6 +89,7 @@ List<SettingsNode> buildSettingsTree({
       branch(
         'agents',
         Icons.smart_toy_outlined,
+        panel: 'agents',
         children: [
           leaf(
             'agents/templates',

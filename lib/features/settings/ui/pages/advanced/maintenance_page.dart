@@ -18,8 +18,30 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
-class MaintenancePage extends ConsumerWidget {
+/// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome
+/// and delegates content to [MaintenanceBody] so the same widget can
+/// render inside the Settings V2 detail pane (plan step 7).
+class MaintenancePage extends StatelessWidget {
   const MaintenancePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverBoxAdapterPage(
+      title: context.messages.settingsMaintenanceTitle,
+      showBackButton: true,
+      child: const MaintenanceBody(),
+    );
+  }
+}
+
+/// Content body for the advanced-maintenance page: a grouped list of
+/// destructive / diagnostic actions. Extracted so the V2 detail pane
+/// can host the same list without the surrounding sliver chrome.
+/// Owns its own vertical padding so both hosts (sliver page and V2
+/// detail pane) get the same chrome-independent spacing — matching
+/// the `LoggingSettingsBody` pattern.
+class MaintenanceBody extends ConsumerWidget {
+  const MaintenanceBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,9 +146,7 @@ class MaintenancePage extends ConsumerWidget {
             ),
         ];
 
-    return SliverBoxAdapterPage(
-      title: context.messages.settingsMaintenanceTitle,
-      showBackButton: true,
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
       child: DesignSystemGroupedList(
         children: [

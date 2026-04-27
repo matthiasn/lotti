@@ -11,12 +11,31 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 
-/// Settings page for controlling per-domain logging flags.
-///
-/// Shows the global logging toggle plus per-domain toggles for agent runtime,
-/// agent workflow, and sync logging.
-class LoggingSettingsPage extends ConsumerWidget {
+/// Mobile wrapper — keeps the existing `SliverBoxAdapterPage`
+/// chrome (title, back button, page-level padding) and delegates
+/// the actual content to [LoggingSettingsBody] so the same content
+/// widget can be hosted inside the Settings V2 detail pane (plan
+/// step 7).
+class LoggingSettingsPage extends StatelessWidget {
   const LoggingSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverBoxAdapterPage(
+      title: context.messages.settingsLoggingDomainsTitle,
+      showBackButton: true,
+      child: const LoggingSettingsBody(),
+    );
+  }
+}
+
+/// Content body for the logging-domains settings. Extracted from
+/// [LoggingSettingsPage] so it can be rendered inside the V2
+/// detail pane without the surrounding `SliverBoxAdapterPage`
+/// chrome. Owns its own padding so both hosts can embed it with
+/// zero additional work.
+class LoggingSettingsBody extends ConsumerWidget {
+  const LoggingSettingsBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,9 +108,7 @@ class LoggingSettingsPage extends ConsumerWidget {
           ),
         ];
 
-    return SliverBoxAdapterPage(
-      title: context.messages.settingsLoggingDomainsTitle,
-      showBackButton: true,
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
       child: DesignSystemGroupedList(
         children: [

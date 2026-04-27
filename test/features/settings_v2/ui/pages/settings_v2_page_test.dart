@@ -2,14 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_width_controller.dart';
-import 'package:lotti/features/settings_v2/ui/detail/settings_v2_detail_placeholder.dart';
+import 'package:lotti/features/settings_v2/ui/detail/settings_detail_pane.dart';
 import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_view.dart';
 import 'package:lotti/features/settings_v2/ui/widgets/settings_tree_resize_handle.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../widget_test_utils.dart';
+
+class _FakeNavService implements NavService {
+  @override
+  final ValueNotifier<DesktopSettingsRoute?> desktopSelectedSettingsRoute =
+      ValueNotifier<DesktopSettingsRoute?>(null);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    'Unexpected NavService call: ${invocation.memberName}',
+  );
+}
 
 Future<void> _pumpPage(
   WidgetTester tester, {
@@ -25,6 +38,16 @@ Future<void> _pumpPage(
   when(
     () => mocks.journalDb.watchConfigFlag(any()),
   ).thenAnswer((_) => Stream.value(false));
+
+  // SettingsTreeUrlSync reads NavService from getIt on mount.
+  final nav = _FakeNavService();
+  getIt.registerSingleton<NavService>(nav);
+  addTearDown(() {
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
+    nav.desktopSelectedSettingsRoute.dispose();
+  });
 
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
@@ -72,11 +95,11 @@ void main() {
       expect(find.byType(SettingsTreeView), findsOneWidget);
     });
 
-    testWidgets('renders the detail-pane placeholder in the right column', (
+    testWidgets('renders the SettingsDetailPane in the right column', (
       tester,
     ) async {
       await _pumpPage(tester);
-      expect(find.byType(SettingsV2DetailPlaceholder), findsOneWidget);
+      expect(find.byType(SettingsDetailPane), findsOneWidget);
     });
 
     testWidgets('includes a SettingsTreeResizeHandle between the columns', (

@@ -91,6 +91,14 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/advanced/conflicts/:conflictId/edit',
     '/settings/advanced/conflicts',
     '/settings/advanced/maintenance',
+    // Legacy alias. `/settings/maintenance` was declared as a path
+    // pattern on `main` but never rendered a page in `buildPages`
+    // (the check was `pathContains('advanced/maintenance')`). To keep
+    // any hand-edited bookmarks that hit the advertised pattern
+    // working, accept the old URL and render the maintenance page in
+    // the mobile/legacy branch below. The canonical URL is now
+    // `/settings/advanced/maintenance`.
+    '/settings/maintenance',
   ];
 
   @override
@@ -485,7 +493,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: EntryDetailsPage(itemId: state.pathParameters['conflictId']!),
         ),
 
-      if (pathContains('advanced/maintenance'))
+      if (pathContains('advanced/maintenance') ||
+          path == '/settings/maintenance')
         const BeamPage(
           key: ValueKey('settings-maintenance'),
           child: MaintenancePage(),

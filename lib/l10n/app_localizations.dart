@@ -10039,6 +10039,18 @@ abstract class AppLocalizations {
   /// **'Theming'**
   String get settingsThemingTitle;
 
+  /// No description provided for @settingsV2CategoryEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a sub-setting on the left.'**
+  String get settingsV2CategoryEmptyBody;
+
+  /// No description provided for @settingsV2DetailRootCrumb.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsV2DetailRootCrumb;
+
   /// No description provided for @settingsV2DisableAction.
   ///
   /// In en, this message translates to:
@@ -10069,6 +10081,24 @@ abstract class AppLocalizations {
   /// **'Panel not yet implemented'**
   String get settingsV2UnimplementedTitle;
 
+  /// No description provided for @settingsWhatsNewCaughtUpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No new release notes to read — the latest version has already been viewed.'**
+  String get settingsWhatsNewCaughtUpBody;
+
+  /// No description provided for @settingsWhatsNewCaughtUpHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up'**
+  String get settingsWhatsNewCaughtUpHeadline;
+
+  /// No description provided for @settingsWhatsNewOpenAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open release notes'**
+  String get settingsWhatsNewOpenAction;
+
   /// No description provided for @settingsWhatsNewSubtitle.
   ///
   /// In en, this message translates to:
@@ -10080,6 +10110,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'What\'s New'**
   String get settingsWhatsNewTitle;
+
+  /// No description provided for @settingsWhatsNewUnseenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the release notes to read what\'s new in this version.'**
+  String get settingsWhatsNewUnseenBody;
+
+  /// No description provided for @settingsWhatsNewUnseenHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 new release} other{{count} new releases}}'**
+  String settingsWhatsNewUnseenHeadline(int count);
 
   /// No description provided for @settingThemingDark.
   ///

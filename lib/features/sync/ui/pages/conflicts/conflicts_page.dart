@@ -25,6 +25,16 @@ enum _ConflictListFilter {
   resolved,
 }
 
+/// Embeddable body alias for the Settings V2 detail pane (plan
+/// step 8). See `CategoriesListBody` for the polish note about the
+/// duplicate header.
+class ConflictsBody extends StatelessWidget {
+  const ConflictsBody({super.key});
+
+  @override
+  Widget build(BuildContext context) => const ConflictsPage();
+}
+
 class ConflictsPage extends StatefulWidget {
   const ConflictsPage({super.key});
 

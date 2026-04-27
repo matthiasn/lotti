@@ -12,8 +12,33 @@ import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-class BackfillSettingsPage extends ConsumerWidget {
+/// Mobile / legacy wrapper. Keeps the `SliverBoxAdapterPage` chrome
+/// + `SyncFeatureGate` and delegates content to [BackfillSettingsBody]
+/// so the same widget can render inside the Settings V2 detail pane
+/// (plan step 7).
+class BackfillSettingsPage extends StatelessWidget {
   const BackfillSettingsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SyncFeatureGate(
+      child: SliverBoxAdapterPage(
+        title: context.messages.backfillSettingsTitle,
+        subtitle: context.messages.backfillSettingsSubtitle,
+        showBackButton: true,
+        child: const BackfillSettingsBody(),
+      ),
+    );
+  }
+}
+
+/// Content body for the backfill-settings page. Extracted so the V2
+/// detail pane can render the same sections without the outer
+/// sliver chrome. The feature gate is applied by each host so
+/// embeddings below a disabled flag still get the intended "feature
+/// off" guard.
+class BackfillSettingsBody extends ConsumerWidget {
+  const BackfillSettingsBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,150 +51,143 @@ class BackfillSettingsPage extends ConsumerWidget {
     final coordinator = matrixService?.queueCoordinator;
     final showQueueSection = coordinator != null;
 
-    return SyncFeatureGate(
-      child: SliverBoxAdapterPage(
-        title: context.messages.backfillSettingsTitle,
-        subtitle: context.messages.backfillSettingsSubtitle,
-        showBackButton: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showQueueSection) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: QueueDepthCard(queue: coordinator.queue),
-              ),
-              const SizedBox(height: 16),
-              _CatchUpNowButton(coordinator: coordinator),
-              const SizedBox(height: 8),
-              _FetchAllHistoryButton(coordinator: coordinator),
-              const SizedBox(height: 24),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showQueueSection) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: QueueDepthCard(queue: coordinator.queue),
+          ),
+          const SizedBox(height: 16),
+          _CatchUpNowButton(coordinator: coordinator),
+          const SizedBox(height: 8),
+          _FetchAllHistoryButton(coordinator: coordinator),
+          const SizedBox(height: 24),
+        ],
 
-            // Enable/Disable Toggle Card
-            _BackfillToggleCard(
-              isEnabled: configAsync.value ?? true,
-              isLoading: configAsync.isLoading,
-              onToggle: () =>
-                  ref.read(backfillConfigControllerProvider.notifier).toggle(),
-            ),
+        // Enable/Disable Toggle Card
+        _BackfillToggleCard(
+          isEnabled: configAsync.value ?? true,
+          isLoading: configAsync.isLoading,
+          onToggle: () =>
+              ref.read(backfillConfigControllerProvider.notifier).toggle(),
+        ),
 
-            const SizedBox(height: 24),
+        const SizedBox(height: 24),
 
-            // Stats Section
-            _StatsSection(
-              stats: statsState.stats,
-              isLoading: statsState.isLoading,
-              onRefresh: () =>
-                  ref.read(backfillStatsControllerProvider.notifier).refresh(),
-            ),
+        // Stats Section
+        _StatsSection(
+          stats: statsState.stats,
+          isLoading: statsState.isLoading,
+          onRefresh: () =>
+              ref.read(backfillStatsControllerProvider.notifier).refresh(),
+        ),
 
-            const SizedBox(height: 24),
+        const SizedBox(height: 24),
 
-            // Manual Backfill Section
-            _ManualBackfillSection(
-              isProcessing: statsState.isProcessing,
-              lastProcessedCount: statsState.lastProcessedCount,
-              error: statsState.error,
-              onTrigger: () => ref
-                  .read(backfillStatsControllerProvider.notifier)
-                  .triggerFullBackfill(),
-            ),
+        // Manual Backfill Section
+        _ManualBackfillSection(
+          isProcessing: statsState.isProcessing,
+          lastProcessedCount: statsState.lastProcessedCount,
+          error: statsState.error,
+          onTrigger: () => ref
+              .read(backfillStatsControllerProvider.notifier)
+              .triggerFullBackfill(),
+        ),
 
-            const SizedBox(height: 24),
+        const SizedBox(height: 24),
 
-            // Reset Unresolvable Section
-            _ResetUnresolvableSection(
-              isProcessing: statsState.isResetting,
-              lastResetCount: statsState.lastResetCount,
+        // Reset Unresolvable Section
+        _ResetUnresolvableSection(
+          isProcessing: statsState.isResetting,
+          lastResetCount: statsState.lastResetCount,
+          unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
+          error: statsState.error,
+          onTrigger: () => ref
+              .read(backfillStatsControllerProvider.notifier)
+              .resetUnresolvable(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Re-Request Section
+        _ReRequestSection(
+          isProcessing: statsState.isReRequesting,
+          lastReRequestedCount: statsState.lastReRequestedCount,
+          requestedCount: statsState.stats?.totalRequested ?? 0,
+          error: statsState.error,
+          onTrigger: () => ref
+              .read(backfillStatsControllerProvider.notifier)
+              .triggerReRequest(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Ask peers for unresolvable entries — flips every
+        // `unresolvable` row back to `missing` so the normal backfill
+        // sweep re-asks. Complements the narrower "Reset Unresolvable"
+        // action above (which only resets rows whose payload is
+        // already known locally).
+        _ResetAllUnresolvableSection(
+          isProcessing: statsState.isResettingAllUnresolvable,
+          lastResetCount: statsState.lastResetAllUnresolvableCount,
+          unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
+          error: statsState.error,
+          onTrigger: () async {
+            final confirmed = await _confirmResetAllUnresolvable(
+              context,
               unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
-              error: statsState.error,
-              onTrigger: () => ref
-                  .read(backfillStatsControllerProvider.notifier)
-                  .resetUnresolvable(),
-            ),
+            );
+            // Guard against widget disposal while the dialog was open —
+            // `ref.read` without a context dependency would still work,
+            // but the convention in this codebase is to short-circuit
+            // any post-async work once the hosting widget is gone.
+            if (!confirmed || !context.mounted) return;
+            await ref
+                .read(backfillStatsControllerProvider.notifier)
+                .resetAllUnresolvable();
+          },
+        ),
 
-            const SizedBox(height: 24),
+        const SizedBox(height: 24),
 
-            // Re-Request Section
-            _ReRequestSection(
-              isProcessing: statsState.isReRequesting,
-              lastReRequestedCount: statsState.lastReRequestedCount,
-              requestedCount: statsState.stats?.totalRequested ?? 0,
-              error: statsState.error,
-              onTrigger: () => ref
-                  .read(backfillStatsControllerProvider.notifier)
-                  .triggerReRequest(),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Ask peers for unresolvable entries — flips every
-            // `unresolvable` row back to `missing` so the normal backfill
-            // sweep re-asks. Complements the narrower "Reset Unresolvable"
-            // action above (which only resets rows whose payload is
-            // already known locally).
-            _ResetAllUnresolvableSection(
-              isProcessing: statsState.isResettingAllUnresolvable,
-              lastResetCount: statsState.lastResetAllUnresolvableCount,
-              unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
-              error: statsState.error,
-              onTrigger: () async {
-                final confirmed = await _confirmResetAllUnresolvable(
-                  context,
-                  unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
-                );
-                // Guard against widget disposal while the dialog was open —
-                // `ref.read` without a context dependency would still work,
-                // but the convention in this codebase is to short-circuit
-                // any post-async work once the hosting widget is gone.
-                if (!confirmed || !context.mounted) return;
-                await ref
-                    .read(backfillStatsControllerProvider.notifier)
-                    .resetAllUnresolvable();
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // Retire Stuck Now — manual trigger for
-            // `retireAgedOutRequestedEntries(amnestyWindow: Duration.zero)`.
-            _RetireStuckNowSection(
-              isProcessing: statsState.isRetiringStuck,
-              lastRetiredCount: statsState.lastRetiredStuckCount,
+        // Retire Stuck Now — manual trigger for
+        // `retireAgedOutRequestedEntries(amnestyWindow: Duration.zero)`.
+        _RetireStuckNowSection(
+          isProcessing: statsState.isRetiringStuck,
+          lastRetiredCount: statsState.lastRetiredStuckCount,
+          openCount:
+              (statsState.stats?.totalMissing ?? 0) +
+              (statsState.stats?.totalRequested ?? 0),
+          error: statsState.error,
+          onTrigger: () async {
+            final confirmed = await _confirmRetireStuck(
+              context,
               openCount:
                   (statsState.stats?.totalMissing ?? 0) +
                   (statsState.stats?.totalRequested ?? 0),
-              error: statsState.error,
-              onTrigger: () async {
-                final confirmed = await _confirmRetireStuck(
-                  context,
-                  openCount:
-                      (statsState.stats?.totalMissing ?? 0) +
-                      (statsState.stats?.totalRequested ?? 0),
-                );
-                if (!confirmed || !context.mounted) return;
-                await ref
-                    .read(backfillStatsControllerProvider.notifier)
-                    .retireStuckNow();
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            // Info text
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                context.messages.backfillSettingsInfo,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
+            );
+            if (!confirmed || !context.mounted) return;
+            await ref
+                .read(backfillStatsControllerProvider.notifier)
+                .retireStuckNow();
+          },
         ),
-      ),
+
+        const SizedBox(height: 16),
+
+        // Info text
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            context.messages.backfillSettingsInfo,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

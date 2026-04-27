@@ -5777,6 +5777,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsThemingTitle => 'Vzhled';
 
   @override
+  String get settingsV2CategoryEmptyBody => 'Vyber pod-nastavení vlevo.';
+
+  @override
+  String get settingsV2DetailRootCrumb => 'Nastavení';
+
+  @override
   String get settingsV2DisableAction => 'Vypnout Nastavení V2';
 
   @override
@@ -5793,11 +5799,37 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsV2UnimplementedTitle => 'Panel zatím není k dispozici';
 
   @override
+  String get settingsWhatsNewCaughtUpBody =>
+      'Žádné nové poznámky k vydání — vše už máš přečteno.';
+
+  @override
+  String get settingsWhatsNewCaughtUpHeadline => 'Máš vše přečtené';
+
+  @override
+  String get settingsWhatsNewOpenAction => 'Otevřít poznámky k vydání';
+
+  @override
   String get settingsWhatsNewSubtitle =>
       'Podívej se na nejnovější aktualizace a funkce';
 
   @override
   String get settingsWhatsNewTitle => 'Co je nového';
+
+  @override
+  String get settingsWhatsNewUnseenBody =>
+      'Otevři poznámky k vydání, aby sis přečetl novinky v této verzi.';
+
+  @override
+  String settingsWhatsNewUnseenHeadline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nových verzí',
+      few: '$count nové verze',
+      one: '1 nová verze',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingThemingDark => 'Tmavé téma';

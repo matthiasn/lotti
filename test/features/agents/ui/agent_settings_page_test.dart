@@ -751,5 +751,119 @@ void main() {
 
       verify(mockNavService.beamBack).called(1);
     });
+
+    testWidgets(
+      'updating initialTab on the same widget instance re-syncs the '
+      'selected tab (Settings V2 in-place rebuild path)',
+      (tester) async {
+        // Settings V2 routes `agents/templates`, `agents/souls`,
+        // `agents/instances` through the same `AgentSettingsPage`
+        // type. When Flutter updates this widget in place across
+        // those routes, only `initialTab` changes — without the
+        // `didUpdateWidget` re-sync the previously-selected tab
+        // would survive and ignore the new request.
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const _InitialTabHarness(initial: AgentSettingsTab.templates),
+            theme: DesignSystemTheme.light(),
+            overrides: [
+              agentTemplatesProvider.overrideWith((ref) async => const []),
+              activeTemplateVersionProvider.overrideWith(
+                (ref, templateId) async => null,
+              ),
+              allSoulDocumentsProvider.overrideWith((ref) async => const []),
+              activeSoulVersionProvider.overrideWith(
+                (ref, soulId) async => null,
+              ),
+              allAgentInstancesProvider.overrideWith(
+                (ref) async => const [],
+              ),
+              allEvolutionSessionsProvider.overrideWith(
+                (ref) async => const [],
+              ),
+              agentIsRunningProvider.overrideWith(
+                (ref, agentId) => Stream.value(false),
+              ),
+              templateForAgentProvider.overrideWith(
+                (ref, agentId) async => null,
+              ),
+              pendingWakeRecordsProvider.overrideWith(
+                (ref) async => const [],
+              ),
+              pendingWakeTargetTitleProvider.overrideWith(
+                (ref, String? entryId) async => null,
+              ),
+              hourlyWakeActivityProvider.overrideWith(
+                (ref) async => const [],
+              ),
+              dailyTokenUsageProvider.overrideWith(
+                (ref, days) async => const <DailyTokenUsage>[],
+              ),
+              tokenUsageComparisonProvider.overrideWith(
+                (ref, days) async => const TokenUsageComparison(
+                  averageTokensByTimeOfDay: 0,
+                  todayTokens: 0,
+                ),
+              ),
+              dailyTokenUsageByModelProvider.overrideWith(
+                (ref, days) async => const <String, List<DailyTokenUsage>>{},
+              ),
+              tokenSourceBreakdownProvider.overrideWith(
+                (ref) async => const <TokenSourceBreakdown>[],
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The Templates empty-state icon is the active-tab signal.
+        expect(find.byIcon(Icons.smart_toy_outlined), findsOneWidget);
+
+        // Swap initialTab on the same harness — didUpdateWidget fires
+        // on the existing _AgentSettingsPageState. The Souls empty
+        // state should now be on stage.
+        _InitialTabHarnessState.current!.swap(AgentSettingsTab.souls);
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.psychology_outlined), findsOneWidget);
+      },
+    );
   });
+}
+
+/// Minimal stateful harness that swaps `initialTab` on the same
+/// `AgentSettingsPage` widget instance so `didUpdateWidget` (rather
+/// than `initState`) is what reaches the underlying state. Pumping
+/// a fresh `AgentSettingsPage` instead would re-initState and not
+/// exercise the re-sync path.
+class _InitialTabHarness extends StatefulWidget {
+  const _InitialTabHarness({required this.initial});
+
+  final AgentSettingsTab initial;
+
+  @override
+  State<_InitialTabHarness> createState() => _InitialTabHarnessState();
+}
+
+class _InitialTabHarnessState extends State<_InitialTabHarness> {
+  static _InitialTabHarnessState? current;
+  late AgentSettingsTab _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = widget.initial;
+    current = this;
+  }
+
+  @override
+  void dispose() {
+    if (current == this) current = null;
+    super.dispose();
+  }
+
+  void swap(AgentSettingsTab next) => setState(() => _tab = next);
+
+  @override
+  Widget build(BuildContext context) => AgentSettingsPage(initialTab: _tab);
 }

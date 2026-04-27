@@ -7,24 +7,39 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
+/// Mobile / legacy wrapper. Keeps the `SliverBoxAdapterPage` chrome
+/// + `SyncFeatureGate` and delegates content to [SyncStatsBody] so
+/// the same widget can render inside the Settings V2 detail pane
+/// (plan step 7).
 class SyncStatsPage extends StatelessWidget {
   const SyncStatsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Always render the stats page; subpanels manage their own updates.
     return SyncFeatureGate(
       child: SliverBoxAdapterPage(
         title: context.messages.settingsMatrixStatsTitle,
         subtitle: context.messages.settingsSyncStatsSubtitle,
         showBackButton: true,
         padding: const EdgeInsets.all(12),
-        child: const ModernBaseCard(
-          margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          padding: EdgeInsets.all(AppTheme.cardPadding),
-          child: IncomingStats(),
-        ),
+        child: const SyncStatsBody(),
       ),
+    );
+  }
+}
+
+/// Content body for the sync-stats page. A single card wrapping
+/// [IncomingStats]; the heavy pipeline-metrics widget manages its own
+/// streams so this body stays state-free.
+class SyncStatsBody extends StatelessWidget {
+  const SyncStatsBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const ModernBaseCard(
+      margin: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: EdgeInsets.all(AppTheme.cardPadding),
+      child: IncomingStats(),
     );
   }
 }

@@ -13,6 +13,18 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
+/// Embeddable body alias for the Settings V2 detail pane (plan
+/// step 8). The V1 page's internal `SettingsPageHeader` overlaps the
+/// leaf-panel title for now; a headerless embedded mode comes in
+/// step 10 polish. Until then the page renders with a minor visual
+/// duplicate header that is functionally fine.
+class CategoriesListBody extends StatelessWidget {
+  const CategoriesListBody({super.key});
+
+  @override
+  Widget build(BuildContext context) => const CategoriesListPage();
+}
+
 /// Categories list page using [DesignSystemListItem] in a grouped container.
 ///
 /// Each category row shows an icon badge, category name, task count subtitle,

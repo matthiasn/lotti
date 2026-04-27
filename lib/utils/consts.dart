@@ -23,6 +23,13 @@ const enableWhatsNewFlag = 'enable_whats_new';
 
 const enableSettingsTreeFlag = 'enable_settings_tree';
 
+/// Canonical description for [enableSettingsTreeFlag]. Shared between
+/// `initConfigFlags` and the Settings V2 escape-hatch button so the
+/// fallback `ConfigFlag` written when the row is missing matches the
+/// row `initConfigFlags` would have created.
+const enableSettingsTreeFlagDescription =
+    'Enable Settings V2 (tree-nav + detail pane, desktop)?';
+
 const logAgentRuntimeFlag = 'log_agent_runtime';
 const logAgentWorkflowFlag = 'log_agent_workflow';
 const logSyncFlag = 'log_sync';

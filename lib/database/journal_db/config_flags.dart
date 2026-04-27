@@ -190,7 +190,7 @@ Future<void> initConfigFlags(
   await db.insertFlagIfNotExists(
     const ConfigFlag(
       name: enableSettingsTreeFlag,
-      description: 'Enable Settings V2 (tree-nav + detail pane, desktop)?',
+      description: enableSettingsTreeFlagDescription,
       status: false,
     ),
   );

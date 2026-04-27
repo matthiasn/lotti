@@ -5814,6 +5814,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsThemingTitle => 'Tematică';
 
   @override
+  String get settingsV2CategoryEmptyBody =>
+      'Selectați o sub-setare din stânga.';
+
+  @override
+  String get settingsV2DetailRootCrumb => 'Setări';
+
+  @override
   String get settingsV2DisableAction => 'Dezactivați Setările V2';
 
   @override
@@ -5831,11 +5838,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsV2UnimplementedTitle => 'Panoul nu este încă implementat';
 
   @override
+  String get settingsWhatsNewCaughtUpBody =>
+      'Nu există note noi de versiune — totul a fost citit.';
+
+  @override
+  String get settingsWhatsNewCaughtUpHeadline => 'Ești la zi';
+
+  @override
+  String get settingsWhatsNewOpenAction => 'Deschide notele de versiune';
+
+  @override
   String get settingsWhatsNewSubtitle =>
       'Vezi cele mai recente actualizări și funcționalități';
 
   @override
   String get settingsWhatsNewTitle => 'Ce este nou';
+
+  @override
+  String get settingsWhatsNewUnseenBody =>
+      'Deschide notele de versiune pentru a vedea noutățile din această versiune.';
+
+  @override
+  String settingsWhatsNewUnseenHeadline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count versiuni noi',
+      one: '1 versiune nouă',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingThemingDark => 'Temă întunecată';

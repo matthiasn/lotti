@@ -19,6 +19,17 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
+/// Embeddable body alias for the Settings V2 detail pane (plan
+/// step 9). Polish step 10 will give the V1 page a headerless
+/// embedded mode; today this alias ships the page as-is with a
+/// minor duplicate title.
+class AiSettingsBody extends StatelessWidget {
+  const AiSettingsBody({super.key});
+
+  @override
+  Widget build(BuildContext context) => const AiSettingsPage();
+}
+
 /// Main AI Settings page providing a unified interface for managing
 /// AI configurations including inference providers, models, and profiles.
 class AiSettingsPage extends ConsumerStatefulWidget {

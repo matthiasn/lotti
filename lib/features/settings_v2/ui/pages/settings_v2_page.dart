@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_width_controller.dart';
-import 'package:lotti/features/settings_v2/ui/detail/settings_v2_detail_placeholder.dart';
+import 'package:lotti/features/settings_v2/ui/detail/settings_detail_pane.dart';
+import 'package:lotti/features/settings_v2/ui/settings_tree_scope.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_view.dart';
+import 'package:lotti/features/settings_v2/ui/url_sync/settings_tree_url_sync.dart';
 import 'package:lotti/features/settings_v2/ui/widgets/settings_tree_resize_handle.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -34,45 +36,57 @@ class SettingsV2Page extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _SettingsV2Header(dividerColor: dividerColor, tokens: tokens),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  width: treeWidth,
-                  child: const SettingsTreeView(),
-                ),
-                // Stack the 6 dp draggable handle on top of the 1 dp
-                // divider so the hit target is centered on the line
-                // per spec §3. `clipBehavior: Clip.none` lets the
-                // handle overhang the divider column without
-                // hit-testing into the tree.
-                SizedBox(
-                  width: 1,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    fit: StackFit.expand,
-                    children: [
-                      _VerticalDivider(color: dividerColor),
-                      const Positioned(
-                        left:
-                            -(SettingsV2Constants.resizeHandleHitWidth - 1) / 2,
-                        top: 0,
-                        bottom: 0,
-                        child: SettingsTreeResizeHandle(),
-                      ),
-                    ],
+      // Hoist the tree + index to a shared InheritedWidget so the
+      // tree view and detail pane observe the same snapshot and the
+      // 5 flag subscriptions only happen once per page mount.
+      body: SettingsTreeScopeHost(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Zero-size bridge widget — keeps tree path and Beamer
+            // URL in sync in both directions. Listens rather than
+            // renders, so placement inside the Column is purely a
+            // matter of where in the widget tree the `ref.listen`
+            // hook needs to live.
+            const SettingsTreeUrlSync(),
+            _SettingsV2Header(dividerColor: dividerColor, tokens: tokens),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: treeWidth,
+                    child: const SettingsTreeView(),
                   ),
-                ),
-                const Expanded(child: SettingsV2DetailPlaceholder()),
-              ],
+                  // Stack the 6 dp draggable handle on top of the 1 dp
+                  // divider so the hit target is centered on the line
+                  // per spec §3. `clipBehavior: Clip.none` lets the
+                  // handle overhang the divider column without
+                  // hit-testing into the tree.
+                  SizedBox(
+                    width: 1,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      fit: StackFit.expand,
+                      children: [
+                        _VerticalDivider(color: dividerColor),
+                        const Positioned(
+                          left:
+                              -(SettingsV2Constants.resizeHandleHitWidth - 1) /
+                              2,
+                          top: 0,
+                          bottom: 0,
+                          child: SettingsTreeResizeHandle(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Expanded(child: SettingsDetailPane()),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

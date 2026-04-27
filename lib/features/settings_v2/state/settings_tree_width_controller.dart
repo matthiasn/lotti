@@ -32,11 +32,31 @@ const settingsTreeNavWidthPersistDebounce = Duration(milliseconds: 300);
 /// and keeping the notifier scalar keeps its test surface minimal.
 class SettingsTreeNavWidth extends Notifier<double> {
   Timer? _debounce;
+
+  /// Set once the user (or a programmatic reset) has committed an
+  /// explicit width. Used only by the drag/keyboard path to decide
+  /// when to debounce+persist. It does NOT gate the async disk
+  /// load — see [_persistedLoadConsumed] for that.
   bool _userAdjusted = false;
+
+  /// Set once [_loadPersistedWidth] has either installed a persisted
+  /// value OR any explicit mutation has landed before the disk read
+  /// returned. A late-arriving disk value only sets [state] while
+  /// this flag is false, so mutations win the race without bleeding
+  /// their meaning into the user-intent flag above.
+  bool _persistedLoadConsumed = false;
+
+  /// Set inside the notifier's `ref.onDispose` callback. `state = …`
+  /// after dispose would throw; we check this before every
+  /// assignment originating from an async callback so teardown during
+  /// tests / hot-reload stays silent instead of logging a swallowed
+  /// exception.
+  bool _disposed = false;
 
   @override
   double build() {
     ref.onDispose(() {
+      _disposed = true;
       _debounce?.cancel();
     });
     unawaited(_loadPersistedWidth());
@@ -47,10 +67,12 @@ class SettingsTreeNavWidth extends Notifier<double> {
     try {
       final db = getIt<SettingsDb>();
       final values = await db.itemsByKeys({settingsTreeNavWidthKey});
+      if (_disposed) return;
       // A mutation (drag / keyboard / reset) that lands before the
       // persisted value loads wins — the user's intent trumps the
       // slow disk read.
-      if (_userAdjusted) return;
+      if (_persistedLoadConsumed) return;
+      _persistedLoadConsumed = true;
 
       final raw = values[settingsTreeNavWidthKey];
       if (raw == null) return;
@@ -62,6 +84,7 @@ class SettingsTreeNavWidth extends Notifier<double> {
         maxSettingsTreeNavWidth,
       );
     } catch (error, stackTrace) {
+      if (_disposed) return;
       getIt<LoggingService>().captureException(
         error,
         domain: 'SETTINGS_TREE_NAV',
@@ -106,11 +129,12 @@ class SettingsTreeNavWidth extends Notifier<double> {
     _debounce?.cancel();
     final alreadyDefault = state == defaultSettingsTreeNavWidth;
     final hadNoMutation = !_userAdjusted;
-    // Mark as user-adjusted on entry so a still-pending
-    // `_loadPersistedWidth` cannot overwrite this explicit reset
-    // with a stale persisted non-default value. The early return
-    // below is still a pure no-op because nothing observes
-    // `_userAdjusted` through it.
+    // Mark the persisted-load race as consumed on entry so a
+    // still-pending `_loadPersistedWidth` cannot overwrite this
+    // explicit reset with a stale persisted non-default value. The
+    // early return below is still a pure no-op because nothing
+    // observes `_persistedLoadConsumed` through it.
+    _persistedLoadConsumed = true;
     _userAdjusted = true;
     if (alreadyDefault && hadNoMutation) {
       return;
@@ -123,12 +147,16 @@ class SettingsTreeNavWidth extends Notifier<double> {
 
   void _commit(double value) {
     _userAdjusted = true;
+    _persistedLoadConsumed = true;
     if (state == value) return;
     state = value;
     _debounce?.cancel();
     _debounce = Timer(
       settingsTreeNavWidthPersistDebounce,
-      () => unawaited(_persist(state)),
+      () {
+        if (_disposed) return;
+        unawaited(_persist(state));
+      },
     );
   }
 
@@ -139,6 +167,7 @@ class SettingsTreeNavWidth extends Notifier<double> {
         value.toStringAsFixed(1),
       );
     } catch (error, stackTrace) {
+      if (_disposed) return;
       getIt<LoggingService>().captureException(
         error,
         domain: 'SETTINGS_TREE_NAV',

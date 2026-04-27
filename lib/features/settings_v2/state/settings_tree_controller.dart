@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 
@@ -65,7 +66,7 @@ class SettingsTreePath extends Notifier<List<String>> {
   /// the URL update was triggered *by* a prior tree mutation.
   void syncFromUrl(String beamPath) {
     final next = beamUrlToPath(beamPath);
-    if (_listEquals(next, state)) return;
+    if (listEquals(next, state)) return;
     state = next;
   }
 
@@ -93,12 +94,3 @@ final settingsTreePathProvider =
     NotifierProvider<SettingsTreePath, List<String>>(
       SettingsTreePath.new,
     );
-
-bool _listEquals(List<String> a, List<String> b) {
-  if (identical(a, b)) return true;
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
-}

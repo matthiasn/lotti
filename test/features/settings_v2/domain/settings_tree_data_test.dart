@@ -246,12 +246,27 @@ void main() {
       });
     });
 
-    test('branch nodes have no panel', () {
-      for (final id in ['ai', 'agents', 'sync', 'advanced']) {
+    test('pure branch nodes have no panel', () {
+      // `sync` and `advanced` are pure branches — no landing page.
+      // `ai` and `agents` are branches that also carry their own
+      // landing panel (asserted separately below).
+      for (final id in ['sync', 'advanced']) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, id);
         expect(node, isNotNull, reason: 'expected $id to be present');
-        expect(node!.panel, isNull, reason: '$id is a branch, no panel');
+        expect(node!.panel, isNull, reason: '$id is a pure branch, no panel');
+      }
+    });
+
+    test('branches that carry a landing panel expose it', () {
+      // AI and Agents branches render their own detail panel when
+      // the user lands on the branch itself (not a descendant leaf).
+      const expected = {'ai': 'ai', 'agents': 'agents'};
+      for (final entry in expected.entries) {
+        final tree = _tree();
+        final node = SettingsTreeIndexTestHelper.findInTree(tree, entry.key);
+        expect(node, isNotNull, reason: 'expected ${entry.key} to be present');
+        expect(node!.panel, entry.value);
       }
     });
   });
