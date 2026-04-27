@@ -1,11 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_card.dart';
+import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
+
+class _RoutePushObserver extends NavigatorObserver {
+  final List<Route<dynamic>> pushedRoutes = [];
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    pushedRoutes.add(route);
+  }
+}
 
 void main() {
   group('LinkedTaskCard', () {
@@ -283,6 +300,102 @@ void main() {
 
       expect(find.byType(Row), findsWidgets);
       expect(find.byType(Expanded), findsOneWidget);
+    });
+
+    group('navigation on tap', () {
+      late MockNavService mockNavService;
+
+      setUp(() {
+        mockNavService = MockNavService();
+        when(
+          () => mockNavService.pushDesktopTaskDetail(any()),
+        ).thenAnswer((_) {});
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+        getIt
+          ..allowReassignment = true
+          ..registerSingleton<NavService>(mockNavService);
+      });
+
+      tearDown(() {
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+      });
+
+      testWidgets(
+        'desktop tap pushes onto NavService desktop detail stack',
+        (tester) async {
+          final task = buildTask(id: 'task-target');
+
+          await tester.pumpWidget(
+            ProviderScope(
+              child: WidgetTestBench(
+                mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+                child: LinkedTaskCard(task: task),
+              ),
+            ),
+          );
+
+          await tester.tap(find.byType(GestureDetector));
+          await tester.pump();
+
+          verify(
+            () => mockNavService.pushDesktopTaskDetail('task-target'),
+          ).called(1);
+          // Desktop must NOT push a MaterialPageRoute that would cover both
+          // panes — verify no TaskDetailsPage was pushed onto the navigator.
+          expect(find.byType(TaskDetailsPage), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'mobile tap pushes a MaterialPageRoute onto the navigator',
+        (tester) async {
+          final task = buildTask(id: 'task-mobile');
+          final observer = _RoutePushObserver();
+
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MediaQuery(
+                data: const MediaQueryData(size: Size(400, 800)),
+                child: MaterialApp(
+                  theme: resolveTestTheme(),
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  navigatorObservers: [observer],
+                  home: Scaffold(
+                    body: LinkedTaskCard(task: task),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.byType(GestureDetector));
+          // Don't pumpAndSettle — TaskDetailsPage tries to read services
+          // from getIt that are intentionally not wired up here.
+
+          verifyNever(
+            () => mockNavService.pushDesktopTaskDetail(any()),
+          );
+          // Initial push of the home route + the linked task push.
+          expect(observer.pushedRoutes.length, 2);
+          final pushed = observer.pushedRoutes.last;
+          expect(pushed, isA<MaterialPageRoute<void>>());
+          final builder = (pushed as MaterialPageRoute<void>).builder;
+          expect(
+            builder(tester.element(find.byType(Scaffold))),
+            isA<TaskDetailsPage>(),
+          );
+        },
+      );
     });
   });
 }

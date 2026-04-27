@@ -15,6 +15,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:mocktail/mocktail.dart';
@@ -316,6 +317,66 @@ void main() {
         // The modal surfaces the shared "entryActions" title — find it to
         // prove the modal opened without asserting on internal item wiring.
         expect(find.text('Actions'), findsOneWidget);
+      },
+    );
+  });
+
+  group('TaskExpandableAppBar desktop back-arrow visibility', () {
+    late MockNavService mockNavService;
+    late ValueNotifier<List<String>> stackNotifier;
+
+    setUp(() {
+      mockNavService = MockNavService();
+      stackNotifier = ValueNotifier<List<String>>(<String>['task-base']);
+      when(
+        () => mockNavService.desktopTaskDetailStack,
+      ).thenReturn(stackNotifier);
+      when(() => mockNavService.popDesktopTaskDetail()).thenAnswer((_) {});
+      getIt.registerSingleton<NavService>(mockNavService);
+    });
+
+    tearDown(() {
+      stackNotifier.dispose();
+    });
+
+    testWidgets(
+      'desktop with single-entry stack hides the GlassBackButton',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final task = buildTask();
+        await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+        await tester.pump();
+
+        expect(find.byType(GlassBackButton), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'desktop with multi-entry stack shows GlassBackButton and pops on tap',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        stackNotifier.value = <String>['task-base', 'task-linked'];
+
+        final task = buildTask(id: 'task-linked');
+        await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+        await tester.pump();
+
+        expect(find.byType(GlassBackButton), findsOneWidget);
+
+        await tester.tap(find.byType(GlassBackButton));
+        await tester.pump();
+
+        verify(() => mockNavService.popDesktopTaskDetail()).called(1);
       },
     );
   });

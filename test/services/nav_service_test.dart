@@ -323,6 +323,51 @@ void main() {
       expect(id, '123e4567-e89b-12d3-a456-426614174000');
     });
 
+    group('desktop task detail stack', () {
+      test('resetDesktopTaskDetail seeds the stack with one entry', () {
+        final navService = getIt<NavService>()
+          ..resetDesktopTaskDetail('task-a');
+        expect(navService.desktopTaskDetailStack.value, ['task-a']);
+        expect(navService.desktopSelectedTaskId.value, 'task-a');
+
+        navService.resetDesktopTaskDetail(null);
+        expect(navService.desktopTaskDetailStack.value, isEmpty);
+        expect(navService.desktopSelectedTaskId.value, isNull);
+      });
+
+      test('pushDesktopTaskDetail appends and updates selected id', () {
+        final navService = getIt<NavService>()
+          ..resetDesktopTaskDetail('base')
+          ..pushDesktopTaskDetail('linked');
+
+        expect(navService.desktopTaskDetailStack.value, ['base', 'linked']);
+        expect(navService.desktopSelectedTaskId.value, 'linked');
+      });
+
+      test('popDesktopTaskDetail removes the top and restores selected id', () {
+        final navService = getIt<NavService>()
+          ..resetDesktopTaskDetail('base')
+          ..pushDesktopTaskDetail('linked-1')
+          ..pushDesktopTaskDetail('linked-2')
+          ..popDesktopTaskDetail();
+
+        expect(navService.desktopTaskDetailStack.value, ['base', 'linked-1']);
+        expect(navService.desktopSelectedTaskId.value, 'linked-1');
+      });
+
+      test(
+        'popDesktopTaskDetail is a no-op when only one entry remains',
+        () {
+          final navService = getIt<NavService>()
+            ..resetDesktopTaskDetail('only')
+            ..popDesktopTaskDetail();
+
+          expect(navService.desktopTaskDetailStack.value, ['only']);
+          expect(navService.desktopSelectedTaskId.value, 'only');
+        },
+      );
+    });
+
     group('global beamToNamed', () {
       test('uses override when set', () {
         String? calledPath;

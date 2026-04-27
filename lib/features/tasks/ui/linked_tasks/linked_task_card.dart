@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -36,11 +39,20 @@ class LinkedTaskCard extends StatelessWidget {
     final statusColor = _getStatusColor(context, task.data.status);
 
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (context) => TaskDetailsPage(taskId: task.id),
-        ),
-      ),
+      onTap: () {
+        if (isDesktopLayout(context)) {
+          // Desktop: push within the right-pane stack so the list pane
+          // on the left stays visible. Avoids the root Navigator push
+          // that would otherwise cover the entire window.
+          getIt<NavService>().pushDesktopTaskDetail(task.id);
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => TaskDetailsPage(taskId: task.id),
+            ),
+          );
+        }
+      },
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.only(left: 4, top: 4, bottom: 4),

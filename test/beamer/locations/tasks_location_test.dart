@@ -88,12 +88,11 @@ void main() {
       'and does not push detail page',
       () {
         final taskId = const Uuid().v4();
-        final desktopSelectedTaskId = ValueNotifier<String?>(null);
 
         when(() => mockNavService.isDesktopMode).thenReturn(true);
         when(
-          () => mockNavService.desktopSelectedTaskId,
-        ).thenReturn(desktopSelectedTaskId);
+          () => mockNavService.resetDesktopTaskDetail(any()),
+        ).thenAnswer((_) {});
 
         final routeInformation = RouteInformation(
           uri: Uri.parse('/tasks/$taskId'),
@@ -115,15 +114,14 @@ void main() {
     );
 
     test(
-      'in desktop mode, buildPages updates desktopSelectedTaskId',
+      'in desktop mode, buildPages resets the desktop task detail stack',
       () {
         final taskId = const Uuid().v4();
-        final desktopSelectedTaskId = ValueNotifier<String?>(null);
 
         when(() => mockNavService.isDesktopMode).thenReturn(true);
         when(
-          () => mockNavService.desktopSelectedTaskId,
-        ).thenReturn(desktopSelectedTaskId);
+          () => mockNavService.resetDesktopTaskDetail(any()),
+        ).thenAnswer((_) {});
 
         final routeInformation = RouteInformation(
           uri: Uri.parse('/tasks/$taskId'),
@@ -139,7 +137,25 @@ void main() {
 
         location.buildPages(mockBuildContext, newBeamState);
 
-        expect(desktopSelectedTaskId.value, taskId);
+        verify(() => mockNavService.resetDesktopTaskDetail(taskId)).called(1);
+      },
+    );
+
+    test(
+      'in desktop mode without a task id, buildPages clears the stack',
+      () {
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.resetDesktopTaskDetail(any()),
+        ).thenAnswer((_) {});
+
+        final routeInformation = RouteInformation(uri: Uri.parse('/tasks'));
+        final location = TasksLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+
+        location.buildPages(mockBuildContext, beamState);
+
+        verify(() => mockNavService.resetDesktopTaskDetail(null)).called(1);
       },
     );
   });

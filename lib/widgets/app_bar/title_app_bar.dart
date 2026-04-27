@@ -76,20 +76,21 @@ class TitleWidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
 class BackWidget extends StatelessWidget {
   const BackWidget({
     super.key,
+    this.onPressed,
   });
+
+  /// Optional override for the back action. Defaults to
+  /// `NavService.beamBack()`.
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    void onPressed() {
-      getIt<NavService>().beamBack();
-    }
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(width: 2),
         IconButton(
-          onPressed: onPressed,
+          onPressed: onPressed ?? () => getIt<NavService>().beamBack(),
           icon: Icon(
             Icons.chevron_left,
             size: 30,

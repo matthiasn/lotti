@@ -81,6 +81,38 @@ the detail pane is keyed by the selected task ID. That gives each task detail
 surface its own state lifetime instead of reusing the previous task's
 stateful page internals across selection changes.
 
+### Desktop task detail stack
+
+On desktop, the right-hand task detail pane is backed by a per-pane stack
+held on `NavService.desktopTaskDetailStack` (`ValueNotifier<List<String>>`).
+
+- `TasksLocation` calls `resetDesktopTaskDetail(taskId)` when the URL
+  changes, seeding the stack with one entry — the task selected from the
+  list pane (the "base").
+- Tapping a `LinkedTaskCard` from inside a task's details calls
+  `pushDesktopTaskDetail(linkedId)` so the linked task is shown on top of
+  the base, *strictly inside* the right-hand pane. The list pane on the
+  left remains visible. Mobile keeps using `Navigator.push` with a
+  `MaterialPageRoute` because the navigator stack and the visible
+  navigation stack are the same thing on mobile.
+- The back arrow in `TaskCompactAppBar` / `TaskExpandableAppBar` is only
+  rendered on desktop when `desktopTaskDetailStack.length > 1`. The base
+  task hides the arrow because the list pane already lets the user
+  return to a sibling task. Pressing the arrow on desktop calls
+  `popDesktopTaskDetail()` instead of `NavService.beamBack()`.
+- `desktopSelectedTaskId` is kept in sync with `stack.last` so existing
+  list-pane highlight listeners keep working without changes.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Empty
+  Empty --> Base: URL → resetDesktopTaskDetail(taskId)
+  Base --> Linked: tap LinkedTaskCard → pushDesktopTaskDetail(otherId)
+  Linked --> Linked: tap LinkedTaskCard → push another
+  Linked --> Base: back arrow → popDesktopTaskDetail()
+  Base --> Empty: URL clears task → resetDesktopTaskDetail(null)
+```
+
 At runtime the browse page does three specific things:
 
 1. it converts paged `JournalEntity` results into `TaskBrowseEntry` rows via `buildTaskBrowseEntries`

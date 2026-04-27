@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 
@@ -53,9 +56,11 @@ class TaskExpandableAppBar extends ConsumerWidget {
           toolbarHeight: 40,
           scrolledUnderElevation: 0,
           elevation: 0,
-          leading: const Padding(
-            padding: EdgeInsets.only(left: 8),
-            child: GlassBackButton(),
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: _GlassTaskBackLeading(
+              isDesktop: isDesktopLayout(context),
+            ),
           ),
           centerTitle: true,
           title: AnimatedSwitcher(
@@ -102,6 +107,37 @@ class TaskExpandableAppBar extends ConsumerWidget {
       ),
       const SizedBox(width: 10),
     ];
+  }
+}
+
+/// Glass-styled back button leading for the expandable task app bar.
+///
+/// Mobile: always renders [GlassBackButton] which pops the navigator.
+/// Desktop: only renders when more than one task sits on the desktop
+/// detail stack, and pops that stack instead of the navigator. The base
+/// task hides the back arrow because the list pane is visible to the
+/// left.
+class _GlassTaskBackLeading extends StatelessWidget {
+  const _GlassTaskBackLeading({required this.isDesktop});
+
+  final bool isDesktop;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isDesktop) {
+      return const GlassBackButton();
+    }
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: getIt<NavService>().desktopTaskDetailStack,
+      builder: (context, stack, _) {
+        if (stack.length <= 1) {
+          return const SizedBox.shrink();
+        }
+        return GlassBackButton(
+          onPressed: () => getIt<NavService>().popDesktopTaskDetail(),
+        );
+      },
+    );
   }
 }
 

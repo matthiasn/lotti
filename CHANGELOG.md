@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sits in the top-right of the icon to match the Tasks badge, and the audio
   and time recording indicators dock flush against the visible nav-bar pill
   instead of floating above it.
+- Desktop linked-task navigation no longer takes over the full window. Tapping
+  a linked task from a task's details now pushes onto a per-pane stack inside
+  the right-hand details area, leaving the task list pane visible. The back
+  arrow at the top of the task details only appears on desktop when a linked
+  task is on top of the stack, and clicking it pops back to the previous task
+  instead of being a no-op. Mobile navigation is unchanged.
 
 ### Added
 - Saved filters for the Tasks tab. Build a filter (status, priority,
