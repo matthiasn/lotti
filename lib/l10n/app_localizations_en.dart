@@ -5079,10 +5079,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Learn more about the Lotti application';
 
   @override
-  String get settingsAdvancedConflictsSubtitle =>
-      'Resolve synchronization conflicts to ensure data consistency';
-
-  @override
   String get settingsAdvancedHealthImportSubtitle =>
       'Import health-related data from external sources';
 
@@ -5663,6 +5659,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Whisper speech recognition model:';
 
   @override
+  String get settingsSyncConflictsSubtitle =>
+      'Resolve synchronization conflicts to ensure data consistency';
+
+  @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override
@@ -5726,7 +5726,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsWhatsNewUnseenBody =>
-      'Open the release notes to read what\'s new in this version.';
+      'Open the release notes to see what\'s new since your last visit.';
 
   @override
   String settingsWhatsNewUnseenHeadline(int count) {
@@ -7064,10 +7064,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get settingsAboutYourData => 'Your Data';
 
   @override
-  String get settingsAdvancedConflictsSubtitle =>
-      'Resolve synchronisation conflicts to ensure data consistency';
-
-  @override
   String get settingsAdvancedMaintenanceSubtitle =>
       'Perform maintenance tasks to optimise application performance';
 
@@ -7090,4 +7086,8 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get settingsMeasurableFavoriteLabel => 'Favourite: ';
+
+  @override
+  String get settingsSyncConflictsSubtitle =>
+      'Resolve synchronisation conflicts to ensure data consistency';
 }

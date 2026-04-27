@@ -63,7 +63,7 @@ class SyncSettingsPage extends StatelessWidget {
           ),
           (
             title: context.messages.settingsConflictsTitle,
-            subtitle: context.messages.settingsAdvancedConflictsSubtitle,
+            subtitle: context.messages.settingsSyncConflictsSubtitle,
             icon: Icons.warning_rounded,
             trailing: chevron,
             onTap: () => context.beamToNamed('/settings/advanced/conflicts'),

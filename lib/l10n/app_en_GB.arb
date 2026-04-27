@@ -163,12 +163,12 @@
   "settingsAboutTitle": "About Lotti",
   "settingsAboutVersion": "Version",
   "settingsAboutYourData": "Your Data",
-  "settingsAdvancedConflictsSubtitle": "Resolve synchronisation conflicts to ensure data consistency",
   "settingsAdvancedMaintenanceSubtitle": "Perform maintenance tasks to optimise application performance",
   "settingsAdvancedMatrixSyncSubtitle": "Configure and manage Matrix synchronisation settings",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsCategoriesEmptyStateHint": "Create a category to organise your entries",
   "settingsLabelsColorHeading": "Select a colour",
   "settingsLabelsSubtitle": "Organise tasks with coloured labels",
-  "settingsMeasurableFavoriteLabel": "Favourite: "
+  "settingsMeasurableFavoriteLabel": "Favourite: ",
+  "settingsSyncConflictsSubtitle": "Resolve synchronisation conflicts to ensure data consistency"
 }

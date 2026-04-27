@@ -5236,10 +5236,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Aprende más sobre la aplicación Lotti';
 
   @override
-  String get settingsAdvancedConflictsSubtitle =>
-      'Resolver conflictos de sincronización para asegurar consistencia de datos';
-
-  @override
   String get settingsAdvancedHealthImportSubtitle =>
       'Importar datos relacionados con la salud desde fuentes externas';
 
@@ -5842,6 +5838,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Modelo de reconocimiento de voz Whisper:';
 
   @override
+  String get settingsSyncConflictsSubtitle =>
+      'Resolver conflictos de sincronización para asegurar consistencia de datos';
+
+  @override
   String get settingsSyncOutboxTitle => 'Bandeja de salida de sincronización';
 
   @override
@@ -5911,7 +5911,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsWhatsNewUnseenBody =>
-      'Abre las notas de versión para ver las novedades de esta versión.';
+      'Abre las notas de versión para ver las novedades desde tu última visita.';
 
   @override
   String settingsWhatsNewUnseenHeadline(int count) {

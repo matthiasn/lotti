@@ -97,7 +97,7 @@ void main() {
       );
     });
 
-    test('AI and Advanced branches are unconditional', () {
+    test('AI, Sync, and Advanced branches are unconditional', () {
       final ids = _ids(
         _tree(
           enableAgents: false,
@@ -112,14 +112,26 @@ void main() {
         containsAll(<String>[
           'ai',
           'ai/profiles',
+          'sync',
+          'sync/conflicts',
           'advanced',
           'advanced/logging',
-          'advanced/conflicts',
           'advanced/maintenance',
           'advanced/about',
         ]),
       );
     });
+
+    test(
+      'sync/conflicts stays reachable regardless of enableMatrix',
+      () {
+        // Conflicts can predate or outlive Matrix sync (legacy data,
+        // local-only divergence). The leaf must remain reachable so
+        // turning Matrix off does not strand existing conflicts.
+        expect(_ids(_tree()), contains('sync/conflicts'));
+        expect(_ids(_tree(enableMatrix: false)), contains('sync/conflicts'));
+      },
+    );
   });
 
   group('buildSettingsTree — enableWhatsNew', () {
@@ -182,9 +194,12 @@ void main() {
   });
 
   group('buildSettingsTree — enableMatrix', () {
-    test('omits the Sync branch and all its children when off', () {
+    test('drops only the matrix-specific leaves when off; keeps conflicts', () {
       final ids = _ids(_tree(enableMatrix: false));
-      expect(ids, isNot(contains('sync')));
+      // Sync branch and conflicts leaf remain reachable.
+      expect(ids, contains('sync'));
+      expect(ids, contains('sync/conflicts'));
+      // Matrix-only surfaces are hidden.
       expect(ids, isNot(contains('sync/backfill')));
       expect(ids, isNot(contains('sync/stats')));
       expect(ids, isNot(contains('sync/outbox')));
@@ -192,7 +207,8 @@ void main() {
     });
 
     test(
-      'emits Sync with exactly backfill/stats/outbox/matrix-maintenance',
+      'emits Sync with exactly backfill/stats/outbox/conflicts/ '
+      'matrix-maintenance',
       () {
         final sync = _tree().firstWhere((n) => n.id == 'sync');
         expect(sync.hasChildren, isTrue);
@@ -200,10 +216,18 @@ void main() {
           'sync/backfill',
           'sync/stats',
           'sync/outbox',
+          'sync/conflicts',
           'sync/matrix-maintenance',
         ]);
       },
     );
+
+    test('with Matrix off, Sync collapses to just the conflicts leaf', () {
+      final sync = _tree(
+        enableMatrix: false,
+      ).firstWhere((n) => n.id == 'sync');
+      expect(sync.children!.map((n) => n.id).toList(), ['sync/conflicts']);
+    });
   });
 
   group('buildSettingsTree — panel assignments', () {
@@ -234,13 +258,13 @@ void main() {
         'sync/backfill': 'sync-backfill',
         'sync/stats': 'sync-stats',
         'sync/outbox': 'sync-outbox',
+        'sync/conflicts': 'sync-conflicts',
         'sync/matrix-maintenance': 'sync-matrix-maintenance',
         'dashboards': 'dashboards',
         'measurables': 'measurables',
         'theming': 'theming',
         'flags': 'flags',
         'advanced/logging': 'advanced-logging',
-        'advanced/conflicts': 'advanced-conflicts',
         'advanced/maintenance': 'advanced-maintenance',
         'advanced/about': 'advanced-about',
       });
@@ -277,15 +301,32 @@ void main() {
       expect(ai.children!.map((n) => n.id).toList(), ['ai/profiles']);
     });
 
-    test('Advanced has logging / conflicts / maintenance / about in order', () {
+    test('Advanced has logging / maintenance / about in order', () {
+      // Conflicts moved out of Advanced and into Sync — Advanced now
+      // only carries the developer-tooling leaves. The order locks
+      // visual stability across the menu.
       final advanced = _tree().firstWhere((n) => n.id == 'advanced');
       expect(advanced.children!.map((n) => n.id).toList(), [
         'advanced/logging',
-        'advanced/conflicts',
         'advanced/maintenance',
         'advanced/about',
       ]);
     });
+
+    test(
+      'Sync has backfill / stats / outbox / conflicts / matrix-maintenance '
+      'in order',
+      () {
+        final sync = _tree().firstWhere((n) => n.id == 'sync');
+        expect(sync.children!.map((n) => n.id).toList(), [
+          'sync/backfill',
+          'sync/stats',
+          'sync/outbox',
+          'sync/conflicts',
+          'sync/matrix-maintenance',
+        ]);
+      },
+    );
   });
 
   group('buildSettingsTree — flag combinations', () {
@@ -302,6 +343,8 @@ void main() {
         'ai',
         'categories',
         'labels',
+        // Sync branch stays so the conflicts leaf remains reachable.
+        'sync',
         'measurables',
         'theming',
         'flags',
@@ -310,18 +353,18 @@ void main() {
     });
 
     test(
-      'sync flag independence: toggling Matrix does not affect siblings',
+      'sync flag independence: toggling Matrix only changes Sync children, '
+      'not the root order',
       () {
         final on = _tree();
         final off = _tree(enableMatrix: false);
 
-        final onWithoutSync = on
-            .where((n) => !n.id.startsWith('sync'))
-            .map((n) => n.id)
-            .toList();
-        final offIds = off.map((n) => n.id).toList();
-
-        expect(offIds, onWithoutSync);
+        // Root order is preserved across the toggle; only the Sync
+        // branch's children differ.
+        expect(
+          off.map((n) => n.id).toList(),
+          on.map((n) => n.id).toList(),
+        );
       },
     );
   });

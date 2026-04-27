@@ -2200,7 +2200,6 @@
   "settingsAboutVersion": "Versión",
   "settingsAboutYourData": "Tus datos",
   "settingsAdvancedAboutSubtitle": "Aprende más sobre la aplicación Lotti",
-  "settingsAdvancedConflictsSubtitle": "Resolver conflictos de sincronización para asegurar consistencia de datos",
   "settingsAdvancedHealthImportSubtitle": "Importar datos relacionados con la salud desde fuentes externas",
   "settingsAdvancedLogsSubtitle": "Acceder y revisar registros de aplicación para depuración",
   "settingsAdvancedMaintenanceSubtitle": "Realizar tareas de mantenimiento para optimizar el rendimiento de la aplicación",
@@ -2405,6 +2404,7 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Buscar y transcribir",
   "settingsSpeechLastActivity": "Última actividad de transcripción:",
   "settingsSpeechModelSelectionTitle": "Modelo de reconocimiento de voz Whisper:",
+  "settingsSyncConflictsSubtitle": "Resolver conflictos de sincronización para asegurar consistencia de datos",
   "settingsSyncOutboxTitle": "Bandeja de salida de sincronización",
   "settingsSyncStatsSubtitle": "Inspeccionar métricas del canal de sincronización",
   "settingsSyncSubtitle": "Configurar sincronización y ver estadísticas",
@@ -2425,7 +2425,7 @@
   "settingsWhatsNewOpenAction": "Abrir notas de versión",
   "settingsWhatsNewSubtitle": "Mira las últimas actualizaciones y funciones",
   "settingsWhatsNewTitle": "Novedades",
-  "settingsWhatsNewUnseenBody": "Abre las notas de versión para ver las novedades de esta versión.",
+  "settingsWhatsNewUnseenBody": "Abre las notas de versión para ver las novedades desde tu última visita.",
   "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 nueva versión} other{{count} nuevas versiones}}",
   "@settingsWhatsNewUnseenHeadline": {
     "placeholders": {

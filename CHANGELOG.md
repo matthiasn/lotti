@@ -6,6 +6,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.978]
 ### Changed
+- Settings V2 detail surface consolidated to a single page-title
+  surface. The full breadcrumb path (e.g. `Settings › Sync ›
+  Backfill Sync`) now lives in the page header at Heading 3
+  typography — non-leaf segments are tappable and call
+  `SettingsTreePath.truncateTo(depth)`, mirroring the click rules of
+  the old in-pane crumbs. The new `SettingsV2TopCrumbs` reads ids
+  from `settingsTreePathProvider` and resolves them against the
+  shared `SettingsTreeScope.index`, falling back to just the root
+  label when the scope isn't mounted. `LeafPanel` now returns the
+  cached `IndexedStack` directly: the in-pane crumb trail, the
+  Heading-3 leaf title, and the outer `step6 / step5` `Padding`
+  gutter are all gone, so registered panels fill the detail pane
+  edge-to-edge. The `_LocalCrumbs` and `_CrumbLink` helpers were
+  deleted along with the `LeafPanel` test cases that exercised
+  them; the remaining tests assert the IndexedStack matches the
+  `LeafPanel` size (no outer Padding) and that no chevron renders
+  inside the leaf subtree.
+- Sync conflict resolution moved out of the **Advanced** branch and
+  into the **Sync** branch in the Settings V2 tree. The leaf id is
+  now `sync/conflicts` and the panel registry key is
+  `sync-conflicts`. The Beamer URL stays at
+  `/settings/advanced/conflicts` (and the `:conflictId` /
+  `:conflictId/edit` subroutes are unchanged) so existing deep
+  links and the legacy column-stack layout keep working — only the
+  V2 tree shape and the panel registry / label resolver follow the
+  reorg. The Sync branch is now always visible regardless of
+  `enableMatrix`: the matrix-only leaves (backfill / stats / outbox /
+  matrix-maintenance) are still flag-gated, but Conflicts stays
+  reachable so legacy or local-only conflicts can always be
+  resolved. The localized subtitle key was renamed
+  `settingsAdvancedConflictsSubtitle` →
+  `settingsSyncConflictsSubtitle` to match the new branch.
+
 - Task agents now react immediately to recorded audio. Brand-new task agents
   on a blank task no longer surface a "wake in 2:00" countdown — the
   orchestrator skips the throttle deadline while the agent is awaiting

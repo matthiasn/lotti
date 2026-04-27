@@ -8962,12 +8962,6 @@ abstract class AppLocalizations {
   /// **'Learn more about the Lotti application'**
   String get settingsAdvancedAboutSubtitle;
 
-  /// No description provided for @settingsAdvancedConflictsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Resolve synchronization conflicts to ensure data consistency'**
-  String get settingsAdvancedConflictsSubtitle;
-
   /// No description provided for @settingsAdvancedHealthImportSubtitle.
   ///
   /// In en, this message translates to:
@@ -9991,6 +9985,12 @@ abstract class AppLocalizations {
   /// **'Whisper speech recognition model:'**
   String get settingsSpeechModelSelectionTitle;
 
+  /// No description provided for @settingsSyncConflictsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolve synchronization conflicts to ensure data consistency'**
+  String get settingsSyncConflictsSubtitle;
+
   /// No description provided for @settingsSyncOutboxTitle.
   ///
   /// In en, this message translates to:
@@ -10114,7 +10114,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsWhatsNewUnseenBody.
   ///
   /// In en, this message translates to:
-  /// **'Open the release notes to read what\'s new in this version.'**
+  /// **'Open the release notes to see what\'s new since your last visit.'**
   String get settingsWhatsNewUnseenBody;
 
   /// No description provided for @settingsWhatsNewUnseenHeadline.

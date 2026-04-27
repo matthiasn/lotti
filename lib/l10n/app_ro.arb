@@ -2200,7 +2200,6 @@
   "settingsAboutVersion": "Versiune",
   "settingsAboutYourData": "Datele tale",
   "settingsAdvancedAboutSubtitle": "Aflați mai multe despre aplicația Lotti",
-  "settingsAdvancedConflictsSubtitle": "Rezolvați conflictele de sincronizare pentru a asigura consistența datelor",
   "settingsAdvancedHealthImportSubtitle": "Importați date legate de sănătate din surse externe",
   "settingsAdvancedLogsSubtitle": "Accesați și examinați log-urile aplicației pentru depanare",
   "settingsAdvancedMaintenanceSubtitle": "Efectuați sarcini de întreținere pentru a optimiza performanța aplicației",
@@ -2405,6 +2404,7 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Găsește și transcrie",
   "settingsSpeechLastActivity": "Ultima activitate de transcriere:",
   "settingsSpeechModelSelectionTitle": "Model de recunoaștere vocală Whisper:",
+  "settingsSyncConflictsSubtitle": "Rezolvați conflictele de sincronizare pentru a asigura consistența datelor",
   "settingsSyncOutboxTitle": "Sync Outbox",
   "settingsSyncStatsSubtitle": "Inspectează metricile canalului de sincronizare",
   "settingsSyncSubtitle": "Configurează sincronizarea și vizualizează statisticile",
@@ -2425,7 +2425,7 @@
   "settingsWhatsNewOpenAction": "Deschide notele de versiune",
   "settingsWhatsNewSubtitle": "Vezi cele mai recente actualizări și funcționalități",
   "settingsWhatsNewTitle": "Ce este nou",
-  "settingsWhatsNewUnseenBody": "Deschide notele de versiune pentru a vedea noutățile din această versiune.",
+  "settingsWhatsNewUnseenBody": "Deschide notele de versiune pentru a vedea noutățile de la ultima vizită.",
   "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 versiune nouă} other{{count} versiuni noi}}",
   "@settingsWhatsNewUnseenHeadline": {
     "placeholders": {

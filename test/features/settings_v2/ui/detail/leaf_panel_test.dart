@@ -1,37 +1,24 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
-import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/ui/detail/default_panel.dart';
 import 'package:lotti/features/settings_v2/ui/detail/leaf_panel.dart';
 
 import '../../../../widget_test_utils.dart';
 
-// The leaf test uses deliberately-unregistered panel ids so every
-// case exercises the LeafPanel chrome with DefaultPanel as the
-// body. The registry tests (`panel_registry_test.dart`) cover
-// real-panel resolution; duplicating that here would pull in the
-// entire sync/backfill provider graph just to assert breadcrumbs.
-SettingsNode _syncBranch() => const SettingsNode(
-  id: 'sync',
-  icon: Icons.sync_rounded,
-  title: 'Sync Settings',
+// LeafPanel uses deliberately-unregistered panel ids so every case
+// exercises the dispatch path with DefaultPanel as the body. The
+// registry tests (`panel_registry_test.dart`) cover real-panel
+// resolution; duplicating that here would pull in the entire
+// sync/backfill provider graph just to exercise the IndexedStack
+// cache.
+SettingsNode _backfillLeaf() => const SettingsNode(
+  id: 'sync/backfill',
+  icon: Icons.cloud_download_outlined,
+  title: 'Backfill Sync',
   desc: '',
-  children: [
-    SettingsNode(
-      id: 'sync/backfill',
-      icon: Icons.cloud_download_outlined,
-      title: 'Backfill Sync',
-      desc: '',
-      panel: 'test-unregistered-sync-backfill',
-    ),
-  ],
+  panel: 'test-unregistered-sync-backfill',
 );
-
-SettingsNode _backfillLeaf() => _syncBranch().children!.first;
 
 SettingsNode _unregisteredLeaf() => const SettingsNode(
   id: 'ghost',
@@ -45,6 +32,7 @@ Future<void> _pump(
   WidgetTester tester, {
   required List<SettingsNode> ancestors,
   double width = 1000,
+  double height = 800,
 }) async {
   await setUpTestGetIt();
   addTearDown(tearDownTestGetIt);
@@ -53,7 +41,7 @@ Future<void> _pump(
       Material(
         child: SizedBox(
           width: width,
-          height: 800,
+          height: height,
           child: LeafPanel(ancestors: ancestors),
         ),
       ),
@@ -63,85 +51,6 @@ Future<void> _pump(
 }
 
 void main() {
-  group('LeafPanel — local header', () {
-    testWidgets('renders the localized root crumb "Settings"', (tester) async {
-      await _pump(
-        tester,
-        ancestors: [_syncBranch(), _backfillLeaf()],
-      );
-      // Anchor the assertion to the *root crumb* specifically rather
-      // than just any text reading "Settings": the root crumb must be
-      // tappable (truncates the path back to []), so the matching Text
-      // sits inside an InkWell ancestor. The leaf segment renders as
-      // plain Text, not InkWell — so this assertion fails closed if
-      // the synthetic root crumb is ever removed or downgraded to
-      // non-interactive copy.
-      final rootCrumb = find.ancestor(
-        of: find.text('Settings'),
-        matching: find.byType(InkWell),
-      );
-      expect(
-        rootCrumb,
-        findsOneWidget,
-        reason:
-            'Expected "Settings" to render inside a tappable InkWell '
-            '(the root breadcrumb link).',
-      );
-    });
-
-    testWidgets('includes each ancestor title in the crumb trail', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        ancestors: [_syncBranch(), _backfillLeaf()],
-      );
-      expect(find.text('Sync Settings'), findsOneWidget);
-      expect(find.text('Backfill Sync'), findsWidgets);
-    });
-
-    testWidgets('uses the chevron (U+203A) as the crumb separator', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        ancestors: [_syncBranch(), _backfillLeaf()],
-      );
-      // Two segments → one separator between Settings and Sync
-      // and another between Sync and Backfill.
-      expect(find.text('›'), findsNWidgets(2));
-    });
-
-    testWidgets('renders the leaf title below the crumbs at Heading 3', (
-      tester,
-    ) async {
-      await _pump(tester, ancestors: [_backfillLeaf()]);
-      // The leaf title appears in two places — the trailing breadcrumb
-      // segment (caption style) and the Heading 3 below the trail.
-      // Locate the latter by matching the heading3 fontSize/weight from
-      // the active design tokens, so the test breaks if the title is
-      // ever demoted to body or caption typography.
-      final tokensContext = tester.element(find.byType(LeafPanel));
-      final heading3 =
-          tokensContext.designTokens.typography.styles.heading.heading3;
-      final headingTexts = tester.widgetList<Text>(find.text('Backfill Sync'));
-      final headingMatch = headingTexts.where(
-        (t) =>
-            t.style?.fontSize == heading3.fontSize &&
-            t.style?.fontWeight == heading3.fontWeight,
-      );
-      expect(
-        headingMatch,
-        hasLength(1),
-        reason:
-            'Expected exactly one "Backfill Sync" Text rendered at the '
-            'Heading 3 typography (fontSize ${heading3.fontSize}, '
-            'fontWeight ${heading3.fontWeight}); got '
-            '${headingTexts.map((t) => '${t.style?.fontSize}/${t.style?.fontWeight}').toList()}',
-      );
-    });
-  });
-
   group('LeafPanel — panel registry dispatch', () {
     testWidgets(
       'an unregistered panel id falls back to DefaultPanel',
@@ -160,6 +69,48 @@ void main() {
           ),
           findsOneWidget,
         );
+      },
+    );
+  });
+
+  group('LeafPanel — chrome consolidated up to the page header', () {
+    testWidgets(
+      'renders no in-pane crumb trail (the page header owns the breadcrumbs)',
+      (tester) async {
+        // The chevron used by the old _LocalCrumbs row must not
+        // appear in the LeafPanel subtree — its presence would mean
+        // the header consolidation regressed and we'd be back to
+        // duplicate breadcrumbs.
+        await _pump(tester, ancestors: [_backfillLeaf()]);
+        expect(
+          find.descendant(
+            of: find.byType(LeafPanel),
+            matching: find.text('›'),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'wraps no outer Padding around the body — the panel fills the pane '
+      'edge-to-edge',
+      (tester) async {
+        // After the consolidation, LeafPanel.build returns the
+        // IndexedStack directly. Asserting the IndexedStack matches
+        // the LeafPanel size proves no Padding / SizedBox / etc. is
+        // shrinking the body — the regression we want to catch is
+        // someone reintroducing a step6/step5 gutter and silently
+        // costing the user 24+ dp on each side.
+        await _pump(
+          tester,
+          ancestors: [_backfillLeaf()],
+          width: 900,
+          height: 700,
+        );
+        final leafSize = tester.getSize(find.byType(LeafPanel));
+        final stackSize = tester.getSize(find.byType(IndexedStack));
+        expect(stackSize, leafSize);
       },
     );
   });
@@ -315,132 +266,81 @@ void main() {
         expect(stack.children, hasLength(1));
       },
     );
-  });
 
-  group('LeafPanel — crumb interactions', () {
     testWidgets(
-      'tapping a non-leaf crumb truncates the tree path to that depth',
+      'returning to a cached leaf whose payload changed off-screen '
+      'rebuilds its body instead of replaying the stale slot',
       (tester) async {
+        // Scenario: leaf A is cached (Initial), the user navigates to
+        // sibling B, then leaf A is mutated in place while it's
+        // off-screen, then the user navigates back. `_ensureCached`
+        // must spot that the cached `SettingsNode` differs from the
+        // incoming one and rebuild — otherwise the user sees the old
+        // payload (e.g. a `DefaultPanel` placeholder for a leaf whose
+        // panel got wired up while they were away).
         const branch = SettingsNode(
           id: 'sync',
           icon: Icons.sync_rounded,
-          title: 'Sync Settings',
+          title: 'Sync',
           desc: '',
         );
-        const leaf = SettingsNode(
+        const aInitial = SettingsNode(
           id: 'sync/backfill',
           icon: Icons.cloud_download_outlined,
-          title: 'Backfill Sync',
+          title: 'A Initial',
           desc: '',
-          panel: 'unreg-backfill',
+          panel: 'unreg-revisit-a-initial',
         );
-
-        await _pump(tester, ancestors: const [branch, leaf]);
-
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(LeafPanel)),
-        );
-        // Seed a path so truncation has something to chop.
-        container
-            .read(settingsTreePathProvider.notifier)
-            .syncFromUrl('/settings/sync/backfill');
-        expect(
-          container.read(settingsTreePathProvider),
-          ['sync', 'sync/backfill'],
-        );
-
-        // Tap the "Sync Settings" crumb — depth 1, which should drop
-        // the trailing leaf and leave the path at ['sync'].
-        await tester.tap(find.text('Sync Settings'));
-        await tester.pumpAndSettle();
-
-        expect(container.read(settingsTreePathProvider), ['sync']);
-      },
-    );
-
-    testWidgets(
-      'tapping the synthetic root "Settings" crumb resets the path to []',
-      (tester) async {
-        const branch = SettingsNode(
-          id: 'advanced',
-          icon: Icons.settings_suggest_outlined,
-          title: 'Advanced',
-          desc: '',
-        );
-        const leaf = SettingsNode(
-          id: 'advanced/about',
-          icon: Icons.info_outline_rounded,
-          title: 'About',
-          desc: '',
-          panel: 'unreg-about',
-        );
-
-        await _pump(tester, ancestors: const [branch, leaf]);
-
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(LeafPanel)),
-        );
-        container
-            .read(settingsTreePathProvider.notifier)
-            .syncFromUrl('/settings/advanced/about');
-        expect(container.read(settingsTreePathProvider), isNotEmpty);
-
-        // The root crumb is at index 0; the InkWell finder picks the
-        // first crumb link.
-        await tester.tap(find.text('Settings').first);
-        await tester.pumpAndSettle();
-
-        expect(container.read(settingsTreePathProvider), isEmpty);
-      },
-    );
-
-    testWidgets(
-      'hovering a crumb link repaints its label in the interactive accent',
-      (tester) async {
-        const branch = SettingsNode(
-          id: 'sync',
-          icon: Icons.sync_rounded,
-          title: 'Sync Settings',
-          desc: '',
-        );
-        const leaf = SettingsNode(
+        const aUpdated = SettingsNode(
           id: 'sync/backfill',
           icon: Icons.cloud_download_outlined,
-          title: 'Backfill Sync',
+          title: 'A Updated',
           desc: '',
-          panel: 'unreg-backfill',
+          panel: 'unreg-revisit-a-updated',
+        );
+        const sibling = SettingsNode(
+          id: 'sync/stats',
+          icon: Icons.bar_chart_rounded,
+          title: 'Sibling',
+          desc: '',
+          panel: 'unreg-revisit-sibling',
         );
 
-        await _pump(tester, ancestors: const [branch, leaf]);
-
-        final tokens = tester.element(find.byType(LeafPanel)).designTokens;
-        final accent = tokens.colors.interactive.enabled;
-        final defaultMid = tokens.colors.text.mediumEmphasis;
-
-        // Locate the "Sync Settings" crumb-link Text widget — it is a
-        // non-terminal segment so it's wrapped in _CrumbLink (an
-        // InkWell). Pre-hover, its color must be the medium-emphasis
-        // text token.
-        Text crumbText() => tester
-            .widgetList<Text>(find.text('Sync Settings'))
-            .firstWhere(
-              (t) => t.style?.color == defaultMid || t.style?.color == accent,
-            );
-
-        expect(crumbText().style?.color, defaultMid);
-
-        // Send a hover event over the crumb's tap surface. We move
-        // through the InkWell's hit region so MouseRegion fires
-        // onEnter -> onHover(true).
-        final gesture = await tester.createGesture(
-          kind: PointerDeviceKind.mouse,
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
+        const harness = _LeafPanelHarness(initial: [branch, aInitial]);
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const Material(
+              child: SizedBox(
+                width: 1000,
+                height: 800,
+                child: harness,
+              ),
+            ),
+          ),
         );
-        addTearDown(gesture.removePointer);
-        await gesture.addPointer(location: Offset.zero);
-        await gesture.moveTo(tester.getCenter(find.text('Sync Settings')));
         await tester.pump();
 
-        expect(crumbText().style?.color, accent);
+        expect(find.text('A Initial'), findsOneWidget);
+
+        // Switch to the sibling leaf — A is now cached but off-screen.
+        _LeafPanelHarnessState.current!.swap(const [branch, sibling]);
+        await tester.pump();
+        expect(find.text('Sibling'), findsOneWidget);
+
+        // Return to A, but with a mutated payload. The cached slot
+        // must refresh — without the fix, "A Initial" would still be
+        // the body and "A Updated" would never appear.
+        _LeafPanelHarnessState.current!.swap(const [branch, aUpdated]);
+        await tester.pump();
+
+        expect(find.text('A Updated'), findsOneWidget);
+        expect(find.text('A Initial'), findsNothing);
+
+        // Cache size unchanged — A's slot was rebuilt, not appended.
+        final stack = tester.widget<IndexedStack>(find.byType(IndexedStack));
+        expect(stack.children, hasLength(2));
       },
     );
   });
@@ -472,8 +372,8 @@ void main() {
         expect(capped, findsNothing);
 
         // The panel itself should size to the full host width
-        // (1500 dp here); the internal Padding shrinks the body by
-        // step6 on each side but the outer widget still matches.
+        // (1500 dp here). Now that the outer Padding has been
+        // removed too, the body matches the host exactly.
         expect(tester.getSize(find.byType(LeafPanel)).width, 1500);
       },
     );
