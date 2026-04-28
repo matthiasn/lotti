@@ -602,6 +602,27 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Pokročilé obnovení",
+  "backfillAskPeersConfirmAccept": "Zeptat se peerů",
+  "backfillAskPeersConfirmContent": "Toto vrátí všech {count} neřešitelných záznamů sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.",
+  "@backfillAskPeersConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAskPeersConfirmTitle": "Zeptat se peerů znovu na neřešitelné záznamy?",
+  "backfillAskPeersDescription": "Vrátí každý neřešitelný záznam sekvenčního logu zpět na chybějící a nechá normální backfill znovu se zeptat peerů.",
+  "backfillAskPeersProcessing": "Znovu otevírám…",
+  "backfillAskPeersTitle": "Zeptat se peerů na neřešitelné",
+  "backfillAskPeersTrigger": "Zeptat se peerů na {count} záznamů",
+  "@backfillAskPeersTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillCatchUpDescription": "Stáhni od peerů nedávné chybějící položky hned teď.",
   "backfillDevicesMeta": "{count, plural, =1{1 ID zařízení} few{{count} ID zařízení} other{{count} ID zařízení}}",
   "@backfillDevicesMeta": {
@@ -647,6 +668,27 @@
   },
   "backfillResetUnresolvableTitle": "Resetovat neřešitelné",
   "backfillResetUnresolvableTrigger": "Resetovat neřešitelné záznamy",
+  "backfillRetireStuckConfirmAccept": "Stáhnout nyní",
+  "backfillRetireStuckConfirmContent": "Označí {count} aktuálně otevřených (chybějících nebo požadovaných) záznamů sekvenčního logu jako neřešitelné. Použij k odblokování watermarku, když jsou záznamy zaseknuté, aniž by uplynulo 7denní okno amnestie. Záznamy lze později vzkřísit, pokud jejich data dorazí na disk s platnými vektorovými hodinami.",
+  "@backfillRetireStuckConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillRetireStuckConfirmTitle": "Stáhnout zaseknuté záznamy nyní?",
+  "backfillRetireStuckDescription": "Vynutí, aby se každý aktuálně otevřený chybějící nebo požadovaný záznam sekvenčního logu stal neřešitelným. Přeskakuje 7denní amnestii — používej jen pro zaseknuté řádky blokující watermark.",
+  "backfillRetireStuckProcessing": "Stahování…",
+  "backfillRetireStuckTitle": "Stáhnout zaseknuté záznamy",
+  "backfillRetireStuckTrigger": "Stáhnout {count} zaseknutých záznamů",
+  "@backfillRetireStuckTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillSettingsInfo": "Automatické žádosti o doplnění chybějících položek za posledních 24 hodin. Použijte ruční záplň pro starší zápisy.",
   "backfillSettingsSubtitle": "Správa obnovy mezer v synchronizaci",
   "backfillSettingsTitle": "Synchronizace doplnění",
@@ -1868,6 +1910,14 @@
   "provisionedSyncVerifyDevicesTitle": "Ověření zařízení",
   "queueCatchUpNowButton": "Dohnat nyní",
   "queueCatchUpNowDone": "Dohánění spuštěno — fronta se vyprazdňuje.",
+  "queueCatchUpNowError": "Dohánění selhalo: {reason}",
+  "@queueCatchUpNowError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "queueCatchUpNowRunning": "Překlenutí nedávné mezery…",
   "queueDepthCardEmpty": "Fronta je prázdná — worker je aktuální.",
   "queueDepthCardLoading": "Čtení hloubky fronty…",

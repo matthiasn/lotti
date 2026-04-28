@@ -808,6 +808,27 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Récupération avancée",
+  "backfillAskPeersConfirmAccept": "Demander aux pairs",
+  "backfillAskPeersConfirmContent": "Bascule les {count} entrées du journal de séquence irrésolubles vers manquantes pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d'amnistie de 7 jours.",
+  "@backfillAskPeersConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAskPeersConfirmTitle": "Redemander aux pairs les entrées irrésolubles ?",
+  "backfillAskPeersDescription": "Bascule chaque entrée irrésoluble vers manquante et laisse le rattrapage normal redemander aux pairs.",
+  "backfillAskPeersProcessing": "Réouverture…",
+  "backfillAskPeersTitle": "Demander aux pairs les irrésolubles",
+  "backfillAskPeersTrigger": "Demander aux pairs {count} entrées",
+  "@backfillAskPeersTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillCatchUpDescription": "Récupère maintenant les entrées manquantes récentes depuis tes pairs.",
   "backfillDevicesMeta": "{count, plural, =1{1 ID d'appareil} other{{count} IDs d'appareil}}",
   "@backfillDevicesMeta": {
@@ -853,6 +874,27 @@
   },
   "backfillResetUnresolvableTitle": "Réinitialiser les entrées irrésolubles",
   "backfillResetUnresolvableTrigger": "Réinitialiser les entrées irrésolubles",
+  "backfillRetireStuckConfirmAccept": "Retirer maintenant",
+  "backfillRetireStuckConfirmContent": "Marque les {count} entrées de journal de séquence actuellement ouvertes (manquantes ou demandées) comme irrésolubles. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.",
+  "@backfillRetireStuckConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillRetireStuckConfirmTitle": "Retirer maintenant les entrées bloquées ?",
+  "backfillRetireStuckDescription": "Force chaque entrée de journal de séquence manquante ou demandée actuellement ouverte à devenir irrésoluble. Ignore l'amnistie de 7 jours — à utiliser uniquement pour les lignes bloquées qui bloquent le watermark.",
+  "backfillRetireStuckProcessing": "Retrait…",
+  "backfillRetireStuckTitle": "Retirer les entrées bloquées",
+  "backfillRetireStuckTrigger": "Retirer {count} entrées bloquées",
+  "@backfillRetireStuckTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillSettingsInfo": "Le rattrapage automatique demande les entrées manquantes des dernières 24 heures. Utilisez le rattrapage manuel pour les entrées plus anciennes.",
   "backfillSettingsSubtitle": "Gérer la récupération des écarts de synchronisation",
   "backfillSettingsTitle": "Rattrapage de synchronisation",
@@ -2115,6 +2157,14 @@
   "provisionedSyncVerifyDevicesTitle": "Vérification des appareils",
   "queueCatchUpNowButton": "Rattraper maintenant",
   "queueCatchUpNowDone": "Rattrapage lancé — la file se vide.",
+  "queueCatchUpNowError": "Rattrapage échoué : {reason}",
+  "@queueCatchUpNowError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "queueCatchUpNowRunning": "Pontage de l'écart récent…",
   "queueDepthCardEmpty": "File vide — le worker est à jour.",
   "queueDepthCardLoading": "Lecture de la profondeur de la file…",

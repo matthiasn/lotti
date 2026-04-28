@@ -1792,6 +1792,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Erweiterte Wiederherstellung';
 
   @override
+  String get backfillAskPeersConfirmAccept => 'Peers fragen';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    return 'Setzt alle $count unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      'Peers erneut nach unlösbaren Einträgen fragen?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Setzt jeden unlösbaren Sequenzlog-Eintrag zurück auf fehlend und lässt den regulären Backfill-Sweep Peers erneut fragen.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Wird wiedereröffnet…';
+
+  @override
+  String get backfillAskPeersTitle => 'Peers nach unlösbaren Einträgen fragen';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    return 'Peers nach $count Einträgen fragen';
+  }
+
+  @override
   String get backfillCatchUpDescription =>
       'Fordere fehlende Einträge der letzten Zeit jetzt von Peers an.';
 
@@ -1867,6 +1894,33 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get backfillResetUnresolvableTrigger =>
       'Unlösbare Einträge zurücksetzen';
+
+  @override
+  String get backfillRetireStuckConfirmAccept => 'Jetzt zurückziehen';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    return 'Markiert $count aktuell offene (fehlende oder angeforderte) Sequenzlog-Einträge als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle =>
+      'Festsitzende Einträge jetzt zurückziehen?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Setzt jeden aktuell offenen fehlenden oder angeforderten Sequenzlog-Eintrag auf unlösbar. Überspringt das 7-Tage-Schonfenster — verwende dies nur für festsitzende Einträge, die den Watermark blockieren.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Wird zurückgezogen…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Festsitzende Einträge zurückziehen';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    return '$count festsitzende Einträge zurückziehen';
+  }
 
   @override
   String get backfillSettingsInfo =>
@@ -4911,6 +4965,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get queueCatchUpNowDone =>
       'Aufholen gestartet — die Warteschlange wird abgearbeitet.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Aufholen fehlgeschlagen: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Überbrücke kürzliche Lücke…';

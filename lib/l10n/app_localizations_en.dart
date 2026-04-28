@@ -1762,6 +1762,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Advanced recovery';
 
   @override
+  String get backfillAskPeersConfirmAccept => 'Ask peers';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    return 'This flips all $count unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      'Ask peers again for unresolvable entries?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Flip every unresolvable sequence-log entry back to missing and let the normal backfill sweep re-ask peers.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Reopening…';
+
+  @override
+  String get backfillAskPeersTitle => 'Ask peers for unresolvable';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    return 'Ask peers for $count entries';
+  }
+
+  @override
   String get backfillCatchUpDescription =>
       'Pull recent missing entries from peers right now.';
 
@@ -1835,6 +1862,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backfillResetUnresolvableTrigger => 'Reset Unresolvable Entries';
+
+  @override
+  String get backfillRetireStuckConfirmAccept => 'Retire now';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    return 'This marks $count currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle => 'Retire stuck entries now?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Force every currently-open missing or requested sequence-log entry to unresolvable. Skips the 7-day amnesty — use only for stuck rows blocking the watermark.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Retiring…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Retire stuck entries';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    return 'Retire $count stuck entries';
+  }
 
   @override
   String get backfillSettingsInfo =>
@@ -4843,6 +4896,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queueCatchUpNowDone => 'Catch-up kicked — queue is draining.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Catch-up failed: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Bridging recent gap…';

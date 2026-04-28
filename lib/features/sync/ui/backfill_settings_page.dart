@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -149,14 +150,21 @@ class _QueueDepthScopeState extends State<_QueueDepthScope> {
 
   void _bind(InboundQueue? queue) {
     if (queue == null) return;
-    _sub = queue.depthChanges.listen((signal) {
-      if (!mounted) return;
+    // Capture the queue identity in the closure so that an in-flight
+    // emission from a previous (cancelled-but-not-yet-detached)
+    // subscription cannot land here and overwrite `_latest` with a
+    // signal from the wrong queue. `StreamSubscription.cancel()` is
+    // async, so a tick delay between rebinding and the old listener
+    // shutting down is real, not theoretical.
+    final boundQueue = queue;
+    _sub = boundQueue.depthChanges.listen((signal) {
+      if (!mounted || !identical(boundQueue, widget.queue)) return;
       setState(() {
         _latest = signal;
         _liveSignalSeen = true;
       });
     });
-    unawaited(_loadInitial(queue));
+    unawaited(_loadInitial(boundQueue));
   }
 
   Future<void> _loadInitial(InboundQueue queue) async {
@@ -315,7 +323,7 @@ class _StatusCell extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step2),
           Text(
-            _formatCount(value),
+            _formatCount(context, value),
             style: tokens.typography.styles.subtitle.subtitle1.copyWith(
               color: valueColor,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -507,7 +515,7 @@ class _LedgerRow extends StatelessWidget {
             ),
           ),
           Text(
-            _formatCount(value),
+            _formatCount(context, value),
             style: tokens.typography.styles.body.bodyMedium.copyWith(
               color: color,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -751,6 +759,17 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
     final requested = stats.stats?.totalRequested ?? 0;
     final missing = stats.stats?.totalMissing ?? 0;
     final openCount = missing + requested;
+    // The controller serializes every backfill op, so while one is
+    // in flight the others would only bounce off its guard. Reflect
+    // that in the UI by disabling all controller-backed actions
+    // whenever any of them is running — keeps the page from looking
+    // actionable when it isn't.
+    final controllerBusy =
+        stats.isProcessing ||
+        stats.isResetting ||
+        stats.isReRequesting ||
+        stats.isResettingAllUnresolvable ||
+        stats.isRetiringStuck;
 
     return [
       _RecoveryAction(
@@ -786,7 +805,7 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
         ctaIcon: Icons.sync,
         tone: _RecoveryTone.primary,
         isBusy: stats.isProcessing,
-        onPressed: stats.isProcessing
+        onPressed: controllerBusy
             ? null
             : () => ProviderScope.containerOf(context)
                   .read(backfillStatsControllerProvider.notifier)
@@ -802,7 +821,7 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
         ctaIcon: Icons.restore_rounded,
         tone: _RecoveryTone.primary,
         isBusy: stats.isResetting,
-        onPressed: (stats.isResetting || unresolvable == 0)
+        onPressed: (controllerBusy || unresolvable == 0)
             ? null
             : () => ProviderScope.containerOf(context)
                   .read(backfillStatsControllerProvider.notifier)
@@ -818,7 +837,7 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
         ctaIcon: Icons.replay_rounded,
         tone: _RecoveryTone.ghost,
         isBusy: stats.isReRequesting,
-        onPressed: (stats.isReRequesting || requested == 0)
+        onPressed: (controllerBusy || requested == 0)
             ? null
             : () => ProviderScope.containerOf(context)
                   .read(backfillStatsControllerProvider.notifier)
@@ -826,34 +845,29 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
       ),
       _RecoveryAction(
         icon: Icons.group_outlined,
-        title: 'Ask peers for unresolvable',
-        description:
-            'Flip every unresolvable sequence-log entry back to missing '
-            'and let the normal backfill sweep re-ask peers.',
+        title: messages.backfillAskPeersTitle,
+        description: messages.backfillAskPeersDescription,
         ctaLabel: stats.isResettingAllUnresolvable
-            ? 'Reopening…'
-            : 'Ask peers for $unresolvable entries',
+            ? messages.backfillAskPeersProcessing
+            : messages.backfillAskPeersTrigger(unresolvable),
         ctaIcon: Icons.group_outlined,
         tone: _RecoveryTone.primary,
         isBusy: stats.isResettingAllUnresolvable,
-        onPressed: (stats.isResettingAllUnresolvable || unresolvable == 0)
+        onPressed: (controllerBusy || unresolvable == 0)
             ? null
             : () => _confirmAndResetAllUnresolvable(context, unresolvable),
       ),
       _RecoveryAction(
         icon: Icons.block_outlined,
-        title: 'Retire stuck entries',
-        description:
-            'Force every currently-open missing or requested sequence-log '
-            'entry to unresolvable. Skips the 7-day amnesty — use only for '
-            'stuck rows blocking the watermark.',
+        title: messages.backfillRetireStuckTitle,
+        description: messages.backfillRetireStuckDescription,
         ctaLabel: stats.isRetiringStuck
-            ? 'Retiring…'
-            : 'Retire $openCount stuck entries',
+            ? messages.backfillRetireStuckProcessing
+            : messages.backfillRetireStuckTrigger(openCount),
         ctaIcon: Icons.block_outlined,
         tone: _RecoveryTone.dangerGhost,
         isBusy: stats.isRetiringStuck,
-        onPressed: (stats.isRetiringStuck || openCount == 0)
+        onPressed: (controllerBusy || openCount == 0)
             ? null
             : () => _confirmAndRetireStuck(context, openCount),
       ),
@@ -874,7 +888,7 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
     } catch (e) {
       messenger?.showSnackBar(
         SnackBar(
-          content: Text(messages.queueFetchAllHistoryError(e.toString())),
+          content: Text(messages.queueCatchUpNowError(e.toString())),
         ),
       );
     }
@@ -901,24 +915,22 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
     BuildContext context,
     int unresolvable,
   ) async {
+    final messages = context.messages;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Ask peers again for unresolvable entries?'),
+        title: Text(messages.backfillAskPeersConfirmTitle),
         content: Text(
-          'This flips all $unresolvable unresolvable sequence-log entries '
-          'back to missing so the normal backfill sweep re-asks peers. '
-          'Peers who still have the payload will respond; truly unrecoverable '
-          'entries will retire again after the 7-day amnesty window.',
+          messages.backfillAskPeersConfirmContent(unresolvable),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(messages.cancelButton),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Ask peers'),
+            child: Text(messages.backfillAskPeersConfirmAccept),
           ),
         ],
       ),
@@ -933,26 +945,22 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
     BuildContext context,
     int openCount,
   ) async {
+    final messages = context.messages;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Retire stuck entries now?'),
+        title: Text(messages.backfillRetireStuckConfirmTitle),
         content: Text(
-          'This marks $openCount currently-open (missing or requested) '
-          'sequence-log entries as unresolvable. Use this to unblock the '
-          'watermark when entries have been stuck for a while without the '
-          '7-day amnesty window having passed. Entries can still be '
-          'resurrected if their payload later arrives on disk with a valid '
-          'vector clock.',
+          messages.backfillRetireStuckConfirmContent(openCount),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
+            child: Text(messages.cancelButton),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Retire now'),
+            child: Text(messages.backfillRetireStuckConfirmAccept),
           ),
         ],
       ),
@@ -1141,17 +1149,10 @@ class _IconActionButton extends StatelessWidget {
   }
 }
 
-/// Number formatter used in both the status row and ledger so the
-/// page stays consistent. Locale defaults to the active app locale
-/// — `NumberFormat`-style grouping is good enough for the diagnostic
-/// numbers shown here.
-String _formatCount(int value) {
-  if (value < 1000) return value.toString();
-  final str = value.toString();
-  final buf = StringBuffer();
-  for (var i = 0; i < str.length; i++) {
-    if (i != 0 && (str.length - i) % 3 == 0) buf.write(',');
-    buf.write(str[i]);
-  }
-  return buf.toString();
-}
+/// Locale-aware integer formatter used in both the status row and
+/// ledger so the page stays consistent across English (`715,544`),
+/// German (`715.544`), French (`715 544`), etc.
+String _formatCount(BuildContext context, int value) =>
+    NumberFormat.decimalPattern(
+      Localizations.localeOf(context).toString(),
+    ).format(value);

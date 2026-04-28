@@ -78,7 +78,7 @@ void main() {
       tester,
     ) async {
       final resolve = await _buildResolver(tester);
-      expect(resolve('sync/backfill').title, 'Backfill Sync');
+      expect(resolve('sync/backfill').title, 'Backfill sync');
       expect(resolve('sync/stats').title, 'Matrix Stats');
       expect(resolve('sync/matrix-maintenance').title, 'Maintenance');
     });

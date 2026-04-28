@@ -808,6 +808,27 @@
     }
   },
   "backfillAdvancedRecoveryTitle": "Recuperación avanzada",
+  "backfillAskPeersConfirmAccept": "Preguntar a pares",
+  "backfillAskPeersConfirmContent": "Esto vuelve a poner las {count} entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entrades realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.",
+  "@backfillAskPeersConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAskPeersConfirmTitle": "¿Preguntar de nuevo a los pares por entradas irresolubles?",
+  "backfillAskPeersDescription": "Vuelve cada entrada irresoluble del registro de secuencia a faltante y deja que el barrido normal de relleno pregunte a los pares.",
+  "backfillAskPeersProcessing": "Reabriendo…",
+  "backfillAskPeersTitle": "Preguntar a pares por irresolubles",
+  "backfillAskPeersTrigger": "Preguntar a pares por {count} entradas",
+  "@backfillAskPeersTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillCatchUpDescription": "Solicita ahora a los pares las entradas faltantes recientes.",
   "backfillDevicesMeta": "{count, plural, =1{1 ID de dispositivo} other{{count} IDs de dispositivo}}",
   "@backfillDevicesMeta": {
@@ -853,6 +874,27 @@
   },
   "backfillResetUnresolvableTitle": "Restablecer irresolubles",
   "backfillResetUnresolvableTrigger": "Restablecer entradas irresolubles",
+  "backfillRetireStuckConfirmAccept": "Retirar ahora",
+  "backfillRetireStuckConfirmContent": "Marca {count} entradas del registro de secuencia actualmente abiertas (faltantes o solicitadas) como irresolubles. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.",
+  "@backfillRetireStuckConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillRetireStuckConfirmTitle": "¿Retirar ahora las entradas atascadas?",
+  "backfillRetireStuckDescription": "Fuerza cada entrada del registro de secuencia faltante o solicitada actualmente abierta a irresoluble. Omite la amnistía de 7 días — úsalo solo para filas atascadas que bloquean la marca de agua.",
+  "backfillRetireStuckProcessing": "Retirando…",
+  "backfillRetireStuckTitle": "Retirar entradas atascadas",
+  "backfillRetireStuckTrigger": "Retirar {count} entradas atascadas",
+  "@backfillRetireStuckTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillSettingsInfo": "El relleno automático solicita las entradas faltantes de las últimas 24 horas. Use el relleno manual para entradas más antiguas.",
   "backfillSettingsSubtitle": "Gestionar recuperación de brechas de sincronización",
   "backfillSettingsTitle": "Relleno de sincronización",
@@ -2115,6 +2157,14 @@
   "provisionedSyncVerifyDevicesTitle": "Verificación de dispositivos",
   "queueCatchUpNowButton": "Sincronizar ahora",
   "queueCatchUpNowDone": "Puesta al día iniciada — la cola se está vaciando.",
+  "queueCatchUpNowError": "Puesta al día fallida: {reason}",
+  "@queueCatchUpNowError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "queueCatchUpNowRunning": "Puenteando la brecha reciente…",
   "queueDepthCardEmpty": "Cola vacía — el procesador está al día.",
   "queueDepthCardLoading": "Leyendo profundidad de la cola…",

@@ -1807,6 +1807,33 @@ class AppLocalizationsEs extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Recuperación avanzada';
 
   @override
+  String get backfillAskPeersConfirmAccept => 'Preguntar a pares';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    return 'Esto vuelve a poner las $count entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entrades realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      '¿Preguntar de nuevo a los pares por entradas irresolubles?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Vuelve cada entrada irresoluble del registro de secuencia a faltante y deja que el barrido normal de relleno pregunte a los pares.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Reabriendo…';
+
+  @override
+  String get backfillAskPeersTitle => 'Preguntar a pares por irresolubles';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    return 'Preguntar a pares por $count entradas';
+  }
+
+  @override
   String get backfillCatchUpDescription =>
       'Solicita ahora a los pares las entradas faltantes recientes.';
 
@@ -1882,6 +1909,33 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get backfillResetUnresolvableTrigger =>
       'Restablecer entradas irresolubles';
+
+  @override
+  String get backfillRetireStuckConfirmAccept => 'Retirar ahora';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    return 'Marca $count entradas del registro de secuencia actualmente abiertas (faltantes o solicitadas) como irresolubles. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle =>
+      '¿Retirar ahora las entradas atascadas?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Fuerza cada entrada del registro de secuencia faltante o solicitada actualmente abierta a irresoluble. Omite la amnistía de 7 días — úsalo solo para filas atascadas que bloquean la marca de agua.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Retirando…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Retirar entradas atascadas';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    return 'Retirar $count entradas atascadas';
+  }
 
   @override
   String get backfillSettingsInfo =>
@@ -4997,6 +5051,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get queueCatchUpNowDone =>
       'Puesta al día iniciada — la cola se está vaciando.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Puesta al día fallida: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Puenteando la brecha reciente…';

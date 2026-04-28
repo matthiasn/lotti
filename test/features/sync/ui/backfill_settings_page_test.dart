@@ -17,21 +17,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_helper.dart';
 
-class _MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
-
-class _MockBackfillRequestService extends Mock
-    implements BackfillRequestService {}
-
-class _MockUserActivityService extends Mock implements UserActivityService {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockJournalDb mockJournalDb;
-  late _MockSyncSequenceLogService mockSequenceService;
-  late _MockBackfillRequestService mockBackfillService;
-  late _MockUserActivityService mockUserActivityService;
+  late MockSyncSequenceLogService mockSequenceService;
+  late MockBackfillRequestService mockBackfillService;
+  late MockUserActivityService mockUserActivityService;
 
   // Deterministic stats: pick numbers that make every counter visible
   // and unique so finder-by-text can disambiguate.
@@ -56,9 +48,9 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({'backfill_enabled': true});
     mockJournalDb = MockJournalDb();
-    mockSequenceService = _MockSyncSequenceLogService();
-    mockBackfillService = _MockBackfillRequestService();
-    mockUserActivityService = _MockUserActivityService();
+    mockSequenceService = MockSyncSequenceLogService();
+    mockBackfillService = MockBackfillRequestService();
+    mockUserActivityService = MockUserActivityService();
 
     when(
       () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
@@ -430,9 +422,9 @@ void main() {
     testWidgets('hides body when the Matrix flag is off', (tester) async {
       await getIt.reset();
       mockJournalDb = MockJournalDb();
-      mockSequenceService = _MockSyncSequenceLogService();
-      mockBackfillService = _MockBackfillRequestService();
-      mockUserActivityService = _MockUserActivityService();
+      mockSequenceService = MockSyncSequenceLogService();
+      mockBackfillService = MockBackfillRequestService();
+      mockUserActivityService = MockUserActivityService();
 
       when(
         () => mockJournalDb.watchConfigFlag(enableMatrixFlag),

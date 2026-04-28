@@ -1778,6 +1778,33 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Pokročilé obnovení';
 
   @override
+  String get backfillAskPeersConfirmAccept => 'Zeptat se peerů';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    return 'Toto vrátí všech $count neřešitelných záznamů sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      'Zeptat se peerů znovu na neřešitelné záznamy?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Vrátí každý neřešitelný záznam sekvenčního logu zpět na chybějící a nechá normální backfill znovu se zeptat peerů.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Znovu otevírám…';
+
+  @override
+  String get backfillAskPeersTitle => 'Zeptat se peerů na neřešitelné';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    return 'Zeptat se peerů na $count záznamů';
+  }
+
+  @override
   String get backfillCatchUpDescription =>
       'Stáhni od peerů nedávné chybějící položky hned teď.';
 
@@ -1854,6 +1881,33 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get backfillResetUnresolvableTrigger =>
       'Resetovat neřešitelné záznamy';
+
+  @override
+  String get backfillRetireStuckConfirmAccept => 'Stáhnout nyní';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    return 'Označí $count aktuálně otevřených (chybějících nebo požadovaných) záznamů sekvenčního logu jako neřešitelné. Použij k odblokování watermarku, když jsou záznamy zaseknuté, aniž by uplynulo 7denní okno amnestie. Záznamy lze později vzkřísit, pokud jejich data dorazí na disk s platnými vektorovými hodinami.';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle =>
+      'Stáhnout zaseknuté záznamy nyní?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Vynutí, aby se každý aktuálně otevřený chybějící nebo požadovaný záznam sekvenčního logu stal neřešitelným. Přeskakuje 7denní amnestii — používej jen pro zaseknuté řádky blokující watermark.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Stahování…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Stáhnout zaseknuté záznamy';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    return 'Stáhnout $count zaseknutých záznamů';
+  }
 
   @override
   String get backfillSettingsInfo =>
@@ -4907,6 +4961,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get queueCatchUpNowDone =>
       'Dohánění spuštěno — fronta se vyprazdňuje.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Dohánění selhalo: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Překlenutí nedávné mezery…';

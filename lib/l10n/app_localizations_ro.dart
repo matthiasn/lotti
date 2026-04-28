@@ -1789,6 +1789,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillAdvancedRecoveryTitle => 'Recuperare avansată';
 
   @override
+  String get backfillAskPeersConfirmAccept => 'Întreabă colegii';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    return 'Aceasta resetează toate cele $count intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      'Întrebați din nou colegii pentru intrări nerezolvabile?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Resetează fiecare intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă și lasă parcurgerea normală de completare să întrebe din nou colegii.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Se redeschide…';
+
+  @override
+  String get backfillAskPeersTitle => 'Întreabă colegii pentru nerezolvabile';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    return 'Întreabă colegii pentru $count intrări';
+  }
+
+  @override
   String get backfillCatchUpDescription =>
       'Solicitați acum colegilor intrările lipsă recente.';
 
@@ -1863,6 +1890,33 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get backfillResetUnresolvableTrigger =>
       'Resetați intrările nerezolvabile';
+
+  @override
+  String get backfillRetireStuckConfirmAccept => 'Retrage acum';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    return 'Marchează cele $count intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle =>
+      'Retrageți acum intrările blocate?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Forțează fiecare intrare lipsă sau solicitată curent deschisă din jurnalul de secvență la nerezolvabilă. Sare peste amnistia de 7 zile — folosiți doar pentru rândurile blocate care blochează marcajul.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Se retrage…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Retrage intrări blocate';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    return 'Retrage $count intrări blocate';
+  }
 
   @override
   String get backfillSettingsInfo =>
@@ -4932,6 +4986,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queueCatchUpNowDone => 'Recuperare inițiată — coada se golește.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Recuperare eșuată: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Se acoperă golul recent…';
