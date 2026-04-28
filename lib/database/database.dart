@@ -110,7 +110,7 @@ class JournalDb extends _$JournalDb {
   bool _configFlagsLoaded = false;
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   /// Conservative chunk size for `IN :ids` drift queries to stay under
   /// SQLite's default `SQLITE_MAX_VARIABLE_NUMBER` of 999 with headroom
@@ -489,6 +489,62 @@ class JournalDb extends _$JournalDb {
               'DROP INDEX IF EXISTS idx_journal_task_status_private',
             );
             await customStatement(_createIdxJournalTaskStatusPrivateSql);
+          }();
+        }
+
+        // v40: Slow-query log surfaced four hotspots that all fall
+        // within the journal/linked_entries indexing surface. See
+        // `logs/slow_queries-2026-04-28.log` for the production
+        // traces this batch addresses.
+        if (from < 40) {
+          await () async {
+            DevLogger.log(
+              name: 'JournalDb',
+              message:
+                  'Adding linked_entries (to_id, type) composite + '
+                  'rating partial; journal (project_id, task_status) '
+                  'partial; backfilling task_priority_rank',
+            );
+
+            if (await _tableExists('linked_entries')) {
+              // Reverse-link `(to_id, type)` lookups (project rollups,
+              // link expansion). The single-column `(to_id)` index
+              // forced a per-row heap probe to evaluate `type`.
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_linked_entries_to_id_type',
+              );
+              await m.createIndex(idxLinkedEntriesToIdType);
+              // Hot partial for rating reverse-links (~867 hits/day,
+              // ~375 s of cumulative DB time on a desktop trace).
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_linked_entries_rating_to_id',
+              );
+              await m.createIndex(idxLinkedEntriesRatingToId);
+            }
+
+            if (await _tableExists('journal')) {
+              // Backfill any task rows that escaped the v29 fill so
+              // the new ORDER BY clauses (which dropped the
+              // `COALESCE(task_priority_rank, 2)` wrapper) match the
+              // index sort exactly. The application layer already
+              // defaults `TaskPriority.p2Medium` (rank=2) on every
+              // task write, so this only affects rare legacy rows.
+              await customStatement(
+                'UPDATE journal '
+                'SET task_priority_rank = 2 '
+                "WHERE type = 'Task' "
+                'AND task = 1 '
+                'AND task_priority_rank IS NULL',
+              );
+
+              // Covering partial for `getProjectTaskRollups` so the
+              // SUM(CASE WHEN task_status = …) counts do not pull
+              // every task row from the heap.
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_journal_project_task_status',
+              );
+              await m.createIndex(idxJournalProjectTaskStatus);
+            }
           }();
         }
       },

@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 15);
+        expect(db.schemaVersion, 16);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -142,7 +142,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 15);
+      expect(versionResult.first.read<int>('user_version'), 16);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -269,6 +269,7 @@ void main() {
           entry_id TEXT NOT NULL,
           status INTEGER NOT NULL DEFAULT 0,
           request_count INTEGER NOT NULL DEFAULT 0,
+          last_requested_at INTEGER,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL,
           payload_type TEXT
@@ -277,8 +278,7 @@ void main() {
       sqlite.execute('''
         CREATE TABLE IF NOT EXISTS host_activity (
           host_id TEXT NOT NULL PRIMARY KEY,
-          last_seen_at INTEGER NOT NULL,
-          last_requested_at INTEGER
+          last_seen_at INTEGER NOT NULL
         )
       ''');
 
@@ -298,7 +298,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 15);
+      expect(versionResult.first.read<int>('user_version'), 16);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -377,7 +377,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 15);
+      expect(versionResult.first.read<int>('user_version'), 16);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -455,7 +455,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 15);
+      expect(versionResult.first.read<int>('user_version'), 16);
 
       final indexResults = await db
           .customSelect(
@@ -547,7 +547,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 15);
+        expect(versionResult.first.read<int>('user_version'), 16);
 
         // v11 replaces the v10 index with the covering variant; when the
         // migration steps v9 → v11 in one run, the v10 index must no longer
@@ -659,7 +659,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 15);
+        expect(versionResult.first.read<int>('user_version'), 16);
 
         final oldIndex = await db
             .customSelect(
@@ -775,7 +775,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 15);
+        expect(versionResult.first.read<int>('user_version'), 16);
 
         final ready = await db
             .customSelect(

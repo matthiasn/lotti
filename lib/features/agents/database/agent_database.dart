@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -126,6 +126,18 @@ class AgentDatabase extends _$AgentDatabase {
             'idx_unique_soul_per_template '
             "ON agent_links(from_id) WHERE type = 'soul_assignment' "
             'AND deleted_at IS NULL',
+          );
+        }
+        if (from < 7) {
+          // Expression partial for `getDueScheduledAgentStates` —
+          // the JSON predicate previously degraded into a heap
+          // probe per matching `idx_agent_entities_type` row.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_agent_entities_due_wake '
+            r"ON agent_entities(json_extract(serialized, '$.scheduledWakeAt') ASC) "
+            "WHERE type = 'agentState' "
+            'AND deleted_at IS NULL '
+            r"AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL",
           );
         }
       },

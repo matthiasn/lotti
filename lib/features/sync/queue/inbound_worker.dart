@@ -398,15 +398,21 @@ class InboundWorker {
   /// would round its intended 250 ms / 500 ms / 2 s backoff up to
   /// `_idleTick` (5 s by default), delaying recovery and starving the
   /// bootstrap back-pressure contract.
+  ///
+  /// When the queue is fully drained ([InboundQueue.earliestReadyAt]
+  /// returns null) the loop relies on the depthChanges signal to wake
+  /// it on the next enqueue. A multiplied tick (`_idleTick × 12`) is
+  /// kept purely as a safety net for missed signals, so an empty queue
+  /// no longer wakes every five seconds — that polled wake-up was the
+  /// dominant inbound_event_queue read in production traces (8 k+ idle
+  /// peeks per day, ~1 k seconds of cumulative DB time).
   Future<void> _waitForWork(Future<void> depthFuture) async {
     final stopFuture = _stopRequested?.future ?? Future<void>.value();
     final readyAt = await _queue.earliestReadyAt();
     final nowMs = clock.now().millisecondsSinceEpoch;
     final Duration delay;
     if (readyAt == null) {
-      // Queue is empty — sleep until either stop or a new depth
-      // signal. The tick bound is a safety net, not the primary exit.
-      delay = _idleTick;
+      delay = _idleTick * 12;
     } else {
       final deltaMs = readyAt - nowMs;
       delay = deltaMs <= 0

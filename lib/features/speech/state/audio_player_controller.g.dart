@@ -124,7 +124,7 @@ final class AudioPlayerControllerProvider
 }
 
 String _$audioPlayerControllerHash() =>
-    r'20ac72444988e23f4319261fba05b43f15ff0f9f';
+    r'2ddf0cb99877d2183e1cf5f6256958bfc785b396';
 
 /// Notifier managing audio player state.
 /// Marked as keepAlive since audio state should persist for the entire app

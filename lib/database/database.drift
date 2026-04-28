@@ -101,6 +101,21 @@ WHERE type = 'Task'
   AND task = 1
   AND deleted = FALSE
   AND project_id IS NOT NULL;
+-- Covers the `getProjectTaskRollups` aggregate that fans out a
+-- `project_id IN (?, ?, ...)` predicate plus
+-- `SUM(CASE WHEN task_status = 'DONE' …)` / `SUM(CASE WHEN
+-- task_status = 'BLOCKED' …)`. Without `task_status` in the index
+-- the planner has to take heap reads on every row in each project
+-- partition to evaluate the SUM(CASE ...) expressions; with this
+-- partial the GROUP BY / SUMs become index-only.
+CREATE INDEX idx_journal_project_task_status ON journal(
+  project_id COLLATE BINARY ASC,
+  task_status COLLATE BINARY ASC
+)
+WHERE type = 'Task'
+  AND task = 1
+  AND deleted = FALSE
+  AND project_id IS NOT NULL;
 
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
@@ -249,6 +264,26 @@ CREATE INDEX idx_linked_entries_from_id_hidden_created_at_desc ON linked_entries
   hidden COLLATE BINARY ASC,
   created_at COLLATE BINARY DESC
 );
+-- Reverse-link lookups that filter by the link `type` (e.g. project
+-- rollups, link expansion for journal cards) used to seek on
+-- `idx_linked_entries_to_id` and re-evaluate `type` per row from the
+-- heap. The composite (`to_id`, `type`) collapses both predicates
+-- into one index seek.
+CREATE INDEX idx_linked_entries_to_id_type ON linked_entries(
+  to_id COLLATE BINARY ASC,
+  type COLLATE BINARY ASC
+);
+-- Hot-path partial for `ratingsForTimeEntries` and the per-target
+-- rating queries: filters `to_id IN (...) AND type='RatingLink' AND
+-- COALESCE(hidden, FALSE) = FALSE`. The non-partial composite above
+-- still serves general (to_id, type) lookups; this partial keeps the
+-- rating reverse-link reads index-only and trivially small even on
+-- DBs with millions of links.
+CREATE INDEX idx_linked_entries_rating_to_id ON linked_entries(
+  to_id COLLATE BINARY ASC,
+  from_id COLLATE BINARY ASC
+)
+WHERE type = 'RatingLink' AND COALESCE(hidden, FALSE) = FALSE;
 
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
@@ -400,7 +435,7 @@ SELECT * FROM journal
     OR :priorityFilterCount = 0
     OR task_priority IN :priorities
   )
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  ORDER BY task_priority_rank ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
@@ -411,7 +446,7 @@ SELECT * FROM journal
   AND task = 1
   AND task_status IN :taskStatuses
   AND category IN :categories
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  ORDER BY task_priority_rank ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
@@ -423,7 +458,7 @@ SELECT * FROM journal
   AND task_status IN :taskStatuses
   AND category IN :categories
   AND task_priority IN :priorities
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  ORDER BY task_priority_rank ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
@@ -436,7 +471,7 @@ SELECT * FROM journal
   AND task = 1
   AND task_status IN :taskStatuses
   AND category IN :categories
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  ORDER BY task_priority_rank ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
@@ -450,7 +485,7 @@ SELECT * FROM journal
   AND task_status IN :taskStatuses
   AND category IN :categories
   AND task_priority IN :priorities
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  ORDER BY task_priority_rank ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
@@ -483,7 +518,7 @@ SELECT * FROM journal
     OR :priorityFilterCount = 0
     OR task_priority IN :priorities
   )
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  ORDER BY task_priority_rank ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
@@ -513,7 +548,7 @@ SELECT * FROM journal
     OR :priorityFilterCount = 0
     OR task_priority IN :priorities
   )
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  ORDER BY task_priority_rank ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
@@ -1244,7 +1279,7 @@ SELECT * FROM journal
   AND deleted = false
   AND type = 'Task'
   AND task = 1
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC;
+  ORDER BY task_priority_rank ASC, date_from DESC;
 
 tasksForProjectByPrivateStatuses:
 SELECT * FROM journal
@@ -1253,7 +1288,7 @@ SELECT * FROM journal
   AND type = 'Task'
   AND task = 1
   AND private IN :privateStatuses
-  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC;
+  ORDER BY task_priority_rank ASC, date_from DESC;
 
 projectLinkForTask:
 SELECT * FROM linked_entries
