@@ -1,6 +1,7 @@
 // ignore_for_file: cascade_invocations
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,6 +58,12 @@ void main() {
       getIt.unregister<LoggingService>();
     }
     getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+    // AudioUtils.getFullAudioPath -> getDocumentsDirectory() -> getIt<Directory>
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
+    }
+    getIt.registerSingleton<Directory>(Directory.systemTemp);
 
     // Setup mock player state
     when(() => mockPlayer.state).thenReturn(mockPlayerState);
@@ -246,6 +253,40 @@ void main() {
       verify(() => mockPlayerStream.buffer).called(1);
       verify(() => mockPlayerStream.completed).called(1);
     });
+
+    test(
+      'disposes the player and does not cache it when subscription wiring '
+      'throws',
+      () async {
+        final brokenStream = MockPlayerStream();
+        final brokenPlayer = MockPlayer();
+        when(() => brokenPlayer.stream).thenReturn(brokenStream);
+        when(brokenPlayer.dispose).thenAnswer((_) async {});
+        // First stream access during _setupSubscriptions throws — simulating
+        // a wiring failure midway through construction.
+        when(() => brokenStream.position).thenThrow(
+          Exception('stream wiring failure'),
+        );
+
+        final brokenContainer = ProviderContainer(
+          overrides: [
+            playerFactoryProvider.overrideWithValue(() => brokenPlayer),
+          ],
+        );
+        addTearDown(brokenContainer.dispose);
+
+        final controller = brokenContainer.read(
+          audioPlayerControllerProvider.notifier,
+        )..ensurePlayerForTest();
+
+        // The partially-constructed player must be disposed so no native mpv
+        // core thread is leaked, and a follow-up call must NOT see the
+        // half-initialized instance — it should retry the factory.
+        verify(brokenPlayer.dispose).called(1);
+        controller.ensurePlayerForTest();
+        verify(() => brokenStream.position).called(2);
+      },
+    );
   });
 
   group('AudioPlayerController - Stream Updates', () {
@@ -397,6 +438,172 @@ void main() {
 
       verify(() => mockPlayer.play()).called(1);
     });
+
+    test('cancels a pending completion timer to avoid race', () {
+      fakeAsync((async) {
+        final controller = container.read(
+          audioPlayerControllerProvider.notifier,
+        )..ensurePlayerForTest();
+
+        // Use a delay long enough that we can definitively observe it has
+        // been cancelled (rather than races vs. the play() future).
+        controller.completionDelayForTest = const Duration(seconds: 1);
+
+        // State with an audioNote so the completion handler arms its timer.
+        controller.stateForTest = AudioPlayerState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: const Duration(minutes: 5),
+          audioNote: JournalAudio(
+            meta: Metadata(
+              id: 'race-audio-id',
+              createdAt: DateTime(2024, 1, 15),
+              updatedAt: DateTime(2024, 1, 15),
+              dateFrom: DateTime(2024, 1, 15),
+              dateTo: DateTime(2024, 1, 15),
+            ),
+            data: AudioData(
+              audioFile: 'race.m4a',
+              audioDirectory: '/test/path',
+              duration: const Duration(minutes: 3),
+              dateTo: DateTime(2024, 1, 15),
+              dateFrom: DateTime(2024, 1, 15),
+            ),
+          ),
+        );
+
+        controller.handleCompletedForTest(isCompleted: true);
+        async.flushMicrotasks();
+
+        // User taps play before the completion-delay timer has fired.
+        controller.play();
+        async.flushMicrotasks();
+
+        // Advance well past the delay; the cancelled timer must NOT fire,
+        // so neither the "stopped" status flip nor the player teardown
+        // happens, and playback remains alive.
+        async.elapse(const Duration(seconds: 2));
+
+        final state = container.read(audioPlayerControllerProvider);
+        expect(state.status, equals(AudioPlayerStatus.playing));
+        verifyNever(() => mockPlayer.dispose());
+      });
+    });
+
+    test('reopens media and restores progress after teardown', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+      final audioNote = JournalAudio(
+        meta: Metadata(
+          id: 'restore-audio-id',
+          createdAt: DateTime(2024, 1, 15),
+          updatedAt: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+          dateTo: DateTime(2024, 1, 15),
+        ),
+        data: AudioData(
+          audioFile: 'restore.m4a',
+          audioDirectory: '/test/path',
+          duration: const Duration(minutes: 5),
+          dateTo: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+        ),
+      );
+
+      // Simulate the post-teardown state: an audio note is selected, mid-track
+      // progress is recorded, but the underlying Player has not been built.
+      controller.stateForTest = AudioPlayerState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: const Duration(minutes: 5),
+        progress: const Duration(seconds: 90),
+        audioNote: audioNote,
+      );
+
+      await controller.play();
+
+      // Reopen happens, total duration is synced from the (mocked) file, and
+      // the recorded progress is restored before playback resumes.
+      verify(
+        () => mockPlayer.open(any(), play: false),
+      ).called(1);
+      verify(() => mockPlayer.seek(const Duration(seconds: 90))).called(1);
+      verify(() => mockPlayer.play()).called(1);
+    });
+
+    test('does not seek when reopened progress is at the very end', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+      final audioNote = JournalAudio(
+        meta: Metadata(
+          id: 'finished-audio-id',
+          createdAt: DateTime(2024, 1, 15),
+          updatedAt: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+          dateTo: DateTime(2024, 1, 15),
+        ),
+        data: AudioData(
+          audioFile: 'finished.m4a',
+          audioDirectory: '/test/path',
+          duration: const Duration(minutes: 5),
+          dateTo: DateTime(2024, 1, 15),
+          dateFrom: DateTime(2024, 1, 15),
+        ),
+      );
+
+      // Mock state.duration is 5 minutes (see the shared setUp). After natural
+      // completion progress equals totalDuration; replay should restart from
+      // the beginning, NOT seek to the end.
+      controller.stateForTest = AudioPlayerState(
+        status: AudioPlayerStatus.stopped,
+        totalDuration: const Duration(minutes: 5),
+        progress: const Duration(minutes: 5),
+        audioNote: audioNote,
+      );
+
+      await controller.play();
+
+      verify(() => mockPlayer.open(any(), play: false)).called(1);
+      verifyNever(() => mockPlayer.seek(any()));
+    });
+  });
+
+  group('AudioPlayerController - setAudioNote()', () {
+    final audioNote = JournalAudio(
+      meta: Metadata(
+        id: 'open-audio-id',
+        createdAt: DateTime(2024, 1, 15),
+        updatedAt: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+        dateTo: DateTime(2024, 1, 15),
+      ),
+      data: AudioData(
+        audioFile: 'open.m4a',
+        audioDirectory: '/test/path',
+        duration: const Duration(minutes: 3),
+        dateTo: DateTime(2024, 1, 15),
+        dateFrom: DateTime(2024, 1, 15),
+      ),
+    );
+
+    test('opens the media and syncs duration from the player', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      await controller.setAudioNote(audioNote);
+
+      verify(() => mockPlayer.open(any(), play: false)).called(1);
+      final state = container.read(audioPlayerControllerProvider);
+      // mockPlayer.state.duration is wired to 5 minutes in setUp; that
+      // value should win over the metadata-supplied 3 minutes.
+      expect(state.audioNote, equals(audioNote));
+      expect(state.totalDuration, equals(const Duration(minutes: 5)));
+      expect(state.status, equals(AudioPlayerStatus.stopped));
+    });
+
+    test('skips reopening when the same note is already loaded', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      await controller.setAudioNote(audioNote);
+      await controller.setAudioNote(audioNote);
+
+      verify(() => mockPlayer.open(any(), play: false)).called(1);
+    });
   });
 
   group('AudioPlayerController - pause()', () {
@@ -438,7 +645,8 @@ void main() {
 
   group('AudioPlayerController - seek()', () {
     test('updates progress to seek position', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier)
+        ..hasOpenAudioForTest = true;
 
       await controller.seek(const Duration(seconds: 90));
 
@@ -447,7 +655,8 @@ void main() {
     });
 
     test('updates pausedAt to seek position', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier)
+        ..hasOpenAudioForTest = true;
 
       await controller.seek(const Duration(seconds: 90));
 
@@ -456,7 +665,8 @@ void main() {
     });
 
     test('updates buffered when seeking beyond current buffered', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier)
+        ..hasOpenAudioForTest = true;
 
       // Current buffered is 0, seeking to 90 should update buffered
       await controller.seek(const Duration(seconds: 90));
@@ -467,9 +677,12 @@ void main() {
 
     test('preserves buffered when seeking backward', () {
       fakeAsync((async) {
-        final controller = container.read(
-          audioPlayerControllerProvider.notifier,
-        )..ensurePlayerForTest();
+        final controller =
+            container.read(
+                audioPlayerControllerProvider.notifier,
+              )
+              ..ensurePlayerForTest()
+              ..hasOpenAudioForTest = true;
 
         // Set buffer ahead
         bufferController.add(const Duration(seconds: 120));
@@ -486,11 +699,27 @@ void main() {
     });
 
     test('calls player.seek()', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier);
+      final controller = container.read(audioPlayerControllerProvider.notifier)
+        ..hasOpenAudioForTest = true;
 
       await controller.seek(const Duration(seconds: 90));
 
       verify(() => mockPlayer.seek(const Duration(seconds: 90))).called(1);
+    });
+
+    test('skips player.seek when no audio is open', () async {
+      final controller = container.read(audioPlayerControllerProvider.notifier);
+
+      // _hasOpenAudio defaults to false (no setAudioNote yet). seek() should
+      // still record the new position in state so play()'s reopen branch can
+      // restore it, but it must not call player.seek on a fileless player.
+      await controller.seek(const Duration(seconds: 30));
+
+      verifyNever(() => mockPlayer.seek(any()));
+      expect(
+        container.read(audioPlayerControllerProvider).progress,
+        equals(const Duration(seconds: 30)),
+      );
     });
 
     test('does not emit when all values unchanged', () async {
@@ -502,16 +731,11 @@ void main() {
         fireImmediately: true,
       );
 
-      await container
-          .read(audioPlayerControllerProvider.notifier)
-          .seek(
-            const Duration(seconds: 45),
-          );
-      await container
-          .read(audioPlayerControllerProvider.notifier)
-          .seek(
-            const Duration(seconds: 45),
-          );
+      final controller = container.read(audioPlayerControllerProvider.notifier)
+        ..hasOpenAudioForTest = true;
+
+      await controller.seek(const Duration(seconds: 45));
+      await controller.seek(const Duration(seconds: 45));
 
       // Should have: initial + first seek = 2 states
       // Second seek with same values should not emit
@@ -1188,7 +1412,7 @@ void main() {
 
       final controller = localContainer.read(
         audioPlayerControllerProvider.notifier,
-      );
+      )..hasOpenAudioForTest = true;
       await controller.seek(const Duration(seconds: 30));
 
       verify(

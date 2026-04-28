@@ -76,13 +76,11 @@ class AudioPlayerController extends _$AudioPlayerController {
   void _initLogging() {
     try {
       _loggingService = getIt<LoggingService>();
-    } catch (exception, stackTrace) {
-      _loggingService?.captureException(
-        exception,
-        domain: 'audio_player_controller',
-        subDomain: 'init',
-        stackTrace: stackTrace,
-      );
+    } catch (_) {
+      // No LoggingService registered — nothing we can log this miss to.
+      // Production startup always registers it, so this catch is purely
+      // defensive against test/dev edge cases where the controller is
+      // constructed before service wiring.
     }
   }
 
@@ -92,17 +90,25 @@ class AudioPlayerController extends _$AudioPlayerController {
   /// Player construction spins up mpv's native `core_thread`. Deferring it
   /// until the user actually triggers playback keeps Flutter hot restart
   /// safe in any session where audio is never opened.
+  ///
+  /// Subscriptions are wired *before* caching the instance so a failure
+  /// midway through never leaves a half-initialized player visible to later
+  /// callers; on failure the partially-constructed player is disposed.
   Player? _ensurePlayer() {
     final existing = _audioPlayer;
     if (existing != null) return existing;
+    Player? createdPlayer;
     try {
       final factory = ref.read(playerFactoryProvider);
-      final player = factory();
+      final player = createdPlayer = factory();
+      _setupSubscriptions(player);
       _audioPlayer = player;
       _activePlayer = player;
-      _setupSubscriptions(player);
       return player;
     } catch (exception, stackTrace) {
+      if (createdPlayer != null) {
+        unawaited(createdPlayer.dispose());
+      }
       _loggingService?.captureException(
         exception,
         domain: 'audio_player_controller',
@@ -238,6 +244,12 @@ class AudioPlayerController extends _$AudioPlayerController {
   /// Starts or resumes playback.
   Future<void> play() async {
     try {
+      // If a completion-delay timer from the previous run is still pending
+      // it would otherwise fire mid-replay, tearing down the freshly
+      // resumed player and flipping state back to stopped.
+      _completionTimer?.cancel();
+      _completionTimer = null;
+
       final player = _ensurePlayer();
       if (player == null) return;
 
@@ -250,6 +262,20 @@ class AudioPlayerController extends _$AudioPlayerController {
           final localPath = await AudioUtils.getFullAudioPath(audioNote);
           await player.open(Media(localPath), play: false);
           _hasOpenAudio = true;
+
+          // Sync total duration from the actual media file in case it
+          // diverges from the metadata stored on the audio note.
+          final totalDuration = player.state.duration;
+          state = state.copyWith(totalDuration: totalDuration);
+
+          // Restore mid-track progress so a seek performed while the
+          // player was torn down (or a partial-listen pause) is preserved
+          // on replay. Progress at the very end of the track is treated
+          // as a request to restart from the beginning.
+          final progress = state.progress;
+          if (progress > Duration.zero && progress < state.totalDuration) {
+            await player.seek(progress);
+          }
         }
       }
 
@@ -272,7 +298,13 @@ class AudioPlayerController extends _$AudioPlayerController {
       final player = _ensurePlayer();
       if (player == null) return;
 
-      await player.seek(newPosition);
+      // After a completion-driven teardown the Player has no media loaded
+      // yet; calling player.seek before player.open is undefined. The
+      // requested position is still recorded in state and will be applied
+      // when play() reopens the file (see the reopen branch in play).
+      if (_hasOpenAudio) {
+        await player.seek(newPosition);
+      }
       final newBuffered = newPosition > state.buffered
           ? newPosition
           : state.buffered;
@@ -390,5 +422,14 @@ class AudioPlayerController extends _$AudioPlayerController {
   @visibleForTesting
   set stateForTest(AudioPlayerState newState) {
     state = newState;
+  }
+
+  /// Pretends an audio file is already opened on the underlying Player so
+  /// methods that gate on [_hasOpenAudio] (e.g. [seek]) exercise their
+  /// file-loaded path without going through [setAudioNote] (which requires
+  /// a real path resolvable by [AudioUtils.getFullAudioPath]).
+  @visibleForTesting
+  set hasOpenAudioForTest(bool value) {
+    _hasOpenAudio = value;
   }
 }
