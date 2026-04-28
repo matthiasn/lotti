@@ -624,7 +624,7 @@
     }
   },
   "backfillCatchUpDescription": "Stáhni od peerů nedávné chybějící položky hned teď.",
-  "backfillDevicesMeta": "{count, plural, =1{1 ID zařízení} few{{count} ID zařízení} other{{count} ID zařízení}}",
+  "backfillDevicesMeta": "{count, plural, =1{1 zařízení} few{{count} zařízení} other{{count} zařízení}}",
   "@backfillDevicesMeta": {
     "placeholders": {
       "count": {
