@@ -3153,7 +3153,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillAskPeersConfirmContent.
   ///
   /// In en, this message translates to:
-  /// **'This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.'**
+  /// **'{count, plural, =1{This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.} other{This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.}}'**
   String backfillAskPeersConfirmContent(int count);
 
   /// No description provided for @backfillAskPeersConfirmTitle.
@@ -3183,7 +3183,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillAskPeersTrigger.
   ///
   /// In en, this message translates to:
-  /// **'Ask peers for {count} entries'**
+  /// **'{count, plural, =1{Ask peers for 1 entry} other{Ask peers for {count} entries}}'**
   String backfillAskPeersTrigger(int count);
 
   /// No description provided for @backfillCatchUpDescription.
@@ -3297,7 +3297,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillRetireStuckConfirmContent.
   ///
   /// In en, this message translates to:
-  /// **'This marks {count} currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.'**
+  /// **'{count, plural, =1{This marks 1 currently-open (missing or requested) sequence-log entry as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.} other{This marks {count} currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.}}'**
   String backfillRetireStuckConfirmContent(int count);
 
   /// No description provided for @backfillRetireStuckConfirmTitle.
@@ -3327,7 +3327,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillRetireStuckTrigger.
   ///
   /// In en, this message translates to:
-  /// **'Retire {count} stuck entries'**
+  /// **'{count, plural, =1{Retire 1 stuck entry} other{Retire {count} stuck entries}}'**
   String backfillRetireStuckTrigger(int count);
 
   /// No description provided for @backfillSettingsInfo.

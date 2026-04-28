@@ -1766,7 +1766,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String backfillAskPeersConfirmContent(int count) {
-    return 'This flips all $count unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This flips all $count unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.',
+      one:
+          'This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1785,7 +1793,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String backfillAskPeersTrigger(int count) {
-    return 'Ask peers for $count entries';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ask peers for $count entries',
+      one: 'Ask peers for 1 entry',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1868,7 +1882,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String backfillRetireStuckConfirmContent(int count) {
-    return 'This marks $count currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This marks $count currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.',
+      one:
+          'This marks 1 currently-open (missing or requested) sequence-log entry as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1886,7 +1908,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String backfillRetireStuckTrigger(int count) {
-    return 'Retire $count stuck entries';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retire $count stuck entries',
+      one: 'Retire 1 stuck entry',
+    );
+    return '$_temp0';
   }
 
   @override

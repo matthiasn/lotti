@@ -1038,7 +1038,7 @@
   },
   "backfillAdvancedRecoveryTitle": "Advanced recovery",
   "backfillAskPeersConfirmAccept": "Ask peers",
-  "backfillAskPeersConfirmContent": "This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.} other{This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.}}",
   "@backfillAskPeersConfirmContent": {
     "placeholders": {
       "count": {
@@ -1050,7 +1050,7 @@
   "backfillAskPeersDescription": "Flip every unresolvable sequence-log entry back to missing and let the normal backfill sweep re-ask peers.",
   "backfillAskPeersProcessing": "Reopening…",
   "backfillAskPeersTitle": "Ask peers for unresolvable",
-  "backfillAskPeersTrigger": "Ask peers for {count} entries",
+  "backfillAskPeersTrigger": "{count, plural, =1{Ask peers for 1 entry} other{Ask peers for {count} entries}}",
   "@backfillAskPeersTrigger": {
     "placeholders": {
       "count": {
@@ -1104,7 +1104,7 @@
   "backfillResetUnresolvableTitle": "Reset Unresolvable",
   "backfillResetUnresolvableTrigger": "Reset Unresolvable Entries",
   "backfillRetireStuckConfirmAccept": "Retire now",
-  "backfillRetireStuckConfirmContent": "This marks {count} currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{This marks 1 currently-open (missing or requested) sequence-log entry as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.} other{This marks {count} currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.}}",
   "@backfillRetireStuckConfirmContent": {
     "placeholders": {
       "count": {
@@ -1116,7 +1116,7 @@
   "backfillRetireStuckDescription": "Force every currently-open missing or requested sequence-log entry to unresolvable. Skips the 7-day amnesty — use only for stuck rows blocking the watermark.",
   "backfillRetireStuckProcessing": "Retiring…",
   "backfillRetireStuckTitle": "Retire stuck entries",
-  "backfillRetireStuckTrigger": "Retire {count} stuck entries",
+  "backfillRetireStuckTrigger": "{count, plural, =1{Retire 1 stuck entry} other{Retire {count} stuck entries}}",
   "@backfillRetireStuckTrigger": {
     "placeholders": {
       "count": {

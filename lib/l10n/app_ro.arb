@@ -809,7 +809,7 @@
   },
   "backfillAdvancedRecoveryTitle": "Recuperare avansată",
   "backfillAskPeersConfirmAccept": "Întreabă colegii",
-  "backfillAskPeersConfirmContent": "Aceasta resetează toate cele {count} intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{Aceasta resetează 1 intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.} few{Aceasta resetează cele {count} intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.} other{Aceasta resetează cele {count} de intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.}}",
   "@backfillAskPeersConfirmContent": {
     "placeholders": {
       "count": {
@@ -821,7 +821,7 @@
   "backfillAskPeersDescription": "Resetează fiecare intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă și lasă parcurgerea normală de completare să întrebe din nou colegii.",
   "backfillAskPeersProcessing": "Se redeschide…",
   "backfillAskPeersTitle": "Întreabă colegii pentru nerezolvabile",
-  "backfillAskPeersTrigger": "Întreabă colegii pentru {count} intrări",
+  "backfillAskPeersTrigger": "{count, plural, =1{Întreabă colegii pentru 1 intrare} few{Întreabă colegii pentru {count} intrări} other{Întreabă colegii pentru {count} de intrări}}",
   "@backfillAskPeersTrigger": {
     "placeholders": {
       "count": {
@@ -875,7 +875,7 @@
   "backfillResetUnresolvableTitle": "Resetare nerezolvabile",
   "backfillResetUnresolvableTrigger": "Resetați intrările nerezolvabile",
   "backfillRetireStuckConfirmAccept": "Retrage acum",
-  "backfillRetireStuckConfirmContent": "Marchează cele {count} intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{Marchează 1 intrare curent deschisă (lipsă sau solicitată) din jurnalul de secvență ca nerezolvabilă. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.} few{Marchează cele {count} intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.} other{Marchează cele {count} de intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.}}",
   "@backfillRetireStuckConfirmContent": {
     "placeholders": {
       "count": {
@@ -887,7 +887,7 @@
   "backfillRetireStuckDescription": "Forțează fiecare intrare lipsă sau solicitată curent deschisă din jurnalul de secvență la nerezolvabilă. Sare peste amnistia de 7 zile — folosiți doar pentru rândurile blocate care blochează marcajul.",
   "backfillRetireStuckProcessing": "Se retrage…",
   "backfillRetireStuckTitle": "Retrage intrări blocate",
-  "backfillRetireStuckTrigger": "Retrage {count} intrări blocate",
+  "backfillRetireStuckTrigger": "{count, plural, =1{Retrage 1 intrare blocată} few{Retrage {count} intrări blocate} other{Retrage {count} de intrări blocate}}",
   "@backfillRetireStuckTrigger": {
     "placeholders": {
       "count": {

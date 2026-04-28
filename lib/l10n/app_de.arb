@@ -809,7 +809,7 @@
   },
   "backfillAdvancedRecoveryTitle": "Erweiterte Wiederherstellung",
   "backfillAskPeersConfirmAccept": "Peers fragen",
-  "backfillAskPeersConfirmContent": "Setzt alle {count} unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{Setzt 1 unlösbaren Sequenzlog-Eintrag zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.} other{Setzt alle {count} unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.}}",
   "@backfillAskPeersConfirmContent": {
     "placeholders": {
       "count": {
@@ -821,7 +821,7 @@
   "backfillAskPeersDescription": "Setzt jeden unlösbaren Sequenzlog-Eintrag zurück auf fehlend und lässt den regulären Backfill-Sweep Peers erneut fragen.",
   "backfillAskPeersProcessing": "Wird wiedereröffnet…",
   "backfillAskPeersTitle": "Peers nach unlösbaren Einträgen fragen",
-  "backfillAskPeersTrigger": "Peers nach {count} Einträgen fragen",
+  "backfillAskPeersTrigger": "{count, plural, =1{Peers nach 1 Eintrag fragen} other{Peers nach {count} Einträgen fragen}}",
   "@backfillAskPeersTrigger": {
     "placeholders": {
       "count": {
@@ -875,7 +875,7 @@
   "backfillResetUnresolvableTitle": "Unlösbare zurücksetzen",
   "backfillResetUnresolvableTrigger": "Unlösbare Einträge zurücksetzen",
   "backfillRetireStuckConfirmAccept": "Jetzt zurückziehen",
-  "backfillRetireStuckConfirmContent": "Markiert {count} aktuell offene (fehlende oder angeforderte) Sequenzlog-Einträge als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{Markiert 1 aktuell offenen (fehlenden oder angeforderten) Sequenzlog-Eintrag als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.} other{Markiert {count} aktuell offene (fehlende oder angeforderte) Sequenzlog-Einträge als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.}}",
   "@backfillRetireStuckConfirmContent": {
     "placeholders": {
       "count": {
@@ -887,7 +887,7 @@
   "backfillRetireStuckDescription": "Setzt jeden aktuell offenen fehlenden oder angeforderten Sequenzlog-Eintrag auf unlösbar. Überspringt das 7-Tage-Schonfenster — verwende dies nur für festsitzende Einträge, die den Watermark blockieren.",
   "backfillRetireStuckProcessing": "Wird zurückgezogen…",
   "backfillRetireStuckTitle": "Festsitzende Einträge zurückziehen",
-  "backfillRetireStuckTrigger": "{count} festsitzende Einträge zurückziehen",
+  "backfillRetireStuckTrigger": "{count, plural, =1{1 festsitzenden Eintrag zurückziehen} other{{count} festsitzende Einträge zurückziehen}}",
   "@backfillRetireStuckTrigger": {
     "placeholders": {
       "count": {

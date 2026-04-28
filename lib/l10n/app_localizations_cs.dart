@@ -1782,7 +1782,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String backfillAskPeersConfirmContent(int count) {
-    return 'Toto vrátí všech $count neřešitelných záznamů sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Toto vrátí všech $count neřešitelných záznamů sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.',
+      few:
+          'Toto vrátí všechny $count neřešitelné záznamy sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.',
+      one:
+          'Toto vrátí 1 neřešitelný záznam sekvenčního logu zpět na chybějící, aby se normální backfill znovu zeptal peerů. Peeři, kteří data stále mají, odpoví; skutečně neobnovitelné záznamy se znovu stáhnou po 7denní amnestii.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1801,7 +1811,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String backfillAskPeersTrigger(int count) {
-    return 'Zeptat se peerů na $count záznamů';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zeptat se peerů na $count záznamů',
+      few: 'Zeptat se peerů na $count záznamy',
+      one: 'Zeptat se peerů na 1 záznam',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1883,30 +1900,47 @@ class AppLocalizationsCs extends AppLocalizations {
       'Resetovat neřešitelné záznamy';
 
   @override
-  String get backfillRetireStuckConfirmAccept => 'Stáhnout nyní';
+  String get backfillRetireStuckConfirmAccept => 'Vyřadit nyní';
 
   @override
   String backfillRetireStuckConfirmContent(int count) {
-    return 'Označí $count aktuálně otevřených (chybějících nebo požadovaných) záznamů sekvenčního logu jako neřešitelné. Použij k odblokování watermarku, když jsou záznamy zaseknuté, aniž by uplynulo 7denní okno amnestie. Záznamy lze později vzkřísit, pokud jejich data dorazí na disk s platnými vektorovými hodinami.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Označí $count aktuálně otevřených (chybějících nebo požadovaných) záznamů sekvenčního logu jako neřešitelných. Použij k odblokování watermarku, když jsou záznamy zaseknuté, aniž by uplynulo 7denní okno amnestie. Záznamy lze později vzkřísit, pokud jejich data dorazí na disk s platnými vektorovými hodinami.',
+      few:
+          'Označí $count aktuálně otevřené (chybějící nebo požadované) záznamy sekvenčního logu jako neřešitelné. Použij k odblokování watermarku, když jsou záznamy zaseknuté, aniž by uplynulo 7denní okno amnestie. Záznamy lze později vzkřísit, pokud jejich data dorazí na disk s platnými vektorovými hodinami.',
+      one:
+          'Označí 1 aktuálně otevřený (chybějící nebo požadovaný) záznam sekvenčního logu jako neřešitelný. Použij k odblokování watermarku, když jsou záznamy zaseknuté, aniž by uplynulo 7denní okno amnestie. Záznamy lze později vzkřísit, pokud jejich data dorazí na disk s platnými vektorovými hodinami.',
+    );
+    return '$_temp0';
   }
 
   @override
   String get backfillRetireStuckConfirmTitle =>
-      'Stáhnout zaseknuté záznamy nyní?';
+      'Vyřadit zaseknuté záznamy nyní?';
 
   @override
   String get backfillRetireStuckDescription =>
       'Vynutí, aby se každý aktuálně otevřený chybějící nebo požadovaný záznam sekvenčního logu stal neřešitelným. Přeskakuje 7denní amnestii — používej jen pro zaseknuté řádky blokující watermark.';
 
   @override
-  String get backfillRetireStuckProcessing => 'Stahování…';
+  String get backfillRetireStuckProcessing => 'Vyřazování…';
 
   @override
-  String get backfillRetireStuckTitle => 'Stáhnout zaseknuté záznamy';
+  String get backfillRetireStuckTitle => 'Vyřadit zaseknuté záznamy';
 
   @override
   String backfillRetireStuckTrigger(int count) {
-    return 'Stáhnout $count zaseknutých záznamů';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vyřadit $count zaseknutých záznamů',
+      few: 'Vyřadit $count zaseknuté záznamy',
+      one: 'Vyřadit 1 zaseknutý záznam',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -1796,7 +1796,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String backfillAskPeersConfirmContent(int count) {
-    return 'Setzt alle $count unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Setzt alle $count unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.',
+      one:
+          'Setzt 1 unlösbaren Sequenzlog-Eintrag zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1815,7 +1823,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String backfillAskPeersTrigger(int count) {
-    return 'Peers nach $count Einträgen fragen';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Peers nach $count Einträgen fragen',
+      one: 'Peers nach 1 Eintrag fragen',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1900,7 +1914,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String backfillRetireStuckConfirmContent(int count) {
-    return 'Markiert $count aktuell offene (fehlende oder angeforderte) Sequenzlog-Einträge als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Markiert $count aktuell offene (fehlende oder angeforderte) Sequenzlog-Einträge als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.',
+      one:
+          'Markiert 1 aktuell offenen (fehlenden oder angeforderten) Sequenzlog-Eintrag als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1919,7 +1941,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String backfillRetireStuckTrigger(int count) {
-    return '$count festsitzende Einträge zurückziehen';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count festsitzende Einträge zurückziehen',
+      one: '1 festsitzenden Eintrag zurückziehen',
+    );
+    return '$_temp0';
   }
 
   @override

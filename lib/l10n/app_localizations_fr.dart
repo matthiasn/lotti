@@ -1816,7 +1816,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String backfillAskPeersConfirmContent(int count) {
-    return 'Bascule les $count entrées du journal de séquence irrésolubles vers manquantes pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d\'amnistie de 7 jours.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Bascule les $count entrées du journal de séquence irrésolubles vers manquantes pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d\'amnistie de 7 jours.',
+      one:
+          'Bascule 1 entrée du journal de séquence irrésoluble vers manquante pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d\'amnistie de 7 jours.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1835,7 +1843,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String backfillAskPeersTrigger(int count) {
-    return 'Demander aux pairs $count entrées';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Demander aux pairs $count entrées',
+      one: 'Demander aux pairs 1 entrée',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1920,7 +1934,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String backfillRetireStuckConfirmContent(int count) {
-    return 'Marque les $count entrées de journal de séquence actuellement ouvertes (manquantes ou demandées) comme irrésolubles. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d\'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Marque les $count entrées de journal de séquence actuellement ouvertes (manquantes ou demandées) comme irrésolubles. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d\'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.',
+      one:
+          'Marque 1 entrée de journal de séquence actuellement ouverte (manquante ou demandée) comme irrésoluble. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d\'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1939,7 +1961,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String backfillRetireStuckTrigger(int count) {
-    return 'Retirer $count entrées bloquées';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retirer $count entrées bloquées',
+      one: 'Retirer 1 entrée bloquée',
+    );
+    return '$_temp0';
   }
 
   @override

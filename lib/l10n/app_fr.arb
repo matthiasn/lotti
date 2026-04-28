@@ -809,7 +809,7 @@
   },
   "backfillAdvancedRecoveryTitle": "Récupération avancée",
   "backfillAskPeersConfirmAccept": "Demander aux pairs",
-  "backfillAskPeersConfirmContent": "Bascule les {count} entrées du journal de séquence irrésolubles vers manquantes pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d'amnistie de 7 jours.",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{Bascule 1 entrée du journal de séquence irrésoluble vers manquante pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d'amnistie de 7 jours.} other{Bascule les {count} entrées du journal de séquence irrésolubles vers manquantes pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d'amnistie de 7 jours.}}",
   "@backfillAskPeersConfirmContent": {
     "placeholders": {
       "count": {
@@ -821,7 +821,7 @@
   "backfillAskPeersDescription": "Bascule chaque entrée irrésoluble vers manquante et laisse le rattrapage normal redemander aux pairs.",
   "backfillAskPeersProcessing": "Réouverture…",
   "backfillAskPeersTitle": "Demander aux pairs les irrésolubles",
-  "backfillAskPeersTrigger": "Demander aux pairs {count} entrées",
+  "backfillAskPeersTrigger": "{count, plural, =1{Demander aux pairs 1 entrée} other{Demander aux pairs {count} entrées}}",
   "@backfillAskPeersTrigger": {
     "placeholders": {
       "count": {
@@ -875,7 +875,7 @@
   "backfillResetUnresolvableTitle": "Réinitialiser les entrées irrésolubles",
   "backfillResetUnresolvableTrigger": "Réinitialiser les entrées irrésolubles",
   "backfillRetireStuckConfirmAccept": "Retirer maintenant",
-  "backfillRetireStuckConfirmContent": "Marque les {count} entrées de journal de séquence actuellement ouvertes (manquantes ou demandées) comme irrésolubles. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{Marque 1 entrée de journal de séquence actuellement ouverte (manquante ou demandée) comme irrésoluble. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.} other{Marque les {count} entrées de journal de séquence actuellement ouvertes (manquantes ou demandées) comme irrésolubles. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.}}",
   "@backfillRetireStuckConfirmContent": {
     "placeholders": {
       "count": {
@@ -887,7 +887,7 @@
   "backfillRetireStuckDescription": "Force chaque entrée de journal de séquence manquante ou demandée actuellement ouverte à devenir irrésoluble. Ignore l'amnistie de 7 jours — à utiliser uniquement pour les lignes bloquées qui bloquent le watermark.",
   "backfillRetireStuckProcessing": "Retrait…",
   "backfillRetireStuckTitle": "Retirer les entrées bloquées",
-  "backfillRetireStuckTrigger": "Retirer {count} entrées bloquées",
+  "backfillRetireStuckTrigger": "{count, plural, =1{Retirer 1 entrée bloquée} other{Retirer {count} entrées bloquées}}",
   "@backfillRetireStuckTrigger": {
     "placeholders": {
       "count": {

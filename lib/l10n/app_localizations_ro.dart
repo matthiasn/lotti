@@ -1793,7 +1793,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String backfillAskPeersConfirmContent(int count) {
-    return 'Aceasta resetează toate cele $count intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Aceasta resetează cele $count de intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.',
+      few:
+          'Aceasta resetează cele $count intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.',
+      one:
+          'Aceasta resetează 1 intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1812,7 +1822,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String backfillAskPeersTrigger(int count) {
-    return 'Întreabă colegii pentru $count intrări';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Întreabă colegii pentru $count de intrări',
+      few: 'Întreabă colegii pentru $count intrări',
+      one: 'Întreabă colegii pentru 1 intrare',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1896,7 +1913,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String backfillRetireStuckConfirmContent(int count) {
-    return 'Marchează cele $count intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Marchează cele $count de intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.',
+      few:
+          'Marchează cele $count intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.',
+      one:
+          'Marchează 1 intrare curent deschisă (lipsă sau solicitată) din jurnalul de secvență ca nerezolvabilă. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1915,7 +1942,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String backfillRetireStuckTrigger(int count) {
-    return 'Retrage $count intrări blocate';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retrage $count de intrări blocate',
+      few: 'Retrage $count intrări blocate',
+      one: 'Retrage 1 intrare blocată',
+    );
+    return '$_temp0';
   }
 
   @override

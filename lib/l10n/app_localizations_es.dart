@@ -1811,7 +1811,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String backfillAskPeersConfirmContent(int count) {
-    return 'Esto vuelve a poner las $count entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entrades realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Esto vuelve a poner las $count entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.',
+      one:
+          'Esto vuelve a poner 1 entrada irresoluble del registro de secuencia como faltante para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1830,7 +1838,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String backfillAskPeersTrigger(int count) {
-    return 'Preguntar a pares por $count entradas';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Preguntar a pares por $count entradas',
+      one: 'Preguntar a pares por 1 entrada',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1915,7 +1929,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String backfillRetireStuckConfirmContent(int count) {
-    return 'Marca $count entradas del registro de secuencia actualmente abiertas (faltantes o solicitadas) como irresolubles. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Marca $count entradas del registro de secuencia actualmente abiertas (faltantes o solicitadas) como irresolubles. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.',
+      one:
+          'Marca 1 entrada del registro de secuencia actualmente abierta (faltante o solicitada) como irresoluble. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1934,7 +1956,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String backfillRetireStuckTrigger(int count) {
-    return 'Retirar $count entradas atascadas';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retirar $count entradas atascadas',
+      one: 'Retirar 1 entrada atascada',
+    );
+    return '$_temp0';
   }
 
   @override

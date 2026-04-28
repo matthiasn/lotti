@@ -809,7 +809,7 @@
   },
   "backfillAdvancedRecoveryTitle": "Recuperación avanzada",
   "backfillAskPeersConfirmAccept": "Preguntar a pares",
-  "backfillAskPeersConfirmContent": "Esto vuelve a poner las {count} entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entrades realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{Esto vuelve a poner 1 entrada irresoluble del registro de secuencia como faltante para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.} other{Esto vuelve a poner las {count} entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.}}",
   "@backfillAskPeersConfirmContent": {
     "placeholders": {
       "count": {
@@ -821,7 +821,7 @@
   "backfillAskPeersDescription": "Vuelve cada entrada irresoluble del registro de secuencia a faltante y deja que el barrido normal de relleno pregunte a los pares.",
   "backfillAskPeersProcessing": "Reabriendo…",
   "backfillAskPeersTitle": "Preguntar a pares por irresolubles",
-  "backfillAskPeersTrigger": "Preguntar a pares por {count} entradas",
+  "backfillAskPeersTrigger": "{count, plural, =1{Preguntar a pares por 1 entrada} other{Preguntar a pares por {count} entradas}}",
   "@backfillAskPeersTrigger": {
     "placeholders": {
       "count": {
@@ -875,7 +875,7 @@
   "backfillResetUnresolvableTitle": "Restablecer irresolubles",
   "backfillResetUnresolvableTrigger": "Restablecer entradas irresolubles",
   "backfillRetireStuckConfirmAccept": "Retirar ahora",
-  "backfillRetireStuckConfirmContent": "Marca {count} entradas del registro de secuencia actualmente abiertas (faltantes o solicitadas) como irresolubles. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{Marca 1 entrada del registro de secuencia actualmente abierta (faltante o solicitada) como irresoluble. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.} other{Marca {count} entradas del registro de secuencia actualmente abiertas (faltantes o solicitadas) como irresolubles. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.}}",
   "@backfillRetireStuckConfirmContent": {
     "placeholders": {
       "count": {
@@ -887,7 +887,7 @@
   "backfillRetireStuckDescription": "Fuerza cada entrada del registro de secuencia faltante o solicitada actualmente abierta a irresoluble. Omite la amnistía de 7 días — úsalo solo para filas atascadas que bloquean la marca de agua.",
   "backfillRetireStuckProcessing": "Retirando…",
   "backfillRetireStuckTitle": "Retirar entradas atascadas",
-  "backfillRetireStuckTrigger": "Retirar {count} entradas atascadas",
+  "backfillRetireStuckTrigger": "{count, plural, =1{Retirar 1 entrada atascada} other{Retirar {count} entradas atascadas}}",
   "@backfillRetireStuckTrigger": {
     "placeholders": {
       "count": {
