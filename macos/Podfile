@@ -44,6 +44,15 @@ post_install do |installer|
       config.build_settings.delete 'MACOSX_DEPLOYMENT_TARGET'
       # Generate dSYMs for all pods to fix "Upload Symbols Failed" warnings
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
+      # Pod targets are static frameworks/libs and can't accept a Runner-level
+      # provisioning profile or signing identity. Clear them so they're not
+      # inherited from xcodebuild CLI overrides on the Runner target.
+      config.build_settings['CODE_SIGN_IDENTITY'] = ''
+      config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = ''
+      config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = ''
+      config.build_settings['CODE_SIGN_STYLE'] = 'Automatic'
+      config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+      config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
     end
   end
 end
