@@ -15,7 +15,10 @@ concurrency:
 jobs:
   build-macos:
     name: Build macOS
-    runs-on: macos-14
+    # macos-26: GA since 2026-02-26, ships Xcode 26.x + macOS 26 SDK.
+    # Required because connectivity_plus references NWPath.isUltraConstrained,
+    # which only exists in the macOS 26 SDK.
+    runs-on: macos-26
     timeout-minutes: 90
     env:
       KEYCHAIN_NAME: build.keychain-db
@@ -29,8 +32,11 @@ jobs:
 
       - uses: actions/checkout@v5
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+      - name: Show Xcode + SDK versions
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          xcodebuild -showsdks | grep macosx
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
