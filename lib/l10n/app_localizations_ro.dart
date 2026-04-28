@@ -1775,6 +1775,79 @@ class AppLocalizationsRo extends AppLocalizations {
   String get automaticPrompts => 'Prompturi automate';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count acțiuni',
+      one: '1 acțiune',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Recuperare avansată';
+
+  @override
+  String get backfillAskPeersConfirmAccept => 'Întreabă colegii';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Aceasta resetează cele $count de intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.',
+      few:
+          'Aceasta resetează cele $count intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.',
+      one:
+          'Aceasta resetează 1 intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      'Întrebați din nou colegii pentru intrări nerezolvabile?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Resetează fiecare intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă și lasă parcurgerea normală de completare să întrebe din nou colegii.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Se redeschide…';
+
+  @override
+  String get backfillAskPeersTitle => 'Întreabă colegii pentru nerezolvabile';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Întreabă colegii pentru $count de intrări',
+      few: 'Întreabă colegii pentru $count intrări',
+      one: 'Întreabă colegii pentru 1 intrare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Solicitați acum colegilor intrările lipsă recente.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ID-uri dispozitive',
+      one: '1 ID dispozitiv',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Solicită toate intrările lipsă indiferent de vechime. Folosiți pentru a recupera lacune de sincronizare mai vechi.';
 
@@ -1836,6 +1909,50 @@ class AppLocalizationsRo extends AppLocalizations {
       'Resetați intrările nerezolvabile';
 
   @override
+  String get backfillRetireStuckConfirmAccept => 'Retrage acum';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Marchează cele $count de intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.',
+      few:
+          'Marchează cele $count intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.',
+      one:
+          'Marchează 1 intrare curent deschisă (lipsă sau solicitată) din jurnalul de secvență ca nerezolvabilă. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle =>
+      'Retrageți acum intrările blocate?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Forțează fiecare intrare lipsă sau solicitată curent deschisă din jurnalul de secvență la nerezolvabilă. Sare peste amnistia de 7 zile — folosiți doar pentru rândurile blocate care blochează marcajul.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Se retrage…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Retrage intrări blocate';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retrage $count de intrări blocate',
+      few: 'Retrage $count intrări blocate',
+      one: 'Retrage 1 intrare blocată',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillSettingsInfo =>
       'Completarea automată solicită intrările lipsă din ultimele 24 de ore. Folosiți completarea manuală pentru intrări mai vechi.';
 
@@ -1887,6 +2004,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'Nerezolvabil';
+
+  @override
+  String get backfillStatusInboundQueue => 'Coadă de intrare';
+
+  @override
+  String get backfillStatusMissing => 'Lipsă';
+
+  @override
+  String get backfillStatusSkipped => 'Omis';
+
+  @override
+  String get backfillToggleDescription =>
+      'Solicită intrările lipsă din ultimele 24 de ore.';
 
   @override
   String get backfillToggleDisabledDescription =>
@@ -4890,6 +5020,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get queueCatchUpNowDone => 'Recuperare inițiată — coada se golește.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Recuperare eșuată: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Se acoperă golul recent…';

@@ -799,6 +799,45 @@
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOPP",
   "automaticPrompts": "Automatische Prompts",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 Aktion} other{{count} Aktionen}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Erweiterte Wiederherstellung",
+  "backfillAskPeersConfirmAccept": "Peers fragen",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{Setzt 1 unlösbaren Sequenzlog-Eintrag zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.} other{Setzt alle {count} unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.}}",
+  "@backfillAskPeersConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAskPeersConfirmTitle": "Peers erneut nach unlösbaren Einträgen fragen?",
+  "backfillAskPeersDescription": "Setzt jeden unlösbaren Sequenzlog-Eintrag zurück auf fehlend und lässt den regulären Backfill-Sweep Peers erneut fragen.",
+  "backfillAskPeersProcessing": "Wird wiedereröffnet…",
+  "backfillAskPeersTitle": "Peers nach unlösbaren Einträgen fragen",
+  "backfillAskPeersTrigger": "{count, plural, =1{Peers nach 1 Eintrag fragen} other{Peers nach {count} Einträgen fragen}}",
+  "@backfillAskPeersTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillCatchUpDescription": "Fordere fehlende Einträge der letzten Zeit jetzt von Peers an.",
+  "backfillDevicesMeta": "{count, plural, =1{1 Geräte-ID} other{{count} Geräte-IDs}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Alle fehlenden Einträge unabhängig vom Alter anfordern. Nutze dies zur Wiederherstellung älterer Synchronisierungslücken.",
   "backfillManualProcessing": "Verarbeitung...",
   "backfillManualSuccess": "{count} Einträge angefordert",
@@ -835,6 +874,27 @@
   },
   "backfillResetUnresolvableTitle": "Unlösbare zurücksetzen",
   "backfillResetUnresolvableTrigger": "Unlösbare Einträge zurücksetzen",
+  "backfillRetireStuckConfirmAccept": "Jetzt zurückziehen",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{Markiert 1 aktuell offenen (fehlenden oder angeforderten) Sequenzlog-Eintrag als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.} other{Markiert {count} aktuell offene (fehlende oder angeforderte) Sequenzlog-Einträge als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.}}",
+  "@backfillRetireStuckConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillRetireStuckConfirmTitle": "Festsitzende Einträge jetzt zurückziehen?",
+  "backfillRetireStuckDescription": "Setzt jeden aktuell offenen fehlenden oder angeforderten Sequenzlog-Eintrag auf unlösbar. Überspringt das 7-Tage-Schonfenster — verwende dies nur für festsitzende Einträge, die den Watermark blockieren.",
+  "backfillRetireStuckProcessing": "Wird zurückgezogen…",
+  "backfillRetireStuckTitle": "Festsitzende Einträge zurückziehen",
+  "backfillRetireStuckTrigger": "{count, plural, =1{1 festsitzenden Eintrag zurückziehen} other{{count} festsitzende Einträge zurückziehen}}",
+  "@backfillRetireStuckTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillSettingsInfo": "Automatische Nachfüllung fordert fehlende Einträge der letzten 24 Stunden an. Nutze manuelle Nachfüllung für ältere Einträge.",
   "backfillSettingsSubtitle": "Synchronisierungslücken verwalten",
   "backfillSettingsTitle": "Sync-Nachfüllung",
@@ -856,6 +916,10 @@
   "backfillStatsTitle": "Synchronisierungsstatistiken",
   "backfillStatsTotalEntries": "Einträge gesamt",
   "backfillStatsUnresolvable": "Nicht auflösbar",
+  "backfillStatusInboundQueue": "Eingangswarteschlange",
+  "backfillStatusMissing": "Fehlend",
+  "backfillStatusSkipped": "Übersprungen",
+  "backfillToggleDescription": "Fordert fehlende Einträge der letzten 24 Stunden an.",
   "backfillToggleDisabledDescription": "Nachfüllung deaktiviert – nützlich bei Mobilfunknetzen",
   "backfillToggleEnabledDescription": "Fehlende Sync-Einträge automatisch anfordern",
   "backfillToggleTitle": "Automatische Nachfüllung",
@@ -2093,6 +2157,14 @@
   "provisionedSyncVerifyDevicesTitle": "Geräteverifizierung",
   "queueCatchUpNowButton": "Jetzt aufholen",
   "queueCatchUpNowDone": "Aufholen gestartet — die Warteschlange wird abgearbeitet.",
+  "queueCatchUpNowError": "Aufholen fehlgeschlagen: {reason}",
+  "@queueCatchUpNowError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "queueCatchUpNowRunning": "Überbrücke kürzliche Lücke…",
   "queueDepthCardEmpty": "Warteschlange leer — Worker ist aktuell.",
   "queueDepthCardLoading": "Warteschlangenfüllung wird gelesen…",

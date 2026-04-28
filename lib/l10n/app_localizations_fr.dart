@@ -1798,6 +1798,76 @@ class AppLocalizationsFr extends AppLocalizations {
   String get automaticPrompts => 'Prompts automatiques';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions',
+      one: '1 action',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Récupération avancée';
+
+  @override
+  String get backfillAskPeersConfirmAccept => 'Demander aux pairs';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Bascule les $count entrées du journal de séquence irrésolubles vers manquantes pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d\'amnistie de 7 jours.',
+      one:
+          'Bascule 1 entrée du journal de séquence irrésoluble vers manquante pour que le rattrapage normal redemande aux pairs. Les pairs qui ont encore les données répondront ; les entrées vraiment irrécupérables seront retirées à nouveau après la fenêtre d\'amnistie de 7 jours.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      'Redemander aux pairs les entrées irrésolubles ?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Bascule chaque entrée irrésoluble vers manquante et laisse le rattrapage normal redemander aux pairs.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Réouverture…';
+
+  @override
+  String get backfillAskPeersTitle => 'Demander aux pairs les irrésolubles';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Demander aux pairs $count entrées',
+      one: 'Demander aux pairs 1 entrée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Récupère maintenant les entrées manquantes récentes depuis tes pairs.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count IDs d\'appareil',
+      one: '1 ID d\'appareil',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Demander toutes les entrées manquantes quel que soit leur âge. Utilisez cette option pour récupérer les écarts de synchronisation anciens.';
 
@@ -1860,6 +1930,47 @@ class AppLocalizationsFr extends AppLocalizations {
       'Réinitialiser les entrées irrésolubles';
 
   @override
+  String get backfillRetireStuckConfirmAccept => 'Retirer maintenant';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Marque les $count entrées de journal de séquence actuellement ouvertes (manquantes ou demandées) comme irrésolubles. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d\'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.',
+      one:
+          'Marque 1 entrée de journal de séquence actuellement ouverte (manquante ou demandée) comme irrésoluble. Utilisez ceci pour débloquer le watermark quand des entrées sont bloquées depuis un moment sans que la fenêtre d\'amnistie de 7 jours soit écoulée. Les entrées peuvent toujours être ressuscitées si leurs données arrivent plus tard sur le disque avec une horloge vectorielle valide.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle =>
+      'Retirer maintenant les entrées bloquées ?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Force chaque entrée de journal de séquence manquante ou demandée actuellement ouverte à devenir irrésoluble. Ignore l\'amnistie de 7 jours — à utiliser uniquement pour les lignes bloquées qui bloquent le watermark.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Retrait…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Retirer les entrées bloquées';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retirer $count entrées bloquées',
+      one: 'Retirer 1 entrée bloquée',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillSettingsInfo =>
       'Le rattrapage automatique demande les entrées manquantes des dernières 24 heures. Utilisez le rattrapage manuel pour les entrées plus anciennes.';
 
@@ -1917,6 +2028,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'Non résoluble';
+
+  @override
+  String get backfillStatusInboundQueue => 'File entrante';
+
+  @override
+  String get backfillStatusMissing => 'Manquant';
+
+  @override
+  String get backfillStatusSkipped => 'Ignoré';
+
+  @override
+  String get backfillToggleDescription =>
+      'Demande les entrées manquantes des dernières 24 heures.';
 
   @override
   String get backfillToggleDisabledDescription =>
@@ -4963,6 +5087,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get queueCatchUpNowDone => 'Rattrapage lancé — la file se vide.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Rattrapage échoué : $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Pontage de l\'écart récent…';

@@ -1793,6 +1793,76 @@ class AppLocalizationsEs extends AppLocalizations {
   String get automaticPrompts => 'Prompts automáticos';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count acciones',
+      one: '1 acción',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Recuperación avanzada';
+
+  @override
+  String get backfillAskPeersConfirmAccept => 'Preguntar a pares';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Esto vuelve a poner las $count entradas irresolubles del registro de secuencia como faltantes para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.',
+      one:
+          'Esto vuelve a poner 1 entrada irresoluble del registro de secuencia como faltante para que el barrido normal de relleno pregunte de nuevo a los pares. Los pares que aún tienen los datos responderán; las entradas realmente irrecuperables se retirarán de nuevo tras la ventana de amnistía de 7 días.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      '¿Preguntar de nuevo a los pares por entradas irresolubles?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Vuelve cada entrada irresoluble del registro de secuencia a faltante y deja que el barrido normal de relleno pregunte a los pares.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Reabriendo…';
+
+  @override
+  String get backfillAskPeersTitle => 'Preguntar a pares por irresolubles';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Preguntar a pares por $count entradas',
+      one: 'Preguntar a pares por 1 entrada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Solicita ahora a los pares las entradas faltantes recientes.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count IDs de dispositivo',
+      one: '1 ID de dispositivo',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Solicitar todas las entradas faltantes sin importar su antigüedad. Úsalo para recuperar brechas de sincronización antiguas.';
 
@@ -1855,6 +1925,47 @@ class AppLocalizationsEs extends AppLocalizations {
       'Restablecer entradas irresolubles';
 
   @override
+  String get backfillRetireStuckConfirmAccept => 'Retirar ahora';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Marca $count entradas del registro de secuencia actualmente abiertas (faltantes o solicitadas) como irresolubles. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.',
+      one:
+          'Marca 1 entrada del registro de secuencia actualmente abierta (faltante o solicitada) como irresoluble. Úsalo para desbloquear la marca de agua cuando hay entradas atascadas desde hace un tiempo sin que haya pasado la ventana de amnistía de 7 días. Las entradas pueden resucitarse si sus datos llegan al disco con un reloj vectorial válido.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle =>
+      '¿Retirar ahora las entradas atascadas?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Fuerza cada entrada del registro de secuencia faltante o solicitada actualmente abierta a irresoluble. Omite la amnistía de 7 días — úsalo solo para filas atascadas que bloquean la marca de agua.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Retirando…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Retirar entradas atascadas';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retirar $count entradas atascadas',
+      one: 'Retirar 1 entrada atascada',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillSettingsInfo =>
       'El relleno automático solicita las entradas faltantes de las últimas 24 horas. Use el relleno manual para entradas más antiguas.';
 
@@ -1912,6 +2023,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'No resoluble';
+
+  @override
+  String get backfillStatusInboundQueue => 'Cola entrante';
+
+  @override
+  String get backfillStatusMissing => 'Faltante';
+
+  @override
+  String get backfillStatusSkipped => 'Omitido';
+
+  @override
+  String get backfillToggleDescription =>
+      'Solicita las entradas faltantes de las últimas 24 horas.';
 
   @override
   String get backfillToggleDisabledDescription =>
@@ -4955,6 +5079,11 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get queueCatchUpNowDone =>
       'Puesta al día iniciada — la cola se está vaciando.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Puesta al día fallida: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Puenteando la brecha reciente…';

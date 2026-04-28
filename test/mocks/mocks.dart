@@ -73,6 +73,8 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -518,6 +520,11 @@ class MockBackfillRequestService extends Mock
 
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
+
+class MockInboundQueue extends Mock implements InboundQueue {}
+
+class MockQueuePipelineCoordinator extends Mock
+    implements QueuePipelineCoordinator {}
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}

@@ -1028,6 +1028,45 @@
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOP",
   "automaticPrompts": "Automatic Prompts",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Advanced recovery",
+  "backfillAskPeersConfirmAccept": "Ask peers",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.} other{This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.}}",
+  "@backfillAskPeersConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAskPeersConfirmTitle": "Ask peers again for unresolvable entries?",
+  "backfillAskPeersDescription": "Flip every unresolvable sequence-log entry back to missing and let the normal backfill sweep re-ask peers.",
+  "backfillAskPeersProcessing": "Reopening…",
+  "backfillAskPeersTitle": "Ask peers for unresolvable",
+  "backfillAskPeersTrigger": "{count, plural, =1{Ask peers for 1 entry} other{Ask peers for {count} entries}}",
+  "@backfillAskPeersTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillCatchUpDescription": "Pull recent missing entries from peers right now.",
+  "backfillDevicesMeta": "{count, plural, =1{1 device ID} other{{count} device IDs}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Request all missing entries regardless of age. Use this to recover older sync gaps.",
   "backfillManualProcessing": "Processing...",
   "backfillManualSuccess": "{count} entries requested",
@@ -1064,9 +1103,30 @@
   },
   "backfillResetUnresolvableTitle": "Reset Unresolvable",
   "backfillResetUnresolvableTrigger": "Reset Unresolvable Entries",
+  "backfillRetireStuckConfirmAccept": "Retire now",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{This marks 1 currently-open (missing or requested) sequence-log entry as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.} other{This marks {count} currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.}}",
+  "@backfillRetireStuckConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillRetireStuckConfirmTitle": "Retire stuck entries now?",
+  "backfillRetireStuckDescription": "Force every currently-open missing or requested sequence-log entry to unresolvable. Skips the 7-day amnesty — use only for stuck rows blocking the watermark.",
+  "backfillRetireStuckProcessing": "Retiring…",
+  "backfillRetireStuckTitle": "Retire stuck entries",
+  "backfillRetireStuckTrigger": "{count, plural, =1{Retire 1 stuck entry} other{Retire {count} stuck entries}}",
+  "@backfillRetireStuckTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillSettingsInfo": "Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.",
   "backfillSettingsSubtitle": "Manage sync gap recovery",
-  "backfillSettingsTitle": "Backfill Sync",
+  "backfillSettingsTitle": "Backfill sync",
   "backfillStatsBackfilled": "Backfilled",
   "backfillStatsDeleted": "Deleted",
   "backfillStatsHostsTitle": "{count} connected device{count, plural, =1{} other{s}}",
@@ -1082,12 +1142,16 @@
   "backfillStatsReceived": "Received",
   "backfillStatsRefresh": "Refresh stats",
   "backfillStatsRequested": "Requested",
-  "backfillStatsTitle": "Sync Statistics",
+  "backfillStatsTitle": "Sync statistics",
   "backfillStatsTotalEntries": "Total entries",
   "backfillStatsUnresolvable": "Unresolvable",
+  "backfillStatusInboundQueue": "Inbound queue",
+  "backfillStatusMissing": "Missing",
+  "backfillStatusSkipped": "Skipped",
+  "backfillToggleDescription": "Requests missing entries from the last 24 hours.",
   "backfillToggleDisabledDescription": "Backfill disabled - useful on metered networks",
   "backfillToggleEnabledDescription": "Automatically request missing sync entries",
-  "backfillToggleTitle": "Automatic Backfill",
+  "backfillToggleTitle": "Automatic backfill",
   "basicSettings": "Basic Settings",
   "cancelButton": "Cancel",
   "categoryActiveDescription": "Inactive categories won't appear in selection lists",
@@ -2336,6 +2400,14 @@
   "provisionedSyncVerifyDevicesTitle": "Device Verification",
   "queueCatchUpNowButton": "Catch up now",
   "queueCatchUpNowDone": "Catch-up kicked — queue is draining.",
+  "queueCatchUpNowError": "Catch-up failed: {reason}",
+  "@queueCatchUpNowError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "queueCatchUpNowRunning": "Bridging recent gap…",
   "queueDepthCardEmpty": "Queue empty — worker is caught up.",
   "queueDepthCardLoading": "Reading queue depth…",

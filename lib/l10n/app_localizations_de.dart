@@ -1778,6 +1778,76 @@ class AppLocalizationsDe extends AppLocalizations {
   String get automaticPrompts => 'Automatische Prompts';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aktionen',
+      one: '1 Aktion',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Erweiterte Wiederherstellung';
+
+  @override
+  String get backfillAskPeersConfirmAccept => 'Peers fragen';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Setzt alle $count unlösbaren Sequenzlog-Einträge zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.',
+      one:
+          'Setzt 1 unlösbaren Sequenzlog-Eintrag zurück auf fehlend, damit der reguläre Backfill-Sweep Peers erneut fragt. Peers, die die Daten noch haben, antworten; wirklich nicht wiederherstellbare Einträge werden nach dem 7-Tage-Schonfenster erneut zurückgezogen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      'Peers erneut nach unlösbaren Einträgen fragen?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Setzt jeden unlösbaren Sequenzlog-Eintrag zurück auf fehlend und lässt den regulären Backfill-Sweep Peers erneut fragen.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Wird wiedereröffnet…';
+
+  @override
+  String get backfillAskPeersTitle => 'Peers nach unlösbaren Einträgen fragen';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Peers nach $count Einträgen fragen',
+      one: 'Peers nach 1 Eintrag fragen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Fordere fehlende Einträge der letzten Zeit jetzt von Peers an.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Geräte-IDs',
+      one: '1 Geräte-ID',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Alle fehlenden Einträge unabhängig vom Alter anfordern. Nutze dies zur Wiederherstellung älterer Synchronisierungslücken.';
 
@@ -1840,6 +1910,47 @@ class AppLocalizationsDe extends AppLocalizations {
       'Unlösbare Einträge zurücksetzen';
 
   @override
+  String get backfillRetireStuckConfirmAccept => 'Jetzt zurückziehen';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Markiert $count aktuell offene (fehlende oder angeforderte) Sequenzlog-Einträge als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.',
+      one:
+          'Markiert 1 aktuell offenen (fehlenden oder angeforderten) Sequenzlog-Eintrag als unlösbar. Nutze dies, um den Watermark zu entsperren, wenn Einträge bereits eine Weile feststecken, ohne dass das 7-Tage-Schonfenster abgelaufen ist. Einträge können später wiederhergestellt werden, wenn ihre Nutzdaten mit gültiger Vector Clock auf der Festplatte ankommen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle =>
+      'Festsitzende Einträge jetzt zurückziehen?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Setzt jeden aktuell offenen fehlenden oder angeforderten Sequenzlog-Eintrag auf unlösbar. Überspringt das 7-Tage-Schonfenster — verwende dies nur für festsitzende Einträge, die den Watermark blockieren.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Wird zurückgezogen…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Festsitzende Einträge zurückziehen';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count festsitzende Einträge zurückziehen',
+      one: '1 festsitzenden Eintrag zurückziehen',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillSettingsInfo =>
       'Automatische Nachfüllung fordert fehlende Einträge der letzten 24 Stunden an. Nutze manuelle Nachfüllung für ältere Einträge.';
 
@@ -1889,6 +2000,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'Nicht auflösbar';
+
+  @override
+  String get backfillStatusInboundQueue => 'Eingangswarteschlange';
+
+  @override
+  String get backfillStatusMissing => 'Fehlend';
+
+  @override
+  String get backfillStatusSkipped => 'Übersprungen';
+
+  @override
+  String get backfillToggleDescription =>
+      'Fordert fehlende Einträge der letzten 24 Stunden an.';
 
   @override
   String get backfillToggleDisabledDescription =>
@@ -4869,6 +4993,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get queueCatchUpNowDone =>
       'Aufholen gestartet — die Warteschlange wird abgearbeitet.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Aufholen fehlgeschlagen: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Überbrücke kürzliche Lücke…';

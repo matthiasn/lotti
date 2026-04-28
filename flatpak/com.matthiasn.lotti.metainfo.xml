@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.979" date="2026-04-28">
+      <description>
+          <p>Backfill Sync settings page rebuilt around the Option C "compact ledger" design: a welded status row (Inbound queue · Missing · Skipped) at the top, a leader-dotted Sync statistics ledger, an Automatic backfill toggle, and a single collapsed Advanced recovery group containing every manual recovery action (Catch up now, Retry skipped events when present, Manual backfill, Reset unresolvable, Re-request pending, Ask peers for unresolvable, Retire stuck entries). All visuals are driven by design-system tokens — DesignSystemButton, DesignSystemToggle, tokens.colors.*, tokens.spacing.*, tokens.radii.* — so the page reads as part of the rest of Settings V2 instead of a one-off.</p>
+      </description>
+    </release>
     <release version="0.9.978" date="2026-04-27">
       <description>
           <p>Task agents now react immediately to recorded audio. Brand-new task agents on a blank task no longer surface a "wake in 2:00" countdown — the orchestrator skips the throttle deadline while the agent is awaiting content, and the content gate keeps the agent from running until real content arrives. The moment a transcription finishes (cloud or realtime), the task agent is nudged via a manual wake that bypasses the standard throttle, so the user does not wait through a 2-minute window after speaking. Subsequent typing edits still go through the normal 2-minute coalescing throttle. Implemented via a new WakeReason.transcriptionComplete and an awaitingContent mirror in WakeOrchestrator, populated by TaskAgentService on creation and restoration.</p>

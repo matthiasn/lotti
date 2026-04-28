@@ -3132,6 +3132,72 @@ abstract class AppLocalizations {
   /// **'Automatic Prompts'**
   String get automaticPrompts;
 
+  /// No description provided for @backfillAdvancedRecoveryActions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 action} other{{count} actions}}'**
+  String backfillAdvancedRecoveryActions(int count);
+
+  /// No description provided for @backfillAdvancedRecoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced recovery'**
+  String get backfillAdvancedRecoveryTitle;
+
+  /// No description provided for @backfillAskPeersConfirmAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask peers'**
+  String get backfillAskPeersConfirmAccept;
+
+  /// No description provided for @backfillAskPeersConfirmContent.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.} other{This flips all {count} unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.}}'**
+  String backfillAskPeersConfirmContent(int count);
+
+  /// No description provided for @backfillAskPeersConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask peers again for unresolvable entries?'**
+  String get backfillAskPeersConfirmTitle;
+
+  /// No description provided for @backfillAskPeersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Flip every unresolvable sequence-log entry back to missing and let the normal backfill sweep re-ask peers.'**
+  String get backfillAskPeersDescription;
+
+  /// No description provided for @backfillAskPeersProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopening…'**
+  String get backfillAskPeersProcessing;
+
+  /// No description provided for @backfillAskPeersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask peers for unresolvable'**
+  String get backfillAskPeersTitle;
+
+  /// No description provided for @backfillAskPeersTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Ask peers for 1 entry} other{Ask peers for {count} entries}}'**
+  String backfillAskPeersTrigger(int count);
+
+  /// No description provided for @backfillCatchUpDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull recent missing entries from peers right now.'**
+  String get backfillCatchUpDescription;
+
+  /// No description provided for @backfillDevicesMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 device ID} other{{count} device IDs}}'**
+  String backfillDevicesMeta(int count);
+
   /// No description provided for @backfillManualDescription.
   ///
   /// In en, this message translates to:
@@ -3222,6 +3288,48 @@ abstract class AppLocalizations {
   /// **'Reset Unresolvable Entries'**
   String get backfillResetUnresolvableTrigger;
 
+  /// No description provided for @backfillRetireStuckConfirmAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Retire now'**
+  String get backfillRetireStuckConfirmAccept;
+
+  /// No description provided for @backfillRetireStuckConfirmContent.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This marks 1 currently-open (missing or requested) sequence-log entry as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.} other{This marks {count} currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.}}'**
+  String backfillRetireStuckConfirmContent(int count);
+
+  /// No description provided for @backfillRetireStuckConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Retire stuck entries now?'**
+  String get backfillRetireStuckConfirmTitle;
+
+  /// No description provided for @backfillRetireStuckDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Force every currently-open missing or requested sequence-log entry to unresolvable. Skips the 7-day amnesty — use only for stuck rows blocking the watermark.'**
+  String get backfillRetireStuckDescription;
+
+  /// No description provided for @backfillRetireStuckProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Retiring…'**
+  String get backfillRetireStuckProcessing;
+
+  /// No description provided for @backfillRetireStuckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Retire stuck entries'**
+  String get backfillRetireStuckTitle;
+
+  /// No description provided for @backfillRetireStuckTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Retire 1 stuck entry} other{Retire {count} stuck entries}}'**
+  String backfillRetireStuckTrigger(int count);
+
   /// No description provided for @backfillSettingsInfo.
   ///
   /// In en, this message translates to:
@@ -3237,7 +3345,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillSettingsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Backfill Sync'**
+  /// **'Backfill sync'**
   String get backfillSettingsTitle;
 
   /// No description provided for @backfillStatsBackfilled.
@@ -3291,7 +3399,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillStatsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync Statistics'**
+  /// **'Sync statistics'**
   String get backfillStatsTitle;
 
   /// No description provided for @backfillStatsTotalEntries.
@@ -3305,6 +3413,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unresolvable'**
   String get backfillStatsUnresolvable;
+
+  /// No description provided for @backfillStatusInboundQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbound queue'**
+  String get backfillStatusInboundQueue;
+
+  /// No description provided for @backfillStatusMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get backfillStatusMissing;
+
+  /// No description provided for @backfillStatusSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get backfillStatusSkipped;
+
+  /// No description provided for @backfillToggleDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests missing entries from the last 24 hours.'**
+  String get backfillToggleDescription;
 
   /// No description provided for @backfillToggleDisabledDescription.
   ///
@@ -3321,7 +3453,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillToggleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Automatic Backfill'**
+  /// **'Automatic backfill'**
   String get backfillToggleTitle;
 
   /// No description provided for @basicSettings.
@@ -8565,6 +8697,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Catch-up kicked — queue is draining.'**
   String get queueCatchUpNowDone;
+
+  /// No description provided for @queueCatchUpNowError.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch-up failed: {reason}'**
+  String queueCatchUpNowError(String reason);
 
   /// No description provided for @queueCatchUpNowRunning.
   ///

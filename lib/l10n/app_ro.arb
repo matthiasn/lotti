@@ -799,6 +799,45 @@
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOP",
   "automaticPrompts": "Prompturi automate",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 acțiune} other{{count} acțiuni}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Recuperare avansată",
+  "backfillAskPeersConfirmAccept": "Întreabă colegii",
+  "backfillAskPeersConfirmContent": "{count, plural, =1{Aceasta resetează 1 intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.} few{Aceasta resetează cele {count} intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.} other{Aceasta resetează cele {count} de intrări nerezolvabile din jurnalul de secvență înapoi la lipsă, astfel încât parcurgerea normală de completare să întrebe din nou colegii. Colegii care încă au datele vor răspunde; intrările cu adevărat irecuperabile vor fi retrase din nou după fereastra de amnistie de 7 zile.}}",
+  "@backfillAskPeersConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAskPeersConfirmTitle": "Întrebați din nou colegii pentru intrări nerezolvabile?",
+  "backfillAskPeersDescription": "Resetează fiecare intrare nerezolvabilă din jurnalul de secvență înapoi la lipsă și lasă parcurgerea normală de completare să întrebe din nou colegii.",
+  "backfillAskPeersProcessing": "Se redeschide…",
+  "backfillAskPeersTitle": "Întreabă colegii pentru nerezolvabile",
+  "backfillAskPeersTrigger": "{count, plural, =1{Întreabă colegii pentru 1 intrare} few{Întreabă colegii pentru {count} intrări} other{Întreabă colegii pentru {count} de intrări}}",
+  "@backfillAskPeersTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillCatchUpDescription": "Solicitați acum colegilor intrările lipsă recente.",
+  "backfillDevicesMeta": "{count, plural, =1{1 ID dispozitiv} other{{count} ID-uri dispozitive}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Solicită toate intrările lipsă indiferent de vechime. Folosiți pentru a recupera lacune de sincronizare mai vechi.",
   "backfillManualProcessing": "Se procesează...",
   "backfillManualSuccess": "{count} intrări solicitate",
@@ -835,6 +874,27 @@
   },
   "backfillResetUnresolvableTitle": "Resetare nerezolvabile",
   "backfillResetUnresolvableTrigger": "Resetați intrările nerezolvabile",
+  "backfillRetireStuckConfirmAccept": "Retrage acum",
+  "backfillRetireStuckConfirmContent": "{count, plural, =1{Marchează 1 intrare curent deschisă (lipsă sau solicitată) din jurnalul de secvență ca nerezolvabilă. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.} few{Marchează cele {count} intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.} other{Marchează cele {count} de intrări curent deschise (lipsă sau solicitate) din jurnalul de secvență ca nerezolvabile. Folosiți aceasta pentru a debloca marcajul când intrările au fost blocate o vreme fără ca fereastra de amnistie de 7 zile să fi expirat. Intrările pot fi resuscitate dacă datele lor ajung ulterior pe disc cu un ceas vectorial valid.}}",
+  "@backfillRetireStuckConfirmContent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillRetireStuckConfirmTitle": "Retrageți acum intrările blocate?",
+  "backfillRetireStuckDescription": "Forțează fiecare intrare lipsă sau solicitată curent deschisă din jurnalul de secvență la nerezolvabilă. Sare peste amnistia de 7 zile — folosiți doar pentru rândurile blocate care blochează marcajul.",
+  "backfillRetireStuckProcessing": "Se retrage…",
+  "backfillRetireStuckTitle": "Retrage intrări blocate",
+  "backfillRetireStuckTrigger": "{count, plural, =1{Retrage 1 intrare blocată} few{Retrage {count} intrări blocate} other{Retrage {count} de intrări blocate}}",
+  "@backfillRetireStuckTrigger": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillSettingsInfo": "Completarea automată solicită intrările lipsă din ultimele 24 de ore. Folosiți completarea manuală pentru intrări mai vechi.",
   "backfillSettingsSubtitle": "Gestionează recuperarea lacunelor de sincronizare",
   "backfillSettingsTitle": "Completare sincronizare",
@@ -856,6 +916,10 @@
   "backfillStatsTitle": "Statistici de sincronizare",
   "backfillStatsTotalEntries": "Total intrări",
   "backfillStatsUnresolvable": "Nerezolvabil",
+  "backfillStatusInboundQueue": "Coadă de intrare",
+  "backfillStatusMissing": "Lipsă",
+  "backfillStatusSkipped": "Omis",
+  "backfillToggleDescription": "Solicită intrările lipsă din ultimele 24 de ore.",
   "backfillToggleDisabledDescription": "Completare dezactivată - utilă pe rețele cu date limitate",
   "backfillToggleEnabledDescription": "Solicită automat intrările de sincronizare lipsă",
   "backfillToggleTitle": "Completare automată",
@@ -2093,6 +2157,14 @@
   "provisionedSyncVerifyDevicesTitle": "Verificarea dispozitivelor",
   "queueCatchUpNowButton": "Recuperați acum",
   "queueCatchUpNowDone": "Recuperare inițiată — coada se golește.",
+  "queueCatchUpNowError": "Recuperare eșuată: {reason}",
+  "@queueCatchUpNowError": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "queueCatchUpNowRunning": "Se acoperă golul recent…",
   "queueDepthCardEmpty": "Coadă goală — worker-ul este actualizat.",
   "queueDepthCardLoading": "Se citește adâncimea cozii…",

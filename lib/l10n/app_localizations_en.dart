@@ -1748,6 +1748,76 @@ class AppLocalizationsEn extends AppLocalizations {
   String get automaticPrompts => 'Automatic Prompts';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions',
+      one: '1 action',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Advanced recovery';
+
+  @override
+  String get backfillAskPeersConfirmAccept => 'Ask peers';
+
+  @override
+  String backfillAskPeersConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This flips all $count unresolvable sequence-log entries back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.',
+      one:
+          'This flips 1 unresolvable sequence-log entry back to missing so the normal backfill sweep re-asks peers. Peers who still have the payload will respond; truly unrecoverable entries will retire again after the 7-day amnesty window.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAskPeersConfirmTitle =>
+      'Ask peers again for unresolvable entries?';
+
+  @override
+  String get backfillAskPeersDescription =>
+      'Flip every unresolvable sequence-log entry back to missing and let the normal backfill sweep re-ask peers.';
+
+  @override
+  String get backfillAskPeersProcessing => 'Reopening…';
+
+  @override
+  String get backfillAskPeersTitle => 'Ask peers for unresolvable';
+
+  @override
+  String backfillAskPeersTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ask peers for $count entries',
+      one: 'Ask peers for 1 entry',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Pull recent missing entries from peers right now.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count device IDs',
+      one: '1 device ID',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Request all missing entries regardless of age. Use this to recover older sync gaps.';
 
@@ -1808,6 +1878,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillResetUnresolvableTrigger => 'Reset Unresolvable Entries';
 
   @override
+  String get backfillRetireStuckConfirmAccept => 'Retire now';
+
+  @override
+  String backfillRetireStuckConfirmContent(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This marks $count currently-open (missing or requested) sequence-log entries as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.',
+      one:
+          'This marks 1 currently-open (missing or requested) sequence-log entry as unresolvable. Use this to unblock the watermark when entries have been stuck for a while without the 7-day amnesty window having passed. Entries can still be resurrected if their payload later arrives on disk with a valid vector clock.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillRetireStuckConfirmTitle => 'Retire stuck entries now?';
+
+  @override
+  String get backfillRetireStuckDescription =>
+      'Force every currently-open missing or requested sequence-log entry to unresolvable. Skips the 7-day amnesty — use only for stuck rows blocking the watermark.';
+
+  @override
+  String get backfillRetireStuckProcessing => 'Retiring…';
+
+  @override
+  String get backfillRetireStuckTitle => 'Retire stuck entries';
+
+  @override
+  String backfillRetireStuckTrigger(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Retire $count stuck entries',
+      one: 'Retire 1 stuck entry',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillSettingsInfo =>
       'Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.';
 
@@ -1815,7 +1925,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillSettingsSubtitle => 'Manage sync gap recovery';
 
   @override
-  String get backfillSettingsTitle => 'Backfill Sync';
+  String get backfillSettingsTitle => 'Backfill sync';
 
   @override
   String get backfillStatsBackfilled => 'Backfilled';
@@ -1850,13 +1960,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillStatsRequested => 'Requested';
 
   @override
-  String get backfillStatsTitle => 'Sync Statistics';
+  String get backfillStatsTitle => 'Sync statistics';
 
   @override
   String get backfillStatsTotalEntries => 'Total entries';
 
   @override
   String get backfillStatsUnresolvable => 'Unresolvable';
+
+  @override
+  String get backfillStatusInboundQueue => 'Inbound queue';
+
+  @override
+  String get backfillStatusMissing => 'Missing';
+
+  @override
+  String get backfillStatusSkipped => 'Skipped';
+
+  @override
+  String get backfillToggleDescription =>
+      'Requests missing entries from the last 24 hours.';
 
   @override
   String get backfillToggleDisabledDescription =>
@@ -1867,7 +1990,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Automatically request missing sync entries';
 
   @override
-  String get backfillToggleTitle => 'Automatic Backfill';
+  String get backfillToggleTitle => 'Automatic backfill';
 
   @override
   String get basicSettings => 'Basic Settings';
@@ -4801,6 +4924,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get queueCatchUpNowDone => 'Catch-up kicked — queue is draining.';
+
+  @override
+  String queueCatchUpNowError(String reason) {
+    return 'Catch-up failed: $reason';
+  }
 
   @override
   String get queueCatchUpNowRunning => 'Bridging recent gap…';
