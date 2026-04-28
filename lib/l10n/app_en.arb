@@ -2544,7 +2544,6 @@
   "settingsAboutVersion": "Version",
   "settingsAboutYourData": "Your Data",
   "settingsAdvancedAboutSubtitle": "Learn more about the Lotti application",
-  "settingsAdvancedConflictsSubtitle": "Resolve synchronization conflicts to ensure data consistency",
   "settingsAdvancedHealthImportSubtitle": "Import health-related data from external sources",
   "settingsAdvancedLogsSubtitle": "Access and review application logs for debugging",
   "settingsAdvancedMaintenanceSubtitle": "Perform maintenance tasks to optimize application performance",
@@ -2770,6 +2769,7 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Find & transcribe",
   "settingsSpeechLastActivity": "Last transcription activity:",
   "settingsSpeechModelSelectionTitle": "Whisper speech recognition model:",
+  "settingsSyncConflictsSubtitle": "Resolve synchronization conflicts to ensure data consistency",
   "settingsSyncOutboxTitle": "Sync Outbox",
   "settingsSyncStatsSubtitle": "Inspect sync pipeline metrics",
   "settingsSyncSubtitle": "Configure sync and view stats",
@@ -2790,7 +2790,7 @@
   "settingsWhatsNewOpenAction": "Open release notes",
   "settingsWhatsNewSubtitle": "See the latest updates and features",
   "settingsWhatsNewTitle": "What's New",
-  "settingsWhatsNewUnseenBody": "Open the release notes to read what's new in this version.",
+  "settingsWhatsNewUnseenBody": "Open the release notes to see what's new since your last visit.",
   "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 new release} other{{count} new releases}}",
   "@settingsWhatsNewUnseenHeadline": {
     "placeholders": {

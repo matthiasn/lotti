@@ -177,12 +177,17 @@ void main() {
       );
     });
 
-    test('advanced/conflicts/:id is treated as panel-local', () {
-      expect(
-        beamUrlToPath('/settings/advanced/conflicts/conflict-id'),
-        ['advanced', 'advanced/conflicts'],
-      );
-    });
+    test(
+      'advanced/conflicts/:id resolves under the Sync branch (the leaf '
+      'lives under sync/* in the tree even though the URL still wears '
+      'the legacy advanced/* path)',
+      () {
+        expect(
+          beamUrlToPath('/settings/advanced/conflicts/conflict-id'),
+          ['sync', 'sync/conflicts'],
+        );
+      },
+    );
   });
 
   group('beamUrlToPath ↔ pathToBeamUrl round-trip', () {
@@ -212,8 +217,12 @@ void main() {
 
     test('returns null for ids gated off by a flag', () {
       final index = SettingsTreeIndex.build(_tree(enableMatrix: false));
-      expect(index.findById('sync'), isNull);
+      // Matrix-only leaves disappear …
       expect(index.findById('sync/backfill'), isNull);
+      expect(index.findById('sync/matrix-maintenance'), isNull);
+      // … but the Sync branch + the always-on conflicts leaf survive.
+      expect(index.findById('sync'), isNotNull);
+      expect(index.findById('sync/conflicts'), isNotNull);
     });
 
     test('empty tree input produces an empty index', () {
@@ -239,7 +248,8 @@ void main() {
       final node = index.findById('sync');
       expect(node, isNotNull);
       expect(node!.hasChildren, isTrue);
-      expect(node.children!.length, 4);
+      // backfill / stats / outbox / conflicts / matrix-maintenance.
+      expect(node.children!.length, 5);
     });
 
     test('returns null for an id that was never in the tree', () {
@@ -299,8 +309,11 @@ void main() {
 
     test('single missing id invalidates the whole path', () {
       final index = SettingsTreeIndex.build(_tree(enableMatrix: false));
-      expect(index.isValidPath(['sync']), isFalse);
+      // `sync/backfill` is gated off by Matrix; `sync` itself stays
+      // (the conflicts leaf is always-visible) but the leaf below it
+      // is gone, so any path that touches `sync/backfill` is invalid.
       expect(index.isValidPath(['sync', 'sync/backfill']), isFalse);
+      expect(index.isValidPath(['sync/backfill']), isFalse);
     });
 
     test('path with one unknown id is invalid even if the rest is valid', () {

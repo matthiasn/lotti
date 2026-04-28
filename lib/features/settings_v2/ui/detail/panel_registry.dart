@@ -64,7 +64,7 @@ class SettingsPanelSpec {
 /// - **Step 7** — "simple" leaves (flags, theming, advanced tooling,
 ///   sync pages).
 /// - **Step 8** — dynamic list panels (categories, labels, habits,
-///   dashboards, measurables, advanced-conflicts).
+///   dashboards, measurables, sync-conflicts).
 /// - **Step 9** — AI + agents (ai, ai-profiles, agents-*).
 ///
 /// Each entry resolves to a `*Body` widget — the body either strips
@@ -117,7 +117,7 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       'habits': SettingsPanelSpec(build: _habitsPanel),
       'dashboards': SettingsPanelSpec(build: _dashboardsPanel),
       'measurables': SettingsPanelSpec(build: _measurablesPanel),
-      'advanced-conflicts': SettingsPanelSpec(build: _advancedConflictsPanel),
+      'sync-conflicts': SettingsPanelSpec(build: _syncConflictsPanel),
 
       // Step 9 — AI + agents. Full pages with their own scrolling.
       'ai-profiles': SettingsPanelSpec(build: _aiProfilesPanel),
@@ -157,7 +157,7 @@ Widget _labelsPanel(BuildContext context) => const LabelsListBody();
 Widget _habitsPanel(BuildContext context) => const HabitsBody();
 Widget _dashboardsPanel(BuildContext context) => const DashboardsBody();
 Widget _measurablesPanel(BuildContext context) => const MeasurablesBody();
-Widget _advancedConflictsPanel(BuildContext context) => const ConflictsBody();
+Widget _syncConflictsPanel(BuildContext context) => const ConflictsBody();
 
 // --- Step 9 builders --------------------------------------------------------
 Widget _aiPanel(BuildContext context) => const AiSettingsBody();

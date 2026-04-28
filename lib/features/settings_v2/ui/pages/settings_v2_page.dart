@@ -8,7 +8,7 @@ import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_view.dart';
 import 'package:lotti/features/settings_v2/ui/url_sync/settings_tree_url_sync.dart';
 import 'package:lotti/features/settings_v2/ui/widgets/settings_tree_resize_handle.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/features/settings_v2/ui/widgets/settings_v2_top_crumbs.dart';
 
 /// Fixed height of the Settings V2 page header (spec §2). Kept as a
 /// top-level const so existing callers (and tests) can reference it
@@ -20,11 +20,13 @@ const double kSettingsV2HeaderHeight = SettingsV2Constants.headerHeight;
 /// right) separated by a 1 dp divider with a 6 dp draggable resize
 /// handle centered on it.
 ///
-/// This widget owns **only layout**. The tree itself, the detail
-/// pane panels, and the breadcrumb trail are filled in by later
-/// PRs (steps 4-9 in the implementation plan). Until then the
-/// tree slot shows a placeholder and the detail slot shows a
-/// neutral empty-state.
+/// This widget owns **only layout**. The header hosts the
+/// breadcrumb title via [SettingsV2TopCrumbs]; the tree slot is
+/// filled by [SettingsTreeView]; the detail slot is filled by
+/// [SettingsDetailPane], which dispatches to per-leaf panels via
+/// the registry. Tree state, URL sync, and the shared tree/index
+/// snapshot are wired in by [SettingsTreeScopeHost] and
+/// [SettingsTreeUrlSync].
 class SettingsV2Page extends ConsumerWidget {
   const SettingsV2Page({super.key});
 
@@ -110,22 +112,17 @@ class _SettingsV2Header extends StatelessWidget {
           color: tokens.colors.background.level01,
           border: Border(bottom: BorderSide(color: dividerColor)),
         ),
+        // Crumbs are the page title now — the trail expands as the
+        // user drills into the tree, and tapping a non-leaf segment
+        // truncates the path. The crumb widget keeps the trail on a
+        // single line and ellipsizes the terminal segment when
+        // constrained; the header itself just supplies the fixed
+        // height, divider, and the standard step6 horizontal gutter.
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step6),
-          child: Row(
-            children: [
-              Text(
-                context.messages.navTabTitleSettings,
-                style: tokens.typography.styles.heading.heading3.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-              // Spacer reserves the right-aligned slot for header
-              // actions that later steps wire in (breadcrumbs,
-              // account switcher). Removing it today would force a
-              // layout change when those land.
-              const Spacer(),
-            ],
+          child: const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: SettingsV2TopCrumbs(),
           ),
         ),
       ),

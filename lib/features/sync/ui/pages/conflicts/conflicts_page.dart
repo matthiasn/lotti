@@ -154,7 +154,7 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
     return SyncListScaffold<Conflict, _ConflictListFilter>(
       title: context.messages.settingsConflictsTitle,
-      subtitle: context.messages.settingsAdvancedConflictsSubtitle,
+      subtitle: context.messages.settingsSyncConflictsSubtitle,
       stream: _stream,
       filters: filters,
       initialFilter: _ConflictListFilter.unresolved,

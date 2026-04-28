@@ -5321,10 +5321,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Aflați mai multe despre aplicația Lotti';
 
   @override
-  String get settingsAdvancedConflictsSubtitle =>
-      'Rezolvați conflictele de sincronizare pentru a asigura consistența datelor';
-
-  @override
   String get settingsAdvancedHealthImportSubtitle =>
       'Importați date legate de sănătate din surse externe';
 
@@ -5922,6 +5918,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Model de recunoaștere vocală Whisper:';
 
   @override
+  String get settingsSyncConflictsSubtitle =>
+      'Rezolvați conflictele de sincronizare pentru a asigura consistența datelor';
+
+  @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override
@@ -5991,7 +5991,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsWhatsNewUnseenBody =>
-      'Deschide notele de versiune pentru a vedea noutățile din această versiune.';
+      'Deschide notele de versiune pentru a vedea noutățile de la ultima vizită.';
 
   @override
   String settingsWhatsNewUnseenHeadline(int count) {

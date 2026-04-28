@@ -102,10 +102,10 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsLoggingDomainsTitle,
           desc: m.settingsLoggingDomainsSubtitle,
         );
-      case 'advanced/conflicts':
+      case 'sync/conflicts':
         return (
           title: m.settingsConflictsTitle,
-          desc: m.settingsAdvancedConflictsSubtitle,
+          desc: m.settingsSyncConflictsSubtitle,
         );
       case 'advanced/maintenance':
         return (

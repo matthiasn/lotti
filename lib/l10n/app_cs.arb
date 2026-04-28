@@ -2025,7 +2025,6 @@
   "settingsAboutVersion": "Verze",
   "settingsAboutYourData": "Vaše data",
   "settingsAdvancedAboutSubtitle": "Zjistěte více o aplikaci Lotti",
-  "settingsAdvancedConflictsSubtitle": "Řešte konflikty synchronizace pro zajištění konzistence dat",
   "settingsAdvancedHealthImportSubtitle": "Importujte zdravotní údaje z externích zdrojů",
   "settingsAdvancedLogsSubtitle": "Přistupujte k logům aplikace a kontrolujte je pro ladění",
   "settingsAdvancedMaintenanceSubtitle": "Provádějte údržbové úkoly pro optimalizaci výkonu aplikace",
@@ -2215,6 +2214,7 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Najít a přepsat",
   "settingsSpeechLastActivity": "Poslední aktivita přepisu:",
   "settingsSpeechModelSelectionTitle": "Model rozpoznávání řeči Whisper:",
+  "settingsSyncConflictsSubtitle": "Řešte konflikty synchronizace pro zajištění konzistence dat",
   "settingsSyncOutboxTitle": "Synchronizace odeslané pošty",
   "settingsSyncStatsSubtitle": "Prohlédněte si metriky synchronizačního procesu",
   "settingsSyncSubtitle": "Nastavte synchronizaci a zobrazte statistiky",
@@ -2235,7 +2235,7 @@
   "settingsWhatsNewOpenAction": "Otevřít poznámky k vydání",
   "settingsWhatsNewSubtitle": "Podívej se na nejnovější aktualizace a funkce",
   "settingsWhatsNewTitle": "Co je nového",
-  "settingsWhatsNewUnseenBody": "Otevři poznámky k vydání, aby sis přečetl novinky v této verzi.",
+  "settingsWhatsNewUnseenBody": "Otevři poznámky k vydání, aby sis přečetl novinky od tvé poslední návštěvy.",
   "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 nová verze} few{{count} nové verze} other{{count} nových verzí}}",
   "@settingsWhatsNewUnseenHeadline": {
     "placeholders": {

@@ -2272,7 +2272,6 @@
   "settingsAboutVersion": "Version",
   "settingsAboutYourData": "Deine Daten",
   "settingsAdvancedAboutSubtitle": "Erfahre mehr über die Lotti-Anwendung",
-  "settingsAdvancedConflictsSubtitle": "Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten",
   "settingsAdvancedHealthImportSubtitle": "Gesundheitsbezogene Daten aus externen Quellen importieren",
   "settingsAdvancedLogsSubtitle": "Auf Anwendungsprotokolle zugreifen und überprüfen für Debugging",
   "settingsAdvancedMaintenanceSubtitle": "Wartungsaufgaben durchführen, um die Anwendungsleistung zu optimieren",
@@ -2477,6 +2476,7 @@
   "settingsSpeechAudioWithoutTranscriptButton": "Suchen & transkribieren",
   "settingsSpeechLastActivity": "Letzte Transkriptionsaktivität:",
   "settingsSpeechModelSelectionTitle": "Whisper Spracherkennungsmodell:",
+  "settingsSyncConflictsSubtitle": "Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten",
   "settingsSyncOutboxTitle": "Sync-Postausgang",
   "settingsSyncStatsSubtitle": "Sync-Pipeline-Metriken überprüfen",
   "settingsSyncSubtitle": "Synchronisierung konfigurieren und Statistiken anzeigen",
@@ -2497,7 +2497,7 @@
   "settingsWhatsNewOpenAction": "Release-Notes öffnen",
   "settingsWhatsNewSubtitle": "Sieh dir die neuesten Updates und Funktionen an",
   "settingsWhatsNewTitle": "Was gibt's Neues",
-  "settingsWhatsNewUnseenBody": "Öffne die Release-Notes, um zu sehen, was in dieser Version neu ist.",
+  "settingsWhatsNewUnseenBody": "Öffne die Release-Notes, um zu sehen, was es seit deinem letzten Besuch Neues gibt.",
   "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 neue Version} other{{count} neue Versionen}}",
   "@settingsWhatsNewUnseenHeadline": {
     "placeholders": {

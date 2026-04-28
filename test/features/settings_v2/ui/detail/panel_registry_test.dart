@@ -41,6 +41,7 @@ void main() {
       'sync-backfill',
       'sync-stats',
       'sync-outbox',
+      'sync-conflicts',
       'sync-matrix-maintenance',
       // Step 8 — dynamic lists.
       'categories',
@@ -48,7 +49,6 @@ void main() {
       'habits',
       'dashboards',
       'measurables',
-      'advanced-conflicts',
       // Step 9 — AI + agents.
       'ai-profiles',
       'agents-templates',
@@ -169,7 +169,10 @@ void main() {
         expect(build('habits'), isA<HabitsBody>());
         expect(build('dashboards'), isA<DashboardsBody>());
         expect(build('measurables'), isA<MeasurablesBody>());
-        expect(build('advanced-conflicts'), isA<ConflictsBody>());
+        // sync-conflicts moved from `advanced-conflicts` so it could
+        // sit next to the other Sync surfaces in the tree. The
+        // builder still resolves to ConflictsBody.
+        expect(build('sync-conflicts'), isA<ConflictsBody>());
 
         // Step 9 — AI + agents. The agent variants must each carry
         // the correct `initialTab` so the registry doesn't silently

@@ -33,6 +33,14 @@ const Map<String, String> settingsNodeUrls = {
   'sync/backfill': '/settings/sync/backfill',
   'sync/stats': '/settings/sync/stats',
   'sync/outbox': '/settings/sync/outbox',
+  // Conflict resolution lives under the Sync branch in the Settings
+  // V2 tree, but its Beamer URL still wears the legacy
+  // `/settings/advanced/conflicts` path so existing deep links and
+  // the `conflictId` / `edit` subroutes (still declared in
+  // `settings_location.dart`) keep working unchanged. The URL → id
+  // resolver picks this entry up via the greedy longest-prefix walk
+  // regardless of which tree branch the leaf hangs from.
+  'sync/conflicts': '/settings/advanced/conflicts',
   'sync/matrix-maintenance': '/settings/sync/matrix/maintenance',
   'dashboards': '/settings/dashboards',
   'measurables': '/settings/measurables',
@@ -40,7 +48,6 @@ const Map<String, String> settingsNodeUrls = {
   'flags': '/settings/flags',
   'advanced': '/settings/advanced',
   'advanced/logging': '/settings/advanced/logging_domains',
-  'advanced/conflicts': '/settings/advanced/conflicts',
   'advanced/maintenance': '/settings/advanced/maintenance',
   'advanced/about': '/settings/advanced/about',
 };

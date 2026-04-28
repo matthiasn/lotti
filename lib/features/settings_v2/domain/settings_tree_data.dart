@@ -107,11 +107,19 @@ List<SettingsNode> buildSettingsTree({
     if (enableHabits) leaf('habits', Icons.repeat_rounded, panel: 'habits'),
     leaf('categories', Icons.category_rounded, panel: 'categories'),
     leaf('labels', Icons.label_rounded, panel: 'labels'),
-    if (enableMatrix)
-      branch(
-        'sync',
-        Icons.sync_rounded,
-        children: [
+    // The Sync branch is always visible. Conflict resolution is a
+    // sync-domain concept that can produce divergence even without
+    // Matrix (e.g. legacy or local-only conflicts), so the conflicts
+    // leaf stays reachable regardless of `enableMatrix`. The
+    // matrix-specific leaves (backfill / stats / outbox /
+    // matrix-maintenance) are gated by the flag — they describe
+    // matrix-only surfaces that have no meaning when Matrix sync is
+    // off.
+    branch(
+      'sync',
+      Icons.sync_rounded,
+      children: [
+        if (enableMatrix) ...[
           leaf(
             'sync/backfill',
             Icons.cloud_download_outlined,
@@ -119,13 +127,25 @@ List<SettingsNode> buildSettingsTree({
           ),
           leaf('sync/stats', Icons.bar_chart_rounded, panel: 'sync-stats'),
           leaf('sync/outbox', Icons.outbox_rounded, panel: 'sync-outbox'),
+        ],
+        // Conflict resolution stays in Sync regardless of the flag.
+        // The Beamer URL is still `/settings/advanced/conflicts` for
+        // legacy-deep-link compatibility — the URL ↔ id mapping in
+        // `settingsNodeUrls` does the translation, and the column
+        // stack keeps using the existing route patterns.
+        leaf(
+          'sync/conflicts',
+          Icons.call_split_rounded,
+          panel: 'sync-conflicts',
+        ),
+        if (enableMatrix)
           leaf(
             'sync/matrix-maintenance',
             Icons.build_outlined,
             panel: 'sync-matrix-maintenance',
           ),
-        ],
-      ),
+      ],
+    ),
     if (enableDashboards)
       leaf('dashboards', Icons.dashboard_rounded, panel: 'dashboards'),
     leaf('measurables', Icons.straighten_rounded, panel: 'measurables'),
@@ -139,11 +159,6 @@ List<SettingsNode> buildSettingsTree({
           'advanced/logging',
           Icons.bug_report_outlined,
           panel: 'advanced-logging',
-        ),
-        leaf(
-          'advanced/conflicts',
-          Icons.call_split_rounded,
-          panel: 'advanced-conflicts',
         ),
         leaf(
           'advanced/maintenance',

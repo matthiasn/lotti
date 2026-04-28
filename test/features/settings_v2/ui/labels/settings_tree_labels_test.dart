@@ -120,11 +120,13 @@ void main() {
       expect(resolve('sync/outbox').title, 'Sync Outbox');
     });
 
-    testWidgets('advanced/conflicts and advanced/about use their arb keys', (
+    testWidgets('sync/conflicts and advanced/about use their arb keys', (
       tester,
     ) async {
+      // The conflicts leaf moved from `advanced` to `sync` (it's a
+      // sync-domain concept) — the resolver follows the new id.
       final resolve = await _buildResolver(tester);
-      expect(resolve('advanced/conflicts').title, 'Sync Conflicts');
+      expect(resolve('sync/conflicts').title, 'Sync Conflicts');
       expect(resolve('advanced/about').title, 'About Lotti');
     });
   });

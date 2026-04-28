@@ -5295,10 +5295,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsAdvancedAboutSubtitle => 'Zjistěte více o aplikaci Lotti';
 
   @override
-  String get settingsAdvancedConflictsSubtitle =>
-      'Řešte konflikty synchronizace pro zajištění konzistence dat';
-
-  @override
   String get settingsAdvancedHealthImportSubtitle =>
       'Importujte zdravotní údaje z externích zdrojů';
 
@@ -5888,6 +5884,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Model rozpoznávání řeči Whisper:';
 
   @override
+  String get settingsSyncConflictsSubtitle =>
+      'Řešte konflikty synchronizace pro zajištění konzistence dat';
+
+  @override
   String get settingsSyncOutboxTitle => 'Synchronizace odeslané pošty';
 
   @override
@@ -5954,7 +5954,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsWhatsNewUnseenBody =>
-      'Otevři poznámky k vydání, aby sis přečetl novinky v této verzi.';
+      'Otevři poznámky k vydání, aby sis přečetl novinky od tvé poslední návštěvy.';
 
   @override
   String settingsWhatsNewUnseenHeadline(int count) {

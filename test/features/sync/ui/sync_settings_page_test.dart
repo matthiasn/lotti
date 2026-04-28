@@ -203,7 +203,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(context.messages.settingsAdvancedConflictsSubtitle),
+        find.text(context.messages.settingsSyncConflictsSubtitle),
         findsOneWidget,
       );
       expect(
