@@ -85,27 +85,42 @@ jobs:
 
           rm -f "$CERT_PATH"
 
-      - name: Install provisioning profile
+      - name: Install provisioning profile and configure Runner signing
         env:
           MACOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.MACOS_PROVISIONING_PROFILE_BASE64 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
-          PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$PROFILE_DIR"
-
           STAGED_PROFILE="$RUNNER_TEMP/lotti_developerid.provisionprofile"
           echo "$MACOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$STAGED_PROFILE"
 
-          # Decode the CMS-wrapped profile to extract Name (used by
-          # PROVISIONING_PROFILE_SPECIFIER and the exportOptions plist) and
-          # UUID (Xcode looks profiles up by UUID-named filename).
+          # Decode the CMS-wrapped profile to extract Name and UUID.
           PROFILE_PLIST="$RUNNER_TEMP/profile.plist"
           security cms -D -i "$STAGED_PROFILE" > "$PROFILE_PLIST"
           PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$PROFILE_PLIST")"
           PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PROFILE_PLIST")"
 
-          cp "$STAGED_PROFILE" "$PROFILE_DIR/$PROFILE_UUID.provisionprofile"
-          ls -la "$PROFILE_DIR"
+          # Install the profile in both legacy and modern Xcode locations,
+          # named by UUID (the lookup key Xcode uses).
+          for d in \
+            "$HOME/Library/MobileDevice/Provisioning Profiles" \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$d"
+            cp "$STAGED_PROFILE" "$d/$PROFILE_UUID.provisionprofile"
+          done
+
+          # Append signing settings to the Runner target's xcconfig so they
+          # apply ONLY to Runner. Pod targets have their own xcconfigs and
+          # won't inherit these — which is what the post_install hook in
+          # Podfile also enforces defensively.
+          cat >> macos/Runner/Configs/Release.xcconfig <<EOF
+
+          // CI-only Developer ID signing overrides, applied per-target.
+          CODE_SIGN_STYLE = Manual
+          DEVELOPMENT_TEAM = ${APPLE_TEAM_ID}
+          CODE_SIGN_IDENTITY = Developer ID Application
+          PROVISIONING_PROFILE_SPECIFIER = ${PROFILE_NAME}
+          EOF
 
           echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
           echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
@@ -141,29 +156,15 @@ jobs:
           PLIST
 
       - name: Flutter build macOS (compile Dart + pods)
-        env:
-          # Override the project's automatic signing so the build picks up the
-          # imported Developer ID cert + provisioning profile instead of looking
-          # for a Mac App Development profile we don't ship to CI.
-          FLUTTER_XCODE_CODE_SIGN_STYLE: Manual
-          FLUTTER_XCODE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
-          FLUTTER_XCODE_CODE_SIGN_IDENTITY: Developer ID Application
-          FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER: ${{ env.PROFILE_NAME }}
         run: flutter build macos --release
 
       - name: Archive with Xcode
-        env:
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
           xcodebuild -workspace macos/Runner.xcworkspace \
             -config Release \
             -scheme Runner \
             -archivePath "$ARCHIVE_PATH" \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_IDENTITY="Developer ID Application" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
             archive
 
       - name: Export signed .app (Developer ID)
