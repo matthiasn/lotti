@@ -119,15 +119,27 @@ jobs:
           PLIST
 
       - name: Flutter build macOS (compile Dart + pods)
+        env:
+          # Override the project's automatic signing so the build picks up the
+          # imported Developer ID cert + provisioning profile instead of looking
+          # for a Mac App Development profile we don't ship to CI.
+          FLUTTER_XCODE_CODE_SIGN_STYLE: Manual
+          FLUTTER_XCODE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          FLUTTER_XCODE_CODE_SIGN_IDENTITY: Developer ID Application
         run: flutter build macos --release
 
       - name: Archive with Xcode
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
           xcodebuild -workspace macos/Runner.xcworkspace \
             -config Release \
             -scheme Runner \
             -archivePath "$ARCHIVE_PATH" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
             archive
 
       - name: Export signed .app (Developer ID)
