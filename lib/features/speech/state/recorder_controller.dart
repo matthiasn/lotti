@@ -686,7 +686,16 @@ class AudioRecorderController extends _$AudioRecorderController {
 
   /// Pauses any currently playing audio. Shared between [record] and
   /// [recordRealtime].
+  ///
+  /// Skips reading the provider if it hasn't been initialized yet — reading it
+  /// would eagerly construct a media_kit `Player` (and its native mpv core
+  /// thread) just to observe that nothing is playing. That makes every
+  /// subsequent hot restart crash on macOS, since mpv's core thread outlives
+  /// the Dart isolate teardown.
   Future<void> _pauseAudioPlayer() async {
+    if (!ref.exists(audioPlayerControllerProvider)) {
+      return;
+    }
     try {
       final playerState = ref.read(audioPlayerControllerProvider);
       if (playerState.status == AudioPlayerStatus.playing) {

@@ -35,6 +35,15 @@ PlayerFactory playerFactory(Ref ref) {
 /// Notifier managing audio player state.
 /// Marked as keepAlive since audio state should persist for the entire app
 /// lifecycle.
+///
+/// The underlying media_kit [Player] is created lazily on the first
+/// `setAudioNote`/`play` call and torn down again when playback completes.
+/// Keeping the native mpv core thread out of memory between active sessions
+/// makes Flutter hot restart safe whenever audio is not actively playing.
+/// (mpv's `core_thread` invokes FFI callbacks asynchronously; if the Dart
+/// VM is torn down by hot restart while the thread is alive, the trampolines
+/// it calls into are gone and the process aborts with
+/// "Callback invoked after it has been deleted".)
 @Riverpod(keepAlive: true)
 class AudioPlayerController extends _$AudioPlayerController {
   /// Tracks the active Player instance so the shutdown path can dispose it
@@ -43,6 +52,7 @@ class AudioPlayerController extends _$AudioPlayerController {
   static Player? _activePlayer;
 
   Player? _audioPlayer;
+  bool _hasOpenAudio = false;
   LoggingService? _loggingService;
   Duration _completionDelay = const Duration(
     milliseconds: AudioPlayerConstants.completionDelayMs,
@@ -59,31 +69,64 @@ class AudioPlayerController extends _$AudioPlayerController {
   @override
   AudioPlayerState build() {
     ref.onDispose(_cleanup);
-    _init();
+    _initLogging();
     return const AudioPlayerState();
   }
 
-  void _init() {
+  void _initLogging() {
     try {
-      final factory = ref.read(playerFactoryProvider);
-      _audioPlayer = factory();
-      _activePlayer = _audioPlayer;
       _loggingService = getIt<LoggingService>();
-      _setupSubscriptions();
-    } catch (exception, stackTrace) {
-      _loggingService?.captureException(
-        exception,
-        domain: 'audio_player_controller',
-        subDomain: 'init',
-        stackTrace: stackTrace,
-      );
+    } catch (_) {
+      // No LoggingService registered — nothing we can log this miss to.
+      // Production startup always registers it, so this catch is purely
+      // defensive against test/dev edge cases where the controller is
+      // constructed before service wiring.
     }
   }
 
-  void _setupSubscriptions() {
-    final player = _audioPlayer;
-    if (player == null) return;
+  /// Lazily constructs the underlying media_kit [Player] and wires its event
+  /// streams. Returns the existing instance if one is already alive.
+  ///
+  /// Player construction spins up mpv's native `core_thread`. Deferring it
+  /// until the user actually triggers playback keeps Flutter hot restart
+  /// safe in any session where audio is never opened.
+  ///
+  /// Subscriptions are wired *before* caching the instance so a failure
+  /// midway through never leaves a half-initialized player visible to later
+  /// callers; on failure the partially-constructed player is disposed.
+  Player? _ensurePlayer() {
+    final existing = _audioPlayer;
+    if (existing != null) return existing;
+    Player? createdPlayer;
+    try {
+      final factory = ref.read(playerFactoryProvider);
+      final player = createdPlayer = factory();
+      _setupSubscriptions(player);
+      _audioPlayer = player;
+      _activePlayer = player;
+      return player;
+    } catch (exception, stackTrace) {
+      if (createdPlayer != null) {
+        unawaited(createdPlayer.dispose());
+      }
+      _loggingService?.captureException(
+        exception,
+        domain: 'audio_player_controller',
+        subDomain: 'ensurePlayer',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
 
+  /// Test hook for triggering lazy player construction without having to
+  /// invoke a stateful action method (which would emit additional states).
+  @visibleForTesting
+  void ensurePlayerForTest() {
+    _ensurePlayer();
+  }
+
+  void _setupSubscriptions(Player player) {
     _positionSubscription = player.stream.position.listen(updateProgress);
     _bufferSubscription = player.stream.buffer.listen(_updateBuffered);
     _completedSubscription = player.stream.completed.listen(
@@ -94,15 +137,33 @@ class AudioPlayerController extends _$AudioPlayerController {
   void _cleanup() {
     _completionTimer?.cancel();
     _completionTimer = null;
+    _tearDownActivePlayer();
+  }
+
+  /// Tears down the live [Player] and its stream subscriptions. State (such
+  /// as the currently selected [AudioPlayerState.audioNote]) is preserved
+  /// so callers can transparently re-open the file on the next play.
+  ///
+  /// Stays synchronous so callers (Riverpod's `onDispose`, the completion
+  /// timer) can rely on the [Player.dispose] call being issued before they
+  /// return — only the resulting `Future` is unawaited.
+  void _tearDownActivePlayer() {
+    final player = _audioPlayer;
+    if (player == null) return;
     _positionSubscription?.cancel();
+    _positionSubscription = null;
     _bufferSubscription?.cancel();
+    _bufferSubscription = null;
     _completedSubscription?.cancel();
+    _completedSubscription = null;
     // Only clear the static pointer if we own it — a newer controller may
     // have already replaced it, and nulling would break the shutdown path.
-    if (identical(_activePlayer, _audioPlayer)) {
+    if (identical(_activePlayer, player)) {
       _activePlayer = null;
     }
-    _audioPlayer?.dispose();
+    _audioPlayer = null;
+    _hasOpenAudio = false;
+    unawaited(player.dispose());
   }
 
   /// Disposes the active media_kit Player for graceful shutdown.
@@ -148,7 +209,7 @@ class AudioPlayerController extends _$AudioPlayerController {
   /// Sets the audio note to play and opens the media file.
   Future<void> setAudioNote(JournalAudio audioNote) async {
     try {
-      if (state.audioNote == audioNote) {
+      if (state.audioNote == audioNote && _hasOpenAudio) {
         return;
       }
 
@@ -156,7 +217,7 @@ class AudioPlayerController extends _$AudioPlayerController {
       _completionTimer?.cancel();
       _completionTimer = null;
 
-      final player = _audioPlayer;
+      final player = _ensurePlayer();
       if (player == null) return;
 
       final localPath = await AudioUtils.getFullAudioPath(audioNote);
@@ -167,6 +228,7 @@ class AudioPlayerController extends _$AudioPlayerController {
       );
       state = newState;
       await player.open(Media(localPath), play: false);
+      _hasOpenAudio = true;
       final totalDuration = player.state.duration;
       state = state.copyWith(totalDuration: totalDuration);
     } catch (exception, stackTrace) {
@@ -182,8 +244,40 @@ class AudioPlayerController extends _$AudioPlayerController {
   /// Starts or resumes playback.
   Future<void> play() async {
     try {
-      final player = _audioPlayer;
+      // If a completion-delay timer from the previous run is still pending
+      // it would otherwise fire mid-replay, tearing down the freshly
+      // resumed player and flipping state back to stopped.
+      _completionTimer?.cancel();
+      _completionTimer = null;
+
+      final player = _ensurePlayer();
       if (player == null) return;
+
+      // After a completion-driven teardown the Player will have been
+      // recreated above without any media loaded. Reopen the previously
+      // selected audio note so the user can transparently replay.
+      if (!_hasOpenAudio) {
+        final audioNote = state.audioNote;
+        if (audioNote != null) {
+          final localPath = await AudioUtils.getFullAudioPath(audioNote);
+          await player.open(Media(localPath), play: false);
+          _hasOpenAudio = true;
+
+          // Sync total duration from the actual media file in case it
+          // diverges from the metadata stored on the audio note.
+          final totalDuration = player.state.duration;
+          state = state.copyWith(totalDuration: totalDuration);
+
+          // Restore mid-track progress so a seek performed while the
+          // player was torn down (or a partial-listen pause) is preserved
+          // on replay. Progress at the very end of the track is treated
+          // as a request to restart from the beginning.
+          final progress = state.progress;
+          if (progress > Duration.zero && progress < state.totalDuration) {
+            await player.seek(progress);
+          }
+        }
+      }
 
       await player.setRate(state.speed);
       await player.play();
@@ -201,10 +295,16 @@ class AudioPlayerController extends _$AudioPlayerController {
   /// Seeks to the specified position.
   Future<void> seek(Duration newPosition) async {
     try {
-      final player = _audioPlayer;
+      final player = _ensurePlayer();
       if (player == null) return;
 
-      await player.seek(newPosition);
+      // After a completion-driven teardown the Player has no media loaded
+      // yet; calling player.seek before player.open is undefined. The
+      // requested position is still recorded in state and will be applied
+      // when play() reopens the file (see the reopen branch in play).
+      if (_hasOpenAudio) {
+        await player.seek(newPosition);
+      }
       final newBuffered = newPosition > state.buffered
           ? newPosition
           : state.buffered;
@@ -232,7 +332,7 @@ class AudioPlayerController extends _$AudioPlayerController {
   /// Sets the playback speed.
   Future<void> setSpeed(double speed) async {
     try {
-      final player = _audioPlayer;
+      final player = _ensurePlayer();
       if (player == null) return;
 
       await player.setRate(speed);
@@ -250,7 +350,7 @@ class AudioPlayerController extends _$AudioPlayerController {
   /// Pauses playback.
   Future<void> pause() async {
     try {
-      final player = _audioPlayer;
+      final player = _ensurePlayer();
       if (player == null) return;
 
       await player.pause();
@@ -290,8 +390,15 @@ class AudioPlayerController extends _$AudioPlayerController {
         _completionTimer = null;
         // Verify the audio note hasn't been replaced before updating progress
         if (state.audioNote?.meta.id == capturedId) {
-          state = state.copyWith(progress: duration);
+          state = state.copyWith(
+            progress: duration,
+            status: AudioPlayerStatus.stopped,
+          );
         }
+        // Tear down the live Player after playback completes so mpv's
+        // core thread shuts down. State (audioNote/totalDuration) is
+        // preserved so the next play() transparently reopens the file.
+        _tearDownActivePlayer();
       },
     );
   }
@@ -315,5 +422,14 @@ class AudioPlayerController extends _$AudioPlayerController {
   @visibleForTesting
   set stateForTest(AudioPlayerState newState) {
     state = newState;
+  }
+
+  /// Pretends an audio file is already opened on the underlying Player so
+  /// methods that gate on [_hasOpenAudio] (e.g. [seek]) exercise their
+  /// file-loaded path without going through [setAudioNote] (which requires
+  /// a real path resolvable by [AudioUtils.getFullAudioPath]).
+  @visibleForTesting
+  set hasOpenAudioForTest(bool value) {
+    _hasOpenAudio = value;
   }
 }
