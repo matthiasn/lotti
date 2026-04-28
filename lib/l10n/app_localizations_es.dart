@@ -2469,13 +2469,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solicitar una calificación rápida de sesión al detener un temporizador.';
 
   @override
-  String get configFlagEnableSettingsTree => 'Diseño de árbol de ajustes';
-
-  @override
-  String get configFlagEnableSettingsTreeDescription =>
-      'Cambia los ajustes del escritorio a una navegación en árbol con panel de detalle. Déjalo desactivado para conservar la pila actual de varias columnas.';
-
-  @override
   String get configFlagEnableTooltip =>
       'Habilitar información sobre herramientas';
 
@@ -6003,13 +5996,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsV2DetailRootCrumb => 'Ajustes';
-
-  @override
-  String get settingsV2DisableAction => 'Desactivar Ajustes V2';
-
-  @override
-  String get settingsV2DisableFailed =>
-      'No se pudieron desactivar los Ajustes V2. Inténtalo de nuevo.';
 
   @override
   String get settingsV2EmptyStateBody =>

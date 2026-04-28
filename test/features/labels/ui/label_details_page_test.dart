@@ -10,6 +10,7 @@ import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -83,6 +84,11 @@ void main() {
     if (!getIt.isRegistered<EntitiesCacheService>()) {
       getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
     }
+    // Save / delete / cancel now drive navigation through `beamToNamed`,
+    // which would crash here because no `NavService` is registered.
+    // Install a no-op override; the dedicated cancel-and-save tests
+    // below replace this with a capturing closure.
+    beamToNamedOverride = (_) {};
   });
 
   tearDown(() async {
@@ -105,6 +111,7 @@ void main() {
     if (getIt.isRegistered<EntitiesCacheService>()) {
       await getIt.reset(dispose: false);
     }
+    beamToNamedOverride = null;
   });
 
   group('LabelDetailsPage', () {
@@ -381,46 +388,93 @@ void main() {
       expect(saved, isTrue);
     });
 
-    testWidgets('Cancel button does not call save and pops', (tester) async {
-      var saved = false;
-      const state = LabelEditorState(
-        name: 'Alpha',
-        colorHex: '#00FF00',
-        isPrivate: false,
-        selectedCategoryIds: {},
-      );
+    testWidgets(
+      'app-bar back arrow beams to the labels list (V2 desktop has no '
+      'Navigator.canPop fallback to auto-render the leading)',
+      (tester) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+        const state = LabelEditorState(
+          name: 'Alpha',
+          colorHex: '#00FF00',
+          isPrivate: false,
+          selectedCategoryIds: {},
+        );
 
-      final fakeController = _FakeLabelEditorController(
-        const LabelEditorArgs(),
-        initialState: state,
-        onSave: () async {
-          saved = true;
-          return testLabelDefinition1;
-        },
-      );
+        final container = ProviderContainer(
+          overrides: [
+            labelEditorControllerProvider.overrideWithBuild(
+              (ref, args) => state,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final container = ProviderContainer(
-        overrides: [
-          labelEditorControllerProvider.overrideWith(() => fakeController),
-        ],
-      );
-      addTearDown(container.dispose);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(const LabelDetailsPage()),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
+        );
+        await tester.pumpAndSettle();
 
-      final cancel = find.byType(LottiSecondaryButton);
-      expect(cancel, findsOneWidget);
-      await tester.tap(cancel);
-      await tester.pump();
+        expect(beamedTo, '/settings/labels');
+      },
+    );
 
-      expect(saved, isFalse);
-    });
+    testWidgets(
+      'Cancel button does not call save and beams back to the labels list',
+      (tester) async {
+        var saved = false;
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+        const state = LabelEditorState(
+          name: 'Alpha',
+          colorHex: '#00FF00',
+          isPrivate: false,
+          selectedCategoryIds: {},
+        );
+
+        final fakeController = _FakeLabelEditorController(
+          const LabelEditorArgs(),
+          initialState: state,
+          onSave: () async {
+            saved = true;
+            return testLabelDefinition1;
+          },
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            labelEditorControllerProvider.overrideWith(() => fakeController),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(const LabelDetailsPage()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final cancel = find.byType(LottiSecondaryButton);
+        expect(cancel, findsOneWidget);
+        await tester.tap(cancel);
+        await tester.pump();
+
+        expect(saved, isFalse);
+        // Cancel beams back to the labels list (V2's detail surface
+        // mounts inline, so this is the only return path on desktop).
+        expect(beamedTo, '/settings/labels');
+      },
+    );
 
     testWidgets('error message renders when present in state', (tester) async {
       const state = LabelEditorState(

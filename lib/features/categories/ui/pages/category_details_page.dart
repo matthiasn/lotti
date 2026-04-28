@@ -19,6 +19,7 @@ import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart'
 import 'package:lotti/features/projects/ui/widgets/category_projects_section.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
@@ -98,6 +99,14 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         body: CustomScrollView(
           slivers: [
             SliverAppBar(
+              // Always show an explicit back arrow — V2's detail pane
+              // mounts the page inline (no Navigator.canPop), so the
+              // automatic leading would never appear there.
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () => beamToNamed('/settings/categories'),
+              ),
               title: Text(
                 context.messages.createCategoryTitle,
                 style: appBarTextStyleNewLarge.copyWith(
@@ -158,8 +167,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       );
 
       if (mounted) {
-        // Navigate back to the categories list page
-        Navigator.of(context).pop();
+        // Beam back to the categories list — V2's desktop detail
+        // surface mounts inline (Navigator.pop would be a no-op);
+        // the URL change still pops the page on mobile.
+        beamToNamed('/settings/categories');
       }
     } catch (e) {
       if (mounted) {
@@ -203,7 +214,11 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     return FormBottomBar(
       rightButtons: [
         LottiSecondaryButton(
-          onPressed: () => Navigator.of(context).pop(),
+          // Beam to the list URL rather than `Navigator.pop`. V2's desktop
+          // detail surface mounts the page inline (no Navigator route was
+          // pushed), so popping is a no-op there; on mobile the URL change
+          // still pops the detail page off the Beamer stack.
+          onPressed: () => beamToNamed('/settings/categories'),
           label: context.messages.cancelButton,
         ),
         LottiPrimaryButton(
@@ -236,14 +251,16 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       return;
     }
 
-    // Success - show snackbar and navigate back
+    // Success - show snackbar and navigate back to the list. Beaming
+    // (rather than popping) keeps V2's desktop inline panel in sync;
+    // mobile's Beamer stack reduces to the list page automatically.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(context.messages.saveSuccessful),
         backgroundColor: successColor,
       ),
     );
-    Navigator.of(context).pop();
+    beamToNamed('/settings/categories');
   }
 
   @override
@@ -264,6 +281,11 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     if (category == null && !state.isLoading) {
       return Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+            onPressed: () => beamToNamed('/settings/categories'),
+          ),
           title: Text(context.messages.settingsCategoriesDetailsLabel),
         ),
         body: Center(
@@ -285,6 +307,11 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         body: CustomScrollView(
           slivers: [
             SliverAppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () => beamToNamed('/settings/categories'),
+              ),
               title: Text(
                 context.messages.settingsCategoriesDetailsLabel,
                 style: appBarTextStyleNewLarge.copyWith(
@@ -688,7 +715,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       ),
       rightButtons: [
         LottiSecondaryButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => beamToNamed('/settings/categories'),
           label: context.messages.cancelButton,
         ),
         LottiPrimaryButton(
@@ -712,13 +739,15 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           ),
           LottiTertiaryButton(
             onPressed: () async {
+              // Pop the confirm dialog first, then beam back to the
+              // list once the row is gone.
               Navigator.of(context).pop();
               final controller = ref.read(
                 categoryDetailsControllerProvider(widget.categoryId!).notifier,
               );
               await controller.deleteCategory();
               if (context.mounted) {
-                Navigator.of(context).pop();
+                beamToNamed('/settings/categories');
               }
             },
             label: context.messages.categoryDeleteConfirm,

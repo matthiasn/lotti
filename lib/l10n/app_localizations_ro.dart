@@ -2441,14 +2441,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.';
 
   @override
-  String get configFlagEnableSettingsTree =>
-      'Aranjament arborescent al setărilor';
-
-  @override
-  String get configFlagEnableSettingsTreeDescription =>
-      'Comută setările desktop către o navigare de tip arbore cu panou de detalii. Lăsați dezactivat pentru a păstra actualul stiv de coloane multiple.';
-
-  @override
   String get configFlagEnableTooltip => 'Activează sfaturile';
 
   @override
@@ -5954,13 +5946,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsV2DetailRootCrumb => 'Setări';
-
-  @override
-  String get settingsV2DisableAction => 'Dezactivați Setările V2';
-
-  @override
-  String get settingsV2DisableFailed =>
-      'Setările V2 nu au putut fi dezactivate. Încercați din nou.';
 
   @override
   String get settingsV2EmptyStateBody =>

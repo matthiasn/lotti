@@ -34,6 +34,7 @@
     <release version="0.9.979" date="2026-04-28">
       <description>
           <p>Backfill Sync settings page rebuilt around the Option C "compact ledger" design: a welded status row (Inbound queue · Missing · Skipped) at the top, a leader-dotted Sync statistics ledger, an Automatic backfill toggle, and a single collapsed Advanced recovery group containing every manual recovery action (Catch up now, Retry skipped events when present, Manual backfill, Reset unresolvable, Re-request pending, Ask peers for unresolvable, Retire stuck entries). All visuals are driven by design-system tokens — DesignSystemButton, DesignSystemToggle, tokens.colors.*, tokens.spacing.*, tokens.radii.* — so the page reads as part of the rest of Settings V2 instead of a one-off.</p>
+          <p>Settings V2 (tree-nav + detail pane) is now the canonical desktop chrome. The enable_settings_tree config flag, the legacy desktop column-stack layout, and the "Disable Settings V2" escape-hatch button are gone; SettingsRootPage now dispatches mobile to the single-page SettingsPage and desktop to SettingsV2Page with no flag observation. Mobile is unchanged.</p>
       </description>
     </release>
     <release version="0.9.978" date="2026-04-27">

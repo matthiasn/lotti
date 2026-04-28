@@ -20,6 +20,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -145,7 +146,11 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 
   @override
   Widget build(BuildContext context) {
-    void maybePop() => Navigator.of(context).maybePop();
+    // Beam back to the dashboards list rather than popping the
+    // navigator. The page is rendered inline inside V2's desktop
+    // detail surface (no Navigator route to pop); on mobile the URL
+    // change still pops the detail page off the Beamer stack.
+    void backToList() => beamToNamed('/settings/dashboards');
 
     final formKey = widget.formKey ?? _formKey;
 
@@ -267,7 +272,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                       setState(() {
                         dirty = false;
                       });
-                      maybePop();
+                      backToList();
                     }
 
                     Future<void> copyDashboard() async {
@@ -302,6 +307,13 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                       body: CustomScrollView(
                         slivers: <Widget>[
                           SliverAppBar(
+                            leading: IconButton(
+                              icon: const Icon(Icons.arrow_back_rounded),
+                              tooltip: MaterialLocalizations.of(
+                                context,
+                              ).backButtonTooltip,
+                              onPressed: backToList,
+                            ),
                             title: Text(
                               context.messages.settingsDashboardDetailsLabel,
                               style: appBarTextStyleNewLarge.copyWith(
@@ -576,7 +588,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                                       .deleteDashboardDefinition(
                                                         widget.dashboard,
                                                       );
-                                                  maybePop();
+                                                  backToList();
                                                 }
                                               },
                                             ),

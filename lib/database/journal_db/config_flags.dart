@@ -187,13 +187,5 @@ Future<void> initConfigFlags(
     ),
   );
 
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableSettingsTreeFlag,
-      description: enableSettingsTreeFlagDescription,
-      status: false,
-    ),
-  );
-
   // No additional flags for label guardrails: always-on behavior.
 }

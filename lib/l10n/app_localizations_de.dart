@@ -2432,13 +2432,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nach dem Stoppen eines Timers eine schnelle Sitzungsbewertung anzeigen.';
 
   @override
-  String get configFlagEnableSettingsTree => 'Einstellungen als Baum';
-
-  @override
-  String get configFlagEnableSettingsTreeDescription =>
-      'Schaltet die Desktop-Einstellungen auf eine Baum-Navigation mit Detailbereich um. Aus lassen, um den bisherigen Mehr-Spalten-Stack zu behalten.';
-
-  @override
   String get configFlagEnableTooltip => 'Tooltips aktivieren';
 
   @override
@@ -5906,13 +5899,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsV2DetailRootCrumb => 'Einstellungen';
-
-  @override
-  String get settingsV2DisableAction => 'Einstellungen V2 deaktivieren';
-
-  @override
-  String get settingsV2DisableFailed =>
-      'Einstellungen V2 konnte nicht deaktiviert werden. Bitte versuche es erneut.';
 
   @override
   String get settingsV2EmptyStateBody =>

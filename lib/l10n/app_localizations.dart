@@ -4188,18 +4188,6 @@ abstract class AppLocalizations {
   /// **'Prompt for a quick session rating when you stop a timer.'**
   String get configFlagEnableSessionRatingsDescription;
 
-  /// No description provided for @configFlagEnableSettingsTree.
-  ///
-  /// In en, this message translates to:
-  /// **'Settings tree layout'**
-  String get configFlagEnableSettingsTree;
-
-  /// No description provided for @configFlagEnableSettingsTreeDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Switch desktop Settings to a tree navigation with a detail pane. Leave off to keep the multi-column stack.'**
-  String get configFlagEnableSettingsTreeDescription;
-
   /// No description provided for @configFlagEnableTooltip.
   ///
   /// In en, this message translates to:
@@ -10188,18 +10176,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get settingsV2DetailRootCrumb;
-
-  /// No description provided for @settingsV2DisableAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Disable Settings V2'**
-  String get settingsV2DisableAction;
-
-  /// No description provided for @settingsV2DisableFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not disable Settings V2. Please try again.'**
-  String get settingsV2DisableFailed;
 
   /// No description provided for @settingsV2EmptyStateBody.
   ///

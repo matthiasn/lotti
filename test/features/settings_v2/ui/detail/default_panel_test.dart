@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/detail/default_panel.dart';
-import 'package:lotti/features/settings_v2/ui/detail/disable_v2_button.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -75,12 +74,5 @@ void main() {
         expect(find.text('orphan-id'), findsOneWidget);
       },
     );
-  });
-
-  group('DefaultPanel — escape hatch', () {
-    testWidgets('always renders the DisableV2Button', (tester) async {
-      await _pump(tester, _flagsLeaf());
-      expect(find.byType(DisableV2Button), findsOneWidget);
-    });
   });
 }

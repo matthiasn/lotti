@@ -11,6 +11,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -39,7 +40,11 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    void maybePop() => Navigator.of(context).maybePop();
+    // Beam back to the measurables list rather than popping. The page
+    // is mounted inline inside V2's desktop detail surface (no
+    // Navigator route to pop); on mobile the URL change still pops the
+    // page off the Beamer stack.
+    void backToList() => beamToNamed('/settings/measurables');
 
     final item = widget.dataType;
 
@@ -63,7 +68,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
           dirty = false;
         });
 
-        maybePop();
+        backToList();
       }
     }
 
@@ -71,6 +76,14 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
+            // Always show an explicit back button — V2's detail pane
+            // mounts the page inline (no Navigator.canPop), so the
+            // automatic leading would never appear there.
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: backToList,
+            ),
             title: Text(
               context.messages.settingsMeasurableDetailsLabel,
               style: appBarTextStyleNewLarge.copyWith(
@@ -205,7 +218,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                                 item.copyWith(deletedAt: DateTime.now()),
                               );
 
-                              maybePop();
+                              backToList();
                             }
                           },
                         ),
