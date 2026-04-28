@@ -60,7 +60,6 @@ class FlagsBody extends ConsumerWidget {
     enableProjectsFlag,
     enableEmbeddingsFlag,
     enableVectorSearchFlag,
-    enableSettingsTreeFlag,
   ];
 
   IconData _iconForFlag(String flagName) {
@@ -101,8 +100,6 @@ class FlagsBody extends ConsumerWidget {
         return Icons.hub_outlined;
       case enableVectorSearchFlag:
         return Icons.manage_search_rounded;
-      case enableSettingsTreeFlag:
-        return Icons.account_tree_outlined;
       default:
         return Icons.settings;
     }
@@ -148,8 +145,6 @@ class FlagsBody extends ConsumerWidget {
         return context.messages.configFlagAttemptEmbeddingDescription;
       case enableVectorSearchFlag:
         return context.messages.configFlagEnableVectorSearchDescription;
-      case enableSettingsTreeFlag:
-        return context.messages.configFlagEnableSettingsTreeDescription;
       default:
         return flag.description;
     }
@@ -193,8 +188,6 @@ class FlagsBody extends ConsumerWidget {
         return context.messages.configFlagEnableEmbeddings;
       case enableVectorSearchFlag:
         return context.messages.configFlagEnableVectorSearch;
-      case enableSettingsTreeFlag:
-        return context.messages.configFlagEnableSettingsTree;
       default:
         return flag.name;
     }

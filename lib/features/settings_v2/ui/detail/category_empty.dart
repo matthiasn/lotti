@@ -8,10 +8,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// has been picked yet (spec §4 "CategoryEmpty"). Uses the branch's
 /// own icon + title + description, followed by the "pick a sub-
 /// setting" helper line.
-///
-/// Does not include the `DisableV2Button`: a user at this state has
-/// already interacted with the tree and has an obvious way back to
-/// the empty root (collapse the branch).
 class CategoryEmpty extends StatelessWidget {
   const CategoryEmpty({required this.node, super.key});
 

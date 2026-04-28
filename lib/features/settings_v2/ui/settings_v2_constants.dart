@@ -4,10 +4,8 @@ import 'package:flutter/foundation.dart';
 ///
 /// Every fixed dp / ms / alpha literal referenced from more than one
 /// widget — or pinned by the spec — lives here so widgets stay free of
-/// magic numbers and callers can trust a single source of truth. These
-/// are not yet promoted into the generated design-token set; that
-/// migration happens when Settings V2 graduates from the
-/// `enable_settings_tree` flag.
+/// magic numbers and callers can trust a single source of truth. Not
+/// yet promoted into the generated design-token set.
 @immutable
 class SettingsV2Constants {
   const SettingsV2Constants._();
@@ -68,7 +66,4 @@ class SettingsV2Constants {
   /// Icon size for the empty-state / unimplemented-panel glyph in
   /// the detail placeholder.
   static const double placeholderIconSize = 36;
-
-  /// Icon size for the "Disable Settings V2" escape-hatch button.
-  static const double placeholderButtonIconSize = 18;
 }

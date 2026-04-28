@@ -16,6 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   driven by design-system tokens — `DesignSystemButton`, `DesignSystemToggle`,
   `tokens.colors.*`, `tokens.spacing.*`, `tokens.radii.*` — so the page reads
   as part of the rest of Settings V2 instead of a one-off.
+- Settings V2 (tree-nav + detail pane) is now the canonical desktop chrome.
+  `SettingsRootPage` reduces to a plain mobile→`SettingsPage` /
+  desktop→`SettingsV2Page` dispatch with no flag observation; mobile is
+  unchanged.
+
+### Removed
+- The `enable_settings_tree` config flag and its description, the legacy
+  desktop `SettingsColumnStack` view, the `DisableV2Button` escape hatch
+  (and its embeds in `EmptyRoot` / `DefaultPanel`), and the matching arb
+  keys (`configFlagEnableSettingsTree{,Description}`,
+  `settingsV2DisableAction`, `settingsV2DisableFailed`) across all locales.
+  The `placeholderButtonIconSize` constant is gone with its sole caller.
 
 ## [0.9.978]
 ### Changed

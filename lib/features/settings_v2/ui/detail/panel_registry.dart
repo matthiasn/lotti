@@ -1,15 +1,22 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
+import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
+import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
+import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
@@ -17,6 +24,8 @@ import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// Signature for a registered detail-pane panel body. The builder
 /// receives a fresh [BuildContext] under the Settings V2 detail
@@ -152,12 +161,142 @@ Widget _syncMatrixMaintenancePanel(BuildContext context) =>
     const MatrixSyncMaintenanceBody();
 
 // --- Step 8 builders --------------------------------------------------------
-Widget _categoriesPanel(BuildContext context) => const CategoriesListBody();
-Widget _labelsPanel(BuildContext context) => const LabelsListBody();
+//
+// Categories / Labels / Dashboards each carry a list ↔ detail/create swap
+// driven by URL `pathParameters`. The legacy desktop column-stack used to
+// route those URLs to a fresh detail column; under V2 the panel slot itself
+// owns the dispatch via [DetailIdDispatch] so the same content area swaps
+// in place when a row is tapped (`/settings/<branch>/<id>`) or the create
+// CTA is hit (`/settings/<branch>/create`).
+Widget _categoriesPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'categoryId',
+  list: (_) => const CategoriesListBody(),
+  create: (_, _) => const CategoryDetailsPage(),
+  detail: (_, id) => CategoryDetailsPage(
+    key: ValueKey('settings-v2-category-$id'),
+    categoryId: id,
+  ),
+);
+Widget _labelsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'labelId',
+  list: (_) => const LabelsListBody(),
+  create: (_, route) => LabelDetailsPage(
+    initialName: route?.queryParameters['name'],
+  ),
+  detail: (_, id) => LabelDetailsPage(
+    key: ValueKey('settings-v2-label-$id'),
+    labelId: id,
+  ),
+);
 Widget _habitsPanel(BuildContext context) => const HabitsBody();
-Widget _dashboardsPanel(BuildContext context) => const DashboardsBody();
-Widget _measurablesPanel(BuildContext context) => const MeasurablesBody();
+Widget _dashboardsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'dashboardId',
+  list: (_) => const DashboardsBody(),
+  create: (_, _) => CreateDashboardPage(),
+  detail: (_, id) => EditDashboardPage(
+    key: ValueKey('settings-v2-dashboard-$id'),
+    dashboardId: id,
+  ),
+);
+Widget _measurablesPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'measurableId',
+  list: (_) => const MeasurablesBody(),
+  create: (_, _) => CreateMeasurablePage(),
+  detail: (_, id) => EditMeasurablePage(
+    key: ValueKey('settings-v2-measurable-$id'),
+    measurableId: id,
+  ),
+);
 Widget _syncConflictsPanel(BuildContext context) => const ConflictsBody();
+
+/// Generic list ↔ detail/create dispatcher for V2 panel bodies.
+///
+/// Listens to [NavService.desktopSelectedSettingsRoute] directly via
+/// a [ValueListenableBuilder] (no Riverpod adapter — the underlying
+/// `ValueNotifier` already emits on every Beamer-driven route change,
+/// and stock Flutter rebuild semantics avoid any "did the provider
+/// observe the update" doubt). Chooses between three builders:
+///
+/// - **create** — when the URL ends with `/create`. Receives the full
+///   route so create flows can read query parameters
+///   (e.g. labels prefilling the new label's name).
+/// - **detail** — when [idParamKey] is present in `pathParameters` and
+///   not the literal `'create'` (which Beamer hands back as a path
+///   parameter on the matching route definition).
+/// - **list** — fallback for the bare branch URL.
+///
+/// The dispatcher is intentionally local to the registry: keeping it
+/// here means the categories / labels / dashboards features stay
+/// agnostic of V2 routing, and the registry stays the single place
+/// to wire a new list-detail pair. The optional [listenable] hook
+/// lets tests drive the dispatch with their own ValueNotifier without
+/// having to register a `NavService` in `get_it`.
+class DetailIdDispatch extends StatelessWidget {
+  const DetailIdDispatch({
+    required this.idParamKey,
+    required this.list,
+    required this.create,
+    required this.detail,
+    this.listenable,
+    super.key,
+  });
+
+  final String idParamKey;
+  final Widget Function(BuildContext context) list;
+  final Widget Function(BuildContext context, DesktopSettingsRoute? route)
+  create;
+  final Widget Function(BuildContext context, String id) detail;
+
+  /// Test-only override for the route source. Production callers leave
+  /// this `null` so the dispatcher reads from `getIt<NavService>()`.
+  @visibleForTesting
+  final ValueListenable<DesktopSettingsRoute?>? listenable;
+
+  /// Cross-fade duration between list / detail / create modes — kept
+  /// in sync with `kSettingsDetailPaneSwap` in `SettingsDetailPane` so
+  /// every transition under the V2 detail surface lands on the same
+  /// motion grammar.
+  static const Duration _kModeSwapDuration = Duration(milliseconds: 180);
+
+  @override
+  Widget build(BuildContext context) {
+    final source =
+        listenable ?? getIt<NavService>().desktopSelectedSettingsRoute;
+    return ValueListenableBuilder<DesktopSettingsRoute?>(
+      valueListenable: source,
+      builder: (context, route, _) {
+        final params = route?.pathParameters ?? const <String, String>{};
+        final path = route?.path ?? '';
+
+        final Widget child;
+        final String modeKey;
+        if (path.endsWith('/create')) {
+          child = create(context, route);
+          modeKey = 'create';
+        } else {
+          final id = params[idParamKey];
+          if (id != null && id.isNotEmpty && id != 'create') {
+            child = detail(context, id);
+            // Key includes the id so swapping between two detail rows
+            // (e.g. tapping a different category) cross-fades instead
+            // of reusing the previous detail's element.
+            modeKey = 'detail:$id';
+          } else {
+            child = list(context);
+            modeKey = 'list';
+          }
+        }
+
+        return AnimatedSwitcher(
+          duration: _kModeSwapDuration,
+          transitionBuilder: (current, animation) =>
+              FadeTransition(opacity: animation, child: current),
+          child: KeyedSubtree(key: ValueKey(modeKey), child: child),
+        );
+      },
+    );
+  }
+}
 
 // --- Step 9 builders --------------------------------------------------------
 Widget _aiPanel(BuildContext context) => const AiSettingsBody();

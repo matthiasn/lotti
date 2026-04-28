@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -46,6 +47,16 @@ void main() {
       mockRepository = MockCategoryRepository();
       // mockAiConfigRepository = MockAiConfigRepository();
       testCategoryId = const Uuid().v4();
+      // The page now drives navigation via `beamToNamed` (which
+      // delegates through `getIt<NavService>()`). These tests don't
+      // register a NavService, so install a no-op override; tests
+      // that need to assert the beamed URL replace this with their
+      // own capturing closure.
+      beamToNamedOverride = (_) {};
+    });
+
+    tearDown(() {
+      beamToNamedOverride = null;
     });
 
     testWidgets(
@@ -392,9 +403,41 @@ void main() {
         await streamController.close();
       });
 
+      testWidgets(
+        'app-bar back arrow beams to the categories list — works in V2 '
+        'desktop where the auto-leading would never appear',
+        (tester) async {
+          final category = CategoryTestUtils.createTestCategory();
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => Stream.value(category),
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.tap(
+            find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
+          );
+          await tester.pumpAndSettle();
+
+          expect(beamedTo, '/settings/categories');
+        },
+      );
+
       testWidgets('cancel button navigates back', (tester) async {
         final category = CategoryTestUtils.createTestCategory();
-        var navigatedBack = false;
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
@@ -405,16 +448,7 @@ void main() {
             overrides: [
               categoryRepositoryProvider.overrideWithValue(mockRepository),
             ],
-            child: Navigator(
-              onDidRemovePage: (page) {
-                navigatedBack = true;
-              },
-              pages: [
-                MaterialPage(
-                  child: CategoryDetailsPage(categoryId: testCategoryId),
-                ),
-              ],
-            ),
+            child: CategoryDetailsPage(categoryId: testCategoryId),
           ),
         );
 
@@ -425,7 +459,10 @@ void main() {
         await tester.tap(cancelButton);
         await tester.pumpAndSettle();
 
-        expect(navigatedBack, isTrue);
+        // Cancel beams back to the categories list — V2's detail
+        // surface mounts inline, so this is the only way the user
+        // returns to the list pane on desktop.
+        expect(beamedTo, '/settings/categories');
       });
     });
 
@@ -457,6 +494,54 @@ void main() {
         expect(find.byType(AlertDialog), findsOneWidget);
         expect(find.textContaining('Delete'), findsAtLeastNWidgets(1));
       });
+
+      testWidgets(
+        'confirm delete invokes repository.deleteCategory and beams to '
+        'the categories list',
+        (tester) async {
+          final category = CategoryTestUtils.createTestCategory();
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => Stream.value(category),
+          );
+          when(() => mockRepository.deleteCategory(testCategoryId)).thenAnswer(
+            (_) async {},
+          );
+
+          await tester.pumpWidget(
+            RiverpodWidgetTestBench(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(mockRepository),
+              ],
+              child: CategoryDetailsPage(categoryId: testCategoryId),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          // Open delete dialog
+          await tester.tap(find.byType(LottiTertiaryButton));
+          await tester.pumpAndSettle();
+
+          // Confirm delete — destructive button is the second tertiary
+          // button inside the dialog (the first is the cancel button).
+          final confirmButton = find
+              .descendant(
+                of: find.byType(AlertDialog),
+                matching: find.byType(LottiTertiaryButton),
+              )
+              .last;
+          await tester.tap(confirmButton);
+          await tester.pumpAndSettle();
+
+          verify(() => mockRepository.deleteCategory(testCategoryId)).called(1);
+          // Beams to the list so the now-deleted detail isn't left
+          // mounted in V2's inline panel.
+          expect(beamedTo, '/settings/categories');
+        },
+      );
 
       testWidgets('cancel delete dismisses dialog', (tester) async {
         final category = CategoryTestUtils.createTestCategory();
@@ -751,7 +836,8 @@ void main() {
       testWidgets('navigates back after successful category creation', (
         tester,
       ) async {
-        var didNavigateBack = false;
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
 
         when(
           () => mockRepository.createCategory(
@@ -768,12 +854,7 @@ void main() {
             overrides: [
               categoryRepositoryProvider.overrideWithValue(mockRepository),
             ],
-            child: Navigator(
-              onDidRemovePage: (page) => didNavigateBack = true,
-              pages: const [
-                MaterialPage(child: CategoryDetailsPage()),
-              ],
-            ),
+            child: const CategoryDetailsPage(),
           ),
         );
 
@@ -788,8 +869,8 @@ void main() {
         await tester.tap(createButton);
         await tester.pumpAndSettle();
 
-        // Verify navigation back occurred
-        expect(didNavigateBack, isTrue);
+        // After a successful create the page beams back to the list.
+        expect(beamedTo, '/settings/categories');
         verify(
           () => mockRepository.createCategory(
             name: 'New Category',
@@ -803,7 +884,8 @@ void main() {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
         final category = CategoryTestUtils.createTestCategory(name: 'Original');
-        var didNavigateBack = false;
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
@@ -820,14 +902,7 @@ void main() {
             overrides: [
               categoryRepositoryProvider.overrideWithValue(mockRepository),
             ],
-            child: Navigator(
-              onDidRemovePage: (page) => didNavigateBack = true,
-              pages: [
-                MaterialPage(
-                  child: CategoryDetailsPage(categoryId: testCategoryId),
-                ),
-              ],
-            ),
+            child: CategoryDetailsPage(categoryId: testCategoryId),
           ),
         );
 
@@ -843,15 +918,16 @@ void main() {
         await tester.tap(find.byWidget(saveButton!));
         await tester.pumpAndSettle();
 
-        // Verify success snackbar AND navigation
+        // Success path shows the snackbar and beams back to the list.
         expect(find.byType(SnackBar), findsOneWidget);
-        expect(didNavigateBack, isTrue);
+        expect(beamedTo, '/settings/categories');
 
         await streamController.close();
       });
 
       testWidgets('does not navigate back when creation fails', (tester) async {
-        var didNavigateBack = false;
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
 
         when(
           () => mockRepository.createCategory(
@@ -866,12 +942,7 @@ void main() {
             overrides: [
               categoryRepositoryProvider.overrideWithValue(mockRepository),
             ],
-            child: Navigator(
-              onDidRemovePage: (page) => didNavigateBack = true,
-              pages: const [
-                MaterialPage(child: CategoryDetailsPage()),
-              ],
-            ),
+            child: const CategoryDetailsPage(),
           ),
         );
 
@@ -883,9 +954,9 @@ void main() {
         await tester.tap(find.byType(LottiPrimaryButton));
         await tester.pumpAndSettle();
 
-        // Verify error shown and NO navigation
+        // Error shown and the page stays put — no beam fired.
         expect(find.textContaining('Error creating category'), findsOneWidget);
-        expect(didNavigateBack, isFalse);
+        expect(beamedTo, isNull);
       });
     });
 

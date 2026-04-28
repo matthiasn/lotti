@@ -2422,13 +2422,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Po zastavení časovače zobrazit rychlé hodnocení relace.';
 
   @override
-  String get configFlagEnableSettingsTree => 'Rozvržení stromu nastavení';
-
-  @override
-  String get configFlagEnableSettingsTreeDescription =>
-      'Přepni nastavení na ploše na stromovou navigaci s panelem detailů. Nech vypnuté, pokud chceš zachovat stávající vícesloupcový stack.';
-
-  @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';
 
   @override
@@ -5918,13 +5911,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsV2DetailRootCrumb => 'Nastavení';
-
-  @override
-  String get settingsV2DisableAction => 'Vypnout Nastavení V2';
-
-  @override
-  String get settingsV2DisableFailed =>
-      'Nastavení V2 se nepodařilo vypnout. Zkus to prosím znovu.';
 
   @override
   String get settingsV2EmptyStateBody => 'Vyber sekci vlevo, abys mohl začít.';

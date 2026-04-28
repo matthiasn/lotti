@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/settings_v2/ui/detail/disable_v2_button.dart';
 import 'package:lotti/features/settings_v2/ui/detail/empty_root.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -36,13 +35,6 @@ void main() {
     testWidgets('renders the gear empty-state glyph', (tester) async {
       await _pumpEmptyRoot(tester);
       expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
-    });
-  });
-
-  group('EmptyRoot — escape hatch', () {
-    testWidgets('always renders the DisableV2Button', (tester) async {
-      await _pumpEmptyRoot(tester);
-      expect(find.byType(DisableV2Button), findsOneWidget);
     });
   });
 }

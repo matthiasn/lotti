@@ -10,6 +10,7 @@ import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -129,7 +130,10 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.messages.saveSuccessful)),
         );
-        Navigator.of(context).pop();
+        // Beam back to the list rather than popping — V2's desktop
+        // detail surface is rendered inline (no Navigator route to
+        // pop); the URL change still pops the detail page on mobile.
+        beamToNamed('/settings/labels');
       }
     }
 
@@ -158,8 +162,9 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 Navigator.pop(dialogContext);
                 await ref.read(labelsRepositoryProvider).deleteLabel(label.id);
                 if (!mounted || !pageContext.mounted) return;
-                // Pop the details page and show a snackbar using the page context
-                Navigator.of(pageContext).pop();
+                // Beam back to the list rather than popping — see
+                // [handleSave] above for the V2-vs-mobile rationale.
+                beamToNamed('/settings/labels');
                 if (!mounted || !pageContext.mounted) return;
                 ScaffoldMessenger.of(pageContext).showSnackBar(
                   SnackBar(
@@ -195,6 +200,11 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         body: CustomScrollView(
           slivers: [
             SliverAppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: () => beamToNamed('/settings/labels'),
+              ),
               title: Text(
                 title,
                 style: appBarTextStyleNewLarge.copyWith(
@@ -240,7 +250,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 ),
           rightButtons: [
             LottiSecondaryButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => beamToNamed('/settings/labels'),
               label: context.messages.cancelButton,
             ),
             LottiPrimaryButton(

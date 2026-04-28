@@ -10,6 +10,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -63,8 +64,44 @@ void main() {
 
       // Ensure ThemingController dependencies are registered
       ensureThemingServicesRegistered();
+
+      // The page now beams to `/settings/dashboards` after save / delete
+      // (V2's desktop detail surface mounts inline, so Navigator.pop
+      // would be a no-op). These tests don't register a NavService, so
+      // install a no-op override.
+      beamToNamedOverride = (_) {};
     });
-    tearDown(getIt.reset);
+    tearDown(() async {
+      beamToNamedOverride = null;
+      await getIt.reset();
+    });
+
+    testWidgets(
+      'app-bar back arrow beams to the dashboards list (V2 desktop has '
+      'no Navigator.canPop fallback to auto-render the leading)',
+      (tester) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+        final formKey = GlobalKey<FormBuilderState>();
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            DashboardDefinitionPage(
+              dashboard: testDashboardConfig,
+              formKey: formKey,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
+        );
+        await tester.pumpAndSettle();
+
+        expect(beamedTo, '/settings/dashboards');
+      },
+    );
 
     testWidgets('dashboard definition page is displayed with test item, '
         'then save button becomes visible after entering text ', (

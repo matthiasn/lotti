@@ -2465,14 +2465,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Proposer une évaluation rapide de session à l\'arrêt d\'un minuteur.';
 
   @override
-  String get configFlagEnableSettingsTree =>
-      'Mise en page arborescente des paramètres';
-
-  @override
-  String get configFlagEnableSettingsTreeDescription =>
-      'Bascule les paramètres du bureau vers une navigation arborescente avec volet de détail. Laisse-le désactivé pour conserver la pile multi-colonnes actuelle.';
-
-  @override
   String get configFlagEnableTooltip => 'Activer les info-bulles';
 
   @override
@@ -6010,13 +6002,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsV2DetailRootCrumb => 'Paramètres';
-
-  @override
-  String get settingsV2DisableAction => 'Désactiver Paramètres V2';
-
-  @override
-  String get settingsV2DisableFailed =>
-      'Impossible de désactiver Paramètres V2. Réessaie.';
 
   @override
   String get settingsV2EmptyStateBody =>

@@ -2394,13 +2394,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Prompt for a quick session rating when you stop a timer.';
 
   @override
-  String get configFlagEnableSettingsTree => 'Settings tree layout';
-
-  @override
-  String get configFlagEnableSettingsTreeDescription =>
-      'Switch desktop Settings to a tree navigation with a detail pane. Leave off to keep the multi-column stack.';
-
-  @override
   String get configFlagEnableTooltip => 'Enable tooltips';
 
   @override
@@ -5819,13 +5812,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsV2DetailRootCrumb => 'Settings';
-
-  @override
-  String get settingsV2DisableAction => 'Disable Settings V2';
-
-  @override
-  String get settingsV2DisableFailed =>
-      'Could not disable Settings V2. Please try again.';
 
   @override
   String get settingsV2EmptyStateBody => 'Pick a section on the left to begin.';

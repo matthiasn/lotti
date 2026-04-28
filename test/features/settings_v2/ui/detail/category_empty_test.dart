@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/detail/category_empty.dart';
-import 'package:lotti/features/settings_v2/ui/detail/disable_v2_button.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -68,15 +67,6 @@ void main() {
     testWidgets('renders the "pick a sub-setting" helper line', (tester) async {
       await _pump(tester, _syncBranch());
       expect(find.text('Pick a sub-setting on the left.'), findsOneWidget);
-    });
-  });
-
-  group('CategoryEmpty — escape hatch', () {
-    testWidgets('does NOT render the DisableV2Button (user can collapse)', (
-      tester,
-    ) async {
-      await _pump(tester, _syncBranch());
-      expect(find.byType(DisableV2Button), findsNothing);
     });
   });
 }

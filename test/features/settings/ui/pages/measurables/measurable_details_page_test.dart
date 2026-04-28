@@ -6,6 +6,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -39,8 +40,40 @@ void main() {
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+      // Save / delete now beam to `/settings/measurables` rather than
+      // popping the navigator (V2's desktop detail surface mounts the
+      // page inline). Install a no-op override so the calls don't try
+      // to reach into an unregistered NavService.
+      beamToNamedOverride = (_) {};
     });
-    tearDown(getIt.reset);
+    tearDown(() async {
+      beamToNamedOverride = null;
+      await getIt.reset();
+    });
+
+    testWidgets(
+      'app-bar back arrow beams to the measurables list (V2 desktop has '
+      'no Navigator.canPop fallback to auto-render the leading)',
+      (tester) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            MeasurableDetailsPage(dataType: measurableWater),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(
+          find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
+        );
+        await tester.pumpAndSettle();
+
+        expect(beamedTo, '/settings/measurables');
+      },
+    );
 
     testWidgets(
       'measurable details page is displayed with type water & updated',
