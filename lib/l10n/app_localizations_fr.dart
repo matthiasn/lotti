@@ -1798,6 +1798,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get automaticPrompts => 'Prompts automatiques';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions',
+      one: '1 action',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Récupération avancée';
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Récupère maintenant les entrées manquantes récentes depuis tes pairs.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count IDs d\'appareil',
+      one: '1 ID d\'appareil',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Demander toutes les entrées manquantes quel que soit leur âge. Utilisez cette option pour récupérer les écarts de synchronisation anciens.';
 
@@ -1917,6 +1946,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'Non résoluble';
+
+  @override
+  String get backfillStatusInboundQueue => 'File entrante';
+
+  @override
+  String get backfillStatusMissing => 'Manquant';
+
+  @override
+  String get backfillStatusSkipped => 'Ignoré';
+
+  @override
+  String get backfillToggleDescription =>
+      'Demande les entrées manquantes des dernières 24 heures.';
 
   @override
   String get backfillToggleDisabledDescription =>

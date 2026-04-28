@@ -1793,6 +1793,35 @@ class AppLocalizationsEs extends AppLocalizations {
   String get automaticPrompts => 'Prompts automáticos';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count acciones',
+      one: '1 acción',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Recuperación avanzada';
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Solicita ahora a los pares las entradas faltantes recientes.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count IDs de dispositivo',
+      one: '1 ID de dispositivo',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Solicitar todas las entradas faltantes sin importar su antigüedad. Úsalo para recuperar brechas de sincronización antiguas.';
 
@@ -1912,6 +1941,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'No resoluble';
+
+  @override
+  String get backfillStatusInboundQueue => 'Cola entrante';
+
+  @override
+  String get backfillStatusMissing => 'Faltante';
+
+  @override
+  String get backfillStatusSkipped => 'Omitido';
+
+  @override
+  String get backfillToggleDescription =>
+      'Solicita las entradas faltantes de las últimas 24 horas.';
 
   @override
   String get backfillToggleDisabledDescription =>

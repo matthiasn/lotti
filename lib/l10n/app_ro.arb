@@ -799,6 +799,24 @@
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOP",
   "automaticPrompts": "Prompturi automate",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 acțiune} other{{count} acțiuni}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Recuperare avansată",
+  "backfillCatchUpDescription": "Solicitați acum colegilor intrările lipsă recente.",
+  "backfillDevicesMeta": "{count, plural, =1{1 ID dispozitiv} other{{count} ID-uri dispozitive}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Solicită toate intrările lipsă indiferent de vechime. Folosiți pentru a recupera lacune de sincronizare mai vechi.",
   "backfillManualProcessing": "Se procesează...",
   "backfillManualSuccess": "{count} intrări solicitate",
@@ -856,6 +874,10 @@
   "backfillStatsTitle": "Statistici de sincronizare",
   "backfillStatsTotalEntries": "Total intrări",
   "backfillStatsUnresolvable": "Nerezolvabil",
+  "backfillStatusInboundQueue": "Coadă de intrare",
+  "backfillStatusMissing": "Lipsă",
+  "backfillStatusSkipped": "Omis",
+  "backfillToggleDescription": "Solicită intrările lipsă din ultimele 24 de ore.",
   "backfillToggleDisabledDescription": "Completare dezactivată - utilă pe rețele cu date limitate",
   "backfillToggleEnabledDescription": "Solicită automat intrările de sincronizare lipsă",
   "backfillToggleTitle": "Completare automată",

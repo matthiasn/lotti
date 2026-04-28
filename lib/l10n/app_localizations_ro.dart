@@ -1775,6 +1775,35 @@ class AppLocalizationsRo extends AppLocalizations {
   String get automaticPrompts => 'Prompturi automate';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count acțiuni',
+      one: '1 acțiune',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Recuperare avansată';
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Solicitați acum colegilor intrările lipsă recente.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ID-uri dispozitive',
+      one: '1 ID dispozitiv',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Solicită toate intrările lipsă indiferent de vechime. Folosiți pentru a recupera lacune de sincronizare mai vechi.';
 
@@ -1887,6 +1916,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'Nerezolvabil';
+
+  @override
+  String get backfillStatusInboundQueue => 'Coadă de intrare';
+
+  @override
+  String get backfillStatusMissing => 'Lipsă';
+
+  @override
+  String get backfillStatusSkipped => 'Omis';
+
+  @override
+  String get backfillToggleDescription =>
+      'Solicită intrările lipsă din ultimele 24 de ore.';
 
   @override
   String get backfillToggleDisabledDescription =>

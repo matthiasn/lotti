@@ -799,6 +799,24 @@
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOPP",
   "automaticPrompts": "Automatische Prompts",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 Aktion} other{{count} Aktionen}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Erweiterte Wiederherstellung",
+  "backfillCatchUpDescription": "Fordere fehlende Einträge der letzten Zeit jetzt von Peers an.",
+  "backfillDevicesMeta": "{count, plural, =1{1 Geräte-ID} other{{count} Geräte-IDs}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Alle fehlenden Einträge unabhängig vom Alter anfordern. Nutze dies zur Wiederherstellung älterer Synchronisierungslücken.",
   "backfillManualProcessing": "Verarbeitung...",
   "backfillManualSuccess": "{count} Einträge angefordert",
@@ -856,6 +874,10 @@
   "backfillStatsTitle": "Synchronisierungsstatistiken",
   "backfillStatsTotalEntries": "Einträge gesamt",
   "backfillStatsUnresolvable": "Nicht auflösbar",
+  "backfillStatusInboundQueue": "Eingangswarteschlange",
+  "backfillStatusMissing": "Fehlend",
+  "backfillStatusSkipped": "Übersprungen",
+  "backfillToggleDescription": "Fordert fehlende Einträge der letzten 24 Stunden an.",
   "backfillToggleDisabledDescription": "Nachfüllung deaktiviert – nützlich bei Mobilfunknetzen",
   "backfillToggleEnabledDescription": "Fehlende Sync-Einträge automatisch anfordern",
   "backfillToggleTitle": "Automatische Nachfüllung",

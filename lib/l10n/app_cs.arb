@@ -593,6 +593,24 @@
   "audioRecordingStandard": "Standardní",
   "audioRecordingStop": "STOP",
   "automaticPrompts": "Automatické výzvy",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 akce} few{{count} akce} other{{count} akcí}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Pokročilé obnovení",
+  "backfillCatchUpDescription": "Stáhni od peerů nedávné chybějící položky hned teď.",
+  "backfillDevicesMeta": "{count, plural, =1{1 ID zařízení} few{{count} ID zařízení} other{{count} ID zařízení}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Požádejte o všechny chybějící záznamy bez ohledu na jejich stáří. Použijte toto pro obnovení starších mezer ve synchronizaci.",
   "backfillManualProcessing": "Probíhá zpracování...",
   "backfillManualSuccess": "Požádáno o {count} záznamů",
@@ -650,6 +668,10 @@
   "backfillStatsTitle": "Statistiky synchronizace",
   "backfillStatsTotalEntries": "Celkem položek",
   "backfillStatsUnresolvable": "Nevyřešitelné",
+  "backfillStatusInboundQueue": "Příchozí fronta",
+  "backfillStatusMissing": "Chybí",
+  "backfillStatusSkipped": "Přeskočeno",
+  "backfillToggleDescription": "Žádá o chybějící položky za posledních 24 hodin.",
   "backfillToggleDisabledDescription": "Doplnění zakázáno - užitečné při omezených sítích",
   "backfillToggleEnabledDescription": "Automaticky požadovat chybějící položky synchronizace",
   "backfillToggleTitle": "Automatické zpětné doplňování",

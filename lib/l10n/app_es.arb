@@ -799,6 +799,24 @@
   "audioRecordingStandard": "Estándar",
   "audioRecordingStop": "PARAR",
   "automaticPrompts": "Prompts automáticos",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 acción} other{{count} acciones}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Recuperación avanzada",
+  "backfillCatchUpDescription": "Solicita ahora a los pares las entradas faltantes recientes.",
+  "backfillDevicesMeta": "{count, plural, =1{1 ID de dispositivo} other{{count} IDs de dispositivo}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Solicitar todas las entradas faltantes sin importar su antigüedad. Úsalo para recuperar brechas de sincronización antiguas.",
   "backfillManualProcessing": "Procesando...",
   "backfillManualSuccess": "{count} entradas solicitadas",
@@ -856,6 +874,10 @@
   "backfillStatsTitle": "Estadísticas de sincronización",
   "backfillStatsTotalEntries": "Entradas totales",
   "backfillStatsUnresolvable": "No resoluble",
+  "backfillStatusInboundQueue": "Cola entrante",
+  "backfillStatusMissing": "Faltante",
+  "backfillStatusSkipped": "Omitido",
+  "backfillToggleDescription": "Solicita las entradas faltantes de las últimas 24 horas.",
   "backfillToggleDisabledDescription": "Relleno desactivado - útil en redes con datos limitados",
   "backfillToggleEnabledDescription": "Solicitar automáticamente entradas de sincronización faltantes",
   "backfillToggleTitle": "Relleno automático",

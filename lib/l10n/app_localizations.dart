@@ -3132,6 +3132,30 @@ abstract class AppLocalizations {
   /// **'Automatic Prompts'**
   String get automaticPrompts;
 
+  /// No description provided for @backfillAdvancedRecoveryActions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 action} other{{count} actions}}'**
+  String backfillAdvancedRecoveryActions(int count);
+
+  /// No description provided for @backfillAdvancedRecoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced recovery'**
+  String get backfillAdvancedRecoveryTitle;
+
+  /// No description provided for @backfillCatchUpDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull recent missing entries from peers right now.'**
+  String get backfillCatchUpDescription;
+
+  /// No description provided for @backfillDevicesMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 device ID} other{{count} device IDs}}'**
+  String backfillDevicesMeta(int count);
+
   /// No description provided for @backfillManualDescription.
   ///
   /// In en, this message translates to:
@@ -3237,7 +3261,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillSettingsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Backfill Sync'**
+  /// **'Backfill sync'**
   String get backfillSettingsTitle;
 
   /// No description provided for @backfillStatsBackfilled.
@@ -3291,7 +3315,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillStatsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Sync Statistics'**
+  /// **'Sync statistics'**
   String get backfillStatsTitle;
 
   /// No description provided for @backfillStatsTotalEntries.
@@ -3305,6 +3329,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unresolvable'**
   String get backfillStatsUnresolvable;
+
+  /// No description provided for @backfillStatusInboundQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbound queue'**
+  String get backfillStatusInboundQueue;
+
+  /// No description provided for @backfillStatusMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing'**
+  String get backfillStatusMissing;
+
+  /// No description provided for @backfillStatusSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get backfillStatusSkipped;
+
+  /// No description provided for @backfillToggleDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests missing entries from the last 24 hours.'**
+  String get backfillToggleDescription;
 
   /// No description provided for @backfillToggleDisabledDescription.
   ///
@@ -3321,7 +3369,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillToggleTitle.
   ///
   /// In en, this message translates to:
-  /// **'Automatic Backfill'**
+  /// **'Automatic backfill'**
   String get backfillToggleTitle;
 
   /// No description provided for @basicSettings.

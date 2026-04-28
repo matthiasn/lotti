@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.979]
+### Changed
+- Backfill Sync settings page rebuilt around the Option C "compact ledger"
+  design: a welded status row (Inbound queue · Missing · Skipped) at the top,
+  a leader-dotted Sync statistics ledger, an `Automatic backfill` toggle, and
+  a single collapsed `Advanced recovery` group containing every manual
+  recovery action (`Catch up now`, `Retry skipped events` when present,
+  `Manual backfill`, `Reset unresolvable`, `Re-request pending`,
+  `Ask peers for unresolvable`, `Retire stuck entries`). All visuals are
+  driven by design-system tokens — `DesignSystemButton`, `DesignSystemToggle`,
+  `tokens.colors.*`, `tokens.spacing.*`, `tokens.radii.*` — so the page reads
+  as part of the rest of Settings V2 instead of a one-off.
+
 ## [0.9.978]
 ### Changed
 - Task agents now react immediately to recorded audio. Brand-new task agents

@@ -799,6 +799,24 @@
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "ARRÊTER",
   "automaticPrompts": "Prompts automatiques",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Récupération avancée",
+  "backfillCatchUpDescription": "Récupère maintenant les entrées manquantes récentes depuis tes pairs.",
+  "backfillDevicesMeta": "{count, plural, =1{1 ID d'appareil} other{{count} IDs d'appareil}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Demander toutes les entrées manquantes quel que soit leur âge. Utilisez cette option pour récupérer les écarts de synchronisation anciens.",
   "backfillManualProcessing": "Traitement...",
   "backfillManualSuccess": "{count} entrées demandées",
@@ -856,6 +874,10 @@
   "backfillStatsTitle": "Statistiques de synchronisation",
   "backfillStatsTotalEntries": "Total des entrées",
   "backfillStatsUnresolvable": "Non résoluble",
+  "backfillStatusInboundQueue": "File entrante",
+  "backfillStatusMissing": "Manquant",
+  "backfillStatusSkipped": "Ignoré",
+  "backfillToggleDescription": "Demande les entrées manquantes des dernières 24 heures.",
   "backfillToggleDisabledDescription": "Rattrapage désactivé - utile sur les réseaux limités",
   "backfillToggleEnabledDescription": "Demander automatiquement les entrées de synchronisation manquantes",
   "backfillToggleTitle": "Rattrapage automatique",

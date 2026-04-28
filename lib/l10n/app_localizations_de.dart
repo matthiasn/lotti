@@ -1778,6 +1778,35 @@ class AppLocalizationsDe extends AppLocalizations {
   String get automaticPrompts => 'Automatische Prompts';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aktionen',
+      one: '1 Aktion',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Erweiterte Wiederherstellung';
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Fordere fehlende Einträge der letzten Zeit jetzt von Peers an.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Geräte-IDs',
+      one: '1 Geräte-ID',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Alle fehlenden Einträge unabhängig vom Alter anfordern. Nutze dies zur Wiederherstellung älterer Synchronisierungslücken.';
 
@@ -1889,6 +1918,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'Nicht auflösbar';
+
+  @override
+  String get backfillStatusInboundQueue => 'Eingangswarteschlange';
+
+  @override
+  String get backfillStatusMissing => 'Fehlend';
+
+  @override
+  String get backfillStatusSkipped => 'Übersprungen';
+
+  @override
+  String get backfillToggleDescription =>
+      'Fordert fehlende Einträge der letzten 24 Stunden an.';
 
   @override
   String get backfillToggleDisabledDescription =>

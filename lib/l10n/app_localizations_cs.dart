@@ -1763,6 +1763,37 @@ class AppLocalizationsCs extends AppLocalizations {
   String get automaticPrompts => 'Automatické výzvy';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count akcí',
+      few: '$count akce',
+      one: '1 akce',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Pokročilé obnovení';
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Stáhni od peerů nedávné chybějící položky hned teď.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ID zařízení',
+      few: '$count ID zařízení',
+      one: '1 ID zařízení',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Požádejte o všechny chybějící záznamy bez ohledu na jejich stáří. Použijte toto pro obnovení starších mezer ve synchronizaci.';
 
@@ -1874,6 +1905,19 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backfillStatsUnresolvable => 'Nevyřešitelné';
+
+  @override
+  String get backfillStatusInboundQueue => 'Příchozí fronta';
+
+  @override
+  String get backfillStatusMissing => 'Chybí';
+
+  @override
+  String get backfillStatusSkipped => 'Přeskočeno';
+
+  @override
+  String get backfillToggleDescription =>
+      'Žádá o chybějící položky za posledních 24 hodin.';
 
   @override
   String get backfillToggleDisabledDescription =>

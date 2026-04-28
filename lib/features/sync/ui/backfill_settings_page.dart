@@ -1,21 +1,28 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
-import 'package:lotti/features/sync/ui/widgets/fetch_all_history_dialog.dart';
-import 'package:lotti/features/sync/ui/widgets/queue_depth_card.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Mobile / legacy wrapper. Keeps the `SliverBoxAdapterPage` chrome
-/// + `SyncFeatureGate` and delegates content to [BackfillSettingsBody]
-/// so the same widget can render inside the Settings V2 detail pane
-/// (plan step 7).
+/// Mobile / Beamer wrapper. Adds the [SliverBoxAdapterPage] chrome
+/// + the [SyncFeatureGate] flag check and delegates content to
+/// [BackfillSettingsBody]. The same body is reused inside the
+/// Settings V2 detail pane via the panel registry — that host
+/// renders its own header, so it embeds [BackfillSettingsBody]
+/// directly without this wrapper.
 class BackfillSettingsPage extends StatelessWidget {
   const BackfillSettingsPage({super.key});
 
@@ -26,317 +33,234 @@ class BackfillSettingsPage extends StatelessWidget {
         title: context.messages.backfillSettingsTitle,
         subtitle: context.messages.backfillSettingsSubtitle,
         showBackButton: true,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: const BackfillSettingsBody(),
       ),
     );
   }
 }
 
-/// Content body for the backfill-settings page. Extracted so the V2
-/// detail pane can render the same sections without the outer
-/// sliver chrome. The feature gate is applied by each host so
-/// embeddings below a disabled flag still get the intended "feature
-/// off" guard.
+/// Backfill Sync content. Layout follows the
+/// `option_c_preview` handoff:
+///   1. **Status row** — three welded cells (Inbound queue · Missing
+///      · Skipped) on a single rounded surface. Operator-critical
+///      counters live here so they sit at eye level.
+///   2. **Sync statistics** — leader-dot ledger of seven counts.
+///   3. **Automatic backfill** — toggle card.
+///   4. **Advanced recovery** — collapsed group containing every
+///      manual recovery action.
+///
+/// The body owns no chrome (page title / scaffold) — both hosts
+/// (legacy [BackfillSettingsPage] and the Settings V2 detail pane)
+/// supply their own.
 class BackfillSettingsBody extends ConsumerWidget {
   const BackfillSettingsBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final configAsync = ref.watch(backfillConfigControllerProvider);
-    final statsState = ref.watch(backfillStatsControllerProvider);
-    final theme = Theme.of(context);
+    final tokens = context.designTokens;
+    final config = ref.watch(backfillConfigControllerProvider);
+    final stats = ref.watch(backfillStatsControllerProvider);
     final matrixService = getIt.isRegistered<MatrixService>()
         ? getIt<MatrixService>()
         : null;
     final coordinator = matrixService?.queueCoordinator;
-    final showQueueSection = coordinator != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showQueueSection) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: QueueDepthCard(queue: coordinator.queue),
+    return _QueueDepthScope(
+      queue: coordinator?.queue,
+      builder: (context, depth) {
+        return Padding(
+          // Breathing room below the host's page title (V2 leaf panel
+          // or legacy `SettingsPageHeader`) before the status row.
+          padding: EdgeInsets.only(top: tokens.spacing.step4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _StatusRow(
+                inbound: depth?.total ?? 0,
+                missing: stats.stats?.totalMissing ?? 0,
+                skipped: depth?.abandoned ?? 0,
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              _SyncStatsCard(
+                stats: stats.stats,
+                isLoading: stats.isLoading,
+                onRefresh: () => ref
+                    .read(backfillStatsControllerProvider.notifier)
+                    .refresh(),
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              _AutomaticBackfillCard(
+                isEnabled: config.value ?? true,
+                isBusy: config.isLoading,
+                onToggle: () => ref
+                    .read(backfillConfigControllerProvider.notifier)
+                    .toggle(),
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              _AdvancedRecoveryGroup(
+                stats: stats,
+                skipped: depth?.abandoned ?? 0,
+                coordinator: coordinator,
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          _CatchUpNowButton(coordinator: coordinator),
-          const SizedBox(height: 8),
-          _FetchAllHistoryButton(coordinator: coordinator),
-          const SizedBox(height: 24),
-        ],
-
-        // Enable/Disable Toggle Card
-        _BackfillToggleCard(
-          isEnabled: configAsync.value ?? true,
-          isLoading: configAsync.isLoading,
-          onToggle: () =>
-              ref.read(backfillConfigControllerProvider.notifier).toggle(),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Stats Section
-        _StatsSection(
-          stats: statsState.stats,
-          isLoading: statsState.isLoading,
-          onRefresh: () =>
-              ref.read(backfillStatsControllerProvider.notifier).refresh(),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Manual Backfill Section
-        _ManualBackfillSection(
-          isProcessing: statsState.isProcessing,
-          lastProcessedCount: statsState.lastProcessedCount,
-          error: statsState.error,
-          onTrigger: () => ref
-              .read(backfillStatsControllerProvider.notifier)
-              .triggerFullBackfill(),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Reset Unresolvable Section
-        _ResetUnresolvableSection(
-          isProcessing: statsState.isResetting,
-          lastResetCount: statsState.lastResetCount,
-          unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
-          error: statsState.error,
-          onTrigger: () => ref
-              .read(backfillStatsControllerProvider.notifier)
-              .resetUnresolvable(),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Re-Request Section
-        _ReRequestSection(
-          isProcessing: statsState.isReRequesting,
-          lastReRequestedCount: statsState.lastReRequestedCount,
-          requestedCount: statsState.stats?.totalRequested ?? 0,
-          error: statsState.error,
-          onTrigger: () => ref
-              .read(backfillStatsControllerProvider.notifier)
-              .triggerReRequest(),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Ask peers for unresolvable entries — flips every
-        // `unresolvable` row back to `missing` so the normal backfill
-        // sweep re-asks. Complements the narrower "Reset Unresolvable"
-        // action above (which only resets rows whose payload is
-        // already known locally).
-        _ResetAllUnresolvableSection(
-          isProcessing: statsState.isResettingAllUnresolvable,
-          lastResetCount: statsState.lastResetAllUnresolvableCount,
-          unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
-          error: statsState.error,
-          onTrigger: () async {
-            final confirmed = await _confirmResetAllUnresolvable(
-              context,
-              unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
-            );
-            // Guard against widget disposal while the dialog was open —
-            // `ref.read` without a context dependency would still work,
-            // but the convention in this codebase is to short-circuit
-            // any post-async work once the hosting widget is gone.
-            if (!confirmed || !context.mounted) return;
-            await ref
-                .read(backfillStatsControllerProvider.notifier)
-                .resetAllUnresolvable();
-          },
-        ),
-
-        const SizedBox(height: 24),
-
-        // Retire Stuck Now — manual trigger for
-        // `retireAgedOutRequestedEntries(amnestyWindow: Duration.zero)`.
-        _RetireStuckNowSection(
-          isProcessing: statsState.isRetiringStuck,
-          lastRetiredCount: statsState.lastRetiredStuckCount,
-          openCount:
-              (statsState.stats?.totalMissing ?? 0) +
-              (statsState.stats?.totalRequested ?? 0),
-          error: statsState.error,
-          onTrigger: () async {
-            final confirmed = await _confirmRetireStuck(
-              context,
-              openCount:
-                  (statsState.stats?.totalMissing ?? 0) +
-                  (statsState.stats?.totalRequested ?? 0),
-            );
-            if (!confirmed || !context.mounted) return;
-            await ref
-                .read(backfillStatsControllerProvider.notifier)
-                .retireStuckNow();
-          },
-        ),
-
-        const SizedBox(height: 16),
-
-        // Info text
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            context.messages.backfillSettingsInfo,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-class _CatchUpNowButton extends StatefulWidget {
-  const _CatchUpNowButton({required this.coordinator});
+/// Listens to [InboundQueue.depthChanges] and rebuilds with the
+/// latest signal. Pulled out so the rest of the body stays a plain
+/// [ConsumerWidget] — only this scope needs the stateful subscription.
+/// Mirrors the binding pattern in `QueueDepthCard`.
+class _QueueDepthScope extends StatefulWidget {
+  const _QueueDepthScope({required this.queue, required this.builder});
 
-  final QueuePipelineCoordinator coordinator;
+  final InboundQueue? queue;
+  final Widget Function(BuildContext context, QueueDepthSignal? depth) builder;
 
   @override
-  State<_CatchUpNowButton> createState() => _CatchUpNowButtonState();
+  State<_QueueDepthScope> createState() => _QueueDepthScopeState();
 }
 
-class _CatchUpNowButtonState extends State<_CatchUpNowButton> {
-  bool _running = false;
+class _QueueDepthScopeState extends State<_QueueDepthScope> {
+  StreamSubscription<QueueDepthSignal>? _sub;
+  QueueDepthSignal? _latest;
+  bool _liveSignalSeen = false;
 
-  Future<void> _kick() async {
-    if (_running) return;
-    setState(() => _running = true);
+  @override
+  void initState() {
+    super.initState();
+    _bind(widget.queue);
+  }
+
+  @override
+  void didUpdateWidget(covariant _QueueDepthScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.queue, widget.queue)) {
+      _sub?.cancel();
+      _latest = null;
+      _liveSignalSeen = false;
+      _bind(widget.queue);
+    }
+  }
+
+  void _bind(InboundQueue? queue) {
+    if (queue == null) return;
+    _sub = queue.depthChanges.listen((signal) {
+      if (!mounted) return;
+      setState(() {
+        _latest = signal;
+        _liveSignalSeen = true;
+      });
+    });
+    unawaited(_loadInitial(queue));
+  }
+
+  Future<void> _loadInitial(InboundQueue queue) async {
     try {
-      await widget.coordinator.triggerBridge();
+      final stats = await queue.stats();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.messages.queueCatchUpNowDone)),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.messages.queueFetchAllHistoryError(error.toString()),
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _running = false);
+      // A live emission while the one-shot read was in flight wins —
+      // do not overwrite it with the stale snapshot. Also bail if we
+      // rebound to a different queue mid-flight.
+      if (_liveSignalSeen) return;
+      if (!identical(queue, widget.queue)) return;
+      setState(() {
+        _latest = QueueDepthSignal(
+          total: stats.total,
+          byProducer: stats.byProducer,
+          oldestEnqueuedAt: stats.oldestEnqueuedAt,
+          abandoned: stats.abandoned,
+        );
+      });
+    } catch (_) {
+      // The depth subscription will refresh on its next emission;
+      // a one-shot DB hiccup at paint time should not crash the page.
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final messages = context.messages;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton.icon(
-          onPressed: _running ? null : _kick,
-          icon: _running
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.bolt_outlined),
-          label: Text(
-            _running
-                ? messages.queueCatchUpNowRunning
-                : messages.queueCatchUpNowButton,
-          ),
-        ),
-      ),
-    );
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
   }
-}
-
-class _FetchAllHistoryButton extends StatelessWidget {
-  const _FetchAllHistoryButton({required this.coordinator});
-
-  final QueuePipelineCoordinator coordinator;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: () async {
-            await FetchAllHistoryDialog.show(context, coordinator);
-          },
-          icon: const Icon(Icons.download_rounded),
-          label: Text(context.messages.queueFetchAllHistoryButton),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => widget.builder(context, _latest);
 }
 
-class _BackfillToggleCard extends StatelessWidget {
-  const _BackfillToggleCard({
-    required this.isEnabled,
-    required this.isLoading,
-    required this.onToggle,
+/// Three welded cells in a single rounded rectangle: inbound queue,
+/// missing count, skipped count. Each cell colours its value based
+/// on state: missing turns warning when > 0; skipped turns error
+/// when > 0.
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({
+    required this.inbound,
+    required this.missing,
+    required this.skipped,
   });
 
-  final bool isEnabled;
-  final bool isLoading;
-  final VoidCallback onToggle;
+  final int inbound;
+  final int missing;
+  final int skipped;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final divider = tokens.colors.decorative.level01;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    final missingActive = missing > 0;
+    final skippedActive = skipped > 0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
+      padding: EdgeInsets.all(tokens.spacing.step1),
+      child: IntrinsicHeight(
         child: Row(
           children: [
-            Icon(
-              isEnabled ? Icons.sync : Icons.sync_disabled,
-              color: isEnabled
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.outline,
-              size: 28,
-            ),
-            const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.messages.backfillToggleTitle,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    isEnabled
-                        ? context.messages.backfillToggleEnabledDescription
-                        : context.messages.backfillToggleDisabledDescription,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+              child: _StatusCell(
+                icon: Icons.inbox_outlined,
+                label: messages.backfillStatusInboundQueue,
+                value: inbound,
+                valueColor: tokens.colors.text.highEmphasis,
               ),
             ),
-            if (isLoading)
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              Switch(
-                value: isEnabled,
-                onChanged: (_) => onToggle(),
+            VerticalDivider(width: 1, thickness: 1, color: divider),
+            Expanded(
+              child: _StatusCell(
+                icon: missingActive
+                    ? Icons.bolt_outlined
+                    : Icons.check_circle_outline,
+                label: messages.backfillStatusMissing,
+                value: missing,
+                valueColor: missingActive
+                    ? tokens.colors.alert.warning.defaultColor
+                    : tokens.colors.text.highEmphasis,
               ),
+            ),
+            VerticalDivider(width: 1, thickness: 1, color: divider),
+            Expanded(
+              child: _StatusCell(
+                icon: Icons.error_outline,
+                label: messages.backfillStatusSkipped,
+                value: skipped,
+                labelColor: skippedActive
+                    ? tokens.colors.alert.error.defaultColor
+                    : null,
+                valueColor: skippedActive
+                    ? tokens.colors.alert.error.defaultColor
+                    : tokens.colors.text.highEmphasis,
+              ),
+            ),
           ],
         ),
       ),
@@ -344,8 +268,70 @@ class _BackfillToggleCard extends StatelessWidget {
   }
 }
 
-class _StatsSection extends StatelessWidget {
-  const _StatsSection({
+class _StatusCell extends StatelessWidget {
+  const _StatusCell({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.valueColor,
+    this.labelColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final int value;
+  final Color valueColor;
+  final Color? labelColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final resolvedLabelColor = labelColor ?? tokens.colors.text.mediumEmphasis;
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step3,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12, color: resolvedLabelColor),
+              SizedBox(width: tokens.spacing.step2),
+              Flexible(
+                child: Text(
+                  label,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: resolvedLabelColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          Text(
+            _formatCount(value),
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: valueColor,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sync statistics ledger card. Header (chart icon · title · device
+/// count meta · refresh) above seven leader-dot rows.
+class _SyncStatsCard extends StatelessWidget {
+  const _SyncStatsCard({
     required this.stats,
     required this.isLoading,
     required this.onRefresh,
@@ -357,138 +343,175 @@ class _StatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final hostCount = stats?.hostStats.length ?? 0;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.bar_chart,
-                  color: theme.colorScheme.primary,
+    return _SurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.bar_chart_rounded,
+                size: 18,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  messages.backfillStatsTitle,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
+              ),
+              if (stats != null)
+                Padding(
+                  padding: EdgeInsets.only(right: tokens.spacing.step2),
                   child: Text(
-                    context.messages.backfillStatsTitle,
-                    style: theme.textTheme.titleMedium,
+                    messages.backfillDevicesMeta(hostCount),
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
                   ),
                 ),
-                IconButton(
-                  icon: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh),
-                  onPressed: isLoading ? null : onRefresh,
-                  tooltip: context.messages.backfillStatsRefresh,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (stats == null && isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (stats == null)
-              Text(
-                context.messages.backfillStatsNoData,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              )
-            else ...[
-              _StatRow(
-                label: context.messages.backfillStatsTotalEntries,
-                value: '${stats!.totalEntries}',
+              _IconActionButton(
+                icon: Icons.refresh,
+                tooltip: messages.backfillStatsRefresh,
+                isBusy: isLoading,
+                onPressed: isLoading ? null : onRefresh,
               ),
-              _StatRow(
-                label: context.messages.backfillStatsReceived,
-                value: '${stats!.totalReceived}',
-                color: theme.colorScheme.primary,
-              ),
-              _StatRow(
-                label: context.messages.backfillStatsMissing,
-                value: '${stats!.totalMissing}',
-                color: stats!.totalMissing > 0
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-              _StatRow(
-                label: context.messages.backfillStatsRequested,
-                value: '${stats!.totalRequested}',
-                color: stats!.totalRequested > 0
-                    ? Colors.orange
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-              _StatRow(
-                label: context.messages.backfillStatsBackfilled,
-                value: '${stats!.totalBackfilled}',
-                color: Colors.green,
-              ),
-              _StatRow(
-                label: context.messages.backfillStatsDeleted,
-                value: '${stats!.totalDeleted}',
-              ),
-              _StatRow(
-                label: context.messages.backfillStatsUnresolvable,
-                value: '${stats!.totalUnresolvable}',
-                color: stats!.totalUnresolvable > 0
-                    ? theme.colorScheme.outline
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-              if (stats!.hostStats.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(
-                  context.messages.backfillStatsHostsTitle(
-                    stats!.hostStats.length,
-                  ),
-                  style: theme.textTheme.titleSmall,
-                ),
-              ],
             ],
-          ],
-        ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          if (stats == null)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
+              child: Text(
+                isLoading
+                    ? messages.backfillStatsRefresh
+                    : messages.backfillStatsNoData,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            )
+          else
+            _Ledger(stats: stats!),
+        ],
       ),
     );
   }
 }
 
-class _StatRow extends StatelessWidget {
-  const _StatRow({
-    required this.label,
-    required this.value,
-    this.color,
-  });
+class _Ledger extends StatelessWidget {
+  const _Ledger({required this.stats});
 
-  final String label;
-  final String value;
-  final Color? color;
+  final BackfillStats stats;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final highEmphasis = tokens.colors.text.highEmphasis;
+    final lowEmphasis = tokens.colors.text.lowEmphasis;
+    final success = tokens.colors.alert.success.defaultColor;
+    final warning = tokens.colors.alert.warning.defaultColor;
+    final interactive = tokens.colors.interactive.enabled;
+    final error = tokens.colors.alert.error.defaultColor;
 
+    final missingTone = stats.totalMissing > 0 ? warning : lowEmphasis;
+    final requestedTone = stats.totalRequested > 0 ? interactive : lowEmphasis;
+    final unresolvableTone = stats.totalUnresolvable > 0 ? error : lowEmphasis;
+
+    return Column(
+      children: [
+        _LedgerRow(
+          label: messages.backfillStatsTotalEntries,
+          value: stats.totalEntries,
+          color: highEmphasis,
+        ),
+        _LedgerRow(
+          label: messages.backfillStatsReceived,
+          value: stats.totalReceived,
+          color: highEmphasis,
+        ),
+        _LedgerRow(
+          label: messages.backfillStatsBackfilled,
+          value: stats.totalBackfilled,
+          color: success,
+        ),
+        _LedgerRow(
+          label: messages.backfillStatsMissing,
+          value: stats.totalMissing,
+          color: missingTone,
+        ),
+        _LedgerRow(
+          label: messages.backfillStatsRequested,
+          value: stats.totalRequested,
+          color: requestedTone,
+        ),
+        _LedgerRow(
+          label: messages.backfillStatsDeleted,
+          value: stats.totalDeleted,
+          color: lowEmphasis,
+        ),
+        _LedgerRow(
+          label: messages.backfillStatsUnresolvable,
+          value: stats.totalUnresolvable,
+          color: unresolvableTone,
+        ),
+      ],
+    );
+  }
+}
+
+/// One leader-dotted row: label on the left, dotted line filling the
+/// gap, tabular value on the right.
+class _LedgerRow extends StatelessWidget {
+  const _LedgerRow({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final int value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: theme.textTheme.bodyMedium,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+              child: CustomPaint(
+                size: const Size.fromHeight(1),
+                painter: _DottedLeaderPainter(
+                  color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.45),
+                ),
+              ),
+            ),
           ),
           Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+            _formatCount(value),
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
               color: color,
               fontFeatures: const [FontFeature.tabularFigures()],
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -497,637 +520,638 @@ class _StatRow extends StatelessWidget {
   }
 }
 
-class _ManualBackfillSection extends StatelessWidget {
-  const _ManualBackfillSection({
-    required this.isProcessing,
-    required this.lastProcessedCount,
-    required this.error,
-    required this.onTrigger,
+class _DottedLeaderPainter extends CustomPainter {
+  const _DottedLeaderPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1
+      ..strokeCap = StrokeCap.round;
+    const dotSpacing = 4.0;
+    final y = size.height / 2;
+    for (var x = 0.0; x < size.width; x += dotSpacing) {
+      canvas.drawCircle(Offset(x, y), 0.5, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DottedLeaderPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Automatic backfill toggle card. Sync icon · title + description ·
+/// [DesignSystemToggle].
+class _AutomaticBackfillCard extends StatelessWidget {
+  const _AutomaticBackfillCard({
+    required this.isEnabled,
+    required this.isBusy,
+    required this.onToggle,
   });
 
-  final bool isProcessing;
-  final int? lastProcessedCount;
-  final String? error;
-  final VoidCallback onTrigger;
+  final bool isEnabled;
+  final bool isBusy;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return _SurfaceCard(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step4,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.sync,
+            size: 18,
+            color: tokens.colors.interactive.enabled,
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.history,
-                  color: theme.colorScheme.primary,
+                Text(
+                  messages.backfillToggleTitle,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    context.messages.backfillManualTitle,
-                    style: theme.textTheme.titleMedium,
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  messages.backfillToggleDescription,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              context.messages.backfillManualDescription,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  error!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-            if (lastProcessedCount != null && !isProcessing)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.messages.backfillManualSuccess(
-                        lastProcessedCount!,
-                      ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: isProcessing ? null : onTrigger,
-                icon: isProcessing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.sync),
-                label: Text(
-                  isProcessing
-                      ? context.messages.backfillManualProcessing
-                      : context.messages.backfillManualTrigger,
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          DesignSystemToggle(
+            value: isEnabled,
+            onChanged: (_) => onToggle(),
+            enabled: !isBusy,
+            semanticsLabel: messages.backfillToggleTitle,
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ResetUnresolvableSection extends StatelessWidget {
-  const _ResetUnresolvableSection({
-    required this.isProcessing,
-    required this.lastResetCount,
-    required this.unresolvableCount,
-    required this.error,
-    required this.onTrigger,
+/// Collapsible group containing every recovery action. Header is
+/// always visible; body is hidden until tapped open. Order matches
+/// the design handoff:
+///   1. Catch up now (primary)
+///   2. Retry skipped events (visible when skipped > 0)
+///   3. Manual backfill (primary)
+///   4. Reset unresolvable (primary, disabled when 0)
+///   5. Re-request pending (secondary, disabled when 0)
+///   6. Ask peers for unresolvable (primary, disabled when 0)
+///   7. Retire stuck entries (danger-tertiary, disabled when 0)
+class _AdvancedRecoveryGroup extends StatefulWidget {
+  const _AdvancedRecoveryGroup({
+    required this.stats,
+    required this.skipped,
+    required this.coordinator,
   });
 
-  final bool isProcessing;
-  final int? lastResetCount;
-  final int unresolvableCount;
-  final String? error;
-  final VoidCallback onTrigger;
+  final BackfillStatsState stats;
+  final int skipped;
+  final QueuePipelineCoordinator? coordinator;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.restore,
-                  color: unresolvableCount > 0
-                      ? theme.colorScheme.error
-                      : theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    context.messages.backfillResetUnresolvableTitle,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              context.messages.backfillResetUnresolvableDescription,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  error!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-            if (lastResetCount != null && !isProcessing)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.messages.backfillResetUnresolvableSuccess(
-                        lastResetCount!,
-                      ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: isProcessing || unresolvableCount == 0
-                    ? null
-                    : onTrigger,
-                icon: isProcessing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.restore),
-                label: Text(
-                  isProcessing
-                      ? context.messages.backfillResetUnresolvableProcessing
-                      : context.messages.backfillResetUnresolvableTrigger,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  State<_AdvancedRecoveryGroup> createState() => _AdvancedRecoveryGroupState();
 }
 
-class _ReRequestSection extends StatelessWidget {
-  const _ReRequestSection({
-    required this.isProcessing,
-    required this.lastReRequestedCount,
-    required this.requestedCount,
-    required this.error,
-    required this.onTrigger,
-  });
-
-  final bool isProcessing;
-  final int? lastReRequestedCount;
-  final int requestedCount;
-  final String? error;
-  final VoidCallback onTrigger;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.replay,
-                  color: requestedCount > 0
-                      ? Colors.orange
-                      : theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    context.messages.backfillReRequestTitle,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              context.messages.backfillReRequestDescription,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  error!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-            if (lastReRequestedCount != null && !isProcessing)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.messages.backfillReRequestSuccess(
-                        lastReRequestedCount!,
-                      ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: isProcessing || requestedCount == 0
-                    ? null
-                    : onTrigger,
-                icon: isProcessing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.replay),
-                label: Text(
-                  isProcessing
-                      ? context.messages.backfillReRequestProcessing
-                      : context.messages.backfillReRequestTrigger,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Shows a confirmation dialog before manually retiring all currently-open
-/// `missing`/`requested` rows. Diagnostic affordance — English-only to keep
-/// translation load off sync internals.
-Future<bool> _confirmRetireStuck(
-  BuildContext context, {
-  required int openCount,
-}) async {
-  final theme = Theme.of(context);
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('Retire stuck entries now?'),
-      content: Text(
-        'This marks $openCount currently-open '
-        '(missing or requested) sequence-log entries as unresolvable. '
-        'Use this to unblock the watermark when entries have been stuck '
-        'for a while without the 7-day amnesty window having passed. '
-        'Entries can still be resurrected if their payload later '
-        'arrives on disk with a valid vector clock.',
-        style: theme.textTheme.bodyMedium,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Retire now'),
-        ),
-      ],
-    ),
+class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
+    with SingleTickerProviderStateMixin {
+  bool _open = false;
+  late final AnimationController _chevController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 180),
   );
-  return result ?? false;
-}
 
-class _RetireStuckNowSection extends StatelessWidget {
-  const _RetireStuckNowSection({
-    required this.isProcessing,
-    required this.lastRetiredCount,
-    required this.openCount,
-    required this.error,
-    required this.onTrigger,
-  });
+  @override
+  void dispose() {
+    _chevController.dispose();
+    super.dispose();
+  }
 
-  final bool isProcessing;
-  final int? lastRetiredCount;
-  final int openCount;
-  final String? error;
-  final VoidCallback onTrigger;
+  void _toggle() {
+    setState(() => _open = !_open);
+    if (_open) {
+      _chevController.forward();
+    } else {
+      _chevController.reverse();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final actions = _buildActions(context);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.block,
-                  color: openCount > 0
-                      ? theme.colorScheme.error
-                      : theme.colorScheme.primary,
+    // The outer Container's `clipBehavior` clips its own descendant
+    // paint, but [InkWell] splashes are drawn on the nearest ancestor
+    // [Material] — which here is the [MaterialApp]'s root Material
+    // far up the tree. Without a local [Material] inside the
+    // container the splash escapes the rounded corners. Wrapping the
+    // header in a transparent [Material] gives ink an in-bounds
+    // surface, so the splash is naturally clipped by the Container's
+    // rounded shape above it.
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _toggle,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step5,
+                  vertical: tokens.spacing.step4,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Retire stuck entries',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Force every currently-open missing or requested sequence-log '
-              'entry to unresolvable. Skips the 7-day amnesty window — use '
-              'this only when you have identified stuck rows that are '
-              'blocking the watermark and want immediate recovery.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  error!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-            if (lastRetiredCount != null && !isProcessing)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
+                    Expanded(
+                      child: Text(
+                        messages.backfillAdvancedRecoveryTitle,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
                     ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Retired $lastRetiredCount entries to unresolvable.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.green,
+                      messages.backfillAdvancedRecoveryActions(actions.length),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    RotationTransition(
+                      turns: Tween<double>(begin: 0, end: 0.25).animate(
+                        CurvedAnimation(
+                          parent: _chevController,
+                          curve: Curves.easeOut,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
                   ],
                 ),
               ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: isProcessing || openCount == 0 ? null : onTrigger,
-                icon: isProcessing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.block),
-                label: Text(
-                  isProcessing
-                      ? 'Retiring…'
-                      : 'Retire $openCount stuck entries',
+            ),
+          ),
+          if (_open) ...[
+            Container(
+              height: 1,
+              color: tokens.colors.decorative.level01,
+            ),
+            for (var i = 0; i < actions.length; i++) ...[
+              if (i > 0)
+                Container(
+                  height: 1,
+                  color: tokens.colors.decorative.level01,
+                ),
+              actions[i],
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildActions(BuildContext context) {
+    final messages = context.messages;
+    final stats = widget.stats;
+    final coordinator = widget.coordinator;
+    final unresolvable = stats.stats?.totalUnresolvable ?? 0;
+    final requested = stats.stats?.totalRequested ?? 0;
+    final missing = stats.stats?.totalMissing ?? 0;
+    final openCount = missing + requested;
+
+    return [
+      _RecoveryAction(
+        icon: Icons.bolt_outlined,
+        title: messages.queueCatchUpNowButton,
+        description: messages.backfillCatchUpDescription,
+        ctaLabel: messages.queueCatchUpNowButton,
+        ctaIcon: Icons.bolt_outlined,
+        tone: _RecoveryTone.primary,
+        onPressed: coordinator == null
+            ? null
+            : () => _kickCatchUp(context, coordinator),
+      ),
+      if (widget.skipped > 0)
+        _RecoveryAction(
+          icon: Icons.refresh_rounded,
+          title: messages.queueSkippedCardTitle,
+          description: messages.queueSkippedCardBody(widget.skipped),
+          ctaLabel: messages.queueSkippedRetryAll,
+          ctaIcon: Icons.refresh_rounded,
+          tone: _RecoveryTone.primary,
+          onPressed: coordinator == null
+              ? null
+              : () => _retrySkipped(context, coordinator.queue),
+        ),
+      _RecoveryAction(
+        icon: Icons.history_rounded,
+        title: messages.backfillManualTitle,
+        description: messages.backfillManualDescription,
+        ctaLabel: stats.isProcessing
+            ? messages.backfillManualProcessing
+            : messages.backfillManualTrigger,
+        ctaIcon: Icons.sync,
+        tone: _RecoveryTone.primary,
+        isBusy: stats.isProcessing,
+        onPressed: stats.isProcessing
+            ? null
+            : () => ProviderScope.containerOf(context)
+                  .read(backfillStatsControllerProvider.notifier)
+                  .triggerFullBackfill(),
+      ),
+      _RecoveryAction(
+        icon: Icons.restore_rounded,
+        title: messages.backfillResetUnresolvableTitle,
+        description: messages.backfillResetUnresolvableDescription,
+        ctaLabel: stats.isResetting
+            ? messages.backfillResetUnresolvableProcessing
+            : messages.backfillResetUnresolvableTrigger,
+        ctaIcon: Icons.restore_rounded,
+        tone: _RecoveryTone.primary,
+        isBusy: stats.isResetting,
+        onPressed: (stats.isResetting || unresolvable == 0)
+            ? null
+            : () => ProviderScope.containerOf(context)
+                  .read(backfillStatsControllerProvider.notifier)
+                  .resetUnresolvable(),
+      ),
+      _RecoveryAction(
+        icon: Icons.replay_rounded,
+        title: messages.backfillReRequestTitle,
+        description: messages.backfillReRequestDescription,
+        ctaLabel: stats.isReRequesting
+            ? messages.backfillReRequestProcessing
+            : messages.backfillReRequestTrigger,
+        ctaIcon: Icons.replay_rounded,
+        tone: _RecoveryTone.ghost,
+        isBusy: stats.isReRequesting,
+        onPressed: (stats.isReRequesting || requested == 0)
+            ? null
+            : () => ProviderScope.containerOf(context)
+                  .read(backfillStatsControllerProvider.notifier)
+                  .triggerReRequest(),
+      ),
+      _RecoveryAction(
+        icon: Icons.group_outlined,
+        title: 'Ask peers for unresolvable',
+        description:
+            'Flip every unresolvable sequence-log entry back to missing '
+            'and let the normal backfill sweep re-ask peers.',
+        ctaLabel: stats.isResettingAllUnresolvable
+            ? 'Reopening…'
+            : 'Ask peers for $unresolvable entries',
+        ctaIcon: Icons.group_outlined,
+        tone: _RecoveryTone.primary,
+        isBusy: stats.isResettingAllUnresolvable,
+        onPressed: (stats.isResettingAllUnresolvable || unresolvable == 0)
+            ? null
+            : () => _confirmAndResetAllUnresolvable(context, unresolvable),
+      ),
+      _RecoveryAction(
+        icon: Icons.block_outlined,
+        title: 'Retire stuck entries',
+        description:
+            'Force every currently-open missing or requested sequence-log '
+            'entry to unresolvable. Skips the 7-day amnesty — use only for '
+            'stuck rows blocking the watermark.',
+        ctaLabel: stats.isRetiringStuck
+            ? 'Retiring…'
+            : 'Retire $openCount stuck entries',
+        ctaIcon: Icons.block_outlined,
+        tone: _RecoveryTone.dangerGhost,
+        isBusy: stats.isRetiringStuck,
+        onPressed: (stats.isRetiringStuck || openCount == 0)
+            ? null
+            : () => _confirmAndRetireStuck(context, openCount),
+      ),
+    ];
+  }
+
+  Future<void> _kickCatchUp(
+    BuildContext context,
+    QueuePipelineCoordinator coordinator,
+  ) async {
+    final messages = context.messages;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      await coordinator.triggerBridge();
+      messenger?.showSnackBar(
+        SnackBar(content: Text(messages.queueCatchUpNowDone)),
+      );
+    } catch (e) {
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(messages.queueFetchAllHistoryError(e.toString())),
+        ),
+      );
+    }
+  }
+
+  Future<void> _retrySkipped(BuildContext context, InboundQueue queue) async {
+    final messages = context.messages;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final count = await queue.resurrectAll();
+      messenger?.showSnackBar(
+        SnackBar(content: Text(messages.queueSkippedRetryAllDone(count))),
+      );
+    } catch (e) {
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(messages.queueSkippedRetryAllError(e.toString())),
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmAndResetAllUnresolvable(
+    BuildContext context,
+    int unresolvable,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ask peers again for unresolvable entries?'),
+        content: Text(
+          'This flips all $unresolvable unresolvable sequence-log entries '
+          'back to missing so the normal backfill sweep re-asks peers. '
+          'Peers who still have the payload will respond; truly unrecoverable '
+          'entries will retire again after the 7-day amnesty window.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Ask peers'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await ProviderScope.containerOf(
+      context,
+    ).read(backfillStatsControllerProvider.notifier).resetAllUnresolvable();
+  }
+
+  Future<void> _confirmAndRetireStuck(
+    BuildContext context,
+    int openCount,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Retire stuck entries now?'),
+        content: Text(
+          'This marks $openCount currently-open (missing or requested) '
+          'sequence-log entries as unresolvable. Use this to unblock the '
+          'watermark when entries have been stuck for a while without the '
+          '7-day amnesty window having passed. Entries can still be '
+          'resurrected if their payload later arrives on disk with a valid '
+          'vector clock.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Retire now'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await ProviderScope.containerOf(
+      context,
+    ).read(backfillStatsControllerProvider.notifier).retireStuckNow();
+  }
+}
+
+enum _RecoveryTone { primary, ghost, dangerGhost }
+
+class _RecoveryAction extends StatelessWidget {
+  const _RecoveryAction({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.ctaLabel,
+    required this.ctaIcon,
+    required this.tone,
+    required this.onPressed,
+    this.isBusy = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final String ctaLabel;
+  final IconData ctaIcon;
+  final _RecoveryTone tone;
+  final VoidCallback? onPressed;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final isDanger = tone == _RecoveryTone.dangerGhost;
+    final iconChipBg = isDanger
+        ? tokens.colors.alert.error.defaultColor.withValues(alpha: 0.14)
+        : tokens.colors.surface.enabled;
+    final iconColor = isDanger
+        ? tokens.colors.alert.error.defaultColor
+        : tokens.colors.text.mediumEmphasis;
+
+    return Container(
+      color: tokens.colors.background.level02,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: iconChipBg,
+                  borderRadius: BorderRadius.circular(tokens.radii.smallChips),
+                ),
+                child: Icon(icon, size: 15, color: iconColor),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      description,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          DesignSystemButton(
+            label: ctaLabel,
+            onPressed: onPressed,
+            leadingIcon: isBusy ? null : ctaIcon,
+            variant: switch (tone) {
+              _RecoveryTone.primary => DesignSystemButtonVariant.primary,
+              _RecoveryTone.ghost => DesignSystemButtonVariant.secondary,
+              _RecoveryTone.dangerGhost =>
+                DesignSystemButtonVariant.dangerSecondary,
+            },
+            size: DesignSystemButtonSize.medium,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shared rounded surface card. Background, radius, and outline come
+/// from design tokens; the only knob the caller turns is `padding`.
+class _SurfaceCard extends StatelessWidget {
+  const _SurfaceCard({required this.child, this.padding});
+
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
+      padding: padding ?? EdgeInsets.all(tokens.spacing.step5),
+      child: child,
+    );
+  }
+}
+
+/// Compact icon-only button used in card headers (e.g. the stats
+/// refresh control). Mirrors the Material `IconButton` ergonomics
+/// while sourcing every visual from design tokens.
+class _IconActionButton extends StatelessWidget {
+  const _IconActionButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.isBusy = false,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final bool isBusy;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final enabled = onPressed != null;
+    final foreground = enabled
+        ? tokens.colors.text.mediumEmphasis
+        : tokens.colors.text.lowEmphasis;
+    final child = isBusy
+        ? SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: foreground,
             ),
-          ],
+          )
+        : Icon(icon, size: 16, color: foreground);
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(tokens.radii.smallChips),
+          onTap: enabled
+              ? () {
+                  HapticFeedback.selectionClick();
+                  onPressed!();
+                }
+              : null,
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step2),
+            child: child,
+          ),
         ),
       ),
     );
   }
 }
 
-/// Confirmation dialog for the "Ask peers for unresolvable entries" action.
-/// Flipping hundreds of thousands of rows back to `missing` is cheap
-/// (a single UPDATE) but will put all of them back in the backfill sweep,
-/// which can mean meaningful outbox traffic for a while — so an explicit
-/// confirmation is warranted.
-Future<bool> _confirmResetAllUnresolvable(
-  BuildContext context, {
-  required int unresolvableCount,
-}) async {
-  final theme = Theme.of(context);
-  final result = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('Ask peers again for unresolvable entries?'),
-      content: Text(
-        'This flips all $unresolvableCount '
-        'unresolvable sequence-log entries back to missing so the normal '
-        'backfill sweep re-asks peers. Peers who still have the payload '
-        '(e.g. a device that received them from a now-dead originating '
-        'host) will respond; truly unrecoverable entries will retire '
-        'again after the 7-day amnesty window.',
-        style: theme.textTheme.bodyMedium,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('Ask peers'),
-        ),
-      ],
-    ),
-  );
-  return result ?? false;
-}
-
-class _ResetAllUnresolvableSection extends StatelessWidget {
-  const _ResetAllUnresolvableSection({
-    required this.isProcessing,
-    required this.lastResetCount,
-    required this.unresolvableCount,
-    required this.error,
-    required this.onTrigger,
-  });
-
-  final bool isProcessing;
-  final int? lastResetCount;
-  final int unresolvableCount;
-  final String? error;
-  final VoidCallback onTrigger;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.cloud_sync,
-                  color: unresolvableCount > 0
-                      ? Colors.orange
-                      : theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Ask peers for unresolvable entries',
-                    style: theme.textTheme.titleMedium,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Flip every unresolvable sequence-log entry back to missing '
-              'and let the normal backfill sweep re-ask peers. Any '
-              'currently-alive peer that still has the payload responds, '
-              'even if the originating host is gone. Unlike "Reset '
-              'Unresolvable" above, this does NOT require the payload to '
-              'already be present locally.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Text(
-                  error!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-            if (lastResetCount != null && !isProcessing)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Reopened $lastResetCount entries for backfill.',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: isProcessing || unresolvableCount == 0
-                    ? null
-                    : onTrigger,
-                icon: isProcessing
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.cloud_sync),
-                label: Text(
-                  isProcessing
-                      ? 'Reopening…'
-                      : 'Ask peers for $unresolvableCount entries',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+/// Number formatter used in both the status row and ledger so the
+/// page stays consistent. Locale defaults to the active app locale
+/// — `NumberFormat`-style grouping is good enough for the diagnostic
+/// numbers shown here.
+String _formatCount(int value) {
+  if (value < 1000) return value.toString();
+  final str = value.toString();
+  final buf = StringBuffer();
+  for (var i = 0; i < str.length; i++) {
+    if (i != 0 && (str.length - i) % 3 == 0) buf.write(',');
+    buf.write(str[i]);
   }
+  return buf.toString();
 }

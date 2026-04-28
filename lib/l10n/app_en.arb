@@ -1028,6 +1028,24 @@
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOP",
   "automaticPrompts": "Automatic Prompts",
+  "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
+  "@backfillAdvancedRecoveryActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillAdvancedRecoveryTitle": "Advanced recovery",
+  "backfillCatchUpDescription": "Pull recent missing entries from peers right now.",
+  "backfillDevicesMeta": "{count, plural, =1{1 device ID} other{{count} device IDs}}",
+  "@backfillDevicesMeta": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "backfillManualDescription": "Request all missing entries regardless of age. Use this to recover older sync gaps.",
   "backfillManualProcessing": "Processing...",
   "backfillManualSuccess": "{count} entries requested",
@@ -1066,7 +1084,7 @@
   "backfillResetUnresolvableTrigger": "Reset Unresolvable Entries",
   "backfillSettingsInfo": "Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.",
   "backfillSettingsSubtitle": "Manage sync gap recovery",
-  "backfillSettingsTitle": "Backfill Sync",
+  "backfillSettingsTitle": "Backfill sync",
   "backfillStatsBackfilled": "Backfilled",
   "backfillStatsDeleted": "Deleted",
   "backfillStatsHostsTitle": "{count} connected device{count, plural, =1{} other{s}}",
@@ -1082,12 +1100,16 @@
   "backfillStatsReceived": "Received",
   "backfillStatsRefresh": "Refresh stats",
   "backfillStatsRequested": "Requested",
-  "backfillStatsTitle": "Sync Statistics",
+  "backfillStatsTitle": "Sync statistics",
   "backfillStatsTotalEntries": "Total entries",
   "backfillStatsUnresolvable": "Unresolvable",
+  "backfillStatusInboundQueue": "Inbound queue",
+  "backfillStatusMissing": "Missing",
+  "backfillStatusSkipped": "Skipped",
+  "backfillToggleDescription": "Requests missing entries from the last 24 hours.",
   "backfillToggleDisabledDescription": "Backfill disabled - useful on metered networks",
   "backfillToggleEnabledDescription": "Automatically request missing sync entries",
-  "backfillToggleTitle": "Automatic Backfill",
+  "backfillToggleTitle": "Automatic backfill",
   "basicSettings": "Basic Settings",
   "cancelButton": "Cancel",
   "categoryActiveDescription": "Inactive categories won't appear in selection lists",

@@ -1748,6 +1748,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get automaticPrompts => 'Automatic Prompts';
 
   @override
+  String backfillAdvancedRecoveryActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions',
+      one: '1 action',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillAdvancedRecoveryTitle => 'Advanced recovery';
+
+  @override
+  String get backfillCatchUpDescription =>
+      'Pull recent missing entries from peers right now.';
+
+  @override
+  String backfillDevicesMeta(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count device IDs',
+      one: '1 device ID',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get backfillManualDescription =>
       'Request all missing entries regardless of age. Use this to recover older sync gaps.';
 
@@ -1815,7 +1844,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillSettingsSubtitle => 'Manage sync gap recovery';
 
   @override
-  String get backfillSettingsTitle => 'Backfill Sync';
+  String get backfillSettingsTitle => 'Backfill sync';
 
   @override
   String get backfillStatsBackfilled => 'Backfilled';
@@ -1850,13 +1879,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillStatsRequested => 'Requested';
 
   @override
-  String get backfillStatsTitle => 'Sync Statistics';
+  String get backfillStatsTitle => 'Sync statistics';
 
   @override
   String get backfillStatsTotalEntries => 'Total entries';
 
   @override
   String get backfillStatsUnresolvable => 'Unresolvable';
+
+  @override
+  String get backfillStatusInboundQueue => 'Inbound queue';
+
+  @override
+  String get backfillStatusMissing => 'Missing';
+
+  @override
+  String get backfillStatusSkipped => 'Skipped';
+
+  @override
+  String get backfillToggleDescription =>
+      'Requests missing entries from the last 24 hours.';
 
   @override
   String get backfillToggleDisabledDescription =>
@@ -1867,7 +1909,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Automatically request missing sync entries';
 
   @override
-  String get backfillToggleTitle => 'Automatic Backfill';
+  String get backfillToggleTitle => 'Automatic backfill';
 
   @override
   String get basicSettings => 'Basic Settings';
