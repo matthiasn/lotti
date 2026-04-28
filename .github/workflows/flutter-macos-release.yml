@@ -119,7 +119,7 @@ jobs:
           PLIST
 
       - name: Flutter build macOS (compile Dart + pods)
-        run: flutter build macos --release --no-codesign
+        run: flutter build macos --release
 
       - name: Archive with Xcode
         run: |
