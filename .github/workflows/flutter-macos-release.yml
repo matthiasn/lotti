@@ -85,10 +85,9 @@ jobs:
 
           rm -f "$CERT_PATH"
 
-      - name: Install provisioning profile and configure Runner signing
+      - name: Install provisioning profile
         env:
           MACOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.MACOS_PROVISIONING_PROFILE_BASE64 }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
           STAGED_PROFILE="$RUNNER_TEMP/lotti_developerid.provisionprofile"
@@ -100,8 +99,8 @@ jobs:
           PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$PROFILE_PLIST")"
           PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PROFILE_PLIST")"
 
-          # Install the profile in both legacy and modern Xcode locations,
-          # named by UUID (the lookup key Xcode uses).
+          # Install the profile under its UUID in both legacy and modern
+          # Xcode profile directories so xcodebuild can resolve it.
           for d in \
             "$HOME/Library/MobileDevice/Provisioning Profiles" \
             "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
@@ -109,21 +108,38 @@ jobs:
             cp "$STAGED_PROFILE" "$d/$PROFILE_UUID.provisionprofile"
           done
 
-          # Append signing settings to the Runner target's xcconfig so they
-          # apply ONLY to Runner. Pod targets have their own xcconfigs and
-          # won't inherit these — which is what the post_install hook in
-          # Podfile also enforces defensively.
-          cat >> macos/Runner/Configs/Release.xcconfig <<EOF
-
-          // CI-only Developer ID signing overrides, applied per-target.
-          CODE_SIGN_STYLE = Manual
-          DEVELOPMENT_TEAM = ${APPLE_TEAM_ID}
-          CODE_SIGN_IDENTITY = Developer ID Application
-          PROVISIONING_PROFILE_SPECIFIER = ${PROFILE_NAME}
-          EOF
-
           echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
           echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+
+      - name: Patch Runner target Release signing for Developer ID
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          # The Runner target's Release config hardcodes Apple Development /
+          # Automatic signing in project.pbxproj. Target-level build settings
+          # beat target-xcconfig and project-xcconfig, so the only correct way
+          # to override them without command-line args (which would also leak
+          # into Pod targets) is to edit the project file in place.
+          ruby -r xcodeproj <<'RUBY'
+          project_path = 'macos/Runner.xcodeproj'
+          project = Xcodeproj::Project.open(project_path)
+          target = project.targets.find { |t| t.name == 'Runner' } \
+            or abort 'Runner target not found in Runner.xcodeproj'
+          config = target.build_configurations.find { |c| c.name == 'Release' } \
+            or abort "Runner target has no Release build configuration"
+
+          config.build_settings['CODE_SIGN_STYLE']                = 'Manual'
+          config.build_settings['CODE_SIGN_IDENTITY']             = 'Developer ID Application'
+          config.build_settings['DEVELOPMENT_TEAM']               = ENV.fetch('APPLE_TEAM_ID')
+          config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = ENV.fetch('PROFILE_NAME')
+
+          project.save
+          puts "Patched Runner Release signing:"
+          %w[CODE_SIGN_STYLE CODE_SIGN_IDENTITY DEVELOPMENT_TEAM PROVISIONING_PROFILE_SPECIFIER].each do |k|
+            puts "  #{k} = #{config.build_settings[k].inspect}"
+          end
+          RUBY
 
       - name: Write Developer ID exportOptions.plist
         env:
