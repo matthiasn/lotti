@@ -92,8 +92,23 @@ jobs:
           set -euo pipefail
           PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$PROFILE_DIR"
-          echo "$MACOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$PROFILE_DIR/lotti_developerid.provisionprofile"
+
+          STAGED_PROFILE="$RUNNER_TEMP/lotti_developerid.provisionprofile"
+          echo "$MACOS_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$STAGED_PROFILE"
+
+          # Decode the CMS-wrapped profile to extract Name (used by
+          # PROVISIONING_PROFILE_SPECIFIER and the exportOptions plist) and
+          # UUID (Xcode looks profiles up by UUID-named filename).
+          PROFILE_PLIST="$RUNNER_TEMP/profile.plist"
+          security cms -D -i "$STAGED_PROFILE" > "$PROFILE_PLIST"
+          PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$PROFILE_PLIST")"
+          PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PROFILE_PLIST")"
+
+          cp "$STAGED_PROFILE" "$PROFILE_DIR/$PROFILE_UUID.provisionprofile"
           ls -la "$PROFILE_DIR"
+
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
 
       - name: Write Developer ID exportOptions.plist
         env:
@@ -114,6 +129,13 @@ jobs:
             <string>manual</string>
             <key>destination</key>
             <string>export</string>
+            <key>signingCertificate</key>
+            <string>Developer ID Application</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.matthiasn.lotti</key>
+              <string>${PROFILE_NAME}</string>
+            </dict>
           </dict>
           </plist>
           PLIST
@@ -126,6 +148,7 @@ jobs:
           FLUTTER_XCODE_CODE_SIGN_STYLE: Manual
           FLUTTER_XCODE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
           FLUTTER_XCODE_CODE_SIGN_IDENTITY: Developer ID Application
+          FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER: ${{ env.PROFILE_NAME }}
         run: flutter build macos --release
 
       - name: Archive with Xcode
@@ -140,6 +163,7 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_IDENTITY="Developer ID Application" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
             archive
 
       - name: Export signed .app (Developer ID)
