@@ -69,7 +69,7 @@ final class AudioRecorderControllerProvider
 }
 
 String _$audioRecorderControllerHash() =>
-    r'15607fb0393f0b0ff7d9a249c76f3f130e17c3a8';
+    r'12e85c27a573e8c00ea67694ba33ca29c4c5fa0c';
 
 /// Main controller for audio recording functionality.
 ///

@@ -56,4 +56,4 @@ final class DashScopeInferenceRepositoryProvider
 }
 
 String _$dashScopeInferenceRepositoryHash() =>
-    r'e3f21359d72ce546f12ec732f65b69e814ee397f';
+    r'aca72583bc6f5f03c9610a1c17e82f82a478d71d';

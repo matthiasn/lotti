@@ -57,6 +57,15 @@ String _$playerFactoryHash() => r'97fc3a12db5c97e405602b8ed38fdb574808a6ca';
 /// Notifier managing audio player state.
 /// Marked as keepAlive since audio state should persist for the entire app
 /// lifecycle.
+///
+/// The underlying media_kit [Player] is created lazily on the first
+/// `setAudioNote`/`play` call and torn down again when playback completes.
+/// Keeping the native mpv core thread out of memory between active sessions
+/// makes Flutter hot restart safe whenever audio is not actively playing.
+/// (mpv's `core_thread` invokes FFI callbacks asynchronously; if the Dart
+/// VM is torn down by hot restart while the thread is alive, the trampolines
+/// it calls into are gone and the process aborts with
+/// "Callback invoked after it has been deleted".)
 
 @ProviderFor(AudioPlayerController)
 final audioPlayerControllerProvider = AudioPlayerControllerProvider._();
@@ -64,11 +73,29 @@ final audioPlayerControllerProvider = AudioPlayerControllerProvider._();
 /// Notifier managing audio player state.
 /// Marked as keepAlive since audio state should persist for the entire app
 /// lifecycle.
+///
+/// The underlying media_kit [Player] is created lazily on the first
+/// `setAudioNote`/`play` call and torn down again when playback completes.
+/// Keeping the native mpv core thread out of memory between active sessions
+/// makes Flutter hot restart safe whenever audio is not actively playing.
+/// (mpv's `core_thread` invokes FFI callbacks asynchronously; if the Dart
+/// VM is torn down by hot restart while the thread is alive, the trampolines
+/// it calls into are gone and the process aborts with
+/// "Callback invoked after it has been deleted".)
 final class AudioPlayerControllerProvider
     extends $NotifierProvider<AudioPlayerController, AudioPlayerState> {
   /// Notifier managing audio player state.
   /// Marked as keepAlive since audio state should persist for the entire app
   /// lifecycle.
+  ///
+  /// The underlying media_kit [Player] is created lazily on the first
+  /// `setAudioNote`/`play` call and torn down again when playback completes.
+  /// Keeping the native mpv core thread out of memory between active sessions
+  /// makes Flutter hot restart safe whenever audio is not actively playing.
+  /// (mpv's `core_thread` invokes FFI callbacks asynchronously; if the Dart
+  /// VM is torn down by hot restart while the thread is alive, the trampolines
+  /// it calls into are gone and the process aborts with
+  /// "Callback invoked after it has been deleted".)
   AudioPlayerControllerProvider._()
     : super(
         from: null,
@@ -97,11 +124,20 @@ final class AudioPlayerControllerProvider
 }
 
 String _$audioPlayerControllerHash() =>
-    r'c601610d29f1729eb71ee51d7c7678e3c4ad249b';
+    r'20ac72444988e23f4319261fba05b43f15ff0f9f';
 
 /// Notifier managing audio player state.
 /// Marked as keepAlive since audio state should persist for the entire app
 /// lifecycle.
+///
+/// The underlying media_kit [Player] is created lazily on the first
+/// `setAudioNote`/`play` call and torn down again when playback completes.
+/// Keeping the native mpv core thread out of memory between active sessions
+/// makes Flutter hot restart safe whenever audio is not actively playing.
+/// (mpv's `core_thread` invokes FFI callbacks asynchronously; if the Dart
+/// VM is torn down by hot restart while the thread is alive, the trampolines
+/// it calls into are gone and the process aborts with
+/// "Callback invoked after it has been deleted".)
 
 abstract class _$AudioPlayerController extends $Notifier<AudioPlayerState> {
   AudioPlayerState build();
