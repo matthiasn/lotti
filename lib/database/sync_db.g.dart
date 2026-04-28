@@ -2953,6 +2953,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_sync_sequence_log_actionable_status_updated_at',
     'CREATE INDEX idx_sync_sequence_log_actionable_status_updated_at ON sync_sequence_log (status, updated_at) WHERE status IN (1, 2)',
   );
+  late final Index idxSyncSequenceLogActionableStatusLastRequestedAt = Index(
+    'idx_sync_sequence_log_actionable_status_last_requested_at',
+    'CREATE INDEX idx_sync_sequence_log_actionable_status_last_requested_at ON sync_sequence_log (status, last_requested_at) WHERE status IN (1, 2) AND last_requested_at IS NOT NULL',
+  );
   late final Index idxSyncSequenceLogHostStatus = Index(
     'idx_sync_sequence_log_host_status',
     'CREATE INDEX idx_sync_sequence_log_host_status ON sync_sequence_log (host_id, status)',
@@ -2967,7 +2971,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   );
   late final Index idxInboundEventQueueReady = Index(
     'idx_inbound_event_queue_ready',
-    'CREATE INDEX idx_inbound_event_queue_ready ON inbound_event_queue (next_due_at, origin_ts, queue_id) WHERE status IN (\'enqueued\', \'retrying\')',
+    'CREATE INDEX idx_inbound_event_queue_ready ON inbound_event_queue (next_due_at, origin_ts, queue_id) WHERE status IN (\'enqueued\', \'retrying\', \'leased\')',
   );
   late final Index idxInboundEventQueueActiveReadyAt = Index(
     'idx_inbound_event_queue_active_ready_at',
@@ -3003,6 +3007,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxOutboxActionablePriorityCreatedAt,
     idxSyncSequenceLogActionableStatusCreatedAt,
     idxSyncSequenceLogActionableStatusUpdatedAt,
+    idxSyncSequenceLogActionableStatusLastRequestedAt,
     idxSyncSequenceLogHostStatus,
     idxSyncSequenceLogPayloadResolution,
     idxSyncSequenceLogHostEntryStatusCounter,

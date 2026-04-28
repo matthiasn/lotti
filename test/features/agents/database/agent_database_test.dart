@@ -116,7 +116,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          6,
+          7,
         );
 
         // Verify the new columns exist by querying them
@@ -232,7 +232,7 @@ void main() {
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        6,
+        7,
       );
 
       // Verify the partial unique index exists.
@@ -485,7 +485,7 @@ void main() {
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        6,
+        7,
       );
 
       // Verify the column exists by selecting it.
@@ -616,7 +616,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          6,
+          7,
         );
 
         final indexes = await db
@@ -753,7 +753,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          6,
+          7,
         );
 
         // Verify wake_run_log soul columns exist and are readable.

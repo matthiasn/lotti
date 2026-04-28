@@ -127,6 +127,19 @@ class Outbox extends Table {
   'ON sync_sequence_log (status, updated_at) '
   'WHERE status IN (1, 2)',
 )
+// Companion partial for `retireExhaustedRequestedEntries`, which
+// filters on `(status IN (1,2)) AND request_count >= ? AND
+// last_requested_at IS NOT NULL AND last_requested_at < ?`. Neither
+// the `created_at` nor `updated_at` partial sorts by the bound
+// column, so before this index the predicate fell back to the
+// autoindex on (host_id, counter) and scanned every actionable row.
+// Restricting the partial WHERE to `last_requested_at IS NOT NULL`
+// keeps the index dense and matches the predicate's NOT NULL guard.
+@TableIndex.sql(
+  'CREATE INDEX idx_sync_sequence_log_actionable_status_last_requested_at '
+  'ON sync_sequence_log (status, last_requested_at) '
+  'WHERE status IN (1, 2) AND last_requested_at IS NOT NULL',
+)
 // Covering index for `getBackfillStats`. The previous SUM-of-CASE
 // formulation full-scanned 700 k+ rows on production devices
 // (858 s/day on a real desktop). With this index, GROUP BY
@@ -234,10 +247,18 @@ class HostActivity extends Table {
 // Drain-path index. Partial on active statuses so the applied ledger
 // (which can grow unbounded over time) is excluded from the index and
 // the worker's peek query scans only the rows it can actually drain.
+//
+// `leased` is included so `peekBatchReady` (which filters
+// `status IN ('enqueued','retrying','leased')` to make crash recovery
+// peek the previously-leased rows once their lease expires) can use
+// this index for ORDER BY. Without `leased` the planner falls back to
+// `idx_inbound_event_queue_active_ready_at` (keyed on
+// `(next_due_at, lease_until)`) and pays an external sort to honour
+// the `ORDER BY origin_ts, queue_id` clause.
 @TableIndex.sql(
   'CREATE INDEX idx_inbound_event_queue_ready '
   'ON inbound_event_queue (next_due_at, origin_ts, queue_id) '
-  '''WHERE status IN ('enqueued', 'retrying')''',
+  '''WHERE status IN ('enqueued', 'retrying', 'leased')''',
 )
 // `earliestReadyAt` probe: computes MIN(MAX(next_due_at, lease_until))
 // across all actively-schedulable rows to tell the worker when the
@@ -1426,7 +1447,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -1669,6 +1690,42 @@ class SyncDatabase extends _$SyncDatabase {
             'WHERE status IN '
             // pending=0, sending=3 — values must match OutboxStatus.
             '(${OutboxStatus.pending.index}, $_outboxSendingStatus)',
+          );
+        }
+        if (from < 16) {
+          // 1. `peekBatchReady` filters
+          //    `status IN ('enqueued','retrying','leased')` so the
+          //    crash-recovered peek can re-claim rows whose lease
+          //    expired. The drain partial originally limited the
+          //    WHERE to `('enqueued','retrying')`, so SQLite could
+          //    not use it for ORDER BY origin_ts, queue_id and fell
+          //    back to `idx_inbound_event_queue_active_ready_at`
+          //    (keyed on (next_due_at, lease_until)) plus an
+          //    external sort. Rebuild the partial with the matching
+          //    status set so the worker's hot drain query becomes
+          //    index-only on the sort columns.
+          await customStatement(
+            'DROP INDEX IF EXISTS idx_inbound_event_queue_ready',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_inbound_event_queue_ready '
+            'ON inbound_event_queue (next_due_at, origin_ts, queue_id) '
+            '''WHERE status IN ('enqueued', 'retrying', 'leased')''',
+          );
+          // 2. `retireExhaustedRequestedEntries` filters on
+          //    `(status IN (1,2)) AND request_count >= ? AND
+          //    last_requested_at IS NOT NULL AND last_requested_at < ?`.
+          //    Neither existing actionable partial (created_at /
+          //    updated_at) covers `last_requested_at`, so the planner
+          //    fell back to the autoindex on (host_id, counter) and
+          //    effectively scanned every actionable row. The new
+          //    partial is keyed on the bound column so the predicate
+          //    becomes a tight range scan.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_actionable_status_last_requested_at '
+            'ON sync_sequence_log (status, last_requested_at) '
+            'WHERE status IN (1, 2) AND last_requested_at IS NOT NULL',
           );
         }
       },

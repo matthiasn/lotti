@@ -414,8 +414,34 @@ class InboundQueue {
     int maxBatch = SyncTuning.inboundWorkerBatchSize,
   }) async {
     final nowMs = clock.now().millisecondsSinceEpoch;
-    final leaseUntilMs = nowMs + _leaseDuration.inMilliseconds;
 
+    // Probe outside any transaction first. The idle worker fires this
+    // every wake-up and the common case (queue fully drained) returns
+    // empty — opening a sync_db transaction just to discover that
+    // burns a BEGIN/COMMIT round trip per tick. Wrapping the SELECT in
+    // a transaction was load-bearing only for the SELECT-then-UPDATE
+    // atomicity below; with a single drainer (the worker), nothing
+    // races against a no-op probe.
+    //
+    // Phrased as an `EXISTS`-style lookup (one column, `LIMIT 1`, no
+    // ORDER BY): the partial index `idx_inbound_event_queue_ready` is
+    // keyed on `(next_due_at, origin_ts, queue_id)`, so this becomes a
+    // tight index seek that touches at most one entry. Selecting full
+    // rows here would double the read cost on the active path because
+    // the transaction below re-reads the same `maxBatch` rows.
+    final probeTable = _db.inboundEventQueue;
+    final probe = _db.selectOnly(probeTable)
+      ..addColumns([probeTable.queueId])
+      ..where(
+        probeTable.status.isIn(_peekStatuses) &
+            probeTable.nextDueAt.isSmallerOrEqualValue(nowMs) &
+            probeTable.leaseUntil.isSmallerOrEqualValue(nowMs),
+      )
+      ..limit(1);
+    final probeRow = await probe.getSingleOrNull();
+    if (probeRow == null) return const <InboundQueueEntry>[];
+
+    final leaseUntilMs = nowMs + _leaseDuration.inMilliseconds;
     return _db.transaction(() async {
       final query = _db.select(_db.inboundEventQueue)
         ..where(
