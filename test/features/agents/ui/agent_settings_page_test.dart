@@ -739,6 +739,10 @@ void main() {
     ) async {
       final mockNavService = MockNavService();
       when(() => mockNavService.currentPath).thenReturn('/settings/agents');
+      // Body's URL-driven branch reads `isDesktopMode`; default the
+      // mock to mobile so this test stays in the legacy local-state
+      // path that the chevron back behavior relies on.
+      when(() => mockNavService.isDesktopMode).thenReturn(false);
       when(mockNavService.beamBack).thenReturn(null);
       getIt.registerSingleton<NavService>(mockNavService);
       addTearDown(() => getIt.unregister<NavService>());
@@ -750,6 +754,160 @@ void main() {
       await tester.pump();
 
       verify(mockNavService.beamBack).called(1);
+    });
+
+    group('URL-driven tab selection (desktop)', () {
+      late MockNavService mockNavService;
+      late ValueNotifier<DesktopSettingsRoute?> routeNotifier;
+
+      setUp(() {
+        routeNotifier = ValueNotifier<DesktopSettingsRoute?>(null);
+        mockNavService = MockNavService();
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedSettingsRoute,
+        ).thenReturn(routeNotifier);
+        // Back-chevron and other rare in-page calls also hit
+        // `currentPath` / `beamBack` — give them safe defaults so a
+        // misclick during pump doesn't blow the test up.
+        when(() => mockNavService.currentPath).thenReturn('/settings/agents');
+        when(mockNavService.beamBack).thenReturn(null);
+        getIt.registerSingleton<NavService>(mockNavService);
+      });
+
+      tearDown(() {
+        routeNotifier.dispose();
+      });
+
+      DesktopSettingsRoute routeFor(String path) => (
+        path: path,
+        pathParameters: const <String, String>{},
+        queryParameters: const <String, String>{},
+      );
+
+      // The active-tab signal must be on-stage-only; `find.byType` and
+      // `find.text` default to `skipOffstage: true`, so the matching
+      // `IndexedStack` child is the only one they observe — sibling
+      // tabs that are still alive offstage don't poison the count.
+      testWidgets(
+        'route /settings/agents/templates puts Templates tab on stage',
+        (tester) async {
+          routeNotifier.value = routeFor('/settings/agents/templates');
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          final context = tester.element(find.byType(AgentSettingsPage));
+          expect(
+            find.text(context.messages.agentTemplateEmptyList),
+            findsOneWidget,
+          );
+          // Sibling-tab bodies must not be on-stage.
+          expect(find.byType(TokenStatsTab), findsNothing);
+          expect(find.byType(AgentInstancesList), findsNothing);
+          expect(find.byType(AgentPendingWakesList), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'route /settings/agents/pending-wakes puts Pending Wakes on stage',
+        (tester) async {
+          routeNotifier.value = routeFor('/settings/agents/pending-wakes');
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          expect(find.byType(AgentPendingWakesList), findsOneWidget);
+          expect(find.byType(TokenStatsTab), findsNothing);
+          expect(find.byType(AgentInstancesList), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'route change updates the active tab without remounting the page',
+        (tester) async {
+          routeNotifier.value = routeFor('/settings/agents/templates');
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          final context = tester.element(find.byType(AgentSettingsPage));
+          expect(
+            find.text(context.messages.agentTemplateEmptyList),
+            findsOneWidget,
+          );
+
+          // Drive the route to the souls tab — the same body should
+          // pick up the souls empty-state without a fresh pumpWidget
+          // (i.e. same widget instance).
+          routeNotifier.value = routeFor('/settings/agents/souls');
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(context.messages.agentSoulEmptyList),
+            findsOneWidget,
+          );
+          // Templates empty-state must now be offstage.
+          expect(
+            find.text(context.messages.agentTemplateEmptyList),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'in-page tab strip is hidden on desktop — sidebar is the only '
+        'navigation surface so the URL → tree → URL feedback loop has '
+        'nothing to fight with',
+        (tester) async {
+          routeNotifier.value = routeFor('/settings/agents/templates');
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          final context = tester.element(find.byType(AgentSettingsPage));
+          // Tab labels only appear inside the in-page tab bar — the
+          // tab body widgets (`_TemplatesTab`, `AgentPendingWakesList`,
+          // …) render their own content, not the tab name. So a
+          // `find.text(label)` of zero is the cleanest "bar is hidden"
+          // signal without reaching into a private widget class.
+          expect(
+            find.text(context.messages.agentTemplatesTitle),
+            findsNothing,
+          );
+          expect(find.text(context.messages.agentSoulsTitle), findsNothing);
+          expect(
+            find.text(context.messages.agentPendingWakesTitle),
+            findsNothing,
+          );
+          expect(find.text(context.messages.agentStatsTabTitle), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'bare /settings/agents falls through to Stats (parent landing)',
+        (tester) async {
+          routeNotifier.value = routeFor('/settings/agents');
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          // Stats tab content is on stage when the URL has no
+          // per-tab segment, so the parent tree row stays a usable
+          // landing.
+          expect(find.byType(TokenStatsTab), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'unknown sibling segment falls through to Stats — segment-aware '
+        "match doesn't let `templates-archive` hijack the Templates tab",
+        (tester) async {
+          // Hypothetical future leaf whose name shares a prefix with
+          // an existing tab. The segment-aware resolver must NOT
+          // promote this to Templates via prefix-only matching.
+          routeNotifier.value = routeFor('/settings/agents/templates-archive');
+          await tester.pumpWidget(buildSubject());
+          await tester.pumpAndSettle();
+
+          expect(find.byType(TokenStatsTab), findsOneWidget);
+        },
+      );
     });
 
     testWidgets(

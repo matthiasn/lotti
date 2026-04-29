@@ -5300,8 +5300,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAgentsInstancesSubtitle => 'Laufende Agenten';
 
   @override
+  String get settingsAgentsPendingWakesSubtitle => 'Geplante Wake-Timer';
+
+  @override
   String get settingsAgentsSoulsSubtitle =>
       'Langlebige Agenten-Persönlichkeiten';
+
+  @override
+  String get settingsAgentsStatsSubtitle => 'Token-Nutzung und Aktivität';
 
   @override
   String get settingsAgentsTemplatesSubtitle => 'Geteilte Agenten-Vorlagen';

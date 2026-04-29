@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -34,11 +35,15 @@ enum AgentSettingsTab {
 
 /// Landing page for Settings > Agents.
 ///
-/// Contains three tabs:
-/// - **Templates**: inline list of agent templates (extracted from the former
-///   `AgentTemplateListPage`).
+/// Contains five tabs (mirrored by the `agents/<segment>` leaves in
+/// the Settings V2 tree):
+/// - **Stats**: token usage and recent activity.
+/// - **Templates**: inline list of agent templates (extracted from
+///   the former `AgentTemplateListPage`).
 /// - **Instances**: filterable list of agent instances.
-/// - **Pending Wakes**: live list of scheduled and deferred wake timers.
+/// - **Souls**: long-lived agent personalities.
+/// - **Pending Wakes**: live list of scheduled and deferred wake
+///   timers.
 class AgentSettingsPage extends ConsumerStatefulWidget {
   const AgentSettingsPage({this.initialTab, super.key});
 
@@ -66,37 +71,103 @@ class AgentSettingsBody extends StatelessWidget {
 }
 
 class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
-  late AgentSettingsTab _selectedTab;
+  /// Selection used when the URL doesn't drive the tab — i.e. mobile
+  /// (legacy push-stack navigation) and tests where `NavService`
+  /// isn't registered. On desktop the selected tab is derived from
+  /// the current Settings URL via [_resolveTabFromRoute].
+  late AgentSettingsTab _localFallback;
+
+  /// `null` when no `NavService` is registered (test path) — the
+  /// widget then unconditionally falls back to [_localFallback]. When
+  /// non-null, [_isUrlDriven] further requires the app to be in
+  /// desktop mode before treating the URL as authoritative.
+  NavService? _navService;
 
   @override
   void initState() {
     super.initState();
-    _selectedTab = widget.initialTab ?? AgentSettingsTab.stats;
+    _localFallback = widget.initialTab ?? AgentSettingsTab.stats;
+    if (getIt.isRegistered<NavService>()) {
+      _navService = getIt<NavService>();
+    }
   }
 
   @override
   void didUpdateWidget(covariant AgentSettingsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Settings V2 routes `agents/templates`, `agents/souls`, and
-    // `agents/instances` through the same `AgentSettingsBody` /
-    // `AgentSettingsPage` widget type. When Flutter updates this
-    // widget in place across those routes, only the constructor
-    // arg (`initialTab`) changes — without this hook the previously
-    // selected tab would survive and ignore the new request.
+    // Mobile / push-stack callers may swap [initialTab] in place
+    // without remounting; mirror that into the local fallback so the
+    // rebuild lands on the requested tab. Desktop callers leave
+    // [initialTab] null and the URL drives selection — skip the write
+    // so we don't churn `_localFallback` no one is reading.
+    if (_isUrlDriven) return;
     final previous = oldWidget.initialTab ?? AgentSettingsTab.stats;
     final next = widget.initialTab ?? AgentSettingsTab.stats;
     if (previous != next) {
-      _selectedTab = next;
+      _localFallback = next;
     }
+  }
+
+  /// Whether the tab bar should beam URL changes (desktop V2) or
+  /// keep the legacy local-`setState` behavior (mobile + tests).
+  /// `NavService.isDesktopMode` is set by `AppScreen` based on
+  /// breakpoint; tests can opt in by flipping it to `true`.
+  ///
+  /// Note: `isDesktopMode` is a plain `bool` rather than a notifier,
+  /// so this getter does *not* react to mid-mount breakpoint flips
+  /// on its own. The page relies on `AppScreen` (which owns the
+  /// LayoutBuilder) to rebuild the subtree when the layout flips —
+  /// at that point the next `build()` re-evaluates this getter and
+  /// picks the correct branch.
+  bool get _isUrlDriven => _navService?.isDesktopMode == true;
+
+  /// Maps a settings URL onto the tab the body should show. Each
+  /// tab has its own tree leaf and URL under `/settings/agents/`
+  /// (see `settingsNodeUrls` and the per-tab patterns in
+  /// `SettingsLocation`); the bare `/settings/agents` landing falls
+  /// through to Stats so the parent tree row stays clickable.
+  AgentSettingsTab _resolveTabFromRoute(DesktopSettingsRoute? route) {
+    if (route == null) return _localFallback;
+    return _tabFromPath(route.path);
+  }
+
+  /// Shared tab-click handler. On desktop, beam to the URL that
+  /// represents the chosen tab so the V2 detail pane swaps to the
+  /// per-tab leaf with its working `DetailIdDispatch` (and FAB).
+  /// On mobile / tests, fall back to local `setState` so the legacy
+  /// page-stack navigation isn't disturbed.
+  void _onTabSelected(AgentSettingsTab tab) {
+    if (_isUrlDriven) {
+      beamToNamed(_urlForTab(tab));
+      return;
+    }
+    if (_localFallback == tab) return;
+    setState(() => _localFallback = tab);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Read the route notifier only inside the URL-driven branch.
+    // Mobile / test contexts often supply a `MockNavService` whose
+    // `desktopSelectedSettingsRoute` getter isn't stubbed (its return
+    // type is non-nullable, so unstubbed access throws under
+    // mocktail) — keep the read behind the desktop-mode gate.
+    if (!_isUrlDriven) {
+      return _buildContent(context, _localFallback);
+    }
+    return ValueListenableBuilder<DesktopSettingsRoute?>(
+      valueListenable: _navService!.desktopSelectedSettingsRoute,
+      builder: (context, route, _) =>
+          _buildContent(context, _resolveTabFromRoute(route)),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, AgentSettingsTab selectedTab) {
     final tokens = context.designTokens;
     final pendingWakeCount = ref.watch(
       pendingWakeRecordsProvider.select((value) => value.value?.length ?? 0),
     );
-    final floatingActionButton = switch (_selectedTab) {
+    final floatingActionButton = switch (selectedTab) {
       AgentSettingsTab.templates => FloatingActionButton(
         onPressed: () => beamToNamed('/settings/agents/templates/create'),
         tooltip: context.messages.agentTemplateCreateTitle,
@@ -122,23 +193,33 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.step4,
-              tokens.spacing.step4,
-              tokens.spacing.step4,
-              tokens.spacing.step2,
+          // Hide the in-page tab strip on desktop V2 — every tab now
+          // has its own tree leaf under `agents` in the sidebar, and
+          // exposing both navigation surfaces caused two interlocked
+          // bugs: (1) the URL → tree → URL feedback guard could leak
+          // across rapid tab clicks and silently swallow subsequent
+          // sidebar / FAB / row beams, and (2) a top-tab click never
+          // expanded the parent branch in the sidebar so the visible
+          // selection drifted out of sync. The body still resolves
+          // its content from the URL, so the tab bar is purely a
+          // mobile / push-stack affordance now.
+          if (!_isUrlDriven)
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.step4,
+                tokens.spacing.step4,
+                tokens.spacing.step4,
+                tokens.spacing.step2,
+              ),
+              child: _AgentSettingsTabBar(
+                selectedTab: selectedTab,
+                pendingWakeCount: pendingWakeCount,
+                onSelected: _onTabSelected,
+              ),
             ),
-            child: _AgentSettingsTabBar(
-              selectedTab: _selectedTab,
-              pendingWakeCount: pendingWakeCount,
-              onSelected: (AgentSettingsTab tab) =>
-                  setState(() => _selectedTab = tab),
-            ),
-          ),
           Expanded(
             child: _AgentSettingsTabBody(
-              selectedTab: _selectedTab,
+              selectedTab: selectedTab,
             ),
           ),
         ],
@@ -150,6 +231,40 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
             ),
     );
   }
+}
+
+/// Single source of truth for the URL segment that represents each
+/// tab under `/settings/agents/`. Both directions of the URL ↔ tab
+/// mapping (`_urlForTab` and `_tabFromPath`) are derived from this
+/// table, so adding or renaming a tab is a one-line change.
+const String _kAgentsRoot = '/settings/agents';
+const Map<AgentSettingsTab, String> _kTabUrlSegments = {
+  AgentSettingsTab.stats: 'stats',
+  AgentSettingsTab.templates: 'templates',
+  AgentSettingsTab.instances: 'instances',
+  AgentSettingsTab.souls: 'souls',
+  AgentSettingsTab.pendingWakes: 'pending-wakes',
+};
+
+/// Canonical URL for each tab. Each tab has a dedicated tree leaf
+/// under `agents` so clicking a tab in the bar matches clicking the
+/// corresponding leaf in the sidebar.
+String _urlForTab(AgentSettingsTab tab) =>
+    '$_kAgentsRoot/${_kTabUrlSegments[tab]!}';
+
+/// Inverse of [_urlForTab]: matches the first path segment after
+/// `/settings/agents/` against [_kTabUrlSegments]. Bare
+/// `/settings/agents` (or an unknown segment) falls through to
+/// `Stats` so the parent tree row stays a usable landing. Segment-
+/// aware so a future leaf like `templates-archive` can't accidentally
+/// hijack the Templates tab via prefix-only matching.
+AgentSettingsTab _tabFromPath(String path) {
+  if (!path.startsWith('$_kAgentsRoot/')) return AgentSettingsTab.stats;
+  final segment = path.substring(_kAgentsRoot.length + 1).split('/').first;
+  for (final entry in _kTabUrlSegments.entries) {
+    if (entry.value == segment) return entry.key;
+  }
+  return AgentSettingsTab.stats;
 }
 
 class _AgentSettingsTabBar extends StatelessWidget {

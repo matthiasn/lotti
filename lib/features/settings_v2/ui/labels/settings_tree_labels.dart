@@ -26,6 +26,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
         );
       case 'agents':
         return (title: m.agentSettingsTitle, desc: m.agentSettingsSubtitle);
+      case 'agents/stats':
+        return (
+          title: m.agentStatsTabTitle,
+          desc: m.settingsAgentsStatsSubtitle,
+        );
       case 'agents/templates':
         return (
           title: m.agentTemplatesTitle,
@@ -40,6 +45,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
         return (
           title: m.agentInstancesTitle,
           desc: m.settingsAgentsInstancesSubtitle,
+        );
+      case 'agents/pending-wakes':
+        return (
+          title: m.agentPendingWakesTitle,
+          desc: m.settingsAgentsPendingWakesSubtitle,
         );
       case 'habits':
         return (title: m.settingsHabitsTitle, desc: m.settingsHabitsSubtitle);

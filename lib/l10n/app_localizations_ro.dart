@@ -5342,8 +5342,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAgentsInstancesSubtitle => 'Agenți în execuție';
 
   @override
+  String get settingsAgentsPendingWakesSubtitle =>
+      'Cronometre de trezire programate';
+
+  @override
   String get settingsAgentsSoulsSubtitle =>
       'Personalități durabile ale agenților';
+
+  @override
+  String get settingsAgentsStatsSubtitle =>
+      'Utilizarea tokenilor și activitate';
 
   @override
   String get settingsAgentsTemplatesSubtitle => 'Șabloane de agenți partajate';

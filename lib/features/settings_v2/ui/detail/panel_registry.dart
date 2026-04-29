@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
+import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
@@ -130,9 +133,13 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
 
       // Step 9 — AI + agents. Full pages with their own scrolling.
       'ai-profiles': SettingsPanelSpec(build: _aiProfilesPanel),
+      'agents-stats': SettingsPanelSpec(build: _agentsStatsPanel),
       'agents-templates': SettingsPanelSpec(build: _agentsTemplatesPanel),
-      'agents-souls': SettingsPanelSpec(build: _agentsSoulsPanel),
       'agents-instances': SettingsPanelSpec(build: _agentsInstancesPanel),
+      'agents-souls': SettingsPanelSpec(build: _agentsSoulsPanel),
+      'agents-pending-wakes': SettingsPanelSpec(
+        build: _agentsPendingWakesPanel,
+      ),
     };
 
 /// Returns the registered spec for [panelId], or `null` when the id
@@ -289,6 +296,25 @@ class DetailIdDispatch extends StatelessWidget {
 
         return AnimatedSwitcher(
           duration: _kModeSwapDuration,
+          // Default layout uses `StackFit.loose`, which collapses
+          // Scaffold-based children to their minimum size and hides
+          // their FloatingActionButton — the "+" in the agents tab is
+          // the canonical case, but this is a property of every
+          // dispatcher consumer (categories, labels, dashboards,
+          // measurables, agents). Force `StackFit.expand` so children
+          // fill the panel slot — Scaffolds get bounded constraints
+          // and lay out their FAB the same way they would unwrapped.
+          // The previous children list still cross-fades correctly
+          // because `AnimatedSwitcher` paints them above us during
+          // the swap.
+          layoutBuilder: (currentChild, previousChildren) => Stack(
+            alignment: Alignment.center,
+            fit: StackFit.expand,
+            children: [
+              ...previousChildren,
+              ?currentChild,
+            ],
+          ),
           transitionBuilder: (current, animation) =>
               FadeTransition(opacity: animation, child: current),
           child: KeyedSubtree(key: ValueKey(modeKey), child: child),
@@ -302,9 +328,53 @@ class DetailIdDispatch extends StatelessWidget {
 Widget _aiPanel(BuildContext context) => const AiSettingsBody();
 Widget _aiProfilesPanel(BuildContext context) => const InferenceProfilesBody();
 Widget _agentsPanel(BuildContext context) => const AgentSettingsBody();
-Widget _agentsTemplatesPanel(BuildContext context) =>
-    const AgentSettingsBody(initialTab: AgentSettingsTab.templates);
-Widget _agentsSoulsPanel(BuildContext context) =>
-    const AgentSettingsBody(initialTab: AgentSettingsTab.souls);
-Widget _agentsInstancesPanel(BuildContext context) =>
-    const AgentSettingsBody(initialTab: AgentSettingsTab.instances);
+
+// Stats and pending-wakes are read-only views with no detail/create
+// flow, so they reuse `AgentSettingsBody` directly. The body resolves
+// its tab from the URL on desktop, so the explicit `initialTab`
+// argument here is just a fallback for mobile / test contexts where
+// `NavService` isn't desktop-driven.
+Widget _agentsStatsPanel(BuildContext context) =>
+    const AgentSettingsBody(initialTab: AgentSettingsTab.stats);
+Widget _agentsPendingWakesPanel(BuildContext context) =>
+    const AgentSettingsBody(initialTab: AgentSettingsTab.pendingWakes);
+
+// Agent panels follow the same list ↔ detail/create pattern as the
+// other dynamic-list panels (categories, labels, dashboards, …) — the
+// floating "+" beams to `/settings/agents/<tab>/create`, list rows
+// beam to `/settings/agents/<tab>/<id>`. Each tab has its own id key
+// (`templateId` / `soulId` / `agentId`).
+Widget _agentsTemplatesPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'templateId',
+  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.templates),
+  create: (_, _) => const AgentTemplateDetailPage(),
+  detail: (_, id) => AgentTemplateDetailPage(
+    key: ValueKey('settings-v2-agent-template-$id'),
+    templateId: id,
+  ),
+);
+
+Widget _agentsSoulsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'soulId',
+  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.souls),
+  create: (_, _) => const AgentSoulDetailPage(),
+  detail: (_, id) => AgentSoulDetailPage(
+    key: ValueKey('settings-v2-agent-soul-$id'),
+    soulId: id,
+  ),
+);
+
+Widget _agentsInstancesPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'agentId',
+  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.instances),
+  // Instances are created indirectly (from a template) — there is no
+  // `/settings/agents/instances/create` route in beamer, so the
+  // create branch is structurally unreachable. Fall back to the list
+  // defensively rather than crashing if a stray URL ever arrives.
+  create: (_, _) =>
+      const AgentSettingsBody(initialTab: AgentSettingsTab.instances),
+  detail: (_, id) => AgentDetailPage(
+    key: ValueKey('settings-v2-agent-instance-$id'),
+    agentId: id,
+  ),
+);

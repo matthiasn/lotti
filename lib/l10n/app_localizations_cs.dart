@@ -5317,7 +5317,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsAgentsInstancesSubtitle => 'Běžící agenti';
 
   @override
+  String get settingsAgentsPendingWakesSubtitle => 'Naplánované wake timery';
+
+  @override
   String get settingsAgentsSoulsSubtitle => 'Dlouhodobé osobnosti agentů';
+
+  @override
+  String get settingsAgentsStatsSubtitle => 'Spotřeba tokenů a aktivita';
 
   @override
   String get settingsAgentsTemplatesSubtitle => 'Sdílené šablony agentů';
