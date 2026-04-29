@@ -658,15 +658,6 @@ class QueuePipelineCoordinator {
         event: event,
         logging: _logging,
         attachmentIndex: _attachmentIndex,
-        // The queue pipeline does not use the legacy descriptor
-        // catch-up manager — missing-descriptor retries are driven
-        // by `AttachmentIndex.pathRecorded` → `queue.resurrectByPath`.
-        descriptorCatchUp: null,
-        // Neither callback has a queue-side analogue:
-        //  - `scheduleLiveScan` is for the legacy scan loop.
-        //  - `retryNow` is subsumed by the resurrection signal fan-out.
-        scheduleLiveScan: _noopScheduleLiveScan,
-        retryNow: _noopRetryNow,
         // Queue the download so a burst of attachment events does
         // not serialize one download at a time; the ingestor's
         // internal concurrency cap bounds the parallel count.
@@ -681,10 +672,6 @@ class QueuePipelineCoordinator {
       );
     }
   }
-
-  void _noopScheduleLiveScan() {}
-
-  Future<void> _noopRetryNow() async {}
 
   void _countSuppressedSelfEcho() {
     _suppressedSelfEchoes++;

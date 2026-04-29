@@ -3,15 +3,12 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -32,12 +29,7 @@ class _MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class _MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
 
-class _MockJournalDb extends Mock implements JournalDb {}
-
 class _MockSettingsDb extends Mock implements SettingsDb {}
-
-class _MockSyncReadMarkerService extends Mock
-    implements SyncReadMarkerService {}
 
 class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
@@ -77,9 +69,7 @@ void main() {
 
   late _MockMatrixSyncGateway gateway;
   late MockLoggingService logging;
-  late _MockJournalDb journalDb;
   late _MockSettingsDb settingsDb;
-  late _MockSyncReadMarkerService readMarkerService;
   late _MockSyncEventProcessor eventProcessor;
   late _MockSecureStorage secureStorage;
   late _MockMatrixMessageSender messageSender;
@@ -88,7 +78,6 @@ void main() {
   late _MockUserActivityGate activityGate;
   late _MockMatrixStreamConsumer pipeline;
   late _MockQueuePipelineCoordinator coordinator;
-  late AttachmentIndex attachmentIndex;
   late _MockClient client;
 
   _MockQueuePipelineCoordinator buildDefaultCoordinator() {
@@ -135,9 +124,7 @@ void main() {
       loggingService: logging,
       activityGate: activityGate,
       messageSender: messageSender,
-      journalDb: journalDb,
       settingsDb: settingsDb,
-      readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
       queueCoordinator: coordinator,
@@ -145,7 +132,6 @@ void main() {
       roomManager: roomManager,
       sessionManager: sessionManager,
       pipelineOverride: pipeline,
-      attachmentIndex: attachmentIndex,
       connectivityStream: connectivityStream,
     );
   }
@@ -153,9 +139,7 @@ void main() {
   setUp(() {
     gateway = _MockMatrixSyncGateway();
     logging = MockLoggingService();
-    journalDb = _MockJournalDb();
     settingsDb = _MockSettingsDb();
-    readMarkerService = _MockSyncReadMarkerService();
     eventProcessor = _MockSyncEventProcessor();
     secureStorage = _MockSecureStorage();
     messageSender = _MockMatrixMessageSender();
@@ -163,7 +147,6 @@ void main() {
     sessionManager = _MockMatrixSessionManager();
     activityGate = _MockUserActivityGate();
     pipeline = _MockMatrixStreamConsumer();
-    attachmentIndex = AttachmentIndex(logging: logging);
     client = _MockClient();
   });
 

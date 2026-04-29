@@ -2,16 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
-import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
@@ -27,11 +23,7 @@ class _MockGateway extends Mock implements MatrixSyncGateway {}
 
 class _MockMessageSender extends Mock implements MatrixMessageSender {}
 
-class _MockJournalDb extends Mock implements JournalDb {}
-
 class _MockSettingsDb extends Mock implements SettingsDb {}
-
-class _MockReadMarkerService extends Mock implements SyncReadMarkerService {}
 
 class _MockEventProcessor extends Mock implements SyncEventProcessor {}
 
@@ -71,9 +63,7 @@ void main() {
 
     logging = MockLoggingService();
     final sender = _MockMessageSender();
-    final journalDb = _MockJournalDb();
     final settingsDb = _MockSettingsDb();
-    final readMarkerService = _MockReadMarkerService();
     final eventProcessor = _MockEventProcessor();
     final roomManager = _MockRoomManager();
     final pipeline = _MockPipeline();
@@ -109,14 +99,10 @@ void main() {
       loggingService: logging,
       activityGate: UserActivityGate(activityService: UserActivityService()),
       messageSender: sender,
-      journalDb: journalDb,
       settingsDb: settingsDb,
-      readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
       queueCoordinator: queueCoordinator,
-      sentEventRegistry: SentEventRegistry(),
-      attachmentIndex: AttachmentIndex(logging: logging),
       roomManager: roomManager,
       sessionManager: sessionManager,
       pipelineOverride: pipeline,

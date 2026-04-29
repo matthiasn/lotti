@@ -1,14 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
@@ -28,17 +25,11 @@ class _MockGateway extends Mock implements MatrixSyncGateway {}
 
 class _MockMessageSender extends Mock implements MatrixMessageSender {}
 
-class _MockJournalDb extends Mock implements JournalDb {}
-
 class _MockSettingsDb extends Mock implements SettingsDb {}
-
-class _MockReadMarkerService extends Mock implements SyncReadMarkerService {}
 
 class _MockEventProcessor extends Mock implements SyncEventProcessor {}
 
 class _MockSecureStorage extends Mock implements SecureStorage {}
-
-class _MockAttachmentIndex extends Mock implements AttachmentIndex {}
 
 class _MockActivityGate extends Mock implements UserActivityGate {}
 
@@ -65,12 +56,9 @@ void main() {
   late LoggingService loggingService;
   late _MockActivityGate activityGate;
   late _MockMessageSender messageSender;
-  late _MockJournalDb journalDb;
   late _MockSettingsDb settingsDb;
-  late _MockReadMarkerService readMarkerService;
   late _MockEventProcessor eventProcessor;
   late _MockSecureStorage secureStorage;
-  late _MockAttachmentIndex attachmentIndex;
   late _MockClient client;
   late _MockSentEventRegistry sentEventRegistry;
   late _MockSessionManager sessionManager;
@@ -111,12 +99,9 @@ void main() {
     loggingService = LoggingService();
     activityGate = _MockActivityGate();
     messageSender = _MockMessageSender();
-    journalDb = _MockJournalDb();
     settingsDb = _MockSettingsDb();
-    readMarkerService = _MockReadMarkerService();
     eventProcessor = _MockEventProcessor();
     secureStorage = _MockSecureStorage();
-    attachmentIndex = _MockAttachmentIndex();
     client = _MockClient();
     sentEventRegistry = _MockSentEventRegistry();
     sessionManager = _MockSessionManager();
@@ -145,14 +130,10 @@ void main() {
       loggingService: loggingService,
       activityGate: activityGate,
       messageSender: messageSender,
-      journalDb: journalDb,
       settingsDb: settingsDb,
-      readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
       queueCoordinator: queueCoordinator,
-      attachmentIndex: attachmentIndex,
-      sentEventRegistry: sentEventRegistry,
       sessionManager: sessionManager,
       roomManager: roomManager,
       syncEngine: syncEngine,
@@ -170,14 +151,10 @@ void main() {
       loggingService: loggingService,
       activityGate: activityGate,
       messageSender: messageSender,
-      journalDb: journalDb,
       settingsDb: settingsDb,
-      readMarkerService: readMarkerService,
       eventProcessor: eventProcessor,
       secureStorage: secureStorage,
       queueCoordinator: queueCoordinator,
-      attachmentIndex: attachmentIndex,
-      sentEventRegistry: sentEventRegistry,
       sessionManager: sessionManager,
       roomManager: roomManager,
       pipelineOverride: pipeline,

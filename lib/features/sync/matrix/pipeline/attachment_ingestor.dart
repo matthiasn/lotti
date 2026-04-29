@@ -8,7 +8,6 @@ import 'dart:io';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
-import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -39,7 +38,6 @@ typedef LocalVectorClockDominanceCheck =
 /// - Encapsulates first-pass attachment handling for the sync pipeline:
 ///   - Record descriptors into AttachmentIndex and emit observability logs
 ///   - Download and save attachments (immediate or queued)
-///   - Clear pending jsonPaths via [DescriptorCatchUpManager] and nudge scans
 ///
 /// This helper operates on provided arguments and the documents directory.
 class AttachmentIngestor {
@@ -116,9 +114,6 @@ class AttachmentIngestor {
     required Event event,
     required LoggingService logging,
     required AttachmentIndex? attachmentIndex,
-    required DescriptorCatchUpManager? descriptorCatchUp,
-    required void Function() scheduleLiveScan,
-    required Future<void> Function() retryNow,
     bool scheduleDownload = false,
   }) async {
     var fileWritten = false;
@@ -201,11 +196,6 @@ class AttachmentIngestor {
             }
           }
         }
-      }
-
-      if (descriptorCatchUp?.removeIfPresent(rpAny) ?? false) {
-        scheduleLiveScan();
-        await retryNow();
       }
     }
 
