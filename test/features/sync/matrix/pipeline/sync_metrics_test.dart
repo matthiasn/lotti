@@ -58,10 +58,7 @@ void main() {
       ..incDbMissingBase()
       ..incDbMissingBase();
 
-    final snapshot = counters.snapshot(
-      retryStateSize: 0,
-      circuitIsOpen: false,
-    );
+    final snapshot = counters.snapshot();
 
     expect(snapshot['staleAttachmentPurges'], 1);
     expect(snapshot['dbMissingBase'], 2);

@@ -227,8 +227,8 @@ class MetricsCounters {
   }
 
   Map<String, int> snapshot({
-    required int retryStateSize,
-    required bool circuitIsOpen,
+    int retryStateSize = 0,
+    bool circuitIsOpen = false,
   }) {
     final base =
         MetricsUtils.buildSnapshot(

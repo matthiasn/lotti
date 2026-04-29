@@ -700,39 +700,36 @@ class MatrixService {
       );
       return;
     }
-    try {
-      await _queueCoordinator.triggerBridge();
-      _loggingService.captureEvent(
-        'forceRescan.triggerBridge invoked',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'forceRescan',
-      );
-    } catch (error, stackTrace) {
-      _loggingService.captureException(
-        error,
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'forceRescan.triggerBridge',
-        stackTrace: stackTrace,
-      );
-    }
+    await _nudgeBridge(
+      subDomain: 'forceRescan',
+      successMessage: 'forceRescan.triggerBridge invoked',
+    );
   }
 
-  Future<void> retryNow() async {
-    // The queue worker drains automatically via resurrection signals;
-    // the user-facing "retry now" button nudges the bridge so any
-    // gap the worker is waiting on gets re-pulled immediately.
+  /// Nudges the queue worker to re-pull pending items. The queue worker
+  /// drains automatically via resurrection signals, so this is the
+  /// user-facing "retry now" hook that closes any waiting gap immediately.
+  Future<void> retryNow() => _nudgeBridge(
+    subDomain: 'retryNow',
+    successMessage: 'retryNow invoked',
+  );
+
+  Future<void> _nudgeBridge({
+    required String subDomain,
+    required String successMessage,
+  }) async {
     try {
       await _queueCoordinator.triggerBridge();
       _loggingService.captureEvent(
-        'retryNow invoked',
+        successMessage,
         domain: 'MATRIX_SERVICE',
-        subDomain: 'retryNow',
+        subDomain: subDomain,
       );
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
-        subDomain: 'retryNow.triggerBridge',
+        subDomain: '$subDomain.triggerBridge',
         stackTrace: stackTrace,
       );
     }

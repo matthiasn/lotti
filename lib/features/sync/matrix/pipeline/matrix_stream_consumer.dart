@@ -12,7 +12,6 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:meta/meta.dart';
 
 /// Encryption + diagnostics façade for the queue pipeline.
 ///
@@ -36,11 +35,10 @@ class MatrixStreamConsumer implements SyncPipeline {
        _loggingService = loggingService,
        _settingsDb = settingsDb,
        _eventProcessor = eventProcessor,
-       _collectMetrics = collectMetrics,
        _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics) {
     _processor = MatrixStreamProcessor(
       metricsCounters: _metrics,
-      collectMetrics: _collectMetrics,
+      collectMetrics: collectMetrics,
     );
     _signals = MatrixStreamSignalBinder(
       sessionManager: _sessionManager,
@@ -59,7 +57,6 @@ class MatrixStreamConsumer implements SyncPipeline {
   final LoggingService _loggingService;
   final SettingsDb _settingsDb;
   final SyncEventProcessor _eventProcessor;
-  final bool _collectMetrics;
   final MetricsCounters _metrics;
 
   late final MatrixStreamProcessor _processor;
@@ -71,15 +68,12 @@ class MatrixStreamConsumer implements SyncPipeline {
   Future<void> initialize() async {
     if (_initialized) return;
     await _roomManager.initialize();
-    final lastEventId = await getLastReadMatrixEventId(_settingsDb);
-    num? lastTs;
-    try {
-      lastTs = await getLastReadMatrixEventTs(_settingsDb);
-    } catch (_) {
-      // optional
-    }
-    // Pass startup timestamp to the SyncEventProcessor so it can skip old
-    // backfill requests during the queue pipeline's startup catch-up.
+    final results = await Future.wait([
+      getLastReadMatrixEventId(_settingsDb),
+      getLastReadMatrixEventTs(_settingsDb),
+    ]);
+    final lastEventId = results[0];
+    final lastTs = results[1] as num?;
     _eventProcessor.startupTimestamp = lastTs;
     _loggingService.captureEvent(
       _withInstance(
@@ -93,8 +87,6 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   @override
   Future<void> start() async {
-    // Ensure room snapshot exists, then run an initial catch-up BEFORE any
-    // live scans or marker advancement to avoid skipping backlog.
     if (_roomManager.currentRoom == null) {
       final hydrateStart = clock.now();
       final hasConfiguredRoom = _roomManager.currentRoomId != null;
@@ -112,8 +104,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       // there is no persisted room yet, and waiting here adds unnecessary
       // startup latency before the room is joined and saved.
       if (hasConfiguredRoom) {
-        // Total wait ~10s (50 x 200ms). This avoids races where the live scan
-        // would start before the room becomes available and skip backlog.
+        // Up to ~10s (50 x 200ms) so the queue pipeline doesn't start
+        // catch-up against a not-yet-hydrated room and miss backlog.
         for (var i = 0; i < 50 && _roomManager.currentRoom == null; i++) {
           await Future<void>.delayed(const Duration(milliseconds: 200));
         }
@@ -165,7 +157,6 @@ class MatrixStreamConsumer implements SyncPipeline {
   @override
   Future<void> dispose() async {
     await _signals.dispose();
-    _processor.dispose();
     _loggingService.captureEvent(
       _withInstance('MatrixStreamConsumer disposed'),
       domain: syncLoggingDomain,
@@ -175,17 +166,11 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   Map<String, int> metricsSnapshot() => _processor.metricsSnapshot();
 
-  // Called by SyncEventProcessor via observer to record DB apply results
   void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
     _processor.reportDbApplyDiagnostics(diag);
   }
 
-  @visibleForTesting
-  bool get debugCollectMetrics => _collectMetrics;
-
-  // Additional textual diagnostics not represented in numeric metrics.
   Map<String, String> diagnosticsStrings() => _processor.diagnosticsStrings();
 
-  // Record a connectivity-driven signal for observability.
   void recordConnectivitySignal() => _processor.recordConnectivitySignal();
 }
