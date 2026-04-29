@@ -20,6 +20,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SettingsRootPage` reduces to a plain mobile→`SettingsPage` /
   desktop→`SettingsV2Page` dispatch with no flag observation; mobile is
   unchanged.
+- Settings V2 Agents tab is now URL-driven and the sidebar tree mirrors the
+  in-page tab strip. Each tab gets a dedicated tree leaf under `Agents` in
+  the same order as the in-page TabBar — `agents/stats`,
+  `agents/templates`, `agents/instances`, `agents/souls`,
+  `agents/pending-wakes` — and the `templates` / `instances` / `souls`
+  panels are wrapped in `DetailIdDispatch` so the "+" FAB and row taps
+  swap the right-hand panel between list / detail / create.
+  `SettingsLocation` registers the bare
+  `/settings/agents/{stats,templates,instances,souls,pending-wakes}`
+  patterns so Beamer accepts them without falling through to a parent
+  location, and `SettingsTreeUrlSync` carries a symmetric URL-driven
+  guard alongside the existing tree-driven one so URL → tree sync
+  preserves panel-local trailing segments (`/create`, a detail UUID)
+  instead of canonicalizing them away. The in-page tab strip
+  (`_AgentSettingsTabBar`) is hidden when `NavService.isDesktopMode` is
+  true — exposing both navigation surfaces caused the URL → tree → URL
+  feedback guard to leak across rapid tab clicks (silently swallowing
+  subsequent sidebar / FAB / row beams) and let the sidebar selection
+  drift out of sync because a top-tab click never expanded the parent
+  branch in the sidebar. The body still resolves its content from the
+  URL, so dropping the bar on desktop is purely additive; mobile / push-
+  stack callers keep the legacy local-`setState` behavior.
+- `DetailIdDispatch` forces `StackFit.expand` on its inner
+  `AnimatedSwitcher` so Scaffold-based panel bodies (`AgentSettingsBody`,
+  …) receive bounded constraints and lay out their `floatingActionButton`
+  the same way they would unwrapped.
 
 ### Removed
 - The `enable_settings_tree` config flag and its description, the legacy

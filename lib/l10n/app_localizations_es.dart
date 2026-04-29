@@ -5388,8 +5388,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsAgentsInstancesSubtitle => 'Agentes en ejecución';
 
   @override
+  String get settingsAgentsPendingWakesSubtitle =>
+      'Temporizadores de despertar programados';
+
+  @override
   String get settingsAgentsSoulsSubtitle =>
       'Personalidades duraderas de agentes';
+
+  @override
+  String get settingsAgentsStatsSubtitle => 'Uso de tokens y actividad';
 
   @override
   String get settingsAgentsTemplatesSubtitle =>

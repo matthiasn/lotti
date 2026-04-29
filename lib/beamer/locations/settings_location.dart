@@ -76,6 +76,17 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/habits/create',
     '/settings/habits/search/:searchTerm',
     '/settings/agents',
+    // Bare per-tab landings. The Settings V2 tree leaves under
+    // `agents` canonicalize to these URLs via `pathToBeamUrl`, and
+    // the tab-bar inside `AgentSettingsBody` beams here when the
+    // user switches tabs on desktop. Listing them as explicit
+    // patterns makes Beamer accept them without falling back to a
+    // parent location.
+    '/settings/agents/stats',
+    '/settings/agents/templates',
+    '/settings/agents/instances',
+    '/settings/agents/souls',
+    '/settings/agents/pending-wakes',
     '/settings/agents/templates/create',
     '/settings/agents/templates/:templateId',
     '/settings/agents/templates/:templateId/review',

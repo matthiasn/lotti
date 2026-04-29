@@ -149,18 +149,25 @@ void main() {
     test('omits the Agents branch and all its children when off', () {
       final ids = _ids(_tree(enableAgents: false));
       expect(ids, isNot(contains('agents')));
+      expect(ids, isNot(contains('agents/stats')));
       expect(ids, isNot(contains('agents/templates')));
-      expect(ids, isNot(contains('agents/souls')));
       expect(ids, isNot(contains('agents/instances')));
+      expect(ids, isNot(contains('agents/souls')));
+      expect(ids, isNot(contains('agents/pending-wakes')));
     });
 
-    test('emits Agents with three leaves and no badge when on', () {
+    test('children mirror the tab order in AgentSettingsBody', () {
+      // Stats / Templates / Instances / Souls / Pending Wakes — same
+      // order as the in-page TabBar, so the tree shape matches the
+      // right-pane tab strip when the user lands on Agents.
       final agents = _tree().firstWhere((n) => n.id == 'agents');
       expect(agents.hasChildren, isTrue);
       expect(agents.children!.map((n) => n.id).toList(), [
+        'agents/stats',
         'agents/templates',
-        'agents/souls',
         'agents/instances',
+        'agents/souls',
+        'agents/pending-wakes',
       ]);
       expect(agents.badge, isNull);
     });
@@ -249,9 +256,11 @@ void main() {
       expect(leafPanels, {
         'whats-new': 'whats-new',
         'ai/profiles': 'ai-profiles',
+        'agents/stats': 'agents-stats',
         'agents/templates': 'agents-templates',
-        'agents/souls': 'agents-souls',
         'agents/instances': 'agents-instances',
+        'agents/souls': 'agents-souls',
+        'agents/pending-wakes': 'agents-pending-wakes',
         'habits': 'habits',
         'categories': 'categories',
         'labels': 'labels',

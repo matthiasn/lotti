@@ -67,6 +67,16 @@ class _SettingsTreeUrlSyncState extends ConsumerState<SettingsTreeUrlSync> {
   /// so the earliest-scheduled callback can't release the guard
   /// while later beams are still settling.
   int _programmaticBeams = 0;
+
+  /// Mirror counter for the opposite direction: when a URL change
+  /// drives a tree-path mutation, the resulting tree-path listener
+  /// must NOT beam back to canonicalize the URL — that would erase
+  /// panel-local trailing segments (`/create`, a detail UUID) that
+  /// the user just navigated into. Bumped before
+  /// `SettingsTreePath.syncFromUrl` runs, decremented post-frame so
+  /// the suppression covers exactly the listener cascade triggered
+  /// by that single URL update.
+  int _urlDrivenSyncs = 0;
   late final NavService _navService;
 
   @override
@@ -93,13 +103,34 @@ class _SettingsTreeUrlSyncState extends ConsumerState<SettingsTreeUrlSync> {
     if (_programmaticBeams > 0) return;
     final route = _navService.desktopSelectedSettingsRoute.value;
     final url = route?.path ?? settingsRootUrl;
+    // Bump the URL-driven guard before mutating the tree path so the
+    // resulting `_onPathChanged` listener cascade doesn't beam back
+    // and erase panel-local URL extensions (e.g. tapping the FAB at
+    // `/settings/agents` lands on `/settings/agents/templates/create`
+    // — the URL → tree sync then promotes the tree path to
+    // `[agents, agents/templates]`, which would otherwise canonicalize
+    // the URL back to `/settings/agents/templates` and kill the
+    // `/create` segment before the panel dispatcher observes it).
+    _urlDrivenSyncs++;
     // syncFromUrl is already idempotent — it only mutates state when
     // the resolved path differs — so the extra early-out here is
-    // purely a cycle-break belt.
+    // purely a cycle-break belt. The `_onPathChanged` listener fires
+    // synchronously inside this call when state changes, so the
+    // increment above is what suppresses the beam-back; the
+    // post-frame decrement just resets the guard for the next URL
+    // change.
     ref.read(settingsTreePathProvider.notifier).syncFromUrl(url);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_urlDrivenSyncs > 0) _urlDrivenSyncs--;
+    });
   }
 
   void _onPathChanged(List<String> next) {
+    // Tree path changed *because* the URL changed (URL → tree sync) —
+    // do not beam back to canonicalize, the URL already represents
+    // the user's intent (often deeper than the bare leaf URL).
+    if (_urlDrivenSyncs > 0) return;
     final target = pathToBeamUrl(next);
     final currentUrl =
         _navService.desktopSelectedSettingsRoute.value?.path ?? settingsRootUrl;

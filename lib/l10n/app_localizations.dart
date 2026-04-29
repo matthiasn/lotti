@@ -9136,11 +9136,23 @@ abstract class AppLocalizations {
   /// **'Running agents'**
   String get settingsAgentsInstancesSubtitle;
 
+  /// No description provided for @settingsAgentsPendingWakesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled wake timers'**
+  String get settingsAgentsPendingWakesSubtitle;
+
   /// No description provided for @settingsAgentsSoulsSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Long-lived agent personalities'**
   String get settingsAgentsSoulsSubtitle;
+
+  /// No description provided for @settingsAgentsStatsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token usage and activity'**
+  String get settingsAgentsStatsSubtitle;
 
   /// No description provided for @settingsAgentsTemplatesSubtitle.
   ///

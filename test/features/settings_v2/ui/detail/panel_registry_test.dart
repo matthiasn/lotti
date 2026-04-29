@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
+import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
@@ -63,9 +66,11 @@ void main() {
       'measurables',
       // Step 9 — AI + agents.
       'ai-profiles',
+      'agents-stats',
       'agents-templates',
-      'agents-souls',
       'agents-instances',
+      'agents-souls',
+      'agents-pending-wakes',
     };
 
     test('registers every expected panel id', () {
@@ -191,9 +196,11 @@ void main() {
         // builder still resolves to ConflictsBody.
         expect(build('sync-conflicts'), isA<ConflictsBody>());
 
-        // Step 9 — AI + agents. The agent variants must each carry
-        // the correct `initialTab` so the registry doesn't silently
-        // collapse all three tabs onto the same default.
+        // Step 9 — AI + agents. The agents tab variants are wrapped in
+        // `DetailIdDispatch` so the FAB ("+") and row taps can swap
+        // the panel between list / detail / create — the per-tab
+        // `initialTab` wiring is asserted via the dispatch closures
+        // in the dedicated group below.
         expect(build('ai'), isA<AiSettingsBody>());
         expect(build('ai-profiles'), isA<InferenceProfilesBody>());
 
@@ -201,26 +208,27 @@ void main() {
         expect(agentsRoot, isA<AgentSettingsBody>());
         expect((agentsRoot as AgentSettingsBody).initialTab, isNull);
 
-        final templates = build('agents-templates');
-        expect(templates, isA<AgentSettingsBody>());
+        // Stats and Pending Wakes are read-only views: no detail/
+        // create flow, so they reuse `AgentSettingsBody` directly
+        // with the matching `initialTab` as the mobile/test fallback.
+        // On desktop the URL drives the tab regardless.
+        final stats = build('agents-stats');
+        expect(stats, isA<AgentSettingsBody>());
         expect(
-          (templates as AgentSettingsBody).initialTab,
-          AgentSettingsTab.templates,
+          (stats as AgentSettingsBody).initialTab,
+          AgentSettingsTab.stats,
         );
 
-        final souls = build('agents-souls');
-        expect(souls, isA<AgentSettingsBody>());
+        final pendingWakes = build('agents-pending-wakes');
+        expect(pendingWakes, isA<AgentSettingsBody>());
         expect(
-          (souls as AgentSettingsBody).initialTab,
-          AgentSettingsTab.souls,
+          (pendingWakes as AgentSettingsBody).initialTab,
+          AgentSettingsTab.pendingWakes,
         );
 
-        final instances = build('agents-instances');
-        expect(instances, isA<AgentSettingsBody>());
-        expect(
-          (instances as AgentSettingsBody).initialTab,
-          AgentSettingsTab.instances,
-        );
+        expect(build('agents-templates'), isA<DetailIdDispatch>());
+        expect(build('agents-souls'), isA<DetailIdDispatch>());
+        expect(build('agents-instances'), isA<DetailIdDispatch>());
       },
     );
   });
@@ -631,6 +639,120 @@ void main() {
         expect(detail, isA<EditMeasurablePage>());
         expect((detail as EditMeasurablePage).measurableId, 'meas-9');
         expect(detail.key, const ValueKey('settings-v2-measurable-meas-9'));
+      },
+    );
+
+    testWidgets(
+      'agents-templates panel: list closure pins the templates tab so '
+      'tapping the leaf in the tree still lands on the right tab',
+      (tester) async {
+        final r = await dispatchFor('agents-templates', tester);
+        expect(r.dispatch.idParamKey, 'templateId');
+        final body = r.dispatch.list(r.context);
+        expect(body, isA<AgentSettingsBody>());
+        expect(
+          (body as AgentSettingsBody).initialTab,
+          AgentSettingsTab.templates,
+        );
+      },
+    );
+
+    testWidgets(
+      'agents-templates panel: create closure returns blank '
+      "AgentTemplateDetailPage — this is the path the templates tab's "
+      '"+" button hits on desktop',
+      (tester) async {
+        final r = await dispatchFor('agents-templates', tester);
+        final created = r.dispatch.create(r.context, null);
+        expect(created, isA<AgentTemplateDetailPage>());
+        expect((created as AgentTemplateDetailPage).templateId, isNull);
+      },
+    );
+
+    testWidgets(
+      'agents-templates panel: detail closure returns '
+      'AgentTemplateDetailPage(templateId)',
+      (tester) async {
+        final r = await dispatchFor('agents-templates', tester);
+        final detail = r.dispatch.detail(r.context, 'tpl-1');
+        expect(detail, isA<AgentTemplateDetailPage>());
+        expect((detail as AgentTemplateDetailPage).templateId, 'tpl-1');
+        expect(
+          detail.key,
+          const ValueKey('settings-v2-agent-template-tpl-1'),
+        );
+      },
+    );
+
+    testWidgets('agents-souls panel: list pins the souls tab', (tester) async {
+      final r = await dispatchFor('agents-souls', tester);
+      expect(r.dispatch.idParamKey, 'soulId');
+      final body = r.dispatch.list(r.context);
+      expect(body, isA<AgentSettingsBody>());
+      expect((body as AgentSettingsBody).initialTab, AgentSettingsTab.souls);
+    });
+
+    testWidgets(
+      'agents-souls panel: create closure returns blank AgentSoulDetailPage',
+      (tester) async {
+        final r = await dispatchFor('agents-souls', tester);
+        final created = r.dispatch.create(r.context, null);
+        expect(created, isA<AgentSoulDetailPage>());
+        expect((created as AgentSoulDetailPage).soulId, isNull);
+      },
+    );
+
+    testWidgets(
+      'agents-souls panel: detail closure returns AgentSoulDetailPage(soulId)',
+      (tester) async {
+        final r = await dispatchFor('agents-souls', tester);
+        final detail = r.dispatch.detail(r.context, 'soul-7');
+        expect(detail, isA<AgentSoulDetailPage>());
+        expect((detail as AgentSoulDetailPage).soulId, 'soul-7');
+        expect(detail.key, const ValueKey('settings-v2-agent-soul-soul-7'));
+      },
+    );
+
+    testWidgets(
+      'agents-instances panel: list pins the instances tab',
+      (tester) async {
+        final r = await dispatchFor('agents-instances', tester);
+        expect(r.dispatch.idParamKey, 'agentId');
+        final body = r.dispatch.list(r.context);
+        expect(body, isA<AgentSettingsBody>());
+        expect(
+          (body as AgentSettingsBody).initialTab,
+          AgentSettingsTab.instances,
+        );
+      },
+    );
+
+    testWidgets(
+      'agents-instances panel: detail closure returns AgentDetailPage(agentId)',
+      (tester) async {
+        final r = await dispatchFor('agents-instances', tester);
+        final detail = r.dispatch.detail(r.context, 'agent-3');
+        expect(detail, isA<AgentDetailPage>());
+        expect((detail as AgentDetailPage).agentId, 'agent-3');
+        expect(
+          detail.key,
+          const ValueKey('settings-v2-agent-instance-agent-3'),
+        );
+      },
+    );
+
+    testWidgets(
+      'agents-instances panel: create closure falls back to the list '
+      '(beamer has no `/settings/agents/instances/create` route, so '
+      'the closure is structurally unreachable but defensive)',
+      (tester) async {
+        final r = await dispatchFor('agents-instances', tester);
+        final created = r.dispatch.create(r.context, null);
+        expect(created, isA<AgentSettingsBody>());
+        expect(
+          (created as AgentSettingsBody).initialTab,
+          AgentSettingsTab.instances,
+        );
       },
     );
   });

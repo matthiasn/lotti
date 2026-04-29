@@ -5396,7 +5396,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsAgentsInstancesSubtitle => 'Agents en cours d\'exécution';
 
   @override
+  String get settingsAgentsPendingWakesSubtitle =>
+      'Minuteries de réveil programmées';
+
+  @override
   String get settingsAgentsSoulsSubtitle => 'Personnalités d\'agents durables';
+
+  @override
+  String get settingsAgentsStatsSubtitle =>
+      'Utilisation des tokens et activité';
 
   @override
   String get settingsAgentsTemplatesSubtitle => 'Modèles d\'agents partagés';

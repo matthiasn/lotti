@@ -110,9 +110,11 @@ void main() {
       tester,
     ) async {
       final resolve = await _buildResolver(tester);
+      expect(resolve('agents/stats').title, 'Stats');
       expect(resolve('agents/templates').title, 'Agent Templates');
-      expect(resolve('agents/souls').title, 'Souls');
       expect(resolve('agents/instances').title, 'Instances');
+      expect(resolve('agents/souls').title, 'Souls');
+      expect(resolve('agents/pending-wakes').title, 'Pending Wakes');
     });
 
     testWidgets('sync/outbox uses settingsSyncOutboxTitle', (tester) async {

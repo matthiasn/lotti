@@ -90,17 +90,37 @@ List<SettingsNode> buildSettingsTree({
         'agents',
         Icons.smart_toy_outlined,
         panel: 'agents',
+        // Children mirror the tab order inside `AgentSettingsBody`
+        // (stats, templates, instances, souls, pending-wakes) so the
+        // tree shape matches what the right pane shows under Agents.
         children: [
+          leaf(
+            'agents/stats',
+            Icons.insights_rounded,
+            panel: 'agents-stats',
+          ),
           leaf(
             'agents/templates',
             Icons.article_outlined,
             panel: 'agents-templates',
           ),
-          leaf('agents/souls', Icons.auto_awesome, panel: 'agents-souls'),
           leaf(
             'agents/instances',
             Icons.hub_outlined,
             panel: 'agents-instances',
+          ),
+          leaf('agents/souls', Icons.auto_awesome, panel: 'agents-souls'),
+          // Trailing path segment is hyphenated (`pending-wakes`)
+          // rather than nested (`pending/wakes`); the `_idToPath`
+          // walker splits ids on `/` and would otherwise look up a
+          // non-existent `agents/pending` parent. The full leaf id is
+          // `agents/pending-wakes`, the panel id is
+          // `agents-pending-wakes`, and the URL is
+          // `/settings/agents/pending-wakes`.
+          leaf(
+            'agents/pending-wakes',
+            Icons.timer_outlined,
+            panel: 'agents-pending-wakes',
           ),
         ],
       ),

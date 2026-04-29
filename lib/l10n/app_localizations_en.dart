@@ -5228,7 +5228,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAgentsInstancesSubtitle => 'Running agents';
 
   @override
+  String get settingsAgentsPendingWakesSubtitle => 'Scheduled wake timers';
+
+  @override
   String get settingsAgentsSoulsSubtitle => 'Long-lived agent personalities';
+
+  @override
+  String get settingsAgentsStatsSubtitle => 'Token usage and activity';
 
   @override
   String get settingsAgentsTemplatesSubtitle => 'Shared agent blueprints';
