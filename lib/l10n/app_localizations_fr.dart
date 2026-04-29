@@ -2479,6 +2479,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Active la recherche vectorielle dans les filtres des tâches. Nécessite les embeddings activés et Ollama en cours d\'exécution.';
 
   @override
+  String get configFlagEnableWhatsNew => 'Afficher « Nouveautés »';
+
+  @override
+  String get configFlagEnableWhatsNewDescription =>
+      'Met en évidence les nouvelles fonctionnalités et modifications dans l\'arborescence des Réglages.';
+
+  @override
   String get configFlagPrivate => 'Afficher les entrées privées ?';
 
   @override
@@ -5496,6 +5503,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsDashboardsTitle => 'Gestion du tableau de bord';
+
+  @override
+  String get settingsFlagsEmptySearch =>
+      'Aucun indicateur ne correspond à ta recherche';
+
+  @override
+  String get settingsFlagsSearchHint => 'Rechercher des indicateurs';
 
   @override
   String get settingsFlagsSubtitle => 'Configurer les indicateurs et options';
