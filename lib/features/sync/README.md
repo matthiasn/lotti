@@ -27,10 +27,14 @@ flowchart LR
   Outbox --> Sender["MatrixService.sendMatrixMsg()"]
   Sender --> Room["Encrypted Matrix room"]
 
-  Room --> Consumer["MatrixStreamConsumer"]
-  Consumer --> Processor["SyncEventProcessor"]
-  Processor --> Stores["JournalDb / AgentRepository / SettingsDb"]
-  Processor --> Sequence["SyncSequenceLogService"]
+  Room --> QueueCoord["QueuePipelineCoordinator"]
+  QueueCoord --> Bridge["BridgeCoordinator (catch-up via /messages on limited=true)"]
+  QueueCoord --> Queue["InboundEventQueue (Drift-backed)"]
+  Bridge --> Queue
+  Queue --> Worker["InboundWorker (per-room drain, batch ≤ 20)"]
+  Worker --> Apply["QueueApplyAdapter → SyncEventProcessor"]
+  Apply --> Stores["JournalDb / AgentRepository / SettingsDb"]
+  Apply --> Sequence["SyncSequenceLogService"]
 
   Sequence --> BackfillReq["BackfillRequestService"]
   Room --> BackfillResp["BackfillResponseHandler"]
@@ -44,7 +48,8 @@ At runtime, the sync feature owns:
 
 1. outbound queueing, retries, backoff, and send nudges
 2. Matrix session and room lifecycle
-3. catch-up and live scanning of room history
+3. inbound ingestion via the persistent queue: live `timelineEvents` stream
+   plus a `/messages` bridge on `timeline.limited == true` for catch-up
 4. applying sync payloads into local stores
 5. sequence-log tracking for sequence-aware payloads
 6. backfill request and response handling
@@ -56,7 +61,8 @@ At runtime, the sync feature owns:
 | --- | --- |
 | `outbox/` | Persist pending payloads in `sync_db`, merge superseded work, enrich sequence metadata, and drive send retries |
 | `matrix/` | Session management, room discovery/persistence, message sending, read markers, verification, and high-level lifecycle |
-| `matrix/pipeline/` | Catch-up, live scan, signal coalescing, attachment ingestion, retry, and ordered processing |
+| `matrix/pipeline/` | Attachment ingestion + index, metrics aggregation, and the `sync.limited` Phase-0 diagnostic listener |
+| `queue/` | Persistent inbound queue, per-room worker, `onSync` bridge for catch-up, and pending-decryption holding pen |
 | `sequence/` | Record `(hostId, counter)` coverage, detect gaps, and track missing/requested/backfilled/deleted/unresolvable states |
 | `backfill/` | Send missing-counter requests and answer peer requests with resend, deleted, unresolvable, or covering-payload hints |
 | `state/` and `ui/` | Riverpod controllers and sync-facing settings, stats, diagnostics, provisioning, and maintenance screens |
@@ -376,22 +382,29 @@ that only backfill could resolve.
 ## Receive Path
 
 `MatrixService` composes `SyncEngine`, `SyncRoomManager`,
-`MatrixStreamConsumer`, and `SyncEventProcessor`.
+`QueuePipelineCoordinator`, and `SyncEventProcessor`. The retained
+`MatrixStreamConsumer` is a thin façade that seeds startup state for the
+`SyncEventProcessor`, attaches the `sync.limited` Phase-0 diagnostic via
+`MatrixStreamSignalBinder`, and surfaces metrics for the Matrix Stats UI —
+inbound ingestion is owned by the queue pipeline.
 
 The important runtime rules are:
 
-- `MatrixStreamConsumer.initialize()` hydrates room state and restores the last
-  processed marker
-- `start()` runs catch-up before binding the live signal path
-- client-stream and timeline callbacks act as scheduling signals, not as the
-  payload-processing path
-- marker advancement happens inside ordered batches, not per callback
-- the per-event apply loop in `MatrixStreamProcessor._processOrderedInternal`
-  runs inside a single `JournalDb.transaction`, so a slice of N events
-  commits once and Drift emits one journal-table stream notification per
-  slice instead of N. Per-event errors are still caught locally and
-  converted to retry-tracker entries, so the transaction only rolls back
-  when a commit itself fails.
+- `QueuePipelineCoordinator` subscribes to `MatrixSessionManager.timelineEvents`
+  for live ingestion and to `Client.onSync` for catch-up triggers
+- live events are routed through `PendingDecryptionPen` so pre-decryption
+  ciphertext never lands in `inbound_event_queue.raw_json`, then enqueued via
+  `InboundEventQueue.enqueueLive`
+- on `timeline.limited == true`, `BridgeCoordinator` walks `/messages` back to
+  the per-room marker stored in `queue_markers` and feeds events through the
+  same enqueue path
+- `InboundWorker` drains each room in batches of up to 20 (gated by
+  `UserActivityGate`), prepares events in parallel via `QueueApplyAdapter`, and
+  applies them through `SyncEventProcessor` inside a single `JournalDb.transaction`
+- `event_id` UNIQUE on the queue table is the sole cross-producer dedupe
+  primitive; `lease_until` is a durable worker lease that survives crashes
+- per-room markers in `queue_markers` advance only after a successful slice
+  commit, so a crash mid-drain just re-leases the same rows on restart
 
 `SyncEventProcessor` decodes `SyncMessage`, resolves file-backed payloads,
 applies them to local stores, records sequence state, and delegates backfill
@@ -485,7 +498,7 @@ stateDiagram-v2
     Starting --> Running: marker seeded · stranded rows pruned · worker + bridge started
     Running --> Running: live event → pen? yes: hold / no: enqueueLive<br/>worker drains K≤20 / batch
     Running --> Draining: coordinator.stop(drainFirst: true)
-    Draining --> Stopped: worker.drainToCompletion()
+    Draining --> Stopped: coordinator.drainUntilEmpty()<br/>(loops worker.drainToCompletion until queue empty or timeout)
     Running --> Stopped: coordinator.stop(drainFirst: false)
 ```
 

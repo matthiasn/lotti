@@ -706,13 +706,31 @@ class MatrixService {
     );
   }
 
-  /// Nudges the queue worker to re-pull pending items. The queue worker
-  /// drains automatically via resurrection signals, so this is the
-  /// user-facing "retry now" hook that closes any waiting gap immediately.
-  Future<void> retryNow() => _nudgeBridge(
-    subDomain: 'retryNow',
-    successMessage: 'retryNow invoked',
-  );
+  /// User-facing "Retry pending failures now" hook. Resurrects every
+  /// abandoned ledger row that is still below the per-row resurrection
+  /// hard cap (so backed-off / leased items wake up immediately) and
+  /// nudges the bridge in case a remote gap is what's holding the worker.
+  Future<void> retryNow() async {
+    try {
+      final resurrected = await _queueCoordinator.queue.resurrectAll();
+      _loggingService.captureEvent(
+        'retryNow.resurrectAll resurrected=$resurrected',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'retryNow',
+      );
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'retryNow.resurrectAll',
+        stackTrace: stackTrace,
+      );
+    }
+    await _nudgeBridge(
+      subDomain: 'retryNow',
+      successMessage: 'retryNow.triggerBridge invoked',
+    );
+  }
 
   Future<void> _nudgeBridge({
     required String subDomain,

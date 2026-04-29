@@ -123,29 +123,10 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'start',
       );
     }
-    // CRITICAL: call `room.getTimeline()` to un-partial the sync room.
-    // Matrix SDK skips `RoomMember` state events on partial rooms in
-    // `_updateRoomsByEventUpdate`, so a partial room never has its
-    // `_trackedUserIds` extended when a new member joins. That breaks
-    // device-key discovery: `updateUserDeviceKeys` never queries keys
-    // for users the SDK isn't tracking, and SAS verification / E2EE
-    // never sees the other device. We call `getTimeline()` for the
-    // side effect of loading room state, then cancel the subscription
-    // immediately — the queue pipeline owns live ingestion.
-    final room = _roomManager.currentRoom;
-    if (room != null) {
-      try {
-        final tl = await room.getTimeline();
-        tl.cancelSubscriptions();
-      } catch (error, stackTrace) {
-        _loggingService.captureException(
-          error,
-          domain: syncLoggingDomain,
-          subDomain: 'start.getTimeline',
-          stackTrace: stackTrace,
-        );
-      }
-    }
+    // Un-partialling the sync room (so `RoomMember` state events get
+    // tracked and E2EE / SAS verification can discover the other
+    // device) is owned by `QueuePipelineCoordinator._maybePostLoadCurrentRoom`,
+    // which calls `room.postLoad()` on every onSync.
     await _signals.start();
     _loggingService.captureEvent(
       _withInstance('MatrixStreamConsumer started'),
