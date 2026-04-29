@@ -183,7 +183,7 @@ Future<void> initConfigFlags(
     const ConfigFlag(
       name: enableWhatsNewFlag,
       description: "Enable What's New feature?",
-      status: true,
+      status: false,
     ),
   );
 

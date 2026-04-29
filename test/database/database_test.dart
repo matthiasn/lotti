@@ -46,7 +46,6 @@ final Set<String> expectedActiveFlagNames = {
   enableAiStreamingFlag,
   logAgentRuntimeFlag,
   logAgentWorkflowFlag,
-  enableWhatsNewFlag,
 };
 
 final expectedFlags = <ConfigFlag>{
@@ -169,7 +168,7 @@ final expectedFlags = <ConfigFlag>{
   const ConfigFlag(
     name: enableWhatsNewFlag,
     description: "Enable What's New feature?",
-    status: true,
+    status: false,
   ),
 };
 
