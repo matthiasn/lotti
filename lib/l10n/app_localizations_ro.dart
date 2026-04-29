@@ -2455,6 +2455,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activează căutarea vectorială în filtrele de sarcini. Necesită embedding-uri activate și Ollama în execuție.';
 
   @override
+  String get configFlagEnableWhatsNew => 'Afișează „Noutăți\"';
+
+  @override
+  String get configFlagEnableWhatsNewDescription =>
+      'Evidențiază funcțiile și modificările noi în arborele Setărilor.';
+
+  @override
   String get configFlagPrivate => 'Arată articolele private?';
 
   @override
@@ -5444,6 +5451,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsDashboardsTitle => 'Panouri de bord';
+
+  @override
+  String get settingsFlagsEmptySearch =>
+      'Niciun marcaj nu corespunde căutării dvs.';
+
+  @override
+  String get settingsFlagsSearchHint => 'Căutați marcaje';
 
   @override
   String get settingsFlagsSubtitle => 'Configurați indicatoarele și opțiunile';

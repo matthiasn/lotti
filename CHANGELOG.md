@@ -5,6 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.979]
+### Added
+- Keyword search on the Config Flags page. A `DesignSystemSearch`
+  field above the list filters flags by their localized title or
+  description (case-insensitive, leading/trailing whitespace
+  trimmed). When no flag matches, a centered empty-state message
+  replaces the list. The filter logic lives in a pure
+  `filterDisplayedFlags` function so it can be unit-tested
+  independently of `BuildContext`. The list itself is wrapped in
+  design-system spacing tokens (`step2` vertical, `step4` between
+  the field and the list) so the search affordance reads as part
+  of the same surface rather than a floating chrome.
+- The `enable_whats_new` config flag is now a user-toggleable entry
+  in the Config Flags list (icon, title, and description sourced
+  from the new `configFlagEnableWhatsNew{,Description}` arb keys
+  across all locales). The DB-side flag definition was already in
+  place — this surfaces the toggle in the UI so users can hide the
+  What's New tree leaf without editing the database.
+
 ### Changed
 - Backfill Sync settings page rebuilt around the Option C "compact ledger"
   design: a welded status row (Inbound queue · Missing · Skipped) at the top,

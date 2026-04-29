@@ -4212,6 +4212,18 @@ abstract class AppLocalizations {
   /// **'Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.'**
   String get configFlagEnableVectorSearchDescription;
 
+  /// No description provided for @configFlagEnableWhatsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Show What\'s New'**
+  String get configFlagEnableWhatsNew;
+
+  /// No description provided for @configFlagEnableWhatsNewDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlight new features and changes inside the Settings tree.'**
+  String get configFlagEnableWhatsNewDescription;
+
   /// No description provided for @configFlagPrivate.
   ///
   /// In en, this message translates to:
@@ -9309,6 +9321,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dashboards'**
   String get settingsDashboardsTitle;
+
+  /// No description provided for @settingsFlagsEmptySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'No flags match your search'**
+  String get settingsFlagsEmptySearch;
+
+  /// No description provided for @settingsFlagsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search flags'**
+  String get settingsFlagsSearchHint;
 
   /// No description provided for @settingsFlagsSubtitle.
   ///

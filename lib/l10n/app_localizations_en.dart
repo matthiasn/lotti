@@ -2408,6 +2408,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable vector search in task filters. Requires embeddings to be enabled and Ollama running.';
 
   @override
+  String get configFlagEnableWhatsNew => 'Show What\'s New';
+
+  @override
+  String get configFlagEnableWhatsNewDescription =>
+      'Highlight new features and changes inside the Settings tree.';
+
+  @override
   String get configFlagPrivate => 'Show private entries?';
 
   @override
@@ -5323,6 +5330,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDashboardsTitle => 'Dashboards';
+
+  @override
+  String get settingsFlagsEmptySearch => 'No flags match your search';
+
+  @override
+  String get settingsFlagsSearchHint => 'Search flags';
 
   @override
   String get settingsFlagsSubtitle => 'Configure feature flags and options';

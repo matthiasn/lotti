@@ -2436,6 +2436,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zapne vektorové vyhledávání ve filtrech úkolů. Vyžaduje povolené embeddingy a spuštěnou Ollamu.';
 
   @override
+  String get configFlagEnableWhatsNew => 'Zobrazit „Co je nového\"';
+
+  @override
+  String get configFlagEnableWhatsNewDescription =>
+      'Zvýrazňuje nové funkce a změny ve stromu Nastavení.';
+
+  @override
   String get configFlagPrivate => 'Zobrazit soukromé záznamy?';
 
   @override
@@ -5414,6 +5421,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsDashboardsTitle => 'Panely';
+
+  @override
+  String get settingsFlagsEmptySearch =>
+      'Žádné příznaky neodpovídají vašemu hledání';
+
+  @override
+  String get settingsFlagsSearchHint => 'Hledat příznaky';
 
   @override
   String get settingsFlagsSubtitle => 'Konfigurace příznaků a možností';

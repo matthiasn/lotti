@@ -2484,6 +2484,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activa la búsqueda vectorial en los filtros de tareas. Requiere incrustaciones activadas y Ollama en ejecución.';
 
   @override
+  String get configFlagEnableWhatsNew => 'Mostrar «Novedades»';
+
+  @override
+  String get configFlagEnableWhatsNewDescription =>
+      'Resalta nuevas funciones y cambios dentro del árbol de Ajustes.';
+
+  @override
   String get configFlagPrivate => '¿Mostrar entradas privadas?';
 
   @override
@@ -5487,6 +5494,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsDashboardsTitle => 'Paneles';
+
+  @override
+  String get settingsFlagsEmptySearch =>
+      'Ningún indicador coincide con tu búsqueda';
+
+  @override
+  String get settingsFlagsSearchHint => 'Buscar indicadores';
 
   @override
   String get settingsFlagsSubtitle => 'Configurar indicadores y opciones';

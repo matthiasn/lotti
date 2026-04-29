@@ -2446,6 +2446,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviert Vektorsuche in den Aufgabenfiltern. Erfordert aktivierte Embeddings und ein laufendes Ollama.';
 
   @override
+  String get configFlagEnableWhatsNew => '„Neu\"-Hinweise anzeigen';
+
+  @override
+  String get configFlagEnableWhatsNewDescription =>
+      'Hebt neue Funktionen und Änderungen im Einstellungsbaum hervor.';
+
+  @override
   String get configFlagPrivate => 'Private Einträge anzeigen?';
 
   @override
@@ -5398,6 +5405,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsDashboardsTitle => 'Dashboards';
+
+  @override
+  String get settingsFlagsEmptySearch => 'Keine Flags entsprechen deiner Suche';
+
+  @override
+  String get settingsFlagsSearchHint => 'Flags durchsuchen';
 
   @override
   String get settingsFlagsSubtitle =>
