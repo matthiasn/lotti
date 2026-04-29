@@ -14,7 +14,6 @@ import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -269,10 +268,6 @@ Future<MatrixService> createMatrixService({
     documentsDirectory: documentsDirectory,
     sentEventRegistry: sentEventRegistry,
   );
-  final readMarkerService = SyncReadMarkerService(
-    settingsDb: settingsDb,
-    loggingService: loggingService,
-  );
   final eventProcessor = SyncEventProcessor(
     loggingService: loggingService,
     updateNotifications: updateNotifications,
@@ -340,15 +335,11 @@ Future<MatrixService> createMatrixService({
     loggingService: loggingService,
     activityGate: activityGate,
     messageSender: messageSender,
-    journalDb: journalDb,
     settingsDb: settingsDb,
-    readMarkerService: readMarkerService,
     eventProcessor: eventProcessor,
     secureStorage: secureStorage,
     deviceDisplayName: deviceName,
     ownsActivityGate: true,
-    attachmentIndex: sharedAttachmentIndex,
-    sentEventRegistry: sentEventRegistry,
     collectSyncMetrics: collectSyncMetrics,
     roomManager: roomManager,
     sessionManager: sessionManager,

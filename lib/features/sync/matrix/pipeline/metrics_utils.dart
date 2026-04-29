@@ -20,8 +20,6 @@ class MetricsUtils {
     required int dbIgnoredByVectorClock,
     required int conflictsCreated,
     required List<String> lastIgnored,
-    required int retryStateSize,
-    required bool circuitOpen,
   }) {
     return <String, int>{
         'processed': processed,
@@ -35,8 +33,6 @@ class MetricsUtils {
         'dbApplied': dbApplied,
         'dbIgnoredByVectorClock': dbIgnoredByVectorClock,
         'conflictsCreated': conflictsCreated,
-        'retryStateSize': retryStateSize,
-        'circuitOpen': circuitOpen ? 1 : 0,
       }
       ..addEntries(
         processedByType.entries.map(

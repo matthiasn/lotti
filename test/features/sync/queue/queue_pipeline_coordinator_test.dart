@@ -8,7 +8,6 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
-import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -68,14 +67,10 @@ class _FakeAttachmentIngestor implements AttachmentIngestor {
     required Event event,
     required LoggingService logging,
     required AttachmentIndex? attachmentIndex,
-    required DescriptorCatchUpManager? descriptorCatchUp,
-    required void Function() scheduleLiveScan,
-    required Future<void> Function() retryNow,
     bool scheduleDownload = false,
   }) async {
     processCalls.add({
       #event: event,
-      #descriptorCatchUp: descriptorCatchUp,
       #scheduleDownload: scheduleDownload,
     });
     if (shouldThrow) {
@@ -1254,13 +1249,9 @@ void main() {
 
         expect(ingestor.processCalls, hasLength(1));
         // `scheduleDownload` must be `true` so the coordinator routes
-        // through the async download queue — the legacy in-line save
-        // path would block the live handler under bursty load.
+        // through the async download queue — an in-line save path would
+        // block the live handler under bursty load.
         expect(ingestor.processCalls.single[#scheduleDownload], isTrue);
-        // `descriptorCatchUp` is hard-coded to `null` in the coordinator —
-        // the queue pipeline uses its own resurrection signal, not the
-        // legacy descriptor catch-up manager.
-        expect(ingestor.processCalls.single[#descriptorCatchUp], isNull);
 
         await coordinator.stop();
       },

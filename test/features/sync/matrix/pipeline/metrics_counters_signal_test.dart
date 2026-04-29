@@ -5,19 +5,19 @@ void main() {
   group('MetricsCounters – signal counters', () {
     test('incSignalClientStream increments counter when collect=true', () {
       final m = MetricsCounters(collect: true)..incSignalClientStream();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalClientStream'], 1);
     });
 
     test('incSignalTimelineCallbacks increments counter when collect=true', () {
       final m = MetricsCounters(collect: true)..incSignalTimelineCallbacks();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalTimelineCallbacks'], 1);
     });
 
     test('incSignalConnectivity increments counter when collect=true', () {
       final m = MetricsCounters(collect: true)..incSignalConnectivity();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalConnectivity'], 1);
     });
 
@@ -26,7 +26,7 @@ void main() {
         ..incSignalClientStream()
         ..incSignalTimelineCallbacks()
         ..incSignalConnectivity();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalClientStream'], 0);
       expect(snap['signalTimelineCallbacks'], 0);
       expect(snap['signalConnectivity'], 0);
@@ -37,7 +37,7 @@ void main() {
         ..incSignalTimelineNewEvent()
         ..incSignalTimelineNewEvent()
         ..incSignalTimelineInsert();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalTimelineNewEvent'], 2);
       expect(snap['signalTimelineInsert'], 1);
     });
@@ -46,7 +46,7 @@ void main() {
       final m = MetricsCounters()
         ..incSignalTimelineNewEvent()
         ..incSignalTimelineInsert();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalTimelineNewEvent'], 0);
       expect(snap['signalTimelineInsert'], 0);
     });
@@ -57,7 +57,7 @@ void main() {
         ..incSignalCatchupDeferred()
         ..incSignalCatchupDeferred()
         ..incSignalCatchupCoalesce();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalFirstStreamCatchupTriggers'], 1);
       expect(snap['signalCatchupDeferredCount'], 2);
       expect(snap['signalCatchupCoalesceCount'], 1);
@@ -68,7 +68,7 @@ void main() {
         ..incSignalLiveScanDeferredInitialCatchupIncomplete()
         ..incSignalLiveScanDeferredCatchupInFlight()
         ..incSignalLiveScanDeferredInFlight();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalLiveScanDeferredInitialCatchupIncomplete'], 1);
       expect(snap['signalLiveScanDeferredCatchupInFlight'], 1);
       expect(snap['signalLiveScanDeferredInFlight'], 1);
@@ -79,7 +79,7 @@ void main() {
         ..incSignalNoTimeline()
         ..incSignalNoTimeline()
         ..incWakeDetections();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalNoTimelineCount'], 2);
       expect(snap['wakeDetections'], 1);
     });
@@ -94,7 +94,7 @@ void main() {
         ..incSignalLiveScanDeferredInFlight()
         ..incSignalNoTimeline()
         ..incWakeDetections();
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalFirstStreamCatchupTriggers'], 0);
       expect(snap['signalCatchupDeferredCount'], 0);
       expect(snap['signalCatchupCoalesceCount'], 0);
@@ -112,7 +112,7 @@ void main() {
         ..recordSignalLatencyMs(150)
         ..recordSignalLatencyMs(80)
         ..recordSignalLatencyMs(200);
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalLatencyLastMs'], 200);
       expect(snap['signalLatencyMinMs'], 80);
       expect(snap['signalLatencyMaxMs'], 200);
@@ -120,7 +120,7 @@ void main() {
 
     test('recordSignalLatencyMs handles first recording (min=0 case)', () {
       final m = MetricsCounters(collect: true)..recordSignalLatencyMs(120);
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalLatencyLastMs'], 120);
       expect(snap['signalLatencyMinMs'], 120);
       expect(snap['signalLatencyMaxMs'], 120);
@@ -128,7 +128,7 @@ void main() {
 
     test('recordSignalLatencyMs respects collect flag', () {
       final m = MetricsCounters()..recordSignalLatencyMs(100);
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalLatencyLastMs'], 0);
       expect(snap['signalLatencyMinMs'], 0);
       expect(snap['signalLatencyMaxMs'], 0);
@@ -152,7 +152,7 @@ void main() {
         ..incWakeDetections()
         ..incSignalConnectivity()
         ..recordSignalLatencyMs(123);
-      final snap = m.snapshot(retryStateSize: 0, circuitIsOpen: false);
+      final snap = m.snapshot();
       expect(snap['signalClientStream'], 1);
       expect(snap['signalTimelineCallbacks'], 1);
       expect(snap['signalTimelineNewEvent'], 1);

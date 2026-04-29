@@ -3,17 +3,13 @@ import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
-import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/stats_signature.dart';
@@ -27,7 +23,6 @@ import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart' show isTestEnv;
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
@@ -55,17 +50,10 @@ class MatrixService {
     required LoggingService loggingService,
     required UserActivityGate activityGate,
     required MatrixMessageSender messageSender,
-    required JournalDb journalDb,
     required SettingsDb settingsDb,
-    required SyncReadMarkerService readMarkerService,
     required SyncEventProcessor eventProcessor,
     required SecureStorage secureStorage,
-    required AttachmentIndex attachmentIndex,
-    // Phase-2 queue pipeline. Owns inbound ingestion; the retained
-    // [MatrixStreamConsumer] handles encryption, attachments and
-    // diagnostics with its live ingestion disabled.
     required QueuePipelineCoordinator queueCoordinator,
-    SentEventRegistry? sentEventRegistry,
     bool collectSyncMetrics = false,
     bool ownsActivityGate = false,
     MatrixConfig? matrixConfig,
@@ -82,11 +70,7 @@ class MatrixService {
        _loggingService = loggingService,
        _activityGate = activityGate,
        _messageSender = messageSender,
-       _sentEventRegistry =
-           sentEventRegistry ?? messageSender.sentEventRegistry,
-       _journalDb = journalDb,
        _settingsDb = settingsDb,
-       _readMarkerService = readMarkerService,
        _eventProcessor = eventProcessor,
        _secureStorage = secureStorage,
        _ownsActivityGate = ownsActivityGate,
@@ -138,16 +122,9 @@ class MatrixService {
             sessionManager: _sessionManager,
             roomManager: _roomManager,
             loggingService: _loggingService,
-            journalDb: _journalDb,
             settingsDb: _settingsDb,
             eventProcessor: _eventProcessor,
-            readMarkerService: _readMarkerService,
-            attachmentIndex: attachmentIndex,
             collectMetrics: collectSyncMetrics,
-            sentEventRegistry: _sentEventRegistry,
-            documentsDirectory: getDocumentsDirectory(),
-            verboseAttachmentLogging: false,
-            suppressLiveIngestion: true,
           );
       _pipeline = pipeline;
 
@@ -223,18 +200,14 @@ class MatrixService {
   final LoggingService _loggingService;
   final UserActivityGate _activityGate;
   final MatrixMessageSender _messageSender;
-  final SentEventRegistry _sentEventRegistry;
-  final JournalDb _journalDb;
   final SettingsDb _settingsDb;
-  final SyncReadMarkerService _readMarkerService;
   final SyncEventProcessor _eventProcessor;
   final SecureStorage _secureStorage;
   final bool _ownsActivityGate;
   final bool _collectSyncMetrics;
   final QueuePipelineCoordinator _queueCoordinator;
 
-  /// Exposes the Phase-2 queue coordinator to tests and the Sync
-  /// Settings UI.
+  /// Exposes the queue coordinator to tests and the Sync Settings UI.
   QueuePipelineCoordinator get queueCoordinator => _queueCoordinator;
 
   late final SyncRoomManager _roomManager;
@@ -727,32 +700,57 @@ class MatrixService {
       );
       return;
     }
+    await _nudgeBridge(
+      subDomain: 'forceRescan',
+      successMessage: 'forceRescan.triggerBridge invoked',
+    );
+  }
+
+  /// User-facing "Retry pending failures now" hook. Resurrects every
+  /// abandoned ledger row that is still below the per-row resurrection
+  /// hard cap (so backed-off / leased items wake up immediately) and
+  /// nudges the bridge in case a remote gap is what's holding the worker.
+  Future<void> retryNow() async {
     try {
-      await _queueCoordinator.triggerBridge();
+      final resurrected = await _queueCoordinator.queue.resurrectAll();
       _loggingService.captureEvent(
-        'forceRescan.triggerBridge invoked',
+        'retryNow.resurrectAll resurrected=$resurrected',
         domain: 'MATRIX_SERVICE',
-        subDomain: 'forceRescan',
+        subDomain: 'retryNow',
       );
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
-        subDomain: 'forceRescan.triggerBridge',
+        subDomain: 'retryNow.resurrectAll',
         stackTrace: stackTrace,
       );
     }
+    await _nudgeBridge(
+      subDomain: 'retryNow',
+      successMessage: 'retryNow.triggerBridge invoked',
+    );
   }
 
-  Future<void> retryNow() async {
-    final p = _pipeline;
-    if (p == null) return;
-    await p.retryNow();
-    _loggingService.captureEvent(
-      'retryNow invoked',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'retryNow',
-    );
+  Future<void> _nudgeBridge({
+    required String subDomain,
+    required String successMessage,
+  }) async {
+    try {
+      await _queueCoordinator.triggerBridge();
+      _loggingService.captureEvent(
+        successMessage,
+        domain: 'MATRIX_SERVICE',
+        subDomain: subDomain,
+      );
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: '$subDomain.triggerBridge',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<String> getSyncDiagnosticsText() async {

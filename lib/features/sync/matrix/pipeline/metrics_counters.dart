@@ -226,10 +226,7 @@ class MetricsCounters {
     msh.ringBufferAdd(lastIgnored, entry, lastIgnoredMax);
   }
 
-  Map<String, int> snapshot({
-    required int retryStateSize,
-    required bool circuitIsOpen,
-  }) {
+  Map<String, int> snapshot() {
     final base =
         MetricsUtils.buildSnapshot(
             processed: processed,
@@ -246,8 +243,6 @@ class MetricsCounters {
             dbIgnoredByVectorClock: dbIgnoredByVectorClock,
             conflictsCreated: conflictsCreated,
             lastIgnored: lastIgnored,
-            retryStateSize: retryStateSize,
-            circuitOpen: circuitIsOpen,
           )
           ..putIfAbsent('dbMissingBase', () => dbMissingBase)
           ..putIfAbsent('dbEntryLinkNoop', () => dbEntryLinkNoop)

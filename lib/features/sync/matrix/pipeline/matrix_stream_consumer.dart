@@ -1,152 +1,49 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:clock/clock.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
-import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
-import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_catch_up.dart';
-import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_live_scan.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_signals.dart';
 import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
-import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:matrix/matrix.dart';
-import 'package:meta/meta.dart';
 
-/// Stream-first sync consumer.
+/// Encryption + diagnostics façade for the queue pipeline.
 ///
-/// Design (high level):
-/// - Client stream events and live timeline callbacks are treated as lightweight
-///   signals only. They schedule a debounced live scan and never process per
-///   event payloads directly. This avoids advancing markers out of order when
-///   the device comes online mid-stream.
-/// - Marker advancement happens exclusively inside ordered batches produced by
-///   live scan or catch-up.
-/// - Optional metrics capture signal counts (client/timeline/connectivity) and
-///   the latency from signal -> first scan to aid observability.
+/// Live ingestion is owned by `QueuePipelineCoordinator`. This consumer
+/// handles startup state (un-partials the sync room, seeds the
+/// `SyncEventProcessor` with the last-read timestamp so old backfill
+/// requests get skipped), keeps the `sync.limited` Phase-0 diagnostic
+/// attached via `MatrixStreamSignalBinder`, and surfaces metrics for the
+/// Matrix Stats UI.
 class MatrixStreamConsumer implements SyncPipeline {
   MatrixStreamConsumer({
     required MatrixSessionManager sessionManager,
     required SyncRoomManager roomManager,
     required LoggingService loggingService,
-    required JournalDb journalDb,
     required SettingsDb settingsDb,
     required SyncEventProcessor eventProcessor,
-    required SyncReadMarkerService readMarkerService,
-    required SentEventRegistry sentEventRegistry,
-    AttachmentIndex? attachmentIndex,
     MetricsCounters? metricsCounters,
     bool collectMetrics = false,
-    Duration markerDebounce = const Duration(milliseconds: 300),
-    int? maxRetriesPerEvent,
-    Duration circuitCooldown = const Duration(seconds: 30),
-    bool dropOldPayloadsInLiveScan = true,
-    bool verboseAttachmentLogging = true,
-    // Test seam: skip sync wait in tests to avoid needing to mock client.onSync
-    bool skipSyncWait = false,
-    Future<bool> Function({
-      required Timeline timeline,
-      required String? lastEventId,
-      required int pageSize,
-      required int? maxPages,
-      required LoggingService logging,
-      num? untilTimestamp,
-    })?
-    backfill,
-    Directory? documentsDirectory,
-    // Phase-2 flag. When true the signal binder does not subscribe
-    // to timelineEvents, so the legacy live-scan path is dormant and
-    // the InboundEventQueue pipeline owns live ingestion.
-    bool suppressLiveIngestion = false,
-  }) : _skipSyncWait = skipSyncWait,
-       _suppressLiveIngestion = suppressLiveIngestion,
-       _sessionManager = sessionManager,
+  }) : _sessionManager = sessionManager,
        _roomManager = roomManager,
        _loggingService = loggingService,
-       _journalDb = journalDb,
        _settingsDb = settingsDb,
        _eventProcessor = eventProcessor,
-       _readMarkerService = readMarkerService,
-       _attachmentIndex = attachmentIndex,
-       _collectMetrics = collectMetrics,
-       _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
-       _markerDebounce = markerDebounce,
-       _maxRetriesPerEvent = maxRetriesPerEvent ?? 5,
-       _circuitCooldown = circuitCooldown,
-       _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
-       _sentEventRegistry = sentEventRegistry,
-       _backfill = backfill,
-       _documentsDirectory = documentsDirectory,
-       _verboseAttachmentLogging = verboseAttachmentLogging {
+       _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics) {
     _processor = MatrixStreamProcessor(
-      roomManager: _roomManager,
-      loggingService: _loggingService,
-      journalDb: _journalDb,
-      settingsDb: _settingsDb,
-      eventProcessor: _eventProcessor,
-      readMarkerService: _readMarkerService,
-      sentEventRegistry: _sentEventRegistry,
-      clientProvider: () => _sessionManager.client,
-      liveTimelineProvider: () => _liveScan.liveTimeline,
-      attachmentIndex: _attachmentIndex,
       metricsCounters: _metrics,
-      collectMetrics: _collectMetrics,
-      markerDebounce: _markerDebounce,
-      maxRetriesPerEvent: _maxRetriesPerEvent,
-      circuitCooldown: _circuitCooldown,
-      documentsDirectory: _documentsDirectory,
-      verboseAttachmentLogging: _verboseAttachmentLogging,
+      collectMetrics: collectMetrics,
     );
-    _catchUp = MatrixStreamCatchUpCoordinator(
-      sessionManager: _sessionManager,
-      roomManager: _roomManager,
-      loggingService: _loggingService,
-      metrics: _metrics,
-      collectMetrics: _collectMetrics,
-      skipSyncWait: _skipSyncWait,
-      processor: _processor,
-      flushDeferredLiveScan: (source) =>
-          _liveScan.flushDeferredLiveScan(source),
-      withInstance: _withInstance,
-      backfill: _backfill,
-    );
-    _liveScan = MatrixStreamLiveScanController(
-      loggingService: _loggingService,
-      metrics: _metrics,
-      collectMetrics: _collectMetrics,
-      dropOldPayloadsInLiveScan: _dropOldPayloadsInLiveScan,
-      processor: _processor,
-      isInitialCatchUpCompleted: () => _catchUp.initialCatchUpReady,
-      isCatchUpInFlight: () => _catchUp.catchUpInFlight,
-      isWakeCatchUpPending: () => _catchUp.wakeCatchUpPending,
-      startWakeCatchUp: _catchUp.startWakeCatchUp,
-      withInstance: _withInstance,
-    );
-    _processor.configureLiveScanCallbacks(
-      scheduleLiveScan: _liveScan.scheduleLiveScan,
-      scanLiveTimeline: _liveScan.scanLiveTimeline,
-      scheduleRescan: _liveScan.scheduleRescan,
-    );
-    _catchUp.scanLiveTimeline = _liveScan.scanLiveTimeline;
     _signals = MatrixStreamSignalBinder(
       sessionManager: _sessionManager,
       roomManager: _roomManager,
       loggingService: _loggingService,
-      metrics: _metrics,
-      collectMetrics: _collectMetrics,
-      catchUpCoordinator: _catchUp,
-      liveScanController: _liveScan,
-      withInstance: _withInstance,
-      suppressLiveIngestion: _suppressLiveIngestion,
     );
   }
 
@@ -155,74 +52,32 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   String _withInstance(String message) => '$message inst=$_instanceId';
 
-  final bool _skipSyncWait;
-  final bool _suppressLiveIngestion;
-
-  /// True when Phase 2's queue pipeline owns live ingestion and this
-  /// consumer's scan/catch-up wiring is dormant. Test-visible.
-  bool get suppressLiveIngestion => _suppressLiveIngestion;
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;
   final LoggingService _loggingService;
-  final JournalDb _journalDb;
   final SettingsDb _settingsDb;
   final SyncEventProcessor _eventProcessor;
-  final SyncReadMarkerService _readMarkerService;
-  final AttachmentIndex? _attachmentIndex;
-  final bool _collectMetrics;
   final MetricsCounters _metrics;
-  final Duration _markerDebounce;
-  final int _maxRetriesPerEvent;
-  final Duration _circuitCooldown;
-  final bool _dropOldPayloadsInLiveScan;
-  final SentEventRegistry _sentEventRegistry;
-  final Future<bool> Function({
-    required Timeline timeline,
-    required String? lastEventId,
-    required int pageSize,
-    required int? maxPages,
-    required LoggingService logging,
-    num? untilTimestamp,
-  })?
-  _backfill;
-  final Directory? _documentsDirectory;
-  final bool _verboseAttachmentLogging;
 
   late final MatrixStreamProcessor _processor;
-  late final MatrixStreamCatchUpCoordinator _catchUp;
-  late final MatrixStreamLiveScanController _liveScan;
   late final MatrixStreamSignalBinder _signals;
 
   bool _initialized = false;
-  String? _startupLastProcessedEventId;
-  num? _startupLastProcessedTs;
 
   @override
   Future<void> initialize() async {
     if (_initialized) return;
-    // Ensure room snapshot is hydrated similarly to V1.
     await _roomManager.initialize();
-    _startupLastProcessedEventId = await getLastReadMatrixEventId(_settingsDb);
-    try {
-      final ts = await getLastReadMatrixEventTs(_settingsDb);
-      if (ts != null) _startupLastProcessedTs = ts;
-    } catch (_) {
-      // optional
-    }
-    _processor.setLastProcessed(
-      eventId: _startupLastProcessedEventId,
-      timestamp: _startupLastProcessedTs,
-    );
-    _catchUp.startupMarkers = (
-      eventId: _startupLastProcessedEventId,
-      timestamp: _startupLastProcessedTs,
-    );
-    // Pass startup timestamp to event processor to skip old backfill requests
-    // that would otherwise be re-processed on every restart due to catch-up.
-    _eventProcessor.startupTimestamp = _startupLastProcessedTs;
+    final results = await Future.wait([
+      getLastReadMatrixEventId(_settingsDb),
+      getLastReadMatrixEventTs(_settingsDb),
+    ]);
+    final lastEventId = results[0];
+    final lastTs = results[1] as num?;
+    _eventProcessor.startupTimestamp = lastTs;
     _loggingService.captureEvent(
       _withInstance(
-        'startup.marker id=${_startupLastProcessedEventId ?? 'null'} ts=${_startupLastProcessedTs?.toInt() ?? 'null'}',
+        'startup.marker id=${lastEventId ?? 'null'} ts=${lastTs?.toInt() ?? 'null'}',
       ),
       domain: syncLoggingDomain,
       subDomain: 'startup.marker',
@@ -232,8 +87,6 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   @override
   Future<void> start() async {
-    // Ensure room snapshot exists, then run an initial catch-up BEFORE any
-    // live scans or marker advancement to avoid skipping backlog.
     if (_roomManager.currentRoom == null) {
       final hydrateStart = clock.now();
       final hasConfiguredRoom = _roomManager.currentRoomId != null;
@@ -251,8 +104,8 @@ class MatrixStreamConsumer implements SyncPipeline {
       // there is no persisted room yet, and waiting here adds unnecessary
       // startup latency before the room is joined and saved.
       if (hasConfiguredRoom) {
-        // Total wait ~10s (50 x 200ms). This avoids races where the live scan
-        // would start before the room becomes available and skip backlog.
+        // Up to ~10s (50 x 200ms) so the queue pipeline doesn't start
+        // catch-up against a not-yet-hydrated room and miss backlog.
         for (var i = 0; i < 50 && _roomManager.currentRoom == null; i++) {
           await Future<void>.delayed(const Duration(milliseconds: 200));
         }
@@ -270,58 +123,11 @@ class MatrixStreamConsumer implements SyncPipeline {
         subDomain: 'start',
       );
     }
-    if (_suppressLiveIngestion) {
-      // Phase-2 queue pipeline owns ingestion. Skip the initial
-      // catch-up too: `runInitialCatchUpIfReady` drives
-      // `MatrixStreamProcessor.processOrdered`, which would apply
-      // events the queue's own bridge is already pulling — the same
-      // double-apply hazard `suppressLiveIngestion` prevents in the
-      // signal binder.
-      _loggingService.captureEvent(
-        _withInstance('MatrixStreamConsumer start suppressed'),
-        domain: syncLoggingDomain,
-        subDomain: 'start.suppressed',
-      );
-      // CRITICAL: call `room.getTimeline()` to un-partial the sync
-      // room. Matrix SDK skips `RoomMember` state events on partial
-      // rooms in `_updateRoomsByEventUpdate`, so a partial room never
-      // has its `_trackedUserIds` extended when a new member joins.
-      // That breaks device-key discovery: `updateUserDeviceKeys` never
-      // queries keys for users the SDK isn't tracking, and SAS
-      // verification / E2EE never sees the other device. The legacy
-      // signal binder did this via its
-      // `room.getTimeline(onNewEvent: …)` call; replicate the bare
-      // un-partial step here without subscribing scan callbacks.
-      final room = _roomManager.currentRoom;
-      if (room != null) {
-        try {
-          final tl = await room.getTimeline();
-          // Cancel the subscription right away — we only needed the
-          // side effect of loading room state. Leaving it attached
-          // would leak SDK timeline buffers we don't consume.
-          tl.cancelSubscriptions();
-        } catch (error, stackTrace) {
-          _loggingService.captureException(
-            error,
-            domain: syncLoggingDomain,
-            subDomain: 'start.suppressed.getTimeline',
-            stackTrace: stackTrace,
-          );
-        }
-      }
-      // Still call `_signals.start` so the Phase-0 `sync.limited`
-      // diagnostic keeps emitting. The signal binder short-circuits
-      // under `suppressLiveIngestion` after wiring only that listener
-      // — `onTimelineEvent.ordering` and scan-scheduling subscriptions
-      // are intentionally skipped in that mode (the queue pipeline
-      // owns live ingestion instead).
-      await _signals.start(
-        lastProcessedEventId: _processor.lastProcessedEventId,
-      );
-      return;
-    }
-    await _catchUp.runInitialCatchUpIfReady();
-    await _signals.start(lastProcessedEventId: _processor.lastProcessedEventId);
+    // Un-partialling the sync room (so `RoomMember` state events get
+    // tracked and E2EE / SAS verification can discover the other
+    // device) is owned by `QueuePipelineCoordinator._maybePostLoadCurrentRoom`,
+    // which calls `room.postLoad()` on every onSync.
+    await _signals.start();
     _loggingService.captureEvent(
       _withInstance('MatrixStreamConsumer started'),
       domain: syncLoggingDomain,
@@ -332,9 +138,6 @@ class MatrixStreamConsumer implements SyncPipeline {
   @override
   Future<void> dispose() async {
     await _signals.dispose();
-    await _catchUp.dispose();
-    _liveScan.dispose();
-    _processor.dispose();
     _loggingService.captureEvent(
       _withInstance('MatrixStreamConsumer disposed'),
       domain: syncLoggingDomain,
@@ -344,84 +147,11 @@ class MatrixStreamConsumer implements SyncPipeline {
 
   Map<String, int> metricsSnapshot() => _processor.metricsSnapshot();
 
-  // Called by SyncEventProcessor via observer to record DB apply results
   void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
     _processor.reportDbApplyDiagnostics(diag);
   }
 
-  // Visible for testing only
-  @visibleForTesting
-  bool get debugCollectMetrics => _processor.debugCollectMetrics;
-
-  // Additional textual diagnostics not represented in numeric metrics.
   Map<String, String> diagnosticsStrings() => _processor.diagnosticsStrings();
 
-  // Force a rescan and optional catch-up to recover from potential gaps.
-  //
-  // Under `suppressLiveIngestion` the queue pipeline owns catch-up via its
-  // bridge coordinator. Running the legacy catch-up would double-apply events
-  // and populate stale legacy metrics (catchupBatches, dbApplied) that make
-  // diagnostics confusing. Callers that bypass `MatrixService.forceRescan`
-  // (e.g. `saveRoom` unawaited bootstrap) still reach this method, so the
-  // guard must live here.
-  Future<void> forceRescan({bool includeCatchUp = true}) async {
-    if (_suppressLiveIngestion) {
-      _loggingService.captureEvent(
-        _withInstance(
-          'forceRescan suppressed includeCatchUp=$includeCatchUp',
-        ),
-        domain: syncLoggingDomain,
-        subDomain: 'forceRescan.suppressed',
-      );
-      return;
-    }
-    await _catchUp.forceRescan(includeCatchUp: includeCatchUp);
-  }
-
-  // Force all pending retries to be immediately due and trigger a scan.
-  Future<void> retryNow() async {
-    if (_suppressLiveIngestion) {
-      _loggingService.captureEvent(
-        _withInstance('retryNow suppressed'),
-        domain: syncLoggingDomain,
-        subDomain: 'retryNow.suppressed',
-      );
-      return;
-    }
-    await _processor.retryNow();
-  }
-
-  // Record a connectivity-driven signal for observability.
   void recordConnectivitySignal() => _processor.recordConnectivitySignal();
-
-  // Test-only hook invoked at the start of scheduleLiveScan to simulate
-  // errors and exercise fallback logic.
-  @visibleForTesting
-  void Function()? get scheduleLiveScanTestHook =>
-      _liveScan.scheduleLiveScanTestHook;
-
-  @visibleForTesting
-  set scheduleLiveScanTestHook(void Function()? fn) {
-    _liveScan.scheduleLiveScanTestHook = fn;
-  }
-
-  // Test-only hook invoked at the start of scanLiveTimeline with a
-  // scheduler callback to allow tests to schedule additional scans while
-  // the guard is asserted.
-  @visibleForTesting
-  void Function(void Function())? get scanLiveTimelineTestHook =>
-      _liveScan.scanLiveTimelineTestHook;
-
-  @visibleForTesting
-  set scanLiveTimelineTestHook(void Function(void Function())? fn) {
-    _liveScan.scanLiveTimelineTestHook = fn;
-  }
-
-  /// Test-only: bypass the sync wait in catch-up to avoid 30s timeouts
-  /// when driving sync externally.
-  @visibleForTesting
-  bool get skipSyncWait => _catchUp.skipSyncWait;
-
-  @visibleForTesting
-  set skipSyncWait(bool value) => _catchUp.skipSyncWait = value;
 }
