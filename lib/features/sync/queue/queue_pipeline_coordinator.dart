@@ -31,11 +31,10 @@ import 'package:meta/meta.dart';
 const _logDomain = 'sync';
 const _logSub = 'queue.coordinator';
 
-/// Top-level owner of the Phase-2 queue pipeline. Wires the four
-/// collaborators the design review approved — `InboundQueue`,
-/// `InboundWorker`, `BridgeCoordinator`, and `PendingDecryptionPen` —
-/// into a single start/stop lifecycle that `MatrixService` can manage
-/// behind the `useInboundEventQueue` flag.
+/// Top-level owner of the queue pipeline. Wires the four collaborators
+/// — `InboundQueue`, `InboundWorker`, `BridgeCoordinator`, and
+/// `PendingDecryptionPen` — into a single start/stop lifecycle that
+/// `MatrixService` manages.
 ///
 /// Responsibilities:
 /// - Subscribe the live-stream producer to the session manager's

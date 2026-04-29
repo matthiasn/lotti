@@ -147,7 +147,6 @@ class MatrixService {
             sentEventRegistry: _sentEventRegistry,
             documentsDirectory: getDocumentsDirectory(),
             verboseAttachmentLogging: false,
-            suppressLiveIngestion: true,
           );
       _pipeline = pipeline;
 
@@ -745,14 +744,24 @@ class MatrixService {
   }
 
   Future<void> retryNow() async {
-    final p = _pipeline;
-    if (p == null) return;
-    await p.retryNow();
-    _loggingService.captureEvent(
-      'retryNow invoked',
-      domain: 'MATRIX_SERVICE',
-      subDomain: 'retryNow',
-    );
+    // The queue worker drains automatically via resurrection signals;
+    // the user-facing "retry now" button nudges the bridge so any
+    // gap the worker is waiting on gets re-pulled immediately.
+    try {
+      await _queueCoordinator.triggerBridge();
+      _loggingService.captureEvent(
+        'retryNow invoked',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'retryNow',
+      );
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'retryNow.triggerBridge',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<String> getSyncDiagnosticsText() async {

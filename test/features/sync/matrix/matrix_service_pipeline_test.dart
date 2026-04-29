@@ -116,10 +116,6 @@ void main() {
 
     when(() => pipeline.reportDbApplyDiagnostics(any())).thenReturn(null);
     when(() => pipeline.start()).thenAnswer((_) async {});
-    when(
-      () => pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')),
-    ).thenAnswer((_) async {});
-    when(() => pipeline.retryNow()).thenAnswer((_) async {});
     when(() => pipeline.metricsSnapshot()).thenReturn(metricsSnapshot);
     when(() => pipeline.diagnosticsStrings()).thenReturn(diagnostics);
     when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
@@ -199,36 +195,25 @@ void main() {
   });
 
   test(
-    'forceRescan(includeCatchUp: true) routes to the queue coordinator '
-    'and never touches the stream-consumer pipeline',
+    'forceRescan(includeCatchUp: true) routes to the queue coordinator',
     () async {
       final service = createService();
 
       await service.forceRescan();
 
       verify(coordinator.triggerBridge).called(1);
-      verifyNever(
-        () => pipeline.forceRescan(
-          includeCatchUp: any(named: 'includeCatchUp'),
-        ),
-      );
     },
   );
 
   test(
     'forceRescan(includeCatchUp: false) is a no-op — live-only rescans '
-    "have no meaning now that the consumer's live ingestion is suppressed",
+    'have no meaning when the queue pipeline owns ingestion',
     () async {
       final service = createService();
 
       await service.forceRescan(includeCatchUp: false);
 
       verifyNever(coordinator.triggerBridge);
-      verifyNever(
-        () => pipeline.forceRescan(
-          includeCatchUp: any(named: 'includeCatchUp'),
-        ),
-      );
     },
   );
 
@@ -253,15 +238,35 @@ void main() {
     },
   );
 
-  test('retryNow triggers pipeline retry', () {
+  test('retryNow nudges the queue coordinator bridge', () {
     fakeAsync((async) {
       final service = createService();
       unawaited(service.retryNow());
       async.flushMicrotasks();
 
-      verify(() => pipeline.retryNow()).called(1);
+      verify(coordinator.triggerBridge).called(1);
     });
   });
+
+  test(
+    'retryNow swallows triggerBridge failure and logs it',
+    () async {
+      final coord = buildDefaultCoordinator();
+      when(coord.triggerBridge).thenThrow(StateError('bridge down'));
+      final service = createService(queueCoordinator: coord);
+
+      await service.retryNow();
+
+      verify(
+        () => logging.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: 'retryNow.triggerBridge',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    },
+  );
 
   test(
     'saveRoom restarts the pipeline and drives catch-up via '
@@ -278,11 +283,6 @@ void main() {
           () => coordinator.onRoomChanged('!room:server'),
           coordinator.triggerBridge,
         ]);
-        verifyNever(
-          () => pipeline.forceRescan(
-            includeCatchUp: any(named: 'includeCatchUp'),
-          ),
-        );
       });
     },
   );
@@ -331,11 +331,6 @@ void main() {
         async.elapse(const Duration(milliseconds: 10));
 
         verify(() => pipeline.recordConnectivitySignal()).called(1);
-        verifyNever(
-          () => pipeline.forceRescan(
-            includeCatchUp: any(named: 'includeCatchUp'),
-          ),
-        );
 
         unawaited(service.dispose());
         async.flushMicrotasks();

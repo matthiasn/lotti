@@ -433,12 +433,12 @@ flowchart TD
   Room --> Response["BackfillResponseHandler"]
 ```
 
-## Inbound Event Queue (Phase 2, feature-flagged)
+## Inbound Event Queue
 
-An alternate receive path gated on the `USE_INBOUND_EVENT_QUEUE` settings
-flag. When the flag is on, the legacy `MatrixStreamSignalBinder` does not
-subscribe to `timelineEvents` (see `suppressLiveIngestion`) and the two
-pipelines are mutually exclusive.
+The queue pipeline is the sole receive path. `MatrixStreamSignalBinder` is
+retained only for the `sync.limited` Phase-0 diagnostic; ingestion is owned
+by `QueuePipelineCoordinator` → `BridgeCoordinator` → `InboundEventQueue` →
+`InboundWorker` → `QueueApplyAdapter`.
 
 Components (all under `lib/features/sync/queue/`):
 

@@ -165,9 +165,6 @@ void main() {
     when(
       () => pipeline.reportDbApplyDiagnostics(any()),
     ).thenReturn(null);
-    when(
-      () => pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')),
-    ).thenAnswer((_) async {});
     return MatrixService(
       gateway: gateway,
       loggingService: loggingService,
@@ -303,20 +300,16 @@ void main() {
       await service.forceRescan();
 
       verify(queueCoordinator.triggerBridge).called(1);
-      verifyNever(
-        () =>
-            pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')),
-      );
     });
 
-    test('retryNow delegates to pipeline', () async {
-      when(() => pipeline.retryNow()).thenAnswer((_) async {});
+    test('retryNow delegates to queue coordinator bridge', () async {
+      when(queueCoordinator.triggerBridge).thenAnswer((_) async {});
 
       final service = createServiceWithPipeline();
 
       await service.retryNow();
 
-      verify(() => pipeline.retryNow()).called(1);
+      verify(queueCoordinator.triggerBridge).called(1);
     });
 
     test('getSyncMetrics returns null when metrics disabled', () async {
