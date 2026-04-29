@@ -1,6 +1,6 @@
 # Lotti Privacy Policy
 
-*Last updated: September 14th, 2025*
+*Last updated: April 29th, 2026*
 
 Trust at a glance:
 - No telemetry or analytics
@@ -51,6 +51,19 @@ Lotti offers AI capabilities through various providers, but you control exactly 
 - You choose which method to use on a per-recording basis
 - Audio files remain on your device regardless of transcription method
 
+## Device Permissions
+
+Lotti requests only the permissions it actually uses. Each one stays on-device unless you explicitly act in a way that sends data out (e.g. an AI inference call you initiate, or Matrix sync you've enabled).
+
+- **Microphone (`RECORD_AUDIO` / iOS microphone)**: used only when you start an audio recording. Recordings are stored locally; nothing is transmitted unless you choose to transcribe with a cloud provider.
+- **Camera (`CAMERA`)**: used only on-device to scan the QR code that exchanges Matrix sync keys between your devices. The camera preview is never recorded, saved, or transmitted.
+- **Location (`ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`)**: optional geo-tagging of journal entries you create. Captured coordinates are stored only in your local database and synced (end-to-end encrypted) between your own devices. They are never sent to Lotti, to advertisers, or to any third party. AI providers receive location data only if you explicitly include a geo-tagged entry in an inference request.
+- **Health (`health` plugin / HealthKit / Health Connect)**: Lotti can read activity, sleep, heart-rate, workout and similar metrics that you have already chosen to record on your device, so you can correlate them with your journal. Reads are opt-in per category and happen on-device. Health data is never uploaded to a Lotti server (there is none) and is treated like any other journal data: it's only sent to a third party if you explicitly send a containing entry to an AI provider you configured.
+- **Storage / media (`READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`, `ACCESS_MEDIA_LOCATION`)**: used to attach photos and files to journal entries, to import/export data, and to read media you select. Lotti only touches files you pick.
+- **Foreground service (`FOREGROUND_SERVICE`)**: used to keep long-running audio recording and sync work alive while the app is in the background, with a system notification visible the whole time. No background data collection happens outside these explicit user actions.
+- **Notifications (`POST_NOTIFICATIONS`)**: used for reminders and habit prompts you've set up yourself, and to display the foreground-service notification.
+- **Network (`INTERNET`, `ACCESS_NETWORK_STATE`)**: used to talk to the AI providers and Matrix homeserver you configure, and to detect connectivity. Lotti makes no other network calls.
+
 ## What We Don't Do
 
 - ❌ No telemetry or usage analytics
@@ -82,6 +95,7 @@ Lotti is fully open source under [LICENSE](LICENSE). This means:
 
 When participating in beta testing:
 - **TestFlight (iOS/macOS)**: Requires providing your Apple ID to receive invitations
+- **Google Play (Android)**: Closed and open testing tracks are distributed through the Google Play Store, which collects whatever account/device data Google's own terms describe; Lotti itself receives nothing extra from these channels
 - **Other platforms**: Direct download from GitHub Releases requires no personal information
 
 ## Your Rights
