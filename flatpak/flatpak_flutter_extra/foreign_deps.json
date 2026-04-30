@@ -1,0 +1,65 @@
+{
+    "_comment": "Toolchain overlay: entries merged into the cloned flatpak-flutter's foreign_deps/foreign_deps.json by prepare_flathub_build.sh. Add new dependency versions here when pubspec.lock outpaces what flatpak-flutter ships. Submit upstream to https://github.com/TheAppgineer/flatpak-flutter when stable.",
+    "sqlite3_flutter_libs": {
+        "0.5.42": {
+            "manifest": {
+                "sources": [
+                    {
+                        "type": "file",
+                        "only-arches": [
+                            "x86_64"
+                        ],
+                        "url": "https://sqlite.org/2026/sqlite-autoconf-3520000.tar.gz",
+                        "sha256": "f6b50b0c103392af32a8be15b2b9d25959de9a00a70c3979128aafeaa5338b3f",
+                        "dest": "$APP/build/linux/x64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+                    },
+                    {
+                        "type": "file",
+                        "only-arches": [
+                            "aarch64"
+                        ],
+                        "url": "https://sqlite.org/2026/sqlite-autoconf-3520000.tar.gz",
+                        "sha256": "f6b50b0c103392af32a8be15b2b9d25959de9a00a70c3979128aafeaa5338b3f",
+                        "dest": "$APP/build/linux/arm64/release/_deps/sqlite3-subbuild/sqlite3-populate-prefix/src"
+                    },
+                    {
+                        "type": "patch",
+                        "path": "sqlite3_flutter_libs/0.5.42-CMakeLists.txt.patch",
+                        "dest": "$PUB_DEV"
+                    }
+                ]
+            }
+        }
+    },
+    "objectbox_flutter_libs": {
+        "5.3.1": {
+            "manifest": {
+                "sources": [
+                    {
+                        "type": "file",
+                        "only-arches": [
+                            "x86_64"
+                        ],
+                        "url": "https://github.com/objectbox/objectbox-c/releases/download/v5.3.1/objectbox-linux-x64.tar.gz",
+                        "sha256": "d1a22f5a43e8aa438c987524c2ef97f5d179acb991b0f63ab03a30c33b882368",
+                        "dest": "$APP/build/linux/x64/release/_deps/objectbox-download-subbuild/objectbox-download-populate-prefix/src"
+                    },
+                    {
+                        "type": "file",
+                        "only-arches": [
+                            "aarch64"
+                        ],
+                        "url": "https://github.com/objectbox/objectbox-c/releases/download/v5.3.1/objectbox-linux-aarch64.tar.gz",
+                        "sha256": "948fe456904b8b0ae6b22a26a9f460734dc3c2ec58750df3a329ccae1ebe035d",
+                        "dest": "$APP/build/linux/arm64/release/_deps/objectbox-download-subbuild/objectbox-download-populate-prefix/src"
+                    },
+                    {
+                        "type": "patch",
+                        "path": "objectbox_flutter_libs/5.3.1-CMakeLists.txt.patch",
+                        "dest": "$PUB_DEV"
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -28,6 +28,39 @@ if [ ! -d "$SCRIPT_DIR/flatpak-flutter" ]; then
   git clone --depth 1 --branch "$FLATPAK_FLUTTER_VERSION" https://github.com/TheAppgineer/flatpak-flutter.git "$SCRIPT_DIR/flatpak-flutter"
 fi
 
+# Apply local toolchain overlay: teach the cloned flatpak-flutter about
+# dependency versions newer than its bundled foreign_deps.json knows.
+# Submit upstream to https://github.com/TheAppgineer/flatpak-flutter when
+# stable so the overlay can be retired.
+OVERLAY_DIR="$SCRIPT_DIR/flatpak_flutter_extra"
+TOOL_FOREIGN_DEPS="$SCRIPT_DIR/flatpak-flutter/foreign_deps"
+if [ -d "$OVERLAY_DIR" ]; then
+  echo "Applying foreign_deps overlay from $OVERLAY_DIR..."
+  # Copy any patch files (mirrored directory layout under foreign_deps/).
+  for entry in "$OVERLAY_DIR"/*/; do
+    [ -d "$entry" ] || continue
+    cp -r "$entry" "$TOOL_FOREIGN_DEPS/"
+  done
+  # Merge foreign_deps.json entries (deep merge by dependency + version key).
+  if [ -f "$OVERLAY_DIR/foreign_deps.json" ]; then
+    "$PYTHON" - "$TOOL_FOREIGN_DEPS/foreign_deps.json" "$OVERLAY_DIR/foreign_deps.json" <<'PY'
+import json, sys
+target_path, overlay_path = sys.argv[1], sys.argv[2]
+with open(target_path) as f:
+    target = json.load(f)
+with open(overlay_path) as f:
+    overlay = json.load(f)
+for dep, versions in overlay.items():
+    if dep.startswith("_"):
+        continue
+    target.setdefault(dep, {}).update(versions)
+with open(target_path, "w") as f:
+    json.dump(target, f, indent=4)
+    f.write("\n")
+PY
+  fi
+fi
+
 # Clean and create work dir
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR" "$OUTPUT_DIR"
