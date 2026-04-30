@@ -5702,4 +5702,83 @@ void main() {
       },
     );
   });
+
+  group('outbox bundling wiring', () {
+    test(
+      'priorityForMessageForTesting maps SyncOutboxBundle to normal priority '
+      '— bundles never reach this path in production (the enqueue dispatch '
+      'switch throws first), but a benign default keeps the priority lookup '
+      'side-effect-free if some future caller does pass one',
+      () {
+        expect(
+          OutboxService.priorityForMessageForTesting(
+            const SyncMessage.outboxBundle(children: []),
+          ),
+          OutboxPriority.normal.index,
+        );
+      },
+    );
+
+    test(
+      'enqueueMessage(SyncOutboxBundle) is captured as an exception via '
+      'OUTBOX/enqueueMessage — proves the bundle never gets enqueued and '
+      'the failure is visible in observability',
+      () async {
+        await service.enqueueMessage(
+          const SyncMessage.outboxBundle(children: []),
+        );
+
+        verify(
+          () => loggingService.captureException(
+            any<Object>(that: isStateError),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+      },
+    );
+
+    test(
+      'resolveBundleMaxSizeForTesting returns SyncTuning.outboxBundleMaxSize '
+      'when the useOutboxBundlingFlag is on',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(useOutboxBundlingFlag),
+        ).thenAnswer((_) async => true);
+
+        final maxSize = await service.resolveBundleMaxSizeForTesting();
+
+        expect(maxSize, SyncTuning.outboxBundleMaxSize);
+      },
+    );
+
+    test(
+      'resolveBundleMaxSizeForTesting returns 1 (no bundling) when the '
+      'flag is off — the legacy single-row claim path stays in effect',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(useOutboxBundlingFlag),
+        ).thenAnswer((_) async => false);
+
+        expect(await service.resolveBundleMaxSizeForTesting(), 1);
+      },
+    );
+
+    test(
+      'resolveBundleMaxSizeForTesting falls back to 1 when the flag read '
+      'throws — the outbox must never block on a transient DB hiccup, the '
+      'safe default is the unchanged single-row behavior',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(useOutboxBundlingFlag),
+        ).thenThrow(StateError('transient db'));
+
+        expect(await service.resolveBundleMaxSizeForTesting(), 1);
+      },
+    );
+  });
 }
+
+const Matcher isStateError = TypeMatcher<StateError>();

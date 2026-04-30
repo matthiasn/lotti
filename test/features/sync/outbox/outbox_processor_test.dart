@@ -1253,5 +1253,172 @@ void main() {
         );
       },
     );
+
+    test(
+      'a bundle send raising an exception (not a soft false return) routes '
+      'through markRetryBatch on the catch path and schedules the standard '
+      'errorDelay backoff — proves bundle exception handling stays out of '
+      'the markedSent fast-path',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = [
+          for (var i = 1; i <= 3; i++) textItem(id: i),
+        ];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenThrow(StateError('transport boom'));
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          errorDelayOverride: const Duration(milliseconds: 444),
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        final result = await proc.processQueue();
+
+        verify(
+          () => repo.markRetryBatch(
+            any(
+              that: isA<List<OutboxItem>>().having((b) => b.length, 'len', 3),
+            ),
+          ),
+        ).called(1);
+        verifyNever(() => repo.markRetry(any()));
+        expect(result.shouldSchedule, isTrue);
+        expect(result.nextDelay, const Duration(milliseconds: 444));
+      },
+    );
+
+    test(
+      'bundle exception path also honors the retry-cap fast-path: when any '
+      'row in the batch is one retry away from the cap, an exception '
+      'still routes to delay=0 instead of the standard errorDelay',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = [
+          textItem(id: 1).copyWith(retries: 1), // hits cap on next retry
+          textItem(id: 2),
+        ];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenThrow(StateError('transport boom'));
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          maxRetriesOverride: 2,
+          errorDelayOverride: const Duration(seconds: 30),
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        final result = await proc.processQueue();
+
+        expect(result.shouldSchedule, isTrue);
+        expect(result.nextDelay, Duration.zero);
+        verify(() => repo.markRetryBatch(any())).called(1);
+      },
+    );
+
+    test(
+      'repeated bundle failures on the same head subject increment the '
+      'repeat counter — head-of-queue diagnostics keep tracking the stuck '
+      'subject across retries, exactly as for single-row failures',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        // Same head row across both calls. We rebuild the queue each time
+        // because stubBatchClaimFromQueue empties it as it claims.
+        when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => false);
+        final events = _captureEvents(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        // First failed bundle.
+        stubBatchClaimFromQueue(repo, [textItem(id: 1), textItem(id: 2)]);
+        await proc.processQueue();
+        // Second failed bundle with the same head subject.
+        stubBatchClaimFromQueue(repo, [textItem(id: 1), textItem(id: 2)]);
+        await proc.processQueue();
+
+        // The second log line carries repeats=2.
+        expect(
+          events.any((e) => e.contains('repeats=2')),
+          isTrue,
+          reason: 'expected the head-subject repeat counter to increment',
+        );
+      },
+    );
+
+    test(
+      'a successful bundle send after a prior failure on the same head '
+      'subject clears the repeat tracker — so the next stuck subject '
+      "doesn't inherit a stale repeat count from a different bundle",
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+        when(() => repo.markSentBatch(any())).thenAnswer((_) async {});
+        // First call fails, second succeeds.
+        var calls = 0;
+        when(() => sender.send(any())).thenAnswer((_) async {
+          calls++;
+          return calls > 1;
+        });
+        final events = _captureEvents(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        stubBatchClaimFromQueue(repo, [textItem(id: 1), textItem(id: 2)]);
+        await proc.processQueue();
+        stubBatchClaimFromQueue(repo, [textItem(id: 1), textItem(id: 2)]);
+        await proc.processQueue();
+
+        // After success, the next bundle on a different subject must start
+        // fresh: simulate a new failing bundle with a different head.
+        stubBatchClaimFromQueue(repo, [
+          textItem(id: 99, subject: 'host:other'),
+        ]);
+        when(() => repo.markRetry(any())).thenAnswer((_) async {});
+        await proc.processQueue();
+
+        // The single-row failure log for host:other should carry repeats=1
+        // (the success in between cleared the prior counter).
+        final otherFails = events
+            .where((e) => e.contains('host:other'))
+            .toList();
+        expect(otherFails, isNotEmpty);
+        expect(
+          otherFails.last.contains('repeats=1'),
+          isTrue,
+          reason: 'tracker should reset after the successful bundle',
+        );
+      },
+    );
   });
 }

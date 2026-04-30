@@ -2445,6 +2445,45 @@ void main() {
     );
 
     test(
+      'sendOutboxBundlePayloadForTesting returns null when writing the '
+      'sidecar to disk throws — the failure is logged via captureException '
+      'and surfaced as null so the bundle never goes on the wire without '
+      'its children',
+      () async {
+        // Replace the documents directory with a path under /dev/null so the
+        // recursive create at write-time genuinely fails.
+        final unwritable = Directory('/dev/null/cannot-write-here');
+        final brokenSender = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: unwritable,
+          sentEventRegistry: sentEventRegistry,
+        );
+
+        final result = await brokenSender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundleWith(2),
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.outboxBundle.write',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+      },
+    );
+
+    test(
       'sendOutboxBundlePayloadForTesting returns null when the upload fails '
       '— the caller (sendMatrixMessage) treats this as a transport-level '
       'failure and propagates it up to OutboxProcessor.markRetryBatch',
@@ -2462,6 +2501,43 @@ void main() {
         );
 
         expect(result, isNull);
+      },
+    );
+
+    test(
+      'sendMatrixMessage returns false when the outboxBundle sidecar upload '
+      'fails — the failure is traced and the text event is never sent',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        ).thenAnswer((_) async => r'$should-not-be-called');
+
+        final result = await sender.sendMatrixMessage(
+          message: bundleWith(3),
+          context: buildContext(),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isFalse);
+        verifyNever(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        );
       },
     );
 

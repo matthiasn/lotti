@@ -341,6 +341,48 @@ void main() {
       );
     });
 
+    testWidgets('shows outbox bundle payload label', (tester) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+
+      final item = OutboxItem(
+        id: 15,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        status: 0,
+        retries: 0,
+        priority: OutboxPriority.normal.index,
+        message: jsonEncode({
+          'runtimeType': 'outboxBundle',
+          'children': <Object?>[],
+          'jsonPath': '/outbox_bundles/abc-123.json',
+        }),
+        subject: 'outboxBundle:abc-123',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        viewModel.payloadKindLabel,
+        capturedContext.messages.syncPayloadOutboxBundle,
+      );
+    });
+
     group('payloadSizeLabel', () {
       OutboxItem makeItem({int? payloadSize}) => OutboxItem(
         id: 100,

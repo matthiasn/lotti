@@ -449,12 +449,20 @@ class OutboxService {
       SyncEntityDefinition() => OutboxPriority.low.index,
       SyncAiConfig() => OutboxPriority.low.index,
       SyncAiConfigDelete() => OutboxPriority.low.index,
-      SyncOutboxBundle() => throw StateError(
-        'SyncOutboxBundle never has a row-level priority — it is a '
-        'transport-time wrapper built by OutboxProcessor.',
-      ),
+      // SyncOutboxBundle has no row-level priority — bundles are built at
+      // dequeue time and never enqueued. The dispatch switch in
+      // [enqueueMessage] is the single defensive guard for that invariant
+      // (one source of truth instead of two coupled `throw` arms).
+      SyncOutboxBundle() => OutboxPriority.normal.index,
     };
   }
+
+  @visibleForTesting
+  static int priorityForMessageForTesting(SyncMessage message) =>
+      _priorityForMessage(message);
+
+  @visibleForTesting
+  Future<int> resolveBundleMaxSizeForTesting() => _resolveBundleMaxSize();
 
   /// Resolves the bundle size cap for the next [OutboxProcessor] drain.
   /// Returns `1` (no bundling) by default; flips to
