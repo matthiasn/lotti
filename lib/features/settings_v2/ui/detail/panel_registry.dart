@@ -92,7 +92,11 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       'agents': SettingsPanelSpec(build: _agentsPanel),
 
       // Step 7 — simple leaves.
-      'flags': SettingsPanelSpec(build: _flagsPanel, scrollable: true),
+      // FlagsBody is `Column[fixed search, Expanded(scrollable list)]`
+      // so it manages its own scrolling and MUST NOT be wrapped in a
+      // SingleChildScrollView (the inner Expanded would receive
+      // unbounded height).
+      'flags': SettingsPanelSpec(build: _flagsPanel),
       'theming': SettingsPanelSpec(build: _themingPanel, scrollable: true),
       'advanced-about': SettingsPanelSpec(
         build: _advancedAboutPanel,

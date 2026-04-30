@@ -13,6 +13,7 @@ class SliverBoxAdapterPage extends StatefulWidget {
     this.showBackButton = false,
     this.padding = EdgeInsets.zero,
     this.actions,
+    this.fillRemaining = false,
     super.key,
   });
 
@@ -22,6 +23,16 @@ class SliverBoxAdapterPage extends StatefulWidget {
   final bool showBackButton;
   final EdgeInsets padding;
   final List<Widget>? actions;
+
+  /// When `true`, the body is hosted inside a
+  /// `SliverFillRemaining(hasScrollBody: true)` — the body claims the
+  /// remaining viewport height as a *bounded* constraint instead of
+  /// the default `SliverToBoxAdapter` (unbounded). Use this for pages
+  /// whose body needs `Expanded` / `Flexible` children (e.g. a fixed
+  /// header above a scrollable list). The bottom-nav-occupied space
+  /// is folded into the body's bottom padding so a sub-list doesn't
+  /// render under the nav bar.
+  final bool fillRemaining;
 
   @override
   State<SliverBoxAdapterPage> createState() => _SliverBoxAdapterPageState();
@@ -39,6 +50,13 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomNavHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+      context,
+    );
+    final fadedChild = widget.child.animate().fadeIn(
+      duration: const Duration(milliseconds: 500),
+    );
+
     return Scaffold(
       body: CustomScrollView(
         controller: _scrollController,
@@ -49,19 +67,41 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
             showBackButton: widget.showBackButton,
             actions: widget.actions,
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: widget.padding,
-              child: widget.child.animate().fadeIn(
-                duration: const Duration(milliseconds: 500),
+          if (widget.fillRemaining)
+            SliverFillRemaining(
+              // In fill-remaining mode the outer CustomScrollView never
+              // scrolls (FillRemaining claims the viewport), so the
+              // controller listener above can't observe activity from
+              // the inner scrollable. Bridge it via ScrollNotification
+              // so user-activity tracking still fires on body scroll.
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (_) {
+                  getIt<UserActivityService>().updateActivity();
+                  return false;
+                },
+                child: Padding(
+                  // Fold the bottom-nav spacer into the body's padding so
+                  // a child ListView's last row doesn't render under the
+                  // nav bar. The trailing SliverToBoxAdapter spacer is
+                  // unreachable in this mode (FillRemaining ate the
+                  // remaining viewport).
+                  padding:
+                      EdgeInsets.only(bottom: bottomNavHeight) + widget.padding,
+                  child: fadedChild,
+                ),
+              ),
+            )
+          else ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: widget.padding,
+                child: fadedChild,
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: DesignSystemBottomNavigationBar.occupiedHeight(context),
+            SliverToBoxAdapter(
+              child: SizedBox(height: bottomNavHeight),
             ),
-          ),
+          ],
         ],
       ),
     );

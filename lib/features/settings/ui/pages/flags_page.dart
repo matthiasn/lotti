@@ -15,19 +15,20 @@ import 'package:lotti/utils/consts.dart';
 /// (title, back button, page-level padding) and delegates the
 /// content to [FlagsBody] so the same widget can be hosted inside the
 /// Settings V2 detail pane (plan step 7).
+///
+/// Uses `fillRemaining: true` so the chrome gives the body a bounded
+/// height — the search field stays pinned while only the rows below
+/// it scroll. [FlagsBody] applies its own internal horizontal +
+/// vertical padding so this wrapper passes [EdgeInsets.zero].
 class FlagsPage extends StatelessWidget {
   const FlagsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     return SliverBoxAdapterPage(
       title: context.messages.settingsFlagsTitle,
       showBackButton: true,
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step5,
-        vertical: tokens.spacing.step4,
-      ),
+      fillRemaining: true,
       child: const FlagsBody(),
     );
   }
@@ -262,20 +263,31 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // Horizontal page gutter — the search field and the list both
+    // honour it so cards never reach the screen edge.
+    final pageGutter = EdgeInsets.symmetric(horizontal: tokens.spacing.step5);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(bottom: tokens.spacing.step4),
-            child: DesignSystemSearch(
-              hintText: context.messages.settingsFlagsSearchHint,
-              controller: _searchController,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Pinned search field. Sits inside the bounded fill-remaining
+        // host so it stays put while only the list below it scrolls.
+        Padding(
+          padding:
+              pageGutter +
+              EdgeInsets.only(
+                top: tokens.spacing.step4,
+                bottom: tokens.spacing.step4,
+              ),
+          child: DesignSystemSearch(
+            hintText: context.messages.settingsFlagsSearchHint,
+            controller: _searchController,
           ),
-          StreamBuilder<Set<ConfigFlag>>(
+        ),
+        // Scrollable list region — claims the rest of the bounded
+        // height the host gave us.
+        Expanded(
+          child: StreamBuilder<Set<ConfigFlag>>(
             stream: getIt<JournalDb>().watchConfigFlags(),
             builder: (context, snapshot) {
               final flagLookup = <String, ConfigFlag>{
@@ -299,19 +311,29 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
                       subtitle: _subtitleForFlag(context, flag),
                     ),
                   );
-                  if (filteredFlags.isEmpty) return const _FlagsEmptySearch();
-                  return _FlagsList(
-                    flags: filteredFlags,
-                    iconFor: _iconForFlag,
-                    titleFor: (flag) => _titleForFlag(context, flag),
-                    subtitleFor: (flag) => _subtitleForFlag(context, flag),
+                  if (filteredFlags.isEmpty) {
+                    return Padding(
+                      padding: pageGutter,
+                      child: const _FlagsEmptySearch(),
+                    );
+                  }
+                  return SingleChildScrollView(
+                    padding:
+                        pageGutter +
+                        EdgeInsets.only(bottom: tokens.spacing.step5),
+                    child: _FlagsList(
+                      flags: filteredFlags,
+                      iconFor: _iconForFlag,
+                      titleFor: (flag) => _titleForFlag(context, flag),
+                      subtitleFor: (flag) => _subtitleForFlag(context, flag),
+                    ),
                   );
                 },
               );
             },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -320,7 +342,7 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
 /// dedicated widget so the empty-search and populated branches stay
 /// readable in [_FlagsBodyState.build] and the list shape is easy to
 /// inspect from tests.
-class _FlagsList extends StatelessWidget {
+class _FlagsList extends StatefulWidget {
   const _FlagsList({
     required this.flags,
     required this.iconFor,
@@ -334,8 +356,19 @@ class _FlagsList extends StatelessWidget {
   final String Function(ConfigFlag flag) subtitleFor;
 
   @override
+  State<_FlagsList> createState() => _FlagsListState();
+}
+
+class _FlagsListState extends State<_FlagsList> {
+  /// Index of the currently-hovered flag row, or `null` when no row is
+  /// hovered. Used to fade the divider between the hovered row and the
+  /// row below it so the hovered row is never bisected by a hairline.
+  int? _hoveredIndex;
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final flags = widget.flags;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
@@ -349,9 +382,14 @@ class _FlagsList extends StatelessWidget {
           children: [
             for (final (index, flag) in flags.indexed)
               DesignSystemListItem(
-                title: titleFor(flag),
-                subtitle: subtitleFor(flag),
-                leading: SettingsIcon(icon: iconFor(flag.name)),
+                title: widget.titleFor(flag),
+                subtitle: widget.subtitleFor(flag),
+                // `null` lifts the default single-line cap so long
+                // descriptions ("Generate AI summary for task actions",
+                // etc.) wrap onto a second / third line instead of
+                // truncating with ellipsis.
+                subtitleMaxLines: null,
+                leading: SettingsIcon(icon: widget.iconFor(flag.name)),
                 trailing: Switch.adaptive(
                   value: flag.status,
                   onChanged: (bool status) {
@@ -365,7 +403,24 @@ class _FlagsList extends StatelessWidget {
                     flag.copyWith(status: !flag.status),
                   );
                 },
+                onHoverChanged: (hovered) {
+                  setState(() {
+                    if (hovered) {
+                      _hoveredIndex = index;
+                    } else if (_hoveredIndex == index) {
+                      _hoveredIndex = null;
+                    }
+                  });
+                },
+                // Keep `showDivider` stable so layout doesn't shift by
+                // 1 px on hover; fade the divider to transparent when
+                // either this row or the row below it is hovered, so
+                // the hovered row is never bisected by a hairline.
                 showDivider: index < flags.length - 1,
+                dividerColor:
+                    (_hoveredIndex == index || _hoveredIndex == index + 1)
+                    ? Colors.transparent
+                    : null,
                 dividerIndent: SettingsIcon.dividerIndent(tokens),
               ),
           ],

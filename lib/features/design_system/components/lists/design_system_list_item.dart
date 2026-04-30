@@ -20,6 +20,7 @@ class DesignSystemListItem extends StatefulWidget {
     this.subtitle,
     this.titleContent,
     this.subtitleSpans,
+    this.subtitleMaxLines = 1,
     this.size = DesignSystemListItemSize.medium,
     this.leading,
     this.leadingExtra,
@@ -51,6 +52,13 @@ class DesignSystemListItem extends StatefulWidget {
   final String? subtitle;
   final Widget? titleContent;
   final List<InlineSpan>? subtitleSpans;
+
+  /// Caps the rendered subtitle at this many lines. Defaults to `1` so
+  /// every existing caller keeps the previous single-line ellipsis
+  /// behaviour. Pass `null` to remove the cap and let long descriptions
+  /// wrap freely (the row will grow vertically). Honoured by both the
+  /// plain-text [subtitle] and the [subtitleSpans] paths.
+  final int? subtitleMaxLines;
   final DesignSystemListItemSize size;
   final Widget? leading;
   final Widget? leadingExtra;
@@ -171,6 +179,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                           subtitle: widget.subtitle,
                           titleContent: widget.titleContent,
                           subtitleSpans: widget.subtitleSpans,
+                          subtitleMaxLines: widget.subtitleMaxLines,
                           spec: spec,
                         ),
                       ),
@@ -209,6 +218,7 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
 class _TitleContent extends StatelessWidget {
   const _TitleContent({
     required this.spec,
+    required this.subtitleMaxLines,
     this.title,
     this.subtitle,
     this.titleContent,
@@ -219,6 +229,7 @@ class _TitleContent extends StatelessWidget {
   final String? subtitle;
   final Widget? titleContent;
   final List<InlineSpan>? subtitleSpans;
+  final int? subtitleMaxLines;
   final _ListItemSpec spec;
 
   @override
@@ -242,13 +253,19 @@ class _TitleContent extends StatelessWidget {
                 style: spec.subtitleStyle,
                 children: subtitleSpans,
               ),
+              maxLines: subtitleMaxLines,
+              overflow: subtitleMaxLines == null
+                  ? TextOverflow.clip
+                  : TextOverflow.ellipsis,
             )
           else
             Text(
               subtitle!,
               style: spec.subtitleStyle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              maxLines: subtitleMaxLines,
+              overflow: subtitleMaxLines == null
+                  ? TextOverflow.clip
+                  : TextOverflow.ellipsis,
             ),
         ],
       ],

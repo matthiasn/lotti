@@ -129,11 +129,22 @@ void main() {
       },
     );
 
-    test('scrollable = true wraps flat-column bodies like FlagsBody', () {
-      // FlagsBody is a plain Column; without the outer
+    test('scrollable = true wraps flat-column bodies like ThemingPage', () {
+      // ThemingPage is a plain Column body; without the outer
       // SingleChildScrollView it would overflow the detail pane.
-      expect(panelSpecFor('flags')!.scrollable, isTrue);
+      expect(panelSpecFor('theming')!.scrollable, isTrue);
     });
+
+    test(
+      'flags panel keeps scrollable: false because FlagsBody owns its scroll',
+      () {
+        // FlagsBody is `Column[fixed search, Expanded(scrollable list)]`.
+        // The Expanded would receive unbounded height inside an outer
+        // SingleChildScrollView and crash at paint time, so the registry
+        // must NOT wrap it.
+        expect(panelSpecFor('flags')!.scrollable, isFalse);
+      },
+    );
   });
 
   group('SettingsPanelSpec — builders', () {
