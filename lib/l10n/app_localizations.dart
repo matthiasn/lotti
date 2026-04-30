@@ -10597,6 +10597,12 @@ abstract class AppLocalizations {
   /// **'Journal entry'**
   String get syncPayloadJournalEntity;
 
+  /// No description provided for @syncPayloadOutboxBundle.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbox bundle'**
+  String get syncPayloadOutboxBundle;
+
   /// No description provided for @syncPayloadThemingSelection.
   ///
   /// In en, this message translates to:

@@ -6168,6 +6168,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Položka deníku';
 
   @override
+  String get syncPayloadOutboxBundle => 'Odchozí balíček';
+
+  @override
   String get syncPayloadThemingSelection => 'Výběr tématu';
 
   @override

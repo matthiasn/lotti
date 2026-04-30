@@ -1896,6 +1896,16 @@ class SyncEventProcessor {
           );
         }
         return null;
+      case SyncOutboxBundle():
+        // Receiver unpacking lands in Step 6 of the outbox bundling plan.
+        // Until then, an OutboxBundle on the wire is treated as an unknown
+        // payload — the calling site already logs and skips when this
+        // returns null without touching the sequence log.
+        _trace(
+          'outboxBundle.skip receiver-unpack not yet implemented',
+          subDomain: 'processor.apply',
+        );
+        return null;
     }
   }
 }

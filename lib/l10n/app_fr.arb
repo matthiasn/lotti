@@ -2586,6 +2586,7 @@
   "syncPayloadEntityDefinition": "Définition d'entité",
   "syncPayloadEntryLink": "Lien d'entrée",
   "syncPayloadJournalEntity": "Entrée de journal",
+  "syncPayloadOutboxBundle": "Lot d'envoi",
   "syncPayloadThemingSelection": "Sélection de thème",
   "syncRetry": "Réessayer",
   "syncRoomCreatedUnknown": "Inconnu",

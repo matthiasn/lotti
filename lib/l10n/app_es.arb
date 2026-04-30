@@ -2586,6 +2586,7 @@
   "syncPayloadEntityDefinition": "Definición de entidad",
   "syncPayloadEntryLink": "Enlace de entrada",
   "syncPayloadJournalEntity": "Entrada de diario",
+  "syncPayloadOutboxBundle": "Paquete de salida",
   "syncPayloadThemingSelection": "Selección de tema",
   "syncRetry": "Reintentar",
   "syncRoomCreatedUnknown": "Desconocido",

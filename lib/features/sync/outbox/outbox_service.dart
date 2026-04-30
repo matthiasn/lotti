@@ -410,6 +410,10 @@ class OutboxService {
           msg: msg,
           commonFields: commonFields,
         ),
+        SyncOutboxBundle() => throw StateError(
+          'SyncOutboxBundle is built at dequeue time and must never be '
+          'enqueued via OutboxService.enqueueMessage.',
+        ),
       };
 
       _syncLog(
@@ -444,6 +448,10 @@ class OutboxService {
       SyncEntityDefinition() => OutboxPriority.low.index,
       SyncAiConfig() => OutboxPriority.low.index,
       SyncAiConfigDelete() => OutboxPriority.low.index,
+      SyncOutboxBundle() => throw StateError(
+        'SyncOutboxBundle never has a row-level priority — it is a '
+        'transport-time wrapper built by OutboxProcessor.',
+      ),
     };
   }
 

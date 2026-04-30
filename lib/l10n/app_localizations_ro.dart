@@ -6205,6 +6205,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Intrare jurnal';
 
   @override
+  String get syncPayloadOutboxBundle => 'Pachet outbox';
+
+  @override
   String get syncPayloadThemingSelection => 'Selecție temă';
 
   @override

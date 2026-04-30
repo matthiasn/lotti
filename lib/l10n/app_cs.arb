@@ -2316,6 +2316,7 @@
   "syncPayloadEntityDefinition": "Definice entity",
   "syncPayloadEntryLink": "Odkaz na položku",
   "syncPayloadJournalEntity": "Položka deníku",
+  "syncPayloadOutboxBundle": "Odchozí balíček",
   "syncPayloadThemingSelection": "Výběr tématu",
   "syncRetry": "Zkusit znovu",
   "syncRoomCreatedUnknown": "Neznámé",

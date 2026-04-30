@@ -6065,6 +6065,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Journal entry';
 
   @override
+  String get syncPayloadOutboxBundle => 'Outbox bundle';
+
+  @override
   String get syncPayloadThemingSelection => 'Theming selection';
 
   @override

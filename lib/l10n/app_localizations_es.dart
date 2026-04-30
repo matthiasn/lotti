@@ -6253,6 +6253,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Entrada de diario';
 
   @override
+  String get syncPayloadOutboxBundle => 'Paquete de salida';
+
+  @override
   String get syncPayloadThemingSelection => 'Selección de tema';
 
   @override

@@ -2586,6 +2586,7 @@
   "syncPayloadEntityDefinition": "Definiție entitate",
   "syncPayloadEntryLink": "Link intrare",
   "syncPayloadJournalEntity": "Intrare jurnal",
+  "syncPayloadOutboxBundle": "Pachet outbox",
   "syncPayloadThemingSelection": "Selecție temă",
   "syncRetry": "Reîncearcă",
   "syncRoomCreatedUnknown": "Necunoscut",

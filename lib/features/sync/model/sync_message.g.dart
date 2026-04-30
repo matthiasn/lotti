@@ -266,3 +266,21 @@ Map<String, dynamic> _$SyncAgentBundleToJson(SyncAgentBundle instance) =>
       'originatingHostId': instance.originatingHostId,
       'runtimeType': instance.$type,
     };
+
+SyncOutboxBundle _$SyncOutboxBundleFromJson(Map<String, dynamic> json) =>
+    SyncOutboxBundle(
+      children: (json['children'] as List<dynamic>)
+          .map((e) => SyncMessage.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      jsonPath: json['jsonPath'] as String?,
+      originatingHostId: json['originatingHostId'] as String?,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncOutboxBundleToJson(SyncOutboxBundle instance) =>
+    <String, dynamic>{
+      'children': instance.children,
+      'jsonPath': instance.jsonPath,
+      'originatingHostId': instance.originatingHostId,
+      'runtimeType': instance.$type,
+    };
