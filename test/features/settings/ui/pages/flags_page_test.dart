@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
@@ -475,6 +476,149 @@ void main() {
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
         expect(find.byType(DesignSystemListItem), findsNWidgets(9));
+      },
+    );
+  });
+
+  group('FlagsPage — row polish', () {
+    testWidgets(
+      'rows allow long descriptions to wrap by passing subtitleMaxLines: null',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        // Every flag row should opt out of the single-line ellipsis cap.
+        // Sampling the first row is enough — the for-loop in `_FlagsList`
+        // applies the same prop to every row.
+        final firstItem = tester
+            .widgetList<DesignSystemListItem>(
+              find.byType(DesignSystemListItem),
+            )
+            .first;
+        expect(firstItem.subtitleMaxLines, isNull);
+      },
+    );
+
+    testWidgets(
+      'hovering a row fades the divider beneath it AND beneath the row '
+      'above it so the hovered row is never bisected — and `showDivider` '
+      "stays stable so layout doesn't shift by 1 px",
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        List<DesignSystemListItem> rows() => tester
+            .widgetList<DesignSystemListItem>(
+              find.byType(DesignSystemListItem),
+            )
+            .toList();
+
+        bool isFaded(DesignSystemListItem item) =>
+            item.dividerColor == Colors.transparent;
+
+        // Idle baseline. `showDivider` is stable for all rows except the
+        // last one (no divider beneath the bottom row); no dividers are
+        // faded.
+        final idleRows = rows();
+        expect(
+          idleRows.length,
+          greaterThanOrEqualTo(3),
+          reason: 'test relies on at least 3 flag rows',
+        );
+        for (final (index, row) in idleRows.indexed) {
+          expect(
+            row.showDivider,
+            index < idleRows.length - 1,
+            reason: 'showDivider must be stable across hover state',
+          );
+          expect(isFaded(row), isFalse, reason: 'no row faded when idle');
+        }
+
+        // Drive a synthetic mouse hover onto the second row. Hover events
+        // require pointer kind `mouse` — `tester.tap` won't fire
+        // `MouseRegion.onEnter`.
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer();
+        await gesture.moveTo(
+          tester.getCenter(find.byType(DesignSystemListItem).at(1)),
+        );
+        await tester.pump();
+
+        // Exactly rows 0 and 1 should fade their divider (above and below
+        // the hovered row); every other row stays unfaded; `showDivider`
+        // is unchanged.
+        final hoveredRows = rows();
+        for (final (index, row) in hoveredRows.indexed) {
+          expect(row.showDivider, index < hoveredRows.length - 1);
+          expect(
+            isFaded(row),
+            index == 0 || index == 1,
+            reason: 'only rows 0 and 1 should fade when row 1 is hovered',
+          );
+        }
+
+        // Move the pointer off the row — fades clear.
+        await gesture.moveTo(Offset.zero);
+        await tester.pump();
+        for (final row in rows()) {
+          expect(isFaded(row), isFalse);
+        }
+      },
+    );
+
+    testWidgets(
+      'inner list scrolls bridge to UserActivityService — fillRemaining mode '
+      'kills the outer ScrollController, so the page must rely on '
+      'ScrollNotification to keep activity tracking alive',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        // Sanity: no activity reported yet from setting up the page.
+        clearInteractions(mockUserActivityService);
+
+        final scrollable = find.descendant(
+          of: find.byType(FlagsBody),
+          matching: find.byType(SingleChildScrollView),
+        );
+        await tester.drag(scrollable, const Offset(0, -50));
+        await tester.pump();
+
+        verify(
+          () => mockUserActivityService.updateActivity(),
+        ).called(greaterThan(0));
+      },
+    );
+
+    testWidgets(
+      'search field is OUTSIDE the scrollable region — only the list scrolls',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        // The pinned search lives directly under FlagsBody, NOT inside
+        // the SingleChildScrollView that owns the list.
+        final search = find.byType(DesignSystemSearch);
+        final scrollable = find.descendant(
+          of: find.byType(FlagsBody),
+          matching: find.byType(SingleChildScrollView),
+        );
+        expect(
+          find.descendant(of: scrollable, matching: search),
+          findsNothing,
+          reason: 'search must stay pinned while the list scrolls',
+        );
       },
     );
   });

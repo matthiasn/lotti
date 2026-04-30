@@ -86,6 +86,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   What's New tree leaf without editing the database.
 
 ### Changed
+- Config Flags page polish — four follow-ups on top of the keyword search:
+  - The `DesignSystemSearch` field is now pinned at the top of the page
+    while only the list of flag rows scrolls beneath it. `FlagsPage` opts
+    its `SliverBoxAdapterPage` chrome into a new `fillRemaining: true`
+    mode that hosts the body inside `SliverFillRemaining(hasScrollBody:
+    true)` and folds the bottom-nav-occupied space into the body padding.
+    `FlagsBody` itself becomes `Column[fixed search, Expanded(scrollable
+    list)]` so the same restructure works inside the V2 detail pane
+    (`'flags'` panel registry entry flips to `scrollable: false` since
+    the body now owns its scrolling).
+  - `DesignSystemListItem` gains a `subtitleMaxLines` parameter (default
+    `1`, preserving the existing single-line ellipsis for every other
+    caller). Flag rows pass `null` so long descriptions like "Generate
+    AI summary for task actions" wrap onto a second / third line
+    instead of truncating. Honored on both the plain-text `subtitle`
+    and the `subtitleSpans` paths.
+  - The flag list now hides the divider on hover — `_FlagsList` becomes
+    stateful, tracks `_hoveredIndex` via the existing
+    `DesignSystemListItem.onHoverChanged`, and suppresses the divider
+    both *below the hovered row* and *above the next row* so the
+    hovered row is never bisected by a hairline. Mirrors the polish
+    already used in the task-list rows.
+  - Added a horizontal page gutter and consistent vertical spacing so
+    the search field and the rounded list container both honour the
+    same edges; cards no longer sit flush against the screen edge.
 - Backfill Sync settings page rebuilt around the Option C "compact ledger"
   design: a welded status row (Inbound queue · Missing · Skipped) at the top,
   a leader-dotted Sync statistics ledger, an `Automatic backfill` toggle, and

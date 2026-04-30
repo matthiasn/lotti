@@ -49,6 +49,73 @@ void main() {
       expect(find.text('Subtitle text'), findsOneWidget);
     });
 
+    testWidgets(
+      'subtitle defaults to single-line ellipsis so legacy callers '
+      "don't suddenly grow vertically",
+      (tester) async {
+        await _pumpListItem(
+          tester,
+          const DesignSystemListItem(
+            title: 'Title',
+            subtitle:
+                'A reasonably long description that would otherwise '
+                'wrap onto multiple lines if the cap were lifted',
+          ),
+        );
+
+        final subtitle = tester.widget<Text>(
+          find.text(
+            'A reasonably long description that would otherwise wrap '
+            'onto multiple lines if the cap were lifted',
+          ),
+        );
+        expect(subtitle.maxLines, 1);
+        expect(subtitle.overflow, TextOverflow.ellipsis);
+      },
+    );
+
+    testWidgets(
+      'subtitleMaxLines: null lifts the cap and lets long descriptions '
+      'wrap freely',
+      (tester) async {
+        await _pumpListItem(
+          tester,
+          const DesignSystemListItem(
+            title: 'Title',
+            subtitle: 'A long description that should be allowed to wrap',
+            subtitleMaxLines: null,
+          ),
+        );
+
+        final subtitle = tester.widget<Text>(
+          find.text('A long description that should be allowed to wrap'),
+        );
+        expect(subtitle.maxLines, isNull);
+        expect(subtitle.overflow, TextOverflow.clip);
+      },
+    );
+
+    testWidgets('subtitleMaxLines also honored on the subtitleSpans path', (
+      tester,
+    ) async {
+      await _pumpListItem(
+        tester,
+        const DesignSystemListItem(
+          title: 'Title',
+          subtitleSpans: [TextSpan(text: 'inline')],
+          subtitleMaxLines: 3,
+        ),
+      );
+
+      final richText = tester.widget<RichText>(
+        find.byWidgetPredicate(
+          (w) => w is RichText && w.text.toPlainText().contains('inline'),
+        ),
+      );
+      expect(richText.maxLines, 3);
+      expect(richText.overflow, TextOverflow.ellipsis);
+    });
+
     testWidgets('renders custom title content and metadata spans', (
       tester,
     ) async {
