@@ -52,10 +52,13 @@ class TabSectionHeader extends StatelessWidget {
 
     final effectiveTitleTrailing =
         titleTrailing ??
-        Icon(
-          Icons.notifications_none_rounded,
-          size: 34,
-          color: highText,
+        SizedBox.square(
+          dimension: 36,
+          child: Icon(
+            Icons.notifications_none_rounded,
+            size: 24,
+            color: highText,
+          ),
         );
 
     return Padding(
@@ -109,14 +112,14 @@ class TabSectionHeader extends StatelessWidget {
                   onPressed: onFilterPressed,
                   icon: Icon(
                     Icons.filter_list_rounded,
-                    size: 24,
+                    size: 20,
                     color: accent,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(height: tokens.spacing.step4),
+          SizedBox(height: tokens.spacing.step3),
         ],
       ),
     );

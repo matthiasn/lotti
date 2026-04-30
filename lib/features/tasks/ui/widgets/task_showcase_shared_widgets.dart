@@ -159,7 +159,7 @@ class TaskShowcaseStatusGlyph extends StatelessWidget {
     final asset = switch (status) {
       TaskOpen() => 'assets/design_system/task_status_open.svg',
       TaskGroomed() => 'assets/design_system/task_status_groomed.svg',
-      TaskInProgress() => 'assets/design_system/task_status_in_progress.svg',
+      TaskInProgress() => 'assets/design_system/project_status_active.svg',
       TaskBlocked() => 'assets/design_system/task_status_blocked.svg',
       TaskOnHold() => 'assets/design_system/task_status_on_hold.svg',
       TaskDone() => 'assets/design_system/task_status_done.svg',
@@ -222,10 +222,8 @@ class TaskShowcaseStatusLabel extends StatelessWidget {
             style:
                 (expanded
                         ? tokens.typography.styles.subtitle.subtitle2
-                        : tokens.typography.styles.body.bodySmall)
-                    .copyWith(
-                      color: textColor,
-                    ),
+                        : tokens.typography.styles.others.caption)
+                    .copyWith(color: textColor),
           ),
           if (expanded) ...[
             SizedBox(width: tokens.spacing.step1),

@@ -30,7 +30,7 @@ class ActiveFilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    final backgroundColor = tokens.colors.surface.enabled;
+    final backgroundColor = tokens.colors.surface.selected;
     final labelColor = tokens.colors.text.highEmphasis;
     final removeIconColor = tokens.colors.text.mediumEmphasis;
 
@@ -61,7 +61,7 @@ class ActiveFilterChip extends StatelessWidget {
           borderRadius: radius,
           onTap: onRemove,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(10, 3, 6, 3),
+            padding: const EdgeInsets.fromLTRB(4, 2, 2, 2),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -74,7 +74,7 @@ class ActiveFilterChip extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.others.caption.copyWith(
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: labelColor,
                     ),
                   ),
@@ -82,7 +82,7 @@ class ActiveFilterChip extends StatelessWidget {
                 const SizedBox(width: 4),
                 Icon(
                   Icons.cancel_rounded,
-                  size: 14,
+                  size: 20,
                   color: removeIconColor,
                 ),
               ],

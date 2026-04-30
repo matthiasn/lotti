@@ -599,13 +599,13 @@ class _PriorityBadge extends StatelessWidget {
     final tokens = context.designTokens;
     final content = Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step2,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TaskShowcasePriorityGlyph(priority: priority),
+          TaskShowcasePriorityGlyph(priority: priority, size: 20),
           SizedBox(width: tokens.spacing.step2),
           Text(
             priority.short,

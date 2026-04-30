@@ -54,7 +54,7 @@ void main() {
             matching: find.byIcon(Icons.cancel_rounded),
           ),
         );
-        expect(icon.size, 14);
+        expect(icon.size, 20);
       },
     );
 

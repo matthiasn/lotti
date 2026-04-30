@@ -63,8 +63,8 @@ class TaskBrowseListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final rowPadding = EdgeInsets.symmetric(
-      horizontal: tokens.spacing.step5,
-      vertical: tokens.spacing.step5,
+      horizontal: tokens.spacing.step3,
+      vertical: 14,
     );
     final borderRadius = BorderRadius.vertical(
       top: entry.isFirstInSection
@@ -88,14 +88,17 @@ class TaskBrowseListItem extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: entry.isLastInSection ? tokens.spacing.step5 : 0,
+        bottom: entry.isLastInSection ? tokens.spacing.step3 : 0,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (entry.showSectionHeader)
             Padding(
-              padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+              padding: EdgeInsets.only(
+                top: tokens.spacing.step4,
+                bottom: tokens.spacing.step4,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -205,7 +208,6 @@ class _TaskBrowseRowShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final interaction = buildTaskBrowseRowInteraction(
       taskId: entry.task.meta.id,
       previousTaskIdInSection: previousTaskIdInSection,
@@ -246,24 +248,21 @@ class _TaskBrowseRowShell extends StatelessWidget {
               child: child,
             ),
             if (!entry.isLastInSection)
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
-                child: interaction.showDividerBelow
-                    ? Divider(
-                        key: ValueKey(
-                          'task-browse-divider-${entry.task.meta.id}',
-                        ),
-                        height: 1,
-                        thickness: 1,
-                        color: TaskShowcasePalette.border(context),
-                      )
-                    : SizedBox(
-                        key: ValueKey(
-                          'task-browse-divider-slot-${entry.task.meta.id}',
-                        ),
-                        height: 1,
+              interaction.showDividerBelow
+                  ? Divider(
+                      key: ValueKey(
+                        'task-browse-divider-${entry.task.meta.id}',
                       ),
-              ),
+                      height: 1,
+                      thickness: 1,
+                      color: TaskShowcasePalette.border(context),
+                    )
+                  : SizedBox(
+                      key: ValueKey(
+                        'task-browse-divider-slot-${entry.task.meta.id}',
+                      ),
+                      height: 1,
+                    ),
           ],
         ),
       ),
@@ -572,7 +571,7 @@ class _SectionHeaderTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textStyle = context.designTokens.typography.styles.others.caption
-        .copyWith(color: TaskShowcasePalette.mediumText(context));
+        .copyWith(color: TaskShowcasePalette.highText(context));
 
     if (titleOverride case final title?) {
       return Text(title, style: textStyle);
