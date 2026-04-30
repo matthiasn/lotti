@@ -166,6 +166,12 @@ const agentLinksSegment = '/agent_links/';
 /// Path segment for wake-scoped agent sync bundle files.
 const agentBundlesSegment = '/agent_bundles/';
 
+/// Segment under which dequeue-time outbox bundle payloads are stored.
+/// Each bundle gets a fresh UUID-named file because the bundle has no
+/// persistent identity — it's a transport-time aggregate built by
+/// `OutboxProcessor`.
+const outboxBundlesSegment = '/outbox_bundles/';
+
 /// Returns `true` if [relativePath] points to an agent sync payload file.
 ///
 /// Entity/link payloads use the entity ID in the path and can be legitimately
@@ -193,6 +199,13 @@ String relativeAgentLinkPath(String linkId) {
 /// file, including a leading `/`.
 String relativeAgentBundlePath(String wakeRunKey) {
   return '$agentBundlesSegment${Uri.encodeComponent(wakeRunKey)}.json';
+}
+
+/// Returns the documents-directory-relative path for a dequeue-time outbox
+/// bundle payload file, including a leading `/`. Uses
+/// `/outbox_bundles/<bundleId>.json`.
+String relativeOutboxBundlePath(String bundleId) {
+  return '$outboxBundlesSegment${Uri.encodeComponent(bundleId)}.json';
 }
 
 Future<JournalEntity> readEntityFromJson(String jsonPath) async {

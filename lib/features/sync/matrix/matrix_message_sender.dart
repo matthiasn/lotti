@@ -203,6 +203,21 @@ class MatrixMessageSender {
       }
       outboundMessage = agentResult;
 
+      if (outboundMessage is SyncOutboxBundle) {
+        final stripped = await _sendOutboxBundlePayload(
+          room: room,
+          message: outboundMessage,
+        );
+        if (stripped == null) {
+          _trace(
+            'FAIL outboxBundlePayload children=${outboundMessage.children.length}',
+            subDomain: 'matrix.send.error',
+          );
+          return false;
+        }
+        outboundMessage = stripped;
+      }
+
       final encodedMessage = json.encode(outboundMessage);
       final encodedBytes = utf8.encode(encodedMessage);
       final b64Message = base64.encode(encodedBytes);
@@ -517,6 +532,62 @@ class MatrixMessageSender {
     return outbound;
   }
 
+  /// Writes the [message]'s children to disk as a JSON sidecar, uploads the
+  /// sidecar to the sync room, and returns a stripped [SyncOutboxBundle] with
+  /// `jsonPath` set and `children` cleared.
+  ///
+  /// Outbox bundles are always file-backed: receivers reconstruct the bundle
+  /// by downloading the sidecar — same shape as `SyncAgentBundle`. Each call
+  /// mints a fresh UUID-based path because the bundle has no persistent
+  /// identity (it is a transport-time aggregate built by `OutboxProcessor`).
+  /// Returns `null` if the bundle is empty or the upload failed.
+  Future<SyncOutboxBundle?> _sendOutboxBundlePayload({
+    required Room room,
+    required SyncOutboxBundle message,
+  }) async {
+    if (message.children.isEmpty) {
+      _loggingService.captureEvent(
+        'skipping empty outboxBundle send',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+      return null;
+    }
+
+    final relativePath =
+        message.jsonPath ?? relativeOutboxBundlePath(uuid.v1());
+    final fullBundleJson = json.encode(
+      message.copyWith(jsonPath: null).toJson(),
+    );
+
+    try {
+      await _savePayloadToDisk(
+        relativePath: relativePath,
+        jsonPayload: fullBundleJson,
+      );
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.outboxBundle.write',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
+    final uploaded = await _uploadAgentPayload(
+      room: room,
+      relativePath: relativePath,
+      logLabel: 'outboxBundle',
+    );
+    if (!uploaded) return null;
+
+    return message.copyWith(
+      jsonPath: relativePath,
+      children: const [],
+    );
+  }
+
   /// Enriches and uploads agent payload (entity or link).
   ///
   /// For legacy items (inline payload but no jsonPath), saves the payload to
@@ -673,6 +744,12 @@ class MatrixMessageSender {
     required Room room,
     required SyncMessage message,
   }) => _enrichAndUploadAgentPayload(room: room, message: message);
+
+  @visibleForTesting
+  Future<SyncOutboxBundle?> sendOutboxBundlePayloadForTesting({
+    required Room room,
+    required SyncOutboxBundle message,
+  }) => _sendOutboxBundlePayload(room: room, message: message);
 
   @visibleForTesting
   Future<SyncMessage> ensureOriginatingHostIdForTesting(
