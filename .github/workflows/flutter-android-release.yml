@@ -105,3 +105,22 @@ jobs:
             build/app/outputs/flutter-apk/app-x86_64-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read app version from pubspec.yaml
+        id: app_version
+        run: |
+          version=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Release name will be: $version"
+
+      - name: Upload AAB to Google Play (internal track)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+          packageName: com.matthiasn.lotti
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          releaseName: ${{ steps.app_version.outputs.version }}
+          tracks: |
+            internal
+          status: draft
+          changesNotSentForReview: false
