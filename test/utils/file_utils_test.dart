@@ -287,4 +287,30 @@ void main() {
       expect(isAgentPayloadPath('/agent_bundles/run-1.json'), isTrue);
     });
   });
+
+  group('outbox bundle payload paths', () {
+    test('builds encoded outbox bundle paths under /outbox_bundles/', () {
+      expect(
+        relativeOutboxBundlePath('abc-123'),
+        '/outbox_bundles/abc-123.json',
+      );
+    });
+
+    test('URI-encodes special characters in the bundle id', () {
+      expect(
+        relativeOutboxBundlePath('with/slash and space'),
+        '/outbox_bundles/with%2Fslash%20and%20space.json',
+      );
+    });
+
+    test(
+      'outbox bundle paths are NOT classified as agent payload paths — '
+      'agent payloads share a VC-dominance re-download skip optimization '
+      'that does not apply to outbox bundles (each bundle has a fresh uuid '
+      'so the local file never pre-exists)',
+      () {
+        expect(isAgentPayloadPath('/outbox_bundles/abc.json'), isFalse);
+      },
+    );
+  });
 }

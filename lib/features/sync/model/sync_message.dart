@@ -172,6 +172,19 @@ sealed class SyncMessage with _$SyncMessage {
     String? originatingHostId,
   }) = SyncAgentBundle;
 
+  /// A dequeue-time bundle of text-only outbox rows.
+  ///
+  /// Built by `OutboxProcessor` to ship up to `SyncTuning.outboxBundleMaxSize`
+  /// pending text rows in a single Matrix envelope. Children are applied in
+  /// order on the receiver, exactly as if delivered individually. Children
+  /// must not themselves be `SyncOutboxBundle` (no nesting) and must not carry
+  /// media attachments — attachments always travel alone.
+  const factory SyncMessage.outboxBundle({
+    required List<SyncMessage> children,
+    String? jsonPath,
+    String? originatingHostId,
+  }) = SyncOutboxBundle;
+
   factory SyncMessage.fromJson(Map<String, dynamic> json) =>
       _$SyncMessageFromJson(json);
 }

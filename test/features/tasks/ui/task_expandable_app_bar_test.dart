@@ -111,11 +111,31 @@ void main() {
     );
   }
 
+  /// Pin `tester.view.physicalSize` and `devicePixelRatio` to a known
+  /// mobile-width value before pumping so `isDesktopLayout(context)` reads
+  /// `false` (width < 960) regardless of whatever view overrides another
+  /// test file may have leaked into the binding in a `very_good test`
+  /// (single-isolate) run. We override the *view* (not just the binding's
+  /// surface size) because `tester.view.physicalSize` takes precedence
+  /// over `setSurfaceSize`, and a leftover view override from an upstream
+  /// test cannot otherwise be cleared.
+  ///
+  /// Tests that need the desktop layout call `tester.pumpWidget` directly
+  /// and set their own `tester.view.physicalSize`.
+  Future<void> pumpMobile(WidgetTester tester, Widget widget) async {
+    tester.view
+      ..physicalSize = const Size(400, 800)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(widget);
+  }
+
   group('TaskExpandableAppBar', () {
     testWidgets('renders SliverAppBar', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       expect(find.byType(SliverAppBar), findsOneWidget);
@@ -124,7 +144,7 @@ void main() {
     testWidgets('renders GlassBackButton', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       expect(find.byType(GlassBackButton), findsOneWidget);
@@ -133,7 +153,7 @@ void main() {
     testWidgets('renders chevron_left icon in back button', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
@@ -144,7 +164,7 @@ void main() {
     ) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       // GlassBackButton uses GlassActionButton internally, plus one for more menu
@@ -154,7 +174,7 @@ void main() {
     testWidgets('renders more_horiz icon', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       expect(find.byIcon(Icons.more_horiz), findsOneWidget);
@@ -163,7 +183,7 @@ void main() {
     testWidgets('contains CoverArtBackground', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       expect(find.byType(CoverArtBackground), findsOneWidget);
@@ -172,7 +192,7 @@ void main() {
     testWidgets('CoverArtBackground receives correct imageId', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'cover-123'));
+      await pumpMobile(tester, buildTestWidget(task, 'cover-123'));
       await tester.pump();
 
       final background = tester.widget<CoverArtBackground>(
@@ -184,7 +204,7 @@ void main() {
     testWidgets('SliverAppBar is pinned', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
@@ -194,7 +214,7 @@ void main() {
     testWidgets('SliverAppBar has correct toolbarHeight', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
@@ -204,7 +224,7 @@ void main() {
     testWidgets('SliverAppBar has correct leadingWidth', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
@@ -214,7 +234,7 @@ void main() {
     testWidgets('does not automatically imply leading', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
@@ -229,7 +249,7 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(400, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
@@ -240,7 +260,7 @@ void main() {
     testWidgets('contains FlexibleSpaceBar', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       expect(find.byType(FlexibleSpaceBar), findsOneWidget);
@@ -249,7 +269,7 @@ void main() {
     testWidgets('back button icon is white', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.chevron_left));
@@ -259,7 +279,7 @@ void main() {
     testWidgets('more_horiz icon is white', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.more_horiz));
@@ -274,7 +294,8 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(400, 800));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(
+        await pumpMobile(
+          tester,
           buildTestWidget(task, 'image-1', initialOffset: 0),
         );
         await tester.pumpAndSettle();
@@ -294,7 +315,8 @@ void main() {
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
         // expandedHeight = 400 * 9/16 = 225 → threshold = 225 * 0.85 ≈ 191.25
-        await tester.pumpWidget(
+        await pumpMobile(
+          tester,
           buildTestWidget(task, 'image-1', initialOffset: 200),
         );
         await tester.pumpAndSettle();
@@ -308,7 +330,7 @@ void main() {
       (tester) async {
         final task = buildTask();
 
-        await tester.pumpWidget(buildTestWidget(task, 'image-1'));
+        await pumpMobile(tester, buildTestWidget(task, 'image-1'));
         await tester.pumpAndSettle();
 
         await tester.tap(find.byIcon(Icons.more_horiz));

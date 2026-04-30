@@ -4296,6 +4296,18 @@ abstract class AppLocalizations {
   /// **'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.'**
   String get configFlagUseCompressedJsonAttachmentsDescription;
 
+  /// No description provided for @configFlagUseOutboxBundling.
+  ///
+  /// In en, this message translates to:
+  /// **'Bundle outbox messages'**
+  String get configFlagUseOutboxBundling;
+
+  /// No description provided for @configFlagUseOutboxBundlingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.'**
+  String get configFlagUseOutboxBundlingDescription;
+
   /// No description provided for @conflictEntityLabel.
   ///
   /// In en, this message translates to:
@@ -10596,6 +10608,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Journal entry'**
   String get syncPayloadJournalEntity;
+
+  /// No description provided for @syncPayloadOutboxBundle.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbox bundle'**
+  String get syncPayloadOutboxBundle;
 
   /// No description provided for @syncPayloadThemingSelection.
   ///

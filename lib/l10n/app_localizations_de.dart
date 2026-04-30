@@ -2505,6 +2505,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.';
 
   @override
+  String get configFlagUseOutboxBundling => 'Outbox-Nachrichten bündeln';
+
+  @override
+  String get configFlagUseOutboxBundlingDescription =>
+      'Bündelt aufeinanderfolgende reine Textzeilen aus der Outbox in einer einzigen Sync-Nachricht, damit Bursts kleiner Änderungen als eine Matrix-Nachricht verschickt werden. Medienanhänge werden weiterhin einzeln gesendet.';
+
+  @override
   String get conflictEntityLabel => 'Entität';
 
   @override
@@ -6154,6 +6161,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadJournalEntity => 'Journaleintrag';
+
+  @override
+  String get syncPayloadOutboxBundle => 'Outbox-Bündel';
 
   @override
   String get syncPayloadThemingSelection => 'Designauswahl';

@@ -2365,4 +2365,233 @@ void main() {
       expect(decoded['jsonPath'], '/agent_links/legacy-link.json');
     });
   });
+
+  group('SyncOutboxBundle delivery', () {
+    SyncOutboxBundle bundleWith(int childCount) {
+      return SyncOutboxBundle(
+        children: [
+          for (var i = 1; i <= childCount; i++)
+            SyncMessage.aiConfigDelete(id: 'cfg-$i'),
+        ],
+      );
+    }
+
+    test(
+      'sendOutboxBundlePayloadForTesting writes the children to disk under '
+      '/outbox_bundles/<uuid>.json, uploads it, and returns a stripped '
+      'bundle whose jsonPath references the new file',
+      () async {
+        final bundle = bundleWith(3);
+
+        final stripped = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundle,
+        );
+
+        expect(stripped, isNotNull);
+        expect(stripped!.children, isEmpty);
+        expect(stripped.jsonPath, isNotNull);
+        expect(stripped.jsonPath, startsWith('/outbox_bundles/'));
+        expect(stripped.jsonPath, endsWith('.json'));
+
+        // The file exists on disk and contains the *full* bundle JSON.
+        final relativeJoined = stripped.jsonPath!.replaceAll(
+          RegExp('^/+'),
+          '',
+        );
+        final onDisk = File(
+          '${documentsDirectory.path}/$relativeJoined',
+        );
+        expect(onDisk.existsSync(), isTrue);
+        final decoded =
+            json.decode(onDisk.readAsStringSync()) as Map<String, dynamic>;
+        expect(decoded['runtimeType'], 'outboxBundle');
+        expect((decoded['children'] as List).length, 3);
+
+        // The upload went through sendFileEvent — once for the bundle.
+        verify(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'sendOutboxBundlePayloadForTesting returns null for an empty bundle '
+      '(no IO performed; logged once)',
+      () async {
+        final result = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: const SyncOutboxBundle(children: []),
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+        verify(
+          () => loggingService.captureEvent(
+            'skipping empty outboxBundle send',
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'sendOutboxBundlePayloadForTesting returns null when writing the '
+      'sidecar to disk throws — the failure is logged via captureException '
+      'and surfaced as null so the bundle never goes on the wire without '
+      'its children',
+      () async {
+        // Cross-platform forced failure: create a regular file, then try to
+        // use it as the parent of the sidecar's directory. The recursive
+        // create inside _savePayloadToDisk will throw FileSystemException
+        // because the parent is not a directory. Works on macOS, Linux, and
+        // Windows runners.
+        final blocker = File('${documentsDirectory.path}/not-a-directory')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('x');
+        final unwritable = Directory('${blocker.path}/cannot-write-here');
+        final brokenSender = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: unwritable,
+          sentEventRegistry: sentEventRegistry,
+        );
+
+        final result = await brokenSender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundleWith(2),
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.outboxBundle.write',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'sendOutboxBundlePayloadForTesting returns null when the upload fails '
+      '— the caller (sendMatrixMessage) treats this as a transport-level '
+      'failure and propagates it up to OutboxProcessor.markRetryBatch',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final result = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundleWith(2),
+        );
+
+        expect(result, isNull);
+      },
+    );
+
+    test(
+      'sendMatrixMessage returns false when the outboxBundle sidecar upload '
+      'fails — the failure is traced and the text event is never sent',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        ).thenAnswer((_) async => r'$should-not-be-called');
+
+        final result = await sender.sendMatrixMessage(
+          message: bundleWith(3),
+          context: buildContext(),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isFalse);
+        verifyNever(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'sendMatrixMessage with a SyncOutboxBundle uploads the sidecar, sends '
+      'a stripped text event referencing it, and registers BOTH the file '
+      'and text event IDs in the sent registry',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async => r'$bundle-file-id');
+        String? capturedPayload;
+        when(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedPayload = inv.positionalArguments.first as String;
+          return r'$bundle-text-id';
+        });
+
+        final bundle = bundleWith(4);
+        final result = await sender.sendMatrixMessage(
+          message: bundle,
+          context: buildContext(),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isTrue);
+        expect(sentEventRegistry.length, 2);
+
+        // The text event no longer carries inline children — they live in
+        // the sidecar referenced by jsonPath.
+        final decoded =
+            json.decode(
+                  utf8.decode(base64.decode(capturedPayload!)),
+                )
+                as Map<String, dynamic>;
+        expect(decoded['runtimeType'], 'outboxBundle');
+        expect(decoded['jsonPath'], startsWith('/outbox_bundles/'));
+        expect(decoded['children'], isEmpty);
+      },
+    );
+  });
 }

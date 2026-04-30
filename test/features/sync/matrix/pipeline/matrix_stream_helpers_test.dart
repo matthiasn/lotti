@@ -92,6 +92,26 @@ void main() {
     });
 
     test(
+      'extractJsonPathFromEvent returns jsonPath for outboxBundle — the '
+      'receiver-side attachment ingestor relies on this lookup to download '
+      'the sidecar holding the bundle children',
+      () {
+        final ev = MockEvent();
+        final jsonPayload = <String, dynamic>{
+          'runtimeType': 'outboxBundle',
+          'jsonPath': '/outbox_bundles/abc-123.json',
+        };
+        final text = base64.encode(utf8.encode(json.encode(jsonPayload)));
+        when(() => ev.text).thenReturn(text);
+
+        expect(
+          extractJsonPathFromEvent(ev),
+          '/outbox_bundles/abc-123.json',
+        );
+      },
+    );
+
+    test(
       'extractJsonPathFromEvent returns null for unsupported runtimeType',
       () {
         final ev = MockEvent();

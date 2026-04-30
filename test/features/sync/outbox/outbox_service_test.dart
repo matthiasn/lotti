@@ -210,6 +210,15 @@ void main() {
     when(
       () => journalDb.linksForEntryIdsBidirectional(any()),
     ).thenAnswer((_) async => <EntryLink>[]);
+    // The outbox service eagerly seeds and watches the bundling flag at
+    // construction. Default to "off" for every test that doesn't override,
+    // so legacy single-row drain behaviour stays the test default.
+    when(
+      () => journalDb.getConfigFlag(useOutboxBundlingFlag),
+    ).thenAnswer((_) async => false);
+    when(
+      () => journalDb.watchConfigFlag(useOutboxBundlingFlag),
+    ).thenAnswer((_) => Stream<bool>.value(false));
     // Ensure activity gate can construct if needed
     when(
       () => userActivityService.lastActivity,
@@ -5699,6 +5708,181 @@ void main() {
             ),
           );
         });
+      },
+    );
+  });
+
+  group('outbox bundling wiring', () {
+    test(
+      'priorityForMessageForTesting maps SyncOutboxBundle to normal priority '
+      '— bundles never reach this path in production (the enqueue dispatch '
+      'switch throws first), but a benign default keeps the priority lookup '
+      'side-effect-free if some future caller does pass one',
+      () {
+        expect(
+          OutboxService.priorityForMessageForTesting(
+            const SyncMessage.outboxBundle(children: []),
+          ),
+          OutboxPriority.normal.index,
+        );
+      },
+    );
+
+    test(
+      'enqueueMessage(SyncOutboxBundle) throws StateError to the caller — '
+      'the early guard rejects the invariant breach instead of swallowing '
+      'it inside the routine enqueue try/catch, so a buggy caller fails '
+      'loudly in tests/CI rather than producing a silent drop in prod',
+      () async {
+        await expectLater(
+          service.enqueueMessage(
+            const SyncMessage.outboxBundle(children: []),
+          ),
+          throwsStateError,
+        );
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+      },
+    );
+
+    test(
+      'resolveBundleMaxSizeForTesting yields SyncTuning.outboxBundleMaxSize '
+      'when the watch stream reports the flag is on — the cached value is '
+      'updated via JournalDb.watchConfigFlag, so flipping at runtime takes '
+      'effect on the next stream emission with no extra DB round-trip',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(useOutboxBundlingFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => journalDb.watchConfigFlag(useOutboxBundlingFlag),
+        ).thenAnswer((_) => Stream<bool>.value(true));
+
+        final svc = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+        );
+        addTearDown(svc.dispose);
+
+        // Drain microtasks so the seed Future and the initial stream
+        // emission populate the cache.
+        await pumpEventQueue();
+
+        expect(
+          await svc.resolveBundleMaxSizeForTesting(),
+          SyncTuning.outboxBundleMaxSize,
+        );
+      },
+    );
+
+    test(
+      'resolveBundleMaxSizeForTesting yields 1 (no bundling) when the watch '
+      'stream reports the flag is off — the legacy single-row claim path '
+      'stays in effect and the cached field never reaches the bundling cap',
+      () async {
+        // Default stubs from setUp already report `false`. We just verify
+        // the service the test setUp built honours that default.
+        await pumpEventQueue();
+
+        expect(await service.resolveBundleMaxSizeForTesting(), 1);
+      },
+    );
+
+    test(
+      'a seed-time getConfigFlag failure is captured under '
+      'OUTBOX/bundleFlag.seed and the cached value stays at the safe '
+      'single-row default — a transient DB hiccup at startup must never '
+      'leave the outbox stuck',
+      () async {
+        // Async-rejected Future mirrors how a real `JournalDb.getConfigFlag`
+        // surfaces an I/O failure — the constructor's `.then(onError:)`
+        // handler is the actual production path, so we exercise it directly.
+        when(
+          () => journalDb.getConfigFlag(useOutboxBundlingFlag),
+        ).thenAnswer(
+          (_) => Future<bool>.error(StateError('transient db')),
+        );
+        // Empty stream → no further emissions, so the cache stays at the
+        // class default of 1.
+        when(
+          () => journalDb.watchConfigFlag(useOutboxBundlingFlag),
+        ).thenAnswer((_) => const Stream<bool>.empty());
+
+        final svc = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+        );
+        addTearDown(svc.dispose);
+        await pumpEventQueue();
+
+        expect(await svc.resolveBundleMaxSizeForTesting(), 1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(that: isA<StateError>()),
+            domain: 'OUTBOX',
+            subDomain: 'bundleFlag.seed',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a stream error from watchConfigFlag is captured under '
+      'OUTBOX/bundleFlag.watch — runtime flag-watch failures stay '
+      'visible in observability instead of silently freezing the cache',
+      () async {
+        final controller = StreamController<bool>();
+        when(
+          () => journalDb.watchConfigFlag(useOutboxBundlingFlag),
+        ).thenAnswer((_) => controller.stream);
+
+        final svc = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          ownsActivityGate: false,
+        );
+        addTearDown(() async {
+          await controller.close();
+          await svc.dispose();
+        });
+
+        controller.addError(StateError('watch broke'));
+        await pumpEventQueue();
+
+        verify(
+          () => loggingService.captureException(
+            any<Object>(that: isA<StateError>()),
+            domain: 'OUTBOX',
+            subDomain: 'bundleFlag.watch',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       },
     );
   });

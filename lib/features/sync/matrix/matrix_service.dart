@@ -390,6 +390,7 @@ class MatrixService {
       agentEntity: (_) => 'agentEntity',
       agentLink: (_) => 'agentLink',
       agentBundle: (_) => 'agentBundle',
+      outboxBundle: (_) => 'outboxBundle',
     );
 
     return _messageSender.sendMatrixMessage(

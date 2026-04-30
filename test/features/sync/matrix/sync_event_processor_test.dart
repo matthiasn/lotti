@@ -6114,4 +6114,46 @@ void main() {
       },
     );
   });
+
+  group('SyncEventProcessor - SyncOutboxBundle integration', () {
+    test(
+      'an inline outboxBundle is wired into the apply pipeline and each '
+      'child flows through its existing per-type handler. Detailed '
+      'unpacker behaviour (sidecar resolution, fault isolation, nested '
+      'bundles, ordering) is covered in '
+      'test/features/sync/matrix/outbox_bundle_unpacker_test.dart.',
+      () async {
+        const bundle = SyncOutboxBundle(
+          children: [
+            SyncMessage.aiConfigDelete(id: 'cfg-1'),
+            SyncMessage.aiConfigDelete(id: 'cfg-2'),
+          ],
+        );
+        when(() => event.text).thenReturn(encodeMessage(bundle));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        final captured = verify(
+          () => aiConfigRepository.deleteConfig(
+            captureAny<String>(),
+            fromSync: true,
+          ),
+        ).captured;
+        expect(captured, ['cfg-1', 'cfg-2']);
+      },
+    );
+
+    test(
+      'resolveOutboxBundleSidecarForTesting returns null for a null '
+      'jsonPath — proves the sidecar resolver wires through the existing '
+      '_resolveAgentPayload "no payload, no path" early-skip without '
+      'attempting any disk IO',
+      () async {
+        final result = await processor.resolveOutboxBundleSidecarForTesting(
+          null,
+        );
+        expect(result, isNull);
+      },
+    );
+  });
 }

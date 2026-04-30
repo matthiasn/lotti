@@ -548,6 +548,109 @@ class SyncDatabase extends _$SyncDatabase {
     });
   }
 
+  /// Atomically claim a batch of consecutive outbox rows in priority/createdAt
+  /// order, transitioning each from `pending` (or an expired `sending` lease)
+  /// to `sending` under one transaction.
+  ///
+  /// Boundary rule for `OutboxProcessor` bundling:
+  ///  - If the head row has `filePath != null` (media attachment), the
+  ///    returned list contains only that row. Media attachments always
+  ///    travel alone.
+  ///  - Otherwise, the returned list is the maximal prefix of consecutive
+  ///    rows whose `filePath` is null, capped at [maxSize]. The walk stops
+  ///    at the first media attachment, so the returned slice can be sent
+  ///    as a single bundle envelope.
+  ///
+  /// If a CAS race causes any per-row update to fail mid-batch, the walk
+  /// stops there. The returned list is always a contiguous prefix of the
+  /// query order — never a non-contiguous gap, which would otherwise
+  /// violate `(priority, createdAt)` send ordering.
+  Future<List<OutboxItem>> claimNextOutboxBatch({
+    required int maxSize,
+    Duration leaseDuration = const Duration(minutes: 1),
+    DateTime? now,
+  }) async {
+    if (maxSize <= 0) return const <OutboxItem>[];
+    final effectiveNow = now ?? DateTime.now();
+    final reclaimWindow = effectiveNow.subtract(leaseDuration);
+
+    return transaction(() async {
+      final candidates =
+          await (select(outbox)
+                ..where(
+                  (t) =>
+                      (t.status.equals(OutboxStatus.pending.index)) |
+                      (t.status.equals(_outboxSendingStatus) &
+                          t.updatedAt.isSmallerThanValue(reclaimWindow)),
+                )
+                ..orderBy([
+                  (t) => OrderingTerm(expression: t.priority),
+                  (t) => OrderingTerm(expression: t.createdAt),
+                ])
+                ..limit(maxSize))
+              .get();
+
+      if (candidates.isEmpty) return const <OutboxItem>[];
+
+      final List<OutboxItem> selected;
+      if (candidates.first.filePath != null) {
+        selected = [candidates.first];
+      } else {
+        final stopAt = candidates.indexWhere(
+          (row) => row.filePath != null,
+        );
+        selected = stopAt == -1 ? candidates : candidates.sublist(0, stopAt);
+      }
+
+      final claimed = <OutboxItem>[];
+      for (final candidate in selected) {
+        final updated =
+            await (update(outbox)..where(
+                  (t) =>
+                      t.id.equals(candidate.id) &
+                      t.status.equals(candidate.status) &
+                      (candidate.status == _outboxSendingStatus
+                          ? t.updatedAt.equals(candidate.updatedAt)
+                          : const Constant(true)),
+                ))
+                .write(
+                  OutboxCompanion(
+                    status: Value(_outboxSendingStatus),
+                    updatedAt: Value(effectiveNow),
+                  ),
+                );
+        if (updated != 1) {
+          break;
+        }
+        claimed.add(
+          candidate.copyWith(
+            status: _outboxSendingStatus,
+            updatedAt: effectiveNow,
+          ),
+        );
+      }
+
+      return claimed;
+    });
+  }
+
+  /// Bulk-set every row whose id is in [ids] to `sent`, stamping
+  /// `updatedAt = now`. Single SQL `UPDATE … WHERE id IN (…)` instead of N
+  /// per-row writes — used by `OutboxRepository.markSentBatch` after a
+  /// bundle send succeeds.
+  Future<void> markOutboxItemsSent({
+    required List<int> ids,
+    DateTime? now,
+  }) async {
+    if (ids.isEmpty) return;
+    await (update(outbox)..where((t) => t.id.isIn(ids))).write(
+      OutboxCompanion(
+        status: Value(OutboxStatus.sent.index),
+        updatedAt: Value(now ?? DateTime.now()),
+      ),
+    );
+  }
+
   Stream<List<OutboxItem>> watchOutboxItems({
     int limit = 1000,
     List<OutboxStatus> statuses = const [

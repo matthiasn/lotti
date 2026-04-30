@@ -76,6 +76,11 @@ class BackfillStats {
 /// smoothness while preventing redundant work under bursty conditions.
 class SyncTuning {
   // Outbox
+  /// Maximum number of text-only outbox rows packed into a single
+  /// `SyncOutboxBundle` by `OutboxProcessor`. Tuneable up to 100.
+  /// Media-attachment rows (filePath != null) are never bundled — they ship
+  /// individually so receivers keep their existing per-attachment handling.
+  static const int outboxBundleMaxSize = 50;
   static const Duration outboxRetryDelay = Duration(seconds: 5);
   static const Duration outboxErrorDelay = Duration(seconds: 15);
   static const int outboxMaxRetriesDiagnostics = 10; // surface issues w/o loops

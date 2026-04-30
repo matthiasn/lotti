@@ -341,6 +341,73 @@ void main() {
       );
     });
 
+    // Two bundle-count cases share the same widget setup. The behaviour
+    // under test is purely the count-formatting in the view model, so the
+    // permutations live in one parameterized loop instead of two
+    // copy-pasted bodies. (Empty bundle is the defensive case: in
+    // production the sender skips empty bundles, but the UI must still
+    // render a sensible label if one ever lands in the outbox.)
+    Future<({OutboxListItemViewModel viewModel, BuildContext context})>
+    pumpOutboxBundle(WidgetTester tester, OutboxItem item) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      return (viewModel: viewModel, context: capturedContext);
+    }
+
+    final outboxBundleCases = <({int childCount, int rowId, String pathId})>[
+      (childCount: 3, rowId: 15, pathId: 'abc-123'),
+      (childCount: 0, rowId: 16, pathId: 'empty'),
+    ];
+
+    for (final c in outboxBundleCases) {
+      testWidgets(
+        'outbox bundle label shows child count (${c.childCount})',
+        (tester) async {
+          final children = List<Map<String, Object?>>.generate(
+            c.childCount,
+            (i) => {'runtimeType': 'aiConfigDelete', 'id': 'cfg-${i + 1}'},
+          );
+          final item = OutboxItem(
+            id: c.rowId,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            status: 0,
+            retries: 0,
+            priority: OutboxPriority.normal.index,
+            message: jsonEncode({
+              'runtimeType': 'outboxBundle',
+              'children': children,
+              'jsonPath': '/outbox_bundles/${c.pathId}.json',
+            }),
+            subject: 'outboxBundle:${c.pathId}',
+          );
+
+          final setup = await pumpOutboxBundle(tester, item);
+
+          expect(
+            setup.viewModel.payloadKindLabel,
+            '${setup.context.messages.syncPayloadOutboxBundle} '
+            '(${c.childCount})',
+          );
+        },
+      );
+    }
+
     group('payloadSizeLabel', () {
       OutboxItem makeItem({int? payloadSize}) => OutboxItem(
         id: 100,

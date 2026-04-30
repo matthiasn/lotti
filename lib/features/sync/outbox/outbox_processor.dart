@@ -27,6 +27,15 @@ class OutboxProcessingResult {
   bool get shouldSchedule => nextDelay != null;
 }
 
+/// Resolves the per-drain bundle size cap. Returning `1` disables bundling
+/// (the batch path collapses to single-row send, byte-for-byte identical to
+/// the pre-bundling behavior). Returning `> 1` activates bundling: up to that
+/// many consecutive text-only rows are packed into a single
+/// `SyncOutboxBundle` per drain pass. Media-attachment rows always travel
+/// alone regardless of this value (boundary rule lives in
+/// `OutboxRepository.claimNextBatch`).
+typedef OutboxBundleMaxSizeProvider = Future<int> Function();
+
 class OutboxProcessor {
   OutboxProcessor({
     required OutboxRepository repository,
@@ -38,10 +47,12 @@ class OutboxProcessor {
     Duration? sendTimeoutOverride,
     Duration? claimLeaseOverride,
     DomainLogger? domainLogger,
+    OutboxBundleMaxSizeProvider? bundleMaxSizeProvider,
   }) : _repository = repository,
        _messageSender = messageSender,
        _loggingService = loggingService,
        _domainLogger = domainLogger,
+       _bundleMaxSizeProvider = bundleMaxSizeProvider ?? _bundlingDisabled,
        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
        maxRetriesForDiagnostics =
@@ -49,10 +60,13 @@ class OutboxProcessor {
        sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout,
        claimLease = claimLeaseOverride ?? SyncTuning.outboxClaimLease;
 
+  static Future<int> _bundlingDisabled() async => 1;
+
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
+  final OutboxBundleMaxSizeProvider _bundleMaxSizeProvider;
   final Duration retryDelay;
   final Duration errorDelay;
   final int maxRetriesForDiagnostics;
@@ -68,17 +82,41 @@ class OutboxProcessor {
   int _lastFailedRepeats = 0;
 
   Future<OutboxProcessingResult> processQueue() async {
+    final maxSize = await _bundleMaxSizeProvider();
     // Atomic claim (pending → sending). Closes the merge-send race: while
     // we are sending, the row's status is `sending`, so in-flight merges'
     // `updateOutboxMessage` (which matches `status=pending`) returns
     // affectedRows=0 and falls through to inserting a fresh row — the
     // merged content still rides a later Matrix event instead of being
     // silently overwritten into an already-sent row.
-    final claimedItem = await _repository.claim(leaseDuration: claimLease);
-    if (claimedItem == null) {
-      return OutboxProcessingResult.none;
+    //
+    // When bundling is disabled (maxSize == 1) we use the original
+    // single-row claim. Bundling activates only when the provider returns a
+    // value greater than 1; the batch claim then enforces the bundling
+    // boundary rule (media attachments always travel alone; text rows pack
+    // up to [maxSize] consecutive rows stopping before the next attachment).
+    if (maxSize <= 1) {
+      final claimedItem = await _repository.claim(leaseDuration: claimLease);
+      if (claimedItem == null) {
+        return OutboxProcessingResult.none;
+      }
+      return _processSingle(claimedItem);
     }
 
+    final batch = await _repository.claimNextBatch(
+      maxSize: maxSize,
+      leaseDuration: claimLease,
+    );
+    if (batch.isEmpty) {
+      return OutboxProcessingResult.none;
+    }
+    if (batch.length == 1) {
+      return _processSingle(batch.first);
+    }
+    return _processBundle(batch);
+  }
+
+  Future<OutboxProcessingResult> _processSingle(OutboxItem claimedItem) async {
     // Tracks whether the row has already been committed as sent so the
     // exception handler below does not revive an already-sent row. Without
     // this, a throw from the post-send observability path (hasMorePending,
@@ -187,6 +225,143 @@ class OutboxProcessor {
         try {
           _loggingService.captureEvent(
             'retryCapReached subject=${claimedItem.subject} attempts=$nextAttempts status=error → skip/head-advance',
+            domain: 'OUTBOX',
+            subDomain: 'retry.cap',
+          );
+        } catch (_) {}
+        return OutboxProcessingResult.schedule(Duration.zero);
+      }
+      return OutboxProcessingResult.schedule(errorDelay);
+    }
+  }
+
+  Future<OutboxProcessingResult> _processBundle(
+    List<OutboxItem> claimedBatch,
+  ) async {
+    // Head subject anchors all head-of-queue diagnostics. The bundle is one
+    // logical send attempt; per-row retries++/error-cap accounting still
+    // happens row-by-row inside [OutboxRepository.markRetryBatch], so a
+    // rotten head row eventually flips to error and the next drain claims a
+    // smaller bundle without it.
+    final headSubject = claimedBatch.first.subject;
+    final bundleSize = claimedBatch.length;
+
+    var markedSent = false;
+    try {
+      final children = <SyncMessage>[];
+      for (final item in claimedBatch) {
+        children.add(_decodeMessage(item));
+      }
+      final bundle = SyncMessage.outboxBundle(children: children);
+
+      final sendStart = DateTime.now();
+      var timedOut = false;
+      final success = await _messageSender
+          .send(bundle)
+          .timeout(
+            sendTimeout,
+            onTimeout: () {
+              timedOut = true;
+              return false;
+            },
+          );
+
+      if (!success) {
+        final nextAttempts = claimedBatch.first.retries + 1;
+        await _repository.markRetryBatch(claimedBatch);
+        _syncLog(
+          'bundleSendFail size=$bundleSize headSubject=$headSubject '
+          'attempts=$nextAttempts timedOut=$timedOut',
+          subDomain: 'outbox.retry',
+        );
+        if (_lastFailedSubject == headSubject) {
+          _lastFailedRepeats++;
+        } else {
+          _lastFailedSubject = headSubject;
+          _lastFailedRepeats = 1;
+        }
+        try {
+          _loggingService.captureEvent(
+            'bundleSendFailed size=$bundleSize headSubject=$headSubject '
+            'attempts=$nextAttempts repeats=$_lastFailedRepeats '
+            'backoffMs=${retryDelay.inMilliseconds} timedOut=$timedOut',
+            domain: 'OUTBOX',
+            subDomain: 'retry',
+          );
+        } catch (_) {}
+        // If any row in the bundle just hit the retry cap, fast-path the
+        // next drain. The repository has already flipped those rows to
+        // error in the same transaction; the next claim will skip them.
+        final capReached = claimedBatch.any(
+          (row) => row.retries + 1 >= maxRetriesForDiagnostics,
+        );
+        if (capReached) {
+          try {
+            _loggingService.captureEvent(
+              'retryCapReached headSubject=$headSubject size=$bundleSize '
+              'attempts=$nextAttempts status=error → skip/head-advance',
+              domain: 'OUTBOX',
+              subDomain: 'retry.cap',
+            );
+          } catch (_) {}
+          return OutboxProcessingResult.schedule(Duration.zero);
+        }
+        return OutboxProcessingResult.schedule(retryDelay);
+      }
+
+      await _repository.markSentBatch(claimedBatch);
+      markedSent = true;
+      final elapsedMs = DateTime.now().difference(sendStart).inMilliseconds;
+      final hasMore = await _repository.hasMorePending();
+      _loggingService.captureEvent(
+        'bundleSent size=$bundleSize headSubject=$headSubject '
+        'ms=$elapsedMs pending=${hasMore ? 2 : 1}',
+        domain: 'OUTBOX',
+        subDomain: 'outbox.send',
+      );
+      if (_lastFailedSubject == headSubject) {
+        _lastFailedSubject = null;
+        _lastFailedRepeats = 0;
+      }
+
+      return hasMore
+          ? OutboxProcessingResult.schedule(Duration.zero)
+          : OutboxProcessingResult.none;
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'OUTBOX',
+        subDomain: 'sendNext.bundle',
+        stackTrace: stackTrace,
+      );
+      if (markedSent) {
+        return OutboxProcessingResult.schedule(Duration.zero);
+      }
+      final nextAttempts = claimedBatch.first.retries + 1;
+      await _repository.markRetryBatch(claimedBatch);
+      if (_lastFailedSubject == headSubject) {
+        _lastFailedRepeats++;
+      } else {
+        _lastFailedSubject = headSubject;
+        _lastFailedRepeats = 1;
+      }
+      try {
+        _loggingService.captureEvent(
+          'bundleSendException size=$bundleSize headSubject=$headSubject '
+          'attempts=$nextAttempts repeats=$_lastFailedRepeats '
+          'backoffMs=${errorDelay.inMilliseconds}',
+          domain: 'OUTBOX',
+          subDomain: 'retry',
+        );
+      } catch (_) {}
+      final capReached = claimedBatch.any(
+        (row) => row.retries + 1 >= maxRetriesForDiagnostics,
+      );
+      if (capReached) {
+        try {
+          _loggingService.captureEvent(
+            'retryCapReached headSubject=$headSubject size=$bundleSize '
+            'attempts=$nextAttempts status=error → skip/head-advance',
             domain: 'OUTBOX',
             subDomain: 'retry.cap',
           );
