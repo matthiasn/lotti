@@ -341,47 +341,104 @@ void main() {
       );
     });
 
-    testWidgets('shows outbox bundle payload label', (tester) async {
-      late OutboxListItemViewModel viewModel;
-      late BuildContext capturedContext;
+    testWidgets(
+      'outbox bundle label includes the child count — surfaces bundling '
+      'density at a glance in the outbox list',
+      (tester) async {
+        late OutboxListItemViewModel viewModel;
+        late BuildContext capturedContext;
 
-      final item = OutboxItem(
-        id: 15,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        status: 0,
-        retries: 0,
-        priority: OutboxPriority.normal.index,
-        message: jsonEncode({
-          'runtimeType': 'outboxBundle',
-          'children': <Object?>[],
-          'jsonPath': '/outbox_bundles/abc-123.json',
-        }),
-        subject: 'outboxBundle:abc-123',
-      );
+        // Three children with valid runtimeType discriminators so
+        // SyncMessage.fromJson reconstructs them correctly.
+        final item = OutboxItem(
+          id: 15,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          status: 0,
+          retries: 0,
+          priority: OutboxPriority.normal.index,
+          message: jsonEncode({
+            'runtimeType': 'outboxBundle',
+            'children': <Object?>[
+              {'runtimeType': 'aiConfigDelete', 'id': 'cfg-1'},
+              {'runtimeType': 'aiConfigDelete', 'id': 'cfg-2'},
+              {'runtimeType': 'aiConfigDelete', 'id': 'cfg-3'},
+            ],
+            'jsonPath': '/outbox_bundles/abc-123.json',
+          }),
+          subject: 'outboxBundle:abc-123',
+        );
 
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              viewModel = OutboxListItemViewModel.fromItem(
-                context: context,
-                item: item,
-              );
-              return const SizedBox.shrink();
-            },
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                viewModel = OutboxListItemViewModel.fromItem(
+                  context: context,
+                  item: item,
+                );
+                return const SizedBox.shrink();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      expect(
-        viewModel.payloadKindLabel,
-        capturedContext.messages.syncPayloadOutboxBundle,
-      );
-    });
+        expect(
+          viewModel.payloadKindLabel,
+          '${capturedContext.messages.syncPayloadOutboxBundle} (3)',
+        );
+      },
+    );
+
+    testWidgets(
+      'outbox bundle label reads (0) for an empty bundle — defensive: '
+      'in production the sender skips empty bundles, but the UI must '
+      'still render a sensible label if one ever lands in the outbox',
+      (tester) async {
+        late OutboxListItemViewModel viewModel;
+        late BuildContext capturedContext;
+
+        final item = OutboxItem(
+          id: 16,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          status: 0,
+          retries: 0,
+          priority: OutboxPriority.normal.index,
+          message: jsonEncode({
+            'runtimeType': 'outboxBundle',
+            'children': <Object?>[],
+            'jsonPath': '/outbox_bundles/empty.json',
+          }),
+          subject: 'outboxBundle:empty',
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                viewModel = OutboxListItemViewModel.fromItem(
+                  context: context,
+                  item: item,
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        expect(
+          viewModel.payloadKindLabel,
+          '${capturedContext.messages.syncPayloadOutboxBundle} (0)',
+        );
+      },
+    );
 
     group('payloadSizeLabel', () {
       OutboxItem makeItem({int? payloadSize}) => OutboxItem(

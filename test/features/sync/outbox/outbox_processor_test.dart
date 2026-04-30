@@ -1109,8 +1109,8 @@ void main() {
 
     test(
       'Scenario A reproduction (image at position 100 in a 500-row queue): '
-      'the wire pattern is bundle(50) × 2 → image alone → bundle(50) × 8 — '
-      '500 rows ship in 11 sends instead of 500',
+      'the wire pattern is bundle(50) → bundle(49) → image alone → '
+      'bundle(50) × 8 — 500 rows ship in 11 sends instead of 500',
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
@@ -1400,11 +1400,15 @@ void main() {
         await proc.processQueue();
 
         // After success, the next bundle on a different subject must start
-        // fresh: simulate a new failing bundle with a different head.
+        // fresh: simulate a new failing bundle with a different head. Re-
+        // stub `sender.send` so this third pass actually fails — without
+        // this the running counter rolls over and the assertion would pass
+        // vacuously even on a regression.
         stubBatchClaimFromQueue(repo, [
           textItem(id: 99, subject: 'host:other'),
         ]);
         when(() => repo.markRetry(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => false);
         await proc.processQueue();
 
         // The single-row failure log for host:other should carry repeats=1

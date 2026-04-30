@@ -24,6 +24,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
@@ -950,6 +951,19 @@ class SyncEventProcessor {
           syncMessage: msg,
           resolvedAgentBundle: resolved,
         );
+      case final SyncOutboxBundle msg:
+        final resolved = await _outboxBundleUnpacker.prepare(
+          event: event,
+          msg: msg,
+          resolveSidecar: _resolveOutboxBundleSidecar,
+          prepareChild: (childEvent, childMsg) =>
+              _prepareForMessage(event: childEvent, syncMessage: childMsg),
+        );
+        return PreparedSyncEvent._(
+          event: event,
+          syncMessage: msg,
+          resolvedOutboxBundle: resolved,
+        );
       default:
         return PreparedSyncEvent._(event: event, syncMessage: syncMessage);
     }
@@ -1547,6 +1561,31 @@ class SyncEventProcessor {
     return PreparedAgentSyncBundle(entities: entities, links: links);
   }
 
+  /// Resolves the sidecar attachment for an empty [SyncOutboxBundle]. Used
+  /// only by the [OutboxBundleUnpacker] callback wiring; the per-child
+  /// recursion is owned by the unpacker.
+  Future<SyncOutboxBundle?> _resolveOutboxBundleSidecar(String? jsonPath) =>
+      _resolveAgentPayload<SyncOutboxBundle>(
+        inline: null,
+        jsonPath: jsonPath,
+        fromJson: (json) {
+          final decoded = SyncMessage.fromJson(json);
+          if (decoded is SyncOutboxBundle) return decoded;
+          throw const FormatException('outboxBundle payload expected');
+        },
+        typeName: 'outboxBundle',
+      );
+
+  @visibleForTesting
+  Future<SyncOutboxBundle?> resolveOutboxBundleSidecarForTesting(
+    String? jsonPath,
+  ) => _resolveOutboxBundleSidecar(jsonPath);
+
+  late final OutboxBundleUnpacker _outboxBundleUnpacker = OutboxBundleUnpacker(
+    loggingService: _loggingService,
+    trace: _trace,
+  );
+
   Future<void> _applyAgentEntityMessage({
     required SyncAgentEntity msg,
     required AgentDomainEntity? resolvedEntity,
@@ -1897,13 +1936,12 @@ class SyncEventProcessor {
         }
         return null;
       case SyncOutboxBundle():
-        // Receiver unpacking lands in Step 6 of the outbox bundling plan.
-        // Until then, an OutboxBundle on the wire is treated as an unknown
-        // payload — the calling site already logs and skips when this
-        // returns null without touching the sequence log.
-        _trace(
-          'outboxBundle.skip receiver-unpack not yet implemented',
-          subDomain: 'processor.apply',
+        final bundle = prepared.resolvedOutboxBundle;
+        if (bundle == null) return null;
+        await _outboxBundleUnpacker.apply(
+          bundle: bundle,
+          applyChild: (child) =>
+              _applyMessage(prepared: child, journalDb: journalDb),
         );
         return null;
     }
@@ -1959,6 +1997,7 @@ class PreparedSyncEvent {
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
     this.resolvedAgentBundle,
+    this.resolvedOutboxBundle,
   });
 
   PreparedSyncEvent._({
@@ -1970,6 +2009,7 @@ class PreparedSyncEvent {
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
     this.resolvedAgentBundle,
+    this.resolvedOutboxBundle,
   });
 
   final Event event;
@@ -2003,6 +2043,12 @@ class PreparedSyncEvent {
   /// Resolved wake bundle when [syncMessage] is a [SyncAgentBundle]. Null
   /// means the bundle payload could not be resolved and apply will skip it.
   final PreparedAgentSyncBundle? resolvedAgentBundle;
+
+  /// Resolved dequeue-time outbox bundle when [syncMessage] is a
+  /// [SyncOutboxBundle]. Each child carries its own [PreparedSyncEvent] so
+  /// apply can recurse through the existing per-type pipeline. Null means
+  /// the bundle payload could not be resolved and apply will skip it.
+  final PreparedOutboxSyncBundle? resolvedOutboxBundle;
 }
 
 class PreparedAgentSyncBundle {

@@ -554,8 +554,25 @@ class MatrixMessageSender {
       return null;
     }
 
-    final relativePath =
-        message.jsonPath ?? relativeOutboxBundlePath(uuid.v1());
+    // Defence in depth: never let a [SyncOutboxBundle.jsonPath] arriving
+    // from outside this method drive a write to an arbitrary location on
+    // disk. We only honour paths that live under `/outbox_bundles/` and do
+    // not contain a `..` segment; any other value (including values from
+    // a tampered/corrupted Matrix payload) falls back to a freshly minted
+    // UUID-based path and is logged.
+    final candidatePath = message.jsonPath;
+    final String relativePath;
+    if (candidatePath == null || _isSafeOutboxBundlePath(candidatePath)) {
+      relativePath = candidatePath ?? relativeOutboxBundlePath(uuid.v1());
+    } else {
+      _loggingService.captureEvent(
+        'rejecting outboxBundle jsonPath outside /outbox_bundles/: '
+        '$candidatePath — falling back to a fresh UUID path',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.outboxBundle.write',
+      );
+      relativePath = relativeOutboxBundlePath(uuid.v1());
+    }
     final fullBundleJson = json.encode(
       message.copyWith(jsonPath: null).toJson(),
     );
@@ -586,6 +603,16 @@ class MatrixMessageSender {
       jsonPath: relativePath,
       children: const [],
     );
+  }
+
+  /// Returns true when [relativePath] is a well-formed
+  /// `/outbox_bundles/<id>.json` path with no traversal segments. Used by
+  /// [_sendOutboxBundlePayload] to gate disk writes.
+  static bool _isSafeOutboxBundlePath(String relativePath) {
+    if (!relativePath.startsWith(outboxBundlesSegment)) return false;
+    final segments = p.split(relativePath).where((s) => s.isNotEmpty).toList();
+    if (segments.any((s) => s == '..' || s == '.')) return false;
+    return true;
   }
 
   /// Enriches and uploads agent payload (entity or link).

@@ -634,6 +634,23 @@ class SyncDatabase extends _$SyncDatabase {
     });
   }
 
+  /// Bulk-set every row whose id is in [ids] to `sent`, stamping
+  /// `updatedAt = now`. Single SQL `UPDATE … WHERE id IN (…)` instead of N
+  /// per-row writes — used by `OutboxRepository.markSentBatch` after a
+  /// bundle send succeeds.
+  Future<void> markOutboxItemsSent({
+    required List<int> ids,
+    DateTime? now,
+  }) async {
+    if (ids.isEmpty) return;
+    await (update(outbox)..where((t) => t.id.isIn(ids))).write(
+      OutboxCompanion(
+        status: Value(OutboxStatus.sent.index),
+        updatedAt: Value(now ?? DateTime.now()),
+      ),
+    );
+  }
+
   Stream<List<OutboxItem>> watchOutboxItems({
     int limit = 1000,
     List<OutboxStatus> statuses = const [

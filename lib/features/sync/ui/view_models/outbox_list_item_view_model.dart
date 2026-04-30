@@ -161,7 +161,11 @@ class OutboxListItemViewModel {
         agentEntity: (_) => messages.syncPayloadAgentEntity,
         agentLink: (_) => messages.syncPayloadAgentLink,
         agentBundle: (_) => messages.syncPayloadAgentBundle,
-        outboxBundle: (_) => messages.syncPayloadOutboxBundle,
+        // Surface the bundle's child count so the outbox list shows e.g.
+        // "Outbox bundle (12)" — at a glance the user sees how many small
+        // text-only updates a single envelope carries.
+        outboxBundle: (b) =>
+            '${messages.syncPayloadOutboxBundle} (${b.children.length})',
       );
     } catch (_) {
       return messages.syncListUnknownPayload;

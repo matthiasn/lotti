@@ -115,18 +115,12 @@ class DatabaseOutboxRepository implements OutboxRepository {
   @override
   Future<void> markSentBatch(List<OutboxItem> items) async {
     if (items.isEmpty) return;
-    final now = DateTime.now();
-    await _database.transaction(() async {
-      for (final item in items) {
-        await _database.updateOutboxItem(
-          OutboxCompanion(
-            id: Value(item.id),
-            status: Value(OutboxStatus.sent.index),
-            updatedAt: Value(now),
-          ),
-        );
-      }
-    });
+    // Single SQL UPDATE keyed by `id IN (…)` instead of N per-row writes.
+    // Every row in the batch transitions to the same `sent` status, so the
+    // operation collapses into one bulk statement.
+    await _database.markOutboxItemsSent(
+      ids: items.map((item) => item.id).toList(growable: false),
+    );
   }
 
   @override

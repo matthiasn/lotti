@@ -2450,9 +2450,15 @@ void main() {
       'and surfaced as null so the bundle never goes on the wire without '
       'its children',
       () async {
-        // Replace the documents directory with a path under /dev/null so the
-        // recursive create at write-time genuinely fails.
-        final unwritable = Directory('/dev/null/cannot-write-here');
+        // Cross-platform forced failure: create a regular file, then try to
+        // use it as the parent of the sidecar's directory. The recursive
+        // create inside _savePayloadToDisk will throw FileSystemException
+        // because the parent is not a directory. Works on macOS, Linux, and
+        // Windows runners.
+        final blocker = File('${documentsDirectory.path}/not-a-directory')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('x');
+        final unwritable = Directory('${blocker.path}/cannot-write-here');
         final brokenSender = MatrixMessageSender(
           loggingService: loggingService,
           journalDb: journalDb,
