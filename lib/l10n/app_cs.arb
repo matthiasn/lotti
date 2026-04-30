@@ -880,6 +880,8 @@
   "configFlagUseCloudInferenceDescription": "Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.",
   "configFlagUseCompressedJsonAttachments": "Komprimovat JSON payloady synchronizace",
   "configFlagUseCompressedJsonAttachmentsDescription": "Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.",
+  "configFlagUseOutboxBundling": "Sdružovat zprávy odchozí pošty",
+  "configFlagUseOutboxBundlingDescription": "Zabalí po sobě jdoucí textové řádky odchozí pošty do jedné synchronizační obálky, takže dávky drobných změn odejdou jako jediná zpráva Matrixu. Mediální přílohy se i nadále odesílají samostatně.",
   "conflictEntityLabel": "Entita",
   "conflictIdLabel": "ID",
   "conflictsCopyTextFromSync": "Kopírovat text ze synchronizace",

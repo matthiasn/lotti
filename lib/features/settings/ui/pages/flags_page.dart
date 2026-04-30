@@ -97,6 +97,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableMatrixFlag,
     resendAttachments,
     useCompressedJsonAttachmentsFlag,
+    useOutboxBundlingFlag,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
     enableDailyOsPageFlag,
@@ -142,6 +143,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.refresh_rounded;
       case useCompressedJsonAttachmentsFlag:
         return Icons.compress_rounded;
+      case useOutboxBundlingFlag:
+        return Icons.archive_outlined;
       case enableHabitsPageFlag:
         return Icons.repeat_rounded;
       case enableDashboardsPageFlag:
@@ -189,6 +192,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context
             .messages
             .configFlagUseCompressedJsonAttachmentsDescription;
+      case useOutboxBundlingFlag:
+        return context.messages.configFlagUseOutboxBundlingDescription;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPageDescription;
       case enableDashboardsPageFlag:
@@ -234,6 +239,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagResendAttachments;
       case useCompressedJsonAttachmentsFlag:
         return context.messages.configFlagUseCompressedJsonAttachments;
+      case useOutboxBundlingFlag:
+        return context.messages.configFlagUseOutboxBundling;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPage;
       case enableDashboardsPageFlag:

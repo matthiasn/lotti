@@ -2538,6 +2538,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Compresse les pièces jointes JSON de synchronisation avec gzip avant l\'envoi. Économise de la bande passante sur les réseaux lents, au prix d\'un léger coût CPU à l\'envoi et à la réception.';
 
   @override
+  String get configFlagUseOutboxBundling => 'Regrouper les messages d\'outbox';
+
+  @override
+  String get configFlagUseOutboxBundlingDescription =>
+      'Regroupe les lignes texte consécutives de l\'outbox en une seule enveloppe de synchronisation pour qu\'une rafale de petits changements parte en un seul message Matrix. Les pièces jointes média sont toujours envoyées individuellement.';
+
+  @override
   String get conflictEntityLabel => 'Entité';
 
   @override

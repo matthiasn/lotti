@@ -2495,6 +2495,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.';
 
   @override
+  String get configFlagUseOutboxBundling => 'Sdružovat zprávy odchozí pošty';
+
+  @override
+  String get configFlagUseOutboxBundlingDescription =>
+      'Zabalí po sobě jdoucí textové řádky odchozí pošty do jedné synchronizační obálky, takže dávky drobných změn odejdou jako jediná zpráva Matrixu. Mediální přílohy se i nadále odesílají samostatně.';
+
+  @override
   String get conflictEntityLabel => 'Entita';
 
   @override

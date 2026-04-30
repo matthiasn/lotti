@@ -2467,6 +2467,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.';
 
   @override
+  String get configFlagUseOutboxBundling => 'Bundle outbox messages';
+
+  @override
+  String get configFlagUseOutboxBundlingDescription =>
+      'Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.';
+
+  @override
   String get conflictEntityLabel => 'Entity';
 
   @override

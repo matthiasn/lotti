@@ -2543,6 +2543,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Comprime con gzip los archivos adjuntos JSON de sincronización antes de subirlos. Ahorra ancho de banda en redes lentas, a cambio de un pequeño coste de CPU al enviar y recibir.';
 
   @override
+  String get configFlagUseOutboxBundling => 'Agrupar mensajes de salida';
+
+  @override
+  String get configFlagUseOutboxBundlingDescription =>
+      'Empaqueta las filas de texto consecutivas de la cola de salida en un único envío de sincronización, para que los lotes de cambios pequeños se envíen como un único mensaje de Matrix. Los archivos adjuntos multimedia se siguen enviando por separado.';
+
+  @override
   String get conflictEntityLabel => 'Entidad';
 
   @override
