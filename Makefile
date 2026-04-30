@@ -235,7 +235,7 @@ macos_local: macos_build
 android_build:
 	$(FLUTTER_CMD) build appbundle
 
-.PHONY: android_build
+.PHONY: android_build_release
 android_build_release:
 	$(FLUTTER_CMD) build appbundle --release
 
