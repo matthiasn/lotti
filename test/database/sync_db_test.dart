@@ -429,6 +429,263 @@ void main() {
       expect(claimed?.status, OutboxStatus.sending.index);
     });
 
+    group('claimNextOutboxBatch', () {
+      test('returns [] for an empty queue', () async {
+        final database = db!;
+        final batch = await database.claimNextOutboxBatch(maxSize: 50);
+        expect(batch, isEmpty);
+      });
+
+      test('returns [] when maxSize is zero', () async {
+        final database = db!;
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: DateTime(2024),
+          ),
+        );
+        final batch = await database.claimNextOutboxBatch(maxSize: 0);
+        expect(batch, isEmpty);
+        // The row is untouched.
+        final refreshed = await database.getOutboxItemById(1);
+        expect(refreshed?.status, OutboxStatus.pending.index);
+      });
+
+      test(
+        'claims up to maxSize consecutive text rows in priority/createdAt '
+        'order and transitions each to sending',
+        () async {
+          final database = db!;
+          for (var i = 0; i < 5; i++) {
+            await database.addOutboxItem(
+              _buildOutbox(
+                status: OutboxStatus.pending,
+                createdAt: DateTime(2024, 1, 1).add(Duration(minutes: i)),
+                subject: 'row-$i',
+                message: '{"i":$i}',
+              ),
+            );
+          }
+
+          final batch = await database.claimNextOutboxBatch(maxSize: 3);
+
+          expect(batch, hasLength(3));
+          expect(batch.map((r) => r.id).toList(), [1, 2, 3]);
+          for (final row in batch) {
+            expect(row.status, OutboxStatus.sending.index);
+          }
+          // Untouched leftovers stay pending.
+          for (final id in [4, 5]) {
+            final refreshed = await database.getOutboxItemById(id);
+            expect(refreshed?.status, OutboxStatus.pending.index);
+          }
+        },
+      );
+
+      test(
+        'returns the head row alone when it is a media attachment, even when '
+        'maxSize would allow more',
+        () async {
+          final database = db!;
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.pending,
+              createdAt: DateTime(2024, 1, 1, 0, 0),
+              filePath: 'audio/1.aac',
+              subject: 'attachment-head',
+            ),
+          );
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.pending,
+              createdAt: DateTime(2024, 1, 1, 0, 1),
+              subject: 'text-1',
+            ),
+          );
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.pending,
+              createdAt: DateTime(2024, 1, 1, 0, 2),
+              subject: 'text-2',
+            ),
+          );
+
+          final batch = await database.claimNextOutboxBatch(maxSize: 50);
+
+          expect(batch, hasLength(1));
+          expect(batch.single.id, 1);
+          expect(batch.single.filePath, 'audio/1.aac');
+          // The text rows after the attachment remain pending — the next
+          // drain pass will batch them.
+          for (final id in [2, 3]) {
+            final refreshed = await database.getOutboxItemById(id);
+            expect(refreshed?.status, OutboxStatus.pending.index);
+          }
+        },
+      );
+
+      test(
+        'stops the bundle one row before the first media attachment',
+        () async {
+          final database = db!;
+          for (var i = 0; i < 3; i++) {
+            await database.addOutboxItem(
+              _buildOutbox(
+                status: OutboxStatus.pending,
+                createdAt: DateTime(2024, 1, 1).add(Duration(minutes: i)),
+                subject: 'text-$i',
+              ),
+            );
+          }
+          // Position 4 carries a media attachment.
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.pending,
+              createdAt: DateTime(2024, 1, 1, 0, 3),
+              filePath: 'images/1.jpg',
+              subject: 'media',
+            ),
+          );
+
+          final batch = await database.claimNextOutboxBatch(maxSize: 50);
+
+          expect(batch.map((r) => r.id).toList(), [1, 2, 3]);
+          // The media row is left pending so the next pass sends it alone.
+          final media = await database.getOutboxItemById(4);
+          expect(media?.status, OutboxStatus.pending.index);
+          expect(media?.filePath, 'images/1.jpg');
+        },
+      );
+
+      test(
+        'bundles freely across priority tiers in (priority, createdAt) order',
+        () async {
+          final database = db!;
+          await database.addOutboxItem(
+            OutboxCompanion(
+              status: Value(OutboxStatus.pending.index),
+              subject: const Value('high-1'),
+              message: const Value('{}'),
+              createdAt: Value(DateTime(2024, 1, 1, 0, 0)),
+              updatedAt: Value(DateTime(2024, 1, 1, 0, 0)),
+              retries: const Value(0),
+              priority: Value(OutboxPriority.high.index),
+            ),
+          );
+          await database.addOutboxItem(
+            OutboxCompanion(
+              status: Value(OutboxStatus.pending.index),
+              subject: const Value('normal-1'),
+              message: const Value('{}'),
+              createdAt: Value(DateTime(2024, 1, 1, 0, 1)),
+              updatedAt: Value(DateTime(2024, 1, 1, 0, 1)),
+              retries: const Value(0),
+              priority: Value(OutboxPriority.normal.index),
+            ),
+          );
+
+          final batch = await database.claimNextOutboxBatch(maxSize: 50);
+
+          expect(batch.map((r) => r.id).toList(), [1, 2]);
+          expect(batch.first.priority, OutboxPriority.high.index);
+          expect(batch.last.priority, OutboxPriority.normal.index);
+        },
+      );
+
+      test(
+        'reclaims expired sending rows just like the single-claim path',
+        () async {
+          final now = DateTime(2024, 1, 1, 12);
+          final stale = now.subtract(const Duration(minutes: 10));
+          final database = db!;
+          await database.addOutboxItem(
+            OutboxCompanion(
+              status: Value(OutboxStatus.sending.index),
+              subject: const Value('stale'),
+              message: const Value('{}'),
+              createdAt: Value(stale),
+              updatedAt: Value(stale),
+              retries: const Value(0),
+            ),
+          );
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.pending,
+              createdAt: now,
+              subject: 'fresh',
+            ),
+          );
+
+          final batch = await database.claimNextOutboxBatch(
+            maxSize: 50,
+            leaseDuration: const Duration(minutes: 5),
+            now: now,
+          );
+
+          expect(batch.map((r) => r.id).toList(), [1, 2]);
+          for (final row in batch) {
+            expect(row.status, OutboxStatus.sending.index);
+            expect(row.updatedAt, now);
+          }
+        },
+      );
+
+      test(
+        'leaves rows whose lease is still active untouched',
+        () async {
+          final now = DateTime(2024, 1, 2, 12);
+          final database = db!;
+          await database.addOutboxItem(
+            OutboxCompanion(
+              status: Value(OutboxStatus.sending.index),
+              subject: const Value('active'),
+              message: const Value('{}'),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+              retries: const Value(0),
+            ),
+          );
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.pending,
+              createdAt: DateTime(2024, 1, 2),
+              subject: 'pending',
+            ),
+          );
+
+          final batch = await database.claimNextOutboxBatch(
+            maxSize: 50,
+            leaseDuration: const Duration(minutes: 5),
+            now: now,
+          );
+
+          // Only the pending row, since the in-flight lease is still valid.
+          expect(batch.map((r) => r.id).toList(), [2]);
+        },
+      );
+
+      test('caps the result at maxSize even for an all-text queue', () async {
+        final database = db!;
+        for (var i = 0; i < 7; i++) {
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.pending,
+              createdAt: DateTime(2024, 1, 1).add(Duration(minutes: i)),
+              subject: 'row-$i',
+            ),
+          );
+        }
+
+        final batch = await database.claimNextOutboxBatch(maxSize: 5);
+
+        expect(batch, hasLength(5));
+        expect(batch.map((r) => r.id).toList(), [1, 2, 3, 4, 5]);
+        // The remaining 2 rows still claimable on the next call.
+        final next = await database.claimNextOutboxBatch(maxSize: 5);
+        expect(next.map((r) => r.id).toList(), [6, 7]);
+      });
+    });
+
     test('updateOutboxItem can set status to error', () async {
       final database = db!;
       await database.addOutboxItem(

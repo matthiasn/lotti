@@ -18,6 +18,22 @@ abstract class OutboxRepository {
   /// still guaranteed to be sent as its own Matrix event.
   Future<OutboxItem?> claim({Duration? leaseDuration});
 
+  /// Atomically claim a contiguous batch of pending rows for bundling.
+  ///
+  /// Returns `[]` when the queue is empty. When the head row is a media
+  /// attachment (`filePath != null`) the returned list is `[head]` — media
+  /// attachments always travel alone. Otherwise the returned list is the
+  /// maximal prefix of consecutive text-only rows in
+  /// `(priority, createdAt)` order, capped at [maxSize], stopping at the
+  /// first media attachment.
+  ///
+  /// The single-row [claim] method remains the primary entry point when
+  /// bundling is disabled — `claimNextBatch(maxSize: 1)` is equivalent.
+  Future<List<OutboxItem>> claimNextBatch({
+    required int maxSize,
+    Duration? leaseDuration,
+  });
+
   /// Peek whether at least one pending row remains, without transitioning
   /// status. Used to decide whether the processor should schedule another
   /// drain pass after a successful send.
@@ -25,7 +41,18 @@ abstract class OutboxRepository {
 
   Future<void> markSent(OutboxItem item);
 
+  /// Mark every row in [items] as sent in a single transaction.
+  /// Used after a bundle send succeeds.
+  Future<void> markSentBatch(List<OutboxItem> items);
+
   Future<void> markRetry(OutboxItem item);
+
+  /// Apply [markRetry] semantics to every row in [items] in a single
+  /// transaction. Used after a bundle send fails: each row's `retries`
+  /// counter is incremented and the row flips back to pending — or to
+  /// error once it crosses `maxRetries` (per-row, exactly as for
+  /// individual sends).
+  Future<void> markRetryBatch(List<OutboxItem> items);
 
   /// Delete rows with `status = sent` older than [retention]. Never
   /// touches `pending`, `sending`, or `error` — error rows are kept
@@ -58,6 +85,17 @@ class DatabaseOutboxRepository implements OutboxRepository {
   }
 
   @override
+  Future<List<OutboxItem>> claimNextBatch({
+    required int maxSize,
+    Duration? leaseDuration,
+  }) {
+    return _database.claimNextOutboxBatch(
+      maxSize: maxSize,
+      leaseDuration: leaseDuration ?? SyncTuning.outboxClaimLease,
+    );
+  }
+
+  @override
   Future<bool> hasMorePending() async {
     final pending = await _database.oldestOutboxItems(1);
     return pending.isNotEmpty;
@@ -75,6 +113,23 @@ class DatabaseOutboxRepository implements OutboxRepository {
   }
 
   @override
+  Future<void> markSentBatch(List<OutboxItem> items) async {
+    if (items.isEmpty) return;
+    final now = DateTime.now();
+    await _database.transaction(() async {
+      for (final item in items) {
+        await _database.updateOutboxItem(
+          OutboxCompanion(
+            id: Value(item.id),
+            status: Value(OutboxStatus.sent.index),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+    });
+  }
+
+  @override
   Future<void> markRetry(OutboxItem item) async {
     final retries = item.retries + 1;
     final newStatus = retries < maxRetries
@@ -89,6 +144,28 @@ class DatabaseOutboxRepository implements OutboxRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  @override
+  Future<void> markRetryBatch(List<OutboxItem> items) async {
+    if (items.isEmpty) return;
+    final now = DateTime.now();
+    await _database.transaction(() async {
+      for (final item in items) {
+        final retries = item.retries + 1;
+        final newStatus = retries < maxRetries
+            ? OutboxStatus.pending.index
+            : OutboxStatus.error.index;
+        await _database.updateOutboxItem(
+          OutboxCompanion(
+            id: Value(item.id),
+            status: Value(newStatus),
+            retries: Value(retries),
+            updatedAt: Value(now),
+          ),
+        );
+      }
+    });
   }
 
   @override

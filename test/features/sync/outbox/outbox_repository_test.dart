@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
@@ -210,6 +210,216 @@ void main() {
         ).thenAnswer((_) async => <OutboxItem>[]);
 
         expect(await repository.hasMorePending(), isFalse);
+      });
+    });
+
+    group('claimNextBatch', () {
+      test(
+        'delegates to database.claimNextOutboxBatch with the provided '
+        'lease and maxSize',
+        () async {
+          when(
+            () => database.claimNextOutboxBatch(
+              maxSize: any(named: 'maxSize'),
+              leaseDuration: any(named: 'leaseDuration'),
+            ),
+          ).thenAnswer((_) async => <OutboxItem>[]);
+
+          await repository.claimNextBatch(
+            maxSize: 50,
+            leaseDuration: const Duration(seconds: 30),
+          );
+
+          verify(
+            () => database.claimNextOutboxBatch(
+              maxSize: 50,
+              leaseDuration: const Duration(seconds: 30),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'falls back to the SyncTuning lease when none is provided',
+        () async {
+          when(
+            () => database.claimNextOutboxBatch(
+              maxSize: any(named: 'maxSize'),
+              leaseDuration: any(named: 'leaseDuration'),
+            ),
+          ).thenAnswer((_) async => <OutboxItem>[]);
+
+          await repository.claimNextBatch(maxSize: 50);
+
+          verify(
+            () => database.claimNextOutboxBatch(
+              maxSize: 50,
+              // Asserting the exact default catches drift between the
+              // repository fallback and the DB-layer default.
+              // ignore: avoid_redundant_argument_values
+              leaseDuration: SyncTuning.outboxClaimLease,
+            ),
+          ).called(1);
+        },
+      );
+
+      test('returns the rows from the DB call as-is', () async {
+        final claimed = [
+          OutboxItem(
+            id: 10,
+            message: '{}',
+            status: OutboxStatus.sending.index,
+            retries: 0,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            subject: 'a',
+            priority: OutboxPriority.normal.index,
+          ),
+          OutboxItem(
+            id: 11,
+            message: '{}',
+            status: OutboxStatus.sending.index,
+            retries: 0,
+            createdAt: DateTime(2024).add(const Duration(minutes: 1)),
+            updatedAt: DateTime(2024).add(const Duration(minutes: 1)),
+            subject: 'b',
+            priority: OutboxPriority.normal.index,
+          ),
+        ];
+        when(
+          () => database.claimNextOutboxBatch(
+            maxSize: any(named: 'maxSize'),
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
+        ).thenAnswer((_) async => claimed);
+
+        final result = await repository.claimNextBatch(maxSize: 50);
+
+        expect(result, equals(claimed));
+      });
+    });
+
+    // The batch-mark methods open a transaction over per-row updates. We
+    // exercise them against a real in-memory SyncDatabase so the
+    // transaction semantics get hit for free instead of fighting
+    // mocktail's generic-method matching for `transaction<T>`.
+    group('batch mark helpers (real SyncDatabase)', () {
+      late SyncDatabase realDb;
+      late DatabaseOutboxRepository realRepo;
+
+      Future<int> insertRow({
+        required OutboxStatus status,
+        int retries = 0,
+        DateTime? createdAt,
+      }) {
+        return realDb.addOutboxItem(
+          OutboxCompanion(
+            status: Value(status.index),
+            subject: const Value('s'),
+            message: const Value('{}'),
+            createdAt: Value(createdAt ?? DateTime(2024)),
+            updatedAt: Value(createdAt ?? DateTime(2024)),
+            retries: Value(retries),
+          ),
+        );
+      }
+
+      setUp(() {
+        realDb = SyncDatabase(inMemoryDatabase: true);
+        realRepo = DatabaseOutboxRepository(realDb, maxRetries: 2);
+      });
+      tearDown(() async {
+        await realDb.close();
+      });
+
+      test('markSentBatch flips every row to status=sent', () async {
+        final ids = <int>[];
+        for (var i = 0; i < 3; i++) {
+          ids.add(
+            await insertRow(
+              status: OutboxStatus.sending,
+              createdAt: DateTime(2024).add(Duration(minutes: i)),
+            ),
+          );
+        }
+        final items = <OutboxItem>[];
+        for (final id in ids) {
+          final row = await realDb.getOutboxItemById(id);
+          expect(row, isNotNull);
+          items.add(row!);
+        }
+
+        await realRepo.markSentBatch(items);
+
+        for (final id in ids) {
+          final refreshed = await realDb.getOutboxItemById(id);
+          expect(refreshed?.status, OutboxStatus.sent.index);
+        }
+      });
+
+      test('markSentBatch is a no-op for an empty list', () async {
+        // Nothing to assert on the DB, but the call must not throw and must
+        // not require a transaction round-trip — covered by the absence of
+        // exceptions and by the next test still seeing untouched rows.
+        await realRepo.markSentBatch(<OutboxItem>[]);
+      });
+
+      test(
+        'markRetryBatch increments retries on every row while keeping rows '
+        'below the cap as pending',
+        () async {
+          final id1 = await insertRow(status: OutboxStatus.sending);
+          final id2 = await insertRow(
+            status: OutboxStatus.sending,
+            createdAt: DateTime(2024).add(const Duration(minutes: 1)),
+          );
+          final items = <OutboxItem>[
+            (await realDb.getOutboxItemById(id1))!,
+            (await realDb.getOutboxItemById(id2))!,
+          ];
+
+          await realRepo.markRetryBatch(items);
+
+          for (final id in [id1, id2]) {
+            final refreshed = await realDb.getOutboxItemById(id);
+            expect(refreshed?.retries, 1);
+            expect(refreshed?.status, OutboxStatus.pending.index);
+          }
+        },
+      );
+
+      test(
+        'markRetryBatch flips each row to error once its incremented retry '
+        'count reaches maxRetries — applied per row, so one batch can have '
+        'some rows retried and others capped',
+        () async {
+          final stillTryingId = await insertRow(
+            status: OutboxStatus.sending,
+          );
+          final cappedId = await insertRow(
+            status: OutboxStatus.sending,
+            retries: 1,
+            createdAt: DateTime(2024).add(const Duration(minutes: 1)),
+          );
+          final items = <OutboxItem>[
+            (await realDb.getOutboxItemById(stillTryingId))!,
+            (await realDb.getOutboxItemById(cappedId))!,
+          ];
+
+          await realRepo.markRetryBatch(items);
+
+          final stillTrying = await realDb.getOutboxItemById(stillTryingId);
+          expect(stillTrying?.retries, 1);
+          expect(stillTrying?.status, OutboxStatus.pending.index);
+
+          final capped = await realDb.getOutboxItemById(cappedId);
+          expect(capped?.retries, 2);
+          expect(capped?.status, OutboxStatus.error.index);
+        },
+      );
+
+      test('markRetryBatch is a no-op for an empty list', () async {
+        await realRepo.markRetryBatch(<OutboxItem>[]);
       });
     });
 
