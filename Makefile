@@ -171,6 +171,9 @@ ios: ios_build ios_fastlane_build ios_fastlane_upload
 macos_build_flutter:
 	$(FLUTTER_CMD) build macos
 
+.PHONY: releases
+releases: android_build_release macos_build_flutter ios_build_ipa
+
 .PHONY: macos_build
 macos_build: clean_test macos_build_flutter
 
@@ -231,6 +234,10 @@ macos_local: macos_build
 .PHONY: android_build
 android_build:
 	$(FLUTTER_CMD) build appbundle
+
+.PHONY: android_build
+android_build_release:
+	$(FLUTTER_CMD) build appbundle --release
 
 .PHONY: linux_build
 linux_build:
