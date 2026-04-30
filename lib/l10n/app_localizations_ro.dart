@@ -2514,11 +2514,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.';
 
   @override
-  String get configFlagUseOutboxBundling => 'Grupează mesajele din outbox';
+  String get configFlagUseOutboxBundling =>
+      'Grupează mesajele din căsuța de trimitere';
 
   @override
   String get configFlagUseOutboxBundlingDescription =>
-      'Împachetează rândurile consecutive doar cu text din outbox într-un singur mesaj de sincronizare, astfel încât rafalele de modificări mici să fie trimise ca un singur mesaj Matrix. Atașamentele media sunt în continuare trimise individual.';
+      'Împachetează rândurile consecutive doar cu text din căsuța de trimitere într-un singur mesaj de sincronizare, astfel încât rafalele de modificări mici să fie trimise ca un singur mesaj Matrix. Atașamentele media sunt în continuare trimise individual.';
 
   @override
   String get conflictEntityLabel => 'Entitate';
@@ -6212,7 +6213,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Intrare jurnal';
 
   @override
-  String get syncPayloadOutboxBundle => 'Pachet outbox';
+  String get syncPayloadOutboxBundle => 'Pachet din căsuța de trimitere';
 
   @override
   String get syncPayloadThemingSelection => 'Selecție temă';

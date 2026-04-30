@@ -5774,7 +5774,7 @@ void main() {
 
         // Drain microtasks so the seed Future and the initial stream
         // emission populate the cache.
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(
           await svc.resolveBundleMaxSizeForTesting(),
@@ -5790,7 +5790,7 @@ void main() {
       () async {
         // Default stubs from setUp already report `false`. We just verify
         // the service the test setUp built honours that default.
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(await service.resolveBundleMaxSizeForTesting(), 1);
       },
@@ -5802,9 +5802,14 @@ void main() {
       'single-row default — a transient DB hiccup at startup must never '
       'leave the outbox stuck',
       () async {
+        // Async-rejected Future mirrors how a real `JournalDb.getConfigFlag`
+        // surfaces an I/O failure — the constructor's `.then(onError:)`
+        // handler is the actual production path, so we exercise it directly.
         when(
           () => journalDb.getConfigFlag(useOutboxBundlingFlag),
-        ).thenThrow(StateError('transient db'));
+        ).thenAnswer(
+          (_) => Future<bool>.error(StateError('transient db')),
+        );
         // Empty stream → no further emissions, so the cache stays at the
         // class default of 1.
         when(
@@ -5825,7 +5830,7 @@ void main() {
           ownsActivityGate: false,
         );
         addTearDown(svc.dispose);
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(await svc.resolveBundleMaxSizeForTesting(), 1);
         verify(
@@ -5868,7 +5873,7 @@ void main() {
         });
 
         controller.addError(StateError('watch broke'));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         verify(
           () => loggingService.captureException(

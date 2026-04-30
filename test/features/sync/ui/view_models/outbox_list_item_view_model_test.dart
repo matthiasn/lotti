@@ -341,104 +341,72 @@ void main() {
       );
     });
 
-    testWidgets(
-      'outbox bundle label includes the child count — surfaces bundling '
-      'density at a glance in the outbox list',
-      (tester) async {
-        late OutboxListItemViewModel viewModel;
-        late BuildContext capturedContext;
-
-        // Three children with valid runtimeType discriminators so
-        // SyncMessage.fromJson reconstructs them correctly.
-        final item = OutboxItem(
-          id: 15,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          status: 0,
-          retries: 0,
-          priority: OutboxPriority.normal.index,
-          message: jsonEncode({
-            'runtimeType': 'outboxBundle',
-            'children': <Object?>[
-              {'runtimeType': 'aiConfigDelete', 'id': 'cfg-1'},
-              {'runtimeType': 'aiConfigDelete', 'id': 'cfg-2'},
-              {'runtimeType': 'aiConfigDelete', 'id': 'cfg-3'},
-            ],
-            'jsonPath': '/outbox_bundles/abc-123.json',
-          }),
-          subject: 'outboxBundle:abc-123',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                viewModel = OutboxListItemViewModel.fromItem(
-                  context: context,
-                  item: item,
-                );
-                return const SizedBox.shrink();
-              },
-            ),
+    // Two bundle-count cases share the same widget setup. The behaviour
+    // under test is purely the count-formatting in the view model, so the
+    // permutations live in one parameterized loop instead of two
+    // copy-pasted bodies. (Empty bundle is the defensive case: in
+    // production the sender skips empty bundles, but the UI must still
+    // render a sensible label if one ever lands in the outbox.)
+    Future<({OutboxListItemViewModel viewModel, BuildContext context})>
+    pumpOutboxBundle(WidgetTester tester, OutboxItem item) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
           ),
-        );
+        ),
+      );
+      await tester.pump();
+      return (viewModel: viewModel, context: capturedContext);
+    }
 
-        await tester.pump();
+    final outboxBundleCases = <({int childCount, int rowId, String pathId})>[
+      (childCount: 3, rowId: 15, pathId: 'abc-123'),
+      (childCount: 0, rowId: 16, pathId: 'empty'),
+    ];
 
-        expect(
-          viewModel.payloadKindLabel,
-          '${capturedContext.messages.syncPayloadOutboxBundle} (3)',
-        );
-      },
-    );
+    for (final c in outboxBundleCases) {
+      testWidgets(
+        'outbox bundle label shows child count (${c.childCount})',
+        (tester) async {
+          final children = List<Map<String, Object?>>.generate(
+            c.childCount,
+            (i) => {'runtimeType': 'aiConfigDelete', 'id': 'cfg-${i + 1}'},
+          );
+          final item = OutboxItem(
+            id: c.rowId,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            status: 0,
+            retries: 0,
+            priority: OutboxPriority.normal.index,
+            message: jsonEncode({
+              'runtimeType': 'outboxBundle',
+              'children': children,
+              'jsonPath': '/outbox_bundles/${c.pathId}.json',
+            }),
+            subject: 'outboxBundle:${c.pathId}',
+          );
 
-    testWidgets(
-      'outbox bundle label reads (0) for an empty bundle — defensive: '
-      'in production the sender skips empty bundles, but the UI must '
-      'still render a sensible label if one ever lands in the outbox',
-      (tester) async {
-        late OutboxListItemViewModel viewModel;
-        late BuildContext capturedContext;
+          final setup = await pumpOutboxBundle(tester, item);
 
-        final item = OutboxItem(
-          id: 16,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          status: 0,
-          retries: 0,
-          priority: OutboxPriority.normal.index,
-          message: jsonEncode({
-            'runtimeType': 'outboxBundle',
-            'children': <Object?>[],
-            'jsonPath': '/outbox_bundles/empty.json',
-          }),
-          subject: 'outboxBundle:empty',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                viewModel = OutboxListItemViewModel.fromItem(
-                  context: context,
-                  item: item,
-                );
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        expect(
-          viewModel.payloadKindLabel,
-          '${capturedContext.messages.syncPayloadOutboxBundle} (0)',
-        );
-      },
-    );
+          expect(
+            setup.viewModel.payloadKindLabel,
+            '${setup.context.messages.syncPayloadOutboxBundle} '
+            '(${c.childCount})',
+          );
+        },
+      );
+    }
 
     group('payloadSizeLabel', () {
       OutboxItem makeItem({int? payloadSize}) => OutboxItem(

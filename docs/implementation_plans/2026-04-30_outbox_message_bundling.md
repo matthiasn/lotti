@@ -35,7 +35,7 @@ Related work:
 
 The current pipeline (post #3009):
 
-```
+```text
 enqueueMessage(msg) ──► Outbox row (priority, filePath?, payloadSize, subject)
                                     │
                                     ▼
@@ -48,7 +48,7 @@ enqueueMessage(msg) ──► Outbox row (priority, filePath?, payloadSize, subj
 
 We change *only* the dequeue side:
 
-```
+```text
 OutboxProcessor.processQueue()
         │
         ▼
@@ -119,7 +119,9 @@ const factory SyncMessage.outboxBundle({
 Run `make build_runner`.
 
 **Invariants enforced in code**:
-- `children` must be non-empty.
+- Inline bundles carry children directly; file-backed/sidecar bundles travel
+  on the wire with `children: []` plus a `jsonPath` referencing the
+  attachment that holds the real children.
 - No child is itself a `SyncOutboxBundle` (no nested bundles).
 - No child carries a media attachment.
 

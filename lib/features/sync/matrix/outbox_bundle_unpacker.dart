@@ -55,9 +55,10 @@ class OutboxBundleUnpacker {
   /// is unresolvable — callers should treat this as a terminal skip.
   ///
   /// Per-child fault isolation:
-  /// - [FileSystemException] is rethrown so the pipeline can retry the whole
-  ///   bundle later — partial application would leave gaps in the sequence
-  ///   log.
+  /// - Any [IOException] (including [FileSystemException], [SocketException],
+  ///   [HttpException], [TlsException], [WebSocketException]) is rethrown so
+  ///   the pipeline can retry the whole bundle later — partial application
+  ///   would leave gaps in the sequence log.
   /// - All other exceptions on a single child are logged and the child is
   ///   skipped; the remaining children still apply.
   Future<PreparedOutboxSyncBundle?> prepare({
@@ -89,7 +90,10 @@ class OutboxBundleUnpacker {
       try {
         final childPrepared = await prepareChild(event, child);
         prepared.add(childPrepared);
-      } on FileSystemException {
+      } on IOException {
+        // Catches FileSystemException, SocketException, HttpException,
+        // TlsException, WebSocketException — every retriable I/O surface
+        // that the parent pipeline already knows how to back off on.
         rethrow;
       } catch (error, stackTrace) {
         loggingService.captureException(
@@ -105,8 +109,14 @@ class OutboxBundleUnpacker {
   }
 
   /// Iterates the bundle's children and dispatches each through [applyChild]
-  /// in order. A failure on one child is logged and skipped — the bundle's
-  /// net effect is exactly the union of successfully-applied children.
+  /// in order.
+  ///
+  /// Per-child fault isolation mirrors [prepare]:
+  /// - Any [IOException] is rethrown so the parent pipeline can retry the
+  ///   whole bundle. Already-applied children are idempotent under
+  ///   vector-clock dedup, so a redelivery is safe.
+  /// - All other exceptions on a single child are logged and skipped; the
+  ///   bundle's net effect is the union of successfully-applied children.
   Future<void> apply({
     required PreparedOutboxSyncBundle bundle,
     required OutboxBundleChildApplier applyChild,
@@ -114,6 +124,11 @@ class OutboxBundleUnpacker {
     for (final child in bundle.children) {
       try {
         await applyChild(child);
+      } on IOException {
+        // Retriable: bubble up so the pipeline schedules a retry. Earlier
+        // applied children stay applied; the receiver's per-type apply
+        // path is idempotent on (id, vectorClock).
+        rethrow;
       } catch (error, stackTrace) {
         loggingService.captureException(
           error,

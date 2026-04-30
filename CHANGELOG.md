@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.981]
+### Added
+- Outbox message bundling, gated by the new `useOutboxBundlingFlag`
+  config flag (default off). When enabled, `OutboxProcessor` claims a
+  contiguous run of consecutive text-only outbox rows up to
+  `SyncTuning.outboxBundleMaxSize` (50, tuneable up to 100) in
+  `(priority, createdAt)` order and ships them as a single
+  `SyncMessage.outboxBundle` envelope delivered as a sidecar JSON
+  attachment under `/outbox_bundles/<uuid>.json`. Media-attachment rows
+  always travel alone — the batch claim stops one before the next
+  attachment row. Receivers download the sidecar via the existing
+  attachment-ingestor pipeline and unpack it through
+  `OutboxBundleUnpacker`, dispatching each child through the per-type
+  apply path used for individually-delivered messages. Bursty workloads
+  (agent suggestions, checklist creation, sync backfill replay) drop
+  to roughly 1 Matrix event per ~50 rows. See ADR 0015 for the design,
+  rollout, and per-child fault-isolation details.
+
 ## [0.9.980]
 ### Added
 - `DesignSystemToast` grows two new affordances and is now the

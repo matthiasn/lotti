@@ -300,6 +300,48 @@ void main() {
     );
 
     test(
+      'rethrows IOException raised by a child apply so the pipeline can '
+      'retry the whole bundle — already-applied earlier children stay '
+      'applied (idempotent under VC dedup on the receiver), so a '
+      'redelivery is safe',
+      () async {
+        final bundle = PreparedOutboxSyncBundle(
+          children: [
+            _preparedFor(event, const SyncMessage.aiConfigDelete(id: 'first')),
+            _preparedFor(event, const SyncMessage.aiConfigDelete(id: 'fail')),
+            _preparedFor(event, const SyncMessage.aiConfigDelete(id: 'never')),
+          ],
+        );
+
+        final applied = <String>[];
+        await expectLater(
+          unpacker.apply(
+            bundle: bundle,
+            applyChild: (child) async {
+              final id = (child.syncMessage as SyncAiConfigDelete).id;
+              if (id == 'fail') {
+                throw const FileSystemException('descriptor missing');
+              }
+              applied.add(id);
+            },
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+        // The first child applied successfully before the rethrow; the
+        // child after the failure is not reached on this pass.
+        expect(applied, ['first']);
+        verifyNever(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        );
+      },
+    );
+
+    test(
       'an empty bundle is a no-op — applyChild is never invoked, no log '
       'spam, returns cleanly',
       () async {

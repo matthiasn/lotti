@@ -204,13 +204,25 @@ class MatrixMessageSender {
       outboundMessage = agentResult;
 
       if (outboundMessage is SyncOutboxBundle) {
+        // Bundle children skip the top-level `_ensureOriginatingHostId`
+        // call above. Backfill each child individually so a journal entity
+        // or entry link delivered inside a bundle still carries the same
+        // originatingHostId metadata it would have if sent on its own —
+        // sequence-tracking on the receiver side relies on it.
+        final normalizedChildren = <SyncMessage>[];
+        for (final child in outboundMessage.children) {
+          normalizedChildren.add(await _ensureOriginatingHostId(child));
+        }
+        final normalizedBundle = outboundMessage.copyWith(
+          children: normalizedChildren,
+        );
         final stripped = await _sendOutboxBundlePayload(
           room: room,
-          message: outboundMessage,
+          message: normalizedBundle,
         );
         if (stripped == null) {
           _trace(
-            'FAIL outboxBundlePayload children=${outboundMessage.children.length}',
+            'FAIL outboxBundlePayload children=${normalizedBundle.children.length}',
             subDomain: 'matrix.send.error',
           );
           return false;
