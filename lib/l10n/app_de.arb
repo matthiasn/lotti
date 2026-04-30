@@ -534,6 +534,7 @@
   "aiAssistantTitle": "KI-Assistent",
   "aiAssistantTranscribeAudio": "Audio transkribieren",
   "aiBatchToggleTooltip": "Zur Standardaufnahme wechseln",
+  "aiChatMessageCopied": "In die Zwischenablage kopiert",
   "aiConfigApiKeyEmptyError": "API-Schlüssel darf nicht leer sein",
   "aiConfigApiKeyFieldLabel": "API-Schlüssel",
   "aiConfigAssociatedModelsRemoved": "{count} zugehörige{count, plural, =1{s Modell} other{ Modelle}} entfernt",
@@ -658,6 +659,14 @@
   "aiInferenceErrorUnknownTitle": "Fehler",
   "aiInferenceErrorViewLogButton": "Protokoll anzeigen",
   "aiModelSettings": "AI-Modell-Einstellungen",
+  "aiOllamaModelInstalledSuccessfully": "Modell \"{modelName}\" erfolgreich installiert!",
+  "@aiOllamaModelInstalledSuccessfully": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderAlibabaDescription": "Alibaba Clouds Qwen-Modellfamilie über die DashScope-API",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Anthropics Claude-Familie von AI-Assistenten",
@@ -949,6 +958,14 @@
   "celebrationTapToContinue": "Tippen zum Fortfahren",
   "changeSetCardTitle": "Vorgeschlagene Änderungen",
   "changeSetConfirmAll": "Alle bestätigen",
+  "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 Element hatte Teilprobleme} other{{count} Elemente hatten Teilprobleme}}",
+  "@changeSetConfirmAllPartialIssues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "changeSetConfirmError": "Änderung konnte nicht angewendet werden",
   "changeSetItemConfirmed": "Änderung angewendet",
   "changeSetItemConfirmedWithWarning": "Angewendet mit Warnung: {warning}",
@@ -1332,6 +1349,7 @@
   "defaultLanguage": "Standardsprache",
   "deleteButton": "Löschen",
   "deleteDeviceLabel": "Gerät löschen",
+  "designSystemActionVariantTitle": "Mit Aktion",
   "designSystemActivatedLabel": "Aktiv",
   "designSystemAvatarAwayLabel": "Abwesend",
   "designSystemAvatarBusyLabel": "Beschäftigt",
@@ -1360,6 +1378,7 @@
   "designSystemCheckboxLabel": "Checkbox",
   "designSystemContextMenuDeleteLabel": "Löschen",
   "designSystemContextMenuVariantsTitle": "Kontextmenü-Varianten",
+  "designSystemCountdownVariantTitle": "Mit Countdown",
   "designSystemDateCardsTitle": "Datumskarten",
   "designSystemDefaultLabel": "Standard",
   "designSystemDisabledLabel": "Deaktiviert",
@@ -1537,10 +1556,12 @@
   "designSystemTimePickerFormatsTitle": "Zeitformate",
   "designSystemTimePickerTwelveHourLabel": "12-Stunden",
   "designSystemTimePickerTwentyFourHourLabel": "24-Stunden",
+  "designSystemTitleOnlyVariantTitle": "Nur-Titel-Variante",
   "designSystemToastDetailsLabel": "Benachrichtigungsdetails",
   "designSystemToggleLabel": "Toggle-Label",
   "designSystemTooltipIconMessageSample": "Hilfreiche Informationen zu diesem Feld",
   "designSystemTooltipIconVariantsTitle": "Tooltip-Symbol",
+  "designSystemUndoLabel": "Rückgängig",
   "designSystemVariantMatrixTitle": "Variantenmatrix",
   "designSystemVerticalLabel": "Vertikal",
   "designSystemWarningLabel": "Warnung",

@@ -9,6 +9,7 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -310,7 +311,7 @@ void main() {
     });
   });
 
-  group('showDictionaryResultSnackbar', () {
+  group('showDictionaryResultToast', () {
     late AppLocalizations messages;
 
     setUpAll(() async {
@@ -320,12 +321,13 @@ void main() {
     testWidgets('shows snackbar for success result', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(
               builder: (context) {
                 return ElevatedButton(
                   onPressed: () {
-                    showDictionaryResultSnackbar(
+                    showDictionaryResultToast(
                       context,
                       SpeechDictionaryResult.success,
                       messages,
@@ -348,12 +350,13 @@ void main() {
     testWidgets('shows snackbar for noCategory result', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(
               builder: (context) {
                 return ElevatedButton(
                   onPressed: () {
-                    showDictionaryResultSnackbar(
+                    showDictionaryResultToast(
                       context,
                       SpeechDictionaryResult.noCategory,
                       messages,
@@ -380,12 +383,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(
               builder: (context) {
                 return ElevatedButton(
                   onPressed: () {
-                    showResult = showDictionaryResultSnackbar(
+                    showResult = showDictionaryResultToast(
                       context,
                       SpeechDictionaryResult.emptyTerm,
                       messages,
@@ -412,12 +416,13 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: resolveTestTheme(),
           home: Scaffold(
             body: Builder(
               builder: (context) {
                 return ElevatedButton(
                   onPressed: () {
-                    showResult = showDictionaryResultSnackbar(
+                    showResult = showDictionaryResultToast(
                       context,
                       SpeechDictionaryResult.duplicate,
                       messages,
@@ -436,6 +441,51 @@ void main() {
 
       expect(showResult, isTrue);
       expect(find.text(messages.addToDictionaryDuplicate), findsOneWidget);
+    });
+
+    Future<void> pumpResult(
+      WidgetTester tester,
+      SpeechDictionaryResult result,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: resolveTestTheme(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    showDictionaryResultToast(context, result, messages);
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Test'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('maps saveFailed to the error tone', (tester) async {
+      await pumpResult(tester, SpeechDictionaryResult.saveFailed);
+
+      final toast = tester.widget<DesignSystemToast>(
+        find.byType(DesignSystemToast),
+      );
+      expect(toast.tone, DesignSystemToastTone.error);
+      expect(toast.title, messages.addToDictionarySaveFailed);
+    });
+
+    testWidgets('maps termTooLong to the warning tone', (tester) async {
+      await pumpResult(tester, SpeechDictionaryResult.termTooLong);
+
+      final toast = tester.widget<DesignSystemToast>(
+        find.byType(DesignSystemToast),
+      );
+      expect(toast.tone, DesignSystemToastTone.warning);
+      expect(toast.title, messages.addToDictionaryTooLong);
     });
   });
 

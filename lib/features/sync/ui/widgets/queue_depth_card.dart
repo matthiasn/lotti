@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -90,21 +92,15 @@ class _QueueDepthCardState extends State<QueueDepthCard> {
     try {
       final resurrected = await widget.queue.resurrectAll();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.messages.queueSkippedRetryAllDone(resurrected),
-          ),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: context.messages.queueSkippedRetryAllDone(resurrected),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.messages.queueSkippedRetryAllError(error.toString()),
-          ),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.queueSkippedRetryAllError(error.toString()),
       );
     } finally {
       if (mounted) setState(() => _retryingAll = false);

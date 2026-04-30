@@ -22,6 +22,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_data/test_data.dart';
+import '../../../../../../widget_test_utils.dart';
 
 class _TestEntryController extends EntryController {
   _TestEntryController(this.entry);
@@ -146,6 +147,7 @@ void main() {
       child: MediaQuery(
         data: const MediaQueryData(size: Size(390, 844)),
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,
@@ -194,6 +196,7 @@ void main() {
       child: MediaQuery(
         data: const MediaQueryData(size: Size(390, 844)),
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,

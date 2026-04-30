@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/category_block_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -65,36 +66,20 @@ class _SetTimeBlocksPageState extends ConsumerState<SetTimeBlocksPage> {
           .setPlannedBlocks(allBlocks);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: DesignSystemToast(
-              tone: DesignSystemToastTone.success,
-              title: context.messages.dailyOsPlanCreated,
-              description: context.messages.dailyOsPlanCreatedDescription,
-              onDismiss: () =>
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-            ),
-            backgroundColor: Colors.transparent,
-            behavior: SnackBarBehavior.floating,
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: context.messages.dailyOsPlanCreated,
+          description: context.messages.dailyOsPlanCreatedDescription,
         );
         Navigator.of(context).pop();
       }
     } on Exception {
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: DesignSystemToast(
-              tone: DesignSystemToastTone.error,
-              title: context.messages.dailyOsSaveError,
-              description: context.messages.dailyOsSaveErrorDescription,
-              onDismiss: () =>
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-            ),
-            backgroundColor: Colors.transparent,
-            behavior: SnackBarBehavior.floating,
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.dailyOsSaveError,
+          description: context.messages.dailyOsSaveErrorDescription,
         );
       }
     }

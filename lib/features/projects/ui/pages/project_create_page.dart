@@ -11,12 +11,13 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
@@ -58,11 +59,9 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
 
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.projectTitleRequired),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.projectTitleRequired,
       );
       return;
     }
@@ -115,20 +114,16 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
         );
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.messages.saveSuccessful),
-              backgroundColor: successColor,
-            ),
+          context.showToast(
+            tone: DesignSystemToastTone.success,
+            title: context.messages.saveSuccessful,
           );
           Navigator.of(context).pop();
         }
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.projectErrorCreateFailed),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.projectErrorCreateFailed,
         );
       }
     } catch (e, s) {
@@ -139,11 +134,9 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
         stackTrace: s,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.projectErrorCreateFailed),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.projectErrorCreateFailed,
         );
       }
     } finally {

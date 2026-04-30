@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -15,12 +16,14 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart' show resolveTestTheme;
 import '../test_utils.dart';
 
 class MockUnifiedAiInferenceRepository extends Mock
@@ -927,5 +930,119 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
       // Should show copy button for prompt generation
       expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
     });
+
+    testWidgets(
+      'tapping the prompt-generation copy button writes to the clipboard '
+      'and shows a success toast',
+      (tester) async {
+        final promptGenConfig =
+            AiConfig.prompt(
+                  id: promptId,
+                  name: 'Coding Prompt',
+                  systemMessage: 'System message',
+                  userMessage: 'Generate coding prompt',
+                  defaultModelId: 'model-1',
+                  modelIds: ['model-1'],
+                  createdAt: DateTime(2024, 3, 15, 10, 30),
+                  useReasoning: false,
+                  requiredInputData: [InputDataType.task],
+                  aiResponseType: AiResponseType.promptGeneration,
+                  description: 'Generate coding prompts',
+                )
+                as AiConfigPrompt;
+
+        String? clipboardText;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (MethodCall call) async {
+            if (call.method == 'Clipboard.setData') {
+              final args = call.arguments as Map<dynamic, dynamic>;
+              clipboardText = args['text'] as String?;
+            }
+            return null;
+          },
+        );
+        addTearDown(() {
+          tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          );
+        });
+
+        // buildTestWidget uses the default MaterialApp theme, which lacks
+        // the DsTokens extension the toast depends on. Wire a local
+        // ProviderScope + MaterialApp with resolveTestTheme() instead so
+        // the SnackBar (hosted by the root ScaffoldMessenger) can read
+        // design tokens.
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              unifiedAiInferenceRepositoryProvider.overrideWithValue(
+                mockRepository,
+              ),
+              cloudInferenceRepositoryProvider.overrideWithValue(
+                mockCloudRepository,
+              ),
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              aiConfigByIdProvider(promptId).overrideWith(
+                (ref) async => promptGenConfig,
+              ),
+              aiConfigByTypeControllerProvider(
+                configType: AiConfigType.inferenceProvider,
+              ).overrideWith(
+                () => MockAiConfigByTypeController(const <AiConfig>[]),
+              ),
+              unifiedAiControllerOverride(
+                const UnifiedAiState(
+                  message: '''
+## Prompt
+Generate a widget that renders a login form.''',
+                ),
+              ),
+              inferenceStatusControllerProvider(
+                id: entityId,
+                aiResponseType: AiResponseType.promptGeneration,
+              ).overrideWith(
+                () => _TestInferenceStatusController(InferenceStatus.idle),
+              ),
+              triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
+            ],
+            child: MaterialApp(
+              theme: resolveTestTheme(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const Scaffold(
+                body: UnifiedAiProgressContent(
+                  entityId: entityId,
+                  promptId: promptId,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.copy_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Prompt body (not the surrounding markdown header) lands on the
+        // clipboard.
+        expect(clipboardText, isNotNull);
+        expect(
+          clipboardText,
+          contains('Generate a widget that renders a login form.'),
+        );
+
+        // Success toast is surfaced on the parent scaffold.
+        final toast = tester.widget<DesignSystemToast>(
+          find.byType(DesignSystemToast),
+        );
+        expect(toast.tone, DesignSystemToastTone.success);
+      },
+    );
   });
 }

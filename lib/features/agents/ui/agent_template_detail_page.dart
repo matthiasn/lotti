@@ -14,6 +14,8 @@ import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_das
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -408,10 +410,9 @@ class _AgentTemplateDetailPageState
         }
 
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.agentTemplateCreatedSuccess),
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: context.messages.agentTemplateCreatedSuccess,
         );
         ref.invalidate(agentTemplatesProvider);
         Navigator.of(context).pop();
@@ -451,10 +452,9 @@ class _AgentTemplateDetailPageState
           authoredBy: 'user',
         );
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.agentTemplateVersionSaved),
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: context.messages.agentTemplateVersionSaved,
         );
         _originalName = _nameController.text;
         _originalProfileId = _selectedProfileId;
@@ -475,8 +475,9 @@ class _AgentTemplateDetailPageState
         stackTrace: s,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.messages.commonError)),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -506,12 +507,9 @@ class _AgentTemplateDetailPageState
                 Navigator.of(pageContext).pop();
               } on TemplateInUseException {
                 if (!mounted || !pageContext.mounted) return;
-                ScaffoldMessenger.of(pageContext).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      pageContext.messages.agentTemplateDeleteHasInstances,
-                    ),
-                  ),
+                pageContext.showToast(
+                  tone: DesignSystemToastTone.error,
+                  title: pageContext.messages.agentTemplateDeleteHasInstances,
                 );
               } catch (e, s) {
                 developer.log(
@@ -521,10 +519,9 @@ class _AgentTemplateDetailPageState
                   stackTrace: s,
                 );
                 if (!mounted || !pageContext.mounted) return;
-                ScaffoldMessenger.of(pageContext).showSnackBar(
-                  SnackBar(
-                    content: Text(pageContext.messages.commonError),
-                  ),
+                pageContext.showToast(
+                  tone: DesignSystemToastTone.error,
+                  title: pageContext.messages.commonError,
                 );
               }
             },
@@ -685,10 +682,9 @@ class _VersionTile extends ConsumerWidget {
                   stackTrace: s,
                 );
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.messages.commonError),
-                  ),
+                context.showToast(
+                  tone: DesignSystemToastTone.error,
+                  title: context.messages.commonError,
                 );
               }
             },

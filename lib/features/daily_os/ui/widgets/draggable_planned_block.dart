@@ -10,6 +10,8 @@ import 'package:lotti/features/daily_os/ui/widgets/planned_block_drag_state.dart
 import 'package:lotti/features/daily_os/ui/widgets/planned_block_edit_modal.dart';
 import 'package:lotti/features/daily_os/util/drag_position_utils.dart';
 import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
@@ -259,12 +261,10 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
 
   void _handleLongPressStart(LongPressStartDetails details) {
     if (_dragDisabled) {
-      // Show tooltip explaining drag is disabled
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.dailyOsExpandToMove),
-          duration: const Duration(seconds: 2),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.warning,
+        title: context.messages.dailyOsExpandToMove,
+        duration: const Duration(seconds: 2),
       );
       return;
     }
@@ -472,11 +472,10 @@ class _DraggablePlannedBlockState extends ConsumerState<DraggablePlannedBlock> {
   }
 
   void _showBoundaryHint() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.messages.dailyOsExpandToMoveMore),
-        duration: const Duration(seconds: 2),
-      ),
+    context.showToast(
+      tone: DesignSystemToastTone.warning,
+      title: context.messages.dailyOsExpandToMoveMore,
+      duration: const Duration(seconds: 2),
     );
   }
 

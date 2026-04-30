@@ -1160,6 +1160,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Switch to standard recording';
 
   @override
+  String get aiChatMessageCopied => 'Copied to clipboard';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'API key cannot be empty';
 
   @override
@@ -1434,6 +1437,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiModelSettings => 'AI Model Settings';
+
+  @override
+  String aiOllamaModelInstalledSuccessfully(String modelName) {
+    return 'Model \"$modelName\" installed successfully!';
+  }
 
   @override
   String get aiProviderAlibabaDescription =>
@@ -2077,6 +2085,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get changeSetConfirmAll => 'Confirm all';
+
+  @override
+  String changeSetConfirmAllPartialIssues(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items had partial issues',
+      one: '1 item had partial issues',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get changeSetConfirmError => 'Failed to apply change';
@@ -2937,6 +2956,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDeviceLabel => 'Delete device';
 
   @override
+  String get designSystemActionVariantTitle => 'With Action';
+
+  @override
   String get designSystemActivatedLabel => 'Activated';
 
   @override
@@ -3020,6 +3042,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designSystemContextMenuVariantsTitle => 'Context Menu Variants';
+
+  @override
+  String get designSystemCountdownVariantTitle => 'With Countdown';
 
   @override
   String get designSystemDateCardsTitle => 'Date Cards';
@@ -3456,6 +3481,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemTimePickerTwentyFourHourLabel => '24-hour';
 
   @override
+  String get designSystemTitleOnlyVariantTitle => 'Title Only Variant';
+
+  @override
   String get designSystemToastDetailsLabel => 'Notification details';
 
   @override
@@ -3467,6 +3495,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designSystemTooltipIconVariantsTitle => 'Tooltip Icon';
+
+  @override
+  String get designSystemUndoLabel => 'Undo';
 
   @override
   String get designSystemVariantMatrixTitle => 'Variant Matrix';

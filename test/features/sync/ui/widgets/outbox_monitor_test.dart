@@ -15,6 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../mocks/sync_config_test_mocks.dart';
 import '../../../../widget_test_utils.dart';
@@ -74,6 +75,8 @@ MockSyncDatabase _prepareMock({
 // ---------------------------------------------------------------------------
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('OutboxMonitorPage', () {
     setUp(
       () => setUpTestGetIt(
@@ -202,6 +205,148 @@ void main() {
         expect(find.text('Cancel'), findsOneWidget);
       },
     );
+
+    testWidgets('confirming delete shows a success toast', (tester) async {
+      final mock = _prepareMock(
+        count: 1,
+        itemStream: Stream<List<OutboxItem>>.fromIterable([
+          [
+            OutboxItem(
+              id: 42,
+              createdAt: _epoch,
+              updatedAt: _epoch,
+              status: 2,
+              retries: 5,
+              message: '{"runtimeType":"journalEntity","id":"test-id"}',
+              subject: 'error-subject',
+              priority: OutboxPriority.low.index,
+            ),
+          ],
+        ]),
+      );
+      when(() => mock.deleteOutboxItemById(42)).thenAnswer((_) async => 1);
+
+      await _pumpOutboxMonitorPage(tester, mock: mock);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Error'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('outboxDelete-42')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('DELETE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(() => mock.deleteOutboxItemById(42)).called(1);
+      expect(find.text('Item deleted'), findsOneWidget);
+    });
+
+    testWidgets('delete failure shows an error toast', (tester) async {
+      final mock = _prepareMock(
+        count: 1,
+        itemStream: Stream<List<OutboxItem>>.fromIterable([
+          [
+            OutboxItem(
+              id: 43,
+              createdAt: _epoch,
+              updatedAt: _epoch,
+              status: 2,
+              retries: 5,
+              message: '{"runtimeType":"journalEntity","id":"test-id"}',
+              subject: 'error-subject',
+              priority: OutboxPriority.low.index,
+            ),
+          ],
+        ]),
+      );
+      when(
+        () => mock.deleteOutboxItemById(43),
+      ).thenThrow(Exception('DB offline'));
+
+      await _pumpOutboxMonitorPage(tester, mock: mock);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Error'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('outboxDelete-43')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('DELETE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('Delete failed'), findsOneWidget);
+    });
+
+    testWidgets('confirming retry shows a success toast', (tester) async {
+      final mock = _prepareMock(
+        count: 1,
+        itemStream: Stream<List<OutboxItem>>.fromIterable([
+          [
+            OutboxItem(
+              id: 77,
+              createdAt: _epoch,
+              updatedAt: _epoch,
+              status: 2,
+              retries: 5,
+              message: '{"runtimeType":"journalEntity","id":"test-id"}',
+              subject: 'error-subject',
+              priority: OutboxPriority.low.index,
+            ),
+          ],
+        ]),
+      );
+      when(() => mock.updateOutboxItem(any())).thenAnswer((_) async => 1);
+
+      await _pumpOutboxMonitorPage(tester, mock: mock);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Error'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('outboxRetry-77')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('RETRY NOW'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(() => mock.updateOutboxItem(any())).called(1);
+      expect(find.text('Retry scheduled'), findsOneWidget);
+    });
+
+    testWidgets('retry failure shows an error toast', (tester) async {
+      final mock = _prepareMock(
+        count: 1,
+        itemStream: Stream<List<OutboxItem>>.fromIterable([
+          [
+            OutboxItem(
+              id: 78,
+              createdAt: _epoch,
+              updatedAt: _epoch,
+              status: 2,
+              retries: 5,
+              message: '{"runtimeType":"journalEntity","id":"test-id"}',
+              subject: 'error-subject',
+              priority: OutboxPriority.low.index,
+            ),
+          ],
+        ]),
+      );
+      when(
+        () => mock.updateOutboxItem(any()),
+      ).thenThrow(Exception('DB offline'));
+
+      await _pumpOutboxMonitorPage(tester, mock: mock);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Error'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('outboxRetry-78')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('RETRY NOW'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('Retry failed'), findsOneWidget);
+    });
 
     testWidgets('renders empty state when no outbox items', (tester) async {
       final mock = _prepareMock(

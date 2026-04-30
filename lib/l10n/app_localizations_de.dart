@@ -1176,6 +1176,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Zur Standardaufnahme wechseln';
 
   @override
+  String get aiChatMessageCopied => 'In die Zwischenablage kopiert';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'API-Schlüssel darf nicht leer sein';
 
   @override
@@ -1458,6 +1461,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiModelSettings => 'AI-Modell-Einstellungen';
+
+  @override
+  String aiOllamaModelInstalledSuccessfully(String modelName) {
+    return 'Modell \"$modelName\" erfolgreich installiert!';
+  }
 
   @override
   String get aiProviderAlibabaDescription =>
@@ -2111,6 +2119,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get changeSetConfirmAll => 'Alle bestätigen';
+
+  @override
+  String changeSetConfirmAllPartialIssues(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Elemente hatten Teilprobleme',
+      one: '1 Element hatte Teilprobleme',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get changeSetConfirmError => 'Änderung konnte nicht angewendet werden';
@@ -2984,6 +3003,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteDeviceLabel => 'Gerät löschen';
 
   @override
+  String get designSystemActionVariantTitle => 'Mit Aktion';
+
+  @override
   String get designSystemActivatedLabel => 'Aktiv';
 
   @override
@@ -3067,6 +3089,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemContextMenuVariantsTitle => 'Kontextmenü-Varianten';
+
+  @override
+  String get designSystemCountdownVariantTitle => 'Mit Countdown';
 
   @override
   String get designSystemDateCardsTitle => 'Datumskarten';
@@ -3503,6 +3528,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get designSystemTimePickerTwentyFourHourLabel => '24-Stunden';
 
   @override
+  String get designSystemTitleOnlyVariantTitle => 'Nur-Titel-Variante';
+
+  @override
   String get designSystemToastDetailsLabel => 'Benachrichtigungsdetails';
 
   @override
@@ -3514,6 +3542,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get designSystemTooltipIconVariantsTitle => 'Tooltip-Symbol';
+
+  @override
+  String get designSystemUndoLabel => 'Rückgängig';
 
   @override
   String get designSystemVariantMatrixTitle => 'Variantenmatrix';

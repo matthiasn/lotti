@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
@@ -13,7 +15,6 @@ import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/misc/countdown_snackbar_content.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 /// Duration for the archive SnackBar countdown.
@@ -411,15 +412,19 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                 itemNotifier.unarchive();
               } else {
                 itemNotifier.archive();
-                showCountdownSnackBar(
-                  messenger,
-                  message: context.messages.checklistItemArchived,
+                messenger.showDesignSystemToast(
+                  tone: DesignSystemToastTone.warning,
+                  title: context.messages.checklistItemArchived,
                   duration: kChecklistArchiveDuration,
-                  actionLabel: context.messages.checklistItemArchiveUndo,
-                  onAction: () {
-                    itemNotifier.unarchive();
-                    messenger.hideCurrentSnackBar();
-                  },
+                  countdown: true,
+                  replaceCurrent: true,
+                  action: ToastAction(
+                    label: context.messages.checklistItemArchiveUndo,
+                    onPressed: () {
+                      itemNotifier.unarchive();
+                      messenger.hideCurrentSnackBar();
+                    },
+                  ),
                 );
               }
               return false;
@@ -428,6 +433,10 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
             return true;
           },
           onDismissed: (_) async {
+            // Capture the message strings from `context` BEFORE the await:
+            // `unlinkItem` removes this row from the checklist's item list,
+            // which unmounts the row and invalidates `context`. The
+            // `messenger` reference is captured higher up and survives.
             final deletedMessage = context.messages.checklistItemDeleted;
             final undoLabel = context.messages.checklistItemArchiveUndo;
 
@@ -439,17 +448,21 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
               () async => itemNotifier.delete(),
             );
 
-            showCountdownSnackBar(
-              messenger,
-              message: deletedMessage,
+            messenger.showDesignSystemToast(
+              tone: DesignSystemToastTone.warning,
+              title: deletedMessage,
               duration: kChecklistDeleteDuration,
-              actionLabel: undoLabel,
-              onAction: () {
-                _deleteTimer?.cancel();
-                _deleteTimer = null;
-                checklistNotifier.relinkItem(widget.itemId);
-                messenger.hideCurrentSnackBar();
-              },
+              countdown: true,
+              replaceCurrent: true,
+              action: ToastAction(
+                label: undoLabel,
+                onPressed: () {
+                  _deleteTimer?.cancel();
+                  _deleteTimer = null;
+                  checklistNotifier.relinkItem(widget.itemId);
+                  messenger.hideCurrentSnackBar();
+                },
+              ),
             );
           },
           background: ColoredBox(

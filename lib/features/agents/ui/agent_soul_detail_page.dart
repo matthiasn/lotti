@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -376,10 +378,9 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
           authoredBy: 'user',
         );
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.agentSoulCreatedSuccess),
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: context.messages.agentSoulCreatedSuccess,
         );
         ref.invalidate(allSoulDocumentsProvider);
         Navigator.of(context).pop();
@@ -394,10 +395,9 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
           authoredBy: 'user',
         );
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.messages.agentSoulVersionSaved),
-          ),
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: context.messages.agentSoulVersionSaved,
         );
         _snapshotOriginals();
         ref.invalidate(allSoulDocumentsProvider);
@@ -410,8 +410,9 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
         stackTrace: s,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.messages.commonError)),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.commonError,
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -447,10 +448,9 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
                   stackTrace: s,
                 );
                 if (!mounted || !pageContext.mounted) return;
-                ScaffoldMessenger.of(pageContext).showSnackBar(
-                  SnackBar(
-                    content: Text(pageContext.messages.commonError),
-                  ),
+                pageContext.showToast(
+                  tone: DesignSystemToastTone.error,
+                  title: pageContext.messages.commonError,
                 );
               }
             },
@@ -638,10 +638,9 @@ class _VersionTile extends ConsumerWidget {
                   stackTrace: s,
                 );
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.messages.commonError),
-                  ),
+                context.showToast(
+                  tone: DesignSystemToastTone.error,
+                  title: context.messages.commonError,
                 );
               }
             },

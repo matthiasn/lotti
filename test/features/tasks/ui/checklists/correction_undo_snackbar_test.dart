@@ -37,8 +37,10 @@ void main() {
       // Should have a cancel button
       expect(find.text('CANCEL'), findsOneWidget);
 
-      // Should have a progress indicator
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      // The pending was created in the past, so remainingTime is zero and
+      // DesignSystemToast intentionally skips the countdown bar. Animated
+      // countdown rendering is covered by design_system_toast_test.dart.
+      expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
     testWidgets('calls onUndo when cancel button pressed', (tester) async {
@@ -71,69 +73,36 @@ void main() {
       expect(undoCalled, isTrue);
     });
 
-    testWidgets('progress indicator animates over time', (tester) async {
-      // Use a createdAt 1 second in the past so there is remaining time
-      // for the progress indicator to animate.
-      final recentDate = DateTime(2024, 3, 15, 10, 30);
-      final pending = PendingCorrection(
-        before: 'before',
-        after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
-        createdAt: recentDate,
-      );
+    testWidgets(
+      'expired pending renders without a progress indicator',
+      (tester) async {
+        final pending = PendingCorrection(
+          before: 'old',
+          after: 'new',
+          categoryId: 'cat-1',
+          categoryName: 'Test',
+          createdAt: DateTime(2024, 3, 15),
+        );
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: Scaffold(
-            body: CorrectionUndoSnackbarContent(
-              pending: pending,
-              onUndo: () {},
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Scaffold(
+              body: CorrectionUndoSnackbarContent(
+                pending: pending,
+                onUndo: () {},
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Get initial progress value
-      final progressFinder = find.byType(LinearProgressIndicator);
-      expect(progressFinder, findsOneWidget);
-      final initialProgress = tester
-          .widget<LinearProgressIndicator>(progressFinder)
-          .value;
-      expect(initialProgress, isNotNull);
-
-      // When using a fixed past date, remaining time is zero
-      // so progress should be 0 (already expired)
-      expect(initialProgress, equals(0.0));
-    });
-
-    testWidgets('handles expired pending correction gracefully', (
-      tester,
-    ) async {
-      // Create a pending that has already expired
-      final expiredPending = PendingCorrection(
-        before: 'old',
-        after: 'new',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
-        createdAt: DateTime(2024, 3, 15),
-      );
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: Scaffold(
-            body: CorrectionUndoSnackbarContent(
-              pending: expiredPending,
-              onUndo: () {},
-            ),
-          ),
-        ),
-      );
-
-      // Should still render without crashing
-      expect(find.byType(CorrectionUndoSnackbarContent), findsOneWidget);
-      expect(find.byType(LinearProgressIndicator), findsOneWidget);
-    });
+        // remainingTime is clamped to zero, and DesignSystemToast skips the
+        // countdown controller (and therefore the progress bar) when the
+        // duration is zero. The widget must still render the body so
+        // anything queued through the messenger is visible.
+        expect(find.byType(CorrectionUndoSnackbarContent), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsNothing);
+      },
+    );
 
     testWidgets('disposes timer and animation controller properly', (
       tester,

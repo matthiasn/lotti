@@ -5,6 +5,8 @@ import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
@@ -879,34 +881,36 @@ class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
     QueuePipelineCoordinator coordinator,
   ) async {
     final messages = context.messages;
-    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       await coordinator.triggerBridge();
-      messenger?.showSnackBar(
-        SnackBar(content: Text(messages.queueCatchUpNowDone)),
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: messages.queueCatchUpNowDone,
       );
     } catch (e) {
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(messages.queueCatchUpNowError(e.toString())),
-        ),
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: messages.queueCatchUpNowError(e.toString()),
       );
     }
   }
 
   Future<void> _retrySkipped(BuildContext context, InboundQueue queue) async {
     final messages = context.messages;
-    final messenger = ScaffoldMessenger.maybeOf(context);
     try {
       final count = await queue.resurrectAll();
-      messenger?.showSnackBar(
-        SnackBar(content: Text(messages.queueSkippedRetryAllDone(count))),
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.success,
+        title: messages.queueSkippedRetryAllDone(count),
       );
     } catch (e) {
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(messages.queueSkippedRetryAllError(e.toString())),
-        ),
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: messages.queueSkippedRetryAllError(e.toString()),
       );
     }
   }

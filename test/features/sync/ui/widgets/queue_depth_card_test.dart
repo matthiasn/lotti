@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/ui/widgets/queue_depth_card.dart';
@@ -61,6 +62,9 @@ void main() {
   });
 
   Widget wrap(Widget child) => MaterialApp(
+    // The Retry / error toasts go through DesignSystemToast which reads
+    // tokens off the active ThemeData, so the test theme must include them.
+    theme: DesignSystemTheme.light(),
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(body: SingleChildScrollView(child: child)),

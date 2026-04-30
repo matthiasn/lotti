@@ -12,6 +12,8 @@ import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/suggestion_row.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
@@ -155,17 +157,17 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                anyFailed
-                    ? context.messages.changeSetConfirmError
-                    : context.messages.changeSetItemConfirmed,
-              ),
-            ),
-          );
+        // Terminal status for the whole batch supersedes any per-item
+        // toasts still queued behind it from in-flight confirms.
+        context.showToast(
+          tone: anyFailed
+              ? DesignSystemToastTone.error
+              : DesignSystemToastTone.success,
+          title: anyFailed
+              ? context.messages.changeSetConfirmError
+              : context.messages.changeSetItemConfirmed,
+          clearQueue: true,
+        );
       }
     } catch (e, stackTrace) {
       developer.log(
@@ -175,13 +177,11 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
         stackTrace: stackTrace,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(context.messages.changeSetConfirmError),
-            ),
-          );
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.changeSetConfirmError,
+          clearQueue: true,
+        );
       }
     } finally {
       // Always refresh — a later set can throw after earlier sets already

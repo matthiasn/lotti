@@ -1165,6 +1165,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
 
   @override
+  String get aiChatMessageCopied => 'Zkopírováno do schránky';
+
+  @override
   String get aiConfigApiKeyEmptyError => 'API klíč nemůže být prázdný';
 
   @override
@@ -1443,6 +1446,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiModelSettings => 'Nastavení AI modelu';
+
+  @override
+  String aiOllamaModelInstalledSuccessfully(String modelName) {
+    return 'Model „$modelName“ byl úspěšně nainstalován';
+  }
 
   @override
   String get aiProviderAlibabaDescription =>
@@ -2103,6 +2111,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get changeSetConfirmAll => 'Confirm all';
+
+  @override
+  String changeSetConfirmAllPartialIssues(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items had partial issues',
+      one: '1 item had partial issues',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get changeSetConfirmError => 'Failed to apply change';
@@ -2964,6 +2983,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteDeviceLabel => 'Odstranit zařízení';
 
   @override
+  String get designSystemActionVariantTitle => 'S akcí';
+
+  @override
   String get designSystemActivatedLabel => 'Aktivní';
 
   @override
@@ -3048,6 +3070,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get designSystemContextMenuVariantsTitle =>
       'Varianty kontextového menu';
+
+  @override
+  String get designSystemCountdownVariantTitle => 'S odpočtem';
 
   @override
   String get designSystemDateCardsTitle => 'Datumové karty';
@@ -3487,6 +3512,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemTimePickerTwentyFourHourLabel => '24hodinový';
 
   @override
+  String get designSystemTitleOnlyVariantTitle => 'Varianta pouze s názvem';
+
+  @override
   String get designSystemToastDetailsLabel => 'Detaily oznámení';
 
   @override
@@ -3498,6 +3526,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemTooltipIconVariantsTitle => 'Ikona nápovědy';
+
+  @override
+  String get designSystemUndoLabel => 'Zpět';
 
   @override
   String get designSystemVariantMatrixTitle => 'Matice variant';

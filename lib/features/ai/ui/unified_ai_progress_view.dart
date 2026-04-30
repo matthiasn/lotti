@@ -16,6 +16,8 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -403,12 +405,10 @@ class _UnifiedAiProgressContentState
                             ClipboardData(text: extractedPrompt!),
                           );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(copySnackbarMessage),
-                                duration: const Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
-                              ),
+                            context.showToast(
+                              tone: DesignSystemToastTone.success,
+                              title: copySnackbarMessage,
+                              duration: const Duration(seconds: 2),
                             );
                           }
                         },
@@ -533,19 +533,16 @@ class OllamaModelInstallDialogState
         });
       }
 
-      // Installation completed successfully
       if (mounted) {
-        Navigator.of(context).pop();
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Model "${widget.modelName}" installed successfully!',
-            ),
-            backgroundColor: Colors.green,
+        // Show the toast via the parent messenger *before* popping — the
+        // dialog's context is detached once pop runs.
+        context.showToast(
+          tone: DesignSystemToastTone.success,
+          title: context.messages.aiOllamaModelInstalledSuccessfully(
+            widget.modelName,
           ),
         );
-        // Call the callback if provided
+        Navigator.of(context).pop();
         widget.onModelInstalled?.call();
       }
     } catch (e) {

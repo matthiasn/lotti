@@ -6,6 +6,8 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/skill_seeding_service.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
@@ -293,10 +295,9 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_thinkingModelId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.messages.inferenceProfileThinkingRequired),
-        ),
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.inferenceProfileThinkingRequired,
       );
       return;
     }
@@ -333,8 +334,9 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.messages.commonError)),
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
         );
       }
     } finally {
