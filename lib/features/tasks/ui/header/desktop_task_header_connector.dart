@@ -244,10 +244,14 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.habitCategoryLabel,
-      builder: (_) => CategorySelectionModalContent(
+      builder: (modalContext) => CategorySelectionModalContent(
         onCategorySelected: (category) {
           controller.updateCategoryId(category?.id);
-          Navigator.of(context).pop();
+          // Pop via modalContext — same pattern as the estimate /
+          // due-date pickers (c6627fe8d). The outer task page lives in
+          // a per-tab nested Navigator while the modal is hosted on the
+          // root Navigator on narrow widths.
+          Navigator.of(modalContext).pop();
         },
         initialCategoryId: task.meta.categoryId,
       ),

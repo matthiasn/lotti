@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -145,6 +146,50 @@ void main() {
 
     expect(selectedCategory, equals(testCategory));
   });
+
+  testWidgets(
+    'row tap closes the modal without popping the outer nested route',
+    (tester) async {
+      // Reproduces the bottom-nav topology: CategoryField lives in a
+      // per-tab nested Navigator inside the root MaterialApp Navigator.
+      // On phone width the modal opens on the root Navigator
+      // (`shouldUseRootNavigatorForBottomSheet`), so popping with the
+      // field's outer context would pop the nested route instead of the
+      // modal — this test guards against that regression.
+      when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
+      when(() => mockCacheService.sortedCategories).thenReturn([testCategory]);
+
+      CategoryDefinition? selectedCategory;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (_) => CategoryField(
+                categoryId: null,
+                onSave: (category) => selectedCategory = category,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(TextField));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Test Category'));
+      await tester.pumpAndSettle();
+
+      expect(selectedCategory, equals(testCategory));
+      // Modal closed.
+      expect(find.byType(CategorySelectionModalContent), findsNothing);
+      // Outer nested route was NOT popped — the field is still mounted.
+      // If the pop had targeted the field's outer context, the nested
+      // Navigator's MaterialPageRoute would have been removed and the
+      // CategoryField would no longer be in the tree.
+      expect(find.byType(CategoryField), findsOneWidget);
+    },
+  );
 
   testWidgets('shows create category option when search has no matches', (
     tester,

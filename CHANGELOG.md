@@ -73,6 +73,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `settingsV2DisableAction`, `settingsV2DisableFailed`) across all locales.
   The `placeholderButtonIconSize` constant is gone with its sole caller.
 
+### Fixed
+- Category selection modal now closes itself when a row is tapped on
+  mobile and narrow desktop. The bottom-nav redesign opens these
+  modals on the **root** Navigator (above the bottom nav), but the
+  picker callbacks were popping `Navigator.of(<outer-page-context>)`,
+  which resolves to the per-tab nested Navigator the page lives in
+  rather than the root Navigator that hosts the modal. Selecting a
+  category therefore left the picker stuck open while the underlying
+  per-tab stack popped. The four affected callers
+  (`DesktopTaskHeaderConnector._showCategoryPicker`,
+  `CategorySelectionIconButton`, `CategoryField`, `AddBlockSheet`)
+  now name their `builder` argument `modalContext` and pop with
+  `Navigator.of(modalContext).pop()` — the same pattern commit
+  c6627fe8d already applied to the estimate / due-date / priority
+  pickers, and that `ProjectDetailsPage._pickCategory` was already
+  using.
+
 ## [0.9.978]
 ### Changed
 - Settings V2 detail surface consolidated to a single page-title
