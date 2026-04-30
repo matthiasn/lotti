@@ -368,6 +368,93 @@ void main() {
           expect(find.text('Second'), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'replaceCurrent: true keeps queued toasts intact behind the new one',
+        (tester) async {
+          // Two queued toasts, then a third with replaceCurrent.
+          await _pumpHost(
+            tester,
+            onPressed: (context) => () {
+              context
+                ..showToast(
+                  tone: DesignSystemToastTone.success,
+                  title: 'First',
+                )
+                ..showToast(
+                  tone: DesignSystemToastTone.success,
+                  title: 'Queued',
+                )
+                ..showToast(
+                  tone: DesignSystemToastTone.error,
+                  title: 'Replacement',
+                  replaceCurrent: true,
+                );
+            },
+          );
+          await tester.tap(find.text('show'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          // The in-flight First was dropped; Queued is now the head of the
+          // queue and is visible because it was promoted by hideCurrent.
+          expect(find.text('First'), findsNothing);
+          expect(find.text('Queued'), findsOneWidget);
+
+          // Drain Queued and the Replacement should still appear after it.
+          await tester.pump(const Duration(seconds: 4));
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.text('Replacement'), findsOneWidget);
+        },
+      );
+    });
+
+    group('clearQueue', () {
+      testWidgets(
+        'clearQueue: true drops queued toasts so only the new one is shown',
+        (tester) async {
+          await _pumpHost(
+            tester,
+            onPressed: (context) => () {
+              context
+                ..showToast(
+                  tone: DesignSystemToastTone.success,
+                  title: 'First',
+                )
+                ..showToast(
+                  tone: DesignSystemToastTone.success,
+                  title: 'Queued',
+                )
+                ..showToast(
+                  tone: DesignSystemToastTone.error,
+                  title: 'Terminal',
+                  clearQueue: true,
+                );
+            },
+          );
+          await tester.tap(find.text('show'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          // First was in-flight; Queued was queued behind it. clearQueue
+          // calls clearSnackBars(), so both vanish and Terminal is the
+          // sole on-screen toast.
+          expect(find.text('First'), findsNothing);
+          expect(find.text('Queued'), findsNothing);
+          expect(find.text('Terminal'), findsOneWidget);
+
+          // Drain past the would-be display of any leftover queued items
+          // to prove they aren't waiting in the wings.
+          await tester.pump(const Duration(seconds: 4));
+          await tester.pump(const Duration(milliseconds: 300));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(find.text('Queued'), findsNothing);
+          expect(find.text('First'), findsNothing);
+        },
+      );
     });
 
     group('desktop sizing', () {

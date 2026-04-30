@@ -96,8 +96,11 @@ extension DesignSystemMessengerToast on ScaffoldMessengerState {
     bool countdown = false,
     double initialCountdownProgress = 1.0,
     bool replaceCurrent = false,
+    bool clearQueue = false,
   }) {
-    if (replaceCurrent) {
+    if (clearQueue) {
+      clearSnackBars();
+    } else if (replaceCurrent) {
       hideCurrentSnackBar();
     }
     return showSnackBar(
@@ -124,11 +127,14 @@ extension DesignSystemToastMessenger on BuildContext {
   /// Uses the shared [ScaffoldMessenger] queue. Passing
   /// `replaceCurrent: true` calls [ScaffoldMessengerState.hideCurrentSnackBar]
   /// first so the new toast displays immediately instead of waiting for the
-  /// in-flight one to finish. Note: this only dismisses the *current*
-  /// SnackBar — items already queued behind it still appear afterwards. Use
-  /// it for transient countdown / undo flows where the most recent action
-  /// supersedes the previous one. The default keeps the queue intact so
-  /// plain confirmation toasts don't wipe an unrelated in-flight undo.
+  /// in-flight one to finish — items already queued behind it still appear
+  /// afterwards. Passing `clearQueue: true` calls
+  /// [ScaffoldMessengerState.clearSnackBars] instead, dropping every queued
+  /// item so the new toast is the only one the user will see; use this for
+  /// terminal status reporting (e.g. "all confirmed" / "all failed") that
+  /// supersedes prior in-flight per-item toasts. The default keeps the
+  /// queue intact so plain confirmation toasts don't wipe an unrelated
+  /// in-flight undo.
   ///
   /// Passing `dismissible: false` hides the close action and disables
   /// swipe-to-dismiss so the toast stays up for the full [duration].
@@ -152,6 +158,7 @@ extension DesignSystemToastMessenger on BuildContext {
     bool countdown = false,
     double initialCountdownProgress = 1.0,
     bool replaceCurrent = false,
+    bool clearQueue = false,
   }) {
     return ScaffoldMessenger.of(this).showDesignSystemToast(
       tone: tone,
@@ -164,6 +171,7 @@ extension DesignSystemToastMessenger on BuildContext {
       countdown: countdown,
       initialCountdownProgress: initialCountdownProgress,
       replaceCurrent: replaceCurrent,
+      clearQueue: clearQueue,
     );
   }
 }

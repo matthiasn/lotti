@@ -157,6 +157,8 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
       }
 
       if (mounted) {
+        // Terminal status for the whole batch supersedes any per-item
+        // toasts still queued behind it from in-flight confirms.
         context.showToast(
           tone: anyFailed
               ? DesignSystemToastTone.error
@@ -164,7 +166,7 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
           title: anyFailed
               ? context.messages.changeSetConfirmError
               : context.messages.changeSetItemConfirmed,
-          replaceCurrent: true,
+          clearQueue: true,
         );
       }
     } catch (e, stackTrace) {
@@ -178,7 +180,7 @@ class _OpenSuggestionsListState extends ConsumerState<_OpenSuggestionsList> {
         context.showToast(
           tone: DesignSystemToastTone.error,
           title: context.messages.changeSetConfirmError,
-          replaceCurrent: true,
+          clearQueue: true,
         );
       }
     } finally {

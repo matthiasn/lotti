@@ -166,14 +166,14 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
       messenger.showDesignSystemToast(
         tone: tone,
         title: message,
-        replaceCurrent: true,
+        clearQueue: true,
       );
     } catch (e) {
       developer.log('confirmItem failed: $e', name: 'SuggestionRow');
       messenger.showDesignSystemToast(
         tone: DesignSystemToastTone.error,
         title: messages.changeSetConfirmError,
-        replaceCurrent: true,
+        clearQueue: true,
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -206,14 +206,14 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
         title: applied
             ? messages.changeSetItemRejected
             : messages.changeSetConfirmError,
-        replaceCurrent: true,
+        clearQueue: true,
       );
     } catch (e) {
       developer.log('rejectItem failed: $e', name: 'SuggestionRow');
       messenger.showDesignSystemToast(
         tone: DesignSystemToastTone.error,
         title: messages.changeSetConfirmError,
-        replaceCurrent: true,
+        clearQueue: true,
       );
     } finally {
       if (mounted) setState(() => _busy = false);
