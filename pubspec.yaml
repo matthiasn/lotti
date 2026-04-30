@@ -103,7 +103,6 @@ dependencies:
   pie_chart: ^5.3.2
   qr_flutter: ^4.0.0
   quiver: ^3.2.1
-  radial_button: ^1.0.1
   record: ^6.0.0
   research_package:
     git:

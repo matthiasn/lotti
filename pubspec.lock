@@ -2374,14 +2374,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.2"
-  radial_button:
-    dependency: "direct main"
-    description:
-      name: radial_button
-      sha256: bc6c95753611ebc07c723f18817c03366ef286bc86f66adb76d2cd2f59925f34
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
   random_string:
     dependency: transitive
     description:
