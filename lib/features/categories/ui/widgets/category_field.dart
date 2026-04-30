@@ -30,11 +30,15 @@ class CategoryField extends StatelessWidget {
       ModalUtils.showSinglePageModal<void>(
         context: context,
         title: context.messages.habitCategoryLabel,
-        builder: (BuildContext _) {
+        builder: (modalContext) {
           return CategorySelectionModalContent(
             onCategorySelected: (category) {
               onSave(category);
-              Navigator.pop(context);
+              // Pop via modalContext: the modal is hosted on the root
+              // Navigator (shouldUseRootNavigatorForBottomSheet on narrow
+              // widths); the outer context resolves to a per-tab nested
+              // Navigator and would pop the wrong stack.
+              Navigator.of(modalContext).pop();
             },
             initialCategoryId: categoryId,
           );

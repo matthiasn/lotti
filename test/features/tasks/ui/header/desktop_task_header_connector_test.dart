@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -535,24 +536,28 @@ void main() {
   });
 
   group('DesktopTaskHeaderConnector — picker callbacks', () {
-    Widget pumpConnectorWithTracker({
+    List<Override> connectorOverrides({
       required Task task,
       required ToggleCallTracker tracker,
-    }) {
-      final override = entryControllerProvider(id: task.id).overrideWith(
+    }) => [
+      entryControllerProvider(id: task.id).overrideWith(
         () => FakeEntryController(task, tracker: tracker),
-      );
+      ),
+      labelsStreamProvider.overrideWith(
+        (ref) => Stream<List<LabelDefinition>>.value(const []),
+      ),
+      projectForTaskProvider(task.id).overrideWith((ref) async => null),
+      taskProgressControllerProvider(id: task.id).overrideWith(
+        () => _FakeTaskProgressController(null),
+      ),
+    ];
+
+    Widget wrapInTestApp({
+      required List<Override> overrides,
+      required Widget home,
+    }) {
       return ProviderScope(
-        overrides: [
-          override,
-          labelsStreamProvider.overrideWith(
-            (ref) => Stream<List<LabelDefinition>>.value(const []),
-          ),
-          projectForTaskProvider(task.id).overrideWith((ref) async => null),
-          taskProgressControllerProvider(id: task.id).overrideWith(
-            () => _FakeTaskProgressController(null),
-          ),
-        ],
+        overrides: overrides,
         child: MaterialApp(
           theme: DesignSystemTheme.dark(),
           localizationsDelegates: const [
@@ -563,10 +568,18 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: DesktopTaskHeaderConnector(taskId: task.id),
-          ),
+          home: home,
         ),
+      );
+    }
+
+    Widget pumpConnectorWithTracker({
+      required Task task,
+      required ToggleCallTracker tracker,
+    }) {
+      return wrapInTestApp(
+        overrides: connectorOverrides(task: task, tracker: tracker),
+        home: Scaffold(body: DesktopTaskHeaderConnector(taskId: task.id)),
       );
     }
 
@@ -714,6 +727,54 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tracker.updateCategoryIdCalls, equals(['cat-pick']));
+      },
+    );
+
+    testWidgets(
+      'category row tap closes the modal without popping the outer route',
+      (tester) async {
+        // Reproduces the bottom-nav topology: the connector lives in a
+        // per-tab nested Navigator inside the MaterialApp root Navigator.
+        // On phone width the picker opens on the root Navigator
+        // (`shouldUseRootNavigatorForBottomSheet`), so popping with the
+        // connector's outer context would pop the nested route instead of
+        // the modal. This guards the c6627fe8d-style fix.
+        final pickable = buildCategory(id: 'cat-pick', name: 'Focus');
+        when(() => mockCache.sortedCategories).thenReturn([pickable]);
+        when(() => mockCache.getCategoryById('cat-pick')).thenReturn(pickable);
+
+        final task = buildTask();
+        final tracker = ToggleCallTracker();
+
+        await tester.pumpWidget(
+          wrapInTestApp(
+            overrides: connectorOverrides(task: task, tracker: tracker),
+            home: MediaQuery(
+              data: const MediaQueryData(size: Size(390, 844)),
+              child: Navigator(
+                onGenerateRoute: (_) => MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    body: DesktopTaskHeaderConnector(taskId: task.id),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('unassigned'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Focus'));
+        await tester.pumpAndSettle();
+
+        // Modal closed.
+        expect(find.byType(CategorySelectionModalContent), findsNothing);
+        // Outer nested route was NOT popped — the connector is still
+        // mounted. A pop targeting the connector's outer context would
+        // have removed the MaterialPageRoute hosting the connector.
+        expect(find.byType(DesktopTaskHeaderConnector), findsOneWidget);
       },
     );
 

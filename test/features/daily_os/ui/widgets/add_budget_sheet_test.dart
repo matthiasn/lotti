@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
@@ -310,5 +315,74 @@ void main() {
       // Should have Row for time selectors and buttons
       expect(find.byType(Row), findsWidgets);
     });
+
+    testWidgets(
+      'tapping a category row updates the selection and closes the modal '
+      'without popping the outer nested route',
+      (tester) async {
+        // Reproduces the bottom-nav topology: AddBlockSheet lives in a
+        // per-tab nested Navigator, while the category picker is pushed
+        // onto the root Navigator on phone widths
+        // (`shouldUseRootNavigatorForBottomSheet`). A pop targeting the
+        // sheet's outer context would dismiss the wrong stack.
+        final unifiedData = DailyOsData(
+          date: testDate,
+          dayPlan: createTestPlan(),
+          timelineData: createTestTimelineData(),
+          budgetProgress: [],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              unifiedDailyOsDataControllerProvider(
+                date: testDate,
+              ).overrideWith(() => _TestUnifiedController(unifiedData)),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                FormBuilderLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MediaQuery(
+                data: const MediaQueryData(size: Size(390, 844)),
+                child: Navigator(
+                  onGenerateRoute: (_) => MaterialPageRoute<void>(
+                    builder: (_) => Scaffold(
+                      body: AddBlockSheet(date: testDate),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Open the picker by tapping the category placeholder.
+        await tester.tap(find.text('Choose a category...'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+
+        await tester.tap(find.text('Work'));
+        await tester.pumpAndSettle();
+
+        // Modal closed.
+        expect(find.byType(CategorySelectionModalContent), findsNothing);
+        // Selection took effect — placeholder is replaced by the
+        // category name in the sheet.
+        expect(find.text('Choose a category...'), findsNothing);
+        expect(find.text('Work'), findsOneWidget);
+        // Outer nested route was NOT popped — the sheet is still
+        // mounted. A pop targeting the sheet's outer context would have
+        // removed the MaterialPageRoute hosting it.
+        expect(find.byType(AddBlockSheet), findsOneWidget);
+      },
+    );
   });
 }

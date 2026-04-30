@@ -39,13 +39,17 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
     ModalUtils.showSinglePageModal<void>(
       context: context,
       title: context.messages.dailyOsSelectCategory,
-      builder: (BuildContext _) {
+      builder: (modalContext) {
         return CategorySelectionModalContent(
           onCategorySelected: (category) {
             setState(() {
               _selectedCategory = category;
             });
-            Navigator.pop(context);
+            // Pop via modalContext — the modal is hosted on the root
+            // Navigator on narrow widths; the outer context resolves to
+            // a per-tab nested Navigator. See CategoryField for the full
+            // rationale.
+            Navigator.of(modalContext).pop();
           },
           initialCategoryId: _selectedCategory?.id,
         );
