@@ -93,6 +93,7 @@ class OutboxService {
           loggingService: _loggingService,
           maxRetriesOverride: maxRetries,
           domainLogger: _domainLogger,
+          bundleMaxSizeProvider: _resolveBundleMaxSize,
         );
 
     _startRunner();
@@ -453,6 +454,24 @@ class OutboxService {
         'transport-time wrapper built by OutboxProcessor.',
       ),
     };
+  }
+
+  /// Resolves the bundle size cap for the next [OutboxProcessor] drain.
+  /// Returns `1` (no bundling) by default; flips to
+  /// [SyncTuning.outboxBundleMaxSize] only when the user has opted in via
+  /// the `useOutboxBundlingFlag` feature flag.
+  ///
+  /// Read freshly per drain so flipping the flag at runtime takes effect on
+  /// the next pass without restarting the service.
+  Future<int> _resolveBundleMaxSize() async {
+    try {
+      final enabled = await _journalDb.getConfigFlag(useOutboxBundlingFlag);
+      return enabled ? SyncTuning.outboxBundleMaxSize : 1;
+    } catch (_) {
+      // A transient flag-read failure must never block the outbox: fall
+      // back to the safe single-row path.
+      return 1;
+    }
   }
 
   /// Upper bound on how many items a single `sendNext` invocation will

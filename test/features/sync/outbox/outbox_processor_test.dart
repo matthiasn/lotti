@@ -709,4 +709,549 @@ void main() {
       },
     );
   });
+
+  group('bundle path', () {
+    OutboxItem textItem({required int id, String subject = 'host:t'}) {
+      return OutboxItem(
+        id: id,
+        message: jsonEncode(
+          SyncMessage.aiConfigDelete(id: 'cfg-$id').toJson(),
+        ),
+        subject: '$subject:$id',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024).add(Duration(minutes: id)),
+        updatedAt: DateTime(2024).add(Duration(minutes: id)),
+        priority: OutboxPriority.low.index,
+      );
+    }
+
+    OutboxItem mediaItem({required int id, String subject = 'media'}) {
+      return OutboxItem(
+        id: id,
+        message: jsonEncode(
+          SyncMessage.aiConfigDelete(id: 'media-$id').toJson(),
+        ),
+        subject: '$subject:$id',
+        status: OutboxStatus.pending.index,
+        retries: 0,
+        createdAt: DateTime(2024).add(Duration(minutes: id)),
+        updatedAt: DateTime(2024).add(Duration(minutes: id)),
+        filePath: 'images/$id.jpg',
+        priority: OutboxPriority.high.index,
+      );
+    }
+
+    /// Models `claimNextBatch` against an in-memory pending queue: the head
+    /// row is returned alone when it is a media attachment, otherwise the
+    /// maximal text-only prefix capped at [maxSize].
+    void stubBatchClaimFromQueue(
+      MockOutboxRepository repo,
+      List<OutboxItem> queue,
+    ) {
+      when(
+        () => repo.claimNextBatch(
+          maxSize: any(named: 'maxSize'),
+          leaseDuration: any(named: 'leaseDuration'),
+        ),
+      ).thenAnswer((invocation) async {
+        if (queue.isEmpty) return <OutboxItem>[];
+        final maxSize = invocation.namedArguments[#maxSize] as int;
+        if (queue.first.filePath != null) {
+          return [queue.removeAt(0)];
+        }
+        final stopAt = queue.indexWhere((row) => row.filePath != null);
+        final boundary = stopAt == -1 ? queue.length : stopAt;
+        final cap = boundary < maxSize ? boundary : maxSize;
+        final claimed = queue.sublist(0, cap);
+        queue.removeRange(0, cap);
+        return claimed;
+      });
+      when(() => repo.hasMorePending()).thenAnswer(
+        (_) async => queue.isNotEmpty,
+      );
+    }
+
+    test(
+      'bundling disabled by default — claim() is used, never claimNextBatch',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        _stubClaimSequence(repo, [textItem(id: 1)]);
+        _stubHasMorePending(repo);
+        when(() => repo.markSent(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => true);
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+        );
+
+        await proc.processQueue();
+
+        verify(
+          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+        ).called(1);
+        verifyNever(
+          () => repo.claimNextBatch(
+            maxSize: any(named: 'maxSize'),
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'when the bundle provider yields 1, the legacy claim() path is used '
+      '(boundary case — proves no behavior drift when the flag is off)',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        _stubClaimSequence(repo, [textItem(id: 1)]);
+        _stubHasMorePending(repo);
+        when(() => repo.markSent(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => true);
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 1,
+        );
+
+        await proc.processQueue();
+
+        verify(
+          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+        ).called(1);
+        verifyNever(
+          () => repo.claimNextBatch(
+            maxSize: any(named: 'maxSize'),
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'a single-row batch of text routes through the single-item path '
+      '(no bundle envelope is constructed, so the wire format is unchanged '
+      'when only one row is pending)',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = [textItem(id: 1)];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markSent(any())).thenAnswer((_) async {});
+        SyncMessage? sent;
+        when(() => sender.send(any())).thenAnswer((inv) async {
+          sent = inv.positionalArguments[0] as SyncMessage;
+          return true;
+        });
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        await proc.processQueue();
+
+        expect(sent, isA<SyncAiConfigDelete>());
+        verify(() => repo.markSent(any())).called(1);
+        verifyNever(() => repo.markSentBatch(any()));
+      },
+    );
+
+    test(
+      'a single-row batch of a media attachment also routes through the '
+      'single-item path — attachments never travel inside a bundle',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = [mediaItem(id: 1)];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markSent(any())).thenAnswer((_) async {});
+        SyncMessage? sent;
+        when(() => sender.send(any())).thenAnswer((inv) async {
+          sent = inv.positionalArguments[0] as SyncMessage;
+          return true;
+        });
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        await proc.processQueue();
+
+        expect(sent, isNot(isA<SyncOutboxBundle>()));
+        verify(() => repo.markSent(any())).called(1);
+        verifyNever(() => repo.markSentBatch(any()));
+      },
+    );
+
+    test(
+      'a multi-row batch is wrapped in a SyncOutboxBundle and committed via '
+      'markSentBatch on success',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = [
+          for (var i = 1; i <= 5; i++) textItem(id: i),
+        ];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markSentBatch(any())).thenAnswer((_) async {});
+        SyncMessage? sent;
+        when(() => sender.send(any())).thenAnswer((inv) async {
+          sent = inv.positionalArguments[0] as SyncMessage;
+          return true;
+        });
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        final result = await proc.processQueue();
+
+        final bundle = sent! as SyncOutboxBundle;
+        expect(bundle.children, hasLength(5));
+        for (final child in bundle.children) {
+          expect(child, isA<SyncAiConfigDelete>());
+        }
+        verify(
+          () => repo.markSentBatch(
+            any(
+              that: isA<List<OutboxItem>>().having((b) => b.length, 'len', 5),
+            ),
+          ),
+        ).called(1);
+        verifyNever(() => repo.markSent(any()));
+        expect(result.shouldSchedule, isFalse);
+      },
+    );
+
+    test(
+      'on bundle send failure every row in the batch goes through markRetryBatch '
+      'and the result schedules the standard retry backoff',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = [
+          for (var i = 1; i <= 3; i++) textItem(id: i),
+        ];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => false);
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          retryDelayOverride: const Duration(milliseconds: 250),
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        final result = await proc.processQueue();
+
+        verify(
+          () => repo.markRetryBatch(
+            any(
+              that: isA<List<OutboxItem>>().having((b) => b.length, 'len', 3),
+            ),
+          ),
+        ).called(1);
+        verifyNever(() => repo.markRetry(any()));
+        expect(result.shouldSchedule, isTrue);
+        expect(result.nextDelay, const Duration(milliseconds: 250));
+      },
+    );
+
+    test(
+      'bundle retry-cap fast-path: when any row in the batch crosses '
+      'maxRetriesForDiagnostics on its incremented retry count, the next '
+      'drain is scheduled at delay=0 so the queue advances past the '
+      'now-errored rows immediately',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final hotRow = textItem(id: 1).copyWith(retries: 1);
+        final coldRow = textItem(id: 2);
+        final queue = [hotRow, coldRow];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => false);
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          maxRetriesOverride: 2,
+          retryDelayOverride: const Duration(seconds: 5),
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        final result = await proc.processQueue();
+
+        expect(result.shouldSchedule, isTrue);
+        expect(result.nextDelay, Duration.zero);
+        verify(() => repo.markRetryBatch(any())).called(1);
+      },
+    );
+
+    test(
+      'bundle send timeout is treated identically to a soft failure: the '
+      'whole batch flips to retry via markRetryBatch and the standard '
+      'backoff is scheduled',
+      () async {
+        fakeAsync((async) {
+          final repo = MockOutboxRepository();
+          final sender = MockMessageSender();
+          final log = MockLoggingService();
+
+          final queue = [
+            for (var i = 1; i <= 4; i++) textItem(id: i),
+          ];
+          stubBatchClaimFromQueue(repo, queue);
+          when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+          when(
+            () => sender.send(any()),
+          ).thenAnswer((_) => Completer<bool>().future);
+          _stubSilentLogging(log);
+
+          final proc = OutboxProcessor(
+            repository: repo,
+            messageSender: sender,
+            loggingService: log,
+            retryDelayOverride: const Duration(milliseconds: 200),
+            sendTimeoutOverride: const Duration(milliseconds: 50),
+            bundleMaxSizeProvider: () async => 50,
+          );
+
+          OutboxProcessingResult? result;
+          unawaited(proc.processQueue().then((r) => result = r));
+          async
+            ..elapse(const Duration(seconds: 1))
+            ..flushMicrotasks();
+          expect(result, isNotNull);
+          expect(result!.shouldSchedule, isTrue);
+          expect(result!.nextDelay?.inMilliseconds, 200);
+          verify(() => repo.markRetryBatch(any())).called(1);
+        });
+      },
+    );
+
+    test(
+      'bundle send raising an exception in the post-send observability path '
+      'does not revive the row through markRetryBatch — once markSentBatch '
+      'has succeeded the rows are considered acknowledged',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = [
+          for (var i = 1; i <= 3; i++) textItem(id: i),
+        ];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markSentBatch(any())).thenAnswer((_) async {});
+        // hasMorePending throws AFTER markSentBatch already committed.
+        // mocktail requires the closure form so the call is captured for
+        // stubbing; a tearoff would invoke the method on the spot.
+        // ignore: unnecessary_lambdas
+        when(() => repo.hasMorePending()).thenThrow(StateError('boom'));
+        when(() => sender.send(any())).thenAnswer((_) async => true);
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        final result = await proc.processQueue();
+
+        verify(() => repo.markSentBatch(any())).called(1);
+        verifyNever(() => repo.markRetryBatch(any()));
+        expect(result.shouldSchedule, isTrue);
+        expect(result.nextDelay, Duration.zero);
+      },
+    );
+
+    test(
+      'Scenario A reproduction (image at position 100 in a 500-row queue): '
+      'the wire pattern is bundle(50) × 2 → image alone → bundle(50) × 8 — '
+      '500 rows ship in 11 sends instead of 500',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = <OutboxItem>[
+          for (var i = 1; i < 100; i++) textItem(id: i),
+          mediaItem(id: 100),
+          for (var i = 101; i <= 500; i++) textItem(id: i),
+        ];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markSent(any())).thenAnswer((_) async {});
+        when(() => repo.markSentBatch(any())).thenAnswer((_) async {});
+
+        final sends = <SyncMessage>[];
+        when(() => sender.send(any())).thenAnswer((inv) async {
+          sends.add(inv.positionalArguments[0] as SyncMessage);
+          return true;
+        });
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        // Drain until processQueue reports nothing more to do.
+        var safety = 1000;
+        while (safety-- > 0) {
+          final r = await proc.processQueue();
+          if (!r.shouldSchedule) break;
+        }
+        expect(safety, greaterThan(0), reason: 'drain loop did not terminate');
+
+        // Bucket the sends by their wire shape.
+        final bundleSizes = <int>[];
+        var imagesSent = 0;
+        for (final s in sends) {
+          if (s is SyncOutboxBundle) {
+            bundleSizes.add(s.children.length);
+          } else {
+            imagesSent++;
+          }
+        }
+
+        expect(imagesSent, 1, reason: 'one media attachment, sent alone');
+        // First two bundles fill to 50 (rows 1..50, 51..99 = 49 — head fills
+        // then stops at the attachment), then image, then 8 × 50 to drain
+        // 401..500.
+        expect(bundleSizes.first, 50);
+        expect(
+          bundleSizes,
+          orderedEquals([50, 49, 50, 50, 50, 50, 50, 50, 50, 50]),
+          reason: '500 rows + image at pos 100 → bundle pattern',
+        );
+        expect(sends.length, 11);
+      },
+    );
+
+    test(
+      'Scenario B reproduction (image at position 60): pattern is '
+      'bundle(50) → bundle(9) → image alone',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        final queue = <OutboxItem>[
+          for (var i = 1; i <= 59; i++) textItem(id: i),
+          mediaItem(id: 60),
+        ];
+        stubBatchClaimFromQueue(repo, queue);
+        when(() => repo.markSent(any())).thenAnswer((_) async {});
+        when(() => repo.markSentBatch(any())).thenAnswer((_) async {});
+
+        final sends = <SyncMessage>[];
+        when(() => sender.send(any())).thenAnswer((inv) async {
+          sends.add(inv.positionalArguments[0] as SyncMessage);
+          return true;
+        });
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          bundleMaxSizeProvider: () async => 50,
+        );
+
+        var safety = 100;
+        while (safety-- > 0) {
+          final r = await proc.processQueue();
+          if (!r.shouldSchedule) break;
+        }
+        expect(safety, greaterThan(0));
+
+        expect(sends, hasLength(3));
+        expect((sends[0] as SyncOutboxBundle).children, hasLength(50));
+        expect((sends[1] as SyncOutboxBundle).children, hasLength(9));
+        expect(sends[2], isNot(isA<SyncOutboxBundle>()));
+      },
+    );
+
+    test(
+      'a flag-read failure inside the provider falls back to single-row '
+      'behavior — the outbox never blocks on a transient flag read',
+      () async {
+        final repo = MockOutboxRepository();
+        final sender = MockMessageSender();
+        final log = MockLoggingService();
+
+        _stubClaimSequence(repo, [textItem(id: 1)]);
+        _stubHasMorePending(repo);
+        when(() => repo.markSent(any())).thenAnswer((_) async {});
+        when(() => sender.send(any())).thenAnswer((_) async => true);
+        _stubSilentLogging(log);
+
+        final proc = OutboxProcessor(
+          repository: repo,
+          messageSender: sender,
+          loggingService: log,
+          // The OutboxService.resolveBundleMaxSize wrapper catches the
+          // exception and returns 1; here we model the same fallback.
+          bundleMaxSizeProvider: () async => 1,
+        );
+
+        final result = await proc.processQueue();
+
+        expect(result.shouldSchedule, isFalse);
+        verify(
+          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+        ).called(1);
+        verifyNever(
+          () => repo.claimNextBatch(
+            maxSize: any(named: 'maxSize'),
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
+        );
+      },
+    );
+  });
 }
