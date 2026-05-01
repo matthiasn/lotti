@@ -31,6 +31,7 @@ import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -553,6 +554,7 @@ class SyncEventProcessor {
     SyncJournalEntityLoader? journalEntityLoader,
     SyncSequenceLogService? sequenceLogService,
     AttachmentIndex? attachmentIndex,
+    JournalDb? journalDb,
     this.backfillResponseHandler,
   }) : _loggingService = loggingService,
        _domainLogger = domainLogger,
@@ -562,7 +564,8 @@ class SyncEventProcessor {
        _journalEntityLoader =
            journalEntityLoader ?? const FileSyncJournalEntityLoader(),
        _sequenceLogService = sequenceLogService,
-       _attachmentIndex = attachmentIndex;
+       _attachmentIndex = attachmentIndex,
+       _journalDb = journalDb;
 
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
@@ -572,6 +575,12 @@ class SyncEventProcessor {
   final SyncJournalEntityLoader _journalEntityLoader;
   final SyncSequenceLogService? _sequenceLogService;
   final AttachmentIndex? _attachmentIndex;
+  // Optional prepare-phase DB handle — only the outbox bundle resolver uses
+  // it today, for a single bulk vector-clock dominance check across every
+  // journal entity in the manifest. Apply-phase DB writes still flow
+  // through the writer-transaction `journalDb` parameter (separate handle)
+  // so this stays read-only by convention.
+  final JournalDb? _journalDb;
 
   static const int _recentJournalEntityLimit = 500;
   final LinkedHashMap<String, String> _recentJournalEntityFingerprints =
@@ -955,7 +964,7 @@ class SyncEventProcessor {
         final resolved = await _outboxBundleUnpacker.prepare(
           event: event,
           msg: msg,
-          resolveSidecar: _resolveOutboxBundleSidecar,
+          resolveSidecar: _resolveOutboxBundleManifest,
           prepareChild: (childEvent, childMsg) =>
               _prepareForMessage(event: childEvent, syncMessage: childMsg),
         );
@@ -1561,25 +1570,231 @@ class SyncEventProcessor {
     return PreparedAgentSyncBundle(entities: entities, links: links);
   }
 
-  /// Resolves the sidecar attachment for an empty [SyncOutboxBundle]. Used
-  /// only by the [OutboxBundleUnpacker] callback wiring; the per-child
-  /// recursion is owned by the unpacker.
-  Future<SyncOutboxBundle?> _resolveOutboxBundleSidecar(String? jsonPath) =>
-      _resolveAgentPayload<SyncOutboxBundle>(
-        inline: null,
-        jsonPath: jsonPath,
-        fromJson: (json) {
-          final decoded = SyncMessage.fromJson(json);
-          if (decoded is SyncOutboxBundle) return decoded;
-          throw const FormatException('outboxBundle payload expected');
-        },
-        typeName: 'outboxBundle',
+  /// Resolves a [SyncOutboxBundle]'s manifest payload, materializes each
+  /// child's `JournalEntity` JSON to the cache on disk, and returns the
+  /// reconstructed bundle for the unpacker to walk through prepareChild.
+  ///
+  /// The manifest is the single artifact on the wire: it carries every
+  /// child's envelope plus, for `SyncJournalEntity`, the full entity body
+  /// (the database is the system of record on both ends, so the receiver
+  /// does not also need a per-child file event). Inline-payload families
+  /// (`SyncEntryLink`, `SyncAiConfig`, `SyncAiConfigDelete`,
+  /// `SyncEntityDefinition`, `SyncThemingSelection`, `SyncBackfillRequest`,
+  /// `SyncBackfillResponse`) ship their data inside the freezed envelope
+  /// and need no separate `payload` field. Agent envelopes
+  /// (`SyncAgentEntity`, `SyncAgentLink`, `SyncAgentBundle`) likewise carry
+  /// their data inline.
+  ///
+  /// Vector-clock dominance is checked against the database in **one** bulk
+  /// query (no N+1) before any disk write: when the local copy already
+  /// covers the incoming envelope's clock, the on-disk JSON cache is left
+  /// untouched so the apply pipeline reads the canonical local entity
+  /// instead of an older bundled payload. The envelope is still surfaced to
+  /// the unpacker so duplicate detection and sequence-log accounting run as
+  /// they do for individually-delivered entities.
+  Future<SyncOutboxBundle?> _resolveOutboxBundleManifest(
+    String? jsonPath,
+  ) async {
+    final jp = jsonPath;
+    if (jp == null) {
+      _trace(
+        'outboxBundle.skipped no jsonPath',
+        subDomain: 'processor.resolve.outboxBundle',
       );
+      return null;
+    }
+
+    final File targetFile;
+    try {
+      targetFile = resolveJsonCandidateFile(jp);
+    } on FileSystemException catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processor.resolve.outboxBundle.invalidPath',
+        stackTrace: st,
+      );
+      return null;
+    }
+
+    // Reuse the existing descriptor pipeline: the encoding header on the
+    // upload tells `decodeAttachmentBytes` to gunzip the manifest bytes
+    // transparently, so what comes back is the plain manifest JSON string.
+    String? manifestJson;
+    manifestJson = await _fetchFromDescriptor(
+      jsonPath: jp,
+      targetFile: targetFile,
+      typeName: 'outboxBundle',
+    );
+
+    if (manifestJson == null) {
+      // Fall back to disk if the descriptor is not yet registered (text
+      // event arrived before the file event made it through catch-up).
+      try {
+        manifestJson = await targetFile.readAsString();
+      } on FileSystemException {
+        rethrow;
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'processor.resolve.outboxBundle.diskRead',
+          stackTrace: st,
+        );
+        return null;
+      }
+    }
+
+    final Map<String, dynamic> manifest;
+    try {
+      manifest = json.decode(manifestJson) as Map<String, dynamic>;
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processor.resolve.outboxBundle.parse',
+        stackTrace: st,
+      );
+      return null;
+    }
+
+    final version = manifest['version'];
+    if (version != SyncTuning.outboxBundleManifestVersion) {
+      _loggingService.captureException(
+        'outboxBundle manifest version=$version unsupported '
+        '(expected ${SyncTuning.outboxBundleManifestVersion}) — skipping',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processor.resolve.outboxBundle.unknownVersion',
+      );
+      return null;
+    }
+
+    final rawEntries = manifest['entries'];
+    if (rawEntries is! List) {
+      _loggingService.captureException(
+        'outboxBundle manifest missing entries array',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processor.resolve.outboxBundle.malformed',
+      );
+      return null;
+    }
+
+    // First pass: parse envelopes and collect every SyncJournalEntity id we
+    // will need a local copy of, so the bulk DB fetch below stays a single
+    // round-trip even at the [SyncTuning.outboxBundleMaxSize] cap.
+    final parsedEntries = <_OutboxBundleManifestEntry>[];
+    final journalEntityIds = <String>{};
+    for (final raw in rawEntries) {
+      if (raw is! Map<String, dynamic>) continue;
+      final envelopeJson = raw['envelope'];
+      if (envelopeJson is! Map<String, dynamic>) continue;
+      final SyncMessage envelope;
+      try {
+        envelope = SyncMessage.fromJson(envelopeJson);
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'processor.resolve.outboxBundle.envelopeParse',
+          stackTrace: st,
+        );
+        continue;
+      }
+      if (envelope is SyncOutboxBundle) {
+        // Defence in depth: nested bundles are rejected by the unpacker
+        // too, but skipping here saves work and avoids a bogus DB lookup.
+        _trace(
+          'outboxBundle.entry.skipNested',
+          subDomain: 'processor.resolve.outboxBundle',
+        );
+        continue;
+      }
+      parsedEntries.add(
+        _OutboxBundleManifestEntry(envelope: envelope, payload: raw['payload']),
+      );
+      if (envelope is SyncJournalEntity) {
+        journalEntityIds.add(envelope.id);
+      }
+    }
+
+    // VC-dominance check uses the database as system of record. If no
+    // JournalDb was injected (legacy test harness), the dominance check is
+    // skipped and the incoming JSON is always written — safe but loses the
+    // "don't clobber a fresher local cache" optimization.
+    final db = _journalDb;
+    final localEntities = journalEntityIds.isEmpty || db == null
+        ? const <String, JournalEntity>{}
+        : await db.journalEntityMapForIds(journalEntityIds);
+
+    final children = <SyncMessage>[];
+    for (final parsed in parsedEntries) {
+      final envelope = parsed.envelope;
+      final payload = parsed.payload;
+
+      if (envelope is SyncJournalEntity) {
+        final local = localEntities[envelope.id];
+        final localVc = local?.meta.vectorClock;
+        final incomingVc = envelope.vectorClock;
+        var skipWrite = false;
+        if (local != null && localVc != null && incomingVc != null) {
+          final cmp = VectorClock.compare(localVc, incomingVc);
+          if (cmp == VclockStatus.a_gt_b || cmp == VclockStatus.equal) {
+            // Local copy already covers the incoming version — leave the
+            // on-disk JSON cache alone so SmartJournalEntityLoader returns
+            // the canonical local entity instead of an older bundled
+            // payload.
+            skipWrite = true;
+            _trace(
+              'outboxBundle.entry.localDominates id=${envelope.id} '
+              'jsonPath=${envelope.jsonPath} status=$cmp',
+              subDomain: 'processor.resolve.outboxBundle',
+            );
+          }
+        }
+        if (!skipWrite) {
+          if (payload is! Map<String, dynamic>) {
+            _loggingService.captureException(
+              'outboxBundle entry missing payload for SyncJournalEntity '
+              'id=${envelope.id} jsonPath=${envelope.jsonPath} — '
+              'cannot apply',
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'processor.resolve.outboxBundle.missingPayload',
+            );
+            continue;
+          }
+          try {
+            final entityFile = resolveJsonCandidateFile(envelope.jsonPath);
+            await saveJson(entityFile.path, json.encode(payload));
+            _trace(
+              'outboxBundle.entry.materialized id=${envelope.id} '
+              'jsonPath=${envelope.jsonPath}',
+              subDomain: 'processor.resolve.outboxBundle',
+            );
+          } on FileSystemException catch (e, st) {
+            _loggingService.captureException(
+              e,
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'processor.resolve.outboxBundle.writePayload',
+              stackTrace: st,
+            );
+            continue;
+          }
+        }
+      }
+
+      children.add(envelope);
+    }
+
+    return SyncOutboxBundle(
+      children: children,
+      jsonPath: jp,
+    );
+  }
 
   @visibleForTesting
-  Future<SyncOutboxBundle?> resolveOutboxBundleSidecarForTesting(
+  Future<SyncOutboxBundle?> resolveOutboxBundleManifestForTesting(
     String? jsonPath,
-  ) => _resolveOutboxBundleSidecar(jsonPath);
+  ) => _resolveOutboxBundleManifest(jsonPath);
 
   late final OutboxBundleUnpacker _outboxBundleUnpacker = OutboxBundleUnpacker(
     loggingService: _loggingService,
@@ -2079,4 +2294,15 @@ class PreparedAgentLinkSync {
 
   final SyncAgentLink message;
   final AgentLink link;
+}
+
+/// One parsed entry from a [SyncOutboxBundle]'s manifest: the deserialized
+/// envelope plus its inline payload (only present for [SyncJournalEntity]
+/// children — agent and inline-only families carry their data inside the
+/// envelope itself).
+class _OutboxBundleManifestEntry {
+  _OutboxBundleManifestEntry({required this.envelope, required this.payload});
+
+  final SyncMessage envelope;
+  final Object? payload;
 }

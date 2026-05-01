@@ -15,8 +15,13 @@ class PreparedOutboxSyncBundle {
   final List<PreparedSyncEvent> children;
 }
 
-/// Resolves the sidecar attachment (when [jsonPath] points at one) and
-/// returns the rehydrated [SyncOutboxBundle] with its children inline.
+/// Resolves the bundle's manifest payload (when [jsonPath] points at one)
+/// and returns the rehydrated [SyncOutboxBundle] with its children inline.
+///
+/// The resolver is responsible for any side effects required so the per-
+/// child prepare path can run unchanged — most importantly, materializing
+/// each `SyncJournalEntity` child's JSON to its on-disk cache before
+/// dispatch. The unpacker itself is filesystem-agnostic.
 typedef OutboxBundleSidecarResolver =
     Future<SyncOutboxBundle?> Function(String? jsonPath);
 

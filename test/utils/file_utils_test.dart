@@ -292,14 +292,14 @@ void main() {
     test('builds encoded outbox bundle paths under /outbox_bundles/', () {
       expect(
         relativeOutboxBundlePath('abc-123'),
-        '/outbox_bundles/abc-123.json',
+        '/outbox_bundles/abc-123.json.gz',
       );
     });
 
     test('URI-encodes special characters in the bundle id', () {
       expect(
         relativeOutboxBundlePath('with/slash and space'),
-        '/outbox_bundles/with%2Fslash%20and%20space.json',
+        '/outbox_bundles/with%2Fslash%20and%20space.json.gz',
       );
     });
 
@@ -309,7 +309,7 @@ void main() {
       'that does not apply to outbox bundles (each bundle has a fresh uuid '
       'so the local file never pre-exists)',
       () {
-        expect(isAgentPayloadPath('/outbox_bundles/abc.json'), isFalse);
+        expect(isAgentPayloadPath('/outbox_bundles/abc.json.gz'), isFalse);
       },
     );
   });

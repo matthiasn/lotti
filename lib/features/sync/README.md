@@ -326,6 +326,89 @@ flushes the buffered bundle before rethrowing. That keeps peers convergent with
 the local database state, but it also means peers can briefly observe the
 partial wake snapshot until a later successful wake advances the agent state.
 
+### Dequeue-Time Outbox Bundling
+
+A second, transport-only bundle layer fires inside `OutboxProcessor` itself.
+When `OutboxRepository.claimNextBatch(maxSize: SyncTuning.outboxBundleMaxSize)`
+returns more than one row, the processor wraps them in a `SyncOutboxBundle`
+and ships the whole batch as one Matrix envelope. Media-attachment rows
+(`filePath != null`) always travel alone — the boundary rule lives in
+`claimNextBatch`, so a bundle never carries audio or image bytes.
+
+`MatrixMessageSender._sendOutboxBundlePayload` builds the on-the-wire form:
+
+1. Bulk-load every `SyncJournalEntity` child's `JournalEntity` from
+   `JournalDb.journalEntityMapForIds` in a single `WHERE id IN (…)` query —
+   the database is the system of record, so the sender never reads
+   per-child JSON files from disk.
+2. Reconcile each child envelope's `vectorClock` against the DB version
+   (same logic as the per-row `_sendJournalEntityPayload` reconcile block,
+   just aggregated over the bundle).
+3. Emit a single manifest of records:
+   `{version: 1, entries: [{envelope: <SyncMessage>, payload: <JournalEntity?>}]}`.
+   Inline-payload families (`SyncEntryLink`, `SyncAiConfig`,
+   `SyncAiConfigDelete`, `SyncEntityDefinition`, `SyncThemingSelection`,
+   `SyncBackfillRequest`, `SyncBackfillResponse`) and agent envelopes
+   (`SyncAgentEntity`, `SyncAgentLink`, `SyncAgentBundle`) carry their data
+   inside the freezed envelope and need no separate `payload` field.
+4. `gzipEncodeBytes` the manifest JSON and upload as a single `m.file`
+   event with `relativePath: /outbox_bundles/<uuid>.json.gz` and
+   `extraContent.encoding = "gzip"`. No temp file ever touches the
+   sender's disk.
+5. Send the thin `SyncOutboxBundle` text event — `children: []`, `jsonPath`
+   pointing at the just-uploaded `.json.gz`.
+
+Receivers reverse the path inside
+`SyncEventProcessor._resolveOutboxBundleManifest`:
+
+1. Reuse the existing descriptor pipeline; `decodeAttachmentBytes` gunzips
+   the manifest bytes transparently.
+2. Bulk-load the local `JournalEntity` map for every `SyncJournalEntity`
+   id in the manifest — one query, no N+1.
+3. For each entry, run a vector-clock dominance check against the
+   database. When the local copy already covers the incoming envelope's
+   clock, leave the on-disk JSON cache alone so
+   `SmartJournalEntityLoader` returns the canonical local entity.
+   Otherwise, write the inlined payload to its declared `jsonPath` so the
+   apply pipeline reads it as a cache hit and skips the descriptor index
+   entirely.
+4. Hand the reconstructed children list to `OutboxBundleUnpacker.prepare`,
+   which dispatches each through the existing per-type prepare path.
+
+The manifest is rejected if:
+
+- the `version` field is absent or unequal to
+  `SyncTuning.outboxBundleManifestVersion`,
+- the `entries` array is missing, or
+- the post-gzip size exceeds `SyncTuning.outboxBundleMaxBytes` (8 MiB).
+
+In each case the bundle is dropped (`null` returned) and
+`OutboxRepository.markRetryBatch` re-queues every row for the next pass.
+Outbox rows stay pending until they are acknowledged as sent, so a failed
+manifest send simply re-bundles from outbox state on the next drain — no
+on-disk artifact survives across attempts.
+
+```mermaid
+sequenceDiagram
+  participant Proc as "OutboxProcessor"
+  participant Repo as "OutboxRepository"
+  participant Sender as "MatrixMessageSender"
+  participant DB as "JournalDb"
+  participant Room as "Matrix room"
+
+  Proc->>Repo: claimNextBatch(maxSize: 50)
+  Repo-->>Proc: List<OutboxItem>
+  Proc->>Sender: send(SyncOutboxBundle)
+  Sender->>DB: journalEntityMapForIds(ids)
+  DB-->>Sender: {id: JournalEntity, …}
+  Sender->>Sender: build manifest + gzip
+  Sender->>Room: m.file (manifest, encoding=gzip)
+  Sender->>Room: m.text (stripped envelope)
+  Room-->>Sender: ack
+  Sender-->>Proc: success
+  Proc->>Repo: markSentBatch(items)
+```
+
 `OutboxProcessor` then:
 
 1. atomically claims the pending head (`pending` → `sending`) via

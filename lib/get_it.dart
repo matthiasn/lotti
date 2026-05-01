@@ -258,6 +258,7 @@ Future<void> registerSingletons() async {
     ),
     attachmentIndex: attachmentIndex,
     sequenceLogService: syncSequenceLogService,
+    journalDb: journalDb,
     // backfillResponseHandler will be injected later to avoid circular dependency
   );
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);

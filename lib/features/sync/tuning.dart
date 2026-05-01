@@ -81,6 +81,20 @@ class SyncTuning {
   /// Media-attachment rows (filePath != null) are never bundled — they ship
   /// individually so receivers keep their existing per-attachment handling.
   static const int outboxBundleMaxSize = 50;
+
+  /// Hard cap on the post-gzip size of an outbox bundle's manifest payload.
+  /// The cap is a defence-in-depth signal: an outbox bundle of
+  /// [outboxBundleMaxSize] text-only rows is expected to land well under this
+  /// budget in production. If a bundle's gzipped manifest exceeds this size,
+  /// `MatrixMessageSender` aborts the send and the rows stay pending so the
+  /// next drain pass can re-claim a smaller batch.
+  static const int outboxBundleMaxBytes = 8 * 1024 * 1024;
+
+  /// Schema version for outbox bundle manifests. Bumped when the on-the-wire
+  /// shape (envelope/payload record) changes incompatibly. Receivers reject
+  /// unknown versions and rely on the surrounding outbox-row retry to
+  /// re-deliver under a future-compatible code path.
+  static const int outboxBundleManifestVersion = 1;
   static const Duration outboxRetryDelay = Duration(seconds: 5);
   static const Duration outboxErrorDelay = Duration(seconds: 15);
   static const int outboxMaxRetriesDiagnostics = 10; // surface issues w/o loops

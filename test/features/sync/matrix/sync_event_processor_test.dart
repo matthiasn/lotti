@@ -6144,16 +6144,157 @@ void main() {
     );
 
     test(
-      'resolveOutboxBundleSidecarForTesting returns null for a null '
-      'jsonPath — proves the sidecar resolver wires through the existing '
-      '_resolveAgentPayload "no payload, no path" early-skip without '
-      'attempting any disk IO',
+      'resolveOutboxBundleManifestForTesting returns null for a null '
+      'jsonPath — proves the manifest resolver early-skips before any disk '
+      'IO when the bundle stub has no jsonPath to fetch',
       () async {
-        final result = await processor.resolveOutboxBundleSidecarForTesting(
+        final result = await processor.resolveOutboxBundleManifestForTesting(
           null,
         );
         expect(result, isNull);
       },
     );
+
+    group('manifest resolver on disk', () {
+      late Directory tempDir;
+
+      setUp(() {
+        tempDir = Directory.systemTemp.createTempSync('outbox_bundle_test');
+        if (getIt.isRegistered<Directory>()) {
+          getIt.unregister<Directory>();
+        }
+        getIt.registerSingleton<Directory>(tempDir);
+      });
+
+      tearDown(() async {
+        await getIt.reset();
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      test(
+        'falls back to a disk read when no descriptor is registered, '
+        'parses the v1 manifest, materializes each SyncJournalEntity '
+        "child's payload to its declared jsonPath, and returns a "
+        'reconstructed bundle whose children round-trip through '
+        'SyncMessage.fromJson',
+        () async {
+          final entity = JournalEntry(
+            meta: Metadata(
+              id: 'bundle-entry-1',
+              createdAt: DateTime.utc(2026, 4, 25),
+              updatedAt: DateTime.utc(2026, 4, 25),
+              dateFrom: DateTime.utc(2026, 4, 25),
+              dateTo: DateTime.utc(2026, 4, 25),
+              vectorClock: const VectorClock({'host-A': 3}),
+            ),
+            entryText: const EntryText(plainText: 'inside the bundle'),
+          );
+
+          const entityRelativePath =
+              '/journal/2026-04-25/bundle-entry-1.entry.json';
+          const bundleRelativePath = '/outbox_bundles/test-bundle.json.gz';
+
+          final manifest = <String, dynamic>{
+            'version': 1,
+            'entries': [
+              <String, dynamic>{
+                'envelope': const SyncMessage.journalEntity(
+                  id: 'bundle-entry-1',
+                  jsonPath: entityRelativePath,
+                  vectorClock: VectorClock({'host-A': 3}),
+                  status: SyncEntryStatus.update,
+                ).toJson(),
+                'payload': entity.toJson(),
+              },
+              <String, dynamic>{
+                'envelope': const SyncMessage.aiConfigDelete(
+                  id: 'cfg-1',
+                ).toJson(),
+              },
+            ],
+          };
+
+          // Drop the manifest at the disk-fallback location: the resolver
+          // will read it via targetFile.readAsString() because no
+          // descriptor event is registered.
+          final manifestFile = File(
+            path.join(
+              tempDir.path,
+              stripLeadingSlashes(bundleRelativePath),
+            ),
+          )..parent.createSync(recursive: true);
+          manifestFile.writeAsStringSync(json.encode(manifest));
+
+          final resolved = await processor
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved, isNotNull);
+          expect(resolved!.jsonPath, bundleRelativePath);
+          expect(resolved.children, hasLength(2));
+          expect(resolved.children.first, isA<SyncJournalEntity>());
+          expect(resolved.children.last, isA<SyncAiConfigDelete>());
+
+          // The journal entity payload was materialized to its declared
+          // jsonPath under the documents directory, so the apply pipeline's
+          // SmartJournalEntityLoader reads it locally as a cache hit.
+          final materialized = File(
+            path.join(tempDir.path, stripLeadingSlashes(entityRelativePath)),
+          );
+          expect(materialized.existsSync(), isTrue);
+          final roundTripped = JournalEntity.fromJson(
+            json.decode(materialized.readAsStringSync())
+                as Map<String, dynamic>,
+          );
+          expect(roundTripped.meta.id, 'bundle-entry-1');
+          expect(
+            roundTripped.meta.vectorClock,
+            const VectorClock({'host-A': 3}),
+          );
+        },
+      );
+
+      test(
+        'returns null when the manifest version does not match — receivers '
+        'reject unknown wire shapes and let the surrounding retry mechanics '
+        're-deliver the bundle under a forward-compatible code path instead '
+        'of feeding garbage into JournalEntity.fromJson',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/v99.json.gz';
+          final manifestFile = File(
+            path.join(
+              tempDir.path,
+              stripLeadingSlashes(bundleRelativePath),
+            ),
+          )..parent.createSync(recursive: true);
+          manifestFile.writeAsStringSync(
+            json.encode(<String, dynamic>{
+              'version': 99,
+              'entries': const <Map<String, dynamic>>[],
+            }),
+          );
+
+          final resolved = await processor
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved, isNull);
+          verify(
+            () => loggingService.captureException(
+              any<Object>(
+                that: isA<String>().having(
+                  (msg) => msg,
+                  'message',
+                  contains('manifest version=99 unsupported'),
+                ),
+              ),
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'processor.resolve.outboxBundle.unknownVersion',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+    });
   });
 }

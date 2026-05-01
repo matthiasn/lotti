@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -544,15 +545,32 @@ class MatrixMessageSender {
     return outbound;
   }
 
-  /// Writes the [message]'s children to disk as a JSON sidecar, uploads the
-  /// sidecar to the sync room, and returns a stripped [SyncOutboxBundle] with
-  /// `jsonPath` set and `children` cleared.
+  /// Builds the dequeue-time outbox bundle's manifest payload (envelope + DB
+  /// content for each child), gzip-encodes it, and uploads the bytes as a
+  /// single Matrix file event. Returns the stripped [SyncOutboxBundle] (i.e.
+  /// `children` cleared, `jsonPath` set to the just-uploaded relative path)
+  /// for the caller to send as the text envelope; returns `null` when the
+  /// bundle is empty, exceeds the size cap, or the upload fails.
   ///
-  /// Outbox bundles are always file-backed: receivers reconstruct the bundle
-  /// by downloading the sidecar — same shape as `SyncAgentBundle`. Each call
-  /// mints a fresh UUID-based path because the bundle has no persistent
-  /// identity (it is a transport-time aggregate built by `OutboxProcessor`).
-  /// Returns `null` if the bundle is empty or the upload failed.
+  /// The manifest is a single JSON document — the bundle never fans out into
+  /// per-child file events. The receiver's `OutboxBundleUnpacker` resolves
+  /// the manifest, materializes each child's payload to disk under its
+  /// declared `jsonPath`, and dispatches each envelope through the existing
+  /// per-type prepare pipeline.
+  ///
+  /// The database is the system of record for journal entities: this method
+  /// fetches every child's `JournalEntity` from `JournalDb` in **one** bulk
+  /// query (no N+1) and embeds the result inline in the manifest. Vector
+  /// clocks are reconciled against the DB version exactly as
+  /// [_sendJournalEntityPayload] does for individually-sent entities.
+  ///
+  /// Inline-payload children (`SyncEntryLink`, `SyncAiConfig`,
+  /// `SyncAiConfigDelete`, `SyncEntityDefinition`, `SyncThemingSelection`,
+  /// `SyncBackfillRequest`, `SyncBackfillResponse`) need no separate payload —
+  /// the freezed envelope already carries everything. Agent envelopes
+  /// (`SyncAgentEntity`, `SyncAgentLink`, `SyncAgentBundle`) keep their
+  /// inline data fields populated by upstream writers, so they ride along in
+  /// the envelope unchanged.
   Future<SyncOutboxBundle?> _sendOutboxBundlePayload({
     required Room room,
     required SyncOutboxBundle message,
@@ -567,9 +585,9 @@ class MatrixMessageSender {
     }
 
     // Defence in depth: never let a [SyncOutboxBundle.jsonPath] arriving
-    // from outside this method drive a write to an arbitrary location on
-    // disk. We only honour paths that live under `/outbox_bundles/` and do
-    // not contain a `..` segment; any other value (including values from
+    // from outside this method drive arbitrary placement of the upload
+    // metadata. We only honour paths that live under `/outbox_bundles/` and
+    // do not contain a `..` segment; any other value (including values from
     // a tampered/corrupted Matrix payload) falls back to a freshly minted
     // UUID-based path and is logged.
     final candidatePath = message.jsonPath;
@@ -585,31 +603,117 @@ class MatrixMessageSender {
       );
       relativePath = relativeOutboxBundlePath(uuid.v1());
     }
-    final fullBundleJson = json.encode(
-      message.copyWith(jsonPath: null).toJson(),
-    );
 
-    try {
-      await _savePayloadToDisk(
-        relativePath: relativePath,
-        jsonPayload: fullBundleJson,
+    // Bulk-load JournalEntity payloads referenced by the bundle's
+    // [SyncJournalEntity] children in a single SQL `IN (…)` query. A naive
+    // per-child fetch would issue [outboxBundleMaxSize] round-trips per
+    // bundle; one batched call keeps the bundler's DB cost flat regardless
+    // of bundle size.
+    final journalEntityIds = <String>{
+      for (final child in message.children)
+        if (child is SyncJournalEntity) child.id,
+    };
+    final journalEntityById = journalEntityIds.isEmpty
+        ? const <String, JournalEntity>{}
+        : await _journalDb.journalEntityMapForIds(journalEntityIds);
+
+    final host = await _vectorClockService?.getHost();
+
+    final entries = <Map<String, dynamic>>[];
+    for (final child in message.children) {
+      final reconciled = _reconcileBundleChildEnvelope(
+        child,
+        host: host,
+        journalEntityById: journalEntityById,
       );
+      final record = <String, dynamic>{
+        'envelope': reconciled.toJson(),
+      };
+      final payload = _loadBundleChildPayload(
+        reconciled,
+        journalEntityById: journalEntityById,
+      );
+      if (payload != null) {
+        record['payload'] = payload;
+      }
+      entries.add(record);
+    }
+
+    final manifest = <String, dynamic>{
+      'version': SyncTuning.outboxBundleManifestVersion,
+      'entries': entries,
+    };
+
+    Uint8List gzipped;
+    try {
+      final manifestBytes = utf8.encode(json.encode(manifest));
+      gzipped = await gzipEncodeBytes(manifestBytes);
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.outboxBundle.write',
+        subDomain: 'sendMatrixMsg.outboxBundle.encode',
         stackTrace: stackTrace,
       );
       return null;
     }
 
-    final uploaded = await _uploadAgentPayload(
-      room: room,
-      relativePath: relativePath,
-      logLabel: 'outboxBundle',
+    if (gzipped.length > SyncTuning.outboxBundleMaxBytes) {
+      _loggingService.captureException(
+        'outboxBundle exceeds max bytes: '
+        'gzipped=${gzipped.length} '
+        'max=${SyncTuning.outboxBundleMaxBytes} '
+        'children=${message.children.length}',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.outboxBundle.tooLarge',
+      );
+      return null;
+    }
+
+    final fileName = p.basename(
+      relativePath.split('/').where((s) => s.isNotEmpty).last,
     );
-    if (!uploaded) return null;
+    final extraContent = <String, dynamic>{
+      'relativePath': relativePath,
+      attachmentEncodingKey: attachmentEncodingGzip,
+    };
+
+    String? uploadEventId;
+    try {
+      uploadEventId = await room.sendFileEvent(
+        MatrixFile(bytes: gzipped, name: fileName),
+        extraContent: extraContent,
+      );
+    } catch (error, stackTrace) {
+      _trace(
+        'EXCEPTION outboxBundle.upload path=$relativePath '
+        'error=${error.runtimeType}: $error',
+        subDomain: 'matrix.send.error',
+      );
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.outboxBundle.upload',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
+    if (uploadEventId == null) {
+      _trace(
+        'FAIL outboxBundle.upload returned null path=$relativePath '
+        'gzippedBytes=${gzipped.length}',
+        subDomain: 'matrix.send.error',
+      );
+      _loggingService.captureEvent(
+        'Failed sending outboxBundle file message to $room',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg',
+      );
+      return null;
+    }
+
+    _sentEventRegistry.register(uploadEventId, source: SentEventSource.file);
 
     return message.copyWith(
       jsonPath: relativePath,
@@ -618,13 +722,171 @@ class MatrixMessageSender {
   }
 
   /// Returns true when [relativePath] is a well-formed
-  /// `/outbox_bundles/<id>.json` path with no traversal segments. Used by
-  /// [_sendOutboxBundlePayload] to gate disk writes.
+  /// `/outbox_bundles/<id>.json.gz` path with no traversal segments. Used by
+  /// [_sendOutboxBundlePayload] to gate which inbound `jsonPath` values are
+  /// honoured for a freshly built bundle's metadata.
   static bool _isSafeOutboxBundlePath(String relativePath) {
     if (!relativePath.startsWith(outboxBundlesSegment)) return false;
     final segments = p.split(relativePath).where((s) => s.isNotEmpty).toList();
     if (segments.any((s) => s == '..' || s == '.')) return false;
     return true;
+  }
+
+  /// Brings a bundle child's envelope to the same state the per-message
+  /// sender would produce: stamps `originatingHostId` from the local host
+  /// service when missing, and reconciles a journal entity's vector clock
+  /// against the DB's current copy. Mirrors the reconcile block in
+  /// [_sendJournalEntityPayload].
+  ///
+  /// [journalEntityById] is the bulk-loaded map for this bundle; the helper
+  /// never issues its own DB queries, so the per-child cost stays O(1).
+  SyncMessage _reconcileBundleChildEnvelope(
+    SyncMessage child, {
+    required String? host,
+    required Map<String, JournalEntity> journalEntityById,
+  }) {
+    if (child is SyncJournalEntity) {
+      var reconciled = child;
+      if (reconciled.originatingHostId == null && host != null) {
+        reconciled = reconciled.copyWith(originatingHostId: host);
+      }
+      final entity = journalEntityById[reconciled.id];
+      if (entity != null) {
+        final messageVc = reconciled.vectorClock;
+        final entityVc = entity.meta.vectorClock;
+        if (messageVc != null && entityVc != null) {
+          final status = VectorClock.compare(entityVc, messageVc);
+          if (status != VclockStatus.equal) {
+            final covered = VectorClock.mergeUniqueClocks([
+              ...?reconciled.coveredVectorClocks,
+              messageVc,
+              entityVc,
+            ]);
+            reconciled = reconciled.copyWith(
+              vectorClock: entityVc,
+              coveredVectorClocks: covered,
+            );
+            logVectorClockAssignment(
+              _loggingService,
+              subDomain: 'send.outboxBundle.adoptDb',
+              action: 'assign',
+              type: 'SyncJournalEntity',
+              entryId: reconciled.id,
+              jsonPath: reconciled.jsonPath,
+              reason: 'db_mismatch',
+              previous: messageVc,
+              assigned: entityVc,
+              coveredVectorClocks: covered,
+              extras: {'status': status},
+            );
+          }
+        } else if (entityVc != null && messageVc == null) {
+          final covered = VectorClock.mergeUniqueClocks([
+            ...?reconciled.coveredVectorClocks,
+            entityVc,
+          ]);
+          reconciled = reconciled.copyWith(
+            vectorClock: entityVc,
+            coveredVectorClocks: covered,
+          );
+          logVectorClockAssignment(
+            _loggingService,
+            subDomain: 'send.outboxBundle.adoptDb',
+            action: 'assign',
+            type: 'SyncJournalEntity',
+            entryId: reconciled.id,
+            jsonPath: reconciled.jsonPath,
+            reason: 'message_missing',
+            assigned: entityVc,
+            coveredVectorClocks: covered,
+          );
+        }
+        final ensuredCovered = VectorClock.mergeUniqueClocks([
+          ...?reconciled.coveredVectorClocks,
+          reconciled.vectorClock,
+        ]);
+        if (ensuredCovered != reconciled.coveredVectorClocks) {
+          final currentClock = reconciled.vectorClock;
+          reconciled = reconciled.copyWith(coveredVectorClocks: ensuredCovered);
+          logVectorClockAssignment(
+            _loggingService,
+            subDomain: 'send.outboxBundle.ensureCovered',
+            action: 'assign',
+            type: 'SyncJournalEntity',
+            entryId: reconciled.id,
+            jsonPath: reconciled.jsonPath,
+            reason: 'ensure_current_clock_covered',
+            assigned: currentClock,
+            coveredVectorClocks: ensuredCovered,
+          );
+        }
+      }
+      return reconciled;
+    }
+
+    if (child is SyncEntryLink &&
+        child.originatingHostId == null &&
+        host != null) {
+      return child.copyWith(originatingHostId: host);
+    }
+
+    if (child is SyncAgentEntity &&
+        child.originatingHostId == null &&
+        host != null) {
+      return child.copyWith(originatingHostId: host);
+    }
+
+    if (child is SyncAgentLink &&
+        child.originatingHostId == null &&
+        host != null) {
+      return child.copyWith(originatingHostId: host);
+    }
+
+    if (child is SyncAgentBundle && host != null) {
+      final origin = child.originatingHostId ?? host;
+      return child.copyWith(
+        originatingHostId: origin,
+        entities: [
+          for (final c in child.entities)
+            c.originatingHostId == null
+                ? c.copyWith(originatingHostId: origin)
+                : c,
+        ],
+        links: [
+          for (final c in child.links)
+            c.originatingHostId == null
+                ? c.copyWith(originatingHostId: origin)
+                : c,
+        ],
+      );
+    }
+
+    return child;
+  }
+
+  /// Returns the body to inline alongside [child]'s envelope in the manifest,
+  /// or null when the envelope already carries everything the receiver needs.
+  /// Only [SyncJournalEntity] children require an inline payload; agent and
+  /// inline-only families (entry link, ai config, theming, backfill) ride
+  /// inside the envelope itself.
+  Map<String, dynamic>? _loadBundleChildPayload(
+    SyncMessage child, {
+    required Map<String, JournalEntity> journalEntityById,
+  }) {
+    if (child is SyncJournalEntity) {
+      final entity = journalEntityById[child.id];
+      if (entity == null) {
+        _loggingService.captureEvent(
+          'outboxBundle child entity not found in DB id=${child.id} '
+          'jsonPath=${child.jsonPath} — sending envelope only',
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'sendMatrixMsg.outboxBundle.missingEntity',
+        );
+        return null;
+      }
+      return entity.toJson();
+    }
+    return null;
   }
 
   /// Enriches and uploads agent payload (entity or link).

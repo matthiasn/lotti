@@ -2376,12 +2376,44 @@ void main() {
       );
     }
 
+    setUp(() {
+      // Default: no journal entity children in the bundle, so the bulk
+      // lookup is never called. Stub it conservatively so any unexpected
+      // invocation fails loudly via the assertion below rather than a
+      // mocktail "missing stub" surprise.
+      when(
+        () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+      ).thenAnswer((_) async => const <String, JournalEntity>{});
+    });
+
+    /// Decodes the gzipped manifest bytes captured from a `sendFileEvent`
+    /// call so a test can assert against the actual on-the-wire payload.
+    Map<String, dynamic> decodeManifestFromUpload(MatrixFile uploaded) {
+      final raw = gzip.decode(uploaded.bytes);
+      return json.decode(utf8.decode(raw)) as Map<String, dynamic>;
+    }
+
     test(
-      'sendOutboxBundlePayloadForTesting writes the children to disk under '
-      '/outbox_bundles/<uuid>.json, uploads it, and returns a stripped '
-      'bundle whose jsonPath references the new file',
+      'sendOutboxBundlePayloadForTesting uploads a single gzipped manifest '
+      'event under /outbox_bundles/<uuid>.json.gz and returns a stripped '
+      'bundle whose jsonPath references it. The manifest carries one '
+      'envelope record per child — no per-child file events, no temp files '
+      'on disk.',
       () async {
         final bundle = bundleWith(3);
+        MatrixFile? capturedFile;
+        Map<String, dynamic>? capturedExtra;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedFile = inv.positionalArguments.first as MatrixFile;
+          capturedExtra =
+              inv.namedArguments[#extraContent] as Map<String, dynamic>?;
+          return r'$bundle-file-id';
+        });
 
         final stripped = await sender.sendOutboxBundlePayloadForTesting(
           room: room,
@@ -2390,31 +2422,129 @@ void main() {
 
         expect(stripped, isNotNull);
         expect(stripped!.children, isEmpty);
-        expect(stripped.jsonPath, isNotNull);
         expect(stripped.jsonPath, startsWith('/outbox_bundles/'));
-        expect(stripped.jsonPath, endsWith('.json'));
+        expect(stripped.jsonPath, endsWith('.json.gz'));
 
-        // The file exists on disk and contains the *full* bundle JSON.
-        final relativeJoined = stripped.jsonPath!.replaceAll(
-          RegExp('^/+'),
-          '',
+        // Disk is untouched — the bundle exists only in the upload bytes
+        // and the matrix room; no /outbox_bundles/ directory is created.
+        expect(
+          Directory('${documentsDirectory.path}/outbox_bundles').existsSync(),
+          isFalse,
         );
-        final onDisk = File(
-          '${documentsDirectory.path}/$relativeJoined',
-        );
-        expect(onDisk.existsSync(), isTrue);
-        final decoded =
-            json.decode(onDisk.readAsStringSync()) as Map<String, dynamic>;
-        expect(decoded['runtimeType'], 'outboxBundle');
-        expect((decoded['children'] as List).length, 3);
 
-        // The upload went through sendFileEvent — once for the bundle.
+        // One file event went out, tagged as gzip-encoded JSON.
         verify(
           () => room.sendFileEvent(
             any<MatrixFile>(),
             extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
           ),
         ).called(1);
+        expect(capturedExtra?['relativePath'], stripped.jsonPath);
+        expect(capturedExtra?[attachmentEncodingKey], attachmentEncodingGzip);
+
+        // The uploaded bytes ungzip into a v1 manifest with one entry per
+        // child, envelopes round-trip through SyncMessage.fromJson.
+        final manifest = decodeManifestFromUpload(capturedFile!);
+        expect(manifest['version'], 1);
+        final entries = manifest['entries'] as List;
+        expect(entries, hasLength(3));
+        for (var i = 0; i < entries.length; i++) {
+          final record = entries[i] as Map<String, dynamic>;
+          final envelopeJson = record['envelope'] as Map<String, dynamic>;
+          final envelope = SyncMessage.fromJson(envelopeJson);
+          expect(envelope, isA<SyncAiConfigDelete>());
+          expect((envelope as SyncAiConfigDelete).id, 'cfg-${i + 1}');
+          // aiConfigDelete is inline-only — no separate `payload`.
+          expect(record.containsKey('payload'), isFalse);
+        }
+      },
+    );
+
+    test(
+      'sendOutboxBundlePayloadForTesting embeds the JournalEntity body from '
+      'the database for every SyncJournalEntity child and reconciles the '
+      "envelope's vector clock against the DB version — exactly the "
+      'reconcile path used for individually-delivered entities, just '
+      'aggregated into a single bulk DB read.',
+      () async {
+        const entityVc = VectorClock({'host-A': 7});
+        const messageVc = VectorClock({'host-A': 5});
+        final entity = JournalEntry(
+          meta: Metadata(
+            id: 'entry-1',
+            createdAt: DateTime.utc(2026, 1, 2),
+            updatedAt: DateTime.utc(2026, 1, 2),
+            dateFrom: DateTime.utc(2026, 1, 2),
+            dateTo: DateTime.utc(2026, 1, 2),
+            vectorClock: entityVc,
+          ),
+          entryText: const EntryText(plainText: 'from db'),
+        );
+        when(
+          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        ).thenAnswer((inv) async {
+          final ids = (inv.positionalArguments.first as Iterable<String>)
+              .toSet();
+          expect(ids, {'entry-1'});
+          return {'entry-1': entity};
+        });
+
+        MatrixFile? capturedFile;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedFile = inv.positionalArguments.first as MatrixFile;
+          return r'$bundle-file-id';
+        });
+
+        final bundle = SyncOutboxBundle(
+          children: [
+            SyncMessage.journalEntity(
+              id: 'entry-1',
+              jsonPath: '/journal/2026-01-02/entry-1.entry.json',
+              vectorClock: messageVc,
+              status: SyncEntryStatus.update,
+            ),
+          ],
+        );
+
+        final stripped = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundle,
+        );
+
+        expect(stripped, isNotNull);
+        verify(
+          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        ).called(1);
+
+        final manifest = decodeManifestFromUpload(capturedFile!);
+        final entries = manifest['entries'] as List;
+        expect(entries, hasLength(1));
+        final record = entries.single as Map<String, dynamic>;
+
+        final envelope = SyncMessage.fromJson(
+          record['envelope'] as Map<String, dynamic>,
+        );
+        expect(envelope, isA<SyncJournalEntity>());
+        // VC reconciled to the DB version, with the message's stale VC and
+        // the DB's current VC both folded into coveredVectorClocks.
+        final reconciled = envelope as SyncJournalEntity;
+        expect(reconciled.vectorClock, entityVc);
+        expect(
+          reconciled.coveredVectorClocks,
+          containsAll([messageVc, entityVc]),
+        );
+
+        // The entity body is inlined under `payload`, round-trips back to
+        // the same JournalEntity the DB returned.
+        final payloadJson = record['payload'] as Map<String, dynamic>;
+        final roundTripped = JournalEntity.fromJson(payloadJson);
+        expect(roundTripped.meta.id, entity.meta.id);
+        expect(roundTripped.meta.vectorClock, entityVc);
       },
     );
 
@@ -2445,51 +2575,6 @@ void main() {
     );
 
     test(
-      'sendOutboxBundlePayloadForTesting returns null when writing the '
-      'sidecar to disk throws — the failure is logged via captureException '
-      'and surfaced as null so the bundle never goes on the wire without '
-      'its children',
-      () async {
-        // Cross-platform forced failure: create a regular file, then try to
-        // use it as the parent of the sidecar's directory. The recursive
-        // create inside _savePayloadToDisk will throw FileSystemException
-        // because the parent is not a directory. Works on macOS, Linux, and
-        // Windows runners.
-        final blocker = File('${documentsDirectory.path}/not-a-directory')
-          ..createSync(recursive: true)
-          ..writeAsStringSync('x');
-        final unwritable = Directory('${blocker.path}/cannot-write-here');
-        final brokenSender = MatrixMessageSender(
-          loggingService: loggingService,
-          journalDb: journalDb,
-          documentsDirectory: unwritable,
-          sentEventRegistry: sentEventRegistry,
-        );
-
-        final result = await brokenSender.sendOutboxBundlePayloadForTesting(
-          room: room,
-          message: bundleWith(2),
-        );
-
-        expect(result, isNull);
-        verify(
-          () => loggingService.captureException(
-            any<Object>(),
-            domain: 'MATRIX_SERVICE',
-            subDomain: 'sendMatrixMsg.outboxBundle.write',
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => room.sendFileEvent(
-            any<MatrixFile>(),
-            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-          ),
-        );
-      },
-    );
-
-    test(
       'sendOutboxBundlePayloadForTesting returns null when the upload fails '
       '— the caller (sendMatrixMessage) treats this as a transport-level '
       'failure and propagates it up to OutboxProcessor.markRetryBatch',
@@ -2511,8 +2596,8 @@ void main() {
     );
 
     test(
-      'sendMatrixMessage returns false when the outboxBundle sidecar upload '
-      'fails — the failure is traced and the text event is never sent',
+      'sendMatrixMessage returns false when the outboxBundle upload fails — '
+      'the failure is traced and the text event is never sent',
       () async {
         when(
           () => room.sendFileEvent(
@@ -2548,9 +2633,9 @@ void main() {
     );
 
     test(
-      'sendMatrixMessage with a SyncOutboxBundle uploads the sidecar, sends '
-      'a stripped text event referencing it, and registers BOTH the file '
-      'and text event IDs in the sent registry',
+      'sendMatrixMessage with a SyncOutboxBundle uploads the manifest, '
+      'sends a stripped text event referencing it, and registers BOTH the '
+      'file and text event IDs in the sent registry',
       () async {
         when(
           () => room.sendFileEvent(
@@ -2582,7 +2667,7 @@ void main() {
         expect(sentEventRegistry.length, 2);
 
         // The text event no longer carries inline children — they live in
-        // the sidecar referenced by jsonPath.
+        // the manifest referenced by jsonPath.
         final decoded =
             json.decode(
                   utf8.decode(base64.decode(capturedPayload!)),
@@ -2590,6 +2675,7 @@ void main() {
                 as Map<String, dynamic>;
         expect(decoded['runtimeType'], 'outboxBundle');
         expect(decoded['jsonPath'], startsWith('/outbox_bundles/'));
+        expect(decoded['jsonPath'], endsWith('.json.gz'));
         expect(decoded['children'], isEmpty);
       },
     );
