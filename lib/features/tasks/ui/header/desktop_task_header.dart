@@ -407,7 +407,7 @@ class _MetaRow extends StatelessWidget {
     final children = <Widget>[
       _PriorityPillTinted(priority: priority, onTap: onPriorityTap),
       _DuePill(dueDate: dueDate, onTap: onDueDateTap),
-      if (estimateSlot != null) estimateSlot!,
+      ?estimateSlot,
       if (labels.isEmpty)
         DsGhostChip(
           label: context.messages.tasksAddLabelButton,

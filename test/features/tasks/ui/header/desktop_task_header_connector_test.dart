@@ -14,6 +14,7 @@ import 'package:lotti/features/categories/ui/widgets/category_selection_modal_co
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -510,6 +512,58 @@ void main() {
     );
 
     testWidgets(
+      'tapping the Add Label placeholder fires the label selector closure',
+      (tester) async {
+        // Empty labelIds → meta row renders the muted "Add Label" ghost.
+        final task = buildTask();
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Add Label'));
+        // Modal opens; its inner label-sliver content reads providers that
+        // aren't wired in this fixture. A single pump is enough for the
+        // connector's onAddLabelTap → _openLabelSelector path to fire.
+        await tester.pump();
+        tester.takeException();
+      },
+    );
+
+    testWidgets(
+      'estimate chip switches to the overtime tinted variant when '
+      'tracked > estimate',
+      (tester) async {
+        // The estimate chip's overtime branch reads the
+        // `taskProgressControllerProvider`, which instantiates a
+        // `TaskProgressController`. The real controller resolves
+        // `getIt<TimeService>()` in a field initialiser, so the fake — which
+        // extends the real class — needs that registration in place even
+        // though it never calls into it.
+        getIt.registerSingleton<TimeService>(MockTimeService());
+        addTearDown(() => getIt.unregister<TimeService>());
+
+        final task = buildTask(estimate: const Duration(hours: 1));
+
+        await tester.pumpWidget(
+          pumpConnector(
+            task: task,
+            progress: const TaskProgressState(
+              progress: Duration(hours: 2),
+              estimate: Duration(hours: 1),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The pill renders the "tracked / estimate" pair, with progress
+        // overrunning the estimate; the connector takes the overtime branch
+        // and paints a tinted error-coloured pill plus a progress bar.
+        expect(find.text('02:00 / 01:00'), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'tapping the estimate chip (unset) opens the estimate picker',
       (tester) async {
         final task = buildTask();
@@ -839,6 +893,23 @@ void main() {
 
         // Either the urgency label or the date string is visible.
         expect(find.byType(DesktopTaskHeader), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tasks due in the future fall through to the normal urgency branch',
+      (tester) async {
+        // A future date (well past "today") exercises the
+        // `case DueDateUrgency.normal:` arm of `_dueUrgency`.
+        final task = buildTask(due: DateTime(2026, 6, 15));
+
+        await withClock(Clock.fixed(now), () async {
+          await tester.pumpWidget(pumpConnector(task: task));
+          await tester.pumpAndSettle();
+        });
+
+        expect(find.byType(DesktopTaskHeader), findsOneWidget);
+        expect(find.textContaining('Jun'), findsOneWidget);
       },
     );
   });

@@ -68,7 +68,7 @@ void main() {
       );
 
       final decoration =
-          (tester
+          tester
                   .widgetList<DecoratedBox>(
                     find.descendant(
                       of: find.byType(DsPill),
@@ -77,7 +77,7 @@ void main() {
                   )
                   .first
                   .decoration
-              as BoxDecoration);
+              as BoxDecoration;
       expect(decoration.color, accent.withValues(alpha: 0.18));
     });
 
@@ -93,7 +93,7 @@ void main() {
       );
 
       final decoration =
-          (tester
+          tester
                   .widgetList<DecoratedBox>(
                     find.descendant(
                       of: find.byType(DsPill),
@@ -102,7 +102,7 @@ void main() {
                   )
                   .first
                   .decoration
-              as BoxDecoration);
+              as BoxDecoration;
       expect(decoration.border?.top.color, accent.withValues(alpha: 0.5));
     });
 
