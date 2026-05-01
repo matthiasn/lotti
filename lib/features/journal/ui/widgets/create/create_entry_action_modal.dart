@@ -36,6 +36,10 @@ class _CreateEntryMenuList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <Widget>[
+      // Renders only when `linkedFromId` resolves to a Task — i.e. when the
+      // FAB is hosted on the task detail page. First in the list so it's the
+      // most prominent action when present.
+      CreateChecklistItem(linkedFromId),
       CreateEventItem(linkedFromId, categoryId: categoryId),
       CreateTaskItem(linkedFromId, categoryId: categoryId),
       CreateAudioItem(linkedFromId, categoryId: categoryId),

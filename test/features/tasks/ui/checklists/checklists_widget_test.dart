@@ -249,7 +249,9 @@ void main() {
       expect(find.text('Checklist 1'), findsOneWidget);
       expect(find.text('Checklist 2'), findsOneWidget);
       expect(find.text('Checklists'), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+      // The inline `+` add button has been removed — adding a checklist now
+      // lives on the FAB's create-entry menu (CreateChecklistItem).
+      expect(find.byIcon(Icons.add_rounded), findsNothing);
       // Checklists-level sort menu is shown when there are multiple checklists
       expect(find.byKey(const Key('checklists-menu')), findsOneWidget);
     });
@@ -264,16 +266,19 @@ void main() {
       expect(find.text('Checklist 1'), findsOneWidget);
     });
 
-    testWidgets('shows empty state with no checklists', (tester) async {
+    testWidgets('hides the section entirely when there are no checklists', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget(checklistIds: []));
       await tester.pumpAndSettle();
 
-      // With empty checklists, no ChecklistCardWrapper widgets are rendered
+      // No cards, no header text, no sort menu — the whole section collapses
+      // so the empty state doesn't dangle in the layout. Adding the first
+      // checklist is exclusively via the FAB.
       expect(find.byType(ChecklistCardWrapper), findsNothing);
-      // Checklists-level sort menu is hidden when there are no checklists
+      expect(find.text('Checklists'), findsNothing);
+      expect(find.byIcon(Icons.add_rounded), findsNothing);
       expect(find.byKey(const Key('checklists-menu')), findsNothing);
-      // Add button should still be visible but requires full widget tree
-      // expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
 
     testWidgets('returns SizedBox.shrink when entry is null', (tester) async {

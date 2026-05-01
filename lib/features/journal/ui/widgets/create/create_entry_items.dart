@@ -106,6 +106,35 @@ class CreateTaskItem extends ConsumerWidget {
   }
 }
 
+/// Adds a checklist to the host task. Only renders when the FAB sits on a
+/// task detail page — i.e. when the entry resolved from `linkedFromId` is a
+/// `Task`. On other surfaces (journal list, non-task entry details) it
+/// disappears so the menu doesn't offer an action that would have nowhere
+/// to attach.
+class CreateChecklistItem extends ConsumerWidget {
+  const CreateChecklistItem(this.linkedFromId, {super.key});
+
+  final String? linkedFromId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = linkedFromId;
+    if (id == null) return const SizedBox.shrink();
+    final entry = ref.watch(entryControllerProvider(id: id)).value?.entry;
+    if (entry is! Task) return const SizedBox.shrink();
+
+    return CreateMenuListItem(
+      icon: Icons.checklist_rounded,
+      title: context.messages.addActionAddChecklist,
+      onTap: () async {
+        await createChecklist(task: entry, ref: ref);
+        if (!context.mounted) return;
+        Navigator.of(context).pop();
+      },
+    );
+  }
+}
+
 /// Modern version of create audio item
 class CreateAudioItem extends ConsumerWidget {
   const CreateAudioItem(

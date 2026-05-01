@@ -4,6 +4,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.982]
+### Added
+- New `DsPill` design-system primitive
+  (`lib/features/design_system/components/chips/ds_pill.dart`) with
+  `filled`, `tinted`, `outline`, and `muted` variants plus `DsGhostChip`
+  and `DsDividerDot` companions. Shared anatomy: 28 px tall, pill
+  radius (`radii.badgesPills`), `spacing.step3` horizontal padding,
+  `spacing.step2` leading/trailing gap, `body.bodySmall`-sized label
+  with optional override, optional leading/trailing slots, and Material
+  ink-well that supports both `onTap` and `onLongPress`. The muted
+  variant paints a 1 px dashed border via a private `CustomPainter`
+  rather than pulling in `dotted_border` as a dependency.
+- New `CreateChecklistItem` on the FAB's create-entry menu
+  (`create_entry_action_modal.dart`). When the FAB sits on a task
+  detail page (i.e. `linkedFromId` resolves to a `Task`), the menu now
+  surfaces *Add Checklist* as the first entry; on every other surface
+  the item self-hides.
+
+### Changed
+- **Task detail header — Option B redesign**
+  (`docs/design/design_handoff_task_header/`,
+  `lib/features/tasks/ui/header/desktop_task_header.dart`,
+  `lib/features/tasks/ui/header/desktop_task_header_connector.dart`).
+  The classification + metadata Wrap with pipe separators is replaced
+  by a two-tier hierarchy:
+  - A breadcrumb above the title — `▣ Category / Project name` — gets
+    the categorical "where am I?" info out of the chip soup. The
+    10×10 rounded category square is the *only* place the category
+    color is used as a fill. Project name truncates with ellipsis;
+    "No project" placeholder remains tappable. Each segment has a
+    `surface.hover` background, no pill chrome.
+  - A single horizontal pill row carries the *actionable* metadata
+    (priority, due, estimate, labels). Priority is `DsPill.tinted`
+    in its accent (P0 = error, P1 = warning, P2 = info, P3 = success)
+    with the production SVG glyph at 14 px. Due is `DsPill.outline`
+    that flips to `DsPill.muted` "No due date" when null and keeps
+    the urgency tinting (overdue → error, today → warning, otherwise
+    `text.mediumEmphasis`). Labels render as filled pills with an
+    8 px color dot; long-press still surfaces the description dialog.
+    The `+ Add Label` ghost chip is shown only when no labels exist —
+    once labels are present, tapping any one opens the same selector.
+  - The status select is rewritten as `_StatusPill` with a per-status
+    18 % alpha tint (in-progress → info, blocked → error, on-hold →
+    warning, groomed → interactive accent, done → success), neutral
+    tint for "open", and a strikethrough low-emphasis treatment for
+    "rejected".
+  - `_TrailingAlignedWrap` — a custom multi-child render box —
+    replaces the old `LayoutBuilder`-with-Row/Column branch. Leading
+    chips wrap greedily; the status pill is pinned to the right edge
+    of whichever row it lands on, falling onto its own right-aligned
+    line only when it doesn't fit on the last leading row. No
+    breakpoint-driven layout switch.
+  - All chips read `tokens.typography.styles.others.caption` (12 px)
+    so priority through status share one rhythm. The estimate label
+    uses `text.lowEmphasis` to defer to the running tracker.
+  - The estimate chip in the connector is rebuilt on top of `DsPill`:
+    `DsPill.muted` "No estimate" when unset, `DsPill.filled` with a
+    36 × 6 progress bar in the trailing slot when running,
+    `DsPill.tinted` in the error color when overtime.
+- **Tasks list filter chips** typography unified with the detail
+  header — `ActiveFilterChip` now uses `others.caption` (12 px) and
+  the trailing remove icon is sized to 20 px.
+- **Task list cards** — when the user has narrowed the filter to a
+  single status, the trailing status pill is now omitted on every
+  card (`tasks_tab_page.dart` passes `showStatus:
+  selectedTaskStatuses.length != 1` to `TaskBrowseListItem`). With
+  zero or 2+ statuses selected the chip stays as a disambiguator.
+- **Checklists section on the task detail page** —
+  `lib/features/tasks/ui/checklists/checklists_widget.dart`:
+  - The inline `+` "Add Checklist" button on the section header is
+    removed. Adding the first checklist now lives exclusively on the
+    FAB's create-entry menu.
+  - When the task has zero checklists, the entire section
+    (header + sort menu) collapses to `SizedBox.shrink` so the empty
+    state doesn't dangle.
+  - The populated section now sits with a `tokens.spacing.step5`
+    (16 px) gap above it so it doesn't crowd the previous block.
+
 ## [0.9.981]
 ### Added
 - Outbox message bundling, gated by the new `useOutboxBundlingFlag`

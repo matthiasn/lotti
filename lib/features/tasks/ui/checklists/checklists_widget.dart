@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklists_sorting_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Container widget for all checklists within a task.
@@ -68,14 +68,26 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
     }
 
     final checklistIds = _checklistIds ?? item.data.checklistIds ?? [];
+    // Empty state — when the task has no checklists yet, the section is
+    // hidden entirely. Adding the first checklist now lives exclusively on
+    // the FAB's create-entry menu (see `create_entry_items.dart`), which
+    // avoids a lonely "Checklists +" header before the user opts in.
+    if (checklistIds.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final color = context.colorScheme.outline;
+
+    final tokens = context.designTokens;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Breathing room above the section so it doesn't crowd the previous
+        // block (e.g. LinkedTasks). Lives on the populated state only —
+        // the empty state collapses entirely.
+        SizedBox(height: tokens.spacing.step5),
         // GLOBAL SECTION HEADER
         _ChecklistsSectionHeader(
-          onAdd: () => createChecklist(task: widget.task, ref: ref),
           onSortChecklists: checklistIds.length > 1 ? _enterSortingMode : null,
           checklistCount: checklistIds.length,
           color: color,
@@ -159,16 +171,15 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
   }
 }
 
-/// Section header with title, add button, and menu.
+/// Section header with title and (when there are 2+ checklists) a sort menu.
+/// The "add checklist" affordance has moved to the FAB's create-entry menu.
 class _ChecklistsSectionHeader extends StatelessWidget {
   const _ChecklistsSectionHeader({
-    required this.onAdd,
     required this.checklistCount,
     required this.color,
     this.onSortChecklists,
   });
 
-  final VoidCallback onAdd;
   final VoidCallback? onSortChecklists;
   final int checklistCount;
   final Color color;
@@ -180,11 +191,6 @@ class _ChecklistsSectionHeader extends StatelessWidget {
         Text(
           context.messages.checklistsTitle,
           style: context.textTheme.titleSmall?.copyWith(color: color),
-        ),
-        IconButton(
-          tooltip: context.messages.addActionAddChecklist,
-          onPressed: onAdd,
-          icon: Icon(Icons.add_rounded, color: color),
         ),
         // Only show menu if there are actions available
         if (checklistCount > 1)
