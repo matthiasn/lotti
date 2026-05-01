@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -2784,6 +2785,280 @@ void main() {
         // what the standalone entry-link send path does in
         // sendMatrixMessage. Bundled deliveries used to skip this step.
         expect(link.coveredVectorClocks, contains(linkVc));
+      },
+    );
+
+    test(
+      'fills originatingHostId on agent envelopes (entity / link / '
+      'bundle) inside an outbox bundle so receivers can identify '
+      'self-echoes by host id, exactly like the per-message agent path',
+      () async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-A');
+        final stamper = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          vectorClockService: vectorClockService,
+        );
+
+        MatrixFile? capturedFile;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedFile = inv.positionalArguments.first as MatrixFile;
+          return r'$file-id';
+        });
+
+        final agentEntity = AgentDomainEntity.agentState(
+          id: 'state-1',
+          agentId: 'agent-1',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime.utc(2026, 4, 25),
+          vectorClock: const VectorClock({'host-A': 1}),
+        );
+        final agentLink = AgentLink.basic(
+          id: 'link-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime.utc(2026, 4, 25),
+          updatedAt: DateTime.utc(2026, 4, 25),
+          vectorClock: const VectorClock({'host-A': 2}),
+        );
+        final wakeBundle = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
+          entities: [
+            SyncMessage.agentEntity(
+                  status: SyncEntryStatus.update,
+                  agentEntity: agentEntity,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  status: SyncEntryStatus.update,
+                  agentLink: agentLink,
+                )
+                as SyncAgentLink,
+          ],
+        );
+
+        final children = <SyncMessage>[
+          SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            agentEntity: agentEntity,
+          ),
+          SyncMessage.agentLink(
+            status: SyncEntryStatus.update,
+            agentLink: agentLink,
+          ),
+          wakeBundle,
+        ];
+
+        final stripped = await stamper.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: SyncOutboxBundle(children: children),
+        );
+
+        expect(stripped, isNotNull);
+        final manifest =
+            json.decode(utf8.decode(gzip.decode(capturedFile!.bytes)))
+                as Map<String, dynamic>;
+        final entries = manifest['entries'] as List;
+        final reconstructed = entries
+            .map(
+              (e) => SyncMessage.fromJson(
+                (e as Map<String, dynamic>)['envelope'] as Map<String, dynamic>,
+              ),
+            )
+            .toList();
+        expect(
+          (reconstructed[0] as SyncAgentEntity).originatingHostId,
+          'host-A',
+        );
+        expect(
+          (reconstructed[1] as SyncAgentLink).originatingHostId,
+          'host-A',
+        );
+        final reconstructedBundle = reconstructed[2] as SyncAgentBundle;
+        expect(reconstructedBundle.originatingHostId, 'host-A');
+        // Inner agent-bundle children are stamped by the bundle-internal
+        // copy in `_reconcileBundleChildEnvelope`'s SyncAgentBundle case.
+        expect(
+          reconstructedBundle.entities.single.originatingHostId,
+          'host-A',
+        );
+        expect(
+          reconstructedBundle.links.single.originatingHostId,
+          'host-A',
+        );
+      },
+    );
+
+    test(
+      'aborts with a tooLarge captureException when the gzipped manifest '
+      'exceeds SyncTuning.outboxBundleMaxBytes — defence-in-depth so a '
+      'pathologically large bundle never goes on the wire and the row '
+      'falls back to the standard retry/cap path',
+      () async {
+        // A single child whose JournalEntity body is ~12 MiB of base64
+        // encoded random bytes. base64 of true random bytes is
+        // incompressible (~0% gzip ratio) so the gzipped manifest stays
+        // safely above the 8 MiB cap regardless of platform-specific
+        // gzip implementations.
+        final rng = Random(42);
+        final randomBytes = Uint8List.fromList(
+          List<int>.generate(9 * 1024 * 1024, (_) => rng.nextInt(256)),
+        );
+        final blob = base64.encode(randomBytes);
+        final entity = JournalEntry(
+          meta: Metadata(
+            id: 'huge-entry',
+            createdAt: DateTime.utc(2026, 4, 25),
+            updatedAt: DateTime.utc(2026, 4, 25),
+            dateFrom: DateTime.utc(2026, 4, 25),
+            dateTo: DateTime.utc(2026, 4, 25),
+            vectorClock: const VectorClock({'host-A': 1}),
+          ),
+          entryText: EntryText(plainText: blob),
+        );
+        when(
+          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        ).thenAnswer((_) async => {'huge-entry': entity});
+
+        final result = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: SyncOutboxBundle(
+            children: [
+              SyncMessage.journalEntity(
+                id: 'huge-entry',
+                jsonPath: '/journal/2026-04-25/huge-entry.entry.json',
+                vectorClock: const VectorClock({'host-A': 1}),
+                status: SyncEntryStatus.initial,
+              ),
+            ],
+          ),
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+        verify(
+          () => loggingService.captureException(
+            any<Object>(
+              that: isA<String>().having(
+                (msg) => msg,
+                'message',
+                contains('outboxBundle exceeds max bytes'),
+              ),
+            ),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.outboxBundle.tooLarge',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'rejects an inbound jsonPath outside /outbox_bundles/ and falls '
+      'back to a freshly minted UUID path — defence in depth against a '
+      'tampered bundle envelope steering a write at an arbitrary '
+      'metadata location',
+      () async {
+        when(
+          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        ).thenAnswer((_) async => const <String, JournalEntity>{});
+
+        final stripped = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: const SyncOutboxBundle(
+            children: [SyncMessage.aiConfigDelete(id: 'cfg-1')],
+            jsonPath: '/journal/2026-04-25/evil.entry.json',
+          ),
+        );
+
+        expect(stripped, isNotNull);
+        // The poisonous jsonPath was rejected; the freshly minted path
+        // sits under /outbox_bundles/ regardless of the inbound value.
+        expect(stripped!.jsonPath, startsWith('/outbox_bundles/'));
+        expect(stripped.jsonPath, isNot('/journal/2026-04-25/evil.entry.json'));
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(
+              that: contains(
+                'rejecting outboxBundle jsonPath outside /outbox_bundles/',
+              ),
+            ),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.outboxBundle.write',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'returns null and logs a captureException when room.sendFileEvent '
+      'throws — covers the upload-throw path so a transport-level error '
+      'never silently strips the bundle and emits an empty text envelope',
+      () async {
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenThrow(const SocketException('connection reset'));
+
+        final result = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundleWith(2),
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(that: isA<SocketException>()),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.outboxBundle.upload',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '_ensureOriginatingHostId stamps a SyncOutboxBundle envelope so '
+      'receivers can identify the bundle as a self-echo without waiting '
+      'for the manifest download — this is the wire-level guarantee the '
+      'self-echo skip relies on, separate from per-child stamping',
+      () async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-X');
+        final stamper = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          vectorClockService: vectorClockService,
+        );
+
+        final stamped = await stamper.ensureOriginatingHostIdForTesting(
+          const SyncOutboxBundle(
+            children: [SyncMessage.aiConfigDelete(id: 'cfg-1')],
+          ),
+        );
+
+        expect(stamped, isA<SyncOutboxBundle>());
+        expect((stamped as SyncOutboxBundle).originatingHostId, 'host-X');
       },
     );
   });

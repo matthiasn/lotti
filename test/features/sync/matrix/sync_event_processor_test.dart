@@ -6486,4 +6486,131 @@ void main() {
       );
     });
   });
+
+  group('SyncEventProcessor - self-echo skip', () {
+    test(
+      'short-circuits prepare for any SyncMessage whose originatingHostId '
+      'matches the local host — proves a self-echoed bundle never '
+      'touches `_resolveOutboxBundleManifest` (no descriptor download, '
+      'no manifest gunzip, no per-child saveJson). Independent of the '
+      'SentEventRegistry TTL and arrival path so it covers the catch-up '
+      'case where the registry has already expired.',
+      () async {
+        final localVcService = MockVectorClockService();
+        when(localVcService.getHost).thenAnswer((_) async => 'host-self');
+
+        final processorWithVc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          vectorClockService: localVcService,
+        );
+
+        const selfBundle = SyncOutboxBundle(
+          children: [SyncMessage.aiConfigDelete(id: 'cfg-self')],
+          jsonPath: '/outbox_bundles/self.json',
+          originatingHostId: 'host-self',
+        );
+        when(() => event.text).thenReturn(encodeMessage(selfBundle));
+
+        await processorWithVc.process(event: event, journalDb: journalDb);
+
+        // The bundle's child (an aiConfigDelete) would normally drive a
+        // deleteConfig call inside the unpacker apply phase. With the
+        // self-echo short-circuit, prepare returns a PreparedSyncEvent
+        // with no resolved bundle and apply no-ops.
+        verifyNever(
+          () => aiConfigRepository.deleteConfig(
+            any<String>(),
+            fromSync: any<bool>(named: 'fromSync'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'still processes a peer-originated SyncOutboxBundle whose '
+      'originatingHostId does not match the local host — the self-echo '
+      'short-circuit must not eat legitimate inbound work',
+      () async {
+        final localVcService = MockVectorClockService();
+        when(localVcService.getHost).thenAnswer((_) async => 'host-self');
+
+        final processorWithVc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          vectorClockService: localVcService,
+        );
+
+        const peerBundle = SyncOutboxBundle(
+          children: [SyncMessage.aiConfigDelete(id: 'cfg-peer')],
+          originatingHostId: 'host-peer',
+        );
+        when(() => event.text).thenReturn(encodeMessage(peerBundle));
+
+        await processorWithVc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => aiConfigRepository.deleteConfig(
+            'cfg-peer',
+            fromSync: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'caches the local host id across calls — only one getHost() lookup '
+      'per processor instance even after many incoming events that '
+      'carry an originatingHostId. The lookup result is stable for the '
+      'lifetime of an install, and a per-event call would put the slow '
+      'vector-clock service on the apply hot path.',
+      () async {
+        final localVcService = MockVectorClockService();
+        when(localVcService.getHost).thenAnswer((_) async => 'host-self');
+
+        final processorWithVc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          vectorClockService: localVcService,
+        );
+
+        // A SyncEntryLink-style message with originatingHostId set is
+        // what triggers the self-echo check (inline-only types like
+        // aiConfigDelete have no host id and bypass the lookup
+        // entirely). Use a peer host so the check decides "not a
+        // self-echo" and the message proceeds through the normal
+        // pipeline — the only thing we care about here is that
+        // resolveLocalHostId fires exactly once across the three
+        // process() calls.
+        final peer = SyncMessage.entryLink(
+          entryLink: EntryLink.basic(
+            id: 'link-cache',
+            fromId: 'from',
+            toId: 'to',
+            createdAt: DateTime.utc(2026, 4, 25),
+            updatedAt: DateTime.utc(2026, 4, 25),
+            vectorClock: const VectorClock({'host-peer': 1}),
+          ),
+          status: SyncEntryStatus.initial,
+          originatingHostId: 'host-peer',
+        );
+        when(() => event.text).thenReturn(encodeMessage(peer));
+
+        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(event: event, journalDb: journalDb);
+        await processorWithVc.process(event: event, journalDb: journalDb);
+
+        verify(localVcService.getHost).called(1);
+      },
+    );
+  });
 }

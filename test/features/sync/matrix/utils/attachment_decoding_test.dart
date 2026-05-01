@@ -1,5 +1,6 @@
 // ignore_for_file: unnecessary_lambdas
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -391,6 +392,91 @@ void main() {
           expect(err.message, contains('timed out'));
           expect(err.path, '/entries/stuck.json');
         });
+      },
+    );
+  });
+
+  group('gzipEncodeJson', () {
+    test(
+      'round-trips a Map through json.encode + utf8.encode + gzip on a '
+      'worker isolate, producing bytes that gunzip back into the '
+      'original structure — this is the helper used by the outbox bundle '
+      'sender to encode the manifest off the UI thread',
+      () async {
+        final manifest = <String, dynamic>{
+          'version': 1,
+          'entries': [
+            for (var i = 0; i < 5; i++)
+              <String, dynamic>{
+                'envelope': <String, dynamic>{'id': 'cfg-$i'},
+                if (i.isEven)
+                  'payload': <String, dynamic>{
+                    'index': i,
+                    'note': 'entry $i body',
+                  },
+              },
+          ],
+        };
+
+        final gzipped = await gzipEncodeJson(manifest);
+
+        expect(gzipped, isA<Uint8List>());
+        // Gzip magic bytes confirm the worker actually compressed the
+        // payload rather than handing back raw UTF-8 by accident.
+        expect(gzipped[0], 0x1f);
+        expect(gzipped[1], 0x8b);
+
+        final roundTripped =
+            json.decode(utf8.decode(gzip.decode(gzipped)))
+                as Map<String, dynamic>;
+        expect(roundTripped, manifest);
+      },
+    );
+  });
+
+  group('decodeJsonStringMaybeIsolate', () {
+    test(
+      'parses small JSON inline (below the 4 KB threshold) without '
+      'crossing the isolate boundary',
+      () async {
+        const tiny = '{"a":1,"b":[true,null,"x"]}';
+
+        final decoded = await decodeJsonStringMaybeIsolate(tiny);
+
+        expect(decoded, <String, dynamic>{
+          'a': 1,
+          'b': <dynamic>[true, null, 'x'],
+        });
+      },
+    );
+
+    test(
+      'offloads large JSON (above the 4 KB threshold) to a worker '
+      'isolate and returns the parsed structure intact — covers the '
+      'compute hop used by the outbox bundle manifest decode path',
+      () async {
+        final entries = <Map<String, dynamic>>[
+          for (var i = 0; i < 200; i++)
+            <String, dynamic>{
+              'id': 'entry-$i',
+              'note':
+                  'a fairly long body string used to push the '
+                  'serialised manifest past the inline threshold for '
+                  'compute() so the off-isolate parse path runs.',
+            },
+        ];
+        final big = json.encode(<String, dynamic>{'entries': entries});
+        expect(big.length, greaterThan(4 * 1024));
+
+        final decoded =
+            (await decodeJsonStringMaybeIsolate(big))! as Map<String, dynamic>;
+
+        expect(decoded.keys.toSet(), {'entries'});
+        final roundTripped = (decoded['entries'] as List)
+            .cast<Map<String, dynamic>>();
+        expect(roundTripped, hasLength(200));
+        expect(roundTripped.first, entries.first);
+        expect(roundTripped.last, entries.last);
       },
     );
   });
