@@ -370,6 +370,78 @@ void main() {
     expect(dbEntity.taskStatus, 'IN PROGRESS');
   });
 
+  group('toDbEntity dueAt column', () {
+    Task taskWithDue(String id, DateTime? due) {
+      return _taskEntry(
+        id: id,
+        status: TaskStatus.open(
+          id: 'open-$id',
+          createdAt: _baseTime,
+          utcOffset: 0,
+        ),
+      ).map(
+        task: (task) => task.copyWith(
+          data: task.data.copyWith(due: due),
+        ),
+        // The other branches are unreachable — `_taskEntry` always returns
+        // the task variant. Throw rather than silently producing the wrong
+        // shape if someone changes the helper later.
+        journalEntry: (_) => throw StateError('unexpected variant'),
+        journalImage: (_) => throw StateError('unexpected variant'),
+        journalAudio: (_) => throw StateError('unexpected variant'),
+        event: (_) => throw StateError('unexpected variant'),
+        aiResponse: (_) => throw StateError('unexpected variant'),
+        checklist: (_) => throw StateError('unexpected variant'),
+        checklistItem: (_) => throw StateError('unexpected variant'),
+        quantitative: (_) => throw StateError('unexpected variant'),
+        measurement: (_) => throw StateError('unexpected variant'),
+        workout: (_) => throw StateError('unexpected variant'),
+        habitCompletion: (_) => throw StateError('unexpected variant'),
+        survey: (_) => throw StateError('unexpected variant'),
+        dayPlan: (_) => throw StateError('unexpected variant'),
+        rating: (_) => throw StateError('unexpected variant'),
+        project: (_) => throw StateError('unexpected variant'),
+      );
+    }
+
+    test('mirrors task.data.due when present', () {
+      final due = DateTime(2026, 5, 1, 17, 30);
+      final entry = taskWithDue('task-with-due', due);
+      final dbEntity = toDbEntity(entry);
+      expect(dbEntity.dueAt, due);
+    });
+
+    test('updates dueAt when the entity is upserted with a new due date', () {
+      final firstDue = DateTime(2026, 5, 1, 12);
+      final secondDue = DateTime(2026, 6, 1, 12);
+      expect(toDbEntity(taskWithDue('task-1', firstDue)).dueAt, firstDue);
+      expect(toDbEntity(taskWithDue('task-1', secondDue)).dueAt, secondDue);
+    });
+
+    test('clears dueAt to null when due is removed from the entity', () {
+      final withDue = taskWithDue('task-clear-due', DateTime(2026, 5));
+      // Drop `due` by serializing through fromJson with the field stripped —
+      // simulates an edit in the UI that nulls the due date.
+      final clearedJson =
+          jsonDecode(jsonEncode(withDue)) as Map<String, dynamic>;
+      (clearedJson['data'] as Map<String, dynamic>).remove('due');
+      final reparsed = JournalEntity.fromJson(clearedJson);
+
+      expect(toDbEntity(withDue).dueAt, DateTime(2026, 5));
+      expect(toDbEntity(reparsed).dueAt, isNull);
+    });
+
+    test('is null for non-task entries', () {
+      final entry = JournalEntity.journalEntry(
+        meta: _meta('plain-entry'),
+        entryText: const EntryText(plainText: 'no task here'),
+      );
+      final dbEntity = toDbEntity(entry);
+      expect(dbEntity.dueAt, isNull);
+      expect(dbEntity.task, isFalse);
+    });
+  });
+
   test('toDbEntity sets deleted flag when deletedAt is present', () {
     final entry = JournalEntity.journalEntry(
       meta: _meta('deleted', deletedAt: _baseTime),

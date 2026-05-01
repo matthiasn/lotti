@@ -269,6 +269,15 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
     requiredDuringInsert: false,
     $customConstraints: '',
   );
+  static const VerificationMeta _dueAtMeta = const VerificationMeta('dueAt');
+  late final GeneratedColumn<DateTime> dueAt = GeneratedColumn<DateTime>(
+    'due_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -295,6 +304,7 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
     geohashInt,
     category,
     projectId,
+    dueAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -475,6 +485,12 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
         projectId.isAcceptableOrUnknown(data['project_id']!, _projectIdMeta),
       );
     }
+    if (data.containsKey('due_at')) {
+      context.handle(
+        _dueAtMeta,
+        dueAt.isAcceptableOrUnknown(data['due_at']!, _dueAtMeta),
+      );
+    }
     return context;
   }
 
@@ -580,6 +596,10 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
         DriftSqlType.string,
         data['${effectivePrefix}project_id'],
       ),
+      dueAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}due_at'],
+      ),
     );
   }
 
@@ -619,6 +639,12 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
   final int? geohashInt;
   final String category;
   final String? projectId;
+
+  /// Denormalized from json_extract(serialized,'$.data.due'), populated by
+  /// toDbEntity on every upsert. NULL when the task has no due date or the
+  /// row is non-Task. Drives the `idx_journal_tasks_due_open` partial index
+  /// and the `getTasksDueOn` / `getTasksDueOnOrBefore` hot path.
+  final DateTime? dueAt;
   const JournalDbEntity({
     required this.id,
     required this.createdAt,
@@ -644,6 +670,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     this.geohashInt,
     required this.category,
     this.projectId,
+    this.dueAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -691,6 +718,9 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     map['category'] = Variable<String>(category);
     if (!nullToAbsent || projectId != null) {
       map['project_id'] = Variable<String>(projectId);
+    }
+    if (!nullToAbsent || dueAt != null) {
+      map['due_at'] = Variable<DateTime>(dueAt);
     }
     return map;
   }
@@ -741,6 +771,9 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       projectId: projectId == null && nullToAbsent
           ? const Value.absent()
           : Value(projectId),
+      dueAt: dueAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dueAt),
     );
   }
 
@@ -774,6 +807,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       geohashInt: serializer.fromJson<int?>(json['geohash_int']),
       category: serializer.fromJson<String>(json['category']),
       projectId: serializer.fromJson<String?>(json['project_id']),
+      dueAt: serializer.fromJson<DateTime?>(json['due_at']),
     );
   }
   @override
@@ -804,6 +838,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       'geohash_int': serializer.toJson<int?>(geohashInt),
       'category': serializer.toJson<String>(category),
       'project_id': serializer.toJson<String?>(projectId),
+      'due_at': serializer.toJson<DateTime?>(dueAt),
     };
   }
 
@@ -832,6 +867,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     Value<int?> geohashInt = const Value.absent(),
     String? category,
     Value<String?> projectId = const Value.absent(),
+    Value<DateTime?> dueAt = const Value.absent(),
   }) => JournalDbEntity(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -861,6 +897,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     geohashInt: geohashInt.present ? geohashInt.value : this.geohashInt,
     category: category ?? this.category,
     projectId: projectId.present ? projectId.value : this.projectId,
+    dueAt: dueAt.present ? dueAt.value : this.dueAt,
   );
   JournalDbEntity copyWithCompanion(JournalCompanion data) {
     return JournalDbEntity(
@@ -902,6 +939,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           : this.geohashInt,
       category: data.category.present ? data.category.value : this.category,
       projectId: data.projectId.present ? data.projectId.value : this.projectId,
+      dueAt: data.dueAt.present ? data.dueAt.value : this.dueAt,
     );
   }
 
@@ -931,7 +969,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           ..write('geohashString: $geohashString, ')
           ..write('geohashInt: $geohashInt, ')
           ..write('category: $category, ')
-          ..write('projectId: $projectId')
+          ..write('projectId: $projectId, ')
+          ..write('dueAt: $dueAt')
           ..write(')'))
         .toString();
   }
@@ -962,6 +1001,7 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     geohashInt,
     category,
     projectId,
+    dueAt,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -990,7 +1030,8 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
           other.geohashString == this.geohashString &&
           other.geohashInt == this.geohashInt &&
           other.category == this.category &&
-          other.projectId == this.projectId);
+          other.projectId == this.projectId &&
+          other.dueAt == this.dueAt);
 }
 
 class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
@@ -1018,6 +1059,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
   final Value<int?> geohashInt;
   final Value<String> category;
   final Value<String?> projectId;
+  final Value<DateTime?> dueAt;
   final Value<int> rowid;
   const JournalCompanion({
     this.id = const Value.absent(),
@@ -1044,6 +1086,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.geohashInt = const Value.absent(),
     this.category = const Value.absent(),
     this.projectId = const Value.absent(),
+    this.dueAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   JournalCompanion.insert({
@@ -1071,6 +1114,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.geohashInt = const Value.absent(),
     this.category = const Value.absent(),
     this.projectId = const Value.absent(),
+    this.dueAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -1104,6 +1148,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     Expression<int>? geohashInt,
     Expression<String>? category,
     Expression<String>? projectId,
+    Expression<DateTime>? dueAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1131,6 +1176,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       if (geohashInt != null) 'geohash_int': geohashInt,
       if (category != null) 'category': category,
       if (projectId != null) 'project_id': projectId,
+      if (dueAt != null) 'due_at': dueAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1160,6 +1206,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     Value<int?>? geohashInt,
     Value<String>? category,
     Value<String?>? projectId,
+    Value<DateTime?>? dueAt,
     Value<int>? rowid,
   }) {
     return JournalCompanion(
@@ -1187,6 +1234,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
       geohashInt: geohashInt ?? this.geohashInt,
       category: category ?? this.category,
       projectId: projectId ?? this.projectId,
+      dueAt: dueAt ?? this.dueAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1266,6 +1314,9 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     if (projectId.present) {
       map['project_id'] = Variable<String>(projectId.value);
     }
+    if (dueAt.present) {
+      map['due_at'] = Variable<DateTime>(dueAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1299,6 +1350,7 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
           ..write('geohashInt: $geohashInt, ')
           ..write('category: $category, ')
           ..write('projectId: $projectId, ')
+          ..write('dueAt: $dueAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5514,13 +5566,9 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_type_subtype',
     'CREATE INDEX idx_journal_type_subtype ON journal (type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)',
   );
-  late final Index idxJournalTasksDueActive = Index(
-    'idx_journal_tasks_due_active',
-    'CREATE INDEX idx_journal_tasks_due_active ON journal (type COLLATE BINARY ASC, deleted COLLATE BINARY ASC, json_extract(serialized, \'\$.data.due\') ASC)',
-  );
   late final Index idxJournalTasksDueOpen = Index(
     'idx_journal_tasks_due_open',
-    'CREATE INDEX idx_journal_tasks_due_open ON journal (json_extract(serialized, \'\$.data.due\') ASC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE AND task_status NOT IN (\'DONE\', \'REJECTED\')',
+    'CREATE INDEX idx_journal_tasks_due_open ON journal (due_at ASC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE AND task_status NOT IN (\'DONE\', \'REJECTED\')',
   );
   late final Index idxJournalTaskStatusPrivate = Index(
     'idx_journal_task_status_private',
@@ -7717,7 +7765,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxJournalTasksDate,
     idxJournalTasksDatePriority,
     idxJournalTypeSubtype,
-    idxJournalTasksDueActive,
     idxJournalTasksDueOpen,
     idxJournalTaskStatusPrivate,
     idxJournalProjectId,
@@ -7803,6 +7850,7 @@ typedef $JournalCreateCompanionBuilder =
       Value<int?> geohashInt,
       Value<String> category,
       Value<String?> projectId,
+      Value<DateTime?> dueAt,
       Value<int> rowid,
     });
 typedef $JournalUpdateCompanionBuilder =
@@ -7831,6 +7879,7 @@ typedef $JournalUpdateCompanionBuilder =
       Value<int?> geohashInt,
       Value<String> category,
       Value<String?> projectId,
+      Value<DateTime?> dueAt,
       Value<int> rowid,
     });
 
@@ -7959,6 +8008,11 @@ class $JournalFilterComposer extends Composer<_$JournalDb, Journal> {
 
   ColumnFilters<String> get projectId => $composableBuilder(
     column: $table.projectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get dueAt => $composableBuilder(
+    column: $table.dueAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8090,6 +8144,11 @@ class $JournalOrderingComposer extends Composer<_$JournalDb, Journal> {
     column: $table.projectId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get dueAt => $composableBuilder(
+    column: $table.dueAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $JournalAnnotationComposer extends Composer<_$JournalDb, Journal> {
@@ -8185,6 +8244,9 @@ class $JournalAnnotationComposer extends Composer<_$JournalDb, Journal> {
 
   GeneratedColumn<String> get projectId =>
       $composableBuilder(column: $table.projectId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get dueAt =>
+      $composableBuilder(column: $table.dueAt, builder: (column) => column);
 }
 
 class $JournalTableManager
@@ -8242,6 +8304,7 @@ class $JournalTableManager
                 Value<int?> geohashInt = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String?> projectId = const Value.absent(),
+                Value<DateTime?> dueAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => JournalCompanion(
                 id: id,
@@ -8268,6 +8331,7 @@ class $JournalTableManager
                 geohashInt: geohashInt,
                 category: category,
                 projectId: projectId,
+                dueAt: dueAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8296,6 +8360,7 @@ class $JournalTableManager
                 Value<int?> geohashInt = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String?> projectId = const Value.absent(),
+                Value<DateTime?> dueAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => JournalCompanion.insert(
                 id: id,
@@ -8322,6 +8387,7 @@ class $JournalTableManager
                 geohashInt: geohashInt,
                 category: category,
                 projectId: projectId,
+                dueAt: dueAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
