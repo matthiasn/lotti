@@ -7,14 +7,11 @@ workflows:
       flutter: 3.41.4
     triggering:
       events:
-        - push
         - tag
-      branch_patterns:
-        - pattern: main
-          include: true
       tag_patterns:
-        - pattern: 'v*'
+        - pattern: '*.*.*+*'
           include: true
+      cancel_previous_builds: true
     scripts:
       - name: Show toolchain versions
         script: |
@@ -27,7 +24,7 @@ workflows:
           Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
           .\rustup-init.exe -y --default-toolchain stable --profile minimal
           $cargoBin = "$env:USERPROFILE\.cargo\bin"
-          "PATH=$cargoBin;$env:PATH" | Out-File -FilePath $env:CM_ENV -Append -Encoding utf8
+          Add-Content -Path $env:CM_ENV -Value "PATH+=$cargoBin"
           & "$cargoBin\rustc.exe" --version
           & "$cargoBin\cargo.exe" --version
 
@@ -36,14 +33,12 @@ workflows:
 
       - name: Flutter analyze
         script: flutter analyze
-        ignore_failure: true
 
       - name: Build Windows release
         script: flutter build windows --release
 
       - name: Package MSIX
         script: dart run msix:create --release
-        ignore_failure: true
 
       - name: Zip release artifacts
         script: |
