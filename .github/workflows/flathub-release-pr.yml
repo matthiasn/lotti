@@ -128,9 +128,33 @@ jobs:
           git fetch origin master
           git checkout -B "$VERSION" origin/master
 
-      # 5. Run the existing prepare script. It clones flatpak-flutter, runs
-      #    it, and copies the generated manifest + sources into the sibling
-      #    com.matthiasn.lotti checkout (which is now on the release branch).
+      # 5a. Clone flatpak-flutter at the version pinned in
+      #     prepare_flathub_build.sh, then install its Python requirements.
+      #     The prepare script's local-dev path expects a `.venv` to already
+      #     have these deps; in CI we install them into the system Python the
+      #     script will fall back to. Pre-cloning here means the prepare step
+      #     reuses the directory and the version pin stays in one place.
+      - name: Install flatpak-flutter Python requirements
+        working-directory: lotti
+        run: |
+          set -euo pipefail
+          FLATPAK_FLUTTER_VERSION=$(awk -F'"' '/^FLATPAK_FLUTTER_VERSION=/ {print $2; exit}' flatpak/prepare_flathub_build.sh)
+          if [ -z "$FLATPAK_FLUTTER_VERSION" ]; then
+            echo "Could not read FLATPAK_FLUTTER_VERSION from prepare_flathub_build.sh" >&2
+            exit 1
+          fi
+          git clone --depth 1 --branch "$FLATPAK_FLUTTER_VERSION" \
+            https://github.com/TheAppgineer/flatpak-flutter.git \
+            flatpak/flatpak-flutter
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r flatpak/flatpak-flutter/requirements.txt
+
+      # 5b. Run the existing prepare script. It would clone flatpak-flutter
+      #     itself, but step 5a already did so at the pinned version; the
+      #     script detects the existing directory and skips the clone. The
+      #     script then generates the manifest + sources and copies them
+      #     into the sibling com.matthiasn.lotti checkout (which is now on
+      #     the release branch).
       - name: Generate Flathub manifest
         working-directory: lotti
         env:
