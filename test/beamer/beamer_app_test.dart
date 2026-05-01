@@ -13,7 +13,6 @@ import 'package:lotti/features/design_system/components/navigation/desktop_navig
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -410,7 +409,7 @@ void main() {
       });
     }
 
-    testWidgets('docks recording indicators to the design-system nav pill', (
+    testWidgets('renders recording indicators inside the nav bar overlay', (
       tester,
     ) async {
       final mockNavService = MockNavService();
@@ -431,33 +430,35 @@ void main() {
         navService: mockNavService,
       );
 
-      final context = tester.element(find.byType(AppScreen));
-      final pillTop = DesignSystemBottomNavigationBar.pillTopFromScreenBottom(
-        context,
+      // The indicators are passed in as the nav bar's `overlay` so they
+      // share the same FittedBox/Column as the pill — sized to the pill's
+      // width and stacked above it via spaceBetween.
+      final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+        find.byType(DesignSystemBottomNavigationBar),
       );
-      final expectedTimeBottom =
-          AppScreenConstants.navigationTimeIndicatorBottom +
-          pillTop -
-          AppScreenConstants.navigationIndicatorPillOverlap;
-      final expectedAudioBottom =
-          AppScreenConstants.navigationTimeIndicatorBottom +
-          pillTop -
-          AppScreenConstants.navigationIndicatorPillOverlap;
-      final timeIndicatorPositioned = tester.widget<Positioned>(
-        find.ancestor(
-          of: find.byType(TimeRecordingIndicator),
-          matching: find.byType(Positioned),
+      expect(navBar.overlay, isNotNull);
+
+      // The TimeRecordingIndicator must be inside the nav bar widget, not
+      // in a separate Positioned.
+      expect(
+        find.descendant(
+          of: find.byType(DesignSystemBottomNavigationBar),
+          matching: find.byType(TimeRecordingIndicator),
         ),
-      );
-      final audioIndicatorPositioned = tester.widget<Positioned>(
-        find.ancestor(
-          of: find.byType(AudioRecordingIndicator),
-          matching: find.byType(Positioned),
-        ),
+        findsOneWidget,
       );
 
-      expect(timeIndicatorPositioned.bottom, expectedTimeBottom);
-      expect(audioIndicatorPositioned.bottom, expectedAudioBottom);
+      // The closest enclosing Row uses center so the indicators meet in
+      // the middle of the pill rather than spreading to its edges.
+      final overlayRow = tester.widget<Row>(
+        find
+            .ancestor(
+              of: find.byType(TimeRecordingIndicator),
+              matching: find.byType(Row),
+            )
+            .first,
+      );
+      expect(overlayRow.mainAxisAlignment, MainAxisAlignment.center);
     });
   });
 
