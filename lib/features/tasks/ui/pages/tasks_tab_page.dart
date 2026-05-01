@@ -249,6 +249,15 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                             state.showCreationDate,
                                         showDueDate: state.showDueDate,
                                         showCoverArt: true,
+                                        // When the user has narrowed the list
+                                        // to a single status via the filter,
+                                        // every row would carry the same
+                                        // chip — drop it. With 0 (no filter)
+                                        // or 2+ statuses selected the chip
+                                        // disambiguates rows.
+                                        showStatus:
+                                            state.selectedTaskStatuses.length !=
+                                            1,
                                         vectorDistance: distance,
                                         previousTaskIdInSection:
                                             entryIndex > 0 &&

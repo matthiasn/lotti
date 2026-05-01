@@ -39,6 +39,7 @@ class TaskBrowseListItem extends StatelessWidget {
     this.nextTaskIdInSection,
     this.selectedTaskId,
     this.hoveredTaskIdNotifier,
+    this.showStatus = true,
     super.key,
   });
 
@@ -58,6 +59,11 @@ class TaskBrowseListItem extends StatelessWidget {
   final String? selectedTaskId;
   final ValueNotifier<String?>? hoveredTaskIdNotifier;
   final VoidCallback onTap;
+
+  /// When false, the trailing status pill is omitted from the card. The
+  /// caller should set this when the active status filter has narrowed the
+  /// list down to a single status — repeating it on every row is noise.
+  final bool showStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +132,7 @@ class TaskBrowseListItem extends StatelessWidget {
                 showCreationDate: showCreationDate,
                 showDueDate: showDueDate,
                 showCoverArt: showCoverArt,
+                showStatus: showStatus,
                 vectorDistance: vectorDistance,
                 categoryNameOverride: categoryNameOverride,
                 categoryIconOverride: categoryIconOverride,
@@ -166,6 +173,7 @@ class TaskBrowseListItem extends StatelessWidget {
                 showCreationDate: showCreationDate,
                 showDueDate: showDueDate,
                 showCoverArt: showCoverArt,
+                showStatus: showStatus,
                 vectorDistance: vectorDistance,
                 categoryNameOverride: categoryNameOverride,
                 categoryIconOverride: categoryIconOverride,
@@ -277,6 +285,7 @@ class _TaskRowContent extends ConsumerWidget {
     required this.showCreationDate,
     required this.showDueDate,
     required this.showCoverArt,
+    required this.showStatus,
     this.vectorDistance,
     this.categoryNameOverride,
     this.categoryIconOverride,
@@ -289,6 +298,7 @@ class _TaskRowContent extends ConsumerWidget {
   final bool showCreationDate;
   final bool showDueDate;
   final bool showCoverArt;
+  final bool showStatus;
   final double? vectorDistance;
   final String? categoryNameOverride;
   final IconData? categoryIconOverride;
@@ -396,8 +406,10 @@ class _TaskRowContent extends ConsumerWidget {
                       children: metadata,
                     ),
                   ),
-                  SizedBox(width: tokens.spacing.step4),
-                  TaskShowcaseStatusLabel(status: liveTask.data.status),
+                  if (showStatus) ...[
+                    SizedBox(width: tokens.spacing.step4),
+                    TaskShowcaseStatusLabel(status: liveTask.data.status),
+                  ],
                 ],
               ),
               if (_footerChildren(context, liveTask).isNotEmpty) ...[
