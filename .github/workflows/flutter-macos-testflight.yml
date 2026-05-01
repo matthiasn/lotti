@@ -53,7 +53,7 @@ jobs:
           cache: true
 
       - name: Flutter pub get
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: Derive build name + number
         id: ver
@@ -212,7 +212,7 @@ jobs:
         run: |
           set -euo pipefail
           xcodebuild -workspace macos/Runner.xcworkspace \
-            -config Release \
+            -configuration Release \
             -scheme Runner \
             -archivePath "$ARCHIVE_PATH" \
             archive
