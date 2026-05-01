@@ -99,17 +99,24 @@ if (from < 41) {
       );
     }
 
-    // 2. Backfill from JSON for the open-task subset only. Restricted to
-    //    the partial-index footprint so the migration is bounded and fast
-    //    even on devices with large journals; non-open tasks will get their
-    //    due_at populated lazily on next upsert (status change, edit, sync).
-    //    json_extract returns ISO-8601 text; SQLite's datetime() converts
-    //    it to the canonical 'YYYY-MM-DD HH:MM:SS.SSS' form Drift parses.
+    // 2. Backfill from JSON for **every** task with a non-null `data.due`,
+    //    regardless of status. Reasoning: the column drives more than just
+    //    the open-task hot path — `getTasksSortedByDueDate` reads across
+    //    all statuses, and range queries like "tasks due yesterday" must
+    //    light up completed/rejected tasks too. Leaving closed tasks NULL
+    //    would silently drop them from range scans and corrupt the sort
+    //    order.
+    //
+    //    Encoding: `strftime('%s', ...)` returns Unix seconds as TEXT;
+    //    `CAST(... AS INTEGER)` matches Drift's default DateTime mapping
+    //    (`SqlTypes.mapToSqlVariable`: `millisecondsSinceEpoch ~/ 1000`).
+    //    Do NOT use `datetime(...)` — that returns a TEXT string and
+    //    corrupts the integer column.
     await customStatement(
       "UPDATE journal "
-      "SET due_at = datetime(json_extract(serialized, '\$.data.due')) "
+      "SET due_at = CAST(strftime('%s', "
+      "  json_extract(serialized, '\$.data.due')) AS INTEGER) "
       "WHERE type = 'Task' AND task = 1 AND deleted = FALSE "
-      "  AND task_status NOT IN ('DONE', 'REJECTED') "
       "  AND json_extract(serialized, '\$.data.due') IS NOT NULL",
     );
 
@@ -124,23 +131,49 @@ if (from < 41) {
 }
 ```
 
-**Backfill scope decision.** Restricted to the open-task subset — matches the
-partial index footprint, keeps migration bounded, and is the only data the
-hot-path query reads. Closed/rejected tasks have `due_at` left NULL until their
-next mutation (status change, edit, or sync write) repopulates via
-`toDbEntity`. The follow-up `getTasksSortedByDueDate` query at
-`database.dart:1453` is *not* restricted to open tasks, so it must continue to
-work correctly when `due_at` is NULL — confirm by reviewing its WHERE clause
-and adding a fallback to JSON for closed-status tasks if needed (or backfill
-all tasks if the larger backfill is acceptable).
+**Backfill scope decision.** All tasks with non-null `data.due` are
+backfilled, not just the open-task subset. Two reasons:
+1. `getTasksSortedByDueDate` (`database.dart:1453`) reads across every
+   task status. Restricting the backfill to open tasks would corrupt sort
+   order for legacy closed tasks until they were re-upserted.
+2. The whole point of the column is fast range queries (e.g. "due
+   yesterday across all statuses"). A range scan that silently skips
+   completed/rejected tasks is worse than slow.
 
-**Self-heal in `beforeOpen`.** The existing pattern at `database.dart:130-137`
-self-heals `idx_journal_tasks_due_open` and `idx_journal_task_status_private`
-on every open. Update the `_createIdxJournalTasksDueOpenSql` constant
-(`database.dart:33`) to the new column-keyed form so devices that miss the
-v41 migration still end up with a working index on next launch. The new
-self-heal SQL must be no-op when run twice (use `CREATE INDEX IF NOT EXISTS`
-through the existing `_asIfNotExists` helper).
+The backfill cost is bounded by the number of Task rows (a small fraction
+of `journal`), so widening it is cheap. The partial *index* still covers
+only open tasks — that's a separate decision driven by the index
+footprint, not by data completeness in the column.
+
+**Encoding decision.** Drift 2.30.0 stores DATETIME as **integer Unix
+seconds** by default (verified in
+`pub-cache/.../drift-2.30.0/lib/src/runtime/types/mapping.dart:72`:
+`return dartValue.millisecondsSinceEpoch ~/ 1000;`). The migration must
+produce the same integer encoding so reads through `Variable<DateTime>`
+parse correctly. `strftime('%s', json_extract(...))` extracts ISO-8601
+text from the JSON payload (which is what `DateTime.toIso8601String()`
+writes) and converts it to a Unix-seconds *string*; `CAST(... AS
+INTEGER)` lands it in the column as a real integer. Do **not** use
+`datetime(...)` — that returns canonical TEXT and would corrupt the
+column.
+
+**Self-heal in `beforeOpen`.** The existing pattern at
+`database.dart:130-137` self-heals `idx_journal_tasks_due_open` and
+`idx_journal_task_status_private` on every open. Two updates required:
+1. **Column self-heal (new).** Before any index work, check
+   `_columnExists('journal', 'due_at')` and run
+   `ALTER TABLE journal ADD COLUMN due_at DATETIME` when missing. Without
+   this, a device that aborted v41 mid-migration would re-run the index
+   self-heal against a non-existent column and crash. Backfill is *not*
+   re-run from `beforeOpen` — the column starts empty and lazy-fills via
+   `toDbEntity` as tasks are touched. (If we ever need a wider belt-and-
+   braces, we could re-run the backfill UPDATE here too, gated on a
+   PRAGMA `user_version`-style flag, but lazy fill is sufficient.)
+2. **Index self-heal (update).** Update
+   `_createIdxJournalTasksDueOpenSql` constant in `database.dart:33` to
+   the new column-keyed form. The new SQL must be no-op when run twice
+   (use `CREATE INDEX IF NOT EXISTS` through the existing
+   `_asIfNotExists` helper).
 
 **Pre-migration backup.** `onUpgrade` already calls `createDbBackup`
 (`database.dart:148-163`). No extra work.
@@ -167,8 +200,10 @@ isn't in the JSON payload — `due` is).
 
 ### 5.1 `_selectTasksDue` (`database.dart:2557-2602`)
 
-Replace JSON extraction throughout. Variables become Drift `DateTime` (which
-maps to integer microseconds-since-epoch in the column) instead of ISO strings:
+Replace JSON extraction throughout. Variables become Drift `DateTime` —
+Drift's default DateTime mapping serializes them to integer **Unix
+seconds** (`millisecondsSinceEpoch ~/ 1000`), which is exactly what the
+backfill writes:
 
 ```dart
 String _buildSelectTasksDue({
@@ -311,7 +346,11 @@ pass as-is once the `_selectTasksDue` signature is updated to accept
 - [ ] Add `due_at DATETIME` column to `journal` in `database.drift`.
 - [ ] Replace `idx_journal_tasks_due_open` definition in `database.drift`.
 - [ ] Update `_createIdxJournalTasksDueOpenSql` constant in `database.dart:33`.
-- [ ] Add v40→v41 migration branch with column-add, backfill, index swap.
+- [ ] Add v40→v41 migration branch with column-add, backfill (all tasks,
+      `CAST(strftime('%s', ...) AS INTEGER)`), and index swap.
+- [ ] In `beforeOpen`, ensure `journal.due_at` exists (`_columnExists` +
+      `ALTER TABLE ... ADD COLUMN` when missing) **before** the existing
+      index self-heal block so a partial-migration device recovers cleanly.
 - [ ] Audit & update `idx_journal_tasks_due_active` if it's still consumed.
 - [ ] Extend `toDbEntity` in `conversions.dart` with `dueAt`.
 - [ ] Rewrite `_buildSelectTasksDue` to use `due_at` and `DateTime` variables.
