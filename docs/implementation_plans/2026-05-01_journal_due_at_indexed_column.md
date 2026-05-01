@@ -253,10 +253,10 @@ ORDER BY CASE WHEN due_at IS NULL THEN 1 ELSE 0 END,
          date_from DESC
 ```
 
-If this query reads tasks across all statuses (not just open), confirm
-`due_at` is populated for closed tasks too — either expand the migration
-backfill, or accept that closed-task ordering may degrade until those rows
-are re-upserted.
+This query reads tasks across all statuses (open, done, rejected). The
+section-3 backfill is already widened to populate `due_at` for every task
+with non-null `data.due`, so closed-task ordering works correctly from the
+moment the migration completes — no re-upsert needed.
 
 ### 5.3 Fallback path
 
@@ -274,14 +274,20 @@ Add `test/database/due_at_migration_test.dart` (mirror
 `test/database/labels_migration_test.dart`):
 
 - Open DB at v40, insert several Tasks with `data.due` set in JSON, mix of
-  open/closed statuses.
+  open/closed statuses (including DONE and REJECTED).
+- Insert at least one Task with `data.due == null` to confirm the
+  `IS NOT NULL` guard in the backfill.
+- Insert at least one non-Task journal row to confirm the type filter
+  leaves it untouched.
 - Run migration to v41.
-- Assert `due_at` column exists and equals the JSON `data.due` for each open
-  task; NULL for closed/rejected tasks (per backfill scope).
-- Assert `idx_journal_tasks_due_open` exists, is partial, and is keyed on
-  `due_at`.
-- Run a query that should use the index and assert `EXPLAIN QUERY PLAN` shows
-  `USING INDEX idx_journal_tasks_due_open`.
+- Assert `due_at` column exists and equals the JSON `data.due` for **every**
+  task with a non-null `data.due`, regardless of status — this is the
+  cross-status sorting / range-query guarantee.
+- Assert `due_at` is NULL for the no-due Task and for the non-Task row.
+- Assert `idx_journal_tasks_due_open` exists, is partial (open-task-only),
+  and is keyed on the `due_at` column (not the JSON expression).
+- Run a query that should use the index and assert `EXPLAIN QUERY PLAN`
+  shows `USING INDEX idx_journal_tasks_due_open`.
 
 ### 6.2 Round-trip
 
