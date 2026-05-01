@@ -113,8 +113,12 @@ void main() {
   }
 
   test(
-    'drainToCompletion applies every queue entry exactly once and '
-    'coalesces missing-entries nudges into ONE emission per batch (F1)',
+    'drainToCompletion applies every queue entry exactly once. With the '
+    'one-entry-per-batch policy adopted alongside dequeue-time outbox '
+    'bundling, each entry is its own batch (a single bundle already '
+    'amortises ~50 entities into one wrapper window, so the F1 '
+    'pre-bundle invariant of one wrapper per drain slice no longer '
+    'applies — see SyncTuning.inboundWorkerBatchSize).',
     () async {
       final events = [
         _buildSyncEvent(eventId: r'$a', roomId: roomId, originTsMs: 100),
@@ -136,11 +140,10 @@ void main() {
       expect(appliedCount, events.length);
       expect(applied, [r'$a', r'$b', r'$c', r'$d']);
 
-      // Critical F1 assertion: the worker wraps the whole batch in
-      // ONE deferred-nudges window, not one per event. A per-event
-      // wrapping would be 4 here — the fragmentation the design
-      // review flagged.
-      expect(sequenceLog.deferredWrapperCalls, 1);
+      // One wrapper invocation per row drained — the worker is now
+      // pinned to batch size 1 so each entry runs prepare → apply →
+      // commit in its own missing-entries window.
+      expect(sequenceLog.deferredWrapperCalls, events.length);
     },
   );
 
@@ -622,9 +625,10 @@ void main() {
 
   group('prepareBatch hook', () {
     test(
-      'prepareBatch is invoked once per batch with every entry, '
-      'before any per-entry apply runs — proves the worker wires the '
-      'batch-parallel prepare path end to end',
+      'prepareBatch fires once per drained row before that row applies '
+      '— proves the prepareBatch wiring still runs end to end under the '
+      'batch-size-1 worker policy (one row per batch means one '
+      'invocation per row).',
       () async {
         final events = [
           _buildSyncEvent(eventId: r'$p1', roomId: roomId, originTsMs: 10),
@@ -641,9 +645,10 @@ void main() {
           resolveRoom: () async => room,
           apply: (entry, _) async {
             applyInvocations.add(entry.eventId);
-            // Applies must observe a fully-populated prepareInvocations
-            // list — prepareBatch ran ahead of the first apply call.
-            expect(prepareInvocations, hasLength(1));
+            // Each apply observes a prepareBatch call that ran ahead
+            // of it for the same single-row batch.
+            expect(prepareInvocations, hasLength(applyInvocations.length));
+            expect(prepareInvocations.last, [entry.eventId]);
             return ApplyOutcome.applied;
           },
           prepareBatch: (entries, _) async {
@@ -657,8 +662,12 @@ void main() {
 
         final appliedCount = await worker.drainToCompletion();
         expect(appliedCount, 3);
-        expect(prepareInvocations, hasLength(1));
-        expect(prepareInvocations.single, [r'$p1', r'$p2', r'$p3']);
+        expect(prepareInvocations, hasLength(3));
+        expect(prepareInvocations, [
+          [r'$p1'],
+          [r'$p2'],
+          [r'$p3'],
+        ]);
         expect(applyInvocations, [r'$p1', r'$p2', r'$p3']);
       },
     );

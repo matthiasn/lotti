@@ -410,8 +410,14 @@ class InboundQueue {
   /// drainers cannot double-apply. Only `enqueued` / `retrying` rows
   /// are eligible — `applied` and `abandoned` rows stay put as the
   /// ledger history and the resurrection target, respectively.
+  ///
+  /// The default is [SyncTuning.peekBatchReadyDefault] (a generic upper
+  /// bound for ad-hoc peek calls and tests). The InboundWorker passes
+  /// its own `SyncTuning.inboundWorkerBatchSize` explicitly so the
+  /// generic peek limit and the worker-specific drain policy can move
+  /// independently.
   Future<List<InboundQueueEntry>> peekBatchReady({
-    int maxBatch = SyncTuning.inboundWorkerBatchSize,
+    int maxBatch = SyncTuning.peekBatchReadyDefault,
   }) async {
     final nowMs = clock.now().millisecondsSinceEpoch;
 

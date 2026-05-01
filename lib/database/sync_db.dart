@@ -71,6 +71,19 @@ enum SyncSequenceStatus {
   'ON outbox (priority, created_at) '
   'WHERE status IN (0, 3)',
 )
+// Covers `findPendingByEntryId` — the outbox merge-deduplication path
+// fired on every enqueue. Filter is `status = pending AND
+// outbox_entry_id = ? ORDER BY created_at DESC LIMIT 1`. Without this
+// index the slow-query log on a real iOS device showed 2,394
+// occurrences with p50=197 ms, p95=371 ms, because the planner fell
+// back to the (status, priority, created_at) index and scanned every
+// pending row to find the entry_id match. The partial WHERE keeps the
+// index dense — only the hot pending+addressable rows live in it.
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_pending_entry_id_created_at '
+  'ON outbox (outbox_entry_id, created_at) '
+  'WHERE status = 0 AND outbox_entry_id IS NOT NULL',
+)
 class Outbox extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -306,6 +319,19 @@ class HostActivity extends Table {
 @TableIndex.sql(
   'CREATE INDEX idx_inbound_event_queue_abandoned_reason '
   'ON inbound_event_queue (last_error_reason) '
+  '''WHERE status = 'abandoned' ''',
+)
+// Tighter companion for `resurrectByReason`: the actual call adds a
+// `resurrection_count < ?` predicate on top of the reason equality, so
+// the predicate `(last_error_reason = ?) AND (resurrection_count < ?)`
+// previously had to fetch each row through the heap to evaluate the
+// count comparison. iOS slow-query log captured 6,331 occurrences with
+// p50=101 ms, p95=344 ms. Stacking the count column behind the reason
+// equality lets SQLite walk the index for the bounded prefix and never
+// touch the heap.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_abandoned_reason_resurrection '
+  'ON inbound_event_queue (last_error_reason, resurrection_count) '
   '''WHERE status = 'abandoned' ''',
 )
 class InboundEventQueue extends Table {
@@ -1550,7 +1576,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration {
@@ -1829,6 +1855,34 @@ class SyncDatabase extends _$SyncDatabase {
             'idx_sync_sequence_log_actionable_status_last_requested_at '
             'ON sync_sequence_log (status, last_requested_at) '
             'WHERE status IN (1, 2) AND last_requested_at IS NOT NULL',
+          );
+        }
+        if (from < 17) {
+          // 1. Outbox merge dedup (`findPendingByEntryId`) was the #3
+          //    iOS slow query (2,394 occurrences, p50=197 ms): scanning
+          //    every pending row to find the entry_id match. Partial
+          //    on (outbox_entry_id, created_at) keyed only on pending
+          //    rows turns it into a tight index seek + DESC walk that
+          //    terminates on the first row.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_outbox_pending_entry_id_created_at '
+            'ON outbox (outbox_entry_id, created_at) '
+            'WHERE status = ${OutboxStatus.pending.index} '
+            'AND outbox_entry_id IS NOT NULL',
+          );
+          // 2. `resurrectByReason` was #2 with p50=101 ms / 6,331
+          //    occurrences. The v15 partial index covers
+          //    `(last_error_reason)` only; the actual predicate also
+          //    constrains `resurrection_count < ?`, forcing per-row
+          //    heap fetches to evaluate the count comparison. Stacking
+          //    `resurrection_count` behind the reason equality keeps
+          //    the walk inside the index.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_abandoned_reason_resurrection '
+            'ON inbound_event_queue (last_error_reason, resurrection_count) '
+            '''WHERE status = 'abandoned' ''',
           );
         }
       },

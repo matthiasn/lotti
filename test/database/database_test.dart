@@ -2155,6 +2155,78 @@ void main() {
         },
       );
 
+      test(
+        'journalEntityMapForIds bypasses the privacy filter and skips '
+        'deleted rows — the outbox bundler always needs every entity '
+        'regardless of UI privacy settings',
+        () async {
+          final base = DateTime(2024, 8, 6);
+          final publicEntry = buildJournalEntry(
+            id: 'map-public-entry',
+            timestamp: base,
+            text: 'Public entry',
+          );
+          final privateEntry = buildJournalEntry(
+            id: 'map-private-entry',
+            timestamp: base.add(const Duration(minutes: 1)),
+            text: 'Private entry',
+            privateFlag: true,
+          );
+          final softDeletedEntry = buildJournalEntry(
+            id: 'map-deleted-entry',
+            timestamp: base.add(const Duration(minutes: 2)),
+            text: 'Soft-deleted entry',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(publicEntry));
+          await db!.upsertJournalDbEntity(toDbEntity(privateEntry));
+          await db!.upsertJournalDbEntity(
+            toDbEntity(softDeletedEntry).copyWith(deleted: true),
+          );
+
+          // Privacy filter is OFF — bulk-id-based read for sync still
+          // returns the private entity (sync needs every row), and never
+          // surfaces a soft-deleted row.
+          final privateConfig = await db!.getConfigFlagByName(privateFlag);
+          await db!.upsertConfigFlag(privateConfig!.copyWith(status: false));
+
+          final whenFilterOff = await db!.journalEntityMapForIds({
+            publicEntry.meta.id,
+            privateEntry.meta.id,
+            softDeletedEntry.meta.id,
+            'never-existed',
+          });
+
+          expect(whenFilterOff.keys.toSet(), {
+            publicEntry.meta.id,
+            privateEntry.meta.id,
+          });
+          expect(
+            whenFilterOff[publicEntry.meta.id]!.meta.id,
+            publicEntry.meta.id,
+          );
+          expect(
+            whenFilterOff[privateEntry.meta.id]!.meta.id,
+            privateEntry.meta.id,
+          );
+
+          // Privacy filter ON — same result; the bulk method ignores the
+          // setting because it routes through the all-private query.
+          await db!.upsertConfigFlag(privateConfig.copyWith(status: true));
+          final whenFilterOn = await db!.journalEntityMapForIds({
+            publicEntry.meta.id,
+            privateEntry.meta.id,
+          });
+          expect(whenFilterOn.keys.toSet(), {
+            publicEntry.meta.id,
+            privateEntry.meta.id,
+          });
+
+          // Empty input collapses to a constant map without hitting the DB.
+          expect(await db!.journalEntityMapForIds(<String>{}), isEmpty);
+        },
+      );
+
       test('getBulkLinkedEntities groups results by parent id', () async {
         final base = DateTime(2024, 8, 2);
         final parentA = buildJournalEntry(

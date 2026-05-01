@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 enum DesignSystemBadgeTone {
   primary,
@@ -193,7 +194,13 @@ class _BadgeSizeSpec {
         verticalPadding: 0,
         cornerRadius: textBadgeHeight / 2,
         iconSize: 0,
-        textStyle: caption,
+        // Numeric badges share a count-friendly OpenType feature set —
+        // tabular figures (so a 9 → 10 → 99 transition does not jiggle),
+        // open-digit character variants (`cv02`/`cv03`/`cv04` keep 4/6/9
+        // legible at 11–12 px), and a slashed zero. See
+        // `numericBadgeFontFeatures` in `themes/theme.dart` for the
+        // complete rationale.
+        textStyle: caption.copyWith(fontFeatures: numericBadgeFontFeatures),
         borderWidth: tokens.spacing.step1 / 2,
       ),
       _DesignSystemBadgeType.icon => _BadgeSizeSpec(

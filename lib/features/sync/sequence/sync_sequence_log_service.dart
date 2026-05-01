@@ -255,6 +255,55 @@ class SyncSequenceLogService {
     // which we track separately.
   }
 
+  /// Conservatively advance [_lastCounterCache] for [hostId] after a
+  /// successful insert/update of [counter] in a watermark-eligible status.
+  /// Replaces the per-record `_invalidateCacheForHost` previously fired on
+  /// every recorded counter — under heavy backfill that was the dominant
+  /// source of slow-query traffic on the watermark CTE
+  /// (`getLastCounterForHost`), because every child of an outbox bundle
+  /// invalidated the cache and the next child's `_getCachedLastCounterForHost`
+  /// re-ran the slow CTE end-to-end. With 50 children sharing one host,
+  /// 50 cache misses became 1 miss + 49 hits.
+  ///
+  /// Correctness: the cache stores the highest contiguous resolved counter
+  /// from 1 for [hostId]. We only advance when [counter] is exactly
+  /// `current + 1` (or `1` from a `null`/cold-cache state), which is the
+  /// only case where the contiguous prefix is provably extended without a
+  /// DB query. Counters that skip ahead (gap) or fall inside an existing
+  /// gap leave the cache alone — under-reporting is safe (it just causes
+  /// extra-cautious gap detection on the next read). Over-reporting would
+  /// be unsafe (we could miss real gaps); this helper never does that.
+  ///
+  /// Status transitions that could shorten the prefix (e.g. a record
+  /// flipping back to a non-watermark status) still flow through
+  /// [_invalidateCacheForHost] from their own call sites, so we do not
+  /// need to worry about that case here.
+  void _advanceLastCounterCache(String hostId, int counter) {
+    if (!_lastCounterCache.containsKey(hostId)) {
+      // Cache slot is cold — leave it that way so the next read computes
+      // the true watermark via SQL. Pre-populating from a single record
+      // would over-report when earlier counters are still missing.
+      return;
+    }
+    final current = _lastCounterCache[hostId];
+    if (current == null) {
+      if (counter == 1) {
+        _lastCounterCache[hostId] = 1;
+      }
+      return;
+    }
+    if (counter <= current) {
+      // Already covered by the cached prefix — no change.
+      return;
+    }
+    if (counter == current + 1) {
+      _lastCounterCache[hostId] = counter;
+    }
+    // counter > current + 1: gap (truth might extend further if other
+    // counters were resolved out-of-order, but we cannot prove it without
+    // a query). Leave the cache at its safe lower-bound value.
+  }
+
   /// Force-expire the host activity cache. Used in tests to verify
   /// that expired caches are cleared and DB is re-queried.
   @visibleForTesting
@@ -678,8 +727,13 @@ class SyncSequenceLogService {
         }
       }
 
-      // Invalidate counter cache for this host since we just recorded entries
-      _invalidateCacheForHost(hostId);
+      // Conservatively advance the watermark cache instead of invalidating
+      // it. Under heavy backfill (50 children per outbox bundle), the old
+      // unconditional invalidate forced the next child to re-run the
+      // slow `getLastCounterForHost` CTE — that query dominated the
+      // mobile slow-query log under load. The advance is a strict
+      // forward-only update that never over-reports the prefix.
+      _advanceLastCounterCache(hostId, counter);
     }
 
     // Only log the gap summary when we actually recorded new missing rows.

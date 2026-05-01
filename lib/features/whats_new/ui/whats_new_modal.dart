@@ -468,6 +468,7 @@ class _VersionBadge extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                   letterSpacing: 0.3,
+                  fontFeatures: numericBadgeFontFeatures,
                 ),
               ),
             ],

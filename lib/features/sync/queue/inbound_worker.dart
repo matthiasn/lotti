@@ -150,7 +150,9 @@ class InboundWorker {
   Future<int> drainToCompletion() async {
     var applied = 0;
     while (true) {
-      final batch = await _queue.peekBatchReady();
+      final batch = await _queue.peekBatchReady(
+        maxBatch: SyncTuning.inboundWorkerBatchSize,
+      );
       if (batch.isEmpty) return applied;
       applied += await _runBatch(batch);
     }
@@ -178,7 +180,9 @@ class InboundWorker {
           if (!depthTrigger.isCompleted) depthTrigger.complete();
         });
 
-        final batch = await _queue.peekBatchReady();
+        final batch = await _queue.peekBatchReady(
+          maxBatch: SyncTuning.inboundWorkerBatchSize,
+        );
         if (batch.isEmpty) {
           try {
             await _waitForWork(depthTrigger.future);

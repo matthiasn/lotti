@@ -4175,7 +4175,14 @@ void main() {
     );
 
     test(
-      'invalidates last counter cache after recording entries for a host',
+      'advances the last-counter cache incrementally on contiguous '
+      'records instead of re-querying the slow watermark CTE — under '
+      'heavy backfill (50 children per outbox bundle from one host), '
+      'the old per-record invalidation forced the next child to re-run '
+      '`getLastCounterForHost`, which dominated the iOS slow-query log. '
+      'A strict +1 advance preserves correctness (under-reports are '
+      'safe; over-reports are not — and this helper never advances by '
+      'more than 1) while collapsing 50 cache misses to 1 lookup.',
       () async {
         when(
           () => mockDb.getLastCounterForHost(aliceHostId),
@@ -4190,8 +4197,9 @@ void main() {
           () => mockDb.recordSequenceEntry(any()),
         ).thenAnswer((_) async => 1);
 
-        // Process an entry — bob counter at 6 means gap detection checks
-        // getLastCounterForHost(bob) which returns 5 → gap for counter 6
+        // First entry: bob counter at 6, contiguous with cached 5. The
+        // gap-detection path reads `getLastCounterForHost(bob)` once,
+        // then the recorded counter advances the cache from 5 to 6.
         await service.recordReceivedEntry(
           entryId: 'entry-1',
           vectorClock: const VectorClock({
@@ -4201,17 +4209,13 @@ void main() {
           originatingHostId: aliceHostId,
         );
 
-        // Bob's counter was queried once via cache
         verify(
           () => mockDb.getLastCounterForHost(bobHostId),
         ).called(1);
 
-        // After the first call, cache was invalidated for bob because
-        // entries were written for bob. The next call must re-query DB.
-        when(
-          () => mockDb.getLastCounterForHost(bobHostId),
-        ).thenAnswer((_) async => 6);
-
+        // Second entry: bob counter at 7, contiguous with the now-cached
+        // 6. The cached watermark is still correct without a DB
+        // round-trip, so the slow CTE must NOT fire again.
         await service.recordReceivedEntry(
           entryId: 'entry-2',
           vectorClock: const VectorClock({
@@ -4221,11 +4225,9 @@ void main() {
           originatingHostId: aliceHostId,
         );
 
-        // Bob's counter was queried again because cache was invalidated
-        // after the first recordReceivedEntry wrote to bob's entries
-        verify(
+        verifyNever(
           () => mockDb.getLastCounterForHost(bobHostId),
-        ).called(1);
+        );
       },
     );
   });

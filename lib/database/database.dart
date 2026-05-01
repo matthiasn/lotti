@@ -918,6 +918,39 @@ class JournalDb extends _$JournalDb {
     return null;
   }
 
+  /// Bulk-fetches the [JournalEntity] for each id in [ids], returning a
+  /// map keyed by entry id. Bypasses the privacy filter (sync needs every
+  /// entry, including private ones) and skips deleted rows. Used by the
+  /// outbox bundler to avoid an N+1 fan-out when a single bundle covers
+  /// up to `SyncTuning.outboxBundleMaxSize` children, and by the inbound
+  /// bundle unpacker for the same reason.
+  ///
+  /// Chunks the id list into [_sqliteInListChunk]-sized batches so a
+  /// caller passing a long list (well above what an outbox bundle ever
+  /// produces) cannot blow past SQLite's bind-variable cap. Same pattern
+  /// the other bulk-by-id helpers in this file use (e.g.
+  /// `getDayPlansForIds`).
+  Future<Map<String, JournalEntity>> journalEntityMapForIds(
+    Iterable<String> ids,
+  ) async {
+    final idList = ids.toSet().toList(growable: false);
+    if (idList.isEmpty) {
+      return const <String, JournalEntity>{};
+    }
+    final result = <String, JournalEntity>{};
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
+      final chunk = idList.sublist(i, end);
+      final dbEntities = await journalEntitiesByIdsUnorderedAllPrivate(
+        chunk,
+      ).get();
+      for (final dbEntity in dbEntities) {
+        result[dbEntity.id] = fromDbEntity(dbEntity);
+      }
+    }
+    return result;
+  }
+
   Future<List<JournalEntity>> getJournalEntities({
     required List<String> types,
     required List<bool> starredStatuses,

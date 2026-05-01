@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -72,6 +73,43 @@ Future<Uint8List> gzipEncodeBytes(Uint8List bytes) async {
 
 Uint8List _gzipEncodeWorker(Uint8List bytes) =>
     _asUint8List(gzip.encode(bytes));
+
+/// Threshold above which JSON decode is offloaded to a worker isolate.
+/// Matches `_inlineSyncDecodeThreshold` in `sync_event_processor.dart` —
+/// the existing CPU-bound parse threshold for sync events. Used by the
+/// outbox bundle manifest decode path so a multi-MiB bundle never blocks
+/// the UI isolate on parse.
+const int _inlineJsonDecodeThreshold = 4 * 1024;
+
+/// Encodes [jsonValue] to JSON, UTF-8 encodes, and gzip-encodes in a single
+/// isolate hop. Designed for outbox bundle manifests where the input is
+/// always multi-row (callers handle the empty case upstream) and the
+/// cumulative encode cost dominates the isolate spin-up overhead. Smaller
+/// already-encoded payloads should keep using [gzipEncodeBytes].
+///
+/// The argument must be JSON-friendly (Map/List/String/num/bool/null) since
+/// `compute` marshals it through the isolate boundary; freezed objects must
+/// be flattened to maps via `toJson()` before the call.
+Future<Uint8List> gzipEncodeJson(Object? jsonValue) =>
+    compute(_gzipEncodeJsonWorker, jsonValue);
+
+Uint8List _gzipEncodeJsonWorker(Object? jsonValue) {
+  final encoded = utf8.encode(json.encode(jsonValue));
+  return _asUint8List(gzip.encode(encoded));
+}
+
+/// JSON-decodes [jsonString]; above [_inlineJsonDecodeThreshold] the work
+/// runs on a worker isolate so receiver-side manifest parsing during a
+/// catch-up slice does not stall the UI. Returns whatever the underlying
+/// `json.decode` produces — callers cast to the expected shape.
+Future<Object?> decodeJsonStringMaybeIsolate(String jsonString) async {
+  if (jsonString.length < _inlineJsonDecodeThreshold) {
+    return json.decode(jsonString);
+  }
+  return compute(_jsonDecodeWorker, jsonString);
+}
+
+Object? _jsonDecodeWorker(String jsonString) => json.decode(jsonString);
 
 /// `gzip.encode` / `gzip.decode` from `dart:io` return a Uint8List-backed
 /// `List<int>`, so the cast avoids an unnecessary copy via

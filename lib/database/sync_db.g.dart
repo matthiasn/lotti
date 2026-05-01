@@ -2945,6 +2945,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_outbox_actionable_priority_created_at',
     'CREATE INDEX idx_outbox_actionable_priority_created_at ON outbox (priority, created_at) WHERE status IN (0, 3)',
   );
+  late final Index idxOutboxPendingEntryIdCreatedAt = Index(
+    'idx_outbox_pending_entry_id_created_at',
+    'CREATE INDEX idx_outbox_pending_entry_id_created_at ON outbox (outbox_entry_id, created_at) WHERE status = 0 AND outbox_entry_id IS NOT NULL',
+  );
   late final Index idxSyncSequenceLogActionableStatusCreatedAt = Index(
     'idx_sync_sequence_log_actionable_status_created_at',
     'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at ON sync_sequence_log (status, created_at) WHERE status IN (1, 2)',
@@ -2993,6 +2997,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_inbound_event_queue_abandoned_reason',
     'CREATE INDEX idx_inbound_event_queue_abandoned_reason ON inbound_event_queue (last_error_reason) WHERE status = \'abandoned\'',
   );
+  late final Index idxInboundEventQueueAbandonedReasonResurrection = Index(
+    'idx_inbound_event_queue_abandoned_reason_resurrection',
+    'CREATE INDEX idx_inbound_event_queue_abandoned_reason_resurrection ON inbound_event_queue (last_error_reason, resurrection_count) WHERE status = \'abandoned\'',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3005,6 +3013,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     queueMarkers,
     idxOutboxStatusPriorityCreatedAt,
     idxOutboxActionablePriorityCreatedAt,
+    idxOutboxPendingEntryIdCreatedAt,
     idxSyncSequenceLogActionableStatusCreatedAt,
     idxSyncSequenceLogActionableStatusUpdatedAt,
     idxSyncSequenceLogActionableStatusLastRequestedAt,
@@ -3017,6 +3026,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxInboundEventQueueActiveRoomTs,
     idxInboundEventQueueAbandonedPath,
     idxInboundEventQueueAbandonedReason,
+    idxInboundEventQueueAbandonedReasonResurrection,
   ];
 }
 

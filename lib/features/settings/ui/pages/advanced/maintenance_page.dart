@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/ui/purge_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
+import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 /// Mobile / legacy wrapper — keeps the `SliverBoxAdapterPage` chrome
@@ -149,18 +150,58 @@ class MaintenanceBody extends ConsumerWidget {
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
       child: DesignSystemGroupedList(
         children: [
-          for (final (index, item) in items.indexed)
+          for (final item in items)
             DesignSystemListItem(
               title: item.title,
               subtitle: item.subtitle,
               leading: SettingsIcon(icon: item.icon),
               trailing: SettingsIcon.trailingChevron(tokens),
-              showDivider: index < items.length - 1,
+              // Always draw a divider; the diagnostic
+              // [_RepaintRainbowTile] below is the new last item and
+              // owns the bottom-of-list (no-divider) slot.
+              showDivider: true,
               dividerIndent: SettingsIcon.dividerIndent(tokens),
               onTap: item.onTap,
             ),
+          const _RepaintRainbowTile(),
         ],
       ),
+    );
+  }
+}
+
+/// In-memory toggle for Flutter's repaint-rainbow overlay. Sits at the
+/// bottom of the Maintenance list because it's a diagnostic, not a
+/// regular maintenance action: when on, every region that repaints
+/// flashes through a colour cycle, making it trivial to spot widgets
+/// that are redrawing every frame at idle. The state is kept in
+/// [repaintRainbowEnabled], which mirrors the value into Flutter's
+/// `debugRepaintRainbowEnabled` global and schedules a forced frame so
+/// the change is visible immediately. Resets to off on every relaunch
+/// — the flag is never persisted.
+class _RepaintRainbowTile extends StatelessWidget {
+  const _RepaintRainbowTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return ValueListenableBuilder<bool>(
+      valueListenable: repaintRainbowEnabled,
+      builder: (context, enabled, _) {
+        return DesignSystemListItem(
+          title: 'Repaint rainbow overlay',
+          subtitle:
+              'Flash a colour cycle over every region that repaints '
+              '— diagnoses widgets redrawing every frame at idle.',
+          leading: const SettingsIcon(icon: Icons.bug_report_outlined),
+          trailing: Switch.adaptive(
+            value: enabled,
+            onChanged: (value) => repaintRainbowEnabled.value = value,
+          ),
+          dividerIndent: SettingsIcon.dividerIndent(tokens),
+          onTap: () => repaintRainbowEnabled.value = !enabled,
+        );
+      },
     );
   }
 }

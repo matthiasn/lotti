@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart'
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/debug_overlays.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -278,10 +280,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      // 6 fixed items (EmbeddingStore not registered in this group).
-      expect(find.byType(DesignSystemListItem), findsNWidgets(6));
-      expect(find.byType(SettingsIcon), findsNWidgets(6));
+      // 6 fixed items (EmbeddingStore not registered in this group)
+      // plus the diagnostic repaint-rainbow toggle = 7 list items.
+      // Only the 6 action rows carry chevrons; the toggle uses an
+      // adaptive Switch as its trailing affordance instead.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(7));
+      expect(find.byType(SettingsIcon), findsNWidgets(7));
       expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(6));
+      expect(find.byType(Switch), findsOneWidget);
     });
 
     testWidgets('shows dividers between items but not after last', (
@@ -293,5 +299,58 @@ void main() {
       await tester.pumpAndSettle();
       expectDividersOnAllButLast(tester);
     });
+
+    testWidgets(
+      "invokes the repaint-rainbow row's onTap and the Switch's "
+      'onChanged callbacks — direct callback invocation rather than '
+      'pointer-driven taps so no frame paints with the rainbow overlay '
+      'on (which would advance `debugCurrentRepaintColor` and trip '
+      '`debugAssertAllRenderVarsUnset`). End-to-end notifier→global '
+      'mirroring is covered in `test/services/debug_overlays_test.dart`.',
+      (tester) async {
+        repaintRainbowEnabled.value = false;
+        debugRepaintRainbowEnabled = false;
+        addTearDown(() {
+          repaintRainbowEnabled.value = false;
+          debugRepaintRainbowEnabled = false;
+        });
+
+        await tester.pumpWidget(
+          makeTestableWidget(_constrainedMaintenancePage()),
+        );
+        await tester.pumpAndSettle();
+
+        // Switch.onChanged closure on the tile flips the notifier.
+        final initialSwitch = tester.widget<Switch>(find.byType(Switch));
+        expect(initialSwitch.value, isFalse);
+        initialSwitch.onChanged!(true);
+        expect(repaintRainbowEnabled.value, isTrue);
+
+        // Reset before any rebuild paints with the overlay on; the
+        // ValueListenableBuilder schedules a rebuild, but we don't pump
+        // it until after the global is back at default to keep the
+        // framework's invariant check happy.
+        repaintRainbowEnabled.value = false;
+        debugRepaintRainbowEnabled = false;
+        await tester.pumpAndSettle();
+
+        // Row's onTap closure also flips the notifier — exercise it via
+        // the same direct-invocation pattern. The DesignSystemListItem
+        // wires `onTap` through to its own InkWell, so we resolve the
+        // tile widget and call its callback.
+        final tile = tester.widget<DesignSystemListItem>(
+          find.ancestor(
+            of: find.text('Repaint rainbow overlay'),
+            matching: find.byType(DesignSystemListItem),
+          ),
+        );
+        tile.onTap!();
+        expect(repaintRainbowEnabled.value, isTrue);
+
+        // Final reset before the binding's invariant check.
+        repaintRainbowEnabled.value = false;
+        debugRepaintRainbowEnabled = false;
+      },
+    );
   });
 }

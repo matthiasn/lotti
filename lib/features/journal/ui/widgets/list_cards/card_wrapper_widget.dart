@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/animated_task_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 class CardWrapperWidget extends ConsumerWidget {
   const CardWrapperWidget({
@@ -82,6 +83,7 @@ class _DistanceBadge extends StatelessWidget {
           color: Colors.white,
           fontSize: 10,
           fontWeight: FontWeight.bold,
+          fontFeatures: numericBadgeFontFeatures,
         ),
       ),
     );
