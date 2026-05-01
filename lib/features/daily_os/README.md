@@ -59,7 +59,6 @@ flowchart LR
 
   Unified --> TimelineData["DailyTimelineData"]
   Unified --> BudgetData["TimeBudgetProgress"]
-  Unified --> Ratings["ratingIds"]
 
   Header --> HeaderCtl["TimeHistoryHeaderController"]
   HeaderCtl --> DB
@@ -135,7 +134,7 @@ It:
 - listens to `UpdateNotifications.updateStream`
 - listens to `TimeService` for the currently running timer
 - returns a transient empty `DayPlanEntry` when the day has no persisted plan yet
-- fetches the day plan, calendar entries, due tasks, entry links, linked parent entities, and rating IDs
+- fetches the day plan, calendar entries, due tasks, entry links, and linked parent entities
 - recomputes timeline data, budget progress, and synthetic zero-budget rows together
 - refetches after plan mutations so derived state stays consistent
 
@@ -152,7 +151,6 @@ sequenceDiagram
   Unified->>DB: sortedCalendarEntries(day)
   Unified->>DB: getTasksDueOn / getTasksDueOnOrBefore(day)
   Unified->>DB: resolve links and linked parent entities
-  Unified->>DB: getRatingIdsForTimeEntries(entryIds)
   Unified->>Unified: build timeline + budgets + synthetic budget rows
   Unified-->>UI: DailyOsData
 
