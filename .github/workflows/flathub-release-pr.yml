@@ -3,10 +3,14 @@ name: Flathub Release PR
 # Generates a Flathub submission from the current Lotti commit, pushes a
 # version branch to flathub/com.matthiasn.lotti, and opens a PR against master.
 #
-# Trigger manually from the Actions tab. Optionally override the commit and
-# version inputs; otherwise we use the workflow ref's commit and the version
-# from pubspec.yaml.
+# Triggers:
+# - push of any tag — tags signal a release, mirroring flutter-macos-release.
+# - workflow_dispatch from the Actions tab, for reruns or one-off submissions
+#   with optional commit / version overrides and a dry-run mode.
 on:
+  push:
+    tags:
+      - '**'
   workflow_dispatch:
     inputs:
       commit_sha:
