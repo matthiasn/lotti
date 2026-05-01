@@ -1777,6 +1777,11 @@ void main() {
           // After v41 the hot path reads the denormalized `due_at` column
           // and pins the partial `idx_journal_tasks_due_open`. The composite
           // `idx_journal_tasks_due_active` was dropped in v41.
+          //
+          // The shape mirrors `_buildSelectTasksDue` in `database.dart`:
+          // `private` is bound as IN (?, ?) — one parameter per status —
+          // not as a config-flag subquery, so the planner sees the real
+          // query shape the production builder emits.
           final endOfDay = DateTime(2024, 10, 5, 23, 59, 59, 999);
 
           final plan = await db!
@@ -1790,10 +1795,14 @@ void main() {
           AND task_status NOT IN ('DONE', 'REJECTED')
           AND due_at IS NOT NULL
           AND due_at <= ?1
-          AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+          AND private IN (?2, ?3)
           ORDER BY due_at ASC
           ''',
-                variables: [drift.Variable<DateTime>(endOfDay)],
+                variables: [
+                  drift.Variable<DateTime>(endOfDay),
+                  const drift.Variable<bool>(false),
+                  const drift.Variable<bool>(true),
+                ],
               )
               .get();
 
