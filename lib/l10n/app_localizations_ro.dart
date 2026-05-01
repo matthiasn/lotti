@@ -5425,6 +5425,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCategoriesAddTooltip => 'Adaugă categorie';
 
   @override
+  String get settingsCategoriesCreateTitle => 'Creare categorie';
+
+  @override
   String get settingsCategoriesDetailsLabel => 'Detalii categorie';
 
   @override
@@ -5452,6 +5455,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsCategoriesNameLabel => 'Numele categoriei:';
+
+  @override
+  String settingsCategoriesNoMatchQuery(String query) {
+    return 'Nicio categorie nu corespunde cu \"$query\"';
+  }
+
+  @override
+  String get settingsCategoriesSearchHint => 'Caută categorii…';
 
   @override
   String get settingsCategoriesSubtitle => 'Categorii cu setări AI';

@@ -58,15 +58,18 @@ void main() {
 
   group('buildSettingsTree — always-on nodes', () {
     test('root order is stable with every flag on', () {
+      // Sync sits directly below Agents — both are runtime / system
+      // concerns and read better as a pair than separated by the
+      // taxonomy leaves (habits / categories / labels).
       final rootIds = _tree().map((n) => n.id).toList();
       expect(rootIds, [
         'whats-new',
         'ai',
         'agents',
+        'sync',
         'habits',
         'categories',
         'labels',
-        'sync',
         'dashboards',
         'measurables',
         'theming',
@@ -280,10 +283,10 @@ void main() {
     });
 
     test('pure branch nodes have no panel', () {
-      // `sync` and `advanced` are pure branches — no landing page.
-      // `ai` and `agents` are branches that also carry their own
-      // landing panel (asserted separately below).
-      for (final id in ['sync', 'advanced']) {
+      // Only `advanced` is a pure (landing-page-less) branch now.
+      // `ai`, `agents`, and `sync` carry their own landing panel
+      // (asserted separately below).
+      for (final id in ['advanced']) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, id);
         expect(node, isNotNull, reason: 'expected $id to be present');
@@ -292,9 +295,12 @@ void main() {
     });
 
     test('branches that carry a landing panel expose it', () {
-      // AI and Agents branches render their own detail panel when
-      // the user lands on the branch itself (not a descendant leaf).
-      const expected = {'ai': 'ai', 'agents': 'agents'};
+      // AI / Agents / Sync branches render their own detail panel
+      // when the user lands on the branch itself (not a descendant
+      // leaf). For Sync, the landing panel surfaces the
+      // ProvisionedSyncSettingsCard so QR-pairing is reachable on
+      // desktop V2 the same way it is on mobile.
+      const expected = {'ai': 'ai', 'agents': 'agents', 'sync': 'sync'};
       for (final entry in expected.entries) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, entry.key);
@@ -350,10 +356,12 @@ void main() {
 
       expect(ids, [
         'ai',
+        // Sync branch stays so the conflicts leaf remains reachable —
+        // and sits directly below the AI/Agents-family slot regardless
+        // of which optional taxonomy branches are gated off.
+        'sync',
         'categories',
         'labels',
-        // Sync branch stays so the conflicts leaf remains reachable.
-        'sync',
         'measurables',
         'theming',
         'flags',

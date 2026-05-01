@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -124,25 +125,21 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
 class FloatingAddIcon extends ConsumerWidget {
   const FloatingAddIcon({
     required this.createFn,
-    this.semanticLabel,
+    required this.semanticLabel,
     super.key,
   });
 
   final void Function() createFn;
-  final String? semanticLabel;
+  final String semanticLabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DesignSystemBottomNavigationFabPadding(
       child: Padding(
         padding: const EdgeInsets.all(5),
-        child: FloatingActionButton(
+        child: DesignSystemFloatingActionButton(
+          semanticLabel: semanticLabel,
           onPressed: createFn,
-          tooltip: semanticLabel,
-          child: Icon(
-            Icons.add_rounded,
-            semanticLabel: semanticLabel,
-          ),
         ),
       ),
     );

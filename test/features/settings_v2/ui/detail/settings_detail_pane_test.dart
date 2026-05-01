@@ -74,18 +74,37 @@ void main() {
   });
 
   group('SettingsDetailPane — branch selection', () {
-    testWidgets('dispatches to CategoryEmpty when a branch is selected', (
-      tester,
-    ) async {
-      await _pumpPane(
-        tester,
-        flags: {enableMatrixFlag: true},
-        initialPath: ['sync'],
-      );
-      await tester.pump(const Duration(milliseconds: 200));
-      expect(find.byType(CategoryEmpty), findsOneWidget);
-      expect(find.byType(EmptyRoot), findsNothing);
-    });
+    testWidgets(
+      'dispatches to CategoryEmpty when a pure branch (no landing panel) '
+      'is selected',
+      (tester) async {
+        // `advanced` is the only remaining root branch without its own
+        // landing panel — `ai`, `agents`, and `sync` all carry one and
+        // therefore fall through to the LeafPanel dispatch.
+        await _pumpPane(
+          tester,
+          initialPath: ['advanced'],
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byType(CategoryEmpty), findsOneWidget);
+        expect(find.byType(EmptyRoot), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'dispatches to LeafPanel when a branch that carries its own '
+      'landing panel is selected (sync after the desktop QR-pairing fix)',
+      (tester) async {
+        await _pumpPane(
+          tester,
+          flags: {enableMatrixFlag: true},
+          initialPath: ['sync'],
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byType(LeafPanel), findsOneWidget);
+        expect(find.byType(CategoryEmpty), findsNothing);
+      },
+    );
   });
 
   group('SettingsDetailPane — leaf selection', () {

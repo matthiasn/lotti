@@ -4,14 +4,17 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Embeddable body alias for the Settings V2 detail pane (plan
 /// step 8). The V1 page's internal `SettingsPageHeader` overlaps the
@@ -29,11 +32,24 @@ class CategoriesListBody extends StatelessWidget {
 ///
 /// Each category row shows an icon badge, category name, task count subtitle,
 /// optional status icons (lock, visibility_off, star), and a chevron.
-class CategoriesListPage extends ConsumerWidget {
+/// Above the list sits a [DesignSystemSearch] field that filters rows by
+/// name (case-insensitive substring); the trailing FAB opens the
+/// `/settings/categories/create` route.
+class CategoriesListPage extends ConsumerStatefulWidget {
   const CategoriesListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CategoriesListPage> createState() => _CategoriesListPageState();
+}
+
+class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
+  /// Trimmed search query — empty when the field is clear. The
+  /// filter compares lower-cased on each rebuild; the trimmed form
+  /// also drives the no-match empty-state message.
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoriesStreamProvider);
 
     return Scaffold(
@@ -42,20 +58,6 @@ class CategoriesListPage extends ConsumerWidget {
           SettingsPageHeader(
             title: context.messages.settingsCategoriesTitle,
             showBackButton: !isDesktopLayout(context),
-            actions: [
-              TextButton.icon(
-                onPressed: () => beamToNamed('/settings/categories/create'),
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(
-                  context.messages.settingsCategoriesAddTooltip,
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.tertiary,
-                ),
-              ),
-            ],
           ),
           ...categoriesAsync.when(
             data: (categories) => _buildContentSlivers(context, categories),
@@ -72,6 +74,12 @@ class CategoriesListPage extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: DesignSystemBottomNavigationFabPadding(
+        child: DesignSystemFloatingActionButton(
+          semanticLabel: context.messages.settingsCategoriesCreateTitle,
+          onPressed: () => beamToNamed('/settings/categories/create'),
+        ),
+      ),
     );
   }
 
@@ -79,31 +87,80 @@ class CategoriesListPage extends ConsumerWidget {
     BuildContext context,
     List<CategoryDefinition> categories,
   ) {
-    final sortedCategories = categories.toList()
-      ..sort(
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-      );
-
-    if (categories.isEmpty) {
-      return [SliverFillRemaining(child: _buildEmptyState(context))];
-    }
+    final queryLower = _query.toLowerCase();
+    final filtered =
+        categories.where((category) {
+          if (queryLower.isEmpty) return true;
+          return category.name.toLowerCase().contains(queryLower);
+        }).toList()..sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
 
     return [
       SliverToBoxAdapter(
-        child: DesignSystemGroupedList(
-          children: [
-            for (final (index, category) in sortedCategories.indexed)
-              _CategoryListItem(
-                category: category,
-                showDivider: index < sortedCategories.length - 1,
-                onTap: () => beamToNamed(
-                  '/settings/categories/${category.id}',
-                ),
-              ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: DesignSystemSearch(
+            hintText: context.messages.settingsCategoriesSearchHint,
+            // DS search fires `onChanged('')` when the user taps the
+            // clear button, so the same setState path covers both the
+            // typing and clearing transitions — no separate `onClear`
+            // is needed.
+            onChanged: (value) => setState(() => _query = value.trim()),
+          ),
         ),
       ),
+      if (filtered.isEmpty)
+        _buildEmptySliver(context, categories.isEmpty)
+      else
+        SliverToBoxAdapter(
+          child: DesignSystemGroupedList(
+            children: [
+              for (final (index, category) in filtered.indexed)
+                _CategoryListItem(
+                  category: category,
+                  showDivider: index < filtered.length - 1,
+                  onTap: () => beamToNamed(
+                    '/settings/categories/${category.id}',
+                  ),
+                ),
+            ],
+          ),
+        ),
     ];
+  }
+
+  /// Empty state. Two flavours: "no categories at all" (default) and
+  /// "search returned nothing" (a query is active and no row matches).
+  /// The search-empty flavour shows the active query so the user knows
+  /// what they typed — same affordance as the labels page.
+  Widget _buildEmptySliver(BuildContext context, bool noCategoriesAtAll) {
+    if (!noCategoriesAtAll && _query.isNotEmpty) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search_off_rounded,
+                  size: 64,
+                  color: Theme.of(context).disabledColor,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  context.messages.settingsCategoriesNoMatchQuery(_query),
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return SliverFillRemaining(child: _buildEmptyState(context));
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -191,7 +248,7 @@ class _CategoryListItem extends ConsumerWidget {
       title: category.name,
       subtitle: taskCountAsync.when(
         data: (count) => context.messages.settingsCategoriesTaskCount(count),
-        loading: () => '\u2014',
+        loading: () => '—',
         error: (_, _) => '',
       ),
       leading: CategoryIconBadge(

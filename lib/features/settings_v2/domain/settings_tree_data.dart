@@ -124,20 +124,24 @@ List<SettingsNode> buildSettingsTree({
           ),
         ],
       ),
-    if (enableHabits) leaf('habits', Icons.repeat_rounded, panel: 'habits'),
-    leaf('categories', Icons.category_rounded, panel: 'categories'),
-    leaf('labels', Icons.label_rounded, panel: 'labels'),
-    // The Sync branch is always visible. Conflict resolution is a
-    // sync-domain concept that can produce divergence even without
-    // Matrix (e.g. legacy or local-only conflicts), so the conflicts
-    // leaf stays reachable regardless of `enableMatrix`. The
-    // matrix-specific leaves (backfill / stats / outbox /
+    // Sync sits directly below Agents — both are runtime / system
+    // concerns and read better as a pair than separated by the
+    // taxonomy leaves (habits / categories / labels). Conflict
+    // resolution is a sync-domain concept that can produce divergence
+    // even without Matrix (e.g. legacy or local-only conflicts), so
+    // the conflicts leaf stays reachable regardless of `enableMatrix`.
+    // The matrix-specific leaves (backfill / stats / outbox /
     // matrix-maintenance) are gated by the flag — they describe
     // matrix-only surfaces that have no meaning when Matrix sync is
     // off.
     branch(
       'sync',
       Icons.sync_rounded,
+      // Landing panel surfaces the provisioned-sync (QR-pairing) entry
+      // point on desktop V2 — the mobile sync settings page already
+      // shows it via SyncSettingsPage; on desktop the bare Sync branch
+      // used to be leafless so provisioned setup was unreachable.
+      panel: 'sync',
       children: [
         if (enableMatrix) ...[
           leaf(
@@ -166,6 +170,9 @@ List<SettingsNode> buildSettingsTree({
           ),
       ],
     ),
+    if (enableHabits) leaf('habits', Icons.repeat_rounded, panel: 'habits'),
+    leaf('categories', Icons.category_rounded, panel: 'categories'),
+    leaf('labels', Icons.label_rounded, panel: 'labels'),
     if (enableDashboards)
       leaf('dashboards', Icons.dashboard_rounded, panel: 'dashboards'),
     leaf('measurables', Icons.straighten_rounded, panel: 'measurables'),

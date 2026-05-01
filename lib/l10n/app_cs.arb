@@ -2059,6 +2059,7 @@
   "settingsAiSubtitle": "Konfigurace poskytovatelů AI, modelů a promptů",
   "settingsAiTitle": "Nastavení AI",
   "settingsCategoriesAddTooltip": "Přidat kategorii",
+  "settingsCategoriesCreateTitle": "Vytvořit kategorii",
   "settingsCategoriesDetailsLabel": "Detaily kategorie",
   "settingsCategoriesDuplicateError": "Kategorie již existuje",
   "settingsCategoriesEmptyState": "Žádné kategorie nalezeny",
@@ -2068,6 +2069,15 @@
   "settingsCategoriesHasAutomaticPrompts": "Automatická AI",
   "settingsCategoriesHasDefaultLanguage": "Výchozí jazyk",
   "settingsCategoriesNameLabel": "Název kategorie:",
+  "settingsCategoriesNoMatchQuery": "Žádné kategorie neodpovídají dotazu \"{query}\"",
+  "@settingsCategoriesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsCategoriesSearchHint": "Hledat kategorie…",
   "settingsCategoriesSubtitle": "Kategorie s nastavením AI",
   "settingsCategoriesTaskCount": "{count, plural, one{{count} úkol} few{{count} úkoly} other{{count} úkolů}}",
   "settingsCategoriesTitle": "Kategorie",

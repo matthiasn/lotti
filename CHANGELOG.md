@@ -106,6 +106,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.980]
 ### Added
+- Categories settings list now matches the Labels / Dashboards
+  baseline. A `DesignSystemSearch` field above the list filters
+  rows by name (case-insensitive substring); a "+" floating
+  action button at the bottom-right opens the existing
+  `/settings/categories/create` route. The legacy in-header
+  "Add Category" text button is gone — the FAB is the canonical
+  create affordance now and uses the design-system circular FAB
+  component already consumed by the Tasks tab. New arb keys
+  `settingsCategoriesSearchHint`,
+  `settingsCategoriesNoMatchQuery`, and
+  `settingsCategoriesCreateTitle` cover all six locales; the
+  no-match empty state echoes the active query verbatim
+  (`No categories match "<q>"`) so users know what they typed.
 - `DesignSystemToast` grows two new affordances and is now the
   shared toast surface for the migrated call sites:
   - `ToastAction(label, onPressed, semanticsLabel?)` renders an
@@ -158,6 +171,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Out of scope and not migrated in this release: the
   `AiConfigDeleteService` cascade-deletion SnackBar (custom rich
   body) and the saved-task-filter pill toast (custom rounded chrome).
+
+### Changed
+- Settings sidebar order: Sync now sits directly below Agents in
+  the Settings V2 tree (root order: `whats-new`, `ai`, `agents`,
+  `sync`, `habits`, `categories`, `labels`, `dashboards`,
+  `measurables`, `theming`, `flags`, `advanced`). Agents and
+  Sync are both runtime / system concerns and read better as a
+  pair than separated by the taxonomy leaves
+  (habits / categories / labels).
+- Settings V2 desktop now exposes the **provisioned-sync** (QR
+  pairing) entry point. The Sync branch was previously leafless
+  on V2 desktop, so the `ProvisionedSyncSettingsCard` that the
+  mobile `SyncSettingsPage` already renders had no equivalent
+  surface — provisioned setup was effectively unreachable on
+  desktop. The Sync branch now declares `panel: 'sync'` and a
+  new `_syncPanel` builder in the registry hosts the same card
+  inside a `SyncFeatureGate` + `DesignSystemGroupedList` so the
+  visual treatment matches the rest of the V2 detail pane.
+- Settings list-page FABs now use the design-system circular FAB
+  component (`DesignSystemFloatingActionButton`) — the same
+  visual primitive the Tasks tab already consumes — instead of
+  raw Material `FloatingActionButton`. Migrated sites:
+  `LabelsListPage`, `DefinitionsListPage` (the shared host for
+  Dashboards / Habits / Measurables, via the public
+  `FloatingAddIcon` helper), `AgentSettingsPage` (Templates +
+  Souls tab FABs), `InferenceProfilePage`, and
+  `AiSettingsFloatingActionButton`. The previously-extended AI
+  FAB drops its inline per-tab text label in favour of the
+  circular shape; the per-tab label survives as the
+  `semanticLabel` so screen readers and hover tooltips still
+  announce `Add Provider` / `Add Model` / `Add Profile`
+  correctly. (Categories already adopted the DS FAB in the
+  parity commit above.)
 
 ### Removed
 - `lib/widgets/misc/countdown_snackbar_content.dart` (and its test)

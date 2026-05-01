@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -338,7 +339,7 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
 
     testWidgets('shows error state when templates fail to load', (
@@ -483,7 +484,7 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_rounded));
 
       expect(navigatedPath, '/settings/agents/templates/create');
     });
@@ -612,10 +613,13 @@ void main() {
       await tester.tap(find.text(context.messages.agentSoulsTitle));
       await tester.pumpAndSettle();
 
-      expect(
-        find.byTooltip(context.messages.agentSoulCreateTitle),
-        findsOneWidget,
+      // The DesignSystemFloatingActionButton exposes the per-tab label
+      // through its `semanticLabel` (used by both screen readers and
+      // hover tooltips), not via a Material `Tooltip` widget.
+      final fab = tester.widget<DesignSystemFloatingActionButton>(
+        find.byType(DesignSystemFloatingActionButton),
       );
+      expect(fab.semanticLabel, context.messages.agentSoulCreateTitle);
       expect(
         find.byType(DesignSystemBottomNavigationFabPadding),
         findsOneWidget,
@@ -635,7 +639,7 @@ void main() {
       await tester.tap(find.text(context.messages.agentSoulsTitle));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.add));
+      await tester.tap(find.byIcon(Icons.add_rounded));
 
       expect(navigatedPath, '/settings/agents/souls/create');
     });

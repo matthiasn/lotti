@@ -2314,6 +2314,7 @@
   "settingsAiSubtitle": "Configurați furnizorii AI, modelele și prompturile",
   "settingsAiTitle": "Setări AI",
   "settingsCategoriesAddTooltip": "Adaugă categorie",
+  "settingsCategoriesCreateTitle": "Creare categorie",
   "settingsCategoriesDetailsLabel": "Detalii categorie",
   "settingsCategoriesDuplicateError": "Categoria există deja",
   "settingsCategoriesEmptyState": "Nu s-au găsit categorii",
@@ -2323,6 +2324,15 @@
   "settingsCategoriesHasAutomaticPrompts": "AI automat",
   "settingsCategoriesHasDefaultLanguage": "Limbă implicită",
   "settingsCategoriesNameLabel": "Numele categoriei:",
+  "settingsCategoriesNoMatchQuery": "Nicio categorie nu corespunde cu \"{query}\"",
+  "@settingsCategoriesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsCategoriesSearchHint": "Caută categorii…",
   "settingsCategoriesSubtitle": "Categorii cu setări AI",
   "settingsCategoriesTaskCount": "{count, plural, one{{count} sarcină} few{{count} sarcini} other{{count} de sarcini}}",
   "settingsCategoriesTitle": "Categorii",

@@ -2314,6 +2314,7 @@
   "settingsAiSubtitle": "Configurar proveedores de AI, modelos y prompts",
   "settingsAiTitle": "Configuración de AI",
   "settingsCategoriesAddTooltip": "Añadir categoría",
+  "settingsCategoriesCreateTitle": "Crear categoría",
   "settingsCategoriesDetailsLabel": "Detalles de categoría",
   "settingsCategoriesDuplicateError": "La categoría ya existe",
   "settingsCategoriesEmptyState": "No se encontraron categorías",
@@ -2323,6 +2324,15 @@
   "settingsCategoriesHasAutomaticPrompts": "AI automática",
   "settingsCategoriesHasDefaultLanguage": "Idioma predeterminado",
   "settingsCategoriesNameLabel": "Nombre de la categoría:",
+  "settingsCategoriesNoMatchQuery": "Ninguna categoría coincide con \"{query}\"",
+  "@settingsCategoriesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsCategoriesSearchHint": "Buscar categorías…",
   "settingsCategoriesSubtitle": "Categorías con configuración de AI",
   "settingsCategoriesTaskCount": "{count, plural, one{{count} tarea} other{{count} tareas}}",
   "settingsCategoriesTitle": "Categorías",

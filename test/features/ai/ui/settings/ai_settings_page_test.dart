@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_card.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -206,30 +207,33 @@ void main() {
       expect(find.text('Reasoning'), findsOneWidget);
     });
 
-    testWidgets('should display floating action button with correct label', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'should display the design-system FAB with the per-tab create label '
+      'as its semantic label',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      // Should see "Add Provider" button on Providers tab
-      expect(find.text('Add Provider'), findsOneWidget);
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+        // The FAB no longer renders an inline text label — the per-tab
+        // "Add …" string is carried as the DS FAB's semanticLabel so
+        // screen readers and hover tooltips still announce it.
+        DesignSystemFloatingActionButton readFab() =>
+            tester.widget<DesignSystemFloatingActionButton>(
+              find.byType(DesignSystemFloatingActionButton),
+            );
 
-      // Switch to Models tab
-      await tester.tap(find.text('Models'));
-      await tester.pumpAndSettle();
+        expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+        expect(readFab().semanticLabel, 'Add Provider');
 
-      // Should see "Add Model" button
-      expect(find.text('Add Model'), findsOneWidget);
+        await tester.tap(find.text('Models'));
+        await tester.pumpAndSettle();
+        expect(readFab().semanticLabel, 'Add Model');
 
-      // Switch to Profiles tab
-      await tester.tap(find.text('Profiles'));
-      await tester.pumpAndSettle();
-
-      // Should see "Add Profile" button
-      expect(find.text('Add Profile'), findsOneWidget);
-    });
+        await tester.tap(find.text('Profiles'));
+        await tester.pumpAndSettle();
+        expect(readFab().semanticLabel, 'Add Profile');
+      },
+    );
 
     testWidgets('should have tappable floating action button', (
       WidgetTester tester,
@@ -237,16 +241,11 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Verify floating action button exists and is tappable
-      final fabFinder = find.byType(FloatingActionButton);
+      final fabFinder = find.byType(DesignSystemFloatingActionButton);
       expect(fabFinder, findsOneWidget);
 
-      // Test that it's enabled (can be tapped without throwing)
-      final fab = tester.widget<FloatingActionButton>(fabFinder);
+      final fab = tester.widget<DesignSystemFloatingActionButton>(fabFinder);
       expect(fab.onPressed, isNotNull);
-
-      // Note: We don't actually tap here to avoid navigation issues in test context
-      // In a real integration test with proper routing, we would test navigation
     });
 
     testWidgets('should show loading state', (WidgetTester tester) async {
@@ -638,12 +637,17 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        // Switch to Profiles tab
         await tester.tap(find.text('Profiles'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Add Profile'), findsOneWidget);
-        expect(find.byType(FloatingActionButton), findsOneWidget);
+        final fabFinder = find.byType(DesignSystemFloatingActionButton);
+        expect(fabFinder, findsOneWidget);
+        expect(
+          tester
+              .widget<DesignSystemFloatingActionButton>(fabFinder)
+              .semanticLabel,
+          'Add Profile',
+        );
       });
 
       testWidgets('should show loading state for profiles', (

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -72,10 +73,9 @@ class _LabelsListPageState extends ConsumerState<LabelsListPage> {
         ],
       ),
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: FloatingActionButton(
+        child: DesignSystemFloatingActionButton(
+          semanticLabel: context.messages.settingsLabelsCreateTitle,
           onPressed: () => beamToNamed('/settings/labels/create'),
-          tooltip: context.messages.settingsLabelsCreateTitle,
-          child: const Icon(Icons.add),
         ),
       ),
     );

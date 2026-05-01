@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -384,7 +385,7 @@ void main() {
 
         await pumpLabelsListPage(tester);
 
-        expect(find.byType(FloatingActionButton), findsOneWidget);
+        expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       });
     });
   });

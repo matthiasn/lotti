@@ -9268,6 +9268,12 @@ abstract class AppLocalizations {
   /// **'Add Category'**
   String get settingsCategoriesAddTooltip;
 
+  /// No description provided for @settingsCategoriesCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create category'**
+  String get settingsCategoriesCreateTitle;
+
   /// No description provided for @settingsCategoriesDetailsLabel.
   ///
   /// In en, this message translates to:
@@ -9321,6 +9327,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Category name:'**
   String get settingsCategoriesNameLabel;
+
+  /// No description provided for @settingsCategoriesNoMatchQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories match \"{query}\"'**
+  String settingsCategoriesNoMatchQuery(String query);
+
+  /// No description provided for @settingsCategoriesSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search categories…'**
+  String get settingsCategoriesSearchHint;
 
   /// No description provided for @settingsCategoriesSubtitle.
   ///
