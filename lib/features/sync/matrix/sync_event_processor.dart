@@ -36,6 +36,7 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -555,6 +556,7 @@ class SyncEventProcessor {
     SyncSequenceLogService? sequenceLogService,
     AttachmentIndex? attachmentIndex,
     JournalDb? journalDb,
+    VectorClockService? vectorClockService,
     this.backfillResponseHandler,
   }) : _loggingService = loggingService,
        _domainLogger = domainLogger,
@@ -565,7 +567,8 @@ class SyncEventProcessor {
            journalEntityLoader ?? const FileSyncJournalEntityLoader(),
        _sequenceLogService = sequenceLogService,
        _attachmentIndex = attachmentIndex,
-       _journalDb = journalDb;
+       _journalDb = journalDb,
+       _vectorClockService = vectorClockService;
 
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
@@ -581,6 +584,19 @@ class SyncEventProcessor {
   // through the writer-transaction `journalDb` parameter (separate handle)
   // so this stays read-only by convention.
   final JournalDb? _journalDb;
+
+  // Resolves the local host id used to short-circuit self-echoes during
+  // the prepare phase. Optional so the existing test harnesses that
+  // construct a [SyncEventProcessor] without a vector-clock service keep
+  // working — they just lose the self-echo skip and process every event
+  // (which is what they tested before).
+  final VectorClockService? _vectorClockService;
+
+  // Cached local host id. Resolved lazily on the first event that carries
+  // an `originatingHostId`. Vector-clock host ids are stable for the life
+  // of an install, so a single lookup per processor instance is enough.
+  String? _localHostId;
+  bool _localHostIdResolved = false;
 
   static const int _recentJournalEntityLimit = 500;
   final LinkedHashMap<String, String> _recentJournalEntityFingerprints =
@@ -928,6 +944,57 @@ class SyncEventProcessor {
   // Prepare-phase helpers (I/O only, no DB writes)
   // ---------------------------------------------------------------------------
 
+  /// Returns true when [message] carries a non-null `originatingHostId`
+  /// equal to the local host's vector-clock id — i.e. the event is one we
+  /// just sent looping back through `/sync` or arriving via catch-up. The
+  /// local host id is resolved once per processor instance (vector-clock
+  /// host ids are stable for the lifetime of an install) and cached.
+  Future<bool> _isLocalSelfEcho(SyncMessage message) async {
+    final origin = _originatingHostIdOf(message);
+    if (origin == null) return false;
+    final localId = await _resolveLocalHostId();
+    if (localId == null) return false;
+    return origin == localId;
+  }
+
+  Future<String?> _resolveLocalHostId() async {
+    if (_localHostIdResolved) return _localHostId;
+    final service = _vectorClockService;
+    if (service == null) {
+      _localHostIdResolved = true;
+      return null;
+    }
+    try {
+      _localHostId = await service.getHost();
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'processor.selfEcho.hostLookup',
+        stackTrace: st,
+      );
+      _localHostId = null;
+    }
+    _localHostIdResolved = true;
+    return _localHostId;
+  }
+
+  /// Returns the `originatingHostId` field for any [SyncMessage] family
+  /// that carries one. Families without the field (`SyncEntityDefinition`,
+  /// `SyncAiConfig`, `SyncAiConfigDelete`, `SyncThemingSelection`,
+  /// `SyncBackfillRequest`, `SyncBackfillResponse`) return null and bypass
+  /// the self-echo check — they are tiny inline payloads where the cost
+  /// of running prepare is already negligible.
+  static String? _originatingHostIdOf(SyncMessage message) => switch (message) {
+    final SyncJournalEntity m => m.originatingHostId,
+    final SyncEntryLink m => m.originatingHostId,
+    final SyncAgentEntity m => m.originatingHostId,
+    final SyncAgentLink m => m.originatingHostId,
+    final SyncAgentBundle m => m.originatingHostId,
+    final SyncOutboxBundle m => m.originatingHostId,
+    _ => null,
+  };
+
   /// Dispatches the prepare phase per sync message family. Only
   /// [SyncJournalEntity], [SyncAgentEntity], [SyncAgentLink], and
   /// [SyncAgentBundle] need I/O (attachment resolution); every other family is
@@ -936,6 +1003,24 @@ class SyncEventProcessor {
     required Event event,
     required SyncMessage syncMessage,
   }) async {
+    // Self-echo short-circuit: every Matrix event the local host sends
+    // loops back through `/sync` (and again on catch-up after a
+    // reconnect). The `SentEventRegistry` already drops most of those at
+    // the live ingress, but it has a 5-minute TTL and only covers the
+    // live arrival path — bulk re-sends and catch-up after a stretch of
+    // disconnect can leak self-echoes through to prepare. Compare the
+    // envelope's `originatingHostId` (stamped by `MatrixMessageSender`)
+    // against the local host id and skip the heavy prepare work for
+    // anything we sent. The apply phase is idempotent under VC dedup
+    // anyway; this just stops us from burning CPU on a manifest decode,
+    // descriptor download, or per-child saveJson for our own data.
+    if (await _isLocalSelfEcho(syncMessage)) {
+      _trace(
+        'selfEcho.skip type=${syncMessage.runtimeType}',
+        subDomain: 'processor.selfEcho',
+      );
+      return PreparedSyncEvent._(event: event, syncMessage: syncMessage);
+    }
     switch (syncMessage) {
       case final SyncJournalEntity msg:
         return _prepareJournalEntity(event: event, syncMessage: msg);
@@ -1595,6 +1680,23 @@ class SyncEventProcessor {
   Future<SyncOutboxBundle?> _resolveOutboxBundleManifest(
     String? jsonPath,
   ) async {
+    // Phase-by-phase timing so a single grep on
+    // `processor.resolve.outboxBundle.timing` answers "where is the time
+    // going" without guesswork. Numbers in milliseconds, comparable
+    // across runs and across hosts. Captured into one log line per
+    // bundle so the typical observation is one row per drain — easy to
+    // tail or pull into a spreadsheet.
+    final totalSw = Stopwatch()..start();
+    var fetchMs = 0;
+    var diskFallbackMs = 0;
+    var decodeMs = 0;
+    var dbLookupMs = 0;
+    var writeMs = 0;
+    var manifestBytes = 0;
+    var entryCount = 0;
+    var writeCount = 0;
+    var fromDescriptor = false;
+
     final jp = jsonPath;
     if (jp == null) {
       _trace(
@@ -1621,15 +1723,19 @@ class SyncEventProcessor {
     // upload tells `decodeAttachmentBytes` to gunzip the manifest bytes
     // transparently, so what comes back is the plain manifest JSON string.
     String? manifestJson;
+    final fetchSw = Stopwatch()..start();
     manifestJson = await _fetchFromDescriptor(
       jsonPath: jp,
       targetFile: targetFile,
       typeName: 'outboxBundle',
     );
+    fetchMs = fetchSw.elapsedMilliseconds;
+    fromDescriptor = manifestJson != null;
 
     if (manifestJson == null) {
       // Fall back to disk if the descriptor is not yet registered (text
       // event arrived before the file event made it through catch-up).
+      final diskSw = Stopwatch()..start();
       try {
         manifestJson = await targetFile.readAsString();
       } on FileSystemException {
@@ -1643,9 +1749,12 @@ class SyncEventProcessor {
         );
         return null;
       }
+      diskFallbackMs = diskSw.elapsedMilliseconds;
     }
+    manifestBytes = manifestJson.length;
 
     final Map<String, dynamic> manifest;
+    final decodeSw = Stopwatch()..start();
     try {
       // Offload large manifests to a worker isolate; small ones (test
       // fixtures, near-empty bundles) parse inline so the threshold-aware
@@ -1662,6 +1771,7 @@ class SyncEventProcessor {
       );
       return null;
     }
+    decodeMs = decodeSw.elapsedMilliseconds;
 
     final version = manifest['version'];
     if (version != SyncTuning.outboxBundleManifestVersion) {
@@ -1722,14 +1832,18 @@ class SyncEventProcessor {
       }
     }
 
+    entryCount = parsedEntries.length;
+
     // VC-dominance check uses the database as system of record. If no
     // JournalDb was injected (legacy test harness), the dominance check is
     // skipped and the incoming JSON is always written — safe but loses the
     // "don't clobber a fresher local cache" optimization.
     final db = _journalDb;
+    final dbSw = Stopwatch()..start();
     final localEntities = journalEntityIds.isEmpty || db == null
         ? const <String, JournalEntity>{}
         : await db.journalEntityMapForIds(journalEntityIds);
+    dbLookupMs = dbSw.elapsedMilliseconds;
 
     // Plan every disk write before issuing any of them so we can fail the
     // whole bundle on a malformed manifest (e.g. a SyncJournalEntity with
@@ -1825,6 +1939,7 @@ class SyncEventProcessor {
     // forward progress. Sequential writes within a bundle keep the worst-
     // case write fan-out bounded by the queue's batch concurrency
     // (`SyncTuning.queueBatchSize`) rather than batch × per-bundle.
+    final writeSw = Stopwatch()..start();
     for (final plan in writePlans) {
       await saveJson(plan.filePath, json.encode(plan.payload));
       _trace(
@@ -1833,6 +1948,23 @@ class SyncEventProcessor {
         subDomain: 'processor.resolve.outboxBundle',
       );
     }
+    writeMs = writeSw.elapsedMilliseconds;
+    writeCount = writePlans.length;
+
+    _trace(
+      'totalMs=${totalSw.elapsedMilliseconds} '
+      'fetchMs=$fetchMs '
+      'fromDescriptor=$fromDescriptor '
+      'diskFallbackMs=$diskFallbackMs '
+      'manifestBytes=$manifestBytes '
+      'decodeMs=$decodeMs '
+      'entries=$entryCount '
+      'dbLookupMs=$dbLookupMs '
+      'dbHits=${localEntities.length}/${journalEntityIds.length} '
+      'writeMs=$writeMs '
+      'writes=$writeCount',
+      subDomain: 'processor.resolve.outboxBundle.timing',
+    );
 
     return SyncOutboxBundle(
       children: children,

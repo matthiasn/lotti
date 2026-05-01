@@ -107,6 +107,24 @@ class MatrixMessageSender {
       );
     }
 
+    if (message is SyncOutboxBundle && message.originatingHostId == null) {
+      // Stamp the dequeue-time outbox bundle so receivers can identify
+      // self-echoes by host id and skip the manifest download/decode
+      // entirely. Without this stamp, the outbox bundle envelope rides
+      // through the wire with `originatingHostId == null` and every peer
+      // (including the sender itself) ends up running the full
+      // prepare-apply pipeline — wasting CPU on a payload that
+      // vector-clock dedup will discard anyway.
+      _loggingService.captureEvent(
+        'originatingHostId filled for outboxBundle '
+        'jsonPath=${message.jsonPath} children=${message.children.length} '
+        'host=$host',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.originatingHostId',
+      );
+      return message.copyWith(originatingHostId: host);
+    }
+
     return message;
   }
 
