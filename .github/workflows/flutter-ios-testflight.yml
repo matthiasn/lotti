@@ -35,6 +35,18 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep -i iphone
 
+      - name: Setup Rust toolchain
+        # flutter_vodozemac builds its Rust bindings via cargokit during `pod install`,
+        # which calls `rustup target add aarch64-apple-ios` against whatever toolchain
+        # the runner already has. On macos-26 the pre-installed toolchain has a partial
+        # iOS target staged, causing the install to fail with a file conflict on
+        # `libaddr2line-*.rlib`. Pre-install a clean stable toolchain with the iOS
+        # targets so cargokit's `rustup target add` is a no-op.
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+
       - uses: kuhnroyal/flutter-fvm-config-action@v2
         id: fvm-config-action
 
@@ -51,13 +63,19 @@ jobs:
         id: ver
         run: |
           set -euo pipefail
-          # BUILD_NAME comes from the tag (strip leading 'v' if present).
-          # BUILD_NUMBER comes from pubspec.yaml's `+N` suffix; bump it when cutting
-          # a release so App Store Connect sees a strictly-increasing CFBundleVersion.
-          BUILD_NAME="${GITHUB_REF_NAME#v}"
-          BUILD_NUMBER="$(grep '^version:' pubspec.yaml | awk -F'+' '{print $2}')"
+          # Repo tag convention: `<semver>+<build>` (e.g. `0.9.983+4017`), matching
+          # pubspec.yaml. An optional `v` prefix is also tolerated. CFBundleShortVersionString
+          # rejects `+`, so the BUILD_NAME must strip the `+N` suffix; otherwise App
+          # Store Connect silently concatenates them (`0.9.983+4018` → `0.9.9834018`).
+          RAW="${GITHUB_REF_NAME#v}"
+          BUILD_NAME="${RAW%+*}"
+          if [[ "$RAW" == *+* ]]; then
+            BUILD_NUMBER="${RAW##*+}"
+          else
+            BUILD_NUMBER="$(grep '^version:' pubspec.yaml | awk -F'+' '{print $2}')"
+          fi
           if [ -z "$BUILD_NUMBER" ]; then
-            echo "pubspec.yaml version has no +<build> suffix" >&2
+            echo "Could not derive build number from tag '$GITHUB_REF_NAME' or pubspec.yaml" >&2
             exit 1
           fi
           echo "build_name=$BUILD_NAME" >> "$GITHUB_OUTPUT"

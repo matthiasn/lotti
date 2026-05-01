@@ -59,10 +59,19 @@ jobs:
         id: ver
         run: |
           set -euo pipefail
-          BUILD_NAME="${GITHUB_REF_NAME#v}"
-          BUILD_NUMBER="$(grep '^version:' pubspec.yaml | awk -F'+' '{print $2}')"
+          # Repo tag convention: `<semver>+<build>` (e.g. `0.9.983+4017`), matching
+          # pubspec.yaml. An optional `v` prefix is also tolerated. CFBundleShortVersionString
+          # rejects `+`, so the BUILD_NAME must strip the `+N` suffix; otherwise App
+          # Store Connect silently concatenates them (`0.9.983+4018` → `0.9.9834018`).
+          RAW="${GITHUB_REF_NAME#v}"
+          BUILD_NAME="${RAW%+*}"
+          if [[ "$RAW" == *+* ]]; then
+            BUILD_NUMBER="${RAW##*+}"
+          else
+            BUILD_NUMBER="$(grep '^version:' pubspec.yaml | awk -F'+' '{print $2}')"
+          fi
           if [ -z "$BUILD_NUMBER" ]; then
-            echo "pubspec.yaml version has no +<build> suffix" >&2
+            echo "Could not derive build number from tag '$GITHUB_REF_NAME' or pubspec.yaml" >&2
             exit 1
           fi
           echo "build_name=$BUILD_NAME" >> "$GITHUB_OUTPUT"
