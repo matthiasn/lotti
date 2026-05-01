@@ -67,6 +67,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Sync are both runtime / system concerns and read better as a
   pair than separated by the taxonomy leaves
   (habits / categories / labels).
+- Settings V2 desktop now exposes the **provisioned-sync** (QR
+  pairing) entry point. The Sync branch was previously leafless
+  on V2 desktop, so the `ProvisionedSyncSettingsCard` that the
+  mobile `SyncSettingsPage` already renders had no equivalent
+  surface — provisioned setup was effectively unreachable on
+  desktop. The Sync branch now declares `panel: 'sync'` and a
+  new `_syncPanel` builder in the registry hosts the same card
+  inside a `SyncFeatureGate` + `DesignSystemGroupedList` so the
+  visual treatment matches the rest of the V2 detail pane.
 
 ### Removed
 - `lib/widgets/misc/countdown_snackbar_content.dart` (and its test)

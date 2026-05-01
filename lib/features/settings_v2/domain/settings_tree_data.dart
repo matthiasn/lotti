@@ -137,6 +137,11 @@ List<SettingsNode> buildSettingsTree({
     branch(
       'sync',
       Icons.sync_rounded,
+      // Landing panel surfaces the provisioned-sync (QR-pairing) entry
+      // point on desktop V2 — the mobile sync settings page already
+      // shows it via SyncSettingsPage; on desktop the bare Sync branch
+      // used to be leafless so provisioned setup was unreachable.
+      panel: 'sync',
       children: [
         if (enableMatrix) ...[
           leaf(

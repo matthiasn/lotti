@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
@@ -26,7 +29,9 @@ import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
+import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -86,10 +91,12 @@ class SettingsPanelSpec {
 /// duplicate title under the leaf panel goes away.
 const Map<String, SettingsPanelSpec> kSettingsPanels =
     <String, SettingsPanelSpec>{
-      // Branches that carry their own landing page. Both render full
-      // pages with their own scroll machinery.
+      // Branches that carry their own landing page. AI / Agents
+      // render full pages with their own scroll machinery; Sync is a
+      // light Column body so the host wraps it.
       'ai': SettingsPanelSpec(build: _aiPanel),
       'agents': SettingsPanelSpec(build: _agentsPanel),
+      'sync': SettingsPanelSpec(build: _syncPanel, scrollable: true),
 
       // Step 7 — simple leaves.
       // FlagsBody is `Column[fixed search, Expanded(scrollable list)]`
@@ -165,6 +172,27 @@ Widget _advancedMaintenancePanel(BuildContext context) =>
     const MaintenanceBody();
 Widget _advancedLoggingPanel(BuildContext context) =>
     const LoggingSettingsBody();
+/// Landing panel for the Sync branch on V2 desktop. Surfaces the
+/// provisioned-sync (QR-pairing) entry point that the mobile
+/// SyncSettingsPage already shows but that desktop V2 used to omit
+/// because the Sync branch was leafless. Wrapped in [SyncFeatureGate]
+/// so it disappears in the same conditions as the rest of the Sync
+/// surface, and in a [DesignSystemGroupedList] so the row matches the
+/// rest of the V2 detail-pane visual language.
+Widget _syncPanel(BuildContext context) {
+  final tokens = context.designTokens;
+  return SyncFeatureGate(
+    child: Padding(
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+      child: DesignSystemGroupedList(
+        children: const [
+          ProvisionedSyncSettingsCard(showDivider: false),
+        ],
+      ),
+    ),
+  );
+}
+
 Widget _syncBackfillPanel(BuildContext context) => const BackfillSettingsBody();
 Widget _syncStatsPanel(BuildContext context) => const SyncStatsBody();
 Widget _syncOutboxPanel(BuildContext context) => const OutboxMonitorBody();

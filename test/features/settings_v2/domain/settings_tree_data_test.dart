@@ -283,10 +283,10 @@ void main() {
     });
 
     test('pure branch nodes have no panel', () {
-      // `sync` and `advanced` are pure branches — no landing page.
-      // `ai` and `agents` are branches that also carry their own
-      // landing panel (asserted separately below).
-      for (final id in ['sync', 'advanced']) {
+      // Only `advanced` is a pure (landing-page-less) branch now.
+      // `ai`, `agents`, and `sync` carry their own landing panel
+      // (asserted separately below).
+      for (final id in ['advanced']) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, id);
         expect(node, isNotNull, reason: 'expected $id to be present');
@@ -295,9 +295,12 @@ void main() {
     });
 
     test('branches that carry a landing panel expose it', () {
-      // AI and Agents branches render their own detail panel when
-      // the user lands on the branch itself (not a descendant leaf).
-      const expected = {'ai': 'ai', 'agents': 'agents'};
+      // AI / Agents / Sync branches render their own detail panel
+      // when the user lands on the branch itself (not a descendant
+      // leaf). For Sync, the landing panel surfaces the
+      // ProvisionedSyncSettingsCard so QR-pairing is reachable on
+      // desktop V2 the same way it is on mobile.
+      const expected = {'ai': 'ai', 'agents': 'agents', 'sync': 'sync'};
       for (final entry in expected.entries) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, entry.key);

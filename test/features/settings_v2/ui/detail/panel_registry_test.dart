@@ -47,6 +47,7 @@ void main() {
       // Branches that carry their own landing page.
       'ai',
       'agents',
+      'sync',
       // Step 7 — simple leaves.
       'flags',
       'theming',
