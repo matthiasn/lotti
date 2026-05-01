@@ -203,14 +203,17 @@ String relativeAgentBundlePath(String wakeRunKey) {
 
 /// Returns the documents-directory-relative path for a dequeue-time outbox
 /// bundle payload file, including a leading `/`. Uses
-/// `/outbox_bundles/<bundleId>.json.gz`.
+/// `/outbox_bundles/<bundleId>.json`.
 ///
-/// The bundle is a single gzipped JSON manifest carrying the full payload of
-/// every child the receiver needs to apply (envelopes plus the database
-/// content for file-backed types). Receivers materialize per-child JSON to
-/// disk on extraction so the existing apply pipeline still reads locally.
+/// The path describes the on-disk cache shape (plain JSON, post-decode);
+/// the wire upload adds `.gz` to the display name and signals compression
+/// via `extraContent.encoding = "gzip"`, mirroring the convention agent
+/// payloads use (`agent_entities/<id>.json` on disk; `<id>.json.gz` on the
+/// wire). The bundle is a single gzipped JSON manifest carrying the full
+/// payload of every child the receiver needs to apply (envelopes plus the
+/// database content for file-backed types).
 String relativeOutboxBundlePath(String bundleId) {
-  return '$outboxBundlesSegment${Uri.encodeComponent(bundleId)}.json.gz';
+  return '$outboxBundlesSegment${Uri.encodeComponent(bundleId)}.json';
 }
 
 Future<JournalEntity> readEntityFromJson(String jsonPath) async {

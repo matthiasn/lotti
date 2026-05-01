@@ -351,12 +351,15 @@ and ships the whole batch as one Matrix envelope. Media-attachment rows
    `SyncBackfillRequest`, `SyncBackfillResponse`) and agent envelopes
    (`SyncAgentEntity`, `SyncAgentLink`, `SyncAgentBundle`) carry their data
    inside the freezed envelope and need no separate `payload` field.
-4. `gzipEncodeBytes` the manifest JSON and upload as a single `m.file`
-   event with `relativePath: /outbox_bundles/<uuid>.json.gz` and
-   `extraContent.encoding = "gzip"`. No temp file ever touches the
-   sender's disk.
+4. `gzipEncodeJson` the manifest map (json.encode + utf8.encode + gzip on
+   a worker isolate) and upload as a single `m.file` event with
+   `relativePath: /outbox_bundles/<uuid>.json`, upload display name
+   `<uuid>.json.gz`, and `extraContent.encoding = "gzip"` — same
+   convention as compressed agent payloads (`relativePath` describes the
+   on-disk artifact; `.gz` rides along on the upload name only). No temp
+   file ever touches the sender's disk.
 5. Send the thin `SyncOutboxBundle` text event — `children: []`, `jsonPath`
-   pointing at the just-uploaded `.json.gz`.
+   pointing at the just-uploaded `.json` cache path.
 
 Receivers reverse the path inside
 `SyncEventProcessor._resolveOutboxBundleManifest`:

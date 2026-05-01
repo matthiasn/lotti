@@ -2395,10 +2395,14 @@ void main() {
 
     test(
       'sendOutboxBundlePayloadForTesting uploads a single gzipped manifest '
-      'event under /outbox_bundles/<uuid>.json.gz and returns a stripped '
-      'bundle whose jsonPath references it. The manifest carries one '
-      'envelope record per child — no per-child file events, no temp files '
-      'on disk.',
+      'event under /outbox_bundles/<uuid>.json and returns a stripped '
+      'bundle whose jsonPath references it. The wire upload display name '
+      'gets `.gz` appended (matching the `_sendFile` convention for '
+      'compressed agent payloads); the canonical compression signal is '
+      'still the encoding header so the relativePath stays `.json` and '
+      "matches the receiver's post-decode on-disk cache content. The "
+      'manifest carries one envelope record per child — no per-child file '
+      'events, no temp files on disk.',
       () async {
         final bundle = bundleWith(3);
         MatrixFile? capturedFile;
@@ -2423,7 +2427,8 @@ void main() {
         expect(stripped, isNotNull);
         expect(stripped!.children, isEmpty);
         expect(stripped.jsonPath, startsWith('/outbox_bundles/'));
-        expect(stripped.jsonPath, endsWith('.json.gz'));
+        expect(stripped.jsonPath, endsWith('.json'));
+        expect(capturedFile!.name, endsWith('.json.gz'));
 
         // Disk is untouched — the bundle exists only in the upload bytes
         // and the matrix room; no /outbox_bundles/ directory is created.
@@ -2675,7 +2680,7 @@ void main() {
                 as Map<String, dynamic>;
         expect(decoded['runtimeType'], 'outboxBundle');
         expect(decoded['jsonPath'], startsWith('/outbox_bundles/'));
-        expect(decoded['jsonPath'], endsWith('.json.gz'));
+        expect(decoded['jsonPath'], endsWith('.json'));
         expect(decoded['children'], isEmpty);
       },
     );

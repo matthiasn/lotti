@@ -697,9 +697,13 @@ class MatrixMessageSender {
       return null;
     }
 
-    final fileName = p.basename(
-      relativePath.split('/').where((s) => s.isNotEmpty).last,
-    );
+    // Wire display name carries `.gz` to hint at the compressed bytes —
+    // the canonical compression signal is still the encoding header. The
+    // `relativePath` keeps the on-disk extension (`.json`) so the receiver's
+    // post-decode cache file at the same path matches its content; mirrors
+    // what `_sendFile` does for compressed agent payloads.
+    final fileName =
+        '${p.basename(relativePath.split('/').where((s) => s.isNotEmpty).last)}.gz';
     final extraContent = <String, dynamic>{
       'relativePath': relativePath,
       attachmentEncodingKey: attachmentEncodingGzip,
@@ -749,7 +753,7 @@ class MatrixMessageSender {
   }
 
   /// Returns true when [relativePath] is a well-formed
-  /// `/outbox_bundles/<id>.json.gz` path with no traversal segments. Used by
+  /// `/outbox_bundles/<id>.json` path with no traversal segments. Used by
   /// [_sendOutboxBundlePayload] to gate which inbound `jsonPath` values are
   /// honoured for a freshly built bundle's metadata.
   static bool _isSafeOutboxBundlePath(String relativePath) {

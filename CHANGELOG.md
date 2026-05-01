@@ -5,22 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.983]
-### Changed
-- Dequeue-time outbox bundles now ship as a single gzipped JSON manifest
-  carrying every child envelope plus, for journal entities, the inline
-  `JournalEntity` body — replacing the broken sidecar-of-envelopes path
-  that emitted no per-child file events and left receivers stuck on
-  `attachment descriptor not yet available`. Senders fetch every child
-  from `JournalDb.journalEntityMapForIds` in a single
-  `WHERE id IN (…)` query (no N+1) and reconcile each envelope's vector
-  clock against the database — the system of record on both ends.
-  Receivers bulk-load the local entity map once per bundle, run a
-  vector-clock dominance check before any disk write, and materialize
-  the manifest payload to each child's declared `jsonPath` so the
-  existing apply pipeline reads it as a cache hit instead of hitting
-  the descriptor index. Bundle paths now end `.json.gz`; the manifest
-  is rejected on unknown `version` or post-gzip size above 8 MiB and
-  the rows stay pending for the next drain.
+### Fixed
+- Improved sync reliability between devices.
 
 ## [0.9.982]
 ### Added

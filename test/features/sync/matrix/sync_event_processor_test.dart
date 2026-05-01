@@ -6194,7 +6194,7 @@ void main() {
 
           const entityRelativePath =
               '/journal/2026-04-25/bundle-entry-1.entry.json';
-          const bundleRelativePath = '/outbox_bundles/test-bundle.json.gz';
+          const bundleRelativePath = '/outbox_bundles/test-bundle.json';
 
           final manifest = <String, dynamic>{
             'version': 1,
@@ -6261,7 +6261,7 @@ void main() {
         're-deliver the bundle under a forward-compatible code path instead '
         'of feeding garbage into JournalEntity.fromJson',
         () async {
-          const bundleRelativePath = '/outbox_bundles/v99.json.gz';
+          const bundleRelativePath = '/outbox_bundles/v99.json';
           final manifestFile = File(
             path.join(
               tempDir.path,
@@ -6303,7 +6303,7 @@ void main() {
         'local DB; peers recover the missing entry via the sequence-log '
         'backfill path',
         () async {
-          const bundleRelativePath = '/outbox_bundles/missing-payload.json.gz';
+          const bundleRelativePath = '/outbox_bundles/missing-payload.json';
           final manifestFile = File(
             path.join(
               tempDir.path,
@@ -6382,7 +6382,7 @@ void main() {
 
           const entityRelativePath =
               '/journal/2026-04-25/dominant-id.entry.json';
-          const bundleRelativePath = '/outbox_bundles/dominates.json.gz';
+          const bundleRelativePath = '/outbox_bundles/dominates.json';
 
           // Pre-populate the cache file with an OLDER version to make the
           // refresh observable: if the resolver did the right thing, the
@@ -6442,7 +6442,7 @@ void main() {
         'aborts the whole bundle when an envelope.jsonPath escapes the '
         'documents sandbox — defence in depth against tampered manifests',
         () async {
-          const bundleRelativePath = '/outbox_bundles/bad-path.json.gz';
+          const bundleRelativePath = '/outbox_bundles/bad-path.json';
           final manifestFile = File(
             path.join(
               tempDir.path,
