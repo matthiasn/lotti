@@ -3641,8 +3641,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 16', () {
-      expect(db.schemaVersion, 16);
+    test('schema version is 17', () {
+      expect(db.schemaVersion, 17);
     });
 
     test(
