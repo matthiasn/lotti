@@ -278,10 +278,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      // 6 fixed items (EmbeddingStore not registered in this group).
-      expect(find.byType(DesignSystemListItem), findsNWidgets(6));
-      expect(find.byType(SettingsIcon), findsNWidgets(6));
+      // 6 fixed items (EmbeddingStore not registered in this group)
+      // plus the diagnostic repaint-rainbow toggle = 7 list items.
+      // Only the 6 action rows carry chevrons; the toggle uses an
+      // adaptive Switch as its trailing affordance instead.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(7));
+      expect(find.byType(SettingsIcon), findsNWidgets(7));
       expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(6));
+      expect(find.byType(Switch), findsOneWidget);
     });
 
     testWidgets('shows dividers between items but not after last', (
