@@ -40,14 +40,14 @@ jobs:
       #    ./com.matthiasn.lotti so they sit as siblings, matching the
       #    layout that prepare_flathub_build.sh expects.
       - name: Checkout Lotti (main app)
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           path: lotti
           ref: ${{ inputs.commit_sha || github.sha }}
           fetch-depth: 0
 
       - name: Checkout Flathub repo (com.matthiasn.lotti)
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5.0.1
         with:
           repository: flathub/com.matthiasn.lotti
           ref: master
@@ -58,24 +58,42 @@ jobs:
           persist-credentials: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
         with:
           python-version: '3.12'
 
       # 2. Resolve version and the commit we're submitting. We expose them
       #    as outputs so later steps don't need to re-parse pubspec.yaml.
+      #    The workflow input is read via env var (not direct `${{ }}`
+      #    interpolation into shell source) so an unexpected value can't
+      #    inject shell syntax. VERSION is then validated against a strict
+      #    allow-list before being used as a git branch name.
       - name: Resolve version and commit
         id: meta
         working-directory: lotti
+        env:
+          INPUT_VERSION_OVERRIDE: ${{ inputs.version_override }}
         run: |
           set -euo pipefail
-          if [ -n "${{ inputs.version_override }}" ]; then
-            VERSION="${{ inputs.version_override }}"
+          if [ -n "$INPUT_VERSION_OVERRIDE" ]; then
+            VERSION="$INPUT_VERSION_OVERRIDE"
           else
             VERSION=$(awk '/^version:[[:space:]]*/ {print $2; exit}' pubspec.yaml)
           fi
           if [ -z "$VERSION" ]; then
             echo "Could not determine version from pubspec.yaml" >&2
+            exit 1
+          fi
+          # Allow only the characters expected in a Lotti version+build
+          # string (e.g. 0.9.980+4003): digits, dot, plus, hyphen,
+          # underscore. This is stricter than git's branch-name rules and
+          # rejects spaces / control chars / shell metacharacters up front.
+          if ! [[ "$VERSION" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+            echo "Invalid version string for git branch name: $VERSION" >&2
+            exit 1
+          fi
+          if ! git check-ref-format --branch "$VERSION" >/dev/null 2>&1; then
+            echo "Version is not a valid git branch name: $VERSION" >&2
             exit 1
           fi
           COMMIT=$(git rev-parse HEAD)
