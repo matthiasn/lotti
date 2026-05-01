@@ -113,7 +113,7 @@ void main() {
 
   group('Task indexes v39 migration', () {
     test(
-      'adds the idx_journal_tasks_due_open partial expression index',
+      'idx_journal_tasks_due_open is keyed on the due_at column post-v41',
       () async {
         final dbFile = File(
           p.join(testDirectory!.path, 'test_v39_due_open.db'),
@@ -128,21 +128,26 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 40);
+        expect(db.schemaVersion, 41);
 
+        // v41 swapped the expression-keyed shape for a column-keyed one.
         final sql = await indexSql(db, 'idx_journal_tasks_due_open');
-        expect(sql, contains(r"json_extract(serialized, '$.data.due')"));
+        expect(sql, contains('due_at ASC'));
+        expect(sql, isNot(contains('json_extract')));
         expect(sql, contains("WHERE type = 'Task'"));
         expect(sql, contains('task = 1'));
         expect(sql, contains('deleted = FALSE'));
         expect(sql, contains("task_status NOT IN ('DONE', 'REJECTED')"));
 
-        // The pre-existing non-partial composite must remain intact for
-        // `getTasksSortedByDueDate`, whose IN-list task_status predicates
-        // can't prove the partial's WHERE.
-        final existing = await indexSql(db, 'idx_journal_tasks_due_active');
-        expect(existing, contains('type COLLATE BINARY ASC'));
-        expect(existing, contains('deleted COLLATE BINARY ASC'));
+        // v41 dropped the non-partial composite — its only consumer was
+        // rewritten to read `due_at` directly and let the planner choose.
+        final existing = await db
+            .customSelect(
+              'SELECT name FROM sqlite_master '
+              "WHERE type='index' AND name='idx_journal_tasks_due_active'",
+            )
+            .get();
+        expect(existing, isEmpty);
       },
     );
 
@@ -166,34 +171,40 @@ void main() {
       expect(sql, contains('deleted = FALSE'));
     });
 
-    test('is idempotent when the v39 indexes already exist', () async {
-      final dbFile = File(p.join(testDirectory!.path, 'test_v39_rerun.db'));
-      final sqlite = sqlite3.open(dbFile.path);
-      createV38Schema(sqlite);
-      // Pre-create the target indexes so the migration's DROP IF EXISTS
-      // + CREATE path is exercised.
-      sqlite.execute(
-        'CREATE INDEX idx_journal_task_status_private '
-        'ON journal(task_status COLLATE BINARY ASC, '
-        'private COLLATE BINARY ASC) '
-        "WHERE type = 'Task' AND task = 1 AND deleted = FALSE",
-      );
-      sqlite.execute(
-        'CREATE INDEX idx_journal_tasks_due_open '
-        r"ON journal(json_extract(serialized, '$.data.due') ASC) "
-        "WHERE type = 'Task' AND task = 1 AND deleted = FALSE "
-        "AND task_status NOT IN ('DONE', 'REJECTED')",
-      );
-      sqlite.execute('PRAGMA user_version = 38');
-      sqlite.dispose();
+    test(
+      'migration is idempotent when the v39-shape indexes preexist',
+      () async {
+        final dbFile = File(p.join(testDirectory!.path, 'test_v39_rerun.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+        createV38Schema(sqlite);
+        // Pre-create the target indexes in the old v39 expression-keyed
+        // shape so the v41 migration's DROP + CREATE path is exercised.
+        sqlite.execute(
+          'CREATE INDEX idx_journal_task_status_private '
+          'ON journal(task_status COLLATE BINARY ASC, '
+          'private COLLATE BINARY ASC) '
+          "WHERE type = 'Task' AND task = 1 AND deleted = FALSE",
+        );
+        sqlite.execute(
+          'CREATE INDEX idx_journal_tasks_due_open '
+          r"ON journal(json_extract(serialized, '$.data.due') ASC) "
+          "WHERE type = 'Task' AND task = 1 AND deleted = FALSE "
+          "AND task_status NOT IN ('DONE', 'REJECTED')",
+        );
+        sqlite.execute('PRAGMA user_version = 38');
+        sqlite.dispose();
 
-      final db = JournalDb(overriddenFilename: 'test_v39_rerun.db');
-      addTearDown(db.close);
+        final db = JournalDb(overriddenFilename: 'test_v39_rerun.db');
+        addTearDown(db.close);
 
-      await indexSql(db, 'idx_journal_tasks_due_open');
-      await indexSql(db, 'idx_journal_tasks_due_active');
-      await indexSql(db, 'idx_journal_task_status_private');
-    });
+        // Post-v41: the due-open index is rebuilt on `due_at`, the active
+        // composite is gone, and the status/private partial is unchanged.
+        final dueOpenSql = await indexSql(db, 'idx_journal_tasks_due_open');
+        expect(dueOpenSql, contains('due_at ASC'));
+        expect(dueOpenSql, isNot(contains('json_extract')));
+        await indexSql(db, 'idx_journal_task_status_private');
+      },
+    );
 
     test(
       'countInProgressTasks query plan uses idx_journal_task_status_private',
@@ -241,6 +252,8 @@ void main() {
         final db = JournalDb(overriddenFilename: 'test_v39_due_plan.db');
         addTearDown(db.close);
 
+        // Post-v41: the query reads `due_at` directly. The pinned index
+        // resolves cleanly because the WHERE matches the partial verbatim.
         final plan = await db
             .customSelect(
               'EXPLAIN QUERY PLAN '
@@ -249,11 +262,11 @@ void main() {
               'AND task = 1 '
               'AND deleted = FALSE '
               "AND task_status NOT IN ('DONE', 'REJECTED') "
-              r"AND json_extract(serialized, '$.data.due') IS NOT NULL "
-              r"AND json_extract(serialized, '$.data.due') <= ? "
+              'AND due_at IS NOT NULL '
+              'AND due_at <= ? '
               'AND private IN (0, 1) '
-              r"ORDER BY json_extract(serialized, '$.data.due') ASC",
-              variables: [Variable.withString('2026-12-31T23:59:59Z')],
+              'ORDER BY due_at ASC',
+              variables: [Variable.withDateTime(DateTime.utc(2026, 12, 31))],
             )
             .get();
 
@@ -263,11 +276,11 @@ void main() {
     );
 
     test(
-      'beforeOpen self-heals idx_journal_tasks_due_open when missing on v39',
+      'beforeOpen self-heals idx_journal_tasks_due_open after v41',
       () async {
-        // Simulate a device that landed at user_version = 39 but is missing
-        // `idx_journal_tasks_due_open` (migration failed mid-way in prod —
-        // the symptom observed in the TestFlight crash logs).
+        // Simulate a device that landed at user_version = 39 but is
+        // missing `idx_journal_tasks_due_open`. The full migration to v41
+        // runs, so the recreated index is the column-keyed shape.
         final dbFile = File(
           p.join(testDirectory!.path, 'test_v39_self_heal.db'),
         );
@@ -279,10 +292,8 @@ void main() {
         final db = JournalDb(overriddenFilename: 'test_v39_self_heal.db');
         addTearDown(db.close);
 
-        // beforeOpen must have created both v39 partial indexes even though
-        // the onUpgrade block didn't run (user_version already at 39).
         final dueOpenSql = await indexSql(db, 'idx_journal_tasks_due_open');
-        expect(dueOpenSql, contains(r"json_extract(serialized, '$.data.due')"));
+        expect(dueOpenSql, contains('due_at ASC'));
         expect(dueOpenSql, contains("task_status NOT IN ('DONE', 'REJECTED')"));
 
         final statusPrivateSql = await indexSql(
