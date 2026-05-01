@@ -1815,21 +1815,22 @@ class SyncEventProcessor {
       children.add(envelope);
     }
 
-    // Issue every write in parallel so up to [outboxBundleMaxSize] atomic
-    // file writes overlap instead of running sequentially. A single
-    // FileSystemException is surfaced as an IOException to the unpacker,
-    // which rethrows for a whole-bundle retry; the rest of the writes
-    // either complete or are retried idempotently on the next pass.
-    if (writePlans.isNotEmpty) {
-      await Future.wait(
-        writePlans.map((plan) async {
-          await saveJson(plan.filePath, json.encode(plan.payload));
-          _trace(
-            'outboxBundle.entry.materialized id=${plan.envelopeId} '
-            'jsonPath=${plan.jsonPath}',
-            subDomain: 'processor.resolve.outboxBundle',
-          );
-        }),
+    // Issue per-child writes serially. The earlier parallel `Future.wait`
+    // multiplied the prepare phase's per-batch fan-out by up to
+    // [outboxBundleMaxSize], which on phone filesystems made the inbound
+    // worker stall under heavy backfill — too many concurrent atomic
+    // writes (each one is parent-create + temp + rename) ran into FD caps
+    // and journal backpressure, and the resulting FileSystemException
+    // pushed the bundle straight back into a tight retry loop with no
+    // forward progress. Sequential writes within a bundle keep the worst-
+    // case write fan-out bounded by the queue's batch concurrency
+    // (`SyncTuning.queueBatchSize`) rather than batch × per-bundle.
+    for (final plan in writePlans) {
+      await saveJson(plan.filePath, json.encode(plan.payload));
+      _trace(
+        'outboxBundle.entry.materialized id=${plan.envelopeId} '
+        'jsonPath=${plan.jsonPath}',
+        subDomain: 'processor.resolve.outboxBundle',
       );
     }
 

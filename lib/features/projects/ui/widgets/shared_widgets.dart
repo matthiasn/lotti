@@ -13,6 +13,7 @@ import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/utils/markdown_link_utils.dart';
 
 /// A small coloured tag displaying a category icon and label.
@@ -476,6 +477,7 @@ class CountDotBadge extends StatelessWidget {
         '$count',
         style: tokens.typography.styles.others.caption.copyWith(
           color: ShowcasePalette.tagText(context),
+          fontFeatures: numericBadgeFontFeatures,
         ),
       ),
     );

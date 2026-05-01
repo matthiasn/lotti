@@ -414,9 +414,29 @@ TextStyle monoTabularStyle({
   );
 }
 
+/// OpenType features applied to every count-style badge so digit shapes
+/// stay visually steady across renders:
+///
+/// - `tnum` / [FontFeature.tabularFigures] — every digit advances by the
+///   same width; counts ticking from `9` → `10` → `99` no longer twitch.
+/// - `cv02` / `cv03` / `cv04` — Inter's open-digit character variants
+///   (open four, open six, open nine). The default Inter forms have
+///   closed counters that read as smudges at small badge sizes; the open
+///   variants stay legible at 11–12 px.
+/// - `zero` / [FontFeature.slashedZero] — slashed zero so it cannot be
+///   confused with `O` or `8` on dense badges.
+const numericBadgeFontFeatures = <FontFeature>[
+  FontFeature.tabularFigures(),
+  FontFeature('cv02'),
+  FontFeature('cv03'),
+  FontFeature('cv04'),
+  FontFeature.slashedZero(),
+];
+
 const badgeStyle = TextStyle(
   fontWeight: FontWeight.w400, // Slightly bolder
   fontSize: fontSizeSmall,
+  fontFeatures: numericBadgeFontFeatures,
 );
 
 const settingsIconSize = 26.0; // Slightly larger
