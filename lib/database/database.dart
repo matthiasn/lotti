@@ -2620,14 +2620,12 @@ class JournalDb extends _$JournalDb {
   Future<List<JournalDbEntity>> _selectTasksDue({
     required DateTime endInclusive,
     required List<bool> privateStatuses,
-    DateTime? startInclusive,
   }) async {
     Future<List<JournalDbEntity>> runQuery(String? indexedBy) {
       final variables = <Variable<Object>>[];
       final query = _buildSelectTasksDue(
         endInclusive: endInclusive,
         privateStatuses: privateStatuses,
-        startInclusive: startInclusive,
         variables: variables,
         indexedBy: indexedBy,
       );
@@ -2670,7 +2668,6 @@ class JournalDb extends _$JournalDb {
     required List<bool> privateStatuses,
     required List<Variable<Object>> variables,
     required String? indexedBy,
-    DateTime? startInclusive,
   }) {
     final buffer = StringBuffer()
       ..write('SELECT * FROM journal ')
@@ -2680,11 +2677,6 @@ class JournalDb extends _$JournalDb {
       ..write('AND deleted = FALSE ')
       ..write("AND task_status NOT IN ('DONE', 'REJECTED') ")
       ..write('AND due_at IS NOT NULL ');
-
-    if (startInclusive != null) {
-      variables.add(Variable<DateTime>(startInclusive));
-      buffer.write('AND due_at >= ?${variables.length} ');
-    }
 
     variables.add(Variable<DateTime>(endInclusive));
     buffer
