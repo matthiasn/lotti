@@ -6243,7 +6243,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get taskAgentCreateChipLabel => 'Agent erstellen';
+  String get taskAgentCreateChipLabel => 'Agent zuweisen';
 
   @override
   String taskAgentCreateError(String error) {

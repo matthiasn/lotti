@@ -2620,7 +2620,7 @@
       }
     }
   },
-  "taskAgentCreateChipLabel": "Agent erstellen",
+  "taskAgentCreateChipLabel": "Agent zuweisen",
   "taskAgentCreateError": "Agent konnte nicht erstellt werden: {error}",
   "@taskAgentCreateError": {
     "placeholders": {

@@ -183,7 +183,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
-      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
     });
   });
 
@@ -213,7 +213,7 @@ void main() {
         find.text(context.messages.taskAgentCreateChipLabel),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
     });
 
     testWidgets('renders nothing during loading state', (tester) async {
@@ -233,7 +233,7 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
-      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
     });
 
     testWidgets('renders nothing when provider errors', (tester) async {
@@ -254,7 +254,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
-      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
     });
 
     testWidgets('renders nothing when entity is not agent type', (
@@ -277,7 +277,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.smart_toy_outlined), findsNothing);
-      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
     });
   });
 

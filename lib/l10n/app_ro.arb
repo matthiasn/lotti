@@ -2620,7 +2620,7 @@
       }
     }
   },
-  "taskAgentCreateChipLabel": "Creează agent",
+  "taskAgentCreateChipLabel": "Atribuiți agent",
   "taskAgentCreateError": "Eroare la crearea agentului: {error}",
   "@taskAgentCreateError": {
     "placeholders": {

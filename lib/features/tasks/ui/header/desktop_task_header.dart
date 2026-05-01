@@ -508,6 +508,14 @@ class _RenderTrailingAlignedWrap extends RenderBox
     }
   }
 
+  // Typed accessor for the parentData. `setupParentData` guarantees every
+  // child has been outfitted with our parent-data type by the time layout /
+  // intrinsics run, so `parentData!` is sound here. Keeping the bang inside
+  // a single helper avoids `cast_nullable_to_non_nullable` warnings at every
+  // call site.
+  _TrailingAlignedWrapParentData _pd(RenderBox child) =>
+      child.parentData! as _TrailingAlignedWrapParentData;
+
   @override
   void performLayout() {
     final maxWidth = constraints.maxWidth.isFinite
@@ -518,8 +526,7 @@ class _RenderTrailingAlignedWrap extends RenderBox
     var cursor = firstChild;
     while (cursor != null) {
       boxes.add(cursor);
-      cursor =
-          (cursor.parentData as _TrailingAlignedWrapParentData).nextSibling;
+      cursor = _pd(cursor).nextSibling;
     }
     if (boxes.isEmpty) {
       size = constraints.constrain(Size.zero);
@@ -593,10 +600,7 @@ class _RenderTrailingAlignedWrap extends RenderBox
       final x = isFirst ? 0.0 : cursorX[r] + _spacing;
       final h = leading[i].size.height;
       final dy = rowY[r] + (rowHeight[r] - h) / 2;
-      (leading[i].parentData as _TrailingAlignedWrapParentData).offset = Offset(
-        x,
-        dy,
-      );
+      _pd(leading[i]).offset = Offset(x, dy);
       cursorX[r] = x + leading[i].size.width;
     }
 
@@ -608,10 +612,7 @@ class _RenderTrailingAlignedWrap extends RenderBox
               tw);
     final tx = boundedWidth - tw;
     final ty = rowY[trailingRow] + (rowHeight[trailingRow] - th) / 2;
-    (trailing.parentData as _TrailingAlignedWrapParentData).offset = Offset(
-      tx,
-      ty,
-    );
+    _pd(trailing).offset = Offset(tx, ty);
 
     size = constraints.constrain(Size(boundedWidth, totalHeight));
   }
@@ -632,7 +633,7 @@ class _RenderTrailingAlignedWrap extends RenderBox
     var c = firstChild;
     while (c != null) {
       width = math.max(width, c.getMinIntrinsicWidth(double.infinity));
-      c = (c.parentData as _TrailingAlignedWrapParentData).nextSibling;
+      c = _pd(c).nextSibling;
     }
     return width;
   }
@@ -643,7 +644,7 @@ class _RenderTrailingAlignedWrap extends RenderBox
     var c = firstChild;
     while (c != null) {
       width += c.getMaxIntrinsicWidth(double.infinity);
-      c = (c.parentData as _TrailingAlignedWrapParentData).nextSibling;
+      c = _pd(c).nextSibling;
     }
     return width;
   }
@@ -658,7 +659,7 @@ class _RenderTrailingAlignedWrap extends RenderBox
     var c = firstChild;
     while (c != null) {
       height = math.max(height, c.getMaxIntrinsicHeight(width));
-      c = (c.parentData as _TrailingAlignedWrapParentData).nextSibling;
+      c = _pd(c).nextSibling;
     }
     return height;
   }
