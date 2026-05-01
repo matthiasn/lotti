@@ -59,6 +59,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `AiConfigDeleteService` cascade-deletion SnackBar (custom rich
   body) and the saved-task-filter pill toast (custom rounded chrome).
 
+### Changed
+- Settings sidebar order: Sync now sits directly below Agents in
+  the Settings V2 tree (root order: `whats-new`, `ai`, `agents`,
+  `sync`, `habits`, `categories`, `labels`, `dashboards`,
+  `measurables`, `theming`, `flags`, `advanced`). Agents and
+  Sync are both runtime / system concerns and read better as a
+  pair than separated by the taxonomy leaves
+  (habits / categories / labels).
+
 ### Removed
 - `lib/widgets/misc/countdown_snackbar_content.dart` (and its test)
   — the `CountdownSnackBarContent` widget and its

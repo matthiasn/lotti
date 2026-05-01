@@ -58,15 +58,18 @@ void main() {
 
   group('buildSettingsTree — always-on nodes', () {
     test('root order is stable with every flag on', () {
+      // Sync sits directly below Agents — both are runtime / system
+      // concerns and read better as a pair than separated by the
+      // taxonomy leaves (habits / categories / labels).
       final rootIds = _tree().map((n) => n.id).toList();
       expect(rootIds, [
         'whats-new',
         'ai',
         'agents',
+        'sync',
         'habits',
         'categories',
         'labels',
-        'sync',
         'dashboards',
         'measurables',
         'theming',
@@ -350,10 +353,12 @@ void main() {
 
       expect(ids, [
         'ai',
+        // Sync branch stays so the conflicts leaf remains reachable —
+        // and sits directly below the AI/Agents-family slot regardless
+        // of which optional taxonomy branches are gated off.
+        'sync',
         'categories',
         'labels',
-        // Sync branch stays so the conflicts leaf remains reachable.
-        'sync',
         'measurables',
         'theming',
         'flags',
