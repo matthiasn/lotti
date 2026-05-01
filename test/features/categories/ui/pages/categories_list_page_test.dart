@@ -6,8 +6,10 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -99,16 +101,30 @@ void main() {
     });
 
     group('Header', () {
-      testWidgets('shows add category button', (tester) async {
-        when(() => mockRepository.watchCategories()).thenAnswer(
-          (_) => Stream.value([]),
-        );
+      testWidgets(
+        'shows a create-category FAB at the bottom-right (replaces the '
+        'old app-bar text button)',
+        (tester) async {
+          when(() => mockRepository.watchCategories()).thenAnswer(
+            (_) => Stream.value([]),
+          );
 
-        await pumpCategoriesListPage(tester);
+          await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.add), findsOneWidget);
-        expect(find.text('Add Category'), findsOneWidget);
-      });
+          // The "+" affordance is now the design-system FAB, not a
+          // TextButton in the header. The icon survives (default
+          // `add_rounded` glyph baked into DesignSystemFloatingActionButton),
+          // the legacy "Add Category" text label is gone (the FAB
+          // carries a semanticLabel for screen readers instead).
+          final fab = find.byType(DesignSystemFloatingActionButton);
+          expect(fab, findsOneWidget);
+          expect(
+            find.descendant(of: fab, matching: find.byIcon(Icons.add_rounded)),
+            findsOneWidget,
+          );
+          expect(find.text('Add Category'), findsNothing);
+        },
+      );
 
       testWidgets('shows Categories title', (tester) async {
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -119,6 +135,84 @@ void main() {
 
         expect(find.text('Categories'), findsOneWidget);
       });
+    });
+
+    group('Search', () {
+      testWidgets(
+        'renders a DesignSystemSearch above the list when categories load',
+        (tester) async {
+          when(() => mockRepository.watchCategories()).thenAnswer(
+            (_) => Stream.value([
+              CategoryTestUtils.createTestCategory(
+                id: 'a',
+                name: 'Alpha',
+              ),
+            ]),
+          );
+
+          await pumpCategoriesListPage(tester);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(DesignSystemSearch), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'typing a query narrows the list to matching categories '
+        '(case-insensitive name substring)',
+        (tester) async {
+          when(() => mockRepository.watchCategories()).thenAnswer(
+            (_) => Stream.value([
+              CategoryTestUtils.createTestCategory(id: 'a', name: 'Alpha'),
+              CategoryTestUtils.createTestCategory(id: 'b', name: 'Beta'),
+              CategoryTestUtils.createTestCategory(id: 'c', name: 'Charlie'),
+            ]),
+          );
+
+          await pumpCategoriesListPage(tester);
+          await tester.pumpAndSettle();
+
+          // All three rows visible by default.
+          expect(find.text('Alpha'), findsOneWidget);
+          expect(find.text('Beta'), findsOneWidget);
+          expect(find.text('Charlie'), findsOneWidget);
+
+          // Type a query that matches a single row.
+          await tester.enterText(find.byType(DesignSystemSearch), 'BET');
+          await tester.pump();
+
+          expect(find.text('Beta'), findsOneWidget);
+          expect(find.text('Alpha'), findsNothing);
+          expect(find.text('Charlie'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'a query that matches no category shows the no-match empty state',
+        (tester) async {
+          when(() => mockRepository.watchCategories()).thenAnswer(
+            (_) => Stream.value([
+              CategoryTestUtils.createTestCategory(id: 'a', name: 'Alpha'),
+            ]),
+          );
+
+          await pumpCategoriesListPage(tester);
+          await tester.pumpAndSettle();
+
+          await tester.enterText(find.byType(DesignSystemSearch), 'zzzz');
+          await tester.pump();
+
+          expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+          // The empty-state message includes the active query verbatim
+          // ("No categories match \"zzzz\""). Don't use `textContaining`
+          // here — it would also match the EditableText showing the
+          // typed query inside the search field.
+          expect(
+            find.text('No categories match "zzzz"'),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('Category Tile Design', () {

@@ -5389,6 +5389,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCategoriesAddTooltip => 'Přidat kategorii';
 
   @override
+  String get settingsCategoriesCreateTitle => 'Vytvořit kategorii';
+
+  @override
   String get settingsCategoriesDetailsLabel => 'Detaily kategorie';
 
   @override
@@ -5415,6 +5418,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsCategoriesNameLabel => 'Název kategorie:';
+
+  @override
+  String settingsCategoriesNoMatchQuery(String query) {
+    return 'Žádné kategorie neodpovídají dotazu \"$query\"';
+  }
+
+  @override
+  String get settingsCategoriesSearchHint => 'Hledat kategorie…';
 
   @override
   String get settingsCategoriesSubtitle => 'Kategorie s nastavením AI';

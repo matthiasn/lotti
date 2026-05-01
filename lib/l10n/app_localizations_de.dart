@@ -5373,6 +5373,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesAddTooltip => 'Kategorie hinzufügen';
 
   @override
+  String get settingsCategoriesCreateTitle => 'Kategorie erstellen';
+
+  @override
   String get settingsCategoriesDetailsLabel => 'Kategoriedetails';
 
   @override
@@ -5400,6 +5403,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCategoriesNameLabel => 'Kategoriename:';
+
+  @override
+  String settingsCategoriesNoMatchQuery(String query) {
+    return 'Keine Kategorien stimmen mit \"$query\" überein';
+  }
+
+  @override
+  String get settingsCategoriesSearchHint => 'Kategorien suchen…';
 
   @override
   String get settingsCategoriesSubtitle => 'Kategorien mit AI-Einstellungen';

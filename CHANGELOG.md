@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.980]
 ### Added
+- Categories settings list now matches the Labels / Dashboards
+  baseline. A `DesignSystemSearch` field above the list filters
+  rows by name (case-insensitive substring); a "+" floating
+  action button at the bottom-right opens the existing
+  `/settings/categories/create` route. The legacy in-header
+  "Add Category" text button is gone — the FAB is the canonical
+  create affordance now and uses the design-system circular FAB
+  component already consumed by the Tasks tab. New arb keys
+  `settingsCategoriesSearchHint`,
+  `settingsCategoriesNoMatchQuery`, and
+  `settingsCategoriesCreateTitle` cover all six locales; the
+  no-match empty state echoes the active query verbatim
+  (`No categories match "<q>"`) so users know what they typed.
 - `DesignSystemToast` grows two new affordances and is now the
   shared toast surface for the migrated call sites:
   - `ToastAction(label, onPressed, semanticsLabel?)` renders an
