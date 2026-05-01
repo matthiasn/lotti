@@ -2679,5 +2679,107 @@ void main() {
         expect(decoded['children'], isEmpty);
       },
     );
+
+    test(
+      'aborts the bundle and returns null when a SyncJournalEntity child '
+      'has no DB row — silently dropping that one child while the others '
+      'apply would let the bundle ack with a missing entity (permanent '
+      'data loss); the failed bundle drops to the standard retry/cap path',
+      () async {
+        when(
+          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        ).thenAnswer((_) async => const <String, JournalEntity>{});
+
+        final bundle = SyncOutboxBundle(
+          children: [
+            SyncMessage.journalEntity(
+              id: 'orphaned-id',
+              jsonPath: '/journal/2026-04-25/orphaned-id.entry.json',
+              vectorClock: const VectorClock({'host-A': 1}),
+              status: SyncEntryStatus.update,
+            ),
+          ],
+        );
+
+        final result = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundle,
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+        verify(
+          () => loggingService.captureException(
+            any<Object>(
+              that: isA<String>().having(
+                (msg) => msg,
+                'message',
+                contains('outboxBundle aborting'),
+              ),
+            ),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.outboxBundle.missingEntity',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'reconciles a SyncEntryLink child by merging entryLink.vectorClock '
+      'into coveredVectorClocks (and filling originatingHostId) — bundled '
+      'and unbundled entry-link sequencing must stay identical so '
+      "recordReceivedEntryLink's gap detection works the same way for "
+      'both delivery shapes',
+      () async {
+        const linkVc = VectorClock({'host-A': 9});
+        final linkChild = SyncMessage.entryLink(
+          entryLink: EntryLink.basic(
+            id: 'link-1',
+            fromId: 'from',
+            toId: 'to',
+            createdAt: DateTime.utc(2026, 4, 25),
+            updatedAt: DateTime.utc(2026, 4, 25),
+            vectorClock: linkVc,
+          ),
+          status: SyncEntryStatus.initial,
+        );
+
+        MatrixFile? capturedFile;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedFile = inv.positionalArguments.first as MatrixFile;
+          return r'$file-id';
+        });
+
+        final stripped = await sender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: SyncOutboxBundle(children: [linkChild]),
+        );
+
+        expect(stripped, isNotNull);
+        final manifestBytes = gzip.decode(capturedFile!.bytes);
+        final manifest =
+            json.decode(utf8.decode(manifestBytes)) as Map<String, dynamic>;
+        final entry =
+            (manifest['entries'] as List).single as Map<String, dynamic>;
+        final envelopeJson = entry['envelope'] as Map<String, dynamic>;
+        final reconstructed = SyncMessage.fromJson(envelopeJson);
+        expect(reconstructed, isA<SyncEntryLink>());
+        final link = reconstructed as SyncEntryLink;
+        // entryLink.vectorClock now lives in coveredVectorClocks — exactly
+        // what the standalone entry-link send path does in
+        // sendMatrixMessage. Bundled deliveries used to skip this step.
+        expect(link.coveredVectorClocks, contains(linkVc));
+      },
+    );
   });
 }

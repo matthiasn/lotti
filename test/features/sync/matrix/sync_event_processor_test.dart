@@ -6295,6 +6295,195 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'aborts the whole bundle (returns null) when a SyncJournalEntity '
+        'envelope has no inline payload — silently skipping the child '
+        'would let the bundle ack while the entity never reaches the '
+        'local DB; peers recover the missing entry via the sequence-log '
+        'backfill path',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/missing-payload.json.gz';
+          final manifestFile = File(
+            path.join(
+              tempDir.path,
+              stripLeadingSlashes(bundleRelativePath),
+            ),
+          )..parent.createSync(recursive: true);
+          manifestFile.writeAsStringSync(
+            json.encode(<String, dynamic>{
+              'version': 1,
+              'entries': [
+                <String, dynamic>{
+                  'envelope': const SyncMessage.journalEntity(
+                    id: 'orphan',
+                    jsonPath: '/journal/2026-04-25/orphan.entry.json',
+                    vectorClock: VectorClock({'host-A': 1}),
+                    status: SyncEntryStatus.update,
+                  ).toJson(),
+                  // No `payload` key — this is the malformed case.
+                },
+              ],
+            }),
+          );
+
+          final resolved = await processor
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved, isNull);
+          verify(
+            () => loggingService.captureException(
+              any<Object>(
+                that: isA<String>().having(
+                  (msg) => msg,
+                  'message',
+                  contains('missing payload for SyncJournalEntity'),
+                ),
+              ),
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'processor.resolve.outboxBundle.missingPayload',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'when local DB version dominates the incoming envelope, refreshes '
+        'the on-disk cache from local.toJson() rather than overwriting it '
+        'with a staler bundled payload — guarantees SmartJournalEntityLoader '
+        'never serves a stale fixture even when the cache file was missing '
+        'or out-of-date',
+        () async {
+          final localEntity = JournalEntry(
+            meta: Metadata(
+              id: 'dominant-id',
+              createdAt: DateTime.utc(2026, 4, 25),
+              updatedAt: DateTime.utc(2026, 4, 25),
+              dateFrom: DateTime.utc(2026, 4, 25),
+              dateTo: DateTime.utc(2026, 4, 25),
+              vectorClock: const VectorClock({'host-A': 9}),
+            ),
+            entryText: const EntryText(plainText: 'canonical local'),
+          );
+
+          when(
+            () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+          ).thenAnswer((_) async => {'dominant-id': localEntity});
+
+          final processorWithDb = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            journalDb: journalDb,
+          );
+
+          const entityRelativePath =
+              '/journal/2026-04-25/dominant-id.entry.json';
+          const bundleRelativePath = '/outbox_bundles/dominates.json.gz';
+
+          // Pre-populate the cache file with an OLDER version to make the
+          // refresh observable: if the resolver did the right thing, the
+          // post-resolve disk content equals localEntity.toJson(); if it
+          // did the wrong thing, it stays as the older fixture.
+          final cacheFile = File(
+            path.join(tempDir.path, stripLeadingSlashes(entityRelativePath)),
+          )..parent.createSync(recursive: true);
+          cacheFile.writeAsStringSync(
+            json.encode(<String, dynamic>{'stale': true}),
+          );
+
+          final manifestFile = File(
+            path.join(
+              tempDir.path,
+              stripLeadingSlashes(bundleRelativePath),
+            ),
+          )..parent.createSync(recursive: true);
+          manifestFile.writeAsStringSync(
+            json.encode(<String, dynamic>{
+              'version': 1,
+              'entries': [
+                <String, dynamic>{
+                  'envelope': const SyncMessage.journalEntity(
+                    id: 'dominant-id',
+                    jsonPath: entityRelativePath,
+                    // Older than localEntity's VC -> local dominates.
+                    vectorClock: VectorClock({'host-A': 1}),
+                    status: SyncEntryStatus.update,
+                  ).toJson(),
+                  'payload': <String, dynamic>{'should': 'not-be-written'},
+                },
+              ],
+            }),
+          );
+
+          final resolved = await processorWithDb
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved, isNotNull);
+          expect(resolved!.children.single, isA<SyncJournalEntity>());
+
+          final refreshed = JournalEntity.fromJson(
+            json.decode(cacheFile.readAsStringSync()) as Map<String, dynamic>,
+          );
+          // Cache now reflects the canonical DB version, not the bundled
+          // one and not the stale pre-test fixture.
+          expect(refreshed.meta.id, 'dominant-id');
+          expect(
+            refreshed.meta.vectorClock,
+            const VectorClock({'host-A': 9}),
+          );
+        },
+      );
+
+      test(
+        'aborts the whole bundle when an envelope.jsonPath escapes the '
+        'documents sandbox — defence in depth against tampered manifests',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/bad-path.json.gz';
+          final manifestFile = File(
+            path.join(
+              tempDir.path,
+              stripLeadingSlashes(bundleRelativePath),
+            ),
+          )..parent.createSync(recursive: true);
+          manifestFile.writeAsStringSync(
+            json.encode(<String, dynamic>{
+              'version': 1,
+              'entries': [
+                <String, dynamic>{
+                  'envelope': const SyncMessage.journalEntity(
+                    id: 'evil',
+                    // Multi-level traversal escapes the documents dir;
+                    // resolveJsonCandidateFile throws FileSystemException
+                    // (a single `/..` collapses back to `/` under
+                    // `path.normalize`, which would not escape).
+                    jsonPath: '../../escape.entry.json',
+                    vectorClock: VectorClock({'host-A': 1}),
+                    status: SyncEntryStatus.update,
+                  ).toJson(),
+                  'payload': <String, dynamic>{'meta': <String, dynamic>{}},
+                },
+              ],
+            }),
+          );
+
+          final resolved = await processor
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved, isNull);
+          verify(
+            () => loggingService.captureException(
+              any<Object>(that: isA<FileSystemException>()),
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'processor.resolve.outboxBundle.invalidEntryPath',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
     });
   });
 }
