@@ -1,0 +1,293 @@
+name: Flutter macOS TestFlight
+
+on:
+  push:
+    tags:
+      - '**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-macos-testflight:
+    name: Build & publish macOS to TestFlight
+    # macos-26: matches flutter-macos-release.yml; required for the macOS 26 SDK
+    # symbols referenced by connectivity_plus.
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      KEYCHAIN_NAME: macos-tf.keychain-db
+      ARCHIVE_PATH: build/macos/archive-appstore/Runner.xcarchive
+      EXPORT_PATH: build/macos/export-appstore
+      BUNDLE_ID: com.matthiasn.lotti
+    steps:
+      - name: Record build start time
+        id: start_time
+        run: echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v5
+
+      - name: Show Xcode + SDK versions
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          xcodebuild -showsdks | grep macosx
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-apple-darwin,aarch64-apple-darwin
+
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Derive build name + number
+        id: ver
+        run: |
+          set -euo pipefail
+          BUILD_NAME="${GITHUB_REF_NAME#v}"
+          BUILD_NUMBER="$(grep '^version:' pubspec.yaml | awk -F'+' '{print $2}')"
+          if [ -z "$BUILD_NUMBER" ]; then
+            echo "pubspec.yaml version has no +<build> suffix" >&2
+            exit 1
+          fi
+          echo "build_name=$BUILD_NAME" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Building $BUILD_NAME ($BUILD_NUMBER)"
+
+      - name: Import App Store distribution certificates
+        env:
+          MACOS_APPSTORE_APP_CERT_BASE64: ${{ secrets.MACOS_APPSTORE_APP_CERT_BASE64 }}
+          MACOS_APPSTORE_APP_CERT_PASSWORD: ${{ secrets.MACOS_APPSTORE_APP_CERT_PASSWORD }}
+          MACOS_APPSTORE_INSTALLER_CERT_BASE64: ${{ secrets.MACOS_APPSTORE_INSTALLER_CERT_BASE64 }}
+          MACOS_APPSTORE_INSTALLER_CERT_PASSWORD: ${{ secrets.MACOS_APPSTORE_INSTALLER_CERT_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          APP_CERT_PATH="$RUNNER_TEMP/macos-appstore-app.p12"
+          INSTALLER_CERT_PATH="$RUNNER_TEMP/macos-appstore-installer.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/$KEYCHAIN_NAME"
+
+          echo "$MACOS_APPSTORE_APP_CERT_BASE64" | base64 --decode > "$APP_CERT_PATH"
+          echo "$MACOS_APPSTORE_INSTALLER_CERT_BASE64" | base64 --decode > "$INSTALLER_CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Apple Distribution (or 3rd Party Mac Developer Application) signs the .app.
+          security import "$APP_CERT_PATH" \
+            -P "$MACOS_APPSTORE_APP_CERT_PASSWORD" \
+            -t cert -f pkcs12 -k "$KEYCHAIN_PATH" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/productbuild \
+            -T /usr/bin/security \
+            -T /usr/bin/xcodebuild
+
+          # 3rd Party Mac Developer Installer signs the .pkg that wraps the .app.
+          security import "$INSTALLER_CERT_PATH" \
+            -P "$MACOS_APPSTORE_INSTALLER_CERT_PASSWORD" \
+            -t cert -f pkcs12 -k "$KEYCHAIN_PATH" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/productbuild \
+            -T /usr/bin/security \
+            -T /usr/bin/xcodebuild
+
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign:,productbuild: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          security find-identity -v "$KEYCHAIN_PATH"
+          rm -f "$APP_CERT_PATH" "$INSTALLER_CERT_PATH"
+
+      - name: Install Mac App Store provisioning profile
+        env:
+          MACOS_APPSTORE_PROFILE_BASE64: ${{ secrets.MACOS_APPSTORE_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          STAGED_PROFILE="$RUNNER_TEMP/lotti_macos_appstore.provisionprofile"
+          echo "$MACOS_APPSTORE_PROFILE_BASE64" | base64 --decode > "$STAGED_PROFILE"
+
+          PROFILE_PLIST="$RUNNER_TEMP/profile.plist"
+          security cms -D -i "$STAGED_PROFILE" > "$PROFILE_PLIST"
+          PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$PROFILE_PLIST")"
+          PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PROFILE_PLIST")"
+
+          for d in \
+            "$HOME/Library/MobileDevice/Provisioning Profiles" \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$d"
+            cp "$STAGED_PROFILE" "$d/$PROFILE_UUID.provisionprofile"
+          done
+
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+
+      - name: Patch Runner target Release signing for App Store
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          # Same rationale as flutter-macos-release.yml: target-level settings beat
+          # xcconfigs, so we override Release signing in project.pbxproj only on the
+          # Runner target (Pods stay on their defaults).
+          ruby -r xcodeproj <<'RUBY'
+          project_path = 'macos/Runner.xcodeproj'
+          project = Xcodeproj::Project.open(project_path)
+          target = project.targets.find { |t| t.name == 'Runner' } \
+            or abort 'Runner target not found in Runner.xcodeproj'
+          config = target.build_configurations.find { |c| c.name == 'Release' } \
+            or abort "Runner target has no Release build configuration"
+
+          config.build_settings['CODE_SIGN_STYLE']                = 'Manual'
+          config.build_settings['CODE_SIGN_IDENTITY']             = 'Apple Distribution'
+          config.build_settings['DEVELOPMENT_TEAM']               = ENV.fetch('APPLE_TEAM_ID')
+          config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = ENV.fetch('PROFILE_NAME')
+
+          project.save
+          puts "Patched Runner Release signing for App Store:"
+          %w[CODE_SIGN_STYLE CODE_SIGN_IDENTITY DEVELOPMENT_TEAM PROVISIONING_PROFILE_SPECIFIER].each do |k|
+            puts "  #{k} = #{config.build_settings[k].inspect}"
+          end
+          RUBY
+
+      - name: Write App Store exportOptions.plist
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/macos
+          cat > build/macos/exportOptions-appstore.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>installerSigningCertificate</key>
+            <string>3rd Party Mac Developer Installer</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key>
+              <string>${PROFILE_NAME}</string>
+            </dict>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Flutter build macOS (compile Dart + pods)
+        run: |
+          flutter build macos --release \
+            --build-name=${{ steps.ver.outputs.build_name }} \
+            --build-number=${{ steps.ver.outputs.build_number }}
+
+      - name: Archive with Xcode
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace macos/Runner.xcworkspace \
+            -config Release \
+            -scheme Runner \
+            -archivePath "$ARCHIVE_PATH" \
+            archive
+
+      - name: Export signed .pkg (App Store)
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportOptionsPlist build/macos/exportOptions-appstore.plist \
+            -exportPath "$EXPORT_PATH"
+          ls -la "$EXPORT_PATH"
+
+      - name: Locate .pkg
+        id: pkg
+        run: |
+          set -euo pipefail
+          PKG_PATH="$(find "$EXPORT_PATH" -maxdepth 2 -name '*.pkg' -print -quit)"
+          if [ -z "$PKG_PATH" ]; then
+            echo "No .pkg found under $EXPORT_PATH" >&2
+            exit 1
+          fi
+          echo "pkg_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
+          ls -la "$PKG_PATH"
+
+      - name: Stage App Store Connect API key
+        env:
+          ASC_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.APPSTORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          mkdir -p "$KEY_DIR"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
+
+      - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          xcrun altool --upload-app \
+            --file "${{ steps.pkg.outputs.pkg_path }}" \
+            --type macos \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-pkg
+          path: ${{ steps.pkg.outputs.pkg_path }}
+
+      - name: Cleanup keychain & secrets
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/$KEYCHAIN_NAME" || true
+          rm -rf "$HOME/.appstoreconnect/private_keys" || true
+          if [ -n "${PROFILE_UUID:-}" ]; then
+            rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/${PROFILE_UUID}.provisionprofile" || true
+            rm -f "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/${PROFILE_UUID}.provisionprofile" || true
+          fi
+
+      - name: Report build duration
+        if: always()
+        run: |
+          end=$(date +%s)
+          start=${{ steps.start_time.outputs.start }}
+          duration=$((end - start))
+          mins=$((duration / 60))
+          secs=$((duration % 60))
+          echo "Total build time: ${mins}m ${secs}s (${duration}s)"
+          echo "::notice title=macOS TestFlight Build Duration::${mins}m ${secs}s"
+          {
+            echo "## macOS TestFlight build duration"
+            echo ""
+            echo "**${mins}m ${secs}s** (${duration} seconds)"
+          } >> "$GITHUB_STEP_SUMMARY"
