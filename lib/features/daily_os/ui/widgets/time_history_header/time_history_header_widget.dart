@@ -60,13 +60,22 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   // Whether we've set the initial scroll position to center on today
   bool _hasSetInitialScroll = false;
 
-  // Number of days to prefetch in each direction beyond visible
+  // Off-screen prefetch is currently disabled to keep the SQLite read pool
+  // out of the multi-second-hang regime under heavy fan-out. Flip this to
+  // `true` (and tune `_prefetchBuffer` / `_invalidateMargin`) once the
+  // DailyOS query path is cheap enough to warm warm neighbours without
+  // starving the selected day.
+  static const bool _prefetchEnabled = false;
+
+  // Number of days to prefetch in each direction beyond visible.
+  // Only takes effect when `_prefetchEnabled` is true.
   static const int _prefetchBuffer = 5;
 
   // Number of days to render beyond visible range for smoother transitions
   static const int _chartBuffer = 2;
 
-  // Margin for invalidation (2x buffer to avoid thrashing)
+  // Margin for invalidation (2x buffer to avoid thrashing).
+  // Only takes effect when `_prefetchEnabled` is true.
   static const int _invalidateMargin = _prefetchBuffer * 2;
 
   @override
@@ -203,7 +212,13 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
   }
 
   /// Update the prefetch window based on visible indices.
+  ///
+  /// No-op while `_prefetchEnabled` is false: the visible-only mode relies
+  /// on `dailyOsSelectedDateProvider` to drive a single
+  /// `unifiedDailyOsDataControllerProvider` build per navigation.
   void _updatePrefetchWindow() {
+    if (!_prefetchEnabled) return;
+
     final historyData = ref.read(timeHistoryHeaderControllerProvider).value;
     if (historyData == null || historyData.days.isEmpty) return;
 
@@ -298,8 +313,14 @@ class _TimeHistoryHeaderState extends ConsumerState<TimeHistoryHeader> {
       }
     }
 
-    // Prefetch today's data in background (fire-and-forget)
-    ref.read(unifiedDailyOsDataControllerProvider(date: today));
+    // Prefetch today's data in background (fire-and-forget).
+    // Gated on the same flag as the scroll-window prefetch so disabling
+    // off-screen warming also disables this redundant warm-up — the
+    // selected-date provider drives the actual load when `goToToday`
+    // moves the selection.
+    if (_prefetchEnabled) {
+      ref.read(unifiedDailyOsDataControllerProvider(date: today));
+    }
   }
 
   /// Center the scroll view on today when data first loads.

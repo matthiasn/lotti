@@ -179,10 +179,6 @@ void main() {
 
     when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
 
-    when(
-      () => mockDb.getRatingIdsForTimeEntries(any()),
-    ).thenAnswer((_) async => <String, String>{});
-
     when(() => mockDb.getTasksDueOnOrBefore(any())).thenAnswer((_) async => []);
     when(() => mockDb.getTasksDueOn(any())).thenAnswer((_) async => []);
 
