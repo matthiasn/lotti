@@ -39,6 +39,7 @@ class TaskBrowseListItem extends StatelessWidget {
     this.nextTaskIdInSection,
     this.selectedTaskId,
     this.hoveredTaskIdNotifier,
+    this.showStatus = true,
     super.key,
   });
 
@@ -59,12 +60,17 @@ class TaskBrowseListItem extends StatelessWidget {
   final ValueNotifier<String?>? hoveredTaskIdNotifier;
   final VoidCallback onTap;
 
+  /// When false, the trailing status pill is omitted from the card. The
+  /// caller should set this when the active status filter has narrowed the
+  /// list down to a single status — repeating it on every row is noise.
+  final bool showStatus;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final rowPadding = EdgeInsets.symmetric(
-      horizontal: tokens.spacing.step5,
-      vertical: tokens.spacing.step5,
+      horizontal: tokens.spacing.step4,
+      vertical: tokens.spacing.step4,
     );
     final borderRadius = BorderRadius.vertical(
       top: entry.isFirstInSection
@@ -88,14 +94,17 @@ class TaskBrowseListItem extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: entry.isLastInSection ? tokens.spacing.step5 : 0,
+        bottom: entry.isLastInSection ? tokens.spacing.step3 : 0,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (entry.showSectionHeader)
             Padding(
-              padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+              padding: EdgeInsets.only(
+                top: tokens.spacing.step4,
+                bottom: tokens.spacing.step4,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -123,6 +132,7 @@ class TaskBrowseListItem extends StatelessWidget {
                 showCreationDate: showCreationDate,
                 showDueDate: showDueDate,
                 showCoverArt: showCoverArt,
+                showStatus: showStatus,
                 vectorDistance: vectorDistance,
                 categoryNameOverride: categoryNameOverride,
                 categoryIconOverride: categoryIconOverride,
@@ -163,6 +173,7 @@ class TaskBrowseListItem extends StatelessWidget {
                 showCreationDate: showCreationDate,
                 showDueDate: showDueDate,
                 showCoverArt: showCoverArt,
+                showStatus: showStatus,
                 vectorDistance: vectorDistance,
                 categoryNameOverride: categoryNameOverride,
                 categoryIconOverride: categoryIconOverride,
@@ -205,7 +216,6 @@ class _TaskBrowseRowShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final interaction = buildTaskBrowseRowInteraction(
       taskId: entry.task.meta.id,
       previousTaskIdInSection: previousTaskIdInSection,
@@ -246,24 +256,21 @@ class _TaskBrowseRowShell extends StatelessWidget {
               child: child,
             ),
             if (!entry.isLastInSection)
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
-                child: interaction.showDividerBelow
-                    ? Divider(
-                        key: ValueKey(
-                          'task-browse-divider-${entry.task.meta.id}',
-                        ),
-                        height: 1,
-                        thickness: 1,
-                        color: TaskShowcasePalette.border(context),
-                      )
-                    : SizedBox(
-                        key: ValueKey(
-                          'task-browse-divider-slot-${entry.task.meta.id}',
-                        ),
-                        height: 1,
+              interaction.showDividerBelow
+                  ? Divider(
+                      key: ValueKey(
+                        'task-browse-divider-${entry.task.meta.id}',
                       ),
-              ),
+                      height: 1,
+                      thickness: 1,
+                      color: TaskShowcasePalette.border(context),
+                    )
+                  : SizedBox(
+                      key: ValueKey(
+                        'task-browse-divider-slot-${entry.task.meta.id}',
+                      ),
+                      height: 1,
+                    ),
           ],
         ),
       ),
@@ -278,6 +285,7 @@ class _TaskRowContent extends ConsumerWidget {
     required this.showCreationDate,
     required this.showDueDate,
     required this.showCoverArt,
+    required this.showStatus,
     this.vectorDistance,
     this.categoryNameOverride,
     this.categoryIconOverride,
@@ -290,6 +298,7 @@ class _TaskRowContent extends ConsumerWidget {
   final bool showCreationDate;
   final bool showDueDate;
   final bool showCoverArt;
+  final bool showStatus;
   final double? vectorDistance;
   final String? categoryNameOverride;
   final IconData? categoryIconOverride;
@@ -397,8 +406,10 @@ class _TaskRowContent extends ConsumerWidget {
                       children: metadata,
                     ),
                   ),
-                  SizedBox(width: tokens.spacing.step4),
-                  TaskShowcaseStatusLabel(status: liveTask.data.status),
+                  if (showStatus) ...[
+                    SizedBox(width: tokens.spacing.step4),
+                    TaskShowcaseStatusLabel(status: liveTask.data.status),
+                  ],
                 ],
               ),
               if (_footerChildren(context, liveTask).isNotEmpty) ...[
@@ -572,7 +583,7 @@ class _SectionHeaderTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textStyle = context.designTokens.typography.styles.others.caption
-        .copyWith(color: TaskShowcasePalette.mediumText(context));
+        .copyWith(color: TaskShowcasePalette.highText(context));
 
     if (titleOverride case final title?) {
       return Text(title, style: textStyle);

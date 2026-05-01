@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -114,13 +115,11 @@ class ProjectAgentReportCard extends ConsumerWidget {
               ),
               Align(
                 alignment: Alignment.centerLeft,
-                child: ActionChip(
-                  avatar: Icon(
-                    Icons.add,
-                    size: 16,
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  label: Text(context.messages.taskAgentCreateChipLabel),
+                child: DesignSystemButton(
+                  label: context.messages.taskAgentCreateChipLabel,
+                  variant: DesignSystemButtonVariant.secondary,
+                  size: DesignSystemButtonSize.medium,
+                  leadingIcon: Icons.auto_awesome_rounded,
                   onPressed: () => _createProjectAgent(context, ref),
                 ),
               ),

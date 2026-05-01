@@ -2349,7 +2349,7 @@
       }
     }
   },
-  "taskAgentCreateChipLabel": "Vytvořit agenta",
+  "taskAgentCreateChipLabel": "Přiřadit agenta",
   "taskAgentCreateError": "Nepodařilo se vytvořit agenta: {error}",
   "@taskAgentCreateError": {
     "placeholders": {

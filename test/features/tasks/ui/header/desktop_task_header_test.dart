@@ -64,6 +64,7 @@ LabelDefinition _label({
 DesktopTaskHeaderData _fixture({
   String title = 'Payment confirmation',
   TaskPriority priority = TaskPriority.p1High,
+  TaskStatus? status,
   DesktopTaskHeaderProject? project,
   DesktopTaskHeaderCategory? category,
   DesktopTaskHeaderDueDate? dueDate,
@@ -73,11 +74,9 @@ DesktopTaskHeaderData _fixture({
   return DesktopTaskHeaderData(
     title: title,
     priority: priority,
-    status: TaskStatus.open(
-      id: 'fx-open',
-      createdAt: createdAt,
-      utcOffset: 0,
-    ),
+    status:
+        status ??
+        TaskStatus.open(id: 'fx-open', createdAt: createdAt, utcOffset: 0),
     project: project,
     category: category,
     dueDate: dueDate,
@@ -514,5 +513,135 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Fixes a defect, not new behaviour.'), findsOneWidget);
     });
+
+    testWidgets(
+      'long-press dialog dismisses when the close button is tapped',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(labels: _labelFixtures),
+            onTitleSaved: (_) {},
+          ),
+        );
+        await tester.longPress(find.text('Bug fix'));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsOneWidget);
+
+        // The dialog renders a single TextButton — the localized close button.
+        await tester.tap(find.byType(TextButton));
+        await tester.pumpAndSettle();
+        expect(find.byType(AlertDialog), findsNothing);
+      },
+    );
+
+    testWidgets('Escape in the title editor cancels back to read-only', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(),
+          onTitleSaved: (_) {},
+          initialEditing: true,
+        ),
+      );
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'A different title');
+      await tester.pump();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+
+      // Editor closes, original read-only title is back.
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Payment confirmation'), findsOneWidget);
+    });
+  });
+
+  group('DesktopTaskHeader — status pill tinting', () {
+    final createdAt = DateTime.utc(2026);
+    final cases = <(TaskStatus, String)>[
+      (
+        TaskStatus.inProgress(
+          id: 'tint-in-progress',
+          createdAt: createdAt,
+          utcOffset: 0,
+        ),
+        'In Progress',
+      ),
+      (
+        TaskStatus.blocked(
+          id: 'tint-blocked',
+          createdAt: createdAt,
+          utcOffset: 0,
+          reason: 'waiting',
+        ),
+        'Blocked',
+      ),
+      (
+        TaskStatus.onHold(
+          id: 'tint-hold',
+          createdAt: createdAt,
+          utcOffset: 0,
+          reason: 'paused',
+        ),
+        'On Hold',
+      ),
+      (
+        TaskStatus.groomed(
+          id: 'tint-groomed',
+          createdAt: createdAt,
+          utcOffset: 0,
+        ),
+        'Groomed',
+      ),
+      (
+        TaskStatus.done(id: 'tint-done', createdAt: createdAt, utcOffset: 0),
+        'Done',
+      ),
+      (
+        TaskStatus.rejected(
+          id: 'tint-rejected',
+          createdAt: createdAt,
+          utcOffset: 0,
+        ),
+        'Rejected',
+      ),
+    ];
+
+    for (final entry in cases) {
+      final status = entry.$1;
+      final label = entry.$2;
+      testWidgets('renders the $label status with its tinted pill', (
+        tester,
+      ) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(status: status),
+            onTitleSaved: (_) {},
+          ),
+        );
+        expect(find.text(label), findsOneWidget);
+      });
+    }
+  });
+
+  group('DesktopTaskHeader — priority palette', () {
+    for (final priority in TaskPriority.values) {
+      testWidgets('renders ${priority.short} pill with the correct accent', (
+        tester,
+      ) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(priority: priority),
+            onTitleSaved: (_) {},
+          ),
+        );
+        expect(find.text(priority.short), findsOneWidget);
+      });
+    }
   });
 }

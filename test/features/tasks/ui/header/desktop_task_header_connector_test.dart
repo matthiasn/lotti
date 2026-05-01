@@ -25,6 +25,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -308,9 +309,16 @@ void main() {
         await tester.pumpWidget(pumpConnector(task: task));
         await tester.pumpAndSettle();
 
-        final alphaPos = tester.getTopLeft(find.text('Alpha')).dx;
-        final betaPos = tester.getTopLeft(find.text('Beta')).dx;
-        expect(alphaPos, lessThan(betaPos));
+        // Use document order (tree traversal) instead of `dx`. The new
+        // single-row meta-layout shares a `Wrap` between priority/due/estimate
+        // and the labels, so on narrow surfaces labels can wrap onto a new
+        // line and `dx` no longer reflects sort order.
+        final labelTexts = tester
+            .widgetList<Text>(find.byType(Text))
+            .map((t) => t.data)
+            .where((d) => d == 'Alpha' || d == 'Beta')
+            .toList();
+        expect(labelTexts, ['Alpha', 'Beta']);
         expect(find.text('lbl-missing'), findsNothing);
       },
     );
@@ -499,6 +507,72 @@ void main() {
         // No modal opened — the base connector is still the visible root.
         expect(find.byType(DesktopTaskHeaderConnector), findsOneWidget);
         expect(find.text('Select project'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping the Add Label placeholder fires the label selector closure',
+      (tester) async {
+        // Empty labelIds → meta row renders the muted "Add Label" ghost.
+        final task = buildTask();
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Add Label'));
+        // Modal opens; its inner label-sliver content reads providers that
+        // aren't wired in this fixture. A single pump is enough for the
+        // connector's onAddLabelTap → _openLabelSelector path to fire.
+        await tester.pump();
+
+        // The captured exception must be non-null — that proves the modal
+        // route was actually pushed (its inner sliver tried to build and
+        // failed on a missing label provider). If the closure under test
+        // regressed and never opened the modal, no exception would surface
+        // and `takeException()` would return `null`, failing this expect.
+        // This way we don't silently swallow a real regression.
+        expect(
+          tester.takeException(),
+          isNotNull,
+          reason:
+              'onAddLabelTap closure should have opened the label selector '
+              'modal, whose inner sliver throws a provider error in this '
+              'fixture. A null exception means the modal never opened.',
+        );
+      },
+    );
+
+    testWidgets(
+      'estimate chip switches to the overtime tinted variant when '
+      'tracked > estimate',
+      (tester) async {
+        // The estimate chip's overtime branch reads the
+        // `taskProgressControllerProvider`, which instantiates a
+        // `TaskProgressController`. The real controller resolves
+        // `getIt<TimeService>()` in a field initialiser, so the fake — which
+        // extends the real class — needs that registration in place even
+        // though it never calls into it.
+        getIt.registerSingleton<TimeService>(MockTimeService());
+        addTearDown(() => getIt.unregister<TimeService>());
+
+        final task = buildTask(estimate: const Duration(hours: 1));
+
+        await tester.pumpWidget(
+          pumpConnector(
+            task: task,
+            progress: const TaskProgressState(
+              progress: Duration(hours: 2),
+              estimate: Duration(hours: 1),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The pill renders the "tracked / estimate" pair, with progress
+        // overrunning the estimate; the connector takes the overtime branch
+        // and paints a tinted error-coloured pill plus a progress bar.
+        expect(find.text('02:00 / 01:00'), findsOneWidget);
+        expect(find.byType(LinearProgressIndicator), findsOneWidget);
       },
     );
 
@@ -832,6 +906,23 @@ void main() {
 
         // Either the urgency label or the date string is visible.
         expect(find.byType(DesktopTaskHeader), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tasks due in the future fall through to the normal urgency branch',
+      (tester) async {
+        // A future date (well past "today") exercises the
+        // `case DueDateUrgency.normal:` arm of `_dueUrgency`.
+        final task = buildTask(due: DateTime(2026, 6, 15));
+
+        await withClock(Clock.fixed(now), () async {
+          await tester.pumpWidget(pumpConnector(task: task));
+          await tester.pumpAndSettle();
+        });
+
+        expect(find.byType(DesktopTaskHeader), findsOneWidget);
+        expect(find.textContaining('Jun'), findsOneWidget);
       },
     );
   });

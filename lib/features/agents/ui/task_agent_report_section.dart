@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -26,7 +27,7 @@ import 'package:lotti/utils/consts.dart';
 /// and report content.
 ///
 /// - When agents are disabled via config flag: renders nothing.
-/// - When no agent exists for the task: shows a "Create Agent" chip.
+/// - When no agent exists for the task: shows an "Assign Agent" CTA.
 /// - When an agent exists: shows a header row with running indicator,
 ///   play button, countdown timer, template name, and navigation chevron.
 ///   Below the header, displays the agent report if one exists.
@@ -132,17 +133,13 @@ class _TaskAgentReportSectionState
 
   Widget _buildCreateAgentRow(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: AppTheme.spacingSmall,
-      ),
+      padding: const EdgeInsets.only(top: AppTheme.spacingSmall),
       child: Center(
-        child: ActionChip(
-          avatar: Icon(
-            Icons.add,
-            size: 16,
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-          label: Text(context.messages.taskAgentCreateChipLabel),
+        child: DesignSystemButton(
+          label: context.messages.taskAgentCreateChipLabel,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.medium,
+          leadingIcon: Icons.auto_awesome_rounded,
           onPressed: () => _createTaskAgent(context, ref),
         ),
       ),

@@ -6351,7 +6351,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get taskAgentCreateChipLabel => 'Créer un agent';
+  String get taskAgentCreateChipLabel => 'Assigner un agent';
 
   @override
   String taskAgentCreateError(String error) {

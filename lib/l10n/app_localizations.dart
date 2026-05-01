@@ -10762,7 +10762,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskAgentCreateChipLabel.
   ///
   /// In en, this message translates to:
-  /// **'Create Agent'**
+  /// **'Assign Agent'**
   String get taskAgentCreateChipLabel;
 
   /// No description provided for @taskAgentCreateError.

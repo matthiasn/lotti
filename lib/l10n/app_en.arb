@@ -2913,7 +2913,7 @@
       }
     }
   },
-  "taskAgentCreateChipLabel": "Create Agent",
+  "taskAgentCreateChipLabel": "Assign Agent",
   "taskAgentCreateError": "Failed to create agent: {error}",
   "@taskAgentCreateError": {
     "placeholders": {

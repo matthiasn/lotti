@@ -6294,7 +6294,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get taskAgentCreateChipLabel => 'Creează agent';
+  String get taskAgentCreateChipLabel => 'Atribuiți agent';
 
   @override
   String taskAgentCreateError(String error) {

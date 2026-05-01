@@ -353,7 +353,7 @@ class _SearchSpec {
         horizontalPadding: 12,
         verticalPadding: 4,
         gap: tokens.spacing.step3,
-        borderRadius: tokens.radii.m,
+        borderRadius: tokens.radii.l,
         iconSize: 20,
         iconTapRadius: 18,
         clearButtonWidth: 32,

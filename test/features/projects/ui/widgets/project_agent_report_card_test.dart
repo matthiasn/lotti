@@ -119,7 +119,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Create Agent'), findsOneWidget);
+      expect(find.text('Assign Agent'), findsOneWidget);
     });
 
     testWidgets('shows agent display name when data is AgentIdentityEntity', (
@@ -303,7 +303,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Create Agent'));
+      await tester.tap(find.text('Assign Agent'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(testProfile.name));
       await tester.pumpAndSettle();
@@ -342,7 +342,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(ProjectAgentReportCard));
-      await tester.tap(find.text('Create Agent'));
+      await tester.tap(find.text('Assign Agent'));
       await tester.pumpAndSettle();
 
       expect(
@@ -398,7 +398,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Create Agent'));
+        await tester.tap(find.text('Assign Agent'));
         await tester.pumpAndSettle();
         await tester.tap(find.text(testProfile.name));
         await tester.pumpAndSettle();
@@ -455,7 +455,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Create Agent'));
+      await tester.tap(find.text('Assign Agent'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(testProfile.name));
       await tester.pumpAndSettle();

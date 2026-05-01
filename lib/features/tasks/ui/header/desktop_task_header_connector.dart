@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -70,13 +71,19 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       },
       onPriorityTap: () => _showPriorityPicker(context, ref, task),
       onStatusTap: () => _showStatusPicker(context, ref, task),
-      onProjectTap: () => _showProjectPicker(
-        context,
-        ref,
-        taskId,
-        project,
-        task.meta.categoryId,
-      ),
+      // Without a category we can't open a project picker — the connector
+      // would early-return inside `_showProjectPicker`. Pass `null` so the
+      // crumb segment renders without an InkWell instead of looking
+      // tappable but doing nothing.
+      onProjectTap: task.meta.categoryId == null
+          ? null
+          : () => _showProjectPicker(
+              context,
+              ref,
+              taskId,
+              project,
+              task.meta.categoryId,
+            ),
       onCategoryTap: () => _showCategoryPicker(context, ref, task),
       onDueDateTap: () => _showDueDatePicker(context, ref, task),
       onLabelTap: (_) => _openLabelSelector(context, ref, task),
@@ -321,11 +328,10 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
   }
 }
 
-/// Estimate chip surfaced in the header. Matches the visual treatment of
-/// the other outlined caption chips in the metadata line (`radii.xs`,
-/// step2/step1 padding, 12px clock icon, caption text). Shows the live
-/// tracked / estimated duration and switches to the error color when the
-/// tracked time exceeds the estimate. Tapping opens the shared
+/// Estimate pill surfaced in the meta row. Renders as a `DsPill.muted` ghost
+/// chip when no estimate is set and as a `DsPill.filled` (or `DsPill.tinted`
+/// in the error color when overtime) showing live `tracked / estimated` plus
+/// a small progress bar when an estimate is set. Tapping opens the shared
 /// `showEstimatePicker` and persists via `EntryController.save(estimate: …)`.
 class _TaskEstimateChip extends ConsumerWidget {
   const _TaskEstimateChip({required this.taskId});
@@ -360,20 +366,16 @@ class _TaskEstimateChip extends ConsumerWidget {
       );
     }
 
-    final tokens = context.designTokens;
-
     if (!hasEstimate) {
-      return _EstimateChipShell(
-        color: TaskShowcasePalette.lowText(context),
-        onTap: onTap,
-        child: Text(
-          context.messages.taskNoEstimateLabel,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: TaskShowcasePalette.lowText(context),
-            fontStyle: FontStyle.italic,
-            height: 1,
-          ),
+      return DsPill(
+        variant: DsPillVariant.muted,
+        label: context.messages.taskNoEstimateLabel,
+        leading: Icon(
+          Icons.timer_outlined,
+          size: 12,
+          color: TaskShowcasePalette.lowText(context),
         ),
+        onTap: onTap,
       );
     }
 
@@ -383,95 +385,59 @@ class _TaskEstimateChip extends ConsumerWidget {
     final isOvertime =
         progressState != null &&
         progressState.progress > progressState.estimate;
-    final color = isOvertime
-        ? TaskShowcasePalette.error(context)
-        : TaskShowcasePalette.lowText(context);
     final progress = progressState?.progress ?? Duration.zero;
     final progressValue = estimate.inSeconds > 0
         ? math.min(progress.inSeconds / estimate.inSeconds, 1)
         : 0;
-    return _EstimateChipShell(
-      color: color,
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '${_format(progress)} / ${_format(estimate)}',
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: color,
-              height: 1,
-            ),
-          ),
-          // Progress bar only when we actually have a progress state — keeps
-          // the chip from showing a misleading empty bar before the task
-          // progress controller has produced a value.
-          if (progressState != null) ...[
-            SizedBox(width: tokens.spacing.step2),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: SizedBox(
-                width: 36,
-                height: 6,
-                child: LinearProgressIndicator(
-                  value: progressValue.toDouble(),
-                  backgroundColor: color.withValues(alpha: 0.2),
-                  color: isOvertime
-                      ? color.withValues(alpha: 0.8)
-                      : TaskShowcasePalette.success(context),
-                ),
+    final iconColor = isOvertime
+        ? TaskShowcasePalette.error(context)
+        : TaskShowcasePalette.mediumText(context);
+    final barTrack = isOvertime
+        ? TaskShowcasePalette.error(context).withValues(alpha: 0.2)
+        : TaskShowcasePalette.lowText(context).withValues(alpha: 0.2);
+    final barFill = isOvertime
+        ? TaskShowcasePalette.error(context)
+        : TaskShowcasePalette.success(context);
+    final progressBar = progressState == null
+        ? null
+        : ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: SizedBox(
+              width: 36,
+              height: 6,
+              child: LinearProgressIndicator(
+                value: progressValue.toDouble(),
+                backgroundColor: barTrack,
+                color: barFill,
               ),
             ),
-          ],
-        ],
-      ),
-    );
-  }
-}
+          );
 
-/// Outlined caption-chip shell matching the other metadata chips: 12px
-/// leading clock icon + caption text in [color], `radii.xs`,
-/// `step2 / step1` padding, transparent fill, decorative-level01 border.
-class _EstimateChipShell extends StatelessWidget {
-  const _EstimateChipShell({
-    required this.child,
-    required this.color,
-    required this.onTap,
-  });
-
-  final Widget child;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final content = Container(
-      constraints: const BoxConstraints(minHeight: 20),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: color),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.timer_outlined, size: 12, color: color),
-          SizedBox(width: tokens.spacing.step1),
-          child,
-        ],
-      ),
-    );
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
+    if (isOvertime) {
+      return DsPill(
+        variant: DsPillVariant.tinted,
+        color: TaskShowcasePalette.error(context),
+        label: '${_format(progress)} / ${_format(estimate)}',
+        leading: Icon(
+          Icons.timer_outlined,
+          size: 12,
+          color: iconColor,
+        ),
+        trailing: progressBar,
         onTap: onTap,
-        child: content,
+      );
+    }
+    return DsPill(
+      variant: DsPillVariant.filled,
+      label: '${_format(progress)} / ${_format(estimate)}',
+      labelColor: TaskShowcasePalette.lowText(context),
+      leading: Icon(
+        Icons.timer_outlined,
+        size: 12,
+        color: iconColor,
       ),
+      trailing: progressBar,
+      onTap: onTap,
     );
   }
 }

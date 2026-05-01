@@ -6255,7 +6255,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get taskAgentCreateChipLabel => 'Vytvořit agenta';
+  String get taskAgentCreateChipLabel => 'Přiřadit agenta';
 
   @override
   String taskAgentCreateError(String error) {

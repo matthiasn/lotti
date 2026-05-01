@@ -1,0 +1,251 @@
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+
+/// Visual variant for [DsPill]. Drives background, border, and label color.
+enum DsPillVariant {
+  /// Solid surface fill, high-emphasis label, optional 8px leading dot.
+  filled,
+
+  /// `pillColor` at 18% alpha background, `pillColor` label.
+  tinted,
+
+  /// Transparent background, 50%-alpha `pillColor` border, `pillColor` label.
+  outline,
+
+  /// Transparent background with a 1px dashed `decorative.level02` border and
+  /// italic `text.lowEmphasis` label. Used for empty / placeholder states.
+  muted,
+}
+
+/// 28px pill chip used across the task detail header and elsewhere in the
+/// design system. Variants share anatomy (height, radius, padding, gap) and
+/// only differ in fill / border / label color so the same primitive can carry
+/// every metadata pill in the header.
+class DsPill extends StatelessWidget {
+  const DsPill({
+    required this.variant,
+    this.label,
+    this.leading,
+    this.trailing,
+    this.color,
+    this.labelColor,
+    this.onTap,
+    this.onLongPress,
+    super.key,
+  }) : assert(
+         variant != DsPillVariant.tinted || color != null,
+         'tinted variant requires `color`',
+       ),
+       assert(
+         variant != DsPillVariant.outline || color != null,
+         'outline variant requires `color`',
+       );
+
+  final DsPillVariant variant;
+  final String? label;
+  final Widget? leading;
+  final Widget? trailing;
+
+  /// Pill accent color. Required for `tinted` and `outline`; ignored for
+  /// `filled` / `muted` (they pull from tokens).
+  final Color? color;
+
+  /// Optional override for the label text color. Defaults to the variant's
+  /// canonical color when null (high-emphasis on filled, the accent on
+  /// tinted/outline, low-emphasis on muted).
+  final Color? labelColor;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  static const double height = 28;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final hPadding = tokens.spacing.step3;
+    final gap = tokens.spacing.step2;
+
+    final labelStyle = tokens.typography.styles.others.caption.copyWith(
+      color: labelColor ?? _labelColor(tokens),
+      fontStyle: variant == DsPillVariant.muted
+          ? FontStyle.italic
+          : FontStyle.normal,
+      height: 1,
+    );
+
+    final children = <Widget>[
+      if (leading != null) ...[
+        leading!,
+        SizedBox(width: gap),
+      ],
+      if (label != null)
+        Text(
+          label!,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: labelStyle,
+        ),
+      if (trailing != null) ...[
+        SizedBox(width: gap),
+        trailing!,
+      ],
+    ];
+
+    final content = SizedBox(
+      height: height,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: hPadding),
+        child: Row(mainAxisSize: MainAxisSize.min, children: children),
+      ),
+    );
+
+    final shaped = switch (variant) {
+      DsPillVariant.filled => DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.colors.surface.enabled,
+          borderRadius: radius,
+        ),
+        child: content,
+      ),
+      DsPillVariant.tinted => DecoratedBox(
+        decoration: BoxDecoration(
+          color: color!.withValues(alpha: 0.18),
+          borderRadius: radius,
+        ),
+        child: content,
+      ),
+      DsPillVariant.outline => DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: Border.all(color: color!.withValues(alpha: 0.5)),
+        ),
+        child: content,
+      ),
+      DsPillVariant.muted => CustomPaint(
+        painter: _DashedBorderPainter(
+          color: tokens.colors.decorative.level02,
+          radius: tokens.radii.badgesPills,
+        ),
+        child: content,
+      ),
+    };
+
+    if (onTap == null && onLongPress == null) return shaped;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: shaped,
+      ),
+    );
+  }
+
+  Color _labelColor(DsTokens tokens) {
+    return switch (variant) {
+      DsPillVariant.filled => tokens.colors.text.highEmphasis,
+      DsPillVariant.tinted => color!,
+      DsPillVariant.outline => color!,
+      DsPillVariant.muted => tokens.colors.text.lowEmphasis,
+    };
+  }
+}
+
+/// Trailing `+` / "Add label" affordance — same height/shape as [DsPill] but
+/// rendered with the muted (dashed) treatment. When [label] is null, only the
+/// leading plus icon is shown.
+class DsGhostChip extends StatelessWidget {
+  const DsGhostChip({this.label, this.onTap, super.key});
+
+  final String? label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DsPill(
+      variant: DsPillVariant.muted,
+      label: label,
+      leading: Icon(
+        Icons.add_rounded,
+        size: 12,
+        color: tokens.colors.text.lowEmphasis,
+      ),
+      // Adds the standard leading/trailing gap on the right so the label
+      // doesn't sit flush against the dashed border.
+      trailing: label == null ? null : const SizedBox.shrink(),
+      onTap: onTap,
+    );
+  }
+}
+
+/// 3×3 disc used in the meta row to separate "intrinsic" facts (priority,
+/// due, estimate) from "tagging" (labels).
+class DsDividerDot extends StatelessWidget {
+  const DsDividerDot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Container(
+      width: 3,
+      height: 3,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: tokens.colors.decorative.level02,
+      ),
+    );
+  }
+}
+
+/// Paints a dashed 1px border along an inset `RRect` matching [radius]. Used
+/// by [DsPill] for the muted variant. The dash pattern is `[4, 3]` — a
+/// well-spaced rhythm that reads as "ghost" without looking dotty at 24px
+/// radius.
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  static const double _stroke = 1;
+  static const double _dashOn = 4;
+  static const double _dashOff = 3;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(
+      _stroke / 2,
+      _stroke / 2,
+      size.width - _stroke,
+      size.height - _stroke,
+    );
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final path = Path()..addRRect(rrect);
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _stroke;
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      final length = metric.length;
+      while (distance < length) {
+        final next = (distance + _dashOn).clamp(0.0, length);
+        canvas.drawPath(
+          metric.extractPath(distance, next),
+          paint,
+        );
+        distance = next + _dashOff;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.radius != radius;
+  }
+}
