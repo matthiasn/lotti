@@ -30,6 +30,20 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
     );
   }
 
+  /// Intrinsic height of a single nav-bar item row (icon + caption with the
+  /// design-system minimum), shared by the height calculations below so the
+  /// numbers can't drift apart.
+  static double _itemHeight(BuildContext context) {
+    final tokens = context.designTokens;
+    return math.max(
+      DesignSystemNavigationTabBar.defaultItemMinHeight,
+      tokens.spacing.step3 * 2 +
+          DesignSystemNavigationTabBar.defaultIconSize +
+          tokens.spacing.step1 +
+          tokens.typography.lineHeight.caption,
+    );
+  }
+
   static double occupiedHeight(BuildContext context) {
     // In desktop layout the bottom navigation bar is not shown;
     // the sidebar replaces it, so no bottom inset is needed.
@@ -37,18 +51,11 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
 
     final tokens = context.designTokens;
     final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
-    final itemHeight = math.max(
-      DesignSystemNavigationTabBar.defaultItemMinHeight,
-      tokens.spacing.step3 * 2 +
-          DesignSystemNavigationTabBar.defaultIconSize +
-          tokens.spacing.step1 +
-          tokens.typography.lineHeight.caption,
-    );
 
     return bottomSafeInset +
         padding(context).vertical +
         tokens.spacing.step2 * 2 +
-        itemHeight;
+        _itemHeight(context);
   }
 
   /// Distance from the top of the system bottom safe-area inset to the visual
@@ -60,14 +67,9 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
   static double pillTopFromNavBarBottom(BuildContext context) {
     if (isDesktopLayout(context)) return 0;
     final tokens = context.designTokens;
-    final itemHeight = math.max(
-      DesignSystemNavigationTabBar.defaultItemMinHeight,
-      tokens.spacing.step3 * 2 +
-          DesignSystemNavigationTabBar.defaultIconSize +
-          tokens.spacing.step1 +
-          tokens.typography.lineHeight.caption,
-    );
-    return padding(context).bottom + tokens.spacing.step2 * 2 + itemHeight;
+    return padding(context).bottom +
+        tokens.spacing.step2 * 2 +
+        _itemHeight(context);
   }
 
   @override

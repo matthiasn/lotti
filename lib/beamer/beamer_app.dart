@@ -456,10 +456,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const TimeRecordingIndicator(),
-          const SizedBox(width: 4),
           // Audio indicator is omitted on Flatpak builds (MediaKit
-          // compatibility issues).
-          if (!_isRunningInFlatpak()) const AudioRecordingIndicator(),
+          // compatibility issues). Spacer lives inside the same conditional
+          // so it doesn't dangle when only the time indicator is visible.
+          if (!_isRunningInFlatpak()) ...[
+            const SizedBox(width: 4),
+            const AudioRecordingIndicator(),
+          ],
         ],
       ),
     );
