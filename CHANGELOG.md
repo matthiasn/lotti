@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   including completed and rejected tasks — by the v41 migration. The
   serialized JSON payload is unchanged; the column is purely a
   query-acceleration shadow.
+- DailyOS calendar prefetch (`sortedCalendarEntries`) now coalesces
+  concurrent per-day callers into a single union-range DB round-trip
+  with client-side filtering, modeled on the existing
+  `_coalesceOpenTasksDueUpTo` pattern. Slow-query telemetry showed
+  22+ identical date-range queries firing in the same second during
+  multi-day prefetch; the wave collapses them into one read.
+- `retireExhaustedRequestedEntries` and `retireAgedOutRequestedEntries`
+  now flip rows in `pageSize`-bounded batches, each in its own
+  transaction, so a large backlog never holds the sync-DB writer lock
+  through a single multi-second UPDATE. Previously a stuck-row
+  backlog could pin the lock for ~1.9 s, starving concurrent reads.
 
 ### Fixed
 - Improved sync reliability between devices.

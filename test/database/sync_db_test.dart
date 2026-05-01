@@ -4389,6 +4389,47 @@ void main() {
       final retired = await database.retireExhaustedRequestedEntries();
       expect(retired, 0);
     });
+
+    test(
+      'retires backlogs larger than pageSize across multiple pages — '
+      'capping per-transaction lock hold without losing rows',
+      () async {
+        final now = DateTime(2024, 3, 15);
+        final longAgo = now.subtract(const Duration(hours: 1));
+        const totalRows = 17;
+        for (var counter = 1; counter <= totalRows; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value('host-bulk'),
+              counter: Value(counter),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.missing.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+              requestCount: const Value(10),
+              lastRequestedAt: Value(longAgo),
+            ),
+          );
+        }
+
+        final retired = await database.retireExhaustedRequestedEntries(
+          now: now,
+          pageSize: 5,
+        );
+
+        expect(retired, totalRows);
+        for (var counter = 1; counter <= totalRows; counter++) {
+          expect(
+            (await database.getEntryByHostAndCounter(
+              'host-bulk',
+              counter,
+            ))!.status,
+            SyncSequenceStatus.unresolvable.index,
+            reason: 'row $counter should have been retired',
+          );
+        }
+      },
+    );
   });
 
   group('retireAgedOutRequestedEntries', () {
@@ -4630,6 +4671,46 @@ void main() {
       final retired = await database.retireAgedOutRequestedEntries();
       expect(retired, 0);
     });
+
+    test(
+      'retires backlogs larger than pageSize across multiple pages — '
+      'capping per-transaction lock hold without losing rows',
+      () async {
+        final now = DateTime(2026, 4, 22);
+        final longAgo = now.subtract(const Duration(days: 14));
+        const totalRows = 13;
+        for (var counter = 1; counter <= totalRows; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value('host-bulk'),
+              counter: Value(counter),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(SyncSequenceStatus.missing.index),
+              createdAt: Value(longAgo),
+              updatedAt: Value(longAgo),
+            ),
+          );
+        }
+
+        final retired = await database.retireAgedOutRequestedEntries(
+          amnestyWindow: const Duration(days: 7),
+          now: now,
+          pageSize: 4,
+        );
+
+        expect(retired, totalRows);
+        for (var counter = 1; counter <= totalRows; counter++) {
+          expect(
+            (await database.getEntryByHostAndCounter(
+              'host-bulk',
+              counter,
+            ))!.status,
+            SyncSequenceStatus.unresolvable.index,
+            reason: 'row $counter should have been retired',
+          );
+        }
+      },
+    );
   });
 
   group('getLastSentCounterForEntry', () {

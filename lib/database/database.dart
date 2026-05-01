@@ -1397,10 +1397,15 @@ class JournalDb extends _$JournalDb {
   }
 
   /// Like [getTasks] but orders by due date (soonest first, nulls last)
-  /// using the expression index on `json_extract(serialized, '$.data.due')`.
+  /// using the denormalized `due_at` column. The partial
+  /// `idx_journal_tasks_due_open` covers the open-task subset; closed
+  /// tasks stream from the priority/date task indexes since v41
+  /// populated `due_at` for every task with a non-null `data.due`
+  /// regardless of status.
   ///
-  /// Uses raw SQL because Drift doesn't support `INDEXED BY` or
-  /// `json_extract` ORDER BY in generated queries.
+  /// Stays as raw SQL because the dynamic filter combinations
+  /// (categories, labels, priorities, ids, starred, private) don't map
+  /// cleanly onto generated Drift queries.
   Future<List<JournalEntity>> getTasksSortedByDueDate({
     required List<bool> starredStatuses,
     required List<String> taskStatuses,
@@ -1948,7 +1953,24 @@ class JournalDb extends _$JournalDb {
     return result;
   }
 
-  Future<List<JournalEntity>> sortedCalendarEntries({
+  // Microtask-coalescing state for `sortedCalendarEntries`.
+  //
+  // The DailyOS prefetch window spins up one controller per visible date
+  // and each controller fires `sortedCalendarEntries(day, day+1)`
+  // independently. With ~22 days in flight (slow_queries log
+  // 2026-05-02, 00:04:26) the per-day fan-out shows up as 22 nearly
+  // identical date-range queries hitting the same second, each
+  // ~750 ms under contention. The coalescer merges concurrent callers
+  // into one DB round-trip across the union range; each caller filters
+  // the in-memory result down to its own [rangeStart, rangeEnd) window.
+  _PendingCalendarEntriesWave? _pendingCalendarEntriesWave;
+
+  /// Single-shot query executed by the calendar-entries coalescer.
+  /// Extracted as a protected seam so tests can count round-trips and
+  /// inject failures without depending on a query interceptor.
+  @protected
+  @visibleForTesting
+  Future<List<JournalEntity>> runCalendarEntriesFetch({
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) async {
@@ -1956,7 +1978,58 @@ class JournalDb extends _$JournalDb {
       rangeStart,
       rangeEnd,
     ).get();
-    return dbEntities.map(fromDbEntity).toList();
+    return dbEntities.map(fromDbEntity).toList(growable: false);
+  }
+
+  Future<List<JournalEntity>> sortedCalendarEntries({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final superset = await _coalesceCalendarEntries(rangeStart, rangeEnd);
+    return [
+      for (final entity in superset)
+        if (!entity.meta.dateFrom.isBefore(rangeStart) &&
+            !entity.meta.dateTo.isAfter(rangeEnd))
+          entity,
+    ];
+  }
+
+  Future<List<JournalEntity>> _coalesceCalendarEntries(
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
+    final existing = _pendingCalendarEntriesWave;
+    if (existing != null) {
+      // Widen the union so the superset still covers every joining
+      // caller. Per-caller filtering happens client-side, so a wider
+      // window costs only one extra DB streaming pass.
+      if (rangeStart.isBefore(existing.rangeStart)) {
+        existing.rangeStart = rangeStart;
+      }
+      if (rangeEnd.isAfter(existing.rangeEnd)) {
+        existing.rangeEnd = rangeEnd;
+      }
+      return existing.completer.future;
+    }
+
+    final wave = _PendingCalendarEntriesWave(
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
+    _pendingCalendarEntriesWave = wave;
+    scheduleMicrotask(() async {
+      _pendingCalendarEntriesWave = null;
+      try {
+        final entities = await runCalendarEntriesFetch(
+          rangeStart: wave.rangeStart,
+          rangeEnd: wave.rangeEnd,
+        );
+        wave.completer.complete(entities);
+      } catch (error, stack) {
+        wave.completer.completeError(error, stack);
+      }
+    });
+    return wave.completer.future;
   }
 
   Future<int> getLabeledCount() async {
@@ -3246,6 +3319,22 @@ class _PendingDueWave {
   DateTime endInclusive;
   final List<bool> privateStatuses;
   final Completer<List<Task>> completer = Completer<List<Task>>.sync();
+}
+
+/// In-flight coalescing wave for `sortedCalendarEntries`. Every caller in
+/// the same microtask wave joins one fetch covering the union of all
+/// requested ranges; each caller then filters the result down to its own
+/// `[rangeStart, rangeEnd]` window client-side.
+class _PendingCalendarEntriesWave {
+  _PendingCalendarEntriesWave({
+    required this.rangeStart,
+    required this.rangeEnd,
+  });
+
+  DateTime rangeStart;
+  DateTime rangeEnd;
+  final Completer<List<JournalEntity>> completer =
+      Completer<List<JournalEntity>>.sync();
 }
 
 /// In-flight coalescing wave for `basicLinksForEntryIds`. Concurrent callers
