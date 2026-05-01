@@ -6484,6 +6484,114 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'returns null on a malformed manifest payload (missing or '
+        'non-list `entries` field) — the malformed shape never reaches '
+        'the per-child loop and surrounding diagnostics fire on a '
+        'distinct subDomain so the failure is greppable',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/no-entries.json';
+          File(
+              path.join(
+                tempDir.path,
+                stripLeadingSlashes(bundleRelativePath),
+              ),
+            )
+            ..parent.createSync(recursive: true)
+            ..writeAsStringSync(
+              json.encode(<String, dynamic>{'version': 1}),
+            );
+
+          final resolved = await processor
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved, isNull);
+          verify(
+            () => loggingService.captureException(
+              any<Object>(
+                that: isA<String>().having(
+                  (msg) => msg,
+                  'message',
+                  contains('manifest missing entries array'),
+                ),
+              ),
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'processor.resolve.outboxBundle.malformed',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'silently skips malformed manifest entries (non-Map shapes, '
+        'envelope JSON that does not deserialize, nested SyncOutboxBundle '
+        'children) and resolves the rest — partial progress is preferable '
+        'to dropping the whole bundle when the rotten entry is the only '
+        'thing wrong',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/mixed.json';
+          File(
+              path.join(
+                tempDir.path,
+                stripLeadingSlashes(bundleRelativePath),
+              ),
+            )
+            ..parent.createSync(recursive: true)
+            ..writeAsStringSync(
+              json.encode(<String, dynamic>{
+                'version': 1,
+                'entries': [
+                  // Not a map → skipped silently.
+                  'not-a-map',
+                  // Map but envelope is not a Map → skipped silently.
+                  <String, dynamic>{'envelope': 'not-a-map'},
+                  // Envelope JSON that fails SyncMessage.fromJson →
+                  // captured as envelopeParse but resolution continues.
+                  <String, dynamic>{
+                    'envelope': <String, dynamic>{
+                      'runtimeType': 'no-such-variant',
+                    },
+                  },
+                  // Nested SyncOutboxBundle child → defensively skipped
+                  // by the resolver before the unpacker even sees it.
+                  <String, dynamic>{
+                    'envelope': const SyncOutboxBundle(
+                      children: [],
+                    ).toJson(),
+                  },
+                  // A valid inline-only child rounds out the manifest so
+                  // the resolver still produces a usable bundle instead
+                  // of returning null.
+                  <String, dynamic>{
+                    'envelope': const SyncMessage.aiConfigDelete(
+                      id: 'cfg-good',
+                    ).toJson(),
+                  },
+                ],
+              }),
+            );
+
+          final resolved = await processor
+              .resolveOutboxBundleManifestForTesting(bundleRelativePath);
+
+          expect(resolved, isNotNull);
+          expect(resolved!.children, hasLength(1));
+          expect(resolved.children.single, isA<SyncAiConfigDelete>());
+          // The envelope-parse error path captured an exception under
+          // its own subDomain — at least once, exactly for the rotten
+          // runtimeType entry above.
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'processor.resolve.outboxBundle.envelopeParse',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
     });
   });
 
