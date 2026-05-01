@@ -71,13 +71,19 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       },
       onPriorityTap: () => _showPriorityPicker(context, ref, task),
       onStatusTap: () => _showStatusPicker(context, ref, task),
-      onProjectTap: () => _showProjectPicker(
-        context,
-        ref,
-        taskId,
-        project,
-        task.meta.categoryId,
-      ),
+      // Without a category we can't open a project picker — the connector
+      // would early-return inside `_showProjectPicker`. Pass `null` so the
+      // crumb segment renders without an InkWell instead of looking
+      // tappable but doing nothing.
+      onProjectTap: task.meta.categoryId == null
+          ? null
+          : () => _showProjectPicker(
+              context,
+              ref,
+              taskId,
+              project,
+              task.meta.categoryId,
+            ),
       onCategoryTap: () => _showCategoryPicker(context, ref, task),
       onDueDateTap: () => _showDueDatePicker(context, ref, task),
       onLabelTap: (_) => _openLabelSelector(context, ref, task),

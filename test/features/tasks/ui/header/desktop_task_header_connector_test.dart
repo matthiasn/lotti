@@ -524,7 +524,21 @@ void main() {
         // aren't wired in this fixture. A single pump is enough for the
         // connector's onAddLabelTap → _openLabelSelector path to fire.
         await tester.pump();
-        tester.takeException();
+
+        // The captured exception must be non-null — that proves the modal
+        // route was actually pushed (its inner sliver tried to build and
+        // failed on a missing label provider). If the closure under test
+        // regressed and never opened the modal, no exception would surface
+        // and `takeException()` would return `null`, failing this expect.
+        // This way we don't silently swallow a real regression.
+        expect(
+          tester.takeException(),
+          isNotNull,
+          reason:
+              'onAddLabelTap closure should have opened the label selector '
+              'modal, whose inner sliver throws a provider error in this '
+              'fixture. A null exception means the modal never opened.',
+        );
       },
     );
 

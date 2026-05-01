@@ -61,7 +61,12 @@ class ActiveFilterChip extends StatelessWidget {
           borderRadius: radius,
           onTap: onRemove,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(4, 2, 2, 2),
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step2,
+              tokens.spacing.step1,
+              tokens.spacing.step1,
+              tokens.spacing.step1,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

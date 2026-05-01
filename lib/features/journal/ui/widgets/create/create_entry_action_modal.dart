@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_items.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -24,7 +27,7 @@ class CreateEntryModal {
 }
 
 /// Builds the list of create entry items with dividers between them.
-class _CreateEntryMenuList extends StatelessWidget {
+class _CreateEntryMenuList extends ConsumerWidget {
   const _CreateEntryMenuList({
     required this.linkedFromId,
     required this.categoryId,
@@ -34,12 +37,21 @@ class _CreateEntryMenuList extends StatelessWidget {
   final String? categoryId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Resolve checklist visibility up-front so a hidden item never lands in
+    // the list — otherwise the divider pre-filter (which only catches
+    // literal `SizedBox`) would leave an orphan divider above an
+    // unbuilt-but-still-listed `CreateChecklistItem` on non-task hosts.
+    final id = linkedFromId;
+    final showChecklist =
+        id != null &&
+        ref.watch(entryControllerProvider(id: id)).value?.entry is Task;
+
     final items = <Widget>[
       // Renders only when `linkedFromId` resolves to a Task — i.e. when the
       // FAB is hosted on the task detail page. First in the list so it's the
       // most prominent action when present.
-      CreateChecklistItem(linkedFromId),
+      if (showChecklist) CreateChecklistItem(linkedFromId),
       CreateEventItem(linkedFromId, categoryId: categoryId),
       CreateTaskItem(linkedFromId, categoryId: categoryId),
       CreateAudioItem(linkedFromId, categoryId: categoryId),

@@ -290,30 +290,39 @@ class _HeroCrumb extends StatelessWidget {
 
     return Row(
       children: [
-        _CrumbSegment(
-          onTap: onCategoryTap,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: categoryColor,
-                  borderRadius: BorderRadius.circular(3),
+        // Both segments are flexible so a long user-defined category name
+        // shrinks/ellipsizes in proportion with a long project name instead
+        // of forcing horizontal overflow on the whole row.
+        Flexible(
+          child: _CrumbSegment(
+            onTap: onCategoryTap,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: categoryColor,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Text(
-                categoryName,
-                style: crumbStyle.copyWith(
-                  color: TaskShowcasePalette.highText(context),
-                  fontStyle: category == null
-                      ? FontStyle.italic
-                      : FontStyle.normal,
+                SizedBox(width: tokens.spacing.step3),
+                Flexible(
+                  child: Text(
+                    categoryName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: crumbStyle.copyWith(
+                      color: TaskShowcasePalette.highText(context),
+                      fontStyle: category == null
+                          ? FontStyle.italic
+                          : FontStyle.normal,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         SizedBox(width: tokens.spacing.step3),
