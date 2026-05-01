@@ -19,21 +19,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 
-class _MockBackfillRequestService extends Mock
-    implements BackfillRequestService {}
-
-class _MockEmbeddingService extends Mock implements EmbeddingService {}
-
-class _MockJournalDb extends Mock implements JournalDb {}
-
-class _MockSyncDatabase extends Mock implements SyncDatabase {}
-
-class _MockAgentDatabase extends Mock implements AgentDatabase {}
-
-class _MockEditorDb extends Mock implements EditorDb {}
-
-class _MockFts5Db extends Mock implements Fts5Db {}
-
 void main() {
   late GetIt testGetIt;
   late List<({Object error, StackTrace stackTrace, String service})>
@@ -61,11 +46,11 @@ void main() {
     test('disposeAll calls services and databases in expected order', () async {
       final order = <String>[];
 
-      final backfill = _MockBackfillRequestService();
+      final backfill = MockBackfillRequestService();
       when(backfill.dispose).thenAnswer((_) {
         order.add('BackfillRequestService');
       });
-      final embeddingService = _MockEmbeddingService();
+      final embeddingService = MockEmbeddingService();
       when(embeddingService.stop).thenAnswer((_) async {
         order.add('EmbeddingService');
       });
@@ -82,23 +67,23 @@ void main() {
         order.add('EmbeddingStore');
       });
 
-      final journalDb = _MockJournalDb();
+      final journalDb = MockJournalDb();
       when(journalDb.close).thenAnswer((_) async {
         order.add('JournalDb');
       });
-      final syncDb = _MockSyncDatabase();
+      final syncDb = MockSyncDatabase();
       when(syncDb.close).thenAnswer((_) async {
         order.add('SyncDatabase');
       });
-      final agentDb = _MockAgentDatabase();
+      final agentDb = MockAgentDatabase();
       when(agentDb.close).thenAnswer((_) async {
         order.add('AgentDatabase');
       });
-      final editorDb = _MockEditorDb();
+      final editorDb = MockEditorDb();
       when(editorDb.close).thenAnswer((_) async {
         order.add('EditorDb');
       });
-      final fts5Db = _MockFts5Db();
+      final fts5Db = MockFts5Db();
       when(fts5Db.close).thenAnswer((_) async {
         order.add('Fts5Db');
       });
@@ -141,11 +126,11 @@ void main() {
     test('disposeServicesOnly skips Drift databases', () async {
       final order = <String>[];
 
-      final embeddingService = _MockEmbeddingService();
+      final embeddingService = MockEmbeddingService();
       when(embeddingService.stop).thenAnswer((_) async {
         order.add('EmbeddingService');
       });
-      final journalDb = _MockJournalDb();
+      final journalDb = MockJournalDb();
       when(journalDb.close).thenAnswer((_) async {
         order.add('JournalDb');
       });
@@ -163,10 +148,10 @@ void main() {
     test('continues disposing even if a service throws', () async {
       final order = <String>[];
 
-      final backfill = _MockBackfillRequestService();
+      final backfill = MockBackfillRequestService();
       when(backfill.dispose).thenThrow(StateError('backfill boom'));
 
-      final embeddingService = _MockEmbeddingService();
+      final embeddingService = MockEmbeddingService();
       when(embeddingService.stop).thenAnswer((_) async {
         order.add('EmbeddingService');
       });
@@ -239,7 +224,7 @@ void main() {
       () async {
         final order = <String>[];
 
-        final journalDb = _MockJournalDb();
+        final journalDb = MockJournalDb();
         when(journalDb.close).thenAnswer((_) async {
           order.add('JournalDb');
         });

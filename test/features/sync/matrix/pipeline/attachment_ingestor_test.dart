@@ -358,6 +358,7 @@ void main() {
           attachmentIndex: index,
         );
         expect(wrote, isFalse);
+        expect(index.find('images/a.jpg')?.eventId, 'ev1');
       },
     );
   });

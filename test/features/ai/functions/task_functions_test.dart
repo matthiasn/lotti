@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
@@ -55,18 +56,20 @@ void main() {
     });
 
     test("update_task_due_date description embeds today's date", () {
-      final tools = TaskFunctions.getTools();
-      final tool = tools.firstWhere(
-        (t) => t.function.name == TaskFunctions.updateTaskDueDate,
-      );
-      final today = DateTime.now().toIso8601String().split('T')[0];
-      expect(tool.function.description, contains(today));
+      final fixedNow = DateTime(2026, 4, 15, 12);
+      withClock(Clock.fixed(fixedNow), () {
+        final tools = TaskFunctions.getTools();
+        final tool = tools.firstWhere(
+          (t) => t.function.name == TaskFunctions.updateTaskDueDate,
+        );
+        expect(tool.function.description, contains('2026-04-15'));
 
-      final params = tool.function.parameters!;
-      final props = params['properties']! as Map<String, dynamic>;
-      final dueDate = props['dueDate']! as Map<String, dynamic>;
-      expect(dueDate['format'], 'date');
-      expect(params['required'], ['dueDate', 'reason', 'confidence']);
+        final params = tool.function.parameters!;
+        final props = params['properties']! as Map<String, dynamic>;
+        final dueDate = props['dueDate']! as Map<String, dynamic>;
+        expect(dueDate['format'], 'date');
+        expect(params['required'], ['dueDate', 'reason', 'confidence']);
+      });
     });
 
     test('update_task_priority restricts to P0..P3', () {

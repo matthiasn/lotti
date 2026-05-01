@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -14,7 +15,7 @@ class TaskFunctions {
 
   /// Get all available function definitions for task operations
   static List<ChatCompletionTool> getTools() {
-    final currentDate = DateTime.now().toIso8601String().split('T')[0];
+    final currentDate = clock.now().toIso8601String().split('T')[0];
 
     return [
       ChatCompletionTool(

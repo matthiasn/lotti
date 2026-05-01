@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
@@ -9,7 +8,7 @@ import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockAgentRepository extends Mock implements AgentRepository {}
+import '../../../mocks/mocks.dart';
 
 AgentLink _link({
   required String id,
@@ -69,10 +68,10 @@ AiResponseEntry _aiResponseEntry({
 
 void main() {
   group('TaskSummaryResolver', () {
-    late _MockAgentRepository repo;
+    late MockAgentRepository repo;
 
     setUp(() {
-      repo = _MockAgentRepository();
+      repo = MockAgentRepository();
     });
 
     test('returns null when both sources are empty and repo is null', () async {
