@@ -67,8 +67,7 @@ class TimeRecordingIndicator extends ConsumerWidget {
               },
               child: MouseRegion(
                 cursor: SystemMouseCursors.click,
-                child: Material(
-                  elevation: 5,
+                child: ClipRRect(
                   borderRadius: borderRadius,
                   child: Container(
                     decoration: BoxDecoration(

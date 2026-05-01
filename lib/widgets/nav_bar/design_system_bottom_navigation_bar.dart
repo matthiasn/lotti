@@ -8,10 +8,17 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 class DesignSystemBottomNavigationBar extends StatelessWidget {
   const DesignSystemBottomNavigationBar({
     required this.items,
+    this.overlay,
     super.key,
   });
 
   final List<DesignSystemNavigationTabBarItem> items;
+
+  /// Optional widget rendered immediately above the pill, sized to the same
+  /// width as the pill. The overlay scales with the pill via the same
+  /// `FittedBox`, so its position stays tied to the rendered nav bar
+  /// regardless of how many tabs are visible.
+  final Widget? overlay;
 
   static EdgeInsets padding(BuildContext context) {
     final tokens = context.designTokens;
@@ -44,12 +51,23 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
         itemHeight;
   }
 
-  /// Distance from the bottom of the screen to the top edge of the visible
-  /// nav-bar pill. Used by overlays (e.g. recording indicators) that should
-  /// dock flush against the pill rather than float above the outer bounds.
-  static double pillTopFromScreenBottom(BuildContext context) {
+  /// Distance from the top of the system bottom safe-area inset to the visual
+  /// top of the nav-bar pill. Overlays (e.g. recording indicators) that wrap
+  /// themselves in `SafeArea(top: false)` should add this offset to dock flush
+  /// against the pill. Excludes `MediaQuery.paddingOf(context).bottom` so the
+  /// SafeArea at the overlay site is the single source of truth for the
+  /// home-indicator inset on iOS.
+  static double pillTopFromNavBarBottom(BuildContext context) {
     if (isDesktopLayout(context)) return 0;
-    return occupiedHeight(context) - padding(context).top;
+    final tokens = context.designTokens;
+    final itemHeight = math.max(
+      DesignSystemNavigationTabBar.defaultItemMinHeight,
+      tokens.spacing.step3 * 2 +
+          DesignSystemNavigationTabBar.defaultIconSize +
+          tokens.spacing.step1 +
+          tokens.typography.lineHeight.caption,
+    );
+    return padding(context).bottom + tokens.spacing.step2 * 2 + itemHeight;
   }
 
   @override
@@ -61,7 +79,18 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
         child: Align(
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: DesignSystemNavigationTabBar(items: items),
+            // IntrinsicWidth bounds the inner Column so the overlay row can
+            // stretch to the pill's natural width.
+            child: IntrinsicWidth(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ?overlay,
+                  DesignSystemNavigationTabBar(items: items),
+                ],
+              ),
+            ),
           ),
         ),
       ),
