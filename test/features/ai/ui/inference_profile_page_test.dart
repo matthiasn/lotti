@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 import '../../../widget_test_utils.dart';
@@ -138,8 +139,9 @@ void main() {
       await tester.pumpWidget(buildSubject(initialData: []));
       await tester.pumpAndSettle();
 
-      expect(find.byType(FloatingActionButton), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
+      // Default DS FAB icon is `add_rounded`, not `add`.
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
       expect(
         find.byType(DesignSystemBottomNavigationFabPadding),
         findsOneWidget,
@@ -175,7 +177,7 @@ void main() {
       await tester.pumpWidget(buildSubject(initialData: []));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(FloatingActionButton));
+      await tester.tap(find.byType(DesignSystemFloatingActionButton));
       await tester.pumpAndSettle();
 
       // Should navigate to InferenceProfileForm (create mode).
@@ -197,15 +199,18 @@ void main() {
       expect(find.text('Edit Profile'), findsOneWidget);
     });
 
-    testWidgets('FAB has localized tooltip', (tester) async {
-      await tester.pumpWidget(buildSubject(initialData: []));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'FAB carries the localized create-profile label as its semanticLabel',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(initialData: []));
+        await tester.pumpAndSettle();
 
-      final fab = tester.widget<FloatingActionButton>(
-        find.byType(FloatingActionButton),
-      );
-      expect(fab.tooltip, 'Create Profile');
-    });
+        final fab = tester.widget<DesignSystemFloatingActionButton>(
+          find.byType(DesignSystemFloatingActionButton),
+        );
+        expect(fab.semanticLabel, 'Create Profile');
+      },
+    );
   });
 }
 

@@ -43,20 +43,10 @@ class CategoriesListPage extends ConsumerStatefulWidget {
 }
 
 class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
-  final _searchController = TextEditingController();
-
-  /// Raw text from the search field (preserves whitespace + casing for
-  /// the empty-state message).
-  String _searchRaw = '';
-
-  /// Lower-cased + trimmed query used for the actual filter compare.
-  String _searchLower = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  /// Trimmed search query — empty when the field is clear. The
+  /// filter compares lower-cased on each rebuild; the trimmed form
+  /// also drives the no-match empty-state message.
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
@@ -97,10 +87,11 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
     BuildContext context,
     List<CategoryDefinition> categories,
   ) {
+    final queryLower = _query.toLowerCase();
     final filtered =
         categories.where((category) {
-          if (_searchLower.isEmpty) return true;
-          return category.name.toLowerCase().contains(_searchLower);
+          if (queryLower.isEmpty) return true;
+          return category.name.toLowerCase().contains(queryLower);
         }).toList()..sort(
           (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
         );
@@ -110,16 +101,12 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: DesignSystemSearch(
-            controller: _searchController,
             hintText: context.messages.settingsCategoriesSearchHint,
-            onChanged: (value) => setState(() {
-              _searchRaw = value;
-              _searchLower = value.trim().toLowerCase();
-            }),
-            onClear: () => setState(() {
-              _searchRaw = '';
-              _searchLower = '';
-            }),
+            // DS search fires `onChanged('')` when the user taps the
+            // clear button, so the same setState path covers both the
+            // typing and clearing transitions — no separate `onClear`
+            // is needed.
+            onChanged: (value) => setState(() => _query = value.trim()),
           ),
         ),
       ),
@@ -148,8 +135,7 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
   /// The search-empty flavour shows the active query so the user knows
   /// what they typed — same affordance as the labels page.
   Widget _buildEmptySliver(BuildContext context, bool noCategoriesAtAll) {
-    final query = _searchRaw.trim();
-    if (!noCategoriesAtAll && query.isNotEmpty) {
+    if (!noCategoriesAtAll && _query.isNotEmpty) {
       return SliverFillRemaining(
         child: Center(
           child: Padding(
@@ -164,7 +150,7 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  context.messages.settingsCategoriesNoMatchQuery(query),
+                  context.messages.settingsCategoriesNoMatchQuery(_query),
                   style: Theme.of(context).textTheme.titleMedium,
                   textAlign: TextAlign.center,
                 ),

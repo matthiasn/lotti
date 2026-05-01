@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
@@ -168,15 +169,13 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       pendingWakeRecordsProvider.select((value) => value.value?.length ?? 0),
     );
     final floatingActionButton = switch (selectedTab) {
-      AgentSettingsTab.templates => FloatingActionButton(
+      AgentSettingsTab.templates => DesignSystemFloatingActionButton(
+        semanticLabel: context.messages.agentTemplateCreateTitle,
         onPressed: () => beamToNamed('/settings/agents/templates/create'),
-        tooltip: context.messages.agentTemplateCreateTitle,
-        child: const Icon(Icons.add),
       ),
-      AgentSettingsTab.souls => FloatingActionButton(
+      AgentSettingsTab.souls => DesignSystemFloatingActionButton(
+        semanticLabel: context.messages.agentSoulCreateTitle,
         onPressed: () => beamToNamed('/settings/agents/souls/create'),
-        tooltip: context.messages.agentSoulCreateTitle,
-        child: const Icon(Icons.add),
       ),
       _ => null,
     };

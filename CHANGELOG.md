@@ -89,6 +89,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   new `_syncPanel` builder in the registry hosts the same card
   inside a `SyncFeatureGate` + `DesignSystemGroupedList` so the
   visual treatment matches the rest of the V2 detail pane.
+- Settings list-page FABs now use the design-system circular FAB
+  component (`DesignSystemFloatingActionButton`) — the same
+  visual primitive the Tasks tab already consumes — instead of
+  raw Material `FloatingActionButton`. Migrated sites:
+  `LabelsListPage`, `DefinitionsListPage` (the shared host for
+  Dashboards / Habits / Measurables, via the public
+  `FloatingAddIcon` helper), `AgentSettingsPage` (Templates +
+  Souls tab FABs), `InferenceProfilePage`, and
+  `AiSettingsFloatingActionButton`. The previously-extended AI
+  FAB drops its inline per-tab text label in favour of the
+  circular shape; the per-tab label survives as the
+  `semanticLabel` so screen readers and hover tooltips still
+  announce `Add Provider` / `Add Model` / `Add Profile`
+  correctly. (Categories already adopted the DS FAB in the
+  parity commit above.)
 
 ### Removed
 - `lib/widgets/misc/countdown_snackbar_content.dart` (and its test)

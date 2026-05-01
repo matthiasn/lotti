@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_card.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
@@ -97,10 +98,9 @@ class InferenceProfilePage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: FloatingActionButton(
-          tooltip: context.messages.inferenceProfileCreateTitle,
+        child: DesignSystemFloatingActionButton(
+          semanticLabel: context.messages.inferenceProfileCreateTitle,
           onPressed: () => _openProfileForm(context),
-          child: const Icon(Icons.add),
         ),
       ),
     );

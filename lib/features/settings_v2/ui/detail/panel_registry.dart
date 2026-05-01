@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
@@ -11,6 +10,8 @@ import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
@@ -31,9 +32,9 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
-import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Signature for a registered detail-pane panel body. The builder
 /// receives a fresh [BuildContext] under the Settings V2 detail
@@ -93,7 +94,7 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
     <String, SettingsPanelSpec>{
       // Branches that carry their own landing page. AI / Agents
       // render full pages with their own scroll machinery; Sync is a
-      // light Column body so the host wraps it.
+      // light grouped-list body so the host wraps it.
       'ai': SettingsPanelSpec(build: _aiPanel),
       'agents': SettingsPanelSpec(build: _agentsPanel),
       'sync': SettingsPanelSpec(build: _syncPanel, scrollable: true),
@@ -172,24 +173,41 @@ Widget _advancedMaintenancePanel(BuildContext context) =>
     const MaintenanceBody();
 Widget _advancedLoggingPanel(BuildContext context) =>
     const LoggingSettingsBody();
+
 /// Landing panel for the Sync branch on V2 desktop. Surfaces the
 /// provisioned-sync (QR-pairing) entry point that the mobile
 /// SyncSettingsPage already shows but that desktop V2 used to omit
-/// because the Sync branch was leafless. Wrapped in [SyncFeatureGate]
-/// so it disappears in the same conditions as the rest of the Sync
-/// surface, and in a [DesignSystemGroupedList] so the row matches the
-/// rest of the V2 detail-pane visual language.
+/// because the Sync branch was leafless.
+///
+/// The card is matrix-only, so we gate it on `enableMatrixFlag` —
+/// but unlike `SyncFeatureGate` we DON'T redirect away when the flag
+/// is off. The Sync branch stays visible even with Matrix disabled
+/// (the conflicts leaf still needs to be reachable for legacy /
+/// local-only conflicts), so a parent-branch click must not bounce
+/// the user out of `/settings/sync`. With Matrix off the panel
+/// renders as an empty placeholder and the user can still drill into
+/// `sync-conflicts` via the sidebar tree.
+///
+/// Wired through Riverpod's `configFlagProvider` rather than a raw
+/// `StreamBuilder` so the underlying flag stream is cached across
+/// rebuilds — a fresh `watchConfigFlag(...)` subscription on every
+/// rebuild would resubscribe + re-emit the loading state unnecessarily.
 Widget _syncPanel(BuildContext context) {
-  final tokens = context.designTokens;
-  return SyncFeatureGate(
-    child: Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-      child: DesignSystemGroupedList(
-        children: const [
-          ProvisionedSyncSettingsCard(showDivider: false),
-        ],
-      ),
-    ),
+  return Consumer(
+    builder: (context, ref, _) {
+      final tokens = context.designTokens;
+      final enabled =
+          ref.watch(configFlagProvider(enableMatrixFlag)).value ?? false;
+      if (!enabled) return const SizedBox.shrink();
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+        child: const DesignSystemGroupedList(
+          children: [
+            ProvisionedSyncSettingsCard(showDivider: false),
+          ],
+        ),
+      );
+    },
   );
 }
 
