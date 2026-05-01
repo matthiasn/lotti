@@ -85,6 +85,7 @@ void main() {
 
   late _CountingJournalDb db;
   late MockLoggingService loggingService;
+  LoggingService? previousLoggingService;
   Directory? testDirectory;
   Directory? previousDirectory;
 
@@ -127,6 +128,7 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     if (getIt.isRegistered<LoggingService>()) {
+      previousLoggingService = getIt<LoggingService>();
       getIt.unregister<LoggingService>();
     }
     getIt.registerSingleton<LoggingService>(loggingService);
@@ -145,7 +147,12 @@ void main() {
     if (getIt.isRegistered<LoggingService>()) {
       getIt.unregister<LoggingService>();
     }
-    getIt.unregister<Directory>();
+    if (previousLoggingService != null) {
+      getIt.registerSingleton<LoggingService>(previousLoggingService!);
+    }
+    if (getIt.isRegistered<Directory>()) {
+      getIt.unregister<Directory>();
+    }
     if (previousDirectory != null) {
       getIt.registerSingleton<Directory>(previousDirectory!);
     }
