@@ -1,17 +1,21 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
-/// Project reference shown in the classification row. When the task has no
-/// project, the header still renders a subdued placeholder in the same slot
-/// whose `onTap` still hits [DesktopTaskHeader.onProjectTap] so users can
-/// attach one — the connector gates the actual picker on a linked category.
+/// Project reference shown in the breadcrumb. When the task has no project,
+/// the connector passes `null` and the crumb renders the literal "No project"
+/// placeholder; the same `onProjectTap` callback still fires so users can
+/// attach one.
 @immutable
 class DesktopTaskHeaderProject {
   const DesktopTaskHeaderProject({required this.label, this.icon});
@@ -20,8 +24,8 @@ class DesktopTaskHeaderProject {
   final IconData? icon;
 }
 
-/// Work category chip rendered as the leading entry of the classification
-/// row.
+/// Work category surfaced as the colored dot at the start of the breadcrumb
+/// and the leading category-name segment.
 @immutable
 class DesktopTaskHeaderCategory {
   const DesktopTaskHeaderCategory({
@@ -35,12 +39,11 @@ class DesktopTaskHeaderCategory {
   final IconData? icon;
 }
 
-/// Urgency levels for the due-date chip. `today` paints orange; `overdue`
-/// paints red; `normal` uses the same subdued outline as the other caption
-/// chips.
+/// Urgency levels for the due-date pill. `today` paints orange; `overdue`
+/// paints red; `normal` uses `text.mediumEmphasis` outline.
 enum DesktopTaskHeaderDueUrgency { normal, today, overdue }
 
-/// Due-date chip rendered in the metadata row.
+/// Due-date payload for the metadata row.
 @immutable
 class DesktopTaskHeaderDueDate {
   const DesktopTaskHeaderDueDate({
@@ -52,10 +55,8 @@ class DesktopTaskHeaderDueDate {
   final DesktopTaskHeaderDueUrgency urgency;
 }
 
-/// View model passed to the presentational [DesktopTaskHeader]. Callers build
-/// it from real domain data (the Riverpod-aware connector) or from fixtures
-/// (Widgetbook, tests). Keeps the header free of Riverpod or repository
-/// dependencies so it can be exercised in isolation.
+/// View model passed to the presentational [DesktopTaskHeader]. Built by the
+/// Riverpod-aware connector or by fixtures (Widgetbook, tests).
 @immutable
 class DesktopTaskHeaderData {
   const DesktopTaskHeaderData({
@@ -74,21 +75,20 @@ class DesktopTaskHeaderData {
   final DesktopTaskHeaderProject? project;
   final DesktopTaskHeaderCategory? category;
   final DesktopTaskHeaderDueDate? dueDate;
-
-  /// Label definitions straight from the entity cache. The header renders
-  /// each as a small outlined chip with a leading color dot (so the label's
-  /// color stays legible while the text is still high-emphasis primary).
   final List<LabelDefinition> labels;
 }
 
-/// Presentational desktop-first task header built as three explicit lines:
+/// Presentational task header — Option B layout from
+/// `docs/design/design_handoff_task_header/`.
 ///
-/// 1. Title — read-only `Text` that transforms into an inline editor on tap.
-/// 2. Classification — category / project / labels in a wrapping row.
-/// 3. Metadata — due date / estimate / priority / status in a wrapping row.
-///
-/// Holds only local UI state (edit) and emits callbacks — no Riverpod, no
-/// repositories.
+/// Two-tier hierarchy:
+/// 1. **Crumb** — `▣ Category / Project name` above the title, getting the
+///    "where am I?" info out of the chip soup.
+/// 2. **Title** — heading-3 with an always-shown small edit pencil to its
+///    right; tap toggles the inline editor.
+/// 3. **Meta row** — pill chips for the *actionable* metadata (priority, due,
+///    estimate, labels) followed by the status select pinned to the right
+///    edge of the row.
 class DesktopTaskHeader extends StatefulWidget {
   const DesktopTaskHeader({
     required this.data,
@@ -113,15 +113,11 @@ class DesktopTaskHeader extends StatefulWidget {
   final VoidCallback? onCategoryTap;
   final VoidCallback? onDueDateTap;
   final ValueChanged<LabelDefinition>? onLabelTap;
-
-  /// Tap handler for the "Add label" placeholder chip shown when no labels
-  /// are assigned. Typically opens the label-selector modal.
   final VoidCallback? onAddLabelTap;
 
-  /// Slot for the estimate affordance. The connector injects a Riverpod-aware
-  /// estimate chip here so the header itself stays framework free. When
-  /// `null` the metadata row simply omits the estimate entry — in practice
-  /// the connector always supplies a slot.
+  /// Slot for the estimate pill. The connector injects a Riverpod-aware chip
+  /// here so the header itself stays framework free. When `null` the meta
+  /// row simply omits the estimate entry.
   final Widget? estimateSlot;
 
   /// Force the inline editor open on first build. Used by Widgetbook / tests
@@ -196,19 +192,45 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final rowGap = tokens.spacing.step3;
+    // Step4 (12) horizontal on mobile leaves a touch-friendly gutter; on
+    // desktop the side panels already supply outer chrome so step3 (8) keeps
+    // the chip row visually anchored. Top is 0 — the host pane controls
+    // the space above the crumb.
+    final outerPadding = EdgeInsets.fromLTRB(
+      isMobile ? tokens.spacing.step3 : tokens.spacing.step1,
+      tokens.spacing.step2,
+      isMobile ? tokens.spacing.step3 : tokens.spacing.step1,
+      tokens.spacing.step3,
+    );
+
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step3,
-      ),
+      padding: outerPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _HeroCrumb(
+            category: widget.data.category,
+            project: widget.data.project,
+            onCategoryTap: widget.onCategoryTap,
+            onProjectTap: widget.onProjectTap,
+          ),
+          SizedBox(height: rowGap),
           _buildTitleLine(context),
-          SizedBox(height: tokens.spacing.step3),
-          _buildClassificationLine(context),
-          SizedBox(height: tokens.spacing.step2),
-          _buildMetadataLine(context),
+          SizedBox(height: rowGap),
+          _MetaRow(
+            priority: widget.data.priority,
+            status: widget.data.status,
+            dueDate: widget.data.dueDate,
+            labels: widget.data.labels,
+            estimateSlot: widget.estimateSlot,
+            onPriorityTap: widget.onPriorityTap,
+            onStatusTap: widget.onStatusTap,
+            onDueDateTap: widget.onDueDateTap,
+            onLabelTap: widget.onLabelTap,
+            onAddLabelTap: widget.onAddLabelTap,
+          ),
         ],
       ),
     );
@@ -234,141 +256,651 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
       onTap: _beginEdit,
     );
   }
+}
 
-  Widget _buildClassificationLine(BuildContext context) {
+/// Tiny breadcrumb above the title: `▣ Category / Project name`.
+///
+/// The category color is used as a 10×10 rounded square — this is the *only*
+/// place the category color is used as a fill. Text never picks it up.
+class _HeroCrumb extends StatelessWidget {
+  const _HeroCrumb({
+    required this.category,
+    required this.project,
+    required this.onCategoryTap,
+    required this.onProjectTap,
+  });
+
+  final DesktopTaskHeaderCategory? category;
+  final DesktopTaskHeaderProject? project;
+  final VoidCallback? onCategoryTap;
+  final VoidCallback? onProjectTap;
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final categoryChip = widget.data.category != null
-        ? _CategoryChip(
-            category: widget.data.category!,
-            onTap: widget.onCategoryTap,
-          )
-        : _PlaceholderChip(
-            icon: Icons.category_outlined,
-            label: context.messages.taskCategoryUnassignedLabel,
-            onTap: widget.onCategoryTap,
-          );
-    final projectChip = _ProjectChip(
-      project: widget.data.project,
-      onTap: widget.onProjectTap,
+    final categoryColor =
+        category?.color ?? TaskShowcasePalette.lowText(context);
+    final categoryName =
+        category?.label ?? context.messages.taskCategoryUnassignedLabel;
+    final projectName =
+        project?.label ?? context.messages.projectPickerUnassigned;
+    final crumbStyle = tokens.typography.styles.others.caption.copyWith(
+      height: 1,
     );
-    // Flat Wrap — Category · Project · Label1 · Label2 · Label3. Dots
-    // are the only separators; individual labels read as one group because
-    // they sit in natural reading order after the second dot.
-    final chips = <Widget>[
-      categoryChip,
-      const _GroupSeparator(),
-      projectChip,
-      const _GroupSeparator(),
-      if (widget.data.labels.isEmpty)
-        _PlaceholderChip(
-          icon: Icons.label_outline_rounded,
-          label: context.messages.tasksAddLabelButton,
-          onTap: widget.onAddLabelTap,
-        )
-      else
-        for (final label in widget.data.labels)
-          _LabelChip(
-            label: label,
-            onTap: widget.onLabelTap == null
-                ? null
-                : () => widget.onLabelTap!(label),
-          ),
-    ];
 
-    return Wrap(
-      spacing: tokens.spacing.step3,
-      runSpacing: tokens.spacing.step2,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: chips,
-    );
-  }
-
-  Widget _buildMetadataLine(BuildContext context) {
-    final tokens = context.designTokens;
-    // Two semantic groups. Each group is a `Row(mainAxisSize: min)` so the
-    // chips inside it always stay on the same line — only the outer
-    // LayoutBuilder branch below decides whether the two groups share one
-    // row or stack vertically.
-    final leftGroup = Row(
-      mainAxisSize: MainAxisSize.min,
+    return Row(
       children: [
-        if (widget.data.dueDate != null)
-          _DueDateChip(
-            dueDate: widget.data.dueDate!,
-            onTap: widget.onDueDateTap,
-          )
-        else
-          _PlaceholderChip(
-            icon: Icons.alarm_rounded,
-            label: context.messages.taskNoDueDateLabel,
-            onTap: widget.onDueDateTap,
+        _CrumbSegment(
+          onTap: onCategoryTap,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: categoryColor,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Text(
+                categoryName,
+                style: crumbStyle.copyWith(
+                  color: TaskShowcasePalette.highText(context),
+                  fontStyle: category == null
+                      ? FontStyle.italic
+                      : FontStyle.normal,
+                ),
+              ),
+            ],
           ),
-        SizedBox(width: tokens.spacing.step2),
-        _PriorityBadge(
-          priority: widget.data.priority,
-          onTap: widget.onPriorityTap,
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Text(
+          '/',
+          style: crumbStyle.copyWith(
+            color: TaskShowcasePalette.lowText(context),
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Flexible(
+          child: _CrumbSegment(
+            onTap: onProjectTap,
+            child: Text(
+              projectName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: crumbStyle.copyWith(
+                color: TaskShowcasePalette.mediumText(context),
+              ),
+            ),
+          ),
         ),
       ],
-    );
-    final rightGroup = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (widget.estimateSlot != null) ...[
-          widget.estimateSlot!,
-          SizedBox(width: tokens.spacing.step4),
-        ],
-        _StatusDropdown(
-          status: widget.data.status,
-          onTap: widget.onStatusTap,
-        ),
-      ],
-    );
-    // `Wrap(alignment: spaceBetween)` doesn't actually space the two
-    // groups apart because Wrap shrink-wraps its main-axis size. Instead
-    // we branch on available width: above the breakpoint both groups fit
-    // side-by-side in a Row(spaceBetween); below it they stack into a
-    // Column. The breakpoint scales with the text scaler so accessibility
-    // text sizes break into two rows at wider viewports rather than
-    // overflowing.
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final scale = MediaQuery.textScalerOf(context).scale(1);
-        final breakpoint = 520.0 * scale;
-        if (constraints.maxWidth >= breakpoint) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [leftGroup, rightGroup],
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            leftGroup,
-            SizedBox(height: tokens.spacing.step2),
-            rightGroup,
-          ],
-        );
-      },
     );
   }
 }
 
-/// Subtle low-emphasis vertical rule between classification groups
-/// (category | project | labels). Shrink-wrapped to its glyph width so it
-/// participates in the outer `Wrap` as a narrow child rather than taking
-/// the full row.
-class _GroupSeparator extends StatelessWidget {
-  const _GroupSeparator();
+/// Tappable crumb segment with a subtle hover background. Avoids pill chrome
+/// — it's a flat hit target the size of the text.
+class _CrumbSegment extends StatelessWidget {
+  const _CrumbSegment({required this.child, this.onTap});
+
+  final Widget child;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      '|',
-      style: TextStyle(
-        fontSize: 8,
-        height: 1,
-        color: TaskShowcasePalette.lowText(context).withValues(alpha: 0.3),
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.s);
+    final padding = EdgeInsets.symmetric(
+      horizontal: tokens.spacing.step2,
+      vertical: tokens.spacing.step1,
+    );
+    if (onTap == null) {
+      return Padding(padding: padding, child: child);
+    }
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: Padding(padding: padding, child: child),
       ),
+    );
+  }
+}
+
+/// Single chip row holding actionable metadata + the right-pinned status
+/// pill. On wide viewports the chips wrap on the left and status sits at
+/// the far right; below the breakpoint the chips wrap above and status
+/// drops to its own right-aligned line.
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({
+    required this.priority,
+    required this.status,
+    required this.dueDate,
+    required this.labels,
+    required this.estimateSlot,
+    required this.onPriorityTap,
+    required this.onStatusTap,
+    required this.onDueDateTap,
+    required this.onLabelTap,
+    required this.onAddLabelTap,
+  });
+
+  final TaskPriority priority;
+  final TaskStatus status;
+  final DesktopTaskHeaderDueDate? dueDate;
+  final List<LabelDefinition> labels;
+  final Widget? estimateSlot;
+  final VoidCallback? onPriorityTap;
+  final VoidCallback? onStatusTap;
+  final VoidCallback? onDueDateTap;
+  final ValueChanged<LabelDefinition>? onLabelTap;
+  final VoidCallback? onAddLabelTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final children = <Widget>[
+      _PriorityPillTinted(priority: priority, onTap: onPriorityTap),
+      _DuePill(dueDate: dueDate, onTap: onDueDateTap),
+      if (estimateSlot != null) estimateSlot!,
+      if (labels.isEmpty)
+        DsGhostChip(
+          label: context.messages.tasksAddLabelButton,
+          onTap: onAddLabelTap,
+        )
+      else
+        for (final label in labels)
+          _LabelPill(
+            label: label,
+            onTap: onLabelTap == null ? null : () => onLabelTap!(label),
+          ),
+    ];
+
+    return _TrailingAlignedWrap(
+      spacing: tokens.spacing.step3,
+      runSpacing: tokens.spacing.step3,
+      children: [
+        ...children,
+        _StatusPill(status: status, onTap: onStatusTap),
+      ],
+    );
+  }
+}
+
+/// Wrap-style horizontal layout where the **last child** is pinned to the
+/// right edge of whichever row it lands on. If the trailing child doesn't
+/// fit in the same row as the leading chips, it falls onto its own row,
+/// still right-aligned.
+///
+/// Used by the meta row so the status pill always sits at the end of the
+/// final visible row, without snapping to a separate column at an arbitrary
+/// breakpoint.
+class _TrailingAlignedWrap extends MultiChildRenderObjectWidget {
+  const _TrailingAlignedWrap({
+    required this.spacing,
+    required this.runSpacing,
+    required super.children,
+  });
+
+  final double spacing;
+  final double runSpacing;
+
+  @override
+  _RenderTrailingAlignedWrap createRenderObject(BuildContext context) {
+    return _RenderTrailingAlignedWrap(
+      spacing: spacing,
+      runSpacing: runSpacing,
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderTrailingAlignedWrap renderObject,
+  ) {
+    renderObject
+      ..spacing = spacing
+      ..runSpacing = runSpacing;
+  }
+}
+
+class _TrailingAlignedWrapParentData
+    extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderTrailingAlignedWrap extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _TrailingAlignedWrapParentData>,
+        RenderBoxContainerDefaultsMixin<
+          RenderBox,
+          _TrailingAlignedWrapParentData
+        > {
+  _RenderTrailingAlignedWrap({
+    required double spacing,
+    required double runSpacing,
+  }) : _spacing = spacing,
+       _runSpacing = runSpacing;
+
+  double _spacing;
+  double get spacing => _spacing;
+  set spacing(double value) {
+    if (_spacing == value) return;
+    _spacing = value;
+    markNeedsLayout();
+  }
+
+  double _runSpacing;
+  double get runSpacing => _runSpacing;
+  set runSpacing(double value) {
+    if (_runSpacing == value) return;
+    _runSpacing = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(covariant RenderBox child) {
+    if (child.parentData is! _TrailingAlignedWrapParentData) {
+      child.parentData = _TrailingAlignedWrapParentData();
+    }
+  }
+
+  @override
+  void performLayout() {
+    final maxWidth = constraints.maxWidth.isFinite
+        ? constraints.maxWidth
+        : double.infinity;
+
+    final boxes = <RenderBox>[];
+    var cursor = firstChild;
+    while (cursor != null) {
+      boxes.add(cursor);
+      cursor =
+          (cursor.parentData as _TrailingAlignedWrapParentData).nextSibling;
+    }
+    if (boxes.isEmpty) {
+      size = constraints.constrain(Size.zero);
+      return;
+    }
+
+    for (final child in boxes) {
+      child.layout(
+        BoxConstraints(maxWidth: maxWidth),
+        parentUsesSize: true,
+      );
+    }
+
+    final trailing = boxes.last;
+    final leading = boxes.sublist(0, boxes.length - 1);
+
+    // Greedy pack leading children into rows.
+    final rowIndex = <int>[];
+    final rowWidth = <double>[0];
+    final rowHeight = <double>[0];
+    var currentRow = 0;
+    for (var i = 0; i < leading.length; i++) {
+      final w = leading[i].size.width;
+      final h = leading[i].size.height;
+      final isFirstInRow = rowWidth[currentRow] == 0;
+      final candidate = isFirstInRow ? w : rowWidth[currentRow] + _spacing + w;
+      if (candidate <= maxWidth || isFirstInRow) {
+        rowIndex.add(currentRow);
+        rowWidth[currentRow] = candidate;
+        rowHeight[currentRow] = math.max(rowHeight[currentRow], h);
+      } else {
+        currentRow += 1;
+        rowWidth.add(w);
+        rowHeight.add(h);
+        rowIndex.add(currentRow);
+      }
+    }
+
+    // Place trailing on the last row if it fits, otherwise on a new row.
+    final tw = trailing.size.width;
+    final th = trailing.size.height;
+    final lastRowEmpty = rowWidth[currentRow] == 0;
+    final fitsLast = lastRowEmpty
+        ? tw <= maxWidth
+        : (rowWidth[currentRow] + _spacing + tw) <= maxWidth;
+    final int trailingRow;
+    if (fitsLast) {
+      trailingRow = currentRow;
+      rowHeight[currentRow] = math.max(rowHeight[currentRow], th);
+    } else {
+      trailingRow = currentRow + 1;
+      rowWidth.add(tw);
+      rowHeight.add(th);
+    }
+
+    // Compute row Y origins.
+    final rowY = <double>[];
+    var y = 0.0;
+    for (var r = 0; r < rowHeight.length; r++) {
+      rowY.add(y);
+      y += rowHeight[r];
+      if (r < rowHeight.length - 1) y += _runSpacing;
+    }
+    final totalHeight = y;
+
+    // Position leading children left-to-right with center vertical alignment.
+    final cursorX = List<double>.filled(rowHeight.length, 0);
+    for (var i = 0; i < leading.length; i++) {
+      final r = rowIndex[i];
+      final isFirst = cursorX[r] == 0;
+      final x = isFirst ? 0.0 : cursorX[r] + _spacing;
+      final h = leading[i].size.height;
+      final dy = rowY[r] + (rowHeight[r] - h) / 2;
+      (leading[i].parentData as _TrailingAlignedWrapParentData).offset = Offset(
+        x,
+        dy,
+      );
+      cursorX[r] = x + leading[i].size.width;
+    }
+
+    // Pin trailing child to the right edge of its row.
+    final boundedWidth = maxWidth.isFinite
+        ? maxWidth
+        : (cursorX[trailingRow] +
+              (cursorX[trailingRow] > 0 ? _spacing : 0) +
+              tw);
+    final tx = boundedWidth - tw;
+    final ty = rowY[trailingRow] + (rowHeight[trailingRow] - th) / 2;
+    (trailing.parentData as _TrailingAlignedWrapParentData).offset = Offset(
+      tx,
+      ty,
+    );
+
+    size = constraints.constrain(Size(boundedWidth, totalHeight));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    defaultPaint(context, offset);
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    return defaultHitTestChildren(result, position: position);
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) {
+    var width = 0.0;
+    var c = firstChild;
+    while (c != null) {
+      width = math.max(width, c.getMinIntrinsicWidth(double.infinity));
+      c = (c.parentData as _TrailingAlignedWrapParentData).nextSibling;
+    }
+    return width;
+  }
+
+  @override
+  double computeMaxIntrinsicWidth(double height) {
+    var width = 0.0;
+    var c = firstChild;
+    while (c != null) {
+      width += c.getMaxIntrinsicWidth(double.infinity);
+      c = (c.parentData as _TrailingAlignedWrapParentData).nextSibling;
+    }
+    return width;
+  }
+
+  @override
+  double computeMinIntrinsicHeight(double width) =>
+      computeMaxIntrinsicHeight(width);
+
+  @override
+  double computeMaxIntrinsicHeight(double width) {
+    var height = 0.0;
+    var c = firstChild;
+    while (c != null) {
+      height = math.max(height, c.getMaxIntrinsicHeight(width));
+      c = (c.parentData as _TrailingAlignedWrapParentData).nextSibling;
+    }
+    return height;
+  }
+}
+
+class _PriorityPillTinted extends StatelessWidget {
+  const _PriorityPillTinted({required this.priority, this.onTap});
+
+  final TaskPriority priority;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (priority) {
+      TaskPriority.p0Urgent => TaskShowcasePalette.error(context),
+      TaskPriority.p1High => TaskShowcasePalette.warning(context),
+      TaskPriority.p2Medium => TaskShowcasePalette.info(context),
+      TaskPriority.p3Low => TaskShowcasePalette.success(context),
+    };
+    return DsPill(
+      variant: DsPillVariant.tinted,
+      color: color,
+      label: priority.short,
+      leading: TaskShowcasePriorityGlyph(priority: priority, size: 14),
+      onTap: onTap,
+    );
+  }
+}
+
+class _DuePill extends StatelessWidget {
+  const _DuePill({required this.dueDate, this.onTap});
+
+  final DesktopTaskHeaderDueDate? dueDate;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final dueDate = this.dueDate;
+    if (dueDate == null) {
+      return DsPill(
+        variant: DsPillVariant.muted,
+        label: context.messages.taskNoDueDateLabel,
+        leading: Icon(
+          Icons.calendar_today_outlined,
+          size: 12,
+          color: TaskShowcasePalette.lowText(context),
+        ),
+        onTap: onTap,
+      );
+    }
+    final color = switch (dueDate.urgency) {
+      DesktopTaskHeaderDueUrgency.overdue => TaskShowcasePalette.error(context),
+      DesktopTaskHeaderDueUrgency.today => TaskShowcasePalette.warning(context),
+      DesktopTaskHeaderDueUrgency.normal => TaskShowcasePalette.mediumText(
+        context,
+      ),
+    };
+    return DsPill(
+      variant: DsPillVariant.outline,
+      color: color,
+      label: dueDate.label,
+      leading: Icon(Icons.calendar_today_outlined, size: 12, color: color),
+      onTap: onTap,
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.status, this.onTap});
+
+  final TaskStatus status;
+  final VoidCallback? onTap;
+
+  static const double _height = 32;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final tint = _statusTint(context, status);
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    final label = status.localizedLabel(context);
+    final labelStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tint.foreground,
+      height: 1,
+      decoration: status is TaskRejected ? TextDecoration.lineThrough : null,
+    );
+    final content = SizedBox(
+      height: _height,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TaskShowcaseStatusGlyph(status: status, size: 14),
+            SizedBox(width: tokens.spacing.step2),
+            Text(label, style: labelStyle),
+            SizedBox(width: tokens.spacing.step2),
+            Icon(
+              Icons.expand_more_rounded,
+              size: 14,
+              color: TaskShowcasePalette.lowText(context),
+            ),
+          ],
+        ),
+      ),
+    );
+    final shaped = DecoratedBox(
+      decoration: BoxDecoration(
+        color: tint.background,
+        borderRadius: radius,
+      ),
+      child: content,
+    );
+    if (onTap == null) return shaped;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: shaped,
+      ),
+    );
+  }
+}
+
+class _StatusTint {
+  const _StatusTint({required this.background, required this.foreground});
+
+  final Color background;
+  final Color foreground;
+}
+
+_StatusTint _statusTint(BuildContext context, TaskStatus status) {
+  return switch (status) {
+    TaskInProgress() => _tintFromAccent(
+      TaskShowcasePalette.info(context),
+      bgAlpha: 0.18,
+    ),
+    TaskBlocked() => _tintFromAccent(
+      TaskShowcasePalette.error(context),
+      bgAlpha: 0.18,
+    ),
+    TaskOnHold() => _tintFromAccent(
+      TaskShowcasePalette.warning(context),
+      bgAlpha: 0.18,
+    ),
+    TaskGroomed() => _tintFromAccent(
+      context.designTokens.colors.interactive.enabled,
+      bgAlpha: 0.18,
+    ),
+    TaskDone() => _tintFromAccent(
+      TaskShowcasePalette.success(context),
+      bgAlpha: 0.18,
+    ),
+    TaskRejected() => _StatusTint(
+      background: TaskShowcasePalette.lowText(
+        context,
+      ).withValues(alpha: 0.14),
+      foreground: TaskShowcasePalette.lowText(context),
+    ),
+    TaskOpen() => _StatusTint(
+      background: TaskShowcasePalette.mediumText(
+        context,
+      ).withValues(alpha: 0.12),
+      foreground: TaskShowcasePalette.highText(context),
+    ),
+  };
+}
+
+_StatusTint _tintFromAccent(Color accent, {required double bgAlpha}) {
+  return _StatusTint(
+    background: accent.withValues(alpha: bgAlpha),
+    foreground: accent,
+  );
+}
+
+/// 8px circle filled with the label's own color. Used as the leading dot in
+/// label pills so the label color stays visible while the chip text remains
+/// high-emphasis.
+class _LabelDot extends StatelessWidget {
+  const _LabelDot({required this.color});
+
+  final String color;
+
+  @override
+  Widget build(BuildContext context) {
+    final fillColor = colorFromCssHex(
+      color,
+      substitute: TaskShowcasePalette.mediumText(context),
+    );
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: fillColor,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+/// Label-specific pill: a filled `DsPill` with the label's color dot, and a
+/// long-press dialog showing the label description (when one is set). The
+/// long-press affordance was carried over from the previous classification
+/// row where label descriptions weren't otherwise reachable.
+class _LabelPill extends StatelessWidget {
+  const _LabelPill({required this.label, this.onTap});
+
+  final LabelDefinition label;
+  final VoidCallback? onTap;
+
+  bool get _hasDescription {
+    final description = label.description?.trim();
+    return description != null && description.isNotEmpty;
+  }
+
+  Future<void> _showDescription(BuildContext context) async {
+    final description = label.description?.trim();
+    if (description == null || description.isEmpty) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(label.name),
+        content: Text(description),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(context.messages.tasksLabelsDialogClose),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DsPill(
+      variant: DsPillVariant.filled,
+      label: label.name,
+      leading: _LabelDot(color: label.color),
+      onTap: onTap,
+      onLongPress: _hasDescription ? () => _showDescription(context) : null,
     );
   }
 }
@@ -427,8 +959,8 @@ class _TitleReadOnly extends StatelessWidget {
                 padding: EdgeInsets.only(top: tokens.spacing.step1),
                 child: Icon(
                   Icons.edit_outlined,
-                  size: 18,
-                  color: TaskShowcasePalette.mediumText(context),
+                  size: 14,
+                  color: TaskShowcasePalette.lowText(context),
                 ),
               ),
             ],
@@ -483,7 +1015,6 @@ class _TitleEditor extends StatelessWidget {
                   LogicalKeyboardKey.enter,
                   control: true,
                 ): _CommitIntent(),
-                // ⌘S / Ctrl+S — standard save shortcut while editing.
                 SingleActivator(
                   LogicalKeyboardKey.keyS,
                   meta: true,
@@ -518,8 +1049,6 @@ class _TitleEditor extends StatelessWidget {
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
                   decoration: const InputDecoration(
-                    // Disable every variant so the focused state doesn't
-                    // paint a second ring inside the capsule's outer border.
                     border: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -583,416 +1112,6 @@ class _IconAction extends StatelessWidget {
       child: SizedBox.square(
         dimension: 24,
         child: Icon(icon, size: 20, color: color, semanticLabel: semanticLabel),
-      ),
-    );
-  }
-}
-
-class _PriorityBadge extends StatelessWidget {
-  const _PriorityBadge({required this.priority, this.onTap});
-
-  final TaskPriority priority;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final content = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step2,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TaskShowcasePriorityGlyph(priority: priority, size: 20),
-          SizedBox(width: tokens.spacing.step2),
-          Text(
-            priority.short,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: TaskShowcasePalette.highText(context),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap == null) return content;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: content,
-      ),
-    );
-  }
-}
-
-class _ProjectChip extends StatelessWidget {
-  const _ProjectChip({required this.project, required this.onTap});
-
-  final DesktopTaskHeaderProject? project;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final hasProject = project != null;
-    if (!hasProject) {
-      return _PlaceholderChip(
-        icon: Icons.folder_outlined,
-        label: context.messages.projectPickerUnassigned,
-        onTap: onTap,
-      );
-    }
-    final color = TaskShowcasePalette.highText(context);
-    final content = Container(
-      constraints: const BoxConstraints(minHeight: 20),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: TaskShowcasePalette.border(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            project!.icon ?? Icons.folder_outlined,
-            size: 12,
-            color: TaskShowcasePalette.mediumText(context),
-          ),
-          SizedBox(width: tokens.spacing.step1),
-          Flexible(
-            child: Text(
-              project!.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: color,
-                height: 1,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (onTap == null) return content;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        child: content,
-      ),
-    );
-  }
-}
-
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.category, this.onTap});
-
-  final DesktopTaskHeaderCategory category;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final content = Container(
-      constraints: const BoxConstraints(minHeight: 20),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: category.color,
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (category.icon != null) ...[
-            Icon(
-              category.icon,
-              size: 12,
-              color: tokens.colors.text.onInteractiveAlert,
-            ),
-            SizedBox(width: tokens.spacing.step1),
-          ],
-          Flexible(
-            child: Text(
-              category.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.onInteractiveAlert,
-                height: 1,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap == null) return content;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        child: content,
-      ),
-    );
-  }
-}
-
-class _DueDateChip extends StatelessWidget {
-  const _DueDateChip({required this.dueDate, this.onTap});
-
-  final DesktopTaskHeaderDueDate dueDate;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final color = switch (dueDate.urgency) {
-      DesktopTaskHeaderDueUrgency.overdue => TaskShowcasePalette.error(context),
-      DesktopTaskHeaderDueUrgency.today => TaskShowcasePalette.warning(context),
-      DesktopTaskHeaderDueUrgency.normal => TaskShowcasePalette.lowText(
-        context,
-      ),
-    };
-    final content = Container(
-      constraints: const BoxConstraints(minHeight: 20),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: color),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.alarm_rounded, size: 12, color: color),
-          SizedBox(width: tokens.spacing.step1),
-          Text(
-            dueDate.label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: color,
-              height: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-    if (onTap == null) return content;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        child: content,
-      ),
-    );
-  }
-}
-
-/// Placeholder chip for `No …` empty states (no category, no due date, no
-/// labels, no project). Subdued outline + italic label + leading icon.
-/// Tapping opens the same picker as the filled variant via [onTap].
-class _PlaceholderChip extends StatelessWidget {
-  const _PlaceholderChip({
-    required this.icon,
-    required this.label,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final color = TaskShowcasePalette.lowText(context);
-    final content = Container(
-      constraints: const BoxConstraints(minHeight: 20),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: TaskShowcasePalette.border(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          SizedBox(width: tokens.spacing.step1),
-          Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: color,
-              fontStyle: FontStyle.italic,
-              height: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-    if (onTap == null) return content;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        child: content,
-      ),
-    );
-  }
-}
-
-/// Hybrid label chip: outlined `radii.xs` shape, caption-sized padding,
-/// leading 8px color dot + high-emphasis primary text for legibility.
-/// Long-press reveals the label's description in a dialog when set.
-class _LabelChip extends StatelessWidget {
-  const _LabelChip({required this.label, this.onTap});
-
-  final LabelDefinition label;
-  final VoidCallback? onTap;
-
-  bool get _hasDescription {
-    final description = label.description?.trim();
-    return description != null && description.isNotEmpty;
-  }
-
-  Future<void> _showDescription(BuildContext context) async {
-    final description = label.description?.trim();
-    if (description == null || description.isEmpty) return;
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(label.name),
-        content: Text(description),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(context.messages.tasksLabelsDialogClose),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final dotColor = colorFromCssHex(
-      label.color,
-      substitute: TaskShowcasePalette.mediumText(context),
-    );
-    final content = Container(
-      constraints: const BoxConstraints(minHeight: 20),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: TaskShowcasePalette.border(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Flexible(
-            child: Text(
-              label.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: TaskShowcasePalette.highText(context),
-                height: 1,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    final longPress = _hasDescription ? () => _showDescription(context) : null;
-    if (onTap == null && longPress == null) return content;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        onTap: onTap,
-        onLongPress: longPress,
-        child: content,
-      ),
-    );
-  }
-}
-
-class _StatusDropdown extends StatelessWidget {
-  const _StatusDropdown({required this.status, this.onTap});
-
-  final TaskStatus status;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final label = status.localizedLabel(context);
-    final content = Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step2,
-      ),
-      decoration: BoxDecoration(
-        color: TaskShowcasePalette.subtleFill(context),
-        borderRadius: BorderRadius.circular(tokens.radii.xl),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TaskShowcaseStatusGlyph(status: status),
-          SizedBox(width: tokens.spacing.step2),
-          Text(
-            label,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: TaskShowcasePalette.highText(context),
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Icon(
-            Icons.unfold_more_rounded,
-            size: 16,
-            color: TaskShowcasePalette.mediumText(context),
-          ),
-        ],
-      ),
-    );
-    if (onTap == null) return content;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(tokens.radii.xl),
-        onTap: onTap,
-        child: content,
       ),
     );
   }

@@ -74,7 +74,7 @@ class ActiveFilterChip extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                    style: tokens.typography.styles.others.caption.copyWith(
                       color: labelColor,
                     ),
                   ),

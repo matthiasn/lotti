@@ -63,8 +63,8 @@ class TaskBrowseListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final rowPadding = EdgeInsets.symmetric(
-      horizontal: tokens.spacing.step3,
-      vertical: 14,
+      horizontal: tokens.spacing.step4,
+      vertical: tokens.spacing.step4,
     );
     final borderRadius = BorderRadius.vertical(
       top: entry.isFirstInSection

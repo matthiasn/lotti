@@ -308,9 +308,16 @@ void main() {
         await tester.pumpWidget(pumpConnector(task: task));
         await tester.pumpAndSettle();
 
-        final alphaPos = tester.getTopLeft(find.text('Alpha')).dx;
-        final betaPos = tester.getTopLeft(find.text('Beta')).dx;
-        expect(alphaPos, lessThan(betaPos));
+        // Use document order (tree traversal) instead of `dx`. The new
+        // single-row meta-layout shares a `Wrap` between priority/due/estimate
+        // and the labels, so on narrow surfaces labels can wrap onto a new
+        // line and `dx` no longer reflects sort order.
+        final labelTexts = tester
+            .widgetList<Text>(find.byType(Text))
+            .map((t) => t.data)
+            .where((d) => d == 'Alpha' || d == 'Beta')
+            .toList();
+        expect(labelTexts, ['Alpha', 'Beta']);
         expect(find.text('lbl-missing'), findsNothing);
       },
     );
