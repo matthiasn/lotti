@@ -1647,7 +1647,12 @@ class SyncEventProcessor {
 
     final Map<String, dynamic> manifest;
     try {
-      manifest = json.decode(manifestJson) as Map<String, dynamic>;
+      // Offload large manifests to a worker isolate; small ones (test
+      // fixtures, near-empty bundles) parse inline so the threshold-aware
+      // helper saves the isolate spin-up cost when the saved time is
+      // smaller than the round-trip overhead.
+      final decoded = await decodeJsonStringMaybeIsolate(manifestJson);
+      manifest = decoded! as Map<String, dynamic>;
     } catch (e, st) {
       _loggingService.captureException(
         e,
@@ -1726,6 +1731,14 @@ class SyncEventProcessor {
         ? const <String, JournalEntity>{}
         : await db.journalEntityMapForIds(journalEntityIds);
 
+    // Plan every disk write before issuing any of them so we can fail the
+    // whole bundle on a malformed manifest (e.g. a SyncJournalEntity with
+    // no `payload`) without leaving half the entries on disk. Per-write
+    // FileSystemExceptions are surfaced via the rethrow below so the
+    // unpacker's IOException-rethrow path triggers a whole-bundle retry —
+    // already-applied writes stay (idempotent under VC dominance on the
+    // next pass).
+    final writePlans = <_OutboxBundleWritePlan>[];
     final children = <SyncMessage>[];
     for (final parsed in parsedEntries) {
       final envelope = parsed.envelope;
@@ -1735,54 +1748,89 @@ class SyncEventProcessor {
         final local = localEntities[envelope.id];
         final localVc = local?.meta.vectorClock;
         final incomingVc = envelope.vectorClock;
-        var skipWrite = false;
+        var localDominates = false;
         if (local != null && localVc != null && incomingVc != null) {
           final cmp = VectorClock.compare(localVc, incomingVc);
-          if (cmp == VclockStatus.a_gt_b || cmp == VclockStatus.equal) {
-            // Local copy already covers the incoming version — leave the
-            // on-disk JSON cache alone so SmartJournalEntityLoader returns
-            // the canonical local entity instead of an older bundled
-            // payload.
-            skipWrite = true;
-            _trace(
-              'outboxBundle.entry.localDominates id=${envelope.id} '
-              'jsonPath=${envelope.jsonPath} status=$cmp',
-              subDomain: 'processor.resolve.outboxBundle',
-            );
-          }
+          localDominates =
+              cmp == VclockStatus.a_gt_b || cmp == VclockStatus.equal;
         }
-        if (!skipWrite) {
+
+        final Map<String, dynamic> payloadToWrite;
+        if (localDominates) {
+          // Refresh the on-disk cache from the canonical DB version. The
+          // cache file may be stale or missing — writing the dominant
+          // local entity back guarantees the apply pipeline's
+          // SmartJournalEntityLoader reads the right data instead of
+          // serving a stale fixture or hitting a descriptor miss.
+          // `local` is non-null here because `localDominates` requires it.
+          payloadToWrite = local!.toJson();
+          _trace(
+            'outboxBundle.entry.localDominates id=${envelope.id} '
+            'jsonPath=${envelope.jsonPath}',
+            subDomain: 'processor.resolve.outboxBundle',
+          );
+        } else {
           if (payload is! Map<String, dynamic>) {
+            // Malformed manifest: a SyncJournalEntity envelope without an
+            // inline payload cannot be applied. Skipping this child would
+            // ack the bundle while the entity never reaches the local DB
+            // (silent loss). Drop the whole bundle instead — peers can
+            // recover the entry via the sequence-log backfill path.
             _loggingService.captureException(
               'outboxBundle entry missing payload for SyncJournalEntity '
               'id=${envelope.id} jsonPath=${envelope.jsonPath} — '
-              'cannot apply',
+              'dropping the whole bundle so missing entries surface via '
+              'the sequence-log backfill path instead of being lost',
               domain: 'MATRIX_SERVICE',
               subDomain: 'processor.resolve.outboxBundle.missingPayload',
             );
-            continue;
+            return null;
           }
-          try {
-            final entityFile = resolveJsonCandidateFile(envelope.jsonPath);
-            await saveJson(entityFile.path, json.encode(payload));
-            _trace(
-              'outboxBundle.entry.materialized id=${envelope.id} '
-              'jsonPath=${envelope.jsonPath}',
-              subDomain: 'processor.resolve.outboxBundle',
-            );
-          } on FileSystemException catch (e, st) {
-            _loggingService.captureException(
-              e,
-              domain: 'MATRIX_SERVICE',
-              subDomain: 'processor.resolve.outboxBundle.writePayload',
-              stackTrace: st,
-            );
-            continue;
-          }
+          payloadToWrite = payload;
         }
+
+        final File entityFile;
+        try {
+          entityFile = resolveJsonCandidateFile(envelope.jsonPath);
+        } on FileSystemException catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'processor.resolve.outboxBundle.invalidEntryPath',
+            stackTrace: st,
+          );
+          return null;
+        }
+
+        writePlans.add(
+          _OutboxBundleWritePlan(
+            envelopeId: envelope.id,
+            jsonPath: envelope.jsonPath,
+            filePath: entityFile.path,
+            payload: payloadToWrite,
+          ),
+        );
       }
 
       children.add(envelope);
+    }
+
+    // Issue every write in parallel so up to [outboxBundleMaxSize] atomic
+    // file writes overlap instead of running sequentially. A single
+    // FileSystemException is surfaced as an IOException to the unpacker,
+    // which rethrows for a whole-bundle retry; the rest of the writes
+    // either complete or are retried idempotently on the next pass.
+    if (writePlans.isNotEmpty) {
+      await Future.wait(
+        writePlans.map((plan) async {
+          await saveJson(plan.filePath, json.encode(plan.payload));
+          _trace(
+            'outboxBundle.entry.materialized id=${plan.envelopeId} '
+            'jsonPath=${plan.jsonPath}',
+            subDomain: 'processor.resolve.outboxBundle',
+          );
+        }),
+      );
     }
 
     return SyncOutboxBundle(
@@ -2305,4 +2353,22 @@ class _OutboxBundleManifestEntry {
 
   final SyncMessage envelope;
   final Object? payload;
+}
+
+/// One pending on-disk JSON cache write planned by the outbox bundle
+/// resolver. The resolver builds a list of plans up-front (rejecting the
+/// whole bundle on malformed entries) and dispatches them via
+/// `Future.wait` so 50 atomic writes overlap instead of running serially.
+class _OutboxBundleWritePlan {
+  _OutboxBundleWritePlan({
+    required this.envelopeId,
+    required this.jsonPath,
+    required this.filePath,
+    required this.payload,
+  });
+
+  final String envelopeId;
+  final String jsonPath;
+  final String filePath;
+  final Map<String, dynamic> payload;
 }

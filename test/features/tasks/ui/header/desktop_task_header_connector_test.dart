@@ -18,6 +18,7 @@ import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
+import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -73,6 +74,12 @@ void main() {
     when(
       () => mockCache.sortedLabels,
     ).thenReturn(const <LabelDefinition>[]);
+    when(
+      () => mockCache.filterLabelsForCategory(any(), any()),
+    ).thenAnswer(
+      (invocation) =>
+          invocation.positionalArguments.first as List<LabelDefinition>,
+    );
 
     getIt
       ..registerSingleton<EntitiesCacheService>(mockCache)
@@ -511,7 +518,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping the Add Label placeholder fires the label selector closure',
+      'tapping the Add Label placeholder opens the label selector modal',
       (tester) async {
         // Empty labelIds → meta row renders the muted "Add Label" ghost.
         final task = buildTask();
@@ -520,25 +527,11 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Add Label'));
-        // Modal opens; its inner label-sliver content reads providers that
-        // aren't wired in this fixture. A single pump is enough for the
-        // connector's onAddLabelTap → _openLabelSelector path to fire.
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        // The captured exception must be non-null — that proves the modal
-        // route was actually pushed (its inner sliver tried to build and
-        // failed on a missing label provider). If the closure under test
-        // regressed and never opened the modal, no exception would surface
-        // and `takeException()` would return `null`, failing this expect.
-        // This way we don't silently swallow a real regression.
-        expect(
-          tester.takeException(),
-          isNotNull,
-          reason:
-              'onAddLabelTap closure should have opened the label selector '
-              'modal, whose inner sliver throws a provider error in this '
-              'fixture. A null exception means the modal never opened.',
-        );
+        // The label selection sliver mounts inside the modal once the
+        // onAddLabelTap → _openLabelSelector path fires.
+        expect(find.byType(LabelSelectionSliverContent), findsOneWidget);
       },
     );
 

@@ -619,6 +619,15 @@ class MatrixMessageSender {
 
     final host = await _vectorClockService?.getHost();
 
+    // Track journal-entity children whose DB row vanished between enqueue
+    // and dequeue (rare, but possible if the entity was deleted locally
+    // mid-flight). Silently dropping such children would let the bundle
+    // ack while one entity never reaches peers — permanent data loss.
+    // Failing the whole bundle drops to the existing retry path; once the
+    // row caps out it ends up in `error` status so an operator can
+    // investigate, exactly like a standalone send with a missing entity.
+    final missingJournalEntityIds = <String>[];
+
     final entries = <Map<String, dynamic>>[];
     for (final child in message.children) {
       final reconciled = _reconcileBundleChildEnvelope(
@@ -629,14 +638,30 @@ class MatrixMessageSender {
       final record = <String, dynamic>{
         'envelope': reconciled.toJson(),
       };
-      final payload = _loadBundleChildPayload(
-        reconciled,
-        journalEntityById: journalEntityById,
-      );
-      if (payload != null) {
-        record['payload'] = payload;
+      if (reconciled is SyncJournalEntity) {
+        final entity = journalEntityById[reconciled.id];
+        if (entity == null) {
+          missingJournalEntityIds.add(reconciled.id);
+          continue;
+        }
+        record['payload'] = entity.toJson();
       }
       entries.add(record);
+    }
+
+    if (missingJournalEntityIds.isNotEmpty) {
+      _loggingService.captureException(
+        'outboxBundle aborting: '
+        '${missingJournalEntityIds.length} journal entity '
+        'payload(s) missing from DB '
+        '(ids=$missingJournalEntityIds) — '
+        'failing the bundle so the row stays pending and the standard '
+        'retry/cap path surfaces the rotten entry instead of silently '
+        'dropping it from the manifest',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.outboxBundle.missingEntity',
+      );
+      return null;
     }
 
     final manifest = <String, dynamic>{
@@ -646,8 +671,10 @@ class MatrixMessageSender {
 
     Uint8List gzipped;
     try {
-      final manifestBytes = utf8.encode(json.encode(manifest));
-      gzipped = await gzipEncodeBytes(manifestBytes);
+      // Run json.encode + utf8.encode + gzip on a worker isolate so a
+      // bundle of up to [SyncTuning.outboxBundleMaxSize] entities does not
+      // stall the UI thread for the duration of the encode pipeline.
+      gzipped = await gzipEncodeJson(manifest);
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,
@@ -824,10 +851,25 @@ class MatrixMessageSender {
       return reconciled;
     }
 
-    if (child is SyncEntryLink &&
-        child.originatingHostId == null &&
-        host != null) {
-      return child.copyWith(originatingHostId: host);
+    if (child is SyncEntryLink) {
+      // Mirror the standalone entry-link send path in `sendMatrixMessage`:
+      // the link's own vector clock must be folded into
+      // `coveredVectorClocks` before dispatch, otherwise bundled and
+      // unbundled deliveries produce divergent sequence metadata and
+      // `recordReceivedEntryLink` cannot do gap detection consistently.
+      final covered = VectorClock.mergeUniqueClocks([
+        ...?child.coveredVectorClocks,
+        child.entryLink.vectorClock,
+      ]);
+      final originating = child.originatingHostId ?? host;
+      if (covered == child.coveredVectorClocks &&
+          originating == child.originatingHostId) {
+        return child;
+      }
+      return child.copyWith(
+        originatingHostId: originating,
+        coveredVectorClocks: covered,
+      );
     }
 
     if (child is SyncAgentEntity &&
@@ -862,31 +904,6 @@ class MatrixMessageSender {
     }
 
     return child;
-  }
-
-  /// Returns the body to inline alongside [child]'s envelope in the manifest,
-  /// or null when the envelope already carries everything the receiver needs.
-  /// Only [SyncJournalEntity] children require an inline payload; agent and
-  /// inline-only families (entry link, ai config, theming, backfill) ride
-  /// inside the envelope itself.
-  Map<String, dynamic>? _loadBundleChildPayload(
-    SyncMessage child, {
-    required Map<String, JournalEntity> journalEntityById,
-  }) {
-    if (child is SyncJournalEntity) {
-      final entity = journalEntityById[child.id];
-      if (entity == null) {
-        _loggingService.captureEvent(
-          'outboxBundle child entity not found in DB id=${child.id} '
-          'jsonPath=${child.jsonPath} — sending envelope only',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg.outboxBundle.missingEntity',
-        );
-        return null;
-      }
-      return entity.toJson();
-    }
-    return null;
   }
 
   /// Enriches and uploads agent payload (entity or link).
