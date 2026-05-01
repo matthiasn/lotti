@@ -49,6 +49,13 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     task: (task) => task.data.priority.rank,
     orElse: () => null,
   );
+  // Denormalized shadow of `task.data.due` — stays in sync via every
+  // upsert because `insertOnConflictUpdate` rewrites the column from this
+  // value. NULL on non-Task rows and on tasks without a due date.
+  final dueAt = entity.maybeMap(
+    task: (task) => task.data.due,
+    orElse: () => null,
+  );
 
   final id = entity.meta.id;
   final dbEntity = JournalDbEntity(
@@ -64,6 +71,7 @@ JournalDbEntity toDbEntity(JournalEntity entity) {
     taskStatus: taskStatus,
     taskPriority: taskPriority,
     taskPriorityRank: taskPriorityRank,
+    dueAt: dueAt,
     category: entity.meta.categoryId ?? '',
     dateTo: entity.meta.dateTo,
     plainText: entity.entryText?.plainText,

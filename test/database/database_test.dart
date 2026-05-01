@@ -1771,37 +1771,38 @@ void main() {
         },
       );
 
-      test('tasks due queries use the active due-date index', () async {
-        final endOfDay = DateTime(
-          2024,
-          10,
-          5,
-          23,
-          59,
-          59,
-          999,
-        ).toIso8601String();
+      test(
+        'open-task due-date queries use idx_journal_tasks_due_open',
+        () async {
+          // After v41 the hot path reads the denormalized `due_at` column
+          // and pins the partial `idx_journal_tasks_due_open`. The composite
+          // `idx_journal_tasks_due_active` was dropped in v41.
+          final endOfDay = DateTime(2024, 10, 5, 23, 59, 59, 999);
 
-        final plan = await db!
-            .customSelect(
-              r'''
+          final plan = await db!
+              .customSelect(
+                '''
           EXPLAIN QUERY PLAN
-          SELECT * FROM journal INDEXED BY idx_journal_tasks_due_active
+          SELECT * FROM journal INDEXED BY idx_journal_tasks_due_open
           WHERE type = 'Task'
-          AND deleted = 0
+          AND task = 1
+          AND deleted = FALSE
           AND task_status NOT IN ('DONE', 'REJECTED')
-          AND json_extract(serialized, '$.data.due') IS NOT NULL
-          AND json_extract(serialized, '$.data.due') <= ?1
+          AND due_at IS NOT NULL
+          AND due_at <= ?1
           AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-          ORDER BY json_extract(serialized, '$.data.due') ASC
+          ORDER BY due_at ASC
           ''',
-              variables: [drift.Variable<String>(endOfDay)],
-            )
-            .get();
+                variables: [drift.Variable<DateTime>(endOfDay)],
+              )
+              .get();
 
-        final details = plan.map((row) => row.read<String>('detail')).join(' ');
-        expect(details, contains('idx_journal_tasks_due_active'));
-      });
+          final details = plan
+              .map((row) => row.read<String>('detail'))
+              .join(' ');
+          expect(details, contains('idx_journal_tasks_due_open'));
+        },
+      );
 
       test(
         'date-sorted task queries use the date-oriented task index',

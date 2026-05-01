@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.983]
+### Changed
+- DailyOS due-task hot path (`getTasksDueOn` / `getTasksDueOnOrBefore`)
+  now reads a denormalized `due_at INTEGER` column on `journal` instead
+  of `json_extract(serialized,'$.data.due')`. The partial
+  `idx_journal_tasks_due_open` is rebuilt on the column so the planner
+  streams `ORDER BY due_at ASC` straight from the index without
+  per-row JSON parsing, eliminating the planner-fragility that required
+  the previous `INDEXED BY` pin plus JSON-fallback safety net. The
+  `due_at` shadow is populated by `toDbEntity` on every upsert and
+  back-filled for every existing task with a non-null `data.due` —
+  including completed and rejected tasks — by the v41 migration. The
+  serialized JSON payload is unchanged; the column is purely a
+  query-acceleration shadow.
+
 ### Fixed
 - Improved sync reliability between devices.
 

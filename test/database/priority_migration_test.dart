@@ -187,17 +187,16 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 40);
+        expect(db.schemaVersion, 41);
 
+        // The non-partial composite `idx_journal_tasks_due_active` was
+        // dropped in v41 — its only consumer (`getTasksSortedByDueDate`)
+        // was rewritten to read the denormalized `due_at` column.
         final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
         WHERE type='index' AND name='idx_journal_tasks_due_active'
       """).get();
-        expect(idx, hasLength(1));
-        final sql = idx.first.read<String>('sql');
-        expect(sql, contains(r"json_extract(serialized, '$.data.due')"));
-        expect(sql, contains('type COLLATE BINARY ASC'));
-        expect(sql, contains('deleted COLLATE BINARY ASC'));
+        expect(idx, isEmpty);
 
         await db.close();
       },
@@ -247,7 +246,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 40);
+      expect(db.schemaVersion, 41);
 
       final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
@@ -379,7 +378,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 40);
+        expect(db.schemaVersion, 41);
 
         final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
@@ -520,7 +519,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 40);
+        expect(db.schemaVersion, 41);
 
         final taskIdx = await db.customSelect("""
         SELECT sql FROM sqlite_master

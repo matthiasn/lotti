@@ -25,13 +25,19 @@ part 'database.g.dart';
 
 const journalDbFileName = 'db.sqlite';
 
-// v39 partial indexes. Declared as top-level constants so the `onUpgrade`
+// Partial indexes declared as top-level constants so the `onUpgrade`
 // migration, `beforeOpen` self-heal, and the migration tests all share one
 // SQL definition. The strings start with `CREATE INDEX ` so both call sites
 // can prefix `IF NOT EXISTS` via a single replaceFirst.
+//
+// `idx_journal_tasks_due_open` is keyed on the denormalized `due_at`
+// column (added in v41), replacing the original v39 expression-keyed
+// shape `json_extract(serialized,'$.data.due')`. The new column lets the
+// planner stream `ORDER BY due_at ASC` directly from the index without
+// per-row JSON parsing.
 const String _createIdxJournalTasksDueOpenSql =
     'CREATE INDEX idx_journal_tasks_due_open '
-    r"ON journal(json_extract(serialized, '$.data.due') ASC) "
+    'ON journal(due_at ASC) '
     "WHERE type = 'Task' "
     'AND task = 1 '
     'AND deleted = FALSE '
@@ -110,7 +116,7 @@ class JournalDb extends _$JournalDb {
   bool _configFlagsLoaded = false;
 
   @override
-  int get schemaVersion => 40;
+  int get schemaVersion => 41;
 
   /// Conservative chunk size for `IN :ids` drift queries to stay under
   /// SQLite's default `SQLITE_MAX_VARIABLE_NUMBER` of 999 with headroom
@@ -122,12 +128,23 @@ class JournalDb extends _$JournalDb {
     return MigrationStrategy(
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
-        // Self-heal the v39 partial indexes on every open. Devices that
-        // failed the v39 migration (e.g. aborted mid-upgrade) could otherwise
-        // land with `user_version = 39` but no index, breaking every DailyOS
-        // query that pins the index via INDEXED BY. Guarded on `journal`
-        // existing because minimal migration-test schemas omit it.
+        // Self-heal the partial indexes on every open. Devices that failed
+        // their migration (e.g. aborted mid-upgrade) could otherwise land
+        // with the user_version bumped but the index missing, breaking
+        // every DailyOS query that pins the index via INDEXED BY. Guarded
+        // on `journal` existing because minimal migration-test schemas
+        // omit it.
         if (await _tableExists('journal')) {
+          // v41 added the denormalized `due_at` column. The partial
+          // `idx_journal_tasks_due_open` re-creation below is keyed on
+          // that column, so the column must exist first. A device that
+          // aborted the v41 migration after bumping user_version but
+          // before adding the column would otherwise crash here.
+          if (!await _columnExists('journal', 'due_at')) {
+            await customStatement(
+              'ALTER TABLE journal ADD COLUMN due_at DATETIME',
+            );
+          }
           await customStatement(
             _asIfNotExists(_createIdxJournalTasksDueOpenSql),
           );
@@ -320,18 +337,21 @@ class JournalDb extends _$JournalDb {
           }();
         }
 
-        // v33: Rebuild the active task due-date index as a non-partial
-        // composite index so it can be safely forced with INDEXED BY.
+        // v33: Originally rebuilt the active task due-date index as a
+        // non-partial composite so it could be forced with INDEXED BY.
+        // The index itself is dropped in v41 (consumer rewritten to read
+        // the denormalized `due_at` column), so the v33 step is now just a
+        // no-op DROP — both for fresh installs that skip straight to v41
+        // and for legacy databases that already created the old index.
         if (from < 33) {
           await () async {
             DevLogger.log(
               name: 'JournalDb',
-              message: 'Rebuilding active task due-date index',
+              message: 'Dropping legacy active task due-date index',
             );
             await customStatement(
               'DROP INDEX IF EXISTS idx_journal_tasks_due_active',
             );
-            await m.createIndex(idxJournalTasksDueActive);
           }();
         }
 
@@ -467,11 +487,13 @@ class JournalDb extends _$JournalDb {
         // query (`_selectTasksDue`) so the ORDER BY streams from the index,
         // and add idx_journal_task_status_private so `countInProgressTasks`
         // and similar global task-status counts can use a narrow partial
-        // index instead of scanning the full task set. The existing
-        // non-partial `idx_journal_tasks_due_active` is intentionally left
-        // in place — other callers (e.g. `getTasksSortedByDueDate`) pin it
-        // via INDEXED BY with IN-list task_status predicates that can't
-        // prove the partial's WHERE.
+        // index instead of scanning the full task set.
+        //
+        // The due-open partial is created here in its original
+        // expression-keyed shape (`json_extract(serialized,'$.data.due')`)
+        // because the `due_at` column it would otherwise reference is not
+        // added until v41. The v41 step below drops this expression-keyed
+        // form and recreates the partial on the column.
         if (from < 39) {
           await () async {
             if (!await _tableExists('journal')) return;
@@ -484,7 +506,14 @@ class JournalDb extends _$JournalDb {
             await customStatement(
               'DROP INDEX IF EXISTS idx_journal_tasks_due_open',
             );
-            await customStatement(_createIdxJournalTasksDueOpenSql);
+            await customStatement(
+              'CREATE INDEX idx_journal_tasks_due_open '
+              r"ON journal(json_extract(serialized, '$.data.due') ASC) "
+              "WHERE type = 'Task' "
+              'AND task = 1 '
+              'AND deleted = FALSE '
+              "AND task_status NOT IN ('DONE', 'REJECTED')",
+            );
             await customStatement(
               'DROP INDEX IF EXISTS idx_journal_task_status_private',
             );
@@ -545,6 +574,76 @@ class JournalDb extends _$JournalDb {
               );
               await m.createIndex(idxJournalProjectTaskStatus);
             }
+          }();
+        }
+
+        // v41: Replace the `json_extract(serialized,'$.data.due')`
+        // expression-keyed `idx_journal_tasks_due_open` with a partial
+        // index over a real `due_at` column. The denormalized column
+        // lets the planner stream `ORDER BY due_at ASC` directly from
+        // the index without touching `serialized`, eliminates per-row
+        // JSON parsing on the DailyOS hot path, and removes the
+        // planner-fragility that required the `INDEXED BY` pin plus a
+        // JSON-fallback safety net.
+        //
+        // The non-partial composite `idx_journal_tasks_due_active` is
+        // dropped because its only consumer (`getTasksSortedByDueDate`)
+        // is rewritten in this release to read `due_at` and let the
+        // planner choose its own access path.
+        if (from < 41) {
+          await () async {
+            if (!await _tableExists('journal')) return;
+            DevLogger.log(
+              name: 'JournalDb',
+              message:
+                  'Adding due_at column, backfilling from JSON, '
+                  'recreating tasks-due partial index',
+            );
+
+            // 1. Add the nullable column. Idempotent via column-existence
+            //    check (mirrors the project_id / task_priority_rank
+            //    migration shape).
+            if (!await _columnExists('journal', 'due_at')) {
+              await customStatement(
+                'ALTER TABLE journal ADD COLUMN due_at DATETIME',
+              );
+            }
+
+            // 2. Backfill from JSON for every task with a non-null
+            //    `data.due`, regardless of status. `getTasksSortedByDueDate`
+            //    reads across all statuses and range queries like "tasks
+            //    due yesterday" must light up completed/rejected tasks too,
+            //    so leaving closed tasks NULL would silently drop them
+            //    from range scans and corrupt sort order.
+            //
+            //    Encoding: `strftime('%s', ...)` returns Unix seconds as
+            //    TEXT; `CAST(... AS INTEGER)` matches Drift's default
+            //    DateTime mapping (`millisecondsSinceEpoch ~/ 1000`). Do
+            //    NOT use `datetime(...)` — that returns canonical TEXT
+            //    and would corrupt the integer column.
+            await customStatement(
+              'UPDATE journal '
+              "SET due_at = CAST(strftime('%s', "
+              r"  json_extract(serialized, '$.data.due')) AS INTEGER) "
+              "WHERE type = 'Task' AND task = 1 AND deleted = FALSE "
+              r"  AND json_extract(serialized, '$.data.due') IS NOT NULL",
+            );
+
+            // 3. Drop the old expression-keyed partial and re-create on
+            //    the column. `_createIdxJournalTasksDueOpenSql` is the
+            //    canonical column-keyed form shared with `beforeOpen`.
+            await customStatement(
+              'DROP INDEX IF EXISTS idx_journal_tasks_due_open',
+            );
+            await customStatement(_createIdxJournalTasksDueOpenSql);
+
+            // 4. Drop the unused non-partial composite. Its only
+            //    consumer was `getTasksSortedByDueDate` via INDEXED BY,
+            //    rewritten this release to use `due_at` and let the
+            //    planner choose its own access path.
+            await customStatement(
+              'DROP INDEX IF EXISTS idx_journal_tasks_due_active',
+            );
           }();
         }
       },
@@ -1346,10 +1445,11 @@ class JournalDb extends _$JournalDb {
 
     final variables = <Variable<Object>>[];
     final buf = StringBuffer()
-      ..write(
-        'SELECT * FROM journal '
-        'INDEXED BY idx_journal_tasks_due_active ',
-      )
+      // No INDEXED BY pin: with the denormalized `due_at` column the
+      // planner reliably picks `idx_journal_tasks_due_open` for the
+      // open-task subset and otherwise streams from the priority/date
+      // task indexes. Pinning here is no longer necessary.
+      ..write('SELECT * FROM journal ')
       ..write("WHERE type = 'Task' AND task = 1 AND deleted = 0 ")
       // Task statuses
       ..write('AND task_status IN (');
@@ -1447,12 +1547,15 @@ class JournalDb extends _$JournalDb {
       buf.write(') ');
     }
 
-    // Order: due date ASC (nulls last), then date_from DESC as tiebreaker
+    // Order: due date ASC (nulls last), then date_from DESC as tiebreaker.
+    // Reads `due_at` directly — the v41 backfill populated the column for
+    // every task with a non-null `data.due`, regardless of status, so
+    // closed-task ordering is correct from the moment the migration
+    // completes.
     buf
       ..write(
-        r"ORDER BY CASE WHEN json_extract(serialized, '$.data.due') "
-        'IS NULL THEN 1 ELSE 0 END, '
-        r"json_extract(serialized, '$.data.due') ASC, "
+        'ORDER BY CASE WHEN due_at IS NULL THEN 1 ELSE 0 END, '
+        'due_at ASC, '
         'date_from DESC ',
       )
       ..write('LIMIT ')
@@ -2447,7 +2550,7 @@ class JournalDb extends _$JournalDb {
     required List<bool> privateStatuses,
   }) async {
     final rows = await _selectTasksDue(
-      endIso: endInclusive.toIso8601String(),
+      endInclusive: endInclusive,
       privateStatuses: privateStatuses,
     );
     return rows.map(fromDbEntity).whereType<Task>().toList(growable: false);
@@ -2505,21 +2608,26 @@ class JournalDb extends _$JournalDb {
   }
 
   // Drift SQL doesn't support `INDEXED BY`, so keep the due-date hot path in
-  // raw SQL to force the partial `idx_journal_tasks_due_open` on large journal
-  // tables. If SQLite can't prove the pin on a given device (observed in
-  // mobile TestFlight builds as `SqliteException(1): no query solution`), we
-  // fall back to the unpinned query so DailyOS never hard-fails.
+  // raw SQL to force the partial `idx_journal_tasks_due_open` on large
+  // journal tables. The index is keyed on the denormalized `due_at` column
+  // (added in v41), so the planner can stream `ORDER BY due_at ASC` from
+  // the index without parsing JSON per row.
+  //
+  // The fallback path is preserved as belt-and-suspenders for one release.
+  // With a real column the pin should always resolve, so any fallback
+  // firing is a signal that the migration silently failed on a device and
+  // we need to investigate via the warning log.
   Future<List<JournalDbEntity>> _selectTasksDue({
-    required String endIso,
+    required DateTime endInclusive,
     required List<bool> privateStatuses,
-    String? startIso,
+    DateTime? startInclusive,
   }) async {
     Future<List<JournalDbEntity>> runQuery(String? indexedBy) {
       final variables = <Variable<Object>>[];
       final query = _buildSelectTasksDue(
-        endIso: endIso,
+        endInclusive: endInclusive,
         privateStatuses: privateStatuses,
-        startIso: startIso,
+        startInclusive: startInclusive,
         variables: variables,
         indexedBy: indexedBy,
       );
@@ -2535,9 +2643,10 @@ class JournalDb extends _$JournalDb {
     } catch (e, stack) {
       // Fall back on any SQLITE_ERROR from the pinned query. Covers both
       // "no query solution" (pin can't be proven) and "no such index"
-      // (partial missing). Drift may wrap `SqliteException` when running in
-      // a background isolate, so match on the printed message as well as the
-      // type. `beforeOpen` self-heals the partial index on next launch.
+      // (partial missing). Drift may wrap `SqliteException` when running
+      // in a background isolate, so match on the printed message as well
+      // as the type. `beforeOpen` self-heals the partial index on next
+      // launch.
       final isSqliteError =
           (e is SqliteException && e.resultCode == 1) ||
           e.toString().contains('SqliteException(1)');
@@ -2546,7 +2655,9 @@ class JournalDb extends _$JournalDb {
         name: 'JournalDb',
         message:
             '_selectTasksDue INDEXED BY rejected by SQLite — falling back '
-            'to unpinned query',
+            'to unpinned query. The v41 column-keyed index should always '
+            'resolve, so this likely means the migration did not complete '
+            'on this device.',
         error: e,
         stackTrace: stack,
       );
@@ -2555,11 +2666,11 @@ class JournalDb extends _$JournalDb {
   }
 
   String _buildSelectTasksDue({
-    required String endIso,
+    required DateTime endInclusive,
     required List<bool> privateStatuses,
     required List<Variable<Object>> variables,
     required String? indexedBy,
-    String? startIso,
+    DateTime? startInclusive,
   }) {
     final buffer = StringBuffer()
       ..write('SELECT * FROM journal ')
@@ -2568,22 +2679,16 @@ class JournalDb extends _$JournalDb {
       ..write('AND task = 1 ')
       ..write('AND deleted = FALSE ')
       ..write("AND task_status NOT IN ('DONE', 'REJECTED') ")
-      ..write(r"AND json_extract(serialized, '$.data.due') IS NOT NULL ");
+      ..write('AND due_at IS NOT NULL ');
 
-    if (startIso != null) {
-      variables.add(Variable<String>(startIso));
-      buffer.write(
-        r"AND json_extract(serialized, '$.data.due') >= "
-        '?${variables.length} ',
-      );
+    if (startInclusive != null) {
+      variables.add(Variable<DateTime>(startInclusive));
+      buffer.write('AND due_at >= ?${variables.length} ');
     }
 
-    variables.add(Variable<String>(endIso));
+    variables.add(Variable<DateTime>(endInclusive));
     buffer
-      ..write(
-        r"AND json_extract(serialized, '$.data.due') <= "
-        '?${variables.length} ',
-      )
+      ..write('AND due_at <= ?${variables.length} ')
       ..write('AND private IN (');
 
     for (var i = 0; i < privateStatuses.length; i++) {
@@ -2596,7 +2701,7 @@ class JournalDb extends _$JournalDb {
 
     buffer
       ..write(') ')
-      ..write(r"ORDER BY json_extract(serialized, '$.data.due') ASC");
+      ..write('ORDER BY due_at ASC');
 
     return buffer.toString();
   }
