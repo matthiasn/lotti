@@ -200,15 +200,38 @@ class SyncTuning {
   // cost per page.
   static const int bootstrapAttachmentConcurrency = 4;
 
+  // Default upper bound for the queue's generic `peekBatchReady` call
+  // — used by ad-hoc inspection paths (settings UI, tests) where
+  // returning more rows is harmless. The InboundWorker overrides this
+  // at every call site with its own [inboundWorkerBatchSize] policy.
+  static const int peekBatchReadyDefault = processOrderedChunkSize;
+
   // Size of the batch the InboundWorker drains in a single
-  // `runWithDeferredMissingEntries` window. Matches
-  // [processOrderedChunkSize] so the one-worker model keeps today's
-  // slice-level coalescing of `_emitMissingEntriesDetected` calls —
-  // the F1 concern from the queue-design review. The worker commits
-  // each entry individually within the window; the window only
-  // governs how many nudges we batch before letting the depth
-  // counter close.
-  static const int inboundWorkerBatchSize = processOrderedChunkSize;
+  // `runWithDeferredMissingEntries` window.
+  //
+  // Originally aliased to [processOrderedChunkSize] (20) under the
+  // assumption that each queue entry was a thin envelope (~2 KB on the
+  // wire, one entity per Matrix event); 20-way parallel prepare paid
+  // off because the per-entry I/O was a single small attachment
+  // download.
+  //
+  // With dequeue-time outbox bundling (`SyncMessage.outboxBundle`),
+  // one queue entry now carries up to [outboxBundleMaxSize] inline
+  // children plus their `JournalEntity` payloads in a single gzipped
+  // manifest. Twenty bundles in flight = up to 1000 entities + 1000
+  // saveJson calls + ~50 MB of decoded entity objects sitting in
+  // memory before any of them commits. The receiver-side stalls and
+  // step-of-20 progress jumps observed during heavy backfill
+  // (PR #3038) traced back to that fan-out.
+  //
+  // A bundle already amortizes 50 entities into a single download, so
+  // the per-batch parallelism added little on top. Drop the worker to
+  // batch size 1: each entry runs prepare → apply → commit in
+  // sequence, queue depth ticks down per row (smooth visible
+  // progress), memory peak is bounded by one bundle, and thermal load
+  // drops because we no longer fan out 20 compute-isolate decode hops
+  // in parallel.
+  static const int inboundWorkerBatchSize = 1;
 
   // Worker lease TTL stamped onto a queue entry by `peekBatchReady`.
   // Survives crashes: an expired lease makes the entry peekable
