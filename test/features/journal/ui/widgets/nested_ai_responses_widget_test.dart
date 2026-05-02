@@ -80,6 +80,10 @@ void main() {
   late MockLoggingService mockLoggingService;
   late StreamController<Set<String>> updateStreamController;
 
+  setUpAll(() {
+    registerFallbackValue(const <String>[]);
+  });
+
   setUp(() {
     mockJournalRepository = MockJournalRepository();
     mockUpdateNotifications = MockUpdateNotifications();
@@ -89,6 +93,24 @@ void main() {
     when(
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
+
+    // Default stub for the bulk fetch path. The controller now coalesces
+    // its N parallel `getJournalEntityById` calls into a single
+    // `getJournalEntitiesByIds`. Existing test bodies still stub the
+    // per-id getter; this default delegates to those stubs so the
+    // individual setups keep working without rewrites.
+    when(
+      () => mockJournalRepository.getJournalEntitiesByIds(any()),
+    ).thenAnswer((invocation) async {
+      final ids = (invocation.positionalArguments.first as Iterable<String>)
+          .toList();
+      final results = <JournalEntity>[];
+      for (final id in ids) {
+        final entity = await mockJournalRepository.getJournalEntityById(id);
+        if (entity != null) results.add(entity);
+      }
+      return results;
+    });
 
     getIt.allowReassignment = true;
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);

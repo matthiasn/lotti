@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.988]
+### Fixed
+- Faster task-list, projects, and inbound sync queries via new SQLite
+  indices and tighter sync transactions.
+  - New partial index `idx_journal_tasks_status_priority_date` streams
+    the open-tasks list ordered by `(task_priority_rank, date_from DESC)`
+    without falling back to a temporary B-tree, even when many categories
+    are selected.
+  - New covering `idx_linked_entries_from_id_hidden_to_id` resolves the
+    bulk linked-time-spans query index-only on the linked side.
+  - New `idx_inbound_event_queue_status_enqueued` lets the queue-stats
+    `COUNT(*) + MIN(enqueued_at)` poll seek by status and pick MIN from
+    the index instead of scanning the full queue ledger.
+  - `claimNextOutboxBatch` no longer scans the outbox: the original
+    `status = pending OR (status = sending AND updated_at < cutoff)`
+    predicate is now two indexed seeks merged in Dart, each picked up
+    by the existing actionable partial index.
+- Sync apply for journal entities holds the journal writer lock only
+  around the actual writes. Cross-database awaits (sync-sequence log
+  recording, pre-write `journalEntityById` reads) now run outside the
+  journal transaction so concurrent readers no longer queue for
+  hundreds of milliseconds per applied event.
+- Removed the per-open self-heal block that re-issued
+  `CREATE INDEX IF NOT EXISTS` on every database connection. With
+  drift's read-pool the block ran nine times per launch (writer plus
+  eight read isolates) recovering from an incident that has not
+  occurred in production. `beforeOpen` is now just
+  `PRAGMA foreign_keys = ON`; if a migration is ever interrupted on a
+  future device the next schema bump will repair it.
+
 ## [0.9.987]
 ### Fixed
 - Inbox backfill no longer hangs for ten minutes per agent-bundle row. Removed

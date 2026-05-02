@@ -1,9 +1,10 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/slow_query_logging.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 
 class MockQueryExecutor extends Mock implements QueryExecutor {}
 
@@ -510,6 +511,259 @@ void main() {
         expect(reportedEntries, hasLength(1));
       });
     });
+
+    group('super-slow query plan capture', () {
+      setUp(() {
+        SlowQueryLoggingGate.isEnabled = true;
+        addTearDown(SlowQueryLoggingGate.resetForTest);
+      });
+
+      test('select crossing super threshold captures EXPLAIN QUERY PLAN '
+          'and marks entry isSuperSlow', () async {
+        // Force every reported query down the super-slow path so the test
+        // is deterministic regardless of how fast the mock returns.
+        interceptor = SlowQueryInterceptor(
+          databaseName: 'test_db',
+          threshold: Duration.zero,
+          superSlowThreshold: Duration.zero,
+          reporter: reportedEntries.add,
+        );
+
+        // First mock answer: actual select. Second mock answer: EXPLAIN.
+        var callCount = 0;
+        when(() => mockExecutor.runSelect(any(), any())).thenAnswer((
+          invocation,
+        ) async {
+          callCount++;
+          if (callCount == 1) return <Map<String, Object?>>[];
+          return <Map<String, Object?>>[
+            {'id': 2, 'parent': 0, 'detail': 'SEARCH journal USING IDX'},
+            {'id': 3, 'parent': 0, 'detail': 'SCAN linked_entries'},
+          ];
+        });
+
+        await interceptor.runSelect(
+          mockExecutor,
+          'SELECT * FROM journal WHERE id = ?',
+          <Object?>['x'],
+        );
+
+        expect(reportedEntries, hasLength(1));
+        expect(reportedEntries.first.isSuperSlow, isTrue);
+        expect(reportedEntries.first.queryPlan, <String>[
+          '2|0|SEARCH journal USING IDX',
+          '3|0|SCAN linked_entries',
+        ]);
+
+        // Original statement + EXPLAIN-prefixed statement both ran.
+        verify(
+          () => mockExecutor.runSelect(
+            'SELECT * FROM journal WHERE id = ?',
+            <Object?>['x'],
+          ),
+        ).called(1);
+        verify(
+          () => mockExecutor.runSelect(
+            'EXPLAIN QUERY PLAN SELECT * FROM journal WHERE id = ?',
+            <Object?>['x'],
+          ),
+        ).called(1);
+      });
+
+      test('select below super threshold does not run EXPLAIN', () async {
+        // Default 200ms super threshold; mock returns immediately.
+        interceptor = createInterceptor();
+
+        when(
+          () => mockExecutor.runSelect(any(), any()),
+        ).thenAnswer((_) async => <Map<String, Object?>>[]);
+
+        await interceptor.runSelect(
+          mockExecutor,
+          'SELECT 1',
+          <Object?>[],
+        );
+
+        expect(reportedEntries, hasLength(1));
+        expect(reportedEntries.first.isSuperSlow, isFalse);
+        expect(reportedEntries.first.queryPlan, isNull);
+        // Only the actual select; no EXPLAIN-prefixed call.
+        verify(
+          () => mockExecutor.runSelect('SELECT 1', <Object?>[]),
+        ).called(1);
+        verifyNoMoreInteractions(mockExecutor);
+      });
+
+      test('non-select operations never capture a plan', () async {
+        // Force reporter to fire on every call. Non-select paths should not
+        // call runSelect at all (no EXPLAIN), and queryPlan stays null.
+        interceptor = SlowQueryInterceptor(
+          databaseName: 'test_db',
+          threshold: Duration.zero,
+          superSlowThreshold: Duration.zero,
+          reporter: reportedEntries.add,
+        );
+
+        when(
+          () => mockExecutor.runUpdate(any(), any()),
+        ).thenAnswer((_) async => 1);
+
+        await interceptor.runUpdate(
+          mockExecutor,
+          'UPDATE journal SET deleted = TRUE',
+          <Object?>[],
+        );
+
+        expect(reportedEntries, hasLength(1));
+        expect(reportedEntries.first.isSuperSlow, isTrue);
+        expect(reportedEntries.first.queryPlan, isNull);
+        verifyNever(() => mockExecutor.runSelect(any(), any()));
+      });
+
+      test(
+        'first-call stack capture: gate off → no callerStack',
+        () async {
+          interceptor = SlowQueryInterceptor(
+            databaseName: 'test_db',
+            threshold: Duration.zero,
+            superSlowThreshold: Duration.zero,
+            reporter: reportedEntries.add,
+          );
+          when(
+            () => mockExecutor.runSelect(any(), any()),
+          ).thenAnswer((_) async => <Map<String, Object?>>[]);
+
+          await interceptor.runSelect(
+            mockExecutor,
+            'SELECT 1 -- gate-off-no-stack',
+            <Object?>[],
+          );
+
+          expect(reportedEntries, hasLength(1));
+          expect(reportedEntries.first.callerStack, isNull);
+        },
+      );
+
+      test(
+        'first-call stack capture: gate on → exactly one capture per '
+        'unique statement, subsequent fires of the same statement reuse '
+        'the seen-set so the boot wave produces one trace per shape, not '
+        'thousands of duplicates',
+        () async {
+          SlowQueryLoggingGate.captureFirstCallStack = true;
+          addTearDown(SlowQueryLoggingGate.resetForTest);
+
+          interceptor = SlowQueryInterceptor(
+            databaseName: 'test_db',
+            threshold: Duration.zero,
+            superSlowThreshold: Duration.zero,
+            reporter: reportedEntries.add,
+          );
+          when(
+            () => mockExecutor.runSelect(any(), any()),
+          ).thenAnswer((_) async => <Map<String, Object?>>[]);
+
+          await interceptor.runSelect(
+            mockExecutor,
+            'SELECT * FROM unique_stmt_first',
+            <Object?>[],
+          );
+          await interceptor.runSelect(
+            mockExecutor,
+            'SELECT * FROM unique_stmt_first',
+            <Object?>[],
+          );
+          await interceptor.runSelect(
+            mockExecutor,
+            'SELECT * FROM unique_stmt_second',
+            <Object?>[],
+          );
+
+          expect(reportedEntries, hasLength(3));
+          expect(
+            reportedEntries[0].callerStack,
+            isNotNull,
+            reason: 'first occurrence captures stack',
+          );
+          expect(
+            reportedEntries[1].callerStack,
+            isNull,
+            reason: 'duplicate statement skips capture',
+          );
+          expect(
+            reportedEntries[2].callerStack,
+            isNotNull,
+            reason: 'a different statement is its own first occurrence',
+          );
+        },
+      );
+
+      test(
+        'markStatementSeenAndIsFirst returns true exactly once per '
+        'statement and resetForTest clears the seen-set',
+        () {
+          expect(
+            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT a'),
+            isTrue,
+          );
+          expect(
+            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT a'),
+            isFalse,
+          );
+          expect(
+            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT b'),
+            isTrue,
+          );
+
+          SlowQueryLoggingGate.resetForTest();
+          expect(
+            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT a'),
+            isTrue,
+            reason: 'resetForTest clears the seen-set',
+          );
+        },
+      );
+
+      test(
+        'EXPLAIN failure does not break the original result or report',
+        () async {
+          interceptor = SlowQueryInterceptor(
+            databaseName: 'test_db',
+            threshold: Duration.zero,
+            superSlowThreshold: Duration.zero,
+            reporter: reportedEntries.add,
+          );
+
+          // First call succeeds (the real query); second call (EXPLAIN) blows up.
+          var callCount = 0;
+          when(() => mockExecutor.runSelect(any(), any())).thenAnswer((
+            invocation,
+          ) async {
+            callCount++;
+            if (callCount == 1) {
+              return <Map<String, Object?>>[
+                {'id': 1, 'name': 'Alice'},
+              ];
+            }
+            throw Exception('explain failed');
+          });
+
+          final result = await interceptor.runSelect(
+            mockExecutor,
+            'SELECT * FROM users',
+            <Object?>[],
+          );
+
+          expect(result, [
+            {'id': 1, 'name': 'Alice'},
+          ]);
+          expect(reportedEntries, hasLength(1));
+          expect(reportedEntries.first.isSuperSlow, isTrue);
+          // EXPLAIN failure leaves queryPlan null but the entry is still reported.
+          expect(reportedEntries.first.queryPlan, isNull);
+        },
+      );
+    });
   });
 
   group('fileReporter', () {
@@ -671,6 +925,182 @@ void main() {
         expect(lines[i], contains('INSERT $i'));
       }
     });
+
+    test('super-slow entry is duplicated to super_slow_queries log with '
+        'indented PLAN rows', () async {
+      final reporter = SlowQueryInterceptor.fileReporter(
+        documentsDirectoryPath: tempDir.path,
+      );
+
+      const entry = SlowQueryLogEntry(
+        databaseName: 'test_db',
+        operation: 'select',
+        statement: 'SELECT * FROM journal WHERE id = ?',
+        arguments: <Object?>['x'],
+        elapsed: Duration(milliseconds: 250),
+        isSuperSlow: true,
+        queryPlan: <String>[
+          '2|0|SEARCH journal USING IDX',
+          '3|0|SCAN linked_entries',
+        ],
+      );
+
+      reporter(entry);
+      await SlowQueryInterceptor.flushFileSinkForTest();
+
+      final logsDir = Directory('${tempDir.path}/logs');
+      final files = logsDir.listSync().whereType<File>().toList(
+        growable: false,
+      );
+      // One slow_queries file + one super_slow_queries file for the same day.
+      expect(files, hasLength(2));
+
+      final slowFile = files.firstWhere(
+        (f) => p.basename(f.path).startsWith('slow_queries-'),
+      );
+      final superFile = files.firstWhere(
+        (f) => p.basename(f.path).startsWith('super_slow_queries-'),
+      );
+
+      // The slow_queries file holds just the bare query line (no plan rows).
+      final slowContent = slowFile.readAsStringSync();
+      expect(slowContent, contains('250.000ms'));
+      expect(slowContent, isNot(contains('PLAN:')));
+
+      // The super file repeats the query line and appends indented plan rows.
+      final superContent = superFile.readAsStringSync();
+      expect(superContent, contains('250.000ms'));
+      expect(superContent, contains('  PLAN: 2|0|SEARCH journal USING IDX'));
+      expect(superContent, contains('  PLAN: 3|0|SCAN linked_entries'));
+    });
+
+    test('non-super-slow entry only writes to slow_queries log', () async {
+      final reporter = SlowQueryInterceptor.fileReporter(
+        documentsDirectoryPath: tempDir.path,
+      );
+
+      const entry = SlowQueryLogEntry(
+        databaseName: 'db',
+        operation: 'select',
+        statement: 'SELECT 1',
+        arguments: <Object?>[],
+        elapsed: Duration(milliseconds: 50),
+      );
+
+      reporter(entry);
+      await SlowQueryInterceptor.flushFileSinkForTest();
+
+      final logsDir = Directory('${tempDir.path}/logs');
+      final files = logsDir.listSync().whereType<File>().toList(
+        growable: false,
+      );
+      expect(files, hasLength(1));
+      expect(
+        p.basename(files.first.path),
+        startsWith('slow_queries-'),
+      );
+    });
+
+    test(
+      'super-slow entry with callerStack writes only app-code STACK lines '
+      'and drops drift / dart-runtime / interceptor frames so the log is '
+      'readable instead of buried in identical boilerplate',
+      () async {
+        final reporter = SlowQueryInterceptor.fileReporter(
+          documentsDirectoryPath: tempDir.path,
+        );
+
+        // Synthetic stack covers every filter branch:
+        // - drift/dart-runtime frames that should be dropped
+        // - the slow-query plumbing self-frame that should be dropped
+        // - one application frame that should be kept
+        // - blank lines (separators) that should be dropped
+        const stackLines = <String>[
+          '#0      SlowQueryInterceptor._measure (package:lotti/database/slow_query_logging.dart:200:12)',
+          '#1      _InterceptedExecutor.runSelect (package:drift/src/runtime/executor/interceptor.dart:163:25)',
+          '#2      _rootRunUnary (dart:async/zone_root.dart:48:47)',
+          '<asynchronous suspension>',
+          '#3      JournalDb.getAllDashboards (package:lotti/database/database.dart:3056:34)',
+          '',
+          '#4      DashboardsController.build (package:lotti/features/dashboards/state/dashboards_page_controller.dart:20:14)',
+        ];
+        final stack = StackTrace.fromString(stackLines.join('\n'));
+
+        final entry = SlowQueryLogEntry(
+          databaseName: 'test_db',
+          operation: 'select',
+          statement: 'SELECT * FROM dashboard_definitions',
+          arguments: const <Object?>[],
+          elapsed: const Duration(milliseconds: 500),
+          isSuperSlow: true,
+          callerStack: stack,
+        );
+
+        reporter(entry);
+        await SlowQueryInterceptor.flushFileSinkForTest();
+
+        final logsDir = Directory('${tempDir.path}/logs');
+        final superFile = logsDir.listSync().whereType<File>().firstWhere(
+          (f) => p.basename(f.path).startsWith('super_slow_queries-'),
+        );
+        final superContent = superFile.readAsStringSync();
+
+        // App-code frames are kept and prefixed with `STACK: `.
+        expect(
+          superContent,
+          contains('STACK: #3      JournalDb.getAllDashboards '),
+        );
+        expect(
+          superContent,
+          contains(
+            'STACK: #4      DashboardsController.build ',
+          ),
+        );
+        // Drift / dart runtime frames are dropped.
+        expect(superContent, isNot(contains('package:drift/')));
+        expect(superContent, isNot(contains('dart:async/')));
+        expect(superContent, isNot(contains('asynchronous suspension')));
+        // The slow-query plumbing self-frame is dropped even though it
+        // technically points at `package:lotti/...` — otherwise every
+        // entry would carry a constant boilerplate line.
+        expect(superContent, isNot(contains('slow_query_logging.dart')));
+      },
+    );
+
+    test(
+      'super-slow entry without plan rows still duplicates the query line',
+      () async {
+        final reporter = SlowQueryInterceptor.fileReporter(
+          documentsDirectoryPath: tempDir.path,
+        );
+
+        // Models the EXPLAIN-failure path where queryPlan stays null.
+        const entry = SlowQueryLogEntry(
+          databaseName: 'db',
+          operation: 'select',
+          statement: 'SELECT 1',
+          arguments: <Object?>[],
+          elapsed: Duration(milliseconds: 250),
+          isSuperSlow: true,
+        );
+
+        reporter(entry);
+        await SlowQueryInterceptor.flushFileSinkForTest();
+
+        final logsDir = Directory('${tempDir.path}/logs');
+        final files = logsDir.listSync().whereType<File>().toList(
+          growable: false,
+        );
+        expect(files, hasLength(2));
+
+        final superFile = files.firstWhere(
+          (f) => p.basename(f.path).startsWith('super_slow_queries-'),
+        );
+        final superContent = superFile.readAsStringSync();
+        expect(superContent, contains('SELECT 1'));
+        expect(superContent, isNot(contains('PLAN:')));
+      },
+    );
 
     test('log line starts with ISO-8601 timestamp', () async {
       final reporter = SlowQueryInterceptor.fileReporter(

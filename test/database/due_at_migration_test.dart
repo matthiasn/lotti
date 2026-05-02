@@ -172,7 +172,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 41);
+      expect(db.schemaVersion, 42);
 
       final hasColumn = await db.columnExistsForTesting('journal', 'due_at');
       expect(hasColumn, isTrue);
@@ -336,36 +336,6 @@ void main() {
 
         final detail = plan.map((row) => row.read<String>('detail')).join('\n');
         expect(detail, contains('idx_journal_tasks_due_open'));
-      },
-    );
-
-    test(
-      'beforeOpen self-heals due_at column when missing on a v41 device',
-      () async {
-        // Simulate a device that bumped user_version to 41 but lost the
-        // due_at column (e.g. aborted migration before the ALTER TABLE
-        // committed). beforeOpen must add the column back before the
-        // index self-heal runs — otherwise the column-keyed
-        // `CREATE INDEX ... ON journal(due_at ASC)` would fail. The old
-        // expression-keyed partial is also dropped here so the self-heal
-        // recreates the index in the v41 column-keyed shape; with
-        // `IF NOT EXISTS` an existing (stale) index would otherwise be
-        // left untouched.
-        final dbFile = File(p.join(testDirectory!.path, 'test_v41_heal.db'));
-        final sqlite = sqlite3.open(dbFile.path);
-        createV40Schema(sqlite);
-        sqlite.execute('DROP INDEX IF EXISTS idx_journal_tasks_due_open');
-        // Land directly at v41 so onUpgrade is skipped.
-        sqlite.execute('PRAGMA user_version = 41');
-        sqlite.dispose();
-
-        final db = JournalDb(overriddenFilename: 'test_v41_heal.db');
-        addTearDown(db.close);
-
-        final hasColumn = await db.columnExistsForTesting('journal', 'due_at');
-        expect(hasColumn, isTrue);
-        final idxSql = await indexSqlOrNull(db, 'idx_journal_tasks_due_open');
-        expect(idxSql, contains('due_at ASC'));
       },
     );
 

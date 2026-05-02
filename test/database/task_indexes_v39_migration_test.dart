@@ -128,7 +128,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 41);
+        expect(db.schemaVersion, 42);
 
         // v41 swapped the expression-keyed shape for a column-keyed one.
         final sql = await indexSql(db, 'idx_journal_tasks_due_open');
@@ -272,35 +272,6 @@ void main() {
 
         final detail = plan.map((row) => row.read<String>('detail')).join('\n');
         expect(detail, contains('idx_journal_tasks_due_open'));
-      },
-    );
-
-    test(
-      'beforeOpen self-heals idx_journal_tasks_due_open after v41',
-      () async {
-        // Simulate a device that landed at user_version = 39 but is
-        // missing `idx_journal_tasks_due_open`. The full migration to v41
-        // runs, so the recreated index is the column-keyed shape.
-        final dbFile = File(
-          p.join(testDirectory!.path, 'test_v39_self_heal.db'),
-        );
-        final sqlite = sqlite3.open(dbFile.path);
-        createV38Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 39');
-        sqlite.dispose();
-
-        final db = JournalDb(overriddenFilename: 'test_v39_self_heal.db');
-        addTearDown(db.close);
-
-        final dueOpenSql = await indexSql(db, 'idx_journal_tasks_due_open');
-        expect(dueOpenSql, contains('due_at ASC'));
-        expect(dueOpenSql, contains("task_status NOT IN ('DONE', 'REJECTED')"));
-
-        final statusPrivateSql = await indexSql(
-          db,
-          'idx_journal_task_status_private',
-        );
-        expect(statusPrivateSql, contains('task_status COLLATE BINARY ASC'));
       },
     );
 

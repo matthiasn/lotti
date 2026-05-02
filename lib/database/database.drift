@@ -111,6 +111,24 @@ WHERE type = 'Task'
   AND task = 1
   AND deleted = FALSE
   AND project_id IS NOT NULL;
+-- `_selectTasks` filters `task_status IN (?)` and orders
+-- `task_priority_rank ASC, date_from DESC`, but with a high-cardinality
+-- `category IN (...)` predicate the planner skipped `idx_journal_tasks`
+-- (which leads on `category`) and fell back to `idx_journal_browse +
+-- USE TEMP B-TREE FOR ORDER BY`. Production traces showed 550 ms+ for
+-- 38-category fan-outs. Leading on `task_status` keeps the seek tight,
+-- and `(task_priority_rank, date_from DESC)` covers the ORDER BY so the
+-- planner streams from the index regardless of how many categories the
+-- user has selected; category filtering becomes a post-row check on the
+-- already-narrowed status partition.
+CREATE INDEX idx_journal_tasks_status_priority_date ON journal(
+  task_status COLLATE BINARY ASC,
+  task_priority_rank COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC
+)
+WHERE type = 'Task'
+  AND task = 1
+  AND deleted = FALSE;
 
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
@@ -253,6 +271,20 @@ CREATE INDEX idx_linked_entries_type ON linked_entries (type);
 CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden);
 
 CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
+-- Covering variant so `getBulkLinkedTimeSpans` can resolve `to_id`
+-- straight from the index without falling back to the heap. Plan
+-- captured in the super-slow log was: SEARCH journal USING idx_browse
+-- driven from the journal side, then SEARCH linked_entries USING
+-- (to_id, hidden) — i.e. the planner reversed the join because the
+-- non-covering (from_id, hidden) index forced a heap read for `to_id`
+-- per match. Adding `to_id` as a trailing index column lets the
+-- planner drive the join from `from_id IN (...)` and stay index-only
+-- on the linked_entries side.
+CREATE INDEX idx_linked_entries_from_id_hidden_to_id ON linked_entries(
+  from_id COLLATE BINARY ASC,
+  hidden COLLATE BINARY ASC,
+  to_id COLLATE BINARY ASC
+);
 CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries(to_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
 CREATE INDEX idx_linked_entries_from_id_hidden_created_at_desc ON linked_entries(
   from_id COLLATE BINARY ASC,

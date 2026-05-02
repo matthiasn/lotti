@@ -72,10 +72,15 @@ class LinkedAiResponsesController extends AsyncNotifier<List<AiResponseEntry>> {
     // Get all links FROM this entry (audio links TO ai responses)
     // Link structure: fromId=audio, toId=aiResponse
     final links = await journalRepository.getLinksFromId(entryId);
+    if (links.isEmpty) return const <AiResponseEntry>[];
 
-    // Fetch all linked entities in parallel for better performance
-    final entities = await Future.wait(
-      links.map((link) => journalRepository.getJournalEntityById(link.toId)),
+    // One bulk fetch instead of N parallel single-id reads. The previous
+    // `Future.wait(links.map(byId))` was a textbook N+1 — every link
+    // queued through the read pool and the cluster showed up as ~12
+    // single-id selects all reporting the same elapsed time in the
+    // super-slow log because they unblocked together.
+    final entities = await journalRepository.getJournalEntitiesByIds(
+      links.map((link) => link.toId),
     );
 
     // Filter for non-deleted AI responses and track their IDs

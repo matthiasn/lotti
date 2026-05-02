@@ -49,9 +49,6 @@ const String _createIdxJournalTaskStatusPrivateSql =
     'private COLLATE BINARY ASC) '
     "WHERE type = 'Task' AND task = 1 AND deleted = FALSE";
 
-String _asIfNotExists(String createIndexSql) =>
-    createIndexSql.replaceFirst('CREATE INDEX ', 'CREATE INDEX IF NOT EXISTS ');
-
 enum ConflictStatus {
   unresolved,
   resolved,
@@ -116,7 +113,7 @@ class JournalDb extends _$JournalDb {
   bool _configFlagsLoaded = false;
 
   @override
-  int get schemaVersion => 41;
+  int get schemaVersion => 42;
 
   /// Conservative chunk size for `IN :ids` drift queries to stay under
   /// SQLite's default `SQLITE_MAX_VARIABLE_NUMBER` of 999 with headroom
@@ -127,31 +124,8 @@ class JournalDb extends _$JournalDb {
   MigrationStrategy get migration {
     return MigrationStrategy(
       beforeOpen: (details) async {
+        // PRAGMA is connection-local — must run on every connection.
         await customStatement('PRAGMA foreign_keys = ON');
-        // Self-heal the partial indexes on every open. Devices that failed
-        // their migration (e.g. aborted mid-upgrade) could otherwise land
-        // with the user_version bumped but the index missing, breaking
-        // every DailyOS query that pins the index via INDEXED BY. Guarded
-        // on `journal` existing because minimal migration-test schemas
-        // omit it.
-        if (await _tableExists('journal')) {
-          // v41 added the denormalized `due_at` column. The partial
-          // `idx_journal_tasks_due_open` re-creation below is keyed on
-          // that column, so the column must exist first. A device that
-          // aborted the v41 migration after bumping user_version but
-          // before adding the column would otherwise crash here.
-          if (!await _columnExists('journal', 'due_at')) {
-            await customStatement(
-              'ALTER TABLE journal ADD COLUMN due_at DATETIME',
-            );
-          }
-          await customStatement(
-            _asIfNotExists(_createIdxJournalTasksDueOpenSql),
-          );
-          await customStatement(
-            _asIfNotExists(_createIdxJournalTaskStatusPrivateSql),
-          );
-        }
       },
       onCreate: (Migrator m) async {
         return m.createAll();
@@ -646,6 +620,57 @@ class JournalDb extends _$JournalDb {
             );
           }();
         }
+
+        if (from < 42) {
+          await () async {
+            DevLogger.log(
+              name: 'JournalDb',
+              message:
+                  'Adding task-status/priority/date partial index and '
+                  'covering linked_entries(from_id, hidden, to_id) '
+                  'index; refreshing planner stats',
+            );
+            // Partial covering ORDER BY (task_priority_rank, date_from
+            // DESC) within a `task_status IN (?)` partition. Lets the
+            // planner stream the tasks list even when the user has
+            // selected many categories, instead of falling back to
+            // `idx_journal_browse + USE TEMP B-TREE FOR ORDER BY`.
+            // Guarded on `journal` because minimal migration-test
+            // schemas omit it.
+            if (await _tableExists('journal')) {
+              await customStatement(
+                'CREATE INDEX IF NOT EXISTS '
+                'idx_journal_tasks_status_priority_date ON journal('
+                '  task_status COLLATE BINARY ASC, '
+                '  task_priority_rank COLLATE BINARY ASC, '
+                '  date_from COLLATE BINARY DESC) '
+                "WHERE type = 'Task' "
+                'AND task = 1 '
+                'AND deleted = FALSE',
+              );
+            }
+            // Covering variant of the existing (from_id, hidden) index
+            // so `getBulkLinkedTimeSpans` resolves `to_id` from the
+            // index and the planner stops reversing the join shape.
+            // Same table-existence guard as above.
+            if (await _tableExists('linked_entries')) {
+              await customStatement(
+                'CREATE INDEX IF NOT EXISTS '
+                'idx_linked_entries_from_id_hidden_to_id '
+                'ON linked_entries('
+                '  from_id COLLATE BINARY ASC, '
+                '  hidden COLLATE BINARY ASC, '
+                '  to_id COLLATE BINARY ASC)',
+              );
+            }
+            // One-shot ANALYZE so the planner picks up the new
+            // indexes immediately. This runs ONCE per device on the
+            // upgrade boot — same trade as any heavy migration step:
+            // a single longer-than-usual launch when the user pulls
+            // the update, then steady-state from then on.
+            await customStatement('ANALYZE');
+          }();
+        }
       },
     );
   }
@@ -1010,11 +1035,58 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<JournalEntity?> journalEntityById(String id) async {
-    final dbEntity = await entityById(id);
+    final dbEntity = await _coalesceEntityById(id);
     if (dbEntity != null) {
       return fromDbEntity(dbEntity);
     }
     return null;
+  }
+
+  // Microtask-coalescing state for `journalEntityById`. Riverpod
+  // `FutureProvider.autoDispose.family` shapes (e.g.
+  // `taskLiveDataProvider`) spin up one provider per visible row in a
+  // scrolling list; when a tasks page mounts ~30 rows simultaneously,
+  // each fires its own single-id read. The cluster shows up in the
+  // super-slow log as ~30 nearly-identical `WHERE id = ? AND deleted = ?`
+  // selects all reporting the same elapsed time — they're queued behind
+  // each other in the read pool, not actually slow per row. The
+  // coalescer merges every concurrent caller in one microtask wave into
+  // one bulk `journalEntitiesByIdsUnorderedAllPrivate` round-trip; each
+  // caller picks its own id out of the resulting map.
+  //
+  // Only the public `journalEntityById` is coalesced. `entityById` (the
+  // internal read used inside `upsertJournalDbEntity`'s pre-write check)
+  // stays direct so it sees a strict snapshot rather than joining a
+  // microtask wave outside the write transaction.
+  _PendingEntityByIdWave? _pendingEntityByIdWave;
+
+  /// Single-shot bulk fetch executed by the entity-by-id coalescer.
+  /// Extracted as a protected seam so tests can count DB round-trips
+  /// and inject failures without depending on a query interceptor.
+  @protected
+  @visibleForTesting
+  Future<List<JournalDbEntity>> runEntitiesByIdsFetch(Set<String> ids) {
+    return journalEntitiesByIdsUnorderedAllPrivate(ids.toList()).get();
+  }
+
+  Future<JournalDbEntity?> _coalesceEntityById(String id) {
+    final wave = _pendingEntityByIdWave ??= _PendingEntityByIdWave();
+    wave.mergedIds.add(id);
+    if (!wave.scheduled) {
+      wave.scheduled = true;
+      scheduleMicrotask(() async {
+        _pendingEntityByIdWave = null;
+        try {
+          final entities = await runEntitiesByIdsFetch(wave.mergedIds);
+          wave.completer.complete(<String, JournalDbEntity>{
+            for (final entity in entities) entity.id: entity,
+          });
+        } catch (error, stack) {
+          wave.completer.completeError(error, stack);
+        }
+      });
+    }
+    return wave.completer.future.then((map) => map[id]);
   }
 
   /// Bulk-fetches the [JournalEntity] for each id in [ids], returning a
@@ -1164,13 +1236,20 @@ class JournalDb extends _$JournalDb {
 
     final idList = ids.toSet().toList(growable: false);
     final placeholders = List.filled(idList.length, '?').join(', ');
+    // The planner picks the PK (`sqlite_autoindex_journal_1`) on its
+    // own once stats are fresh — we no longer pin it via `INDEXED BY`
+    // because the autoindex name is not part of the public SQLite
+    // contract. The v42 migration runs `ANALYZE` so installs that
+    // pull this branch get accurate planner stats; subsequent
+    // `id IN (...)` queries see the PK seek as the cheap path
+    // without a hint.
     final rows = await customSelect(
       '''
       SELECT id, json_extract(serialized, '\$.data.estimate') AS estimate_us
       FROM journal
-      WHERE deleted = FALSE
+      WHERE id IN ($placeholders)
+      AND deleted = FALSE
       AND type = 'Task'
-      AND id IN ($placeholders)
       ''',
       variables: [
         for (final id in idList) Variable<String>(id),
@@ -3335,6 +3414,17 @@ class _PendingCalendarEntriesWave {
   DateTime rangeEnd;
   final Completer<List<JournalEntity>> completer =
       Completer<List<JournalEntity>>.sync();
+}
+
+/// In-flight coalescing wave for `journalEntityById`. Concurrent callers
+/// within the same microtask merge their ids; the wave fires one bulk
+/// `id IN (…)` query and each caller pulls its own row out of the
+/// returned map.
+class _PendingEntityByIdWave {
+  final Set<String> mergedIds = <String>{};
+  bool scheduled = false;
+  final Completer<Map<String, JournalDbEntity>> completer =
+      Completer<Map<String, JournalDbEntity>>.sync();
 }
 
 /// In-flight coalescing wave for `basicLinksForEntryIds`. Concurrent callers

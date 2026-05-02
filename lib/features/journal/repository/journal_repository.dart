@@ -47,6 +47,17 @@ class JournalRepository {
     return getIt<JournalDb>().journalEntityById(id);
   }
 
+  /// Bulk-fetch entities by id. Use this whenever the caller has more than
+  /// one id at a time — collapses the classic `Future.wait(ids.map(byId))`
+  /// fan-out into a single round-trip.
+  Future<List<JournalEntity>> getJournalEntitiesByIds(
+    Iterable<String> ids,
+  ) async {
+    final idSet = ids.toSet();
+    if (idSet.isEmpty) return const <JournalEntity>[];
+    return getIt<JournalDb>().getJournalEntitiesForIdsUnordered(idSet);
+  }
+
   Future<bool> updateCategoryId(
     String journalEntityId, {
     required String? categoryId,

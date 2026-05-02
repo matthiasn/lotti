@@ -2,16 +2,20 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
@@ -475,6 +479,202 @@ void main() {
       () async {
         await build().bindPrepareBatch()(const [], room);
         verifyNever(() => processor.prepare(event: any(named: 'event')));
+      },
+    );
+  });
+
+  group('writesJournalDb classifies sync payload families', () {
+    // These tests pin the per-variant outcome of the adapter's
+    // wrap-or-bypass decision. The wrap path costs the journal writer
+    // lock for the whole `apply` duration; misclassifying a
+    // non-journal payload as wrapped silently re-introduces the
+    // reader-stall regression we just fixed (super-slow log showed
+    // hundreds of ms of queued reads behind unrelated sync applies).
+    // Misclassifying a journal-writing payload as bypass would split
+    // the journal upsert + linked_entries writes across two
+    // transactions and break atomicity on a mid-apply crash. Locking
+    // the table down per-variant means a future `SyncMessage` factory
+    // without a corresponding case here will fail compilation rather
+    // than silently inheriting a wrong default.
+
+    bool wraps(SyncMessage message) =>
+        QueueApplyAdapter.writesJournalDbForTesting(message);
+
+    test('SyncJournalEntity bypasses outer wrap (owns its own narrow tx)', () {
+      const message = SyncMessage.journalEntity(
+        id: 'entity-id',
+        jsonPath: '/entity.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncEntryLink wraps — writes to linked_entries (JournalDb)', () {
+      final link = EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from',
+        toId: 'to',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isTrue);
+    });
+
+    test(
+      'SyncEntityDefinition wraps — writes to *_definitions (JournalDb)',
+      () {
+        final message = SyncMessage.entityDefinition(
+          entityDefinition: measurableWater,
+          status: SyncEntryStatus.initial,
+        );
+        expect(wraps(message), isTrue);
+      },
+    );
+
+    test('SyncAiConfig bypasses outer wrap (writes to ai_config_db)', () {
+      final message = SyncMessage.aiConfig(
+        aiConfig: fallbackAiConfig,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncAiConfigDelete bypasses outer wrap (ai_config_db)', () {
+      const message = SyncMessage.aiConfigDelete(id: 'cfg-id');
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncThemingSelection bypasses outer wrap (settings_db)', () {
+      const message = SyncMessage.themingSelection(
+        lightThemeName: 'light',
+        darkThemeName: 'dark',
+        themeMode: 'system',
+        updatedAt: 1,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncBackfillRequest wraps conservatively', () {
+      const message = SyncMessage.backfillRequest(
+        entries: <BackfillRequestEntry>[],
+        requesterId: 'host-1',
+      );
+      expect(wraps(message), isTrue);
+    });
+
+    test('SyncBackfillResponse wraps conservatively', () {
+      const message = SyncMessage.backfillResponse(
+        hostId: 'host-1',
+        counter: 1,
+        deleted: false,
+        unresolvable: false,
+      );
+      expect(wraps(message), isTrue);
+    });
+
+    test('SyncAgentEntity bypasses outer wrap (agent_db)', () {
+      const message = SyncMessage.agentEntity(
+        status: SyncEntryStatus.initial,
+        jsonPath: '/agent_entities/a1.json',
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncAgentLink bypasses outer wrap (agent_db)', () {
+      const message = SyncMessage.agentLink(
+        status: SyncEntryStatus.initial,
+        jsonPath: '/agent_links/l1.json',
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncAgentBundle bypasses outer wrap (agent_db loop)', () {
+      const message = SyncMessage.agentBundle(
+        agentId: 'agent-1',
+        wakeRunKey: 'wake-1',
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncOutboxBundle wraps — unpacks into journal/linked_entries', () {
+      const message = SyncMessage.outboxBundle(
+        children: <SyncMessage>[],
+      );
+      expect(wraps(message), isTrue);
+    });
+  });
+
+  group('apply respects the writesJournalDb classifier', () {
+    test(
+      'a journalEntity-shaped payload bypasses the outer transaction wrap '
+      'so cross-DB awaits inside `apply` (sync-sequence log, pre-write '
+      'reads) do not hold the journal writer lock',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$bypass-wrap',
+          roomId: '!r',
+          originTsMs: 1,
+        );
+        final prepared = _MockPreparedSyncEvent();
+        const message = SyncMessage.journalEntity(
+          id: 'entity-id',
+          jsonPath: '/entity.json',
+          vectorClock: null,
+          status: SyncEntryStatus.initial,
+        );
+        when(() => prepared.syncMessage).thenReturn(message);
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async => prepared);
+        when(
+          () => processor.apply(
+            prepared: any(named: 'prepared'),
+            journalDb: journalDb,
+          ),
+        ).thenAnswer((_) async => null);
+
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.applied);
+        // The classifier introspected the prepared payload; the apply
+        // still ran. We do not assert on transaction state directly
+        // because the JournalDb is in-memory and a transaction wrap is
+        // observable only via the writer lock — but the predicate test
+        // group above pins the wrap/bypass decision per variant.
+        verify(() => prepared.syncMessage).called(1);
+      },
+    );
+
+    test(
+      'a payload that throws when its syncMessage is read falls back to '
+      'the safe wrapped path — the existing test mocks rely on this so '
+      'the change cannot retroactively break them',
+      () async {
+        final entry = _buildEntry(
+          eventId: r'$throws',
+          roomId: '!r',
+          originTsMs: 1,
+        );
+        final prepared = _MockPreparedSyncEvent();
+        // No stub for syncMessage → mocktail throws on access.
+        when(
+          () => processor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async => prepared);
+        when(
+          () => processor.apply(
+            prepared: any(named: 'prepared'),
+            journalDb: journalDb,
+          ),
+        ).thenAnswer((_) async => null);
+
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.applied);
       },
     );
   });

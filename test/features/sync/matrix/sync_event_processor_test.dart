@@ -4978,80 +4978,72 @@ void main() {
       ).called(1);
     });
 
-    test('handles errors when processing individual embedded links', () async {
-      final link1 = EntryLink.basic(
-        id: 'link-1',
-        fromId: 'entry-id',
-        toId: 'category-1',
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-        vectorClock: null,
-      );
-      final link2 = EntryLink.basic(
-        id: 'link-2',
-        fromId: 'entry-id',
-        toId: 'category-2',
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-        vectorClock: null,
-      );
+    test(
+      'embedded link failure inside the journal-entity apply path aborts '
+      'the transaction so the entity row never lands without its links — '
+      'redelivery routes the same event to the duplicate path which does '
+      'NOT retry link upserts, so a swallowed failure here would leave '
+      'permanently missing edges',
+      () async {
+        final link1 = EntryLink.basic(
+          id: 'link-1',
+          fromId: 'entry-id',
+          toId: 'category-1',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          vectorClock: null,
+        );
+        final link2 = EntryLink.basic(
+          id: 'link-2',
+          fromId: 'entry-id',
+          toId: 'category-2',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          vectorClock: null,
+        );
 
-      final message = SyncMessage.journalEntity(
-        id: 'entry-id',
-        jsonPath: '/entry.json',
-        vectorClock: null,
-        status: SyncEntryStatus.initial,
-        entryLinks: [link1, link2],
-      );
+        final message = SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: '/entry.json',
+          vectorClock: null,
+          status: SyncEntryStatus.initial,
+          entryLinks: [link1, link2],
+        );
 
-      when(
-        () => journalEntityLoader.load(jsonPath: '/entry.json'),
-      ).thenAnswer((_) async => fallbackJournalEntity);
-      when(() => event.text).thenReturn(encodeMessage(message));
+        when(
+          () => journalEntityLoader.load(jsonPath: '/entry.json'),
+        ).thenAnswer((_) async => fallbackJournalEntity);
+        when(() => event.text).thenReturn(encodeMessage(message));
 
-      // First link fails, second succeeds
-      when(
-        () => journalDb.upsertEntryLink(link1),
-      ).thenThrow(Exception('Database error'));
-      when(() => journalDb.upsertEntryLink(link2)).thenAnswer((_) async => 1);
+        // First link fails, second would succeed — but the loop must
+        // bail on the first failure and let the transaction roll back.
+        when(
+          () => journalDb.upsertEntryLink(link1),
+        ).thenThrow(Exception('Database error'));
+        when(() => journalDb.upsertEntryLink(link2)).thenAnswer((_) async => 1);
 
-      // Should not throw - errors are handled gracefully
-      await processor.process(event: event, journalDb: journalDb);
+        await expectLater(
+          processor.process(event: event, journalDb: journalDb),
+          throwsA(isA<Exception>()),
+        );
 
-      // Verify both links were attempted
-      verify(() => journalDb.upsertEntryLink(link1)).called(1);
-      verify(() => journalDb.upsertEntryLink(link2)).called(1);
+        // The first link was attempted (and threw); the second was
+        // NOT — the loop exits on rethrow.
+        verify(() => journalDb.upsertEntryLink(link1)).called(1);
+        verifyNever(() => journalDb.upsertEntryLink(link2));
 
-      // Verify exception was logged for link1
-      verify(
-        () => loggingService.captureException(
-          any<Exception>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'apply.entryLink.embedded',
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).called(1);
-
-      // Verify link2 was logged successfully
-      verify(
-        () => loggingService.captureEvent(
-          contains(
-            'apply entryLink.embedded from=${link2.fromId} to=${link2.toId}',
+        // The link-level capture still ran before the rethrow so the
+        // failure shows up in domain logs.
+        verify(
+          () => loggingService.captureException(
+            any<Exception>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'apply.entryLink.embedded',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
-          domain: LogDomains.sync,
-          subDomain: 'processor.apply.entryLink.embedded',
-        ),
-      ).called(1);
-
-      // Verify only one link was processed successfully
-      verify(
-        () => loggingService.captureEvent(
-          contains('embeddedLinks=1/2'),
-          domain: LogDomains.sync,
-          subDomain: 'processor.apply',
-        ),
-      ).called(1);
-    });
+        ).called(1);
+      },
+    );
 
     test('processes empty embedded links list', () async {
       const message = SyncMessage.journalEntity(

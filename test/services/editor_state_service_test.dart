@@ -53,8 +53,11 @@ void main() {
         ),
       ).thenAnswer((_) async => 1);
 
-      // Mock entityById to return null by default
+      // Mock entityById and the bulk variant the new init() coalesces to.
       when(() => mockJournalDb.entityById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+      ).thenAnswer((_) => FakeJournalEntitiesQuery(const <JournalDbEntity>[]));
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -65,7 +68,10 @@ void main() {
 
     test('init populates editorStateById with matching drafts', () async {
       final testTime = DateTime(2024, 3, 15, 10, 30);
-      final testEntity = FakeJournalDbEntity(updatedAt: testTime);
+      final testEntity = FakeJournalDbEntity(
+        id: 'test-entry-id',
+        updatedAt: testTime,
+      );
 
       final draftEntry = EditorDraftState(
         id: 'draft-id',
@@ -81,8 +87,10 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.entityById('test-entry-id'),
-      ).thenAnswer((_) async => testEntity);
+        () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+      ).thenAnswer(
+        (_) => FakeJournalEntitiesQuery(<JournalDbEntity>[testEntity]),
+      );
 
       final service = EditorStateService();
       await service.init();
@@ -95,7 +103,10 @@ void main() {
     });
 
     test('init skips drafts when updatedAt does not match', () async {
-      final testEntity = FakeJournalDbEntity(updatedAt: DateTime(2025));
+      final testEntity = FakeJournalDbEntity(
+        id: 'test-entry-id',
+        updatedAt: DateTime(2025),
+      );
 
       final draftEntry = EditorDraftState(
         id: 'draft-id',
@@ -111,8 +122,10 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.entityById('test-entry-id'),
-      ).thenAnswer((_) async => testEntity);
+        () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+      ).thenAnswer(
+        (_) => FakeJournalEntitiesQuery(<JournalDbEntity>[testEntity]),
+      );
 
       final service = EditorStateService();
       await service.init();
@@ -340,8 +353,20 @@ class FakeDraftsQueryWithData extends Fake
 }
 
 class FakeJournalDbEntity extends Fake implements JournalDbEntity {
-  FakeJournalDbEntity({required this.updatedAt});
+  FakeJournalDbEntity({required this.id, required this.updatedAt});
+
+  @override
+  final String id;
 
   @override
   final DateTime updatedAt;
+}
+
+class FakeJournalEntitiesQuery extends Fake
+    implements Selectable<JournalDbEntity> {
+  FakeJournalEntitiesQuery(this.data);
+  final List<JournalDbEntity> data;
+
+  @override
+  Future<List<JournalDbEntity>> get() async => data;
 }

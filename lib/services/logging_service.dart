@@ -44,6 +44,15 @@ class LoggingService {
 
   void _syncSlowQueryLoggingGate() {
     SlowQueryLoggingGate.isEnabled = _enableLogging && _enableSlowQueryLogging;
+    // First-call stack capture rides on the slow-query gate. The gate
+    // is binary, but stacks are only useful as a one-shot diagnostic;
+    // they're tracked per unique statement so an enabled gate produces
+    // exactly one stack per query shape per process. Disabling the
+    // gate clears the seen-set via [SlowQueryLoggingGate.resetForTest]
+    // is for tests only — a real toggle keeps the seen-set so callers
+    // re-enabling mid-session don't get a second flood of stacks.
+    SlowQueryLoggingGate.captureFirstCallStack =
+        _enableLogging && _enableSlowQueryLogging;
   }
 
   void listenToConfigFlag() {

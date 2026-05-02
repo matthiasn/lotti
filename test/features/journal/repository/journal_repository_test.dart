@@ -2369,5 +2369,60 @@ void main() {
         expect(callbackInvoked, isFalse);
       });
     });
+
+    group('getJournalEntitiesByIds', () {
+      test(
+        'returns empty list without hitting the DB for an empty input',
+        () async {
+          final result = await repository.getJournalEntitiesByIds(
+            const <String>[],
+          );
+
+          expect(result, isEmpty);
+          // Crucially: the bulk fetch must NOT be called for the empty
+          // case — otherwise we issue an unnecessary `id IN ()` query
+          // that drift would reject.
+          verifyNever(
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+          );
+        },
+      );
+
+      test('delegates to the bulk fetcher and dedupes the input set', () async {
+        final entity = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'bulk-fetch',
+            markdown: 'bulk',
+          ),
+          meta: Metadata(
+            id: 'a',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            starred: false,
+            private: false,
+            flag: EntryFlag.none,
+          ),
+        );
+        when(
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+        ).thenAnswer((_) async => [entity]);
+
+        final result = await repository.getJournalEntitiesByIds(
+          ['a', 'a', 'b'],
+        );
+
+        expect(result, [entity]);
+        final captured =
+            verify(
+                  () => mockJournalDb.getJournalEntitiesForIdsUnordered(
+                    captureAny(),
+                  ),
+                ).captured.single
+                as Set<String>;
+        expect(captured, {'a', 'b'});
+      });
+    });
   });
 }

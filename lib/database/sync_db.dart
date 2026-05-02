@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -334,6 +335,32 @@ class HostActivity extends Table {
   'ON inbound_event_queue (last_error_reason, resurrection_count) '
   '''WHERE status = 'abandoned' ''',
 )
+// `QueueStats.stats()` and the `readyNow` probe filter
+// `status IN ('enqueued','retrying','leased') AND next_due_at <= ?
+// AND lease_until <= ?`, but the existing `idx_inbound_event_queue_
+// active_ready_at` is partial on a constant `status IN (…)` clause
+// that SQLite's theorem prover cannot match against a parameterized
+// `IN (?, ?, ?)`. The slow-query log captured 332 ms full SCANs.
+// A non-partial composite leading on `status` lets the planner seek
+// for each bound status value and walk `(next_due_at, lease_until)`
+// inside the index.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_status_due_lease '
+  'ON inbound_event_queue (status, next_due_at, lease_until)',
+)
+// `QueueStats.stats()` aggregates `COUNT(*) + MIN(enqueued_at)`
+// filtered by `status IN (...)`. The v18 index above lets the planner
+// seek by status, but `MIN(enqueued_at)` cannot be evaluated without
+// reading the heap because `enqueued_at` is not in any index keyed on
+// `status`. The slow-query log captured this as a 240–550 ms SCAN of
+// the entire queue table on every UI poll. Pairing `(status,
+// enqueued_at)` makes MIN an O(1) index seek per matched status
+// partition (the first entry of each partition is the minimum), and
+// COUNT becomes an index-only walk over a tight key range.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_status_enqueued '
+  'ON inbound_event_queue (status, enqueued_at)',
+)
 class InboundEventQueue extends Table {
   IntColumn get queueId => integer().autoIncrement().named('queue_id')();
 
@@ -601,20 +628,58 @@ class SyncDatabase extends _$SyncDatabase {
     final reclaimWindow = effectiveNow.subtract(leaseDuration);
 
     return transaction(() async {
-      final candidates =
+      // Split the original `status = pending OR (status = sending AND
+      // updated_at < cutoff)` into two indexed seeks. The combined
+      // predicate prevented the planner from matching either of the
+      // existing outbox indices and forced a SCAN (218 ms in the
+      // super-slow log). Each branch is now a clean equality on
+      // `status` so the planner picks the partial
+      // `idx_outbox_actionable_priority_created_at` (pending + sending,
+      // ordered by `(priority, created_at)`) and walks it index-only.
+      // The merge in Dart is bounded by `2 × maxSize` rows; trivial.
+      // `id` is the third sort key so the merged batch matches the
+      // contiguous-prefix ordering contract `OutboxRepository.
+      // claimNextBatch` and `OutboxProcessor._processBundle` rely on:
+      // when (priority, createdAt) tie, picking a stable order keeps
+      // the first `filePath != null` boundary deterministic across
+      // repeated calls.
+      final pendingRows =
           await (select(outbox)
                 ..where(
-                  (t) =>
-                      (t.status.equals(OutboxStatus.pending.index)) |
-                      (t.status.equals(_outboxSendingStatus) &
-                          t.updatedAt.isSmallerThanValue(reclaimWindow)),
+                  (t) => t.status.equals(OutboxStatus.pending.index),
                 )
                 ..orderBy([
                   (t) => OrderingTerm(expression: t.priority),
                   (t) => OrderingTerm(expression: t.createdAt),
+                  (t) => OrderingTerm(expression: t.id),
                 ])
                 ..limit(maxSize))
               .get();
+      final expiredSendingRows =
+          await (select(outbox)
+                ..where(
+                  (t) =>
+                      t.status.equals(_outboxSendingStatus) &
+                      t.updatedAt.isSmallerThanValue(reclaimWindow),
+                )
+                ..orderBy([
+                  (t) => OrderingTerm(expression: t.priority),
+                  (t) => OrderingTerm(expression: t.createdAt),
+                  (t) => OrderingTerm(expression: t.id),
+                ])
+                ..limit(maxSize))
+              .get();
+      final candidates = <OutboxItem>[...pendingRows, ...expiredSendingRows]
+        ..sort((a, b) {
+          final p = a.priority.compareTo(b.priority);
+          if (p != 0) return p;
+          final created = a.createdAt.compareTo(b.createdAt);
+          if (created != 0) return created;
+          return a.id.compareTo(b.id);
+        });
+      if (candidates.length > maxSize) {
+        candidates.removeRange(maxSize, candidates.length);
+      }
 
       if (candidates.isEmpty) return const <OutboxItem>[];
 
@@ -1646,7 +1711,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration {
@@ -1954,6 +2019,35 @@ class SyncDatabase extends _$SyncDatabase {
             'ON inbound_event_queue (last_error_reason, resurrection_count) '
             '''WHERE status = 'abandoned' ''',
           );
+        }
+        if (from < 18) {
+          // Backstop the `QueueStats.stats()` and `readyNow` probes.
+          // Their `status IN (?, ?, ?)` predicate could not be matched
+          // to the existing partial index, so the planner full-scanned
+          // the queue ledger (332 ms in the super-slow log). Non-partial
+          // composite leading on `status` makes the predicate seekable.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_status_due_lease '
+            'ON inbound_event_queue (status, next_due_at, lease_until)',
+          );
+          // Refresh stats for the new partition shape so the planner
+          // picks the new index immediately on first launch instead of
+          // waiting for the next ANALYZE cycle.
+          await customStatement('ANALYZE');
+        }
+        if (from < 19) {
+          // The v18 index seeked on status but couldn't satisfy
+          // `MIN(enqueued_at)` without falling back to the heap, so the
+          // stats query still showed up as a SCAN in the super-slow log
+          // (240–550 ms per poll). Pairing `(status, enqueued_at)`
+          // turns MIN into an O(1) seek per matched status partition.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_status_enqueued '
+            'ON inbound_event_queue (status, enqueued_at)',
+          );
+          await customStatement('ANALYZE');
         }
       },
     );
