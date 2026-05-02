@@ -488,13 +488,16 @@ class SkillInferenceRunner {
         // 7. Save result as AiResponseEntry. The response type is derived
         // from the skill so the same runner can serve both
         // `promptGeneration` and `imagePromptGeneration` skills without
-        // mislabelling persisted responses.
+        // mislabelling persisted responses. The `skillId` lets the UI
+        // distinguish sibling prompt-generation skills (coding / design /
+        // research) that share the same response type.
         final data = AiResponseData(
           model: modelId,
           systemMessage: promptResult.systemMessage,
           prompt: promptResult.userMessage,
           thoughts: '',
           response: response,
+          skillId: skill.id,
           type: skill.skillType.toResponseType,
         );
 

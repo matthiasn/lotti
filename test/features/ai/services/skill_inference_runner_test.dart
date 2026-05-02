@@ -1678,6 +1678,58 @@ void main() {
         ).called(1);
       });
 
+      test('persists skillId on the AiResponseEntry data', () async {
+        final textEntry = makeTextEntry(
+          id: 'text-skill-id',
+          markdown: 'Some prompt input',
+        );
+
+        when(
+          () => mockAiInputRepo.getEntity('text-skill-id'),
+        ).thenAnswer((_) async => textEntry);
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([makeStreamChunk('out')]),
+        );
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        stubLoggingEvent();
+
+        await runner.runPromptGeneration(
+          entryId: 'text-skill-id',
+          automationResult: makePromptGenerationResult(),
+        );
+
+        final captured = verify(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: captureAny(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).captured;
+        final data = captured.single as AiResponseData;
+        // The automation result uses `testPromptGenSkill` whose id is
+        // 'skill-prompt-gen' — that exact ID must be persisted so the card
+        // can render the right skill name.
+        expect(data.skillId, 'skill-prompt-gen');
+      });
+
       test(
         'persists imagePromptGeneration responses under the matching '
         'AiResponseType',

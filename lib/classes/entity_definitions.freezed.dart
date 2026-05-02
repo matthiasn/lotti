@@ -2646,7 +2646,12 @@ as String,
 /// @nodoc
 mixin _$AiResponseData {
 
- String get model; String get systemMessage; String get prompt; String get thoughts; String get response; String? get promptId; List<AiActionItem>? get suggestedActionItems; AiResponseType? get type; double? get temperature;// Usage statistics (nullable for backward compatibility)
+ String get model; String get systemMessage; String get prompt; String get thoughts; String get response; String? get promptId;// ID of the [AiConfigSkill] that produced this response, when the
+// response was generated through the skill path (rather than the legacy
+// prompt path). Lets the UI distinguish between sibling skills that share
+// the same [AiResponseType] (e.g. coding-prompt, design-prompt, and
+// research-prompt all use [AiResponseType.promptGeneration]).
+ String? get skillId; List<AiActionItem>? get suggestedActionItems; AiResponseType? get type; double? get temperature;// Usage statistics (nullable for backward compatibility)
  int? get inputTokens; int? get outputTokens; int? get thoughtsTokens; int? get cachedInputTokens;// Processing duration in milliseconds
  int? get durationMs;
 /// Create a copy of AiResponseData
@@ -2661,16 +2666,16 @@ $AiResponseDataCopyWith<AiResponseData> get copyWith => _$AiResponseDataCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiResponseData&&(identical(other.model, model) || other.model == model)&&(identical(other.systemMessage, systemMessage) || other.systemMessage == systemMessage)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.thoughts, thoughts) || other.thoughts == thoughts)&&(identical(other.response, response) || other.response == response)&&(identical(other.promptId, promptId) || other.promptId == promptId)&&const DeepCollectionEquality().equals(other.suggestedActionItems, suggestedActionItems)&&(identical(other.type, type) || other.type == type)&&(identical(other.temperature, temperature) || other.temperature == temperature)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.thoughtsTokens, thoughtsTokens) || other.thoughtsTokens == thoughtsTokens)&&(identical(other.cachedInputTokens, cachedInputTokens) || other.cachedInputTokens == cachedInputTokens)&&(identical(other.durationMs, durationMs) || other.durationMs == durationMs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiResponseData&&(identical(other.model, model) || other.model == model)&&(identical(other.systemMessage, systemMessage) || other.systemMessage == systemMessage)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.thoughts, thoughts) || other.thoughts == thoughts)&&(identical(other.response, response) || other.response == response)&&(identical(other.promptId, promptId) || other.promptId == promptId)&&(identical(other.skillId, skillId) || other.skillId == skillId)&&const DeepCollectionEquality().equals(other.suggestedActionItems, suggestedActionItems)&&(identical(other.type, type) || other.type == type)&&(identical(other.temperature, temperature) || other.temperature == temperature)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.thoughtsTokens, thoughtsTokens) || other.thoughtsTokens == thoughtsTokens)&&(identical(other.cachedInputTokens, cachedInputTokens) || other.cachedInputTokens == cachedInputTokens)&&(identical(other.durationMs, durationMs) || other.durationMs == durationMs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,model,systemMessage,prompt,thoughts,response,promptId,const DeepCollectionEquality().hash(suggestedActionItems),type,temperature,inputTokens,outputTokens,thoughtsTokens,cachedInputTokens,durationMs);
+int get hashCode => Object.hash(runtimeType,model,systemMessage,prompt,thoughts,response,promptId,skillId,const DeepCollectionEquality().hash(suggestedActionItems),type,temperature,inputTokens,outputTokens,thoughtsTokens,cachedInputTokens,durationMs);
 
 @override
 String toString() {
-  return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, durationMs: $durationMs)';
+  return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, skillId: $skillId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, durationMs: $durationMs)';
 }
 
 
@@ -2681,7 +2686,7 @@ abstract mixin class $AiResponseDataCopyWith<$Res>  {
   factory $AiResponseDataCopyWith(AiResponseData value, $Res Function(AiResponseData) _then) = _$AiResponseDataCopyWithImpl;
 @useResult
 $Res call({
- String model, String systemMessage, String prompt, String thoughts, String response, String? promptId, List<AiActionItem>? suggestedActionItems, AiResponseType? type, double? temperature, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, int? durationMs
+ String model, String systemMessage, String prompt, String thoughts, String response, String? promptId, String? skillId, List<AiActionItem>? suggestedActionItems, AiResponseType? type, double? temperature, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, int? durationMs
 });
 
 
@@ -2698,7 +2703,7 @@ class _$AiResponseDataCopyWithImpl<$Res>
 
 /// Create a copy of AiResponseData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? model = null,Object? systemMessage = null,Object? prompt = null,Object? thoughts = null,Object? response = null,Object? promptId = freezed,Object? suggestedActionItems = freezed,Object? type = freezed,Object? temperature = freezed,Object? inputTokens = freezed,Object? outputTokens = freezed,Object? thoughtsTokens = freezed,Object? cachedInputTokens = freezed,Object? durationMs = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? model = null,Object? systemMessage = null,Object? prompt = null,Object? thoughts = null,Object? response = null,Object? promptId = freezed,Object? skillId = freezed,Object? suggestedActionItems = freezed,Object? type = freezed,Object? temperature = freezed,Object? inputTokens = freezed,Object? outputTokens = freezed,Object? thoughtsTokens = freezed,Object? cachedInputTokens = freezed,Object? durationMs = freezed,}) {
   return _then(_self.copyWith(
 model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as String,systemMessage: null == systemMessage ? _self.systemMessage : systemMessage // ignore: cast_nullable_to_non_nullable
@@ -2706,6 +2711,7 @@ as String,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullabl
 as String,thoughts: null == thoughts ? _self.thoughts : thoughts // ignore: cast_nullable_to_non_nullable
 as String,response: null == response ? _self.response : response // ignore: cast_nullable_to_non_nullable
 as String,promptId: freezed == promptId ? _self.promptId : promptId // ignore: cast_nullable_to_non_nullable
+as String?,skillId: freezed == skillId ? _self.skillId : skillId // ignore: cast_nullable_to_non_nullable
 as String?,suggestedActionItems: freezed == suggestedActionItems ? _self.suggestedActionItems : suggestedActionItems // ignore: cast_nullable_to_non_nullable
 as List<AiActionItem>?,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as AiResponseType?,temperature: freezed == temperature ? _self.temperature : temperature // ignore: cast_nullable_to_non_nullable
@@ -2799,10 +2805,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiResponseData() when $default != null:
-return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs);case _:
+return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.skillId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs);case _:
   return orElse();
 
 }
@@ -2820,10 +2826,10 @@ return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs)  $default,) {final _that = this;
 switch (_that) {
 case _AiResponseData():
-return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs);case _:
+return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.skillId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2840,10 +2846,10 @@ return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String model,  String systemMessage,  String prompt,  String thoughts,  String response,  String? promptId,  String? skillId,  List<AiActionItem>? suggestedActionItems,  AiResponseType? type,  double? temperature,  int? inputTokens,  int? outputTokens,  int? thoughtsTokens,  int? cachedInputTokens,  int? durationMs)?  $default,) {final _that = this;
 switch (_that) {
 case _AiResponseData() when $default != null:
-return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs);case _:
+return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_that.response,_that.promptId,_that.skillId,_that.suggestedActionItems,_that.type,_that.temperature,_that.inputTokens,_that.outputTokens,_that.thoughtsTokens,_that.cachedInputTokens,_that.durationMs);case _:
   return null;
 
 }
@@ -2855,7 +2861,7 @@ return $default(_that.model,_that.systemMessage,_that.prompt,_that.thoughts,_tha
 @JsonSerializable()
 
 class _AiResponseData implements AiResponseData {
-  const _AiResponseData({required this.model, required this.systemMessage, required this.prompt, required this.thoughts, required this.response, this.promptId, final  List<AiActionItem>? suggestedActionItems, this.type, this.temperature, this.inputTokens, this.outputTokens, this.thoughtsTokens, this.cachedInputTokens, this.durationMs}): _suggestedActionItems = suggestedActionItems;
+  const _AiResponseData({required this.model, required this.systemMessage, required this.prompt, required this.thoughts, required this.response, this.promptId, this.skillId, final  List<AiActionItem>? suggestedActionItems, this.type, this.temperature, this.inputTokens, this.outputTokens, this.thoughtsTokens, this.cachedInputTokens, this.durationMs}): _suggestedActionItems = suggestedActionItems;
   factory _AiResponseData.fromJson(Map<String, dynamic> json) => _$AiResponseDataFromJson(json);
 
 @override final  String model;
@@ -2864,6 +2870,12 @@ class _AiResponseData implements AiResponseData {
 @override final  String thoughts;
 @override final  String response;
 @override final  String? promptId;
+// ID of the [AiConfigSkill] that produced this response, when the
+// response was generated through the skill path (rather than the legacy
+// prompt path). Lets the UI distinguish between sibling skills that share
+// the same [AiResponseType] (e.g. coding-prompt, design-prompt, and
+// research-prompt all use [AiResponseType.promptGeneration]).
+@override final  String? skillId;
  final  List<AiActionItem>? _suggestedActionItems;
 @override List<AiActionItem>? get suggestedActionItems {
   final value = _suggestedActionItems;
@@ -2896,16 +2908,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiResponseData&&(identical(other.model, model) || other.model == model)&&(identical(other.systemMessage, systemMessage) || other.systemMessage == systemMessage)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.thoughts, thoughts) || other.thoughts == thoughts)&&(identical(other.response, response) || other.response == response)&&(identical(other.promptId, promptId) || other.promptId == promptId)&&const DeepCollectionEquality().equals(other._suggestedActionItems, _suggestedActionItems)&&(identical(other.type, type) || other.type == type)&&(identical(other.temperature, temperature) || other.temperature == temperature)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.thoughtsTokens, thoughtsTokens) || other.thoughtsTokens == thoughtsTokens)&&(identical(other.cachedInputTokens, cachedInputTokens) || other.cachedInputTokens == cachedInputTokens)&&(identical(other.durationMs, durationMs) || other.durationMs == durationMs));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiResponseData&&(identical(other.model, model) || other.model == model)&&(identical(other.systemMessage, systemMessage) || other.systemMessage == systemMessage)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.thoughts, thoughts) || other.thoughts == thoughts)&&(identical(other.response, response) || other.response == response)&&(identical(other.promptId, promptId) || other.promptId == promptId)&&(identical(other.skillId, skillId) || other.skillId == skillId)&&const DeepCollectionEquality().equals(other._suggestedActionItems, _suggestedActionItems)&&(identical(other.type, type) || other.type == type)&&(identical(other.temperature, temperature) || other.temperature == temperature)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.thoughtsTokens, thoughtsTokens) || other.thoughtsTokens == thoughtsTokens)&&(identical(other.cachedInputTokens, cachedInputTokens) || other.cachedInputTokens == cachedInputTokens)&&(identical(other.durationMs, durationMs) || other.durationMs == durationMs));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,model,systemMessage,prompt,thoughts,response,promptId,const DeepCollectionEquality().hash(_suggestedActionItems),type,temperature,inputTokens,outputTokens,thoughtsTokens,cachedInputTokens,durationMs);
+int get hashCode => Object.hash(runtimeType,model,systemMessage,prompt,thoughts,response,promptId,skillId,const DeepCollectionEquality().hash(_suggestedActionItems),type,temperature,inputTokens,outputTokens,thoughtsTokens,cachedInputTokens,durationMs);
 
 @override
 String toString() {
-  return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, durationMs: $durationMs)';
+  return 'AiResponseData(model: $model, systemMessage: $systemMessage, prompt: $prompt, thoughts: $thoughts, response: $response, promptId: $promptId, skillId: $skillId, suggestedActionItems: $suggestedActionItems, type: $type, temperature: $temperature, inputTokens: $inputTokens, outputTokens: $outputTokens, thoughtsTokens: $thoughtsTokens, cachedInputTokens: $cachedInputTokens, durationMs: $durationMs)';
 }
 
 
@@ -2916,7 +2928,7 @@ abstract mixin class _$AiResponseDataCopyWith<$Res> implements $AiResponseDataCo
   factory _$AiResponseDataCopyWith(_AiResponseData value, $Res Function(_AiResponseData) _then) = __$AiResponseDataCopyWithImpl;
 @override @useResult
 $Res call({
- String model, String systemMessage, String prompt, String thoughts, String response, String? promptId, List<AiActionItem>? suggestedActionItems, AiResponseType? type, double? temperature, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, int? durationMs
+ String model, String systemMessage, String prompt, String thoughts, String response, String? promptId, String? skillId, List<AiActionItem>? suggestedActionItems, AiResponseType? type, double? temperature, int? inputTokens, int? outputTokens, int? thoughtsTokens, int? cachedInputTokens, int? durationMs
 });
 
 
@@ -2933,7 +2945,7 @@ class __$AiResponseDataCopyWithImpl<$Res>
 
 /// Create a copy of AiResponseData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? model = null,Object? systemMessage = null,Object? prompt = null,Object? thoughts = null,Object? response = null,Object? promptId = freezed,Object? suggestedActionItems = freezed,Object? type = freezed,Object? temperature = freezed,Object? inputTokens = freezed,Object? outputTokens = freezed,Object? thoughtsTokens = freezed,Object? cachedInputTokens = freezed,Object? durationMs = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? model = null,Object? systemMessage = null,Object? prompt = null,Object? thoughts = null,Object? response = null,Object? promptId = freezed,Object? skillId = freezed,Object? suggestedActionItems = freezed,Object? type = freezed,Object? temperature = freezed,Object? inputTokens = freezed,Object? outputTokens = freezed,Object? thoughtsTokens = freezed,Object? cachedInputTokens = freezed,Object? durationMs = freezed,}) {
   return _then(_AiResponseData(
 model: null == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
 as String,systemMessage: null == systemMessage ? _self.systemMessage : systemMessage // ignore: cast_nullable_to_non_nullable
@@ -2941,6 +2953,7 @@ as String,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullabl
 as String,thoughts: null == thoughts ? _self.thoughts : thoughts // ignore: cast_nullable_to_non_nullable
 as String,response: null == response ? _self.response : response // ignore: cast_nullable_to_non_nullable
 as String,promptId: freezed == promptId ? _self.promptId : promptId // ignore: cast_nullable_to_non_nullable
+as String?,skillId: freezed == skillId ? _self.skillId : skillId // ignore: cast_nullable_to_non_nullable
 as String?,suggestedActionItems: freezed == suggestedActionItems ? _self._suggestedActionItems : suggestedActionItems // ignore: cast_nullable_to_non_nullable
 as List<AiActionItem>?,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as AiResponseType?,temperature: freezed == temperature ? _self.temperature : temperature // ignore: cast_nullable_to_non_nullable

@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   lockstep with the code that uses it. A future skill-management UI will
   introduce a separate user-override layer rather than re-introducing
   seeding.
+- Generated-prompt cards now render the source skill's own name (e.g.
+  "Generate Design Prompt", "Generate Research Prompt") instead of always
+  showing "AI Coding Prompt". `AiResponseData` now carries an optional
+  `skillId` so the same card can distinguish sibling skills that share the
+  `promptGeneration` response type.
 
 ## [0.9.988]
 ### Changed

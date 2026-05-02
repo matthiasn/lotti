@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -55,6 +56,23 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
   /// Returns true if this is an image prompt generation response
   bool get _isImagePrompt =>
       widget.aiResponse.data.type == AiResponseType.imagePromptGeneration;
+
+  /// Resolves the title shown in the card header.
+  ///
+  /// When the response carries a `skillId` for a known built-in skill, use
+  /// the skill's own name so sibling skills that share an [AiResponseType]
+  /// (coding / design / research, all `promptGeneration`) get distinct
+  /// titles. Falls back to the legacy localized type label.
+  String _cardTitle(BuildContext context) {
+    final skillId = widget.aiResponse.data.skillId;
+    if (skillId != null) {
+      final skill = findBuiltInSkill(skillId);
+      if (skill != null) return skill.name;
+    }
+    return _isImagePrompt
+        ? context.messages.imagePromptGenerationCardTitle
+        : context.messages.promptGenerationCardTitle;
+  }
 
   @override
   void initState() {
@@ -164,9 +182,7 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                _isImagePrompt
-                    ? context.messages.imagePromptGenerationCardTitle
-                    : context.messages.promptGenerationCardTitle,
+                _cardTitle(context),
                 style: context.textTheme.titleSmall?.copyWith(
                   color: context.colorScheme.primary,
                   fontWeight: FontWeight.w600,

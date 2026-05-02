@@ -236,6 +236,12 @@ abstract class AiResponseData with _$AiResponseData {
     required String thoughts,
     required String response,
     String? promptId,
+    // ID of the [AiConfigSkill] that produced this response, when the
+    // response was generated through the skill path (rather than the legacy
+    // prompt path). Lets the UI distinguish between sibling skills that share
+    // the same [AiResponseType] (e.g. coding-prompt, design-prompt, and
+    // research-prompt all use [AiResponseType.promptGeneration]).
+    String? skillId,
     List<AiActionItem>? suggestedActionItems,
     AiResponseType? type,
     double? temperature,

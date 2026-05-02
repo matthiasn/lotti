@@ -5,6 +5,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -509,5 +510,97 @@ Modified prompt.
       final afterBarriers = find.byType(ModalBarrier).evaluate().length;
       expect(afterBarriers, greaterThan(initialBarriers));
     });
+
+    AiResponseEntry promptResponseWithSkill(String? skillId) {
+      return AiResponseEntry(
+        meta: Metadata(
+          id: 'resp-skill-$skillId',
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: AiResponseData(
+          model: 'gemini-2.5-pro',
+          systemMessage: 'sys',
+          prompt: 'usr',
+          thoughts: '',
+          response: '## Summary\nshort\n## Prompt\nfull',
+          skillId: skillId,
+          type: AiResponseType.promptGeneration,
+        ),
+      );
+    }
+
+    testWidgets(
+      'renders the skill name as the title when skillId resolves to a '
+      'built-in skill (design)',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: GeneratedPromptCard(
+              promptResponseWithSkill(skillDesignPromptId),
+              linkedFromId: 'test-id',
+            ),
+          ),
+        );
+
+        final designSkill = findBuiltInSkill(skillDesignPromptId)!;
+        expect(find.text(designSkill.name), findsOneWidget);
+        expect(find.text('AI Coding Prompt'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'renders the skill name as the title when skillId resolves to a '
+      'built-in skill (research)',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: GeneratedPromptCard(
+              promptResponseWithSkill(skillResearchPromptId),
+              linkedFromId: 'test-id',
+            ),
+          ),
+        );
+
+        final researchSkill = findBuiltInSkill(skillResearchPromptId)!;
+        expect(find.text(researchSkill.name), findsOneWidget);
+        expect(find.text('AI Coding Prompt'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'falls back to the localized type title when skillId is null',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: GeneratedPromptCard(
+              promptResponseWithSkill(null),
+              linkedFromId: 'test-id',
+            ),
+          ),
+        );
+
+        // Without a skillId, the legacy localized title is used.
+        expect(find.text('AI Coding Prompt'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'falls back to the localized type title when skillId is unknown',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: GeneratedPromptCard(
+              promptResponseWithSkill('unknown-skill-id-xyz'),
+              linkedFromId: 'test-id',
+            ),
+          ),
+        );
+
+        expect(find.text('AI Coding Prompt'), findsOneWidget);
+      },
+    );
   });
 }

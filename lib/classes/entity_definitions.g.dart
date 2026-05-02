@@ -477,6 +477,7 @@ _AiResponseData _$AiResponseDataFromJson(Map<String, dynamic> json) =>
       thoughts: json['thoughts'] as String,
       response: json['response'] as String,
       promptId: json['promptId'] as String?,
+      skillId: json['skillId'] as String?,
       suggestedActionItems: (json['suggestedActionItems'] as List<dynamic>?)
           ?.map((e) => AiActionItem.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -497,6 +498,7 @@ Map<String, dynamic> _$AiResponseDataToJson(_AiResponseData instance) =>
       'thoughts': instance.thoughts,
       'response': instance.response,
       'promptId': instance.promptId,
+      'skillId': instance.skillId,
       'suggestedActionItems': instance.suggestedActionItems,
       'type': _$AiResponseTypeEnumMap[instance.type],
       'temperature': instance.temperature,
