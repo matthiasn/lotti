@@ -187,7 +187,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 41);
+        expect(db.schemaVersion, 42);
 
         // The non-partial composite `idx_journal_tasks_due_active` was
         // dropped in v41 — its only consumer (`getTasksSortedByDueDate`)
@@ -246,7 +246,7 @@ void main() {
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 41);
+      expect(db.schemaVersion, 42);
 
       final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
@@ -378,7 +378,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 41);
+        expect(db.schemaVersion, 42);
 
         final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
@@ -519,7 +519,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 41);
+        expect(db.schemaVersion, 42);
 
         final taskIdx = await db.customSelect("""
         SELECT sql FROM sqlite_master

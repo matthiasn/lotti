@@ -116,7 +116,13 @@ class JournalDb extends _$JournalDb {
   bool _configFlagsLoaded = false;
 
   @override
-  int get schemaVersion => 41;
+  int get schemaVersion => 42;
+
+  // Static guard so ANALYZE runs once per process, not per connection.
+  // The drift read-pool opens 4 read connections + 1 write; running
+  // ANALYZE on every `beforeOpen` would re-walk `sqlite_stat1` 5x per
+  // launch. Once is enough — stats persist in the DB file.
+  static bool _statsAnalyzed = false;
 
   /// Conservative chunk size for `IN :ids` drift queries to stay under
   /// SQLite's default `SQLITE_MAX_VARIABLE_NUMBER` of 999 with headroom
@@ -151,6 +157,17 @@ class JournalDb extends _$JournalDb {
           await customStatement(
             _asIfNotExists(_createIdxJournalTaskStatusPrivateSql),
           );
+        }
+        if (!_statsAnalyzed && !inMemoryDatabase) {
+          _statsAnalyzed = true;
+          // Refresh planner stats once per process. The slow-query log
+          // showed `id IN (...)` queries falling through to
+          // idx_journal_browse instead of the PK; that is a classic
+          // stale-stats symptom on a DB that has grown since the last
+          // ANALYZE. Best-effort: never fail open on stat refresh.
+          try {
+            await customStatement('ANALYZE');
+          } catch (_) {}
         }
       },
       onCreate: (Migrator m) async {
@@ -644,6 +661,55 @@ class JournalDb extends _$JournalDb {
             await customStatement(
               'DROP INDEX IF EXISTS idx_journal_tasks_due_active',
             );
+          }();
+        }
+
+        if (from < 42) {
+          await () async {
+            DevLogger.log(
+              name: 'JournalDb',
+              message:
+                  'Adding task-status/priority/date partial index and '
+                  'covering linked_entries(from_id, hidden, to_id) '
+                  'index; refreshing planner stats',
+            );
+            // Partial covering ORDER BY (task_priority_rank, date_from
+            // DESC) within a `task_status IN (?)` partition. Lets the
+            // planner stream the tasks list even when the user has
+            // selected many categories, instead of falling back to
+            // `idx_journal_browse + USE TEMP B-TREE FOR ORDER BY`.
+            // Guarded on `journal` because minimal migration-test
+            // schemas omit it.
+            if (await _tableExists('journal')) {
+              await customStatement(
+                'CREATE INDEX IF NOT EXISTS '
+                'idx_journal_tasks_status_priority_date ON journal('
+                '  task_status COLLATE BINARY ASC, '
+                '  task_priority_rank COLLATE BINARY ASC, '
+                '  date_from COLLATE BINARY DESC) '
+                "WHERE type = 'Task' "
+                'AND task = 1 '
+                'AND deleted = FALSE',
+              );
+            }
+            // Covering variant of the existing (from_id, hidden) index
+            // so `getBulkLinkedTimeSpans` resolves `to_id` from the
+            // index and the planner stops reversing the join shape.
+            // Same table-existence guard as above.
+            if (await _tableExists('linked_entries')) {
+              await customStatement(
+                'CREATE INDEX IF NOT EXISTS '
+                'idx_linked_entries_from_id_hidden_to_id '
+                'ON linked_entries('
+                '  from_id COLLATE BINARY ASC, '
+                '  hidden COLLATE BINARY ASC, '
+                '  to_id COLLATE BINARY ASC)',
+              );
+            }
+            // After adding new indexes, refresh stats so the planner
+            // picks them on first launch rather than waiting for the
+            // next ANALYZE cycle.
+            await customStatement('ANALYZE');
           }();
         }
       },
@@ -1164,13 +1230,18 @@ class JournalDb extends _$JournalDb {
 
     final idList = ids.toSet().toList(growable: false);
     final placeholders = List.filled(idList.length, '?').join(', ');
+    // Pin the journal PK index. The slow-query log captured this query
+    // hitting `idx_journal_browse (deleted=?, type=?)` for an `id IN
+    // (...)` predicate, which fans out across the entire (non-deleted,
+    // Task) partition before filtering on `id`. With the autoindex
+    // pinned the planner does N PK seeks instead.
     final rows = await customSelect(
       '''
       SELECT id, json_extract(serialized, '\$.data.estimate') AS estimate_us
-      FROM journal
-      WHERE deleted = FALSE
+      FROM journal INDEXED BY sqlite_autoindex_journal_1
+      WHERE id IN ($placeholders)
+      AND deleted = FALSE
       AND type = 'Task'
-      AND id IN ($placeholders)
       ''',
       variables: [
         for (final id in idList) Variable<String>(id),

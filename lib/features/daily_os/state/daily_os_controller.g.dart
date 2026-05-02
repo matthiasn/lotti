@@ -351,7 +351,7 @@ final class RunningTimerCategoryIdProvider
 }
 
 String _$runningTimerCategoryIdHash() =>
-    r'de27450d1e3ceddb8c4cb9e6dd3b5b286e86e08c';
+    r'edfed2abf7c7d7d8613d2bf963a5fedef56795ed';
 
 /// Provides the category ID of the currently running timer.
 ///

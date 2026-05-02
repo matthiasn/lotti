@@ -3001,6 +3001,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_inbound_event_queue_abandoned_reason_resurrection',
     'CREATE INDEX idx_inbound_event_queue_abandoned_reason_resurrection ON inbound_event_queue (last_error_reason, resurrection_count) WHERE status = \'abandoned\'',
   );
+  late final Index idxInboundEventQueueStatusDueLease = Index(
+    'idx_inbound_event_queue_status_due_lease',
+    'CREATE INDEX idx_inbound_event_queue_status_due_lease ON inbound_event_queue (status, next_due_at, lease_until)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3027,6 +3031,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxInboundEventQueueAbandonedPath,
     idxInboundEventQueueAbandonedReason,
     idxInboundEventQueueAbandonedReasonResurrection,
+    idxInboundEventQueueStatusDueLease,
   ];
 }
 

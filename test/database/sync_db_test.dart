@@ -3642,7 +3642,7 @@ void main() {
     });
 
     test('schema version is 17', () {
-      expect(db.schemaVersion, 17);
+      expect(db.schemaVersion, 18);
     });
 
     test(

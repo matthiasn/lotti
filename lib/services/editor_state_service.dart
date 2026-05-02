@@ -21,11 +21,23 @@ class EditorStateService {
 
   Future<void> init() async {
     final drafts = await _editorDb.allDrafts().get();
+    if (drafts.isEmpty) return;
+
+    // One bulk fetch instead of N serial `entityById` round-trips. The
+    // super-slow log showed a 10-deep cluster of `WHERE id = ? AND
+    // deleted = ?` selects firing in series at startup; coalescing them
+    // into one `id IN (...)` query collapses the wave and unblocks the
+    // editor warm-up.
+    final entryIds = {for (final d in drafts) d.entryId};
+    final entities = await _journalDb
+        .journalEntitiesByIdsAllPrivate(entryIds.toList(growable: false))
+        .get();
+    final entityById = <String, JournalDbEntity>{
+      for (final entity in entities) entity.id: entity,
+    };
 
     for (final draft in drafts) {
-      final entity = await _journalDb.entityById(draft.entryId);
-
-      if (entity?.updatedAt == draft.lastSaved) {
+      if (entityById[draft.entryId]?.updatedAt == draft.lastSaved) {
         editorStateById[draft.entryId] = draft.delta;
       }
     }

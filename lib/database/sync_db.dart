@@ -334,6 +334,19 @@ class HostActivity extends Table {
   'ON inbound_event_queue (last_error_reason, resurrection_count) '
   '''WHERE status = 'abandoned' ''',
 )
+// `QueueStats.stats()` and the `readyNow` probe filter
+// `status IN ('enqueued','retrying','leased') AND next_due_at <= ?
+// AND lease_until <= ?`, but the existing `idx_inbound_event_queue_
+// active_ready_at` is partial on a constant `status IN (…)` clause
+// that SQLite's theorem prover cannot match against a parameterized
+// `IN (?, ?, ?)`. The slow-query log captured 332 ms full SCANs.
+// A non-partial composite leading on `status` lets the planner seek
+// for each bound status value and walk `(next_due_at, lease_until)`
+// inside the index.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_status_due_lease '
+  'ON inbound_event_queue (status, next_due_at, lease_until)',
+)
 class InboundEventQueue extends Table {
   IntColumn get queueId => integer().autoIncrement().named('queue_id')();
 
@@ -1646,11 +1659,30 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
+
+  // Static guard so ANALYZE runs once per process, not per connection.
+  // The drift read-pool opens 4 read connections + 1 write; running
+  // ANALYZE on every `beforeOpen` would re-walk the stat tables 5x per
+  // launch. Once is enough — stats are persisted in `sqlite_stat1`.
+  static bool _statsAnalyzed = false;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
+      beforeOpen: (details) async {
+        if (!_statsAnalyzed) {
+          _statsAnalyzed = true;
+          // Refresh planner stats so partial-index choices stop drifting.
+          // ANALYZE on small/medium tables is cheap; the queue ledger is
+          // bounded and the sync_sequence_log scan is one-pass.
+          try {
+            await customStatement('ANALYZE');
+          } catch (_) {
+            // Stats refresh is best-effort; never fail the open path.
+          }
+        }
+      },
       onCreate: (Migrator m) async {
         await m.createAll();
       },
@@ -1954,6 +1986,22 @@ class SyncDatabase extends _$SyncDatabase {
             'ON inbound_event_queue (last_error_reason, resurrection_count) '
             '''WHERE status = 'abandoned' ''',
           );
+        }
+        if (from < 18) {
+          // Backstop the `QueueStats.stats()` and `readyNow` probes.
+          // Their `status IN (?, ?, ?)` predicate could not be matched
+          // to the existing partial index, so the planner full-scanned
+          // the queue ledger (332 ms in the super-slow log). Non-partial
+          // composite leading on `status` makes the predicate seekable.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_status_due_lease '
+            'ON inbound_event_queue (status, next_due_at, lease_until)',
+          );
+          // Refresh stats for the new partition shape so the planner
+          // picks the new index immediately on first launch instead of
+          // waiting for the next ANALYZE cycle.
+          await customStatement('ANALYZE');
         }
       },
     );

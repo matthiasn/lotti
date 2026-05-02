@@ -5582,6 +5582,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_project_task_status',
     'CREATE INDEX idx_journal_project_task_status ON journal (project_id COLLATE BINARY ASC, task_status COLLATE BINARY ASC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE AND project_id IS NOT NULL',
   );
+  late final Index idxJournalTasksStatusPriorityDate = Index(
+    'idx_journal_tasks_status_priority_date',
+    'CREATE INDEX idx_journal_tasks_status_priority_date ON journal (task_status COLLATE BINARY ASC, task_priority_rank COLLATE BINARY ASC, date_from COLLATE BINARY DESC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE',
+  );
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
@@ -5682,6 +5686,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final Index idxLinkedEntriesFromIdHidden = Index(
     'idx_linked_entries_from_id_hidden',
     'CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)',
+  );
+  late final Index idxLinkedEntriesFromIdHiddenToId = Index(
+    'idx_linked_entries_from_id_hidden_to_id',
+    'CREATE INDEX idx_linked_entries_from_id_hidden_to_id ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC, to_id COLLATE BINARY ASC)',
   );
   late final Index idxLinkedEntriesToIdHidden = Index(
     'idx_linked_entries_to_id_hidden',
@@ -7769,6 +7777,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxJournalTaskStatusPrivate,
     idxJournalProjectId,
     idxJournalProjectTaskStatus,
+    idxJournalTasksStatusPriorityDate,
     conflicts,
     measurableTypes,
     habitDefinitions,
@@ -7800,6 +7809,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxLinkedEntriesType,
     idxLinkedEntriesHidden,
     idxLinkedEntriesFromIdHidden,
+    idxLinkedEntriesFromIdHiddenToId,
     idxLinkedEntriesToIdHidden,
     idxLinkedEntriesFromIdHiddenCreatedAtDesc,
     idxLinkedEntriesToIdType,
