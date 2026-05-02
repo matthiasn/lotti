@@ -1,13 +1,10 @@
-import 'dart:async';
-
-import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
+import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
@@ -905,114 +902,26 @@ class _ReportCountdownPill extends StatefulWidget {
   State<_ReportCountdownPill> createState() => _ReportCountdownPillState();
 }
 
-class _ReportCountdownPillState extends State<_ReportCountdownPill> {
-  Timer? _timer;
-  int _seconds = 0;
-  ValueListenable<TickerModeData>? _tickerModeNotifier;
-  bool _tickerModeEnabled = true;
-
+class _ReportCountdownPillState extends State<_ReportCountdownPill>
+    with WakeCountdownState<_ReportCountdownPill> {
   @override
-  void initState() {
-    super.initState();
-    _seconds = _remainingSeconds();
-    _syncTimer();
-  }
+  DateTime get nextWakeAt => widget.nextWakeAt;
 
   @override
   void didUpdateWidget(covariant _ReportCountdownPill oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.nextWakeAt != widget.nextWakeAt) {
-      _seconds = _remainingSeconds();
-      _syncTimer();
+      resyncCountdown();
     }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final tickerModeNotifier = TickerMode.getValuesNotifier(context);
-    if (_tickerModeNotifier != tickerModeNotifier) {
-      _tickerModeNotifier?.removeListener(_handleTickerModeChanged);
-      _tickerModeNotifier = tickerModeNotifier
-        ..addListener(_handleTickerModeChanged);
-    }
-    _syncTickerMode();
-  }
-
-  @override
-  void dispose() {
-    _tickerModeNotifier?.removeListener(_handleTickerModeChanged);
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  int _remainingSeconds() {
-    final remaining = widget.nextWakeAt.difference(clock.now());
-    if (remaining <= Duration.zero) {
-      return 0;
-    }
-    return remaining.inSeconds;
-  }
-
-  void _syncTimer() {
-    _timer?.cancel();
-    _timer = null;
-
-    if (_seconds <= 0) {
-      return;
-    }
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (!_tickerModeEnabled) {
-        return;
-      }
-
-      final updated = _remainingSeconds();
-      if (updated == _seconds) {
-        return;
-      }
-
-      setState(() => _seconds = updated);
-      if (updated <= 0) {
-        timer.cancel();
-        _timer = null;
-      }
-    });
-  }
-
-  void _handleTickerModeChanged() {
-    if (!mounted) {
-      return;
-    }
-
-    setState(_syncTickerMode);
-  }
-
-  void _syncTickerMode() {
-    _tickerModeEnabled =
-        _tickerModeNotifier?.value.enabled ?? TickerModeData.fallback.enabled;
-    if (!_tickerModeEnabled) {
-      return;
-    }
-
-    final updated = _remainingSeconds();
-    if (updated != _seconds) {
-      _seconds = updated;
-    }
-    _syncTimer();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_seconds <= 0) {
+    if (countdownSeconds <= 0) {
       return const SizedBox.shrink();
     }
 
-    final countdownText = formatCountdown(_seconds);
+    final countdownText = formatCountdown(countdownSeconds);
     return Tooltip(
       message: context.messages.taskAgentCountdownTooltip(countdownText),
       child: ShowcaseCountdownPill(countdownText: countdownText),

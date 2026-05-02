@@ -414,8 +414,12 @@ class InboundWorker {
   static const Duration _pendingAttachmentInitialBackoff = Duration(
     seconds: 30,
   );
-  static const Duration _maxPendingAttachmentBackoff = Duration(minutes: 10);
   static const Duration _maxPendingAttachmentWait = Duration(minutes: 10);
+  // Bounded by the wait deadline: a single backoff at the cap exhausts
+  // the entire grace window, so capping the backoff above the deadline
+  // would be wasted retry budget.
+  static const Duration _maxPendingAttachmentBackoff =
+      _maxPendingAttachmentWait;
 
   /// Races stop, a depthChanges signal, and a delay that matches the
   /// queue's earliest ready timestamp. Without the ready-aware delay,

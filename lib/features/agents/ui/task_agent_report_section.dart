@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -14,6 +12,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -364,124 +363,29 @@ class _CountdownPill extends StatefulWidget {
   State<_CountdownPill> createState() => _CountdownPillState();
 }
 
-class _CountdownPillState extends State<_CountdownPill> {
-  Timer? _timer;
-  int _seconds = 0;
-  ValueListenable<TickerModeData>? _tickerModeNotifier;
-  bool _tickerModeEnabled = true;
-
+class _CountdownPillState extends State<_CountdownPill>
+    with WakeCountdownState<_CountdownPill> {
   @override
-  void initState() {
-    super.initState();
-    _seconds = _remainingSeconds();
-    _syncTimer();
-  }
+  DateTime get nextWakeAt => widget.nextWakeAt;
 
   @override
   void didUpdateWidget(covariant _CountdownPill oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.nextWakeAt != widget.nextWakeAt) {
-      _seconds = _remainingSeconds();
-      _syncTimer();
+      resyncCountdown();
     }
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final tickerModeNotifier = TickerMode.getValuesNotifier(context);
-    if (_tickerModeNotifier != tickerModeNotifier) {
-      _tickerModeNotifier?.removeListener(_handleTickerModeChanged);
-      _tickerModeNotifier = tickerModeNotifier
-        ..addListener(_handleTickerModeChanged);
-    }
-    _syncTickerMode();
-  }
-
-  @override
-  void dispose() {
-    _tickerModeNotifier?.removeListener(_handleTickerModeChanged);
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  int _remainingSeconds() {
-    final remaining = widget.nextWakeAt.difference(clock.now());
-    if (remaining <= Duration.zero) {
-      return 0;
-    }
-    return remaining.inSeconds;
-  }
-
-  void _syncTimer() {
-    _timer?.cancel();
-    _timer = null;
-
-    if (_seconds <= 0) {
-      _notifyExpiredAfterBuild();
-      return;
-    }
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (!_tickerModeEnabled) {
-        return;
-      }
-
-      final updated = _remainingSeconds();
-      if (updated == _seconds) {
-        return;
-      }
-
-      setState(() => _seconds = updated);
-      if (updated <= 0) {
-        timer.cancel();
-        _timer = null;
-        _notifyExpiredAfterBuild();
-      }
-    });
-  }
-
-  void _handleTickerModeChanged() {
-    if (!mounted) {
-      return;
-    }
-
-    setState(_syncTickerMode);
-  }
-
-  void _syncTickerMode() {
-    _tickerModeEnabled =
-        _tickerModeNotifier?.value.enabled ?? TickerModeData.fallback.enabled;
-    if (!_tickerModeEnabled) {
-      return;
-    }
-
-    final updated = _remainingSeconds();
-    if (updated != _seconds) {
-      _seconds = updated;
-    }
-    _syncTimer();
-  }
-
-  void _notifyExpiredAfterBuild() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        widget.onExpired();
-      }
-    });
-  }
+  void onCountdownExpired() => widget.onExpired();
 
   @override
   Widget build(BuildContext context) {
-    if (_seconds <= 0) {
+    if (countdownSeconds <= 0) {
       return const SizedBox.shrink();
     }
 
-    final countdownText = formatCountdown(_seconds);
+    final countdownText = formatCountdown(countdownSeconds);
 
     return Container(
       width: _CountdownPill._pillWidth,
