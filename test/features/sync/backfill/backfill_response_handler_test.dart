@@ -874,7 +874,7 @@ void main() {
             )
             // Set window to now so the rate window is still active
             ..windowStart = DateTime.now()
-            ..responsesInWindow = 500; // At the limit
+            ..responsesInWindow = 5000; // At the limit
 
       const request = SyncBackfillRequest(
         entries: [

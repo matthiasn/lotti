@@ -143,7 +143,7 @@ void main() {
           const Duration(minutes: 2),
         );
         expect(SyncTuning.backfillMaxRequestCount, 10);
-        expect(SyncTuning.backfillProcessingBatchSize, 100);
+        expect(SyncTuning.backfillProcessingBatchSize, 2000);
       });
 
       test('default backfill limits have expected values', () {
