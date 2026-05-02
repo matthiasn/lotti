@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/time_entry_update_tile.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -80,6 +83,37 @@ void main() {
       );
     });
 
+    testWidgets('loads current entry through the journal repository provider', (
+      tester,
+    ) async {
+      final repository = MockJournalRepository();
+      when(
+        () => repository.getJournalEntityById(entryId),
+      ).thenAnswer((_) async => makeEntry());
+
+      await pumpTile(
+        tester,
+        makeTestableWidgetWithScaffold(
+          const TimeEntryUpdateTile(
+            args: {
+              'entryId': entryId,
+              'summary': 'Repository-backed update',
+            },
+            busy: false,
+          ),
+          overrides: [journalRepositoryProvider.overrideWithValue(repository)],
+        ),
+      );
+
+      expect(
+        find.textContaining(
+          'Current: Original workshop notes -> Proposed: Repository-backed update',
+        ),
+        findsOneWidget,
+      );
+      verify(() => repository.getJournalEntityById(entryId)).called(1);
+    });
+
     testWidgets('marks untouched fields as unchanged', (tester) async {
       await pumpTile(
         tester,
@@ -102,6 +136,34 @@ void main() {
       );
       expect(
         find.textContaining('Proposed: Revised summary only'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders unavailable state when current entry load fails', (
+      tester,
+    ) async {
+      await pumpTile(
+        tester,
+        makeTestableWidgetWithScaffold(
+          const TimeEntryUpdateTile(
+            args: {
+              'entryId': entryId,
+              'summary': 'Fallback proposal',
+            },
+            busy: false,
+          ),
+          overrides: [
+            timeEntryUpdateTileEntryProvider(
+              entryId,
+            ).overrideWith((ref) async => throw StateError('load failed')),
+          ],
+        ),
+      );
+
+      expect(find.text('Original entry not available'), findsOneWidget);
+      expect(
+        find.textContaining('Proposed: Fallback proposal'),
         findsOneWidget,
       );
     });

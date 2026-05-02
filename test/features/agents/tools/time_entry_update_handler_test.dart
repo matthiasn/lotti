@@ -155,6 +155,17 @@ void main() {
         expect(result.errorMessage, 'Unparseable startTime');
       });
 
+      test('returns failure when startTime is empty', () async {
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'startTime': '',
+        });
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Missing or invalid startTime');
+        expect(result.output, contains('explicit local time'));
+      });
+
       test('returns failure when endTime has timezone suffix', () async {
         final result = await handler.handle(sourceTaskId, {
           'entryId': entryId,

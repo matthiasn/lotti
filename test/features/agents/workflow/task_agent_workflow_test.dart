@@ -2656,6 +2656,43 @@ void main() {
         },
       );
 
+      test('truncates long editable time entry text', () async {
+        final longText = 'x' * 205;
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer(
+          (_) async => [
+            _makeLinkedTimeEntry(
+              id: 'entry-long',
+              dateFrom: DateTime(2024, 6, 14, 9),
+              dateTo: DateTime(2024, 6, 14, 10),
+              text: longText,
+            ),
+          ],
+        );
+
+        final message = await executeAndCaptureMessage();
+
+        expect(message, isNotNull);
+        expect(message, contains('id: entry-long'));
+        expect(message, contains('"${'x' * 199}…"'));
+        expect(message, isNot(contains(longText)));
+      });
+
+      test(
+        'omits Editable Time Entries section when linked entry lookup fails',
+        () async {
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenThrow(Exception('linked entries failed'));
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Editable Time Entries')));
+        },
+      );
+
       test(
         'includes full Active Running Timer details when timer is for THIS '
         'task',
