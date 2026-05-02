@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.986]
+### Fixed
+- Reduced idle CPU usage after starting and stopping task timers. Inactive
+  desktop and mobile navigation tabs now disable tickers for their cached
+  `IndexedStack` children, and task/project agent countdowns update only their
+  small countdown pill instead of rebuilding whole report sections in hidden
+  tabs. Running-timer task icons also rebuild only when the linked task changes.
+- Inbound sync rows waiting for missing attachment or agent-bundle JSON now use
+  a bounded 10-minute wait with long backoff instead of either retrying forever
+  or being skipped by the generic attempt counter too early. If the attachment
+  is still missing after the grace window, the row is abandoned and normal
+  backfill recovery can handle the long tail.
+
 ## [0.9.985]
 ### Added
 - Sidebar **Sync activity indicator** (variant D4a). When the new

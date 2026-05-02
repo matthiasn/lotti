@@ -460,6 +460,34 @@ void main() {
       );
       expect(overlayRow.mainAxisAlignment, MainAxisAlignment.center);
     });
+
+    testWidgets('disables tickers for inactive mobile tabs', (tester) async {
+      final mockNavService = MockNavService();
+
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(3),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+      );
+
+      final stack = tester.widget<IndexedStack>(find.byType(IndexedStack));
+      expect(stack.index, 3);
+      for (var i = 0; i < stack.children.length; i++) {
+        final child = stack.children[i];
+        expect(child, isA<TickerMode>());
+        expect((child as TickerMode).enabled, i == 3);
+      }
+    });
   });
 
   group('AppScreen desktop layout', () {
@@ -622,6 +650,39 @@ void main() {
         timeIndicator.bottom,
         AppScreenConstants.navigationTimeIndicatorBottom,
       );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('disables tickers for inactive desktop tabs', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1280, 800)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(2),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(tester, navService: mockNavService);
+
+      final stack = tester.widget<IndexedStack>(find.byType(IndexedStack));
+      expect(stack.index, 2);
+      for (var i = 0; i < stack.children.length; i++) {
+        final child = stack.children[i];
+        expect(child, isA<TickerMode>());
+        expect((child as TickerMode).enabled, i == 2);
+      }
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();

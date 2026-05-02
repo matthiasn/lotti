@@ -58,7 +58,8 @@ enum RetryReason {
 
   /// Waiting for an attachment JSON (descriptor or agent entity
   /// payload) to land on disk. Retried with a longer backoff ladder
-  /// and no `_maxAttempts` cap — see `ApplyOutcome.pendingAttachment`.
+  /// and a wall-clock timeout instead of the generic attempt cap —
+  /// see `ApplyOutcome.pendingAttachment`.
   pendingAttachment,
 }
 
@@ -72,6 +73,7 @@ class InboundQueueEntry {
     required this.roomId,
     required this.originTs,
     required this.producer,
+    required this.enqueuedAt,
     required this.attempts,
     required this.leaseUntil,
     required this.rawJson,
@@ -82,6 +84,7 @@ class InboundQueueEntry {
   final String roomId;
   final int originTs;
   final InboundEventProducer producer;
+  final int enqueuedAt;
   final int attempts;
   final int leaseUntil;
   final String rawJson;
@@ -492,6 +495,7 @@ class InboundQueue {
     roomId: row.roomId,
     originTs: row.originTs,
     producer: _producerFromName(row.producer),
+    enqueuedAt: row.enqueuedAt,
     attempts: row.attempts,
     leaseUntil: leaseUntil,
     rawJson: row.rawJson,
@@ -795,6 +799,12 @@ class InboundQueue {
     final updated = await _db.transaction(() async {
       // A single UPDATE flips every eligible row; looping per-row
       // would pay the round-trip cost N times.
+      // Reset `enqueued_at` so any pendingAttachment retries triggered
+      // by the resurrected row get a fresh wall-clock deadline. Without
+      // this, a row abandoned by `pendingAttachmentTimeout` would be
+      // re-abandoned on its next worker pass because the elapsed
+      // calculation in `InboundWorker._maybeRetry` is anchored to the
+      // original enqueue time.
       final custom = await _db.customUpdate(
         'UPDATE inbound_event_queue '
         'SET status = ?, '
@@ -802,11 +812,13 @@ class InboundQueue {
         '    attempts = 0, '
         '    next_due_at = 0, '
         '    lease_until = 0, '
+        '    enqueued_at = ?, '
         '    last_error_reason = NULL, '
         '    abandoned_at = NULL '
         'WHERE queue_id IN (${List.filled(ids.length, '?').join(', ')})',
         variables: [
           Variable.withString(_statusEnqueued),
+          Variable.withInt(nowMs),
           ...ids.map(Variable.withInt),
         ],
         updates: {table},

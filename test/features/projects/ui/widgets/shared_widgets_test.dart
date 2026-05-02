@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,11 +44,19 @@ ProjectStatus _openStatus() => ProjectStatus.open(
 );
 
 void main() {
-  Widget wrap(Widget child) {
+  Widget wrap(
+    Widget child, {
+    bool tickerModeEnabled = true,
+  }) {
     return makeTestableWidget2(
       Theme(
         data: DesignSystemTheme.dark(),
-        child: Scaffold(body: child),
+        child: Scaffold(
+          body: TickerMode(
+            enabled: tickerModeEnabled,
+            child: child,
+          ),
+        ),
       ),
     );
   }
@@ -569,6 +578,110 @@ Longer report content.
       expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
       expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
     });
+
+    testWidgets(
+      'countdown does not update while ticker mode is disabled and catches up when re-enabled',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+        var currentTime = start;
+        final nextWakeAt = start.add(const Duration(seconds: 90));
+
+        await withClock(Clock(() => currentTime), () async {
+          Widget subject({required bool tickerModeEnabled}) {
+            return wrap(
+              ExpandableReportSection(
+                title: 'AI Report',
+                body: 'TLDR only.',
+                fullContent: 'TLDR only.',
+                recommendations: const [],
+                nextWakeAt: nextWakeAt,
+                onRefresh: () {},
+              ),
+              tickerModeEnabled: tickerModeEnabled,
+            );
+          }
+
+          await tester.pumpWidget(subject(tickerModeEnabled: false));
+          await tester.pump();
+
+          expect(find.text('1:30'), findsOneWidget);
+
+          currentTime = start.add(const Duration(seconds: 30));
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(find.text('1:30'), findsOneWidget);
+          expect(find.text('1:00'), findsNothing);
+
+          await tester.pumpWidget(subject(tickerModeEnabled: true));
+          await tester.pump();
+
+          expect(find.text('1:00'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets('countdown pill resyncs when nextWakeAt changes', (
+      tester,
+    ) async {
+      final start = DateTime(2024, 3, 15, 12);
+
+      await withClock(Clock.fixed(start), () async {
+        Widget subject(DateTime nextWakeAt) {
+          return wrap(
+            ExpandableReportSection(
+              title: 'AI Report',
+              body: 'TLDR only.',
+              fullContent: 'TLDR only.',
+              recommendations: const [],
+              nextWakeAt: nextWakeAt,
+              onRefresh: () {},
+            ),
+          );
+        }
+
+        await tester.pumpWidget(
+          subject(start.add(const Duration(seconds: 30))),
+        );
+        await tester.pump();
+        expect(find.text('0:30'), findsOneWidget);
+
+        // Same widget type, new nextWakeAt → didUpdateWidget must call
+        // resyncCountdown so the pill snaps to the new remaining seconds
+        // without waiting for the next periodic tick.
+        await tester.pumpWidget(
+          subject(start.add(const Duration(seconds: 90))),
+        );
+        await tester.pump();
+        expect(find.text('1:30'), findsOneWidget);
+        expect(find.text('0:30'), findsNothing);
+      });
+    });
+
+    testWidgets(
+      'countdown pill hides itself once nextWakeAt has already passed',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+
+        await withClock(Clock.fixed(start), () async {
+          await tester.pumpWidget(
+            wrap(
+              ExpandableReportSection(
+                title: 'AI Report',
+                body: 'TLDR only.',
+                fullContent: 'TLDR only.',
+                recommendations: const [],
+                nextWakeAt: start.subtract(const Duration(seconds: 5)),
+                onRefresh: () {},
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Pill builds with countdownSeconds <= 0 → returns SizedBox.shrink.
+          expect(find.byType(ShowcaseCountdownPill), findsNothing);
+        });
+      },
+    );
   });
 
   group('RecommendationsList', () {

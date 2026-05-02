@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -13,6 +12,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -46,52 +46,9 @@ class TaskAgentReportSection extends ConsumerStatefulWidget {
 
 class _TaskAgentReportSectionState
     extends ConsumerState<TaskAgentReportSection> {
-  Timer? _countdownTimer;
-  int _countdownSeconds = 0;
-
   /// Guards against re-seeding the countdown after a manual cancel.
   /// Reset when the provider propagates the cleared `nextWakeAt`.
   bool _cancelledManually = false;
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startCountdown(int seconds) {
-    _countdownTimer?.cancel();
-    _countdownSeconds = seconds;
-    if (seconds <= 0) return;
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        _countdownSeconds--;
-        if (_countdownSeconds <= 0) {
-          _countdownTimer?.cancel();
-          _countdownTimer = null;
-        }
-      });
-    });
-  }
-
-  void _stopCountdown() {
-    _countdownTimer?.cancel();
-    _countdownTimer = null;
-    _countdownSeconds = 0;
-  }
-
-  /// Defers [_stopCountdown] to a post-frame callback so we never mutate
-  /// state synchronously during [build].
-  void _scheduleStopCountdown() {
-    if (_countdownTimer == null && _countdownSeconds == 0) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _stopCountdown();
-        setState(() {});
-      }
-    });
-  }
 
   int _computeRemainingSeconds(DateTime? nextWakeAt) {
     if (nextWakeAt == null) return 0;
@@ -108,7 +65,6 @@ class _TaskAgentReportSectionState
         ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
 
     if (!enableAgents) {
-      _scheduleStopCountdown();
       return const SizedBox.shrink();
     }
 
@@ -121,7 +77,6 @@ class _TaskAgentReportSectionState
       error: (_, _) => const SizedBox.shrink(),
       data: (agentEntity) {
         if (agentEntity == null) {
-          _scheduleStopCountdown();
           return _buildCreateAgentRow(context);
         }
         final identity = agentEntity.mapOrNull(agent: (e) => e);
@@ -182,38 +137,17 @@ class _TaskAgentReportSectionState
 
     final remainingSeconds = _computeRemainingSeconds(nextWakeAt);
 
-    // Restart countdown timer when nextWakeAt changes.
     ref.listen(agentStateProvider(agentId), (prev, next) {
       final newNextWake = next.value?.mapOrNull(
         agentState: (s) => s.nextWakeAt,
       );
-      final newRemaining = _computeRemainingSeconds(newNextWake);
-      if (newRemaining > 0) {
-        if (!_cancelledManually) {
-          _startCountdown(newRemaining);
-        }
-      } else {
-        // Provider caught up with the cancel — safe to allow future seeds.
+      if (_computeRemainingSeconds(newNextWake) <= 0) {
         _cancelledManually = false;
-        _stopCountdown();
       }
     });
 
-    // Seed the timer on first build if a countdown is active.
-    if (isRunning) {
-      _scheduleStopCountdown();
-    } else if (_countdownTimer == null &&
-        remainingSeconds > 0 &&
-        !_cancelledManually) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_cancelledManually) _startCountdown(remainingSeconds);
-      });
-    }
-
-    final showCountdown = !isRunning && _countdownSeconds > 0;
-    final countdownText = showCountdown
-        ? formatCountdown(_countdownSeconds)
-        : null;
+    final showCountdown =
+        !isRunning && remainingSeconds > 0 && !_cancelledManually;
 
     return Padding(
       padding: const EdgeInsets.only(
@@ -309,7 +243,14 @@ class _TaskAgentReportSectionState
                   ref.read(taskAgentServiceProvider).triggerReanalysis(agentId);
                 },
               ),
-              _CountdownPill(countdownText: countdownText!),
+              _CountdownPill(
+                nextWakeAt: nextWakeAt!,
+                onExpired: () {
+                  if (mounted) {
+                    setState(() {});
+                  }
+                },
+              ),
               IconButton(
                 icon: Icon(
                   Icons.close,
@@ -325,7 +266,6 @@ class _TaskAgentReportSectionState
                       .read(taskAgentServiceProvider)
                       .cancelScheduledWake(agentId);
                   _cancelledManually = true;
-                  _stopCountdown();
                   setState(() {});
                 },
               ),
@@ -408,17 +348,47 @@ class _TaskAgentReportSectionState
 }
 
 /// Fixed-width pill that displays the agent wake countdown timer.
-class _CountdownPill extends StatelessWidget {
-  const _CountdownPill({required this.countdownText});
+class _CountdownPill extends StatefulWidget {
+  const _CountdownPill({
+    required this.nextWakeAt,
+    required this.onExpired,
+  });
 
-  final String countdownText;
+  final DateTime nextWakeAt;
+  final VoidCallback onExpired;
 
   static const double _pillWidth = 52;
 
   @override
+  State<_CountdownPill> createState() => _CountdownPillState();
+}
+
+class _CountdownPillState extends State<_CountdownPill>
+    with WakeCountdownState<_CountdownPill> {
+  @override
+  DateTime get nextWakeAt => widget.nextWakeAt;
+
+  @override
+  void didUpdateWidget(covariant _CountdownPill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.nextWakeAt != widget.nextWakeAt) {
+      resyncCountdown();
+    }
+  }
+
+  @override
+  void onCountdownExpired() => widget.onExpired();
+
+  @override
   Widget build(BuildContext context) {
+    if (countdownSeconds <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    final countdownText = formatCountdown(countdownSeconds);
+
     return Container(
-      width: _pillWidth,
+      width: _CountdownPill._pillWidth,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerHighest,

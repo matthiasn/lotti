@@ -1,12 +1,10 @@
-import 'dart:async';
-
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
+import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
@@ -647,85 +645,6 @@ class ExpandableReportSection extends StatefulWidget {
 
 class _ExpandableReportSectionState extends State<ExpandableReportSection> {
   late bool _expanded = widget.initiallyExpanded;
-  Timer? _countdownTimer;
-  int _countdownSeconds = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _syncCountdown();
-  }
-
-  @override
-  void didUpdateWidget(covariant ExpandableReportSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.nextWakeAt != widget.nextWakeAt ||
-        oldWidget.isRefreshing != widget.isRefreshing) {
-      _syncCountdown();
-    }
-  }
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
-
-  int _remainingSeconds(DateTime? nextWakeAt) {
-    if (nextWakeAt == null) {
-      return 0;
-    }
-
-    final remaining = nextWakeAt.difference(clock.now());
-    if (remaining <= Duration.zero) {
-      return 0;
-    }
-
-    return remaining.inSeconds;
-  }
-
-  void _syncCountdown() {
-    _countdownTimer?.cancel();
-    _countdownTimer = null;
-
-    if (widget.isRefreshing) {
-      if (mounted) {
-        setState(() => _countdownSeconds = 0);
-      } else {
-        _countdownSeconds = 0;
-      }
-      return;
-    }
-
-    final remaining = _remainingSeconds(widget.nextWakeAt);
-    if (remaining <= 0) {
-      if (mounted) {
-        setState(() => _countdownSeconds = 0);
-      } else {
-        _countdownSeconds = 0;
-      }
-      return;
-    }
-
-    if (mounted) {
-      setState(() => _countdownSeconds = remaining);
-    } else {
-      _countdownSeconds = remaining;
-    }
-
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      final updated = _remainingSeconds(widget.nextWakeAt);
-      setState(() => _countdownSeconds = updated);
-      if (updated <= 0) {
-        timer.cancel();
-      }
-    });
-  }
 
   ({String tldr, String? additional}) _parseContent() {
     final body = widget.body.trim();
@@ -806,7 +725,6 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
     final hasAdditionalContent =
         parsed.additional != null && parsed.additional!.trim().isNotEmpty;
     final canExpand = hasAdditionalContent;
-    final showCountdown = !widget.isRefreshing && _countdownSeconds > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,16 +765,11 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                               ),
                         ),
                       ),
-                    if (showCountdown)
+                    if (!widget.isRefreshing && widget.nextWakeAt != null)
                       Padding(
                         padding: EdgeInsets.only(right: tokens.spacing.step2),
-                        child: Tooltip(
-                          message: context.messages.taskAgentCountdownTooltip(
-                            formatCountdown(_countdownSeconds),
-                          ),
-                          child: ShowcaseCountdownPill(
-                            countdownText: formatCountdown(_countdownSeconds),
-                          ),
+                        child: _ReportCountdownPill(
+                          nextWakeAt: widget.nextWakeAt!,
                         ),
                       ),
                     if (widget.onRefresh != null)
@@ -976,6 +889,44 @@ String formatCountdown(int totalSeconds) {
   final minutes = totalSeconds ~/ 60;
   final seconds = totalSeconds % 60;
   return '$minutes:${seconds.toString().padLeft(2, '0')}';
+}
+
+class _ReportCountdownPill extends StatefulWidget {
+  const _ReportCountdownPill({
+    required this.nextWakeAt,
+  });
+
+  final DateTime nextWakeAt;
+
+  @override
+  State<_ReportCountdownPill> createState() => _ReportCountdownPillState();
+}
+
+class _ReportCountdownPillState extends State<_ReportCountdownPill>
+    with WakeCountdownState<_ReportCountdownPill> {
+  @override
+  DateTime get nextWakeAt => widget.nextWakeAt;
+
+  @override
+  void didUpdateWidget(covariant _ReportCountdownPill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.nextWakeAt != widget.nextWakeAt) {
+      resyncCountdown();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (countdownSeconds <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    final countdownText = formatCountdown(countdownSeconds);
+    return Tooltip(
+      message: context.messages.taskAgentCountdownTooltip(countdownText),
+      child: ShowcaseCountdownPill(countdownText: countdownText),
+    );
+  }
 }
 
 class ShowcaseCountdownPill extends StatelessWidget {

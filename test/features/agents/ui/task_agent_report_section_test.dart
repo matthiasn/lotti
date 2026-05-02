@@ -75,10 +75,14 @@ final AiConfigInferenceProfile _testProfile = testInferenceProfile();
 Widget _buildSubject({
   required String taskId,
   required List<Override> overrides,
+  bool tickerModeEnabled = true,
 }) {
   return RiverpodWidgetTestBench(
     overrides: overrides,
-    child: TaskAgentReportSection(taskId: taskId),
+    child: TickerMode(
+      enabled: tickerModeEnabled,
+      child: TaskAgentReportSection(taskId: taskId),
+    ),
   );
 }
 
@@ -763,6 +767,106 @@ void main() {
         expect(find.text('1:30'), findsOneWidget);
       });
     });
+
+    testWidgets(
+      'countdown does not update while ticker mode is disabled and catches up when re-enabled',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+        var currentTime = start;
+
+        await withClock(Clock(() => currentTime), () async {
+          final agentEntity = makeTestIdentity();
+          final nextWakeAt = start.add(const Duration(seconds: 90));
+          final stateEntity = makeTestState(
+            agentId: agentEntity.agentId,
+            nextWakeAt: nextWakeAt,
+          );
+          final overrides = agentExistsOverrides(
+            agent: agentEntity,
+            agentState: stateEntity,
+          );
+
+          await tester.pumpWidget(
+            _buildSubject(
+              taskId: 'task-1',
+              overrides: overrides,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('1:30'), findsOneWidget);
+
+          await tester.pumpWidget(
+            _buildSubject(
+              taskId: 'task-1',
+              overrides: overrides,
+              tickerModeEnabled: false,
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('1:30'), findsOneWidget);
+
+          currentTime = start.add(const Duration(seconds: 30));
+          await tester.pump(const Duration(seconds: 1));
+
+          expect(find.text('1:30'), findsOneWidget);
+          expect(find.text('1:00'), findsNothing);
+
+          await tester.pumpWidget(
+            _buildSubject(
+              taskId: 'task-1',
+              overrides: overrides,
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('1:00'), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets(
+      'parent rebuilds and hides countdown pill once nextWakeAt elapses',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+        var currentTime = start;
+
+        await withClock(Clock(() => currentTime), () async {
+          final agentEntity = makeTestIdentity();
+          final nextWakeAt = start.add(const Duration(seconds: 2));
+          final stateEntity = makeTestState(
+            agentId: agentEntity.agentId,
+            nextWakeAt: nextWakeAt,
+          );
+
+          await tester.pumpWidget(
+            _buildSubject(
+              taskId: 'task-1',
+              overrides: agentExistsOverrides(
+                agent: agentEntity,
+                agentState: stateEntity,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('0:02'), findsOneWidget);
+
+          // Cross the deadline. The pill's internal timer fires once the
+          // displayed seconds drop to 0, which invokes the parent's
+          // `onExpired` lambda; the parent's `setState` then rebuilds
+          // and the pill subtree is removed.
+          currentTime = start.add(const Duration(seconds: 3));
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pump();
+
+          expect(find.text('0:02'), findsNothing);
+          expect(find.text('0:01'), findsNothing);
+          expect(find.text('0:00'), findsNothing);
+        });
+      },
+    );
 
     testWidgets('does not show countdown when nextWakeAt is in the past', (
       tester,

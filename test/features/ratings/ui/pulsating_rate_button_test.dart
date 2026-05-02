@@ -106,6 +106,7 @@ void main() {
 
       // Button should still be visible (just not pulsing anymore)
       expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
+      expect(tester.binding.transientCallbackCount, 0);
     });
 
     testWidgets('tapping button opens rating modal', (tester) async {

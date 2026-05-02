@@ -224,6 +224,56 @@ void main() {
   );
 
   test(
+    'pendingAttachment ignores maxAttempts until its wait deadline',
+    () async {
+      var virtualNow = DateTime(2024);
+      await withClock(Clock(() => virtualNow), () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$pending-attachment',
+            roomId: roomId,
+            originTsMs: 1,
+          ),
+        );
+        var attempts = 0;
+        final worker = buildWorker(
+          apply: (entry) async {
+            attempts++;
+            return ApplyOutcome.pendingAttachment;
+          },
+        );
+
+        // pendingAttachment uses a wall-clock wait deadline rather than the
+        // generic maxAttempts count. With maxAttempts=4 in buildWorker, the
+        // fourth and fifth attempts must still retry because they land before
+        // the 10 minute attachment wait deadline.
+        for (final elapsed in [
+          Duration.zero,
+          const Duration(seconds: 30),
+          const Duration(seconds: 90),
+          const Duration(seconds: 210),
+          const Duration(seconds: 450),
+        ]) {
+          virtualNow = DateTime(2024).add(elapsed);
+          expect(await worker.drainToCompletion(), 0);
+          final stats = await queue.stats();
+          expect(stats.total, 1);
+          expect(stats.retrying, 1);
+          expect(stats.abandoned, 0);
+        }
+
+        virtualNow = DateTime(2024).add(const Duration(minutes: 10));
+        expect(await worker.drainToCompletion(), 0);
+        expect(attempts, 6);
+        final stats = await queue.stats();
+        expect(stats.total, 0);
+        expect(stats.retrying, 0);
+        expect(stats.abandoned, 1);
+      });
+    },
+  );
+
+  test(
     'decryptionPending outcome reschedules with shorter backoff',
     () async {
       var virtualNow = DateTime(2024);

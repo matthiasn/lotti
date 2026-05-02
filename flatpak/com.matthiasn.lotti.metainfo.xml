@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.986" date="2026-05-02">
+      <description>
+          <p>Reduced idle CPU usage after starting and stopping task timers. Inactive desktop and mobile navigation tabs now disable tickers for their cached IndexedStack children, and task/project agent countdowns update only their small countdown pill instead of rebuilding whole report sections in hidden tabs. Running-timer task icons also rebuild only when the linked task changes.</p>
+          <p>Inbound sync rows waiting for missing attachment or agent-bundle JSON now use a bounded 10-minute wait with long backoff instead of either retrying forever or being skipped by the generic attempt counter too early. If the attachment is still missing after the grace window, the row is abandoned and normal backfill recovery can handle the long tail.</p>
+      </description>
+    </release>
     <release version="0.9.985" date="2026-05-02">
       <description>
           <p>New sidebar Sync activity indicator (variant D4a). When the show_sync_activity_indicator config flag is enabled, the desktop sidebar gains an ambient two-row monospace strip just above Settings: tx &lt;outbox-depth&gt; / rx &lt;inbox-depth&gt;, each with a 5×5 LED that flashes for ~140 ms per packet committed on that channel. Tap navigates to Settings → Sync; while the flag is on the legacy red Settings badge is suppressed so the count is shown in exactly one place. Default off; opt in via Settings → Config Flags.</p>

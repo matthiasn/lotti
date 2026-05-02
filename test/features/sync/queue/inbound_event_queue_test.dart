@@ -710,6 +710,57 @@ void main() {
     );
 
     test(
+      'resurrection resets enqueued_at so pendingAttachment retries '
+      'on the resurrected row get a fresh wall-clock deadline window',
+      () async {
+        const path = '/audio/2026-04-21/late.m4a.json';
+        final original = DateTime(2026, 4, 21, 12);
+        final resurrectAt = original.add(const Duration(hours: 2));
+
+        // Enqueue at t=0 and abandon — anchors enqueuedAt to `original`.
+        final batch = await withClock(Clock(() => original), () async {
+          await queue.enqueueLive(
+            _buildSyncEvent(
+              eventId: r'$lateAudio',
+              roomId: roomA,
+              originTsMs: 700,
+              content: <String, dynamic>{
+                'msgtype': syncMessageType,
+                'jsonPath': path,
+              },
+            ),
+          );
+          final pending = await queue.peekBatchReady();
+          await queue.markSkipped(
+            pending.first,
+            reason: 'pendingAttachmentTimeout',
+          );
+          return pending;
+        });
+
+        final originalRow = await (db.select(
+          db.inboundEventQueue,
+        )..where((t) => t.queueId.equals(batch.first.queueId))).getSingle();
+        expect(originalRow.enqueuedAt, original.millisecondsSinceEpoch);
+
+        // Resurrect 2 hours later — the elapsed grace window measured
+        // from the original enqueueAt would already exceed the worker's
+        // 10-minute deadline, so the row must adopt the resurrection
+        // timestamp instead.
+        await withClock(Clock(() => resurrectAt), () async {
+          final resurrected = await queue.resurrectByPath(path);
+          expect(resurrected, 1);
+        });
+
+        final resurrectedRow = await (db.select(
+          db.inboundEventQueue,
+        )..where((t) => t.queueId.equals(batch.first.queueId))).getSingle();
+        expect(resurrectedRow.enqueuedAt, resurrectAt.millisecondsSinceEpoch);
+        expect(resurrectedRow.resurrectionCount, 1);
+      },
+    );
+
+    test(
       'resurrectByPath respects the hard cap so a poison row that '
       'keeps failing to apply cannot thrash the worker forever',
       () async {

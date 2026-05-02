@@ -20,12 +20,12 @@ enum ApplyOutcome {
   /// The entry's attachment JSON (descriptor or agent-entity payload)
   /// has not arrived on disk yet. Distinct from [retriable] because
   /// attachment deliveries can lag the sync event by many seconds /
-  /// minutes, and capping retries at `_maxAttempts` here causes silent
-  /// data loss once the queue marker drags past the skipped row. The
-  /// worker retries `pendingAttachment` with a longer ladder and no
-  /// attempts cap; the queue also wakes these rows immediately when
-  /// `AttachmentIndex` observes a new attachment so the event applies
-  /// as soon as the descriptor is available.
+  /// minutes, and capping retries at `_maxAttempts` here can abandon
+  /// a row before the descriptor had a reasonable chance to arrive.
+  /// The worker retries `pendingAttachment` with a longer ladder and
+  /// a hard wall-clock deadline; the queue also wakes these rows
+  /// immediately when `AttachmentIndex` observes a new attachment so
+  /// the event applies as soon as the descriptor is available.
   pendingAttachment,
   permanentSkip,
 }
@@ -333,6 +333,28 @@ class InboundWorker {
     RetryReason reason,
   ) async {
     final nextAttempts = entry.attempts + 1;
+    if (reason == RetryReason.pendingAttachment) {
+      final elapsed = Duration(
+        milliseconds: clock.now().millisecondsSinceEpoch - entry.enqueuedAt,
+      );
+      if (elapsed >= _maxPendingAttachmentWait) {
+        await _queue.markSkipped(
+          entry,
+          reason: 'pendingAttachmentTimeout',
+        );
+        return;
+      }
+
+      final remainingWait = _maxPendingAttachmentWait - elapsed;
+      final backoff = _backoff(entry.attempts, reason);
+      await _queue.scheduleRetry(
+        entry,
+        backoff < remainingWait ? backoff : remainingWait,
+        reason: reason,
+      );
+      return;
+    }
+
     if (nextAttempts >= _maxAttempts) {
       await _queue.markSkipped(
         entry,
@@ -352,12 +374,10 @@ class InboundWorker {
     //  - `decryptionPending`: Megolm session keys usually arrive in
     //    a few seconds; start at 250 ms.
     //  - `pendingAttachment`: attachment uploads + downloads are on
-    //    a human-scale timeline. Start at 30 s and let the curve
-    //    cap out at `_maxPendingAttachmentBackoff` so a long-lived
-    //    queue entry costs almost nothing in wake-ups. The
-    //    `AttachmentIndex.pathRecorded` signal resurrects the
-    //    common case anyway; this ladder just covers the
-    //    no-signal fallback.
+    //    a human-scale timeline. Start at 30 s and let the curve cap
+    //    out at `_maxPendingAttachmentBackoff`; `_maybeRetry` also
+    //    caps each scheduled delay to the remaining wall-clock wait
+    //    so the row is abandoned promptly at `_maxPendingAttachmentWait`.
     //  - everything else (network, missing-base, generic
     //    retriable): standard exponential capped at `_maxBackoff`.
     switch (reason) {
@@ -387,13 +407,19 @@ class InboundWorker {
   }
 
   // Long ladder for attachment-waiting rows. Tuned to retry ~3-4
-  // times during the lifetime of a typical attachment download and
-  // then idle; `AttachmentIndex.pathRecorded` resurrects the row
-  // the instant the descriptor actually lands.
+  // times during the lifetime of a typical attachment download.
+  // `AttachmentIndex.pathRecorded` wakes the row the instant the
+  // descriptor lands; if it still has not landed by the hard wait
+  // deadline, the row is abandoned instead of retrying forever.
   static const Duration _pendingAttachmentInitialBackoff = Duration(
     seconds: 30,
   );
-  static const Duration _maxPendingAttachmentBackoff = Duration(minutes: 10);
+  static const Duration _maxPendingAttachmentWait = Duration(minutes: 10);
+  // Bounded by the wait deadline: a single backoff at the cap exhausts
+  // the entire grace window, so capping the backoff above the deadline
+  // would be wasted retry budget.
+  static const Duration _maxPendingAttachmentBackoff =
+      _maxPendingAttachmentWait;
 
   /// Races stop, a depthChanges signal, and a delay that matches the
   /// queue's earliest ready timestamp. Without the ready-aware delay,
