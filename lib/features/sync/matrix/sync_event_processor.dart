@@ -1019,7 +1019,11 @@ class SyncEventProcessor {
         'selfEcho.skip type=${syncMessage.runtimeType}',
         subDomain: 'processor.selfEcho',
       );
-      return PreparedSyncEvent._(event: event, syncMessage: syncMessage);
+      return PreparedSyncEvent._(
+        event: event,
+        syncMessage: syncMessage,
+        isSelfEcho: true,
+      );
     }
     switch (syncMessage) {
       case final SyncJournalEntity msg:
@@ -2157,6 +2161,22 @@ class SyncEventProcessor {
   }) async {
     final event = prepared.event;
     final syncMessage = prepared.syncMessage;
+    // Self-echo short-circuit. Prepare flagged this event as one the local
+    // host originated; the journal/agent/outbox payload was written locally
+    // before the message was sent, so apply has nothing to do for any
+    // family. Returning null commits the queue row cleanly (marker
+    // advances, no skip count, no retry) and — critically — avoids
+    // dereferencing the unpopulated `journalEntity` / `resolvedAgentBundle`
+    // / `resolvedOutboxBundle` slots that would otherwise null-bang in the
+    // per-family branches below.
+    if (prepared.isSelfEcho) {
+      _trace(
+        'apply selfEcho.skip type=${syncMessage.runtimeType} '
+        'eventId=${event.eventId}',
+        subDomain: 'processor.apply',
+      );
+      return null;
+    }
     switch (syncMessage) {
       case final SyncJournalEntity msg:
         return _applyJournalEntity(
@@ -2389,6 +2409,7 @@ class PreparedSyncEvent {
     required this.syncMessage,
     this.journalEntity,
     this.isDuplicateJournalEntity = false,
+    this.isSelfEcho = false,
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
@@ -2401,6 +2422,7 @@ class PreparedSyncEvent {
     required this.syncMessage,
     this.journalEntity,
     this.isDuplicateJournalEntity = false,
+    this.isSelfEcho = false,
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
@@ -2420,6 +2442,17 @@ class PreparedSyncEvent {
   /// and skipped the loader call. Apply still records the duplicate in the
   /// sequence log so hint resolution runs.
   final bool isDuplicateJournalEntity;
+
+  /// True when prepare identified the event as a self-echo (its
+  /// `originatingHostId` matches the local host). Self-echoes are events the
+  /// local host already wrote before sending; apply has nothing to do for
+  /// any message family. The flag is the explicit contract that the
+  /// per-family apply branches in [SyncEventProcessor._applyMessage] check
+  /// before they expect their resolved-payload slots to be populated. None
+  /// of the other slots (`journalEntity`, `resolvedAgentBundle`, …) are
+  /// populated when this is true, so per-family apply must short-circuit
+  /// rather than dereference them.
+  final bool isSelfEcho;
 
   /// Captured stale-descriptor error from the loader. Apply first checks
   /// whether the local version already supersedes the incoming one; if not,

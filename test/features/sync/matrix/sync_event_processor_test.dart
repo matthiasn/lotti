@@ -6720,5 +6720,205 @@ void main() {
         verify(localVcService.getHost).called(1);
       },
     );
+
+    test(
+      'SyncJournalEntity self-echo applies as a no-op — regression for the '
+      'crash where prepare flagged self-echo but apply still dereferenced '
+      'the unpopulated journalEntity slot and threw `Null check operator '
+      'used on a null value`. The crash classified retriable in the queue '
+      'adapter and pinned the inbound read marker until maxAttempts gave '
+      'up, surfacing as the 29 skipped entries on the Backfill screen. '
+      'Apply must short-circuit before _applyJournalEntity bangs on '
+      '`preloaded!`.',
+      () async {
+        final localVcService = MockVectorClockService();
+        when(localVcService.getHost).thenAnswer((_) async => 'host-self');
+
+        final processorWithVc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          vectorClockService: localVcService,
+        );
+
+        const message = SyncMessage.journalEntity(
+          id: 'entity-self',
+          jsonPath: '/entity-self.json',
+          vectorClock: VectorClock({'host-self': 1}),
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-self',
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        final diags = <SyncApplyDiagnostics>[];
+        processorWithVc.applyObserver = diags.add;
+
+        // The prior bug raised `Null check operator used on a null value`
+        // here. expectLater would mask future regressions; assert no throw
+        // by simply awaiting and then asserting on the side effects.
+        await processorWithVc.process(event: event, journalDb: journalDb);
+
+        // Self-echo must skip the loader entirely (we already wrote the
+        // entity locally before sending) and must not touch the DB.
+        verifyNever(
+          () => journalEntityLoader.load(
+            jsonPath: any<String>(named: 'jsonPath'),
+            incomingVectorClock: any<VectorClock>(named: 'incomingVectorClock'),
+          ),
+        );
+        verifyNever(
+          () => journalDb.updateJournalEntity(any<JournalEntity>()),
+        );
+        // No diagnostics emitted: self-echo is neither applied nor a
+        // duplicate skip — the queue commits cleanly so the marker
+        // advances.
+        expect(diags, isEmpty);
+      },
+    );
+
+    test(
+      'apply() returns null for an isSelfEcho-flagged SyncJournalEntity '
+      'even when the journalEntity slot is null — locks the apply-side '
+      'invariant so a future refactor cannot reintroduce the null-bang '
+      'on `preloaded!`. Driven directly through apply() to keep the '
+      'test independent of prepare wiring.',
+      () async {
+        const message = SyncMessage.journalEntity(
+          id: 'entity-self',
+          jsonPath: '/entity-self.json',
+          vectorClock: VectorClock({'host-self': 1}),
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-self',
+        );
+        final prepared = PreparedSyncEvent.forTesting(
+          event: event,
+          syncMessage: message,
+          isSelfEcho: true,
+          // journalEntity intentionally left null — that was the crash
+          // shape in production.
+        );
+
+        final result = await processor.apply(
+          prepared: prepared,
+          journalDb: journalDb,
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => journalDb.updateJournalEntity(any<JournalEntity>()),
+        );
+      },
+    );
+
+    test(
+      'apply() returns null for an isSelfEcho-flagged SyncOutboxBundle '
+      'whose resolvedOutboxBundle is null — guards against a future '
+      'refactor that could otherwise null-bang in the bundle apply '
+      'branch. Self-echo bundles must short-circuit before the per-child '
+      'recursion because none of their children were resolved.',
+      () async {
+        const message = SyncOutboxBundle(
+          children: [SyncMessage.aiConfigDelete(id: 'cfg-self')],
+          jsonPath: '/outbox_bundles/self.json',
+          originatingHostId: 'host-self',
+        );
+        final prepared = PreparedSyncEvent.forTesting(
+          event: event,
+          syncMessage: message,
+          isSelfEcho: true,
+          // resolvedOutboxBundle intentionally left null.
+        );
+
+        final result = await processor.apply(
+          prepared: prepared,
+          journalDb: journalDb,
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => aiConfigRepository.deleteConfig(
+            any<String>(),
+            fromSync: any<bool>(named: 'fromSync'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'apply() returns null for an isSelfEcho-flagged SyncAgentBundle '
+      'whose resolvedAgentBundle is null — symmetric guarantee to the '
+      'outbox-bundle case so every family is covered by the apply-side '
+      'self-echo short-circuit.',
+      () async {
+        const message = SyncMessage.agentBundle(
+          agentId: 'agent-self',
+          wakeRunKey: 'wake-self',
+          jsonPath: '/agent_bundles/self.json',
+          originatingHostId: 'host-self',
+        );
+        final prepared = PreparedSyncEvent.forTesting(
+          event: event,
+          syncMessage: message,
+          isSelfEcho: true,
+          // resolvedAgentBundle intentionally left null.
+        );
+
+        final result = await processor.apply(
+          prepared: prepared,
+          journalDb: journalDb,
+        );
+
+        expect(result, isNull);
+      },
+    );
+
+    test(
+      'peer-originated SyncJournalEntity still flows through the normal '
+      'apply path — the apply-side self-echo guard must not eat '
+      'legitimate inbound work. Without this regression-guard test, a '
+      'mis-set isSelfEcho default could silently drop every peer event.',
+      () async {
+        final localVcService = MockVectorClockService();
+        when(localVcService.getHost).thenAnswer((_) async => 'host-self');
+
+        final processorWithVc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          vectorClockService: localVcService,
+        );
+
+        const message = SyncMessage.journalEntity(
+          id: 'entity-peer',
+          jsonPath: '/entity-peer.json',
+          vectorClock: VectorClock({'host-peer': 1}),
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-peer',
+        );
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/entity-peer.json',
+            incomingVectorClock: const VectorClock({'host-peer': 1}),
+          ),
+        ).thenAnswer((_) async => fallbackJournalEntity);
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processorWithVc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => journalEntityLoader.load(
+            jsonPath: '/entity-peer.json',
+            incomingVectorClock: const VectorClock({'host-peer': 1}),
+          ),
+        ).called(1);
+        verify(
+          () => journalDb.updateJournalEntity(fallbackJournalEntity),
+        ).called(1);
+      },
+    );
   });
 }
