@@ -413,6 +413,12 @@ The task wake prompt is assembled from:
   proposing `create_time_entry` intervals on this task that overlap with
   what is already being tracked elsewhere. See `_buildActiveTimerSection`
   in `task_agent_workflow.dart`.
+- editable historical time entries linked from the current task. The
+  `Editable Time Entries` prompt section lists non-running `JournalEntry`
+  ids, `dateFrom`, `dateTo`, and current text so the agent can propose
+  `update_time_entry` only against concrete entries on this task. The
+  active timer row is omitted from this section and remains owned by
+  `update_running_timer`.
 
 The linked-task context is not only raw task metadata. The workflow also pulls
 in the latest task-agent report for linked tasks when available, so one task
@@ -438,9 +444,11 @@ The current deferred task tools are:
 - `assign_task_labels`
 - `create_follow_up_task`
 - `migrate_checklist_items`
-- `create_time_entry` *(for past sessions: today before the running timer
-  started, or any prior day; same-day-as-startTime constraint is preserved
-  for the entry itself)*
+- `create_time_entry` *(for newly dictated work sessions; completed
+  sessions may use any valid `endTime > startTime` range, while running
+  timers still must start today and not in the future)*
+- `update_time_entry` *(proposes text/start/end edits for a non-running
+  time entry linked from this task; user-gated and rendered as a diff)*
 - `update_running_timer` *(proposes a richer description for the active
   timer when one is running for this task; user-gated; replaces entry text
   outright)*

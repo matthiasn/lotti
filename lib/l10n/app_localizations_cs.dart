@@ -890,6 +890,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Celkem za 7 dní';
 
   @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Aktuální';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(beze změny)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Navrhované';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Původní záznam není k dispozici';
+
+  @override
   String get agentSuggestionsActivityAgentFallback => 'agentem';
 
   @override

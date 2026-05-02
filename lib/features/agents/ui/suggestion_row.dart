@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
+import 'package:lotti/features/agents/ui/time_entry_update_tile.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -112,6 +113,9 @@ class _SuggestionRowState extends ConsumerState<SuggestionRow> {
   Widget _buildTile(BuildContext context) {
     if (_suggestion.item.toolName == TaskAgentToolNames.createTimeEntry) {
       return TimeEntryTile(args: _suggestion.item.args, busy: _busy);
+    }
+    if (_suggestion.item.toolName == TaskAgentToolNames.updateTimeEntry) {
+      return TimeEntryUpdateTile(args: _suggestion.item.args, busy: _busy);
     }
     return ListTile(
       dense: true,

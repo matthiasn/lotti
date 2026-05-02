@@ -901,6 +901,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 zile';
 
   @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Curent';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(neschimbat)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Propus';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Înregistrarea originală nu este disponibilă';
+
+  @override
   String get agentSuggestionsActivityAgentFallback => 'agent';
 
   @override

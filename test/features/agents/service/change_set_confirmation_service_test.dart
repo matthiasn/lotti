@@ -4,7 +4,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
-import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -340,7 +339,7 @@ void main() {
       );
 
       test(
-        'injects the wake timestamp when dispatching create_time_entry',
+        'dispatches create_time_entry args unchanged',
         () async {
           final changeSet = makeChangeSetWith(
             items: const [
@@ -380,8 +379,6 @@ void main() {
                   'startTime': '2026-03-17T14:00:00',
                   'endTime': '2026-03-17T15:00:00',
                   'summary': 'Worked on API integration',
-                  timeEntryReferenceTimestampArg: changeSet.createdAt
-                      .toIso8601String(),
                 },
                 'task-001',
               ),

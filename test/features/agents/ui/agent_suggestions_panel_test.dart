@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/ui/agent_suggestions_panel.dart';
 import 'package:lotti/features/agents/ui/suggestion_row.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
+import 'package:lotti/features/agents/ui/time_entry_update_tile.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -323,6 +324,32 @@ void main() {
         expect(find.text('10:00'), findsOneWidget);
         expect(find.text('11:00'), findsOneWidget);
         expect(find.text('Pair on migration'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'update_time_entry item renders TimeEntryUpdateTile instead of the '
+      'generic tile',
+      (tester) async {
+        await pumpWithOpen(tester, [
+          pendingSuggestion(
+            toolName: 'update_time_entry',
+            args: const {
+              'entryId': 'entry-001',
+              'endTime': '2026-04-18T11:30:00',
+              'summary': 'Pair on migration and cleanup',
+            },
+            humanSummary: 'Update time entry',
+            changeSetId: 'cs-update-time',
+          ),
+        ]);
+
+        expect(find.byType(TimeEntryUpdateTile), findsOneWidget);
+        expect(find.text('Original entry not available'), findsOneWidget);
+        expect(
+          find.textContaining('Pair on migration and cleanup'),
+          findsOneWidget,
+        );
       },
     );
 

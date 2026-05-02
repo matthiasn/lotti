@@ -653,6 +653,147 @@ void main() {
     );
   });
 
+  group('updateJournalEntry', () {
+    test('returns false when no fields are provided', () async {
+      final result = await logic.updateJournalEntry(
+        journalEntityId: 'entry-id',
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => journalDb.journalEntityById(any<String>()));
+    });
+
+    test('updates JournalEntry text, dateFrom, and dateTo', () async {
+      final entry = buildEntry();
+      when(
+        () => journalDb.journalEntityById('entry-id'),
+      ).thenAnswer((_) async => entry);
+
+      logic = TestPersistenceLogic(
+        updateDbEntityHandler:
+            (
+              entity, {
+              linkedId,
+              enqueueSync = true,
+              overrideComparison = false,
+              beforeNotify,
+            }) async => true,
+      );
+
+      final result = await logic.updateJournalEntry(
+        journalEntityId: 'entry-id',
+        entryText: const EntryText(plainText: 'updated text'),
+        dateFrom: DateTime(2024, 3, 15, 9),
+        dateTo: DateTime(2024, 3, 15, 11),
+      );
+
+      expect(result, isTrue);
+      expect(logic.lastUpdateDbEntity, isA<JournalEntry>());
+      final updated = logic.lastUpdateDbEntity! as JournalEntry;
+      expect(updated.entryText?.plainText, 'updated text');
+      expect(updated.meta.dateFrom, DateTime(2024, 3, 15, 9));
+      expect(updated.meta.dateTo, DateTime(2024, 3, 15, 11));
+      expect(logic.updateMetadataCalls, 1);
+    });
+
+    test('keeps existing text when entryText is omitted', () async {
+      final entry = buildEntry();
+      when(
+        () => journalDb.journalEntityById('entry-id'),
+      ).thenAnswer((_) async => entry);
+
+      logic = TestPersistenceLogic(
+        updateDbEntityHandler:
+            (
+              entity, {
+              linkedId,
+              enqueueSync = true,
+              overrideComparison = false,
+              beforeNotify,
+            }) async => true,
+      );
+
+      final result = await logic.updateJournalEntry(
+        journalEntityId: 'entry-id',
+        dateTo: DateTime(2024, 3, 15, 12),
+      );
+
+      expect(result, isTrue);
+      final updated = logic.lastUpdateDbEntity! as JournalEntry;
+      expect(updated.entryText?.plainText, 'text');
+      expect(updated.meta.dateTo, DateTime(2024, 3, 15, 12));
+    });
+
+    test('returns false when entity is missing', () async {
+      when(
+        () => journalDb.journalEntityById('missing-id'),
+      ).thenAnswer((_) async => null);
+
+      final result = await logic.updateJournalEntry(
+        journalEntityId: 'missing-id',
+        entryText: const EntryText(plainText: 'updated'),
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('returns false when entity is not a JournalEntry', () async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final task = JournalEntity.task(
+        meta: Metadata(
+          id: 'task-id',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          vectorClock: const VectorClock({'host': 1}),
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'task-id',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+          dateFrom: testDate,
+          dateTo: testDate,
+          statusHistory: [],
+          title: 'Task',
+        ),
+      );
+      when(
+        () => journalDb.journalEntityById('task-id'),
+      ).thenAnswer((_) async => task);
+
+      final result = await logic.updateJournalEntry(
+        journalEntityId: 'task-id',
+        entryText: const EntryText(plainText: 'updated'),
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('returns false and logs when lookup throws', () async {
+      when(
+        () => journalDb.journalEntityById('boom-id'),
+      ).thenThrow(StateError('boom'));
+
+      final result = await logic.updateJournalEntry(
+        journalEntityId: 'boom-id',
+        entryText: const EntryText(plainText: 'updated'),
+      );
+
+      expect(result, isFalse);
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'persistence_logic',
+          subDomain: 'updateJournalEntry',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+  });
+
   group('updateTask - orElse path', () {
     test('logs captureException when entity is not a Task', () async {
       final testDate = DateTime(2024, 3, 15, 10, 30);

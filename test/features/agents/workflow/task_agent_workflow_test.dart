@@ -191,6 +191,9 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => '{}');
+    when(
+      () => mockJournalDb.getLinkedEntities(any()),
+    ).thenAnswer((_) async => <JournalEntity>[]);
 
     // Default template stubs — tests that need different behavior override.
     when(
@@ -2607,6 +2610,118 @@ void main() {
       );
 
       test(
+        'omits Editable Time Entries section when no entries exist',
+        () async {
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Editable Time Entries')));
+        },
+      );
+
+      test(
+        'includes linked JournalEntry rows in Editable Time Entries newest '
+        'first',
+        () async {
+          final older = _makeLinkedTimeEntry(
+            id: 'entry-older',
+            dateFrom: DateTime(2024, 6, 14, 9),
+            dateTo: DateTime(2024, 6, 14, 10),
+            text: 'Older workshop notes',
+          );
+          final newer = _makeLinkedTimeEntry(
+            id: 'entry-newer',
+            dateFrom: DateTime(2024, 6, 15, 13),
+            dateTo: DateTime(2024, 6, 15, 14, 30),
+            text: 'Newer planning notes',
+          );
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [older, _makeTask('linked-task'), newer]);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, contains('## Editable Time Entries'));
+          expect(message, contains('Only pass an `entryId` listed here'));
+          expect(message, contains('id: entry-newer'));
+          expect(message, contains('dateFrom: 2024-06-15T13:00:00.000'));
+          expect(message, contains('"Newer planning notes"'));
+          expect(message, contains('id: entry-older'));
+          expect(
+            message!.indexOf('id: entry-newer'),
+            lessThan(message.indexOf('id: entry-older')),
+          );
+          expect(message, isNot(contains('id: linked-task')));
+        },
+      );
+
+      test(
+        'lists every linked JournalEntry in Editable Time Entries',
+        () async {
+          final entries = List.generate(21, (index) {
+            final id = index.toString().padLeft(2, '0');
+            return _makeLinkedTimeEntry(
+              id: 'entry-$id',
+              dateFrom: DateTime(2024, 6, 15, index),
+              dateTo: DateTime(2024, 6, 15, index, 30),
+              text: 'Entry $id notes',
+            );
+          });
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => entries);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect('- id:'.allMatches(message!).length, 21);
+          expect(message, contains('id: entry-20'));
+          expect(message, contains('id: entry-00'));
+          expect(
+            message.indexOf('id: entry-20'),
+            lessThan(message.indexOf('id: entry-00')),
+          );
+        },
+      );
+
+      test('includes full editable time entry text', () async {
+        final longText = 'x' * 205;
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer(
+          (_) async => [
+            _makeLinkedTimeEntry(
+              id: 'entry-long',
+              dateFrom: DateTime(2024, 6, 14, 9),
+              dateTo: DateTime(2024, 6, 14, 10),
+              text: longText,
+            ),
+          ],
+        );
+
+        final message = await executeAndCaptureMessage();
+
+        expect(message, isNotNull);
+        expect(message, contains('id: entry-long'));
+        expect(message, contains(jsonEncode(longText)));
+      });
+
+      test(
+        'omits Editable Time Entries section when linked entry lookup fails',
+        () async {
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenThrow(Exception('linked entries failed'));
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Editable Time Entries')));
+        },
+      );
+
+      test(
         'includes full Active Running Timer details when timer is for THIS '
         'task',
         () async {
@@ -2660,6 +2775,35 @@ void main() {
           expect(message, isNot(contains('2024-06-14T10:05')));
         },
       );
+
+      test('excludes the active timer from Editable Time Entries', () async {
+        final timeService = getIt<TimeService>();
+        final task = _makeTask(taskId);
+        final running = _makeLinkedTimeEntry(
+          id: 'running-entry',
+          dateFrom: DateTime(2024, 6, 14, 10),
+          dateTo: DateTime(2024, 6, 14, 10, 5),
+          text: 'active timer text',
+        );
+        final historical = _makeLinkedTimeEntry(
+          id: 'historical-entry',
+          dateFrom: DateTime(2024, 6, 13, 10),
+          dateTo: DateTime(2024, 6, 13, 11),
+          text: 'past work',
+        );
+        await timeService.start(running, task);
+        addTearDown(timeService.stop);
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [running, historical]);
+
+        final message = await executeAndCaptureMessage();
+
+        expect(message, isNotNull);
+        expect(message, contains('## Editable Time Entries'));
+        expect(message, contains('id: historical-entry'));
+        expect('- id:'.allMatches(message!).length, 1);
+      });
 
       test(
         'exposes only tracked range when timer belongs to a DIFFERENT task',
@@ -4502,4 +4646,45 @@ void main() {
       );
     });
   });
+}
+
+Task _makeTask(String id) {
+  return Task(
+    meta: Metadata(
+      id: id,
+      dateFrom: DateTime(2024, 6),
+      dateTo: DateTime(2024, 6),
+      createdAt: DateTime(2024, 6),
+      updatedAt: DateTime(2024, 6),
+    ),
+    data: TaskData(
+      status: TaskStatus.open(
+        id: id,
+        createdAt: DateTime(2024, 6),
+        utcOffset: 0,
+      ),
+      dateFrom: DateTime(2024, 6),
+      dateTo: DateTime(2024, 6),
+      statusHistory: [],
+      title: 'Linked task',
+    ),
+  );
+}
+
+JournalEntry _makeLinkedTimeEntry({
+  required String id,
+  required DateTime dateFrom,
+  required DateTime dateTo,
+  required String text,
+}) {
+  return JournalEntry(
+    meta: Metadata(
+      id: id,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      createdAt: dateFrom,
+      updatedAt: dateFrom,
+    ),
+    entryText: EntryText(plainText: text),
+  );
 }

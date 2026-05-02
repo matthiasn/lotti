@@ -4,8 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.983]
+## [0.9.984]
+### Added
+- Task agents can now propose user-reviewed edits to historical time
+  entries linked from the current task. The wake prompt exposes editable
+  non-running entry IDs with their current time range and text, the new
+  `update_time_entry` tool validates task ownership and excludes the live
+  timer, and the suggestion row renders a current-to-proposed diff before
+  confirmation.
+
 ### Changed
+- `create_time_entry` completed sessions now allow any valid
+  `endTime > startTime` range, including future and midnight-spanning
+  blocks. Running timers keep the existing today-only and not-in-the-future
+  restrictions.
 - DailyOS due-task hot path (`getTasksDueOn` / `getTasksDueOnOrBefore`)
   now reads a denormalized `due_at INTEGER` column on `journal` instead
   of `json_extract(serialized,'$.data.due')`. The partial

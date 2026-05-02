@@ -1,7 +1,3 @@
-/// Internal dispatch arg used to preserve the originating wake timestamp for
-/// deferred `create_time_entry` confirmations.
-const timeEntryReferenceTimestampArg = '_referenceTimestamp';
-
 final _timezoneSuffix = RegExp(r'([Zz]|[+-]\d{2}:?\d{2})$');
 
 /// Parses only local ISO 8601 timestamps with an explicit time component.

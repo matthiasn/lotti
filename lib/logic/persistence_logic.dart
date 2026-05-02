@@ -595,6 +595,46 @@ class PersistenceLogic {
     return true;
   }
 
+  Future<bool> updateJournalEntry({
+    required String journalEntityId,
+    EntryText? entryText,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+  }) async {
+    if (entryText == null && dateFrom == null && dateTo == null) {
+      return false;
+    }
+
+    try {
+      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+
+      if (journalEntity is! JournalEntry) {
+        return false;
+      }
+
+      final newMeta = await updateMetadata(
+        journalEntity.meta,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      );
+
+      final updated = journalEntity.copyWith(
+        meta: newMeta,
+        entryText: entryText ?? journalEntity.entryText,
+      );
+
+      return await updateDbEntity(updated) ?? false;
+    } catch (exception, stackTrace) {
+      _loggingService.captureException(
+        exception,
+        domain: 'persistence_logic',
+        subDomain: 'updateJournalEntry',
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
   Future<bool> updateTask({
     required String journalEntityId,
     required TaskData taskData,
