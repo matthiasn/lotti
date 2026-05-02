@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.985" date="2026-05-02">
+      <description>
+          <p>New sidebar Sync activity indicator (variant D4a). When the show_sync_activity_indicator config flag is enabled, the desktop sidebar gains an ambient two-row monospace strip just above Settings: tx &lt;outbox-depth&gt; / rx &lt;inbox-depth&gt;, each with a 5×5 LED that flashes for ~140 ms per packet committed on that channel. Tap navigates to Settings → Sync; while the flag is on the legacy red Settings badge is suppressed so the count is shown in exactly one place. Default off; opt in via Settings → Config Flags.</p>
+      </description>
+    </release>
     <release version="0.9.984" date="2026-05-02">
       <description>
           <p>Task agents can now propose user-reviewed edits to historical time entries linked from the current task. The wake prompt exposes editable non-running entry IDs with their current time range and text, the new update_time_entry tool validates task ownership and excludes the live timer, and the suggestion row renders a current-to-proposed diff before confirmation.</p>

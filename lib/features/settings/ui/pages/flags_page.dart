@@ -109,6 +109,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableEmbeddingsFlag,
     enableVectorSearchFlag,
     enableWhatsNewFlag,
+    showSyncActivityIndicatorFlag,
   ];
 
   @override
@@ -166,6 +167,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.manage_search_rounded;
       case enableWhatsNewFlag:
         return Icons.new_releases_outlined;
+      case showSyncActivityIndicatorFlag:
+        return Icons.network_check_rounded;
       default:
         return Icons.settings;
     }
@@ -215,6 +218,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableVectorSearchDescription;
       case enableWhatsNewFlag:
         return context.messages.configFlagEnableWhatsNewDescription;
+      case showSyncActivityIndicatorFlag:
+        return context.messages.configFlagShowSyncActivityIndicatorDescription;
       default:
         return flag.description;
     }
@@ -262,6 +267,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableVectorSearch;
       case enableWhatsNewFlag:
         return context.messages.configFlagEnableWhatsNew;
+      case showSyncActivityIndicatorFlag:
+        return context.messages.configFlagShowSyncActivityIndicator;
       default:
         return flag.name;
     }

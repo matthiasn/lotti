@@ -21,6 +21,7 @@ const enableEmbeddingsFlag = 'enable_embeddings';
 const enableVectorSearchFlag = 'enable_vector_search';
 
 const enableWhatsNewFlag = 'enable_whats_new';
+const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';
 
 const logAgentRuntimeFlag = 'log_agent_runtime';
 const logAgentWorkflowFlag = 'log_agent_workflow';

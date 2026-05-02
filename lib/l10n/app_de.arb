@@ -1118,6 +1118,8 @@
   "configFlagRecordLocationDescription": "Zeichnet automatisch deinen Standort mit neuen Einträgen auf. Dies hilft bei der ortsbezogenen Organisation und Suche.",
   "configFlagResendAttachments": "Anhänge erneut senden",
   "configFlagResendAttachmentsDescription": "Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.",
+  "configFlagShowSyncActivityIndicator": "Sync-Aktivitätsanzeige einblenden",
+  "configFlagShowSyncActivityIndicatorDescription": "Live-Sync-Aktivität in der Seitenleiste anzeigen — eine tx/rx-LED-Leiste mit Outbox- und Inbox-Tiefe.",
   "configFlagUseCloudInferenceDescription": "Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.",
   "configFlagUseCompressedJsonAttachments": "JSON-Sync-Payloads komprimieren",
   "configFlagUseCompressedJsonAttachmentsDescription": "Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.",
@@ -2561,6 +2563,17 @@
   "speechModalSelectLanguage": "Sprache auswählen",
   "speechModalTitle": "Spracherkennung",
   "speechModalTranscriptionProgress": "Transkriptionsfortschritt",
+  "syncActivityIndicatorSemantics": "Sync-Aktivität. Outbox: {outbox}. Inbox: {inbox}. Sync-Outbox öffnen.",
+  "@syncActivityIndicatorSemantics": {
+    "placeholders": {
+      "outbox": {
+        "type": "int"
+      },
+      "inbox": {
+        "type": "int"
+      }
+    }
+  },
   "syncCreateNewRoom": "Neuen Raum erstellen",
   "syncCreateNewRoomInstead": "Stattdessen neuen Raum erstellen",
   "syncDeleteConfigConfirm": "JA, ICH BIN SICHER",

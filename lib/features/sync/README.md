@@ -641,6 +641,32 @@ Pipeline-tagged log lines let a log analyzer compare apply rates:
 
 The Phase-2 ±15% gate compares event/sec rates between the two.
 
+### Sidebar activity indicator (D4a)
+
+`SyncActivitySignaler` (`state/sync_activity_signaler.dart`) is a
+broadcast pulse emitter wired into the two committal chokepoints:
+
+- **TX** — `DatabaseOutboxRepository.markSent` and `markSentBatch` pulse
+  one event per row that actually transitioned to `status=sent`.
+- **RX** — `InboundQueue.commitApplied` pulses one event per row that
+  flipped to `status=applied`.
+
+The signaler is registered as a `getIt` singleton and exposed to the UI
+via `syncActivityTxPulsesProvider` / `syncActivityRxPulsesProvider`.
+The sidebar `SyncActivityIndicator` (`ui/widgets/sync_activity_indicator.dart`,
+gated behind the `show_sync_activity_indicator` config flag) listens
+to both streams to drive a 140 ms LED flash per packet, alongside live
+counts pulled from `outboxPendingCountProvider` (existing) and
+`inboundQueueDepthProvider` (new — sourced from
+`InboundQueue.depthChanges` via `MatrixService.queueCoordinator`).
+Tapping the strip beams to `/settings/sync` (Settings → Sync), where
+the outbox monitor, queue depth card, backfill, and sync stats live.
+
+The signaler is fire-and-forget and carries no payload; correctness
+still lives in the underlying queue/outbox state. Producers tolerate a
+null signaler (constructors take `SyncActivitySignaler?`) so tests that
+do not need the indicator can omit it without modifying call sites.
+
 ## Sequence Log And Backfill
 
 `SyncSequenceLogService` is the causal accounting layer. It records which

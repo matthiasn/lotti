@@ -559,6 +559,65 @@ void main() {
 
       expect(toggleCount, 1);
     });
+
+    testWidgets(
+      'aboveSettings slot renders BETWEEN the last nav item and the '
+      'Settings row in expanded mode and stays hidden in collapsed mode',
+      (tester) async {
+        const slotKey = Key('above-settings-slot');
+        const slot = SizedBox(
+          key: slotKey,
+          height: 24,
+          child: Text('sync activity'),
+        );
+        final settings = DesktopSidebarDestination(
+          label: 'Settings',
+          iconBuilder: ({required bool active}) => const Icon(Icons.settings),
+        );
+
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              settingsDestination: settings,
+              aboveSettings: slot,
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byKey(slotKey), findsOneWidget);
+
+        // Verify vertical placement: the slot must sit between the
+        // last nav row ("Habits") and the Settings row. A regression
+        // that hoisted the slot into the nav list or pushed it below
+        // Settings would still satisfy `findsOneWidget`, so these
+        // placement asserts are the load-bearing check.
+        final habitsY = tester.getCenter(find.text('Habits')).dy;
+        final slotY = tester.getCenter(find.byKey(slotKey)).dy;
+        final settingsY = tester.getCenter(find.text('Settings')).dy;
+        expect(slotY, greaterThan(habitsY));
+        expect(slotY, lessThan(settingsY));
+
+        // Collapsed mode — slot is suppressed because the strip is too
+        // narrow to display readable monospace counters.
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              settingsDestination: settings,
+              aboveSettings: slot,
+              collapsed: true,
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byKey(slotKey), findsNothing);
+      },
+    );
   });
 
   group('DesktopNavigationSidebar collapsed', () {

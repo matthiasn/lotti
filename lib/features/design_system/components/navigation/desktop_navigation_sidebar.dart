@@ -63,6 +63,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.collapsed = false,
     this.collapsedWidth = 72,
     this.onToggleCollapsed,
+    this.aboveSettings,
     super.key,
   });
 
@@ -96,6 +97,13 @@ class DesktopNavigationSidebar extends StatelessWidget {
   /// Called when the toggle icon next to the logo is tapped. When null, the
   /// toggle icon is rendered but not interactive.
   final VoidCallback? onToggleCollapsed;
+
+  /// Optional widget rendered between the scrollable nav and the
+  /// Settings row in the expanded layout. The Lotti app uses this slot
+  /// to host the ambient sync activity indicator (variant D4a). The
+  /// slot is intentionally suppressed in [collapsed] mode — its monospace
+  /// LED strip would not fit the icon-only column.
+  final Widget? aboveSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +167,14 @@ class DesktopNavigationSidebar extends StatelessWidget {
               ),
             ),
           ),
+
+          // Optional ambient indicator slot (e.g. sync activity).
+          // Hidden in collapsed mode because the strip is too narrow
+          // to display readable monospace counters.
+          if (!collapsed && aboveSettings != null) ...[
+            aboveSettings!,
+            SizedBox(height: tokens.spacing.step3),
+          ],
 
           // Settings at the bottom
           if (settingsDestination != null)

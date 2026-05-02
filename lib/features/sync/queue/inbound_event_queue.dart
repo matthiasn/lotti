@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart';
+import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -204,12 +205,15 @@ class InboundQueue {
     required SyncDatabase db,
     required LoggingService logging,
     Duration? leaseDuration,
+    SyncActivitySignaler? activitySignaler,
   }) : _db = db,
        _logging = logging,
+       _activitySignaler = activitySignaler,
        _leaseDuration = leaseDuration ?? SyncTuning.inboundWorkerLeaseDuration;
 
   final SyncDatabase _db;
   final LoggingService _logging;
+  final SyncActivitySignaler? _activitySignaler;
   final Duration _leaseDuration;
 
   final StreamController<QueueDepthSignal> _depthCtl =
@@ -542,6 +546,7 @@ class InboundQueue {
       domain: _logDomain,
       subDomain: _logSubCommit,
     );
+    _activitySignaler?.pulseRx();
     _scheduleDepthEmit();
   }
 

@@ -22,6 +22,7 @@ import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -61,6 +62,7 @@ class QueuePipelineCoordinator {
     UpdateNotifications? updateNotifications,
     AttachmentIngestor? attachmentIngestor,
     SentEventRegistry? sentEventRegistry,
+    SyncActivitySignaler? activitySignaler,
     InboundQueue? queueOverride,
     InboundWorker? workerOverride,
     BridgeCoordinator? bridgeOverride,
@@ -77,7 +79,13 @@ class QueuePipelineCoordinator {
        _updateNotifications = updateNotifications,
        _attachmentIngestor = attachmentIngestor,
        _sentEventRegistry = sentEventRegistry,
-       _queue = queueOverride ?? InboundQueue(db: syncDb, logging: logging),
+       _queue =
+           queueOverride ??
+           InboundQueue(
+             db: syncDb,
+             logging: logging,
+             activitySignaler: activitySignaler,
+           ),
        _pen = penOverride ?? PendingDecryptionPen(logging: logging),
        _seeder =
            seederOverride ??

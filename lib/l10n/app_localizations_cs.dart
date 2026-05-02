@@ -2496,6 +2496,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
 
   @override
+  String get configFlagShowSyncActivityIndicator =>
+      'Zobrazit indikátor aktivity synchronizace';
+
+  @override
+  String get configFlagShowSyncActivityIndicatorDescription =>
+      'Zobrazit živou aktivitu synchronizace v postranním panelu — tx/rx LED proužek s hloubkou odchozí a příchozí fronty.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.';
 
@@ -6087,6 +6095,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechModalTranscriptionProgress => 'Pokrok přepisu';
+
+  @override
+  String syncActivityIndicatorSemantics(int outbox, int inbox) {
+    return 'Aktivita synchronizace. Odchozí: $outbox. Příchozí: $inbox. Otevřít odchozí frontu synchronizace.';
+  }
 
   @override
   String get syncCreateNewRoom => 'Vytvořit novou místnost';

@@ -4302,6 +4302,18 @@ abstract class AppLocalizations {
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
 
+  /// No description provided for @configFlagShowSyncActivityIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Show sync activity indicator'**
+  String get configFlagShowSyncActivityIndicator;
+
+  /// No description provided for @configFlagShowSyncActivityIndicatorDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.'**
+  String get configFlagShowSyncActivityIndicatorDescription;
+
   /// No description provided for @configFlagUseCloudInferenceDescription.
   ///
   /// In en, this message translates to:
@@ -10464,6 +10476,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Transcription Progress'**
   String get speechModalTranscriptionProgress;
+
+  /// No description provided for @syncActivityIndicatorSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.'**
+  String syncActivityIndicatorSemantics(int outbox, int inbox);
 
   /// No description provided for @syncCreateNewRoom.
   ///

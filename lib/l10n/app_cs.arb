@@ -881,6 +881,8 @@
   "configFlagRecordLocationDescription": "Automaticky zaznamenejte vaši polohu s novými záznamy. To pomáhá s organizací a vyhledáváním podle polohy.",
   "configFlagResendAttachments": "Odeslat přílohy znovu",
   "configFlagResendAttachmentsDescription": "Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.",
+  "configFlagShowSyncActivityIndicator": "Zobrazit indikátor aktivity synchronizace",
+  "configFlagShowSyncActivityIndicatorDescription": "Zobrazit živou aktivitu synchronizace v postranním panelu — tx/rx LED proužek s hloubkou odchozí a příchozí fronty.",
   "configFlagUseCloudInferenceDescription": "Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.",
   "configFlagUseCompressedJsonAttachments": "Komprimovat JSON payloady synchronizace",
   "configFlagUseCompressedJsonAttachmentsDescription": "Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.",
@@ -2291,6 +2293,17 @@
   "speechModalSelectLanguage": "Vyberte jazyk",
   "speechModalTitle": "Rozpoznávání řeči",
   "speechModalTranscriptionProgress": "Pokrok přepisu",
+  "syncActivityIndicatorSemantics": "Aktivita synchronizace. Odchozí: {outbox}. Příchozí: {inbox}. Otevřít odchozí frontu synchronizace.",
+  "@syncActivityIndicatorSemantics": {
+    "placeholders": {
+      "outbox": {
+        "type": "int"
+      },
+      "inbox": {
+        "type": "int"
+      }
+    }
+  },
   "syncCreateNewRoom": "Vytvořit novou místnost",
   "syncCreateNewRoomInstead": "Místo toho vytvořit novou místnost",
   "syncDeleteConfigConfirm": "ANO, JSEM SI JISTÝ",

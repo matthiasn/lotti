@@ -16,6 +16,7 @@ import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
@@ -53,7 +54,9 @@ class OutboxService {
     SyncSequenceLogService? sequenceLogService,
     Duration postDrainSettle = _defaultPostDrainSettle,
     DomainLogger? domainLogger,
+    SyncActivitySignaler? activitySignaler,
   }) : _postDrainSettle = postDrainSettle,
+       _activitySignaler = activitySignaler,
        _syncDatabase = syncDatabase,
        _loggingService = loggingService,
        _vectorClockService = vectorClockService,
@@ -83,6 +86,7 @@ class OutboxService {
         DatabaseOutboxRepository(
           syncDatabase,
           maxRetries: maxRetries,
+          activitySignaler: _activitySignaler,
         );
     _messageSender = messageSender ?? MatrixOutboxMessageSender(matrixService!);
     _processor =
@@ -226,6 +230,7 @@ class OutboxService {
 
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
+  final SyncActivitySignaler? _activitySignaler;
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;
   final JournalDb _journalDb;
