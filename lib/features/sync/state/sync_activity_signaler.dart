@@ -23,15 +23,16 @@ class SyncActivitySignaler {
   /// Pulses for inbound packets that were applied locally.
   Stream<DateTime> get rxPulses => _rxCtl.stream;
 
-  /// Emits [count] TX pulses. Used by the outbox path after a single
-  /// send (`count == 1`) or a successful bundle send (one pulse per
-  /// committed item).
-  void pulseTx({int count = 1}) {
-    if (count <= 0 || _txCtl.isClosed) return;
-    final now = DateTime.now();
-    for (var i = 0; i < count; i++) {
-      _txCtl.add(now);
-    }
+  /// Emits a single TX pulse. Used by the outbox path after a single
+  /// send or a successful bundle send. The indicator widget coalesces
+  /// rapid pulses into a single ~140 ms LED hold (the spec says
+  /// "multiple fires within the hold window simply extend it"), so
+  /// emitting once per batch is visually identical to emitting once per
+  /// committed row — and avoids walking a tight per-item loop on hot
+  /// drain paths.
+  void pulseTx() {
+    if (_txCtl.isClosed) return;
+    _txCtl.add(DateTime.now());
   }
 
   /// Emits one RX pulse. Used by the inbound queue after each

@@ -11,14 +11,10 @@ void main() {
   group('SyncActivityIndicator', () {
     late StreamController<DateTime> txCtl;
     late StreamController<DateTime> rxCtl;
-    late StreamController<int> outboxCtl;
-    late StreamController<int> inboxCtl;
 
     setUp(() {
       txCtl = StreamController<DateTime>.broadcast();
       rxCtl = StreamController<DateTime>.broadcast();
-      outboxCtl = StreamController<int>.broadcast();
-      inboxCtl = StreamController<int>.broadcast();
       SyncActivityIndicatorTestHooks.navigatorOverride = null;
     });
 
@@ -26,8 +22,6 @@ void main() {
       SyncActivityIndicatorTestHooks.navigatorOverride = null;
       await txCtl.close();
       await rxCtl.close();
-      await outboxCtl.close();
-      await inboxCtl.close();
     });
 
     Future<void> pumpIndicator(

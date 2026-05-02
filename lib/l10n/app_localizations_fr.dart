@@ -2544,7 +2544,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Affiche l\'activité de synchronisation en direct dans la barre latérale — une bande LED tx/rx avec la profondeur des files entrante et sortante.';
+      'Affiche l\'activité de synchronisation en direct dans la barre latérale — une bande LED tx/rx avec la profondeur des files d\'entrée et de sortie.';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

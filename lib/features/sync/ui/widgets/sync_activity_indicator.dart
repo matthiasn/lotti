@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/ui/app_fonts.dart';
@@ -62,35 +63,11 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
   bool _hovered = false;
   Timer? _txTimer;
   Timer? _rxTimer;
-  ProviderSubscription<AsyncValue<DateTime>>? _txSub;
-  ProviderSubscription<AsyncValue<DateTime>>? _rxSub;
-
-  @override
-  void initState() {
-    super.initState();
-    // listenManual lets us subscribe outside of build() so each pulse
-    // (a new AsyncData emission from the stream provider) triggers
-    // exactly one LED flash regardless of how often the widget rebuilds.
-    _txSub = ref.listenManual<AsyncValue<DateTime>>(
-      syncActivityTxPulsesProvider,
-      (_, next) {
-        if (next is AsyncData<DateTime>) _flashTx();
-      },
-    );
-    _rxSub = ref.listenManual<AsyncValue<DateTime>>(
-      syncActivityRxPulsesProvider,
-      (_, next) {
-        if (next is AsyncData<DateTime>) _flashRx();
-      },
-    );
-  }
 
   @override
   void dispose() {
     _txTimer?.cancel();
     _rxTimer?.cancel();
-    _txSub?.close();
-    _rxSub?.close();
     super.dispose();
   }
 
@@ -120,11 +97,34 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
       override(kSyncOutboxRoute);
       return;
     }
-    beamToNamed(kSyncOutboxRoute);
+    // Switch to the Settings tab AND beam the inner Settings Beamer
+    // delegate to the Sync sub-route. Going through the global
+    // `beamToNamed` helper alone races with the IndexedStack mount
+    // cycle when the user is currently on a different tab — by the
+    // time the Settings Beamer mounts it has fallen back to its
+    // `/settings` initial path, so the user lands on Settings instead
+    // of Settings → Sync. The two-step pattern matches the project
+    // detail page's category-deep-link flow.
+    final navService = getIt<NavService>();
+    navService.tapIndex(navService.settingsIndex);
+    navService.settingsDelegate.beamToNamed(kSyncOutboxRoute);
+    unawaited(navService.persistNamedRoute(kSyncOutboxRoute));
   }
 
   @override
   Widget build(BuildContext context) {
+    // ref.listen handles the subscription lifecycle and reacts to
+    // provider overrides automatically — preferable to the manual
+    // initState subscription, which would stay tied to whatever
+    // provider instance was current when the widget first mounted.
+    ref
+      ..listen<AsyncValue<DateTime>>(syncActivityTxPulsesProvider, (_, next) {
+        if (next is AsyncData<DateTime>) _flashTx();
+      })
+      ..listen<AsyncValue<DateTime>>(syncActivityRxPulsesProvider, (_, next) {
+        if (next is AsyncData<DateTime>) _flashRx();
+      });
+
     final outbox = ref.watch(outboxPendingCountProvider).value ?? 0;
     final inbox = ref.watch(inboundQueueDepthProvider).value ?? 0;
     final semanticsLabel = context.messages.syncActivityIndicatorSemantics(
@@ -167,9 +167,14 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                   decoration: BoxDecoration(
                     color: _hovered ? _hoverWash : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
-                    border: focused
-                        ? Border.all(color: _focusRing, width: 2)
-                        : null,
+                    // Always render a 2 px border and toggle its color
+                    // on focus — keeps the strip's outer dimensions
+                    // stable so neighbouring rows don't jump on
+                    // focus-in / focus-out.
+                    border: Border.all(
+                      color: focused ? _focusRing : Colors.transparent,
+                      width: 2,
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

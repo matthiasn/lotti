@@ -1119,7 +1119,7 @@
   "configFlagResendAttachments": "Retrimite atașamentele",
   "configFlagResendAttachmentsDescription": "Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.",
   "configFlagShowSyncActivityIndicator": "Afișează indicatorul de activitate de sincronizare",
-  "configFlagShowSyncActivityIndicatorDescription": "Afișați activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.",
+  "configFlagShowSyncActivityIndicatorDescription": "Afișează activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.",
   "configFlagUseCloudInferenceDescription": "Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.",
   "configFlagUseCompressedJsonAttachments": "Comprimă payload-urile JSON de sincronizare",
   "configFlagUseCompressedJsonAttachmentsDescription": "Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.",

@@ -177,6 +177,11 @@ final expectedFlags = <ConfigFlag>{
     description: "Enable What's New feature?",
     status: false,
   ),
+  const ConfigFlag(
+    name: showSyncActivityIndicatorFlag,
+    description: 'Show live sync activity in the sidebar.',
+    status: false,
+  ),
 };
 
 void main() {

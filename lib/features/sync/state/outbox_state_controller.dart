@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
@@ -100,14 +102,30 @@ Stream<int> inboundQueueDepth(Ref ref) {
 }
 
 Stream<int> _inboundQueueDepthStream(InboundQueue queue) async* {
-  // Seed the stream with the current depth so the UI does not have to
-  // wait for the next emission to render a non-zero count.
+  // Subscribe BEFORE awaiting `stats()` so any depth signal that fires
+  // while we're computing the initial snapshot is queued in `relay`
+  // rather than dropped — `depthChanges` is a broadcast stream with no
+  // buffering of its own, so a naive seed-then-yield* sequence would
+  // miss every signal that lands during the await.
+  final relay = StreamController<int>();
+  final sub = queue.depthChanges
+      .map((signal) => signal.total)
+      .listen(
+        relay.add,
+        onError: relay.addError,
+        onDone: relay.close,
+      );
   try {
-    final stats = await queue.stats();
-    yield stats.total;
-  } catch (_) {
-    // Initial paint failures are non-fatal; the live signal will
-    // provide a count on the next emission.
+    try {
+      final stats = await queue.stats();
+      yield stats.total;
+    } catch (_) {
+      // Initial paint failures are non-fatal; the live signal below
+      // will provide a count on the next emission.
+    }
+    yield* relay.stream;
+  } finally {
+    await sub.cancel();
+    if (!relay.isClosed) await relay.close();
   }
-  yield* queue.depthChanges.map((signal) => signal.total);
 }

@@ -125,7 +125,7 @@ class DatabaseOutboxRepository implements OutboxRepository {
     await _database.markOutboxItemsSent(
       ids: items.map((item) => item.id).toList(growable: false),
     );
-    _activitySignaler?.pulseTx(count: items.length);
+    _activitySignaler?.pulseTx();
   }
 
   @override

@@ -2520,7 +2520,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
-      'Afișați activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.';
+      'Afișează activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.';
 
   @override
   String get configFlagUseCloudInferenceDescription =>

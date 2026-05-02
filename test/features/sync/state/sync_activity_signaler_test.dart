@@ -13,7 +13,7 @@ void main() {
       await signaler.dispose();
     });
 
-    test('emits one TX pulse per pulseTx call by default', () async {
+    test('emits one TX pulse per pulseTx call', () async {
       final pulses = <DateTime>[];
       final sub = signaler.txPulses.listen(pulses.add);
 
@@ -24,29 +24,24 @@ void main() {
       await sub.cancel();
     });
 
-    test('emits N TX pulses when count > 1 (bundle send)', () async {
-      final pulses = <DateTime>[];
-      final sub = signaler.txPulses.listen(pulses.add);
+    test(
+      'pulseTx coalesces a batch into one emission — '
+      'the LED hold window is per pulse, not per packet, so '
+      'emitting once per batch produces an identical visual',
+      () async {
+        final pulses = <DateTime>[];
+        final sub = signaler.txPulses.listen(pulses.add);
 
-      signaler.pulseTx(count: 5);
-      await Future<void>.delayed(Duration.zero);
+        signaler
+          ..pulseTx()
+          ..pulseTx()
+          ..pulseTx();
+        await Future<void>.delayed(Duration.zero);
 
-      expect(pulses, hasLength(5));
-      await sub.cancel();
-    });
-
-    test('drops invalid TX counts (zero / negative)', () async {
-      final pulses = <DateTime>[];
-      final sub = signaler.txPulses.listen(pulses.add);
-
-      signaler
-        ..pulseTx(count: 0)
-        ..pulseTx(count: -1);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(pulses, isEmpty);
-      await sub.cancel();
-    });
+        expect(pulses, hasLength(3));
+        await sub.cancel();
+      },
+    );
 
     test('emits one RX pulse per pulseRx call', () async {
       final pulses = <DateTime>[];
