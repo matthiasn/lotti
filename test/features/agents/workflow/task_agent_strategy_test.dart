@@ -1832,6 +1832,70 @@ void main() {
       );
 
       test(
+        'generates correct human summary for update_time_entry',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-update-time-entry',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_time_entry',
+                arguments: jsonEncode({
+                  'entryId': 'entry-123',
+                  'startTime': '2026-03-17T14:15:00',
+                  'endTime': '2026-03-17T15:45:00',
+                  'summary': '  Refined historical session  ',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(1));
+          expect(csBuilder.items.first.toolName, 'update_time_entry');
+          expect(
+            csBuilder.items.first.humanSummary,
+            'Update time entry 14:15–15:45: '
+            '"Refined historical session"',
+          );
+        },
+      );
+
+      test(
+        'generates readable human summary for text-only update_time_entry',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-update-time-entry-text',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'update_time_entry',
+                arguments: jsonEncode({
+                  'entryId': 'entry-123',
+                  'summary': 'Added rollout discussion',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(1));
+          expect(
+            csBuilder.items.first.humanSummary,
+            'Update time entry entry-123: "Added rollout discussion"',
+          );
+        },
+      );
+
+      test(
         'handles malformed update_running_timer summary without crashing',
         () async {
           final toolCalls = [

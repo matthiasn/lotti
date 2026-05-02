@@ -3,7 +3,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -319,7 +318,7 @@ class ChangeSetConfirmationService {
     ChangeItem item,
     ChangeSetEntity changeSet,
   ) {
-    final contextualArgs = _injectDispatchContext(item, changeSet);
+    final contextualArgs = item.args;
 
     if (item.toolName != TaskAgentToolNames.migrateChecklistItem) {
       return contextualArgs;
@@ -350,20 +349,6 @@ class ChangeSetConfirmationService {
     // Case 3: targetTaskId is a real ID (already resolved by a prior
     // service instance via _persistResolvedIdToSiblings).
     return contextualArgs;
-  }
-
-  Map<String, dynamic> _injectDispatchContext(
-    ChangeItem item,
-    ChangeSetEntity changeSet,
-  ) {
-    if (item.toolName != TaskAgentToolNames.createTimeEntry) {
-      return item.args;
-    }
-
-    return {
-      ...item.args,
-      timeEntryReferenceTimestampArg: changeSet.createdAt.toIso8601String(),
-    };
   }
 
   /// After a successful `create_follow_up_task` dispatch, updates sibling

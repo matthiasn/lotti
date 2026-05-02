@@ -1620,6 +1620,30 @@ abstract class AppLocalizations {
   /// **'7-Day Total'**
   String get agentStatsWeekTotalLabel;
 
+  /// No description provided for @agentSuggestionTimeEntryUpdateCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get agentSuggestionTimeEntryUpdateCurrent;
+
+  /// No description provided for @agentSuggestionTimeEntryUpdateNoChange.
+  ///
+  /// In en, this message translates to:
+  /// **'(unchanged)'**
+  String get agentSuggestionTimeEntryUpdateNoChange;
+
+  /// No description provided for @agentSuggestionTimeEntryUpdateProposed.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get agentSuggestionTimeEntryUpdateProposed;
+
+  /// No description provided for @agentSuggestionTimeEntryUpdateUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Original entry not available'**
+  String get agentSuggestionTimeEntryUpdateUnavailable;
+
   /// No description provided for @agentSuggestionsActivityAgentFallback.
   ///
   /// In en, this message translates to:

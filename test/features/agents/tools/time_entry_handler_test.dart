@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/time_entry_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -274,40 +273,6 @@ void main() {
         });
       });
 
-      test('returns failure when endTime is on a different day', () async {
-        await withClock(Clock.fixed(testNow), () async {
-          final result = await handler.handle(
-            sourceTaskId,
-            {
-              'startTime': '2026-03-17T14:00:00',
-              'endTime': '2026-03-18T01:00:00',
-              'summary': 'Worked on API',
-            },
-          );
-
-          expect(result.success, isFalse);
-          expect(result.output, contains('same day'));
-          expect(result.errorMessage, 'endTime is on a different day');
-        });
-      });
-
-      test('returns failure when endTime is in the future', () async {
-        await withClock(Clock.fixed(testNow), () async {
-          final result = await handler.handle(
-            sourceTaskId,
-            {
-              'startTime': '2026-03-17T14:00:00',
-              'endTime': '2026-03-17T16:00:00',
-              'summary': 'Worked on API',
-            },
-          );
-
-          expect(result.success, isFalse);
-          expect(result.output, contains('must not be after the current time'));
-          expect(result.errorMessage, 'endTime is after current time');
-        });
-      });
-
       test('returns failure when startTime is in the future', () async {
         // testNow = 2026-03-17T15:30 — 23:00 is today but in the future.
         await withClock(Clock.fixed(testNow), () async {
@@ -518,7 +483,7 @@ void main() {
       });
 
       test(
-        'validates completed sessions against the wake timestamp argument',
+        'accepts completed sessions late at night without wake timestamp args',
         () async {
           await withClock(Clock.fixed(DateTime(2026, 3, 18, 0, 5)), () async {
             final result = await handler.handle(
@@ -527,7 +492,6 @@ void main() {
                 'startTime': '2026-03-17T23:00:00',
                 'endTime': '2026-03-17T23:45:00',
                 'summary': 'Late session',
-                timeEntryReferenceTimestampArg: '2026-03-17T23:55:00',
               },
             );
 
@@ -539,7 +503,7 @@ void main() {
 
       test(
         'accepts completed session whose endTime extends past the wake '
-        'timestamp (user is the authority at approval time)',
+        'timestamp from the original proposal',
         () async {
           // Reproduces the P0 scenario: agent wakes at 11:48:23, model
           // rounds/estimates endTime past wake, user approves later. The
@@ -551,7 +515,6 @@ void main() {
                 'startTime': '2026-04-18T11:13:50',
                 'endTime': '2026-04-18T11:48:50',
                 'summary': 'Design walkthrough',
-                timeEntryReferenceTimestampArg: '2026-04-18T11:48:23.029723',
               },
             );
 
@@ -563,7 +526,7 @@ void main() {
 
       test(
         'accepts completed session whose endTime is in the actual future at '
-        'approval time as long as it stays on the same day',
+        'approval time',
         () async {
           // Item 23 from the P0 logs: end=13:00, wake=11:48, approval<13:00.
           await withClock(Clock.fixed(DateTime(2026, 4, 18, 12, 57)), () async {
@@ -573,7 +536,6 @@ void main() {
                 'startTime': '2026-04-18T11:00:00',
                 'endTime': '2026-04-18T13:00:00',
                 'summary': 'Comprehensive walkthrough',
-                timeEntryReferenceTimestampArg: '2026-04-18T11:48:23.029723',
               },
             );
 
@@ -585,8 +547,7 @@ void main() {
 
       test('accepts completed session from a prior day', () async {
         // The agent must be allowed to log work from yesterday or further
-        // back when the user dictates it during the current wake. Only the
-        // future-cutoff is enforced at wake time.
+        // back when the user dictates it during the current wake.
         await withClock(Clock.fixed(testNow), () async {
           final result = await handler.handle(
             sourceTaskId,
@@ -619,8 +580,7 @@ void main() {
       });
 
       test(
-        'still rejects completed session when endTime spills into the next '
-        'day (same-day constraint is preserved)',
+        'accepts completed session when endTime spills into the next day',
         () async {
           await withClock(Clock.fixed(DateTime(2026, 4, 18, 23)), () async {
             final result = await handler.handle(
@@ -629,20 +589,17 @@ void main() {
                 'startTime': '2026-04-18T23:30:00',
                 'endTime': '2026-04-19T00:30:00',
                 'summary': 'Crossing midnight',
-                timeEntryReferenceTimestampArg: '2026-04-18T22:00:00',
               },
             );
 
-            expect(result.success, isFalse);
-            expect(result.output, contains('same day'));
-            expect(result.errorMessage, 'endTime is on a different day');
+            expect(result.success, isTrue);
+            expect(result.output, contains('23:30–00:30'));
           });
         },
       );
 
       test(
-        'at wake time (no reference timestamp injected) still rejects '
-        'completed session with endTime in the future',
+        'accepts completed session with endTime in the future',
         () async {
           // testNow = 2026-03-17T15:30 — endTime 16:00 is in the future.
           await withClock(Clock.fixed(testNow), () async {
@@ -655,8 +612,8 @@ void main() {
               },
             );
 
-            expect(result.success, isFalse);
-            expect(result.errorMessage, 'endTime is after current time');
+            expect(result.success, isTrue);
+            expect(result.output, contains('14:00–16:00'));
           });
         },
       );

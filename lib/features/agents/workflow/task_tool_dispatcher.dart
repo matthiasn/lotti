@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:lotti/features/agents/tools/time_entry_handler.dart';
+import 'package:lotti/features/agents/tools/time_entry_update_handler.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart'
     show TaskAgentWorkflow;
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
@@ -158,6 +159,9 @@ class TaskToolDispatcher {
 
       case TaskAgentToolNames.createTimeEntry:
         return _handleCreateTimeEntry(args, taskId);
+
+      case TaskAgentToolNames.updateTimeEntry:
+        return _handleUpdateTimeEntry(args, taskId);
 
       case TaskAgentToolNames.updateRunningTimer:
         return _handleUpdateRunningTimer(args, taskId);
@@ -575,6 +579,19 @@ class TaskToolDispatcher {
   ) async {
     final handler = RunningTimerUpdateHandler(
       persistenceLogic: persistenceLogic,
+      timeService: timeService,
+      domainLogger: domainLogger,
+    );
+    return handler.handle(taskId, args);
+  }
+
+  Future<ToolExecutionResult> _handleUpdateTimeEntry(
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final handler = TimeEntryUpdateHandler(
+      persistenceLogic: persistenceLogic,
+      journalDb: journalDb,
       timeService: timeService,
       domainLogger: domainLogger,
     );

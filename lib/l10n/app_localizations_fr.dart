@@ -902,6 +902,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 jours';
 
   @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Actuel';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(inchangé)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Proposé';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Entrée d\'origine indisponible';
+
+  @override
   String get agentSuggestionsActivityAgentFallback => 'l\'agent';
 
   @override

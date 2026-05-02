@@ -641,6 +641,41 @@ void main() {
       );
 
       test(
+        'update_time_entry delegates to TimeEntryUpdateHandler',
+        () async {
+          const entryId = 'entry-xyz';
+          final entry = _makeJournalEntry(entryId);
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => _makeTestTask(taskId));
+          when(
+            () => mockJournalDb.journalEntityById(entryId),
+          ).thenAnswer((_) async => entry);
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [entry]);
+          when(() => mockTimeService.getCurrent()).thenReturn(null);
+          when(
+            () => mockPersistenceLogic.updateJournalEntry(
+              journalEntityId: any(named: 'journalEntityId'),
+              entryText: any(named: 'entryText'),
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = await dispatcher.dispatch(
+            'update_time_entry',
+            {'entryId': entryId, 'summary': 'Updated notes'},
+            taskId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, entryId);
+        },
+      );
+
+      test(
         'migrate_checklist_item delegates to ChecklistMigrationHandler',
         () async {
           // The handler needs the checklist item, source task, and target task.
@@ -668,6 +703,18 @@ void main() {
       );
     });
   });
+}
+
+JournalEntry _makeJournalEntry(String id) {
+  return JournalEntry(
+    meta: Metadata(
+      id: id,
+      dateFrom: DateTime(2024, 3, 15, 10),
+      dateTo: DateTime(2024, 3, 15, 11),
+      createdAt: DateTime(2024, 3, 15, 10),
+      updatedAt: DateTime(2024, 3, 15, 10),
+    ),
+  );
 }
 
 /// Creates a minimal [LabelDefinition] for testing.

@@ -940,6 +940,35 @@ class TaskAgentStrategy extends ConversationStrategy {
             : '';
         return 'Update running timer text: "$summary"';
       }(),
+      TaskAgentToolNames.updateTimeEntry => () {
+        final startRaw = args['startTime'] is String
+            ? args['startTime'] as String
+            : null;
+        final endRaw = args['endTime'] is String
+            ? args['endTime'] as String
+            : null;
+        final summary = args['summary'] is String
+            ? (args['summary'] as String).trim()
+            : '';
+        final entryId = args['entryId'] is String
+            ? (args['entryId'] as String).trim()
+            : '?';
+        final start = startRaw != null
+            ? parseTimeEntryLocalDateTime(startRaw)
+            : null;
+        final end = endRaw != null ? parseTimeEntryLocalDateTime(endRaw) : null;
+        final startStr = start != null ? formatTimeEntryHhMm(start) : startRaw;
+        final endStr = end != null ? formatTimeEntryHhMm(end) : endRaw;
+        final range = switch ((startStr, endStr)) {
+          (final String s, final String e) => '$s–$e',
+          (final String s, null) => 'from $s',
+          (null, final String e) => 'until $e',
+          _ => entryId,
+        };
+        return summary.isEmpty
+            ? 'Update time entry $range'
+            : 'Update time entry $range: "$summary"';
+      }(),
       _ => '$toolName(${args.keys.join(", ")})',
     };
   }

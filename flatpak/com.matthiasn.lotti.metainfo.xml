@@ -31,8 +31,10 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.983" date="2026-05-01">
+    <release version="0.9.984" date="2026-05-02">
       <description>
+          <p>Task agents can now propose user-reviewed edits to historical time entries linked from the current task. The wake prompt exposes editable non-running entry IDs with their current time range and text, the new update_time_entry tool validates task ownership and excludes the live timer, and the suggestion row renders a current-to-proposed diff before confirmation.</p>
+          <p>create_time_entry completed sessions now allow any valid endTime &gt; startTime range, including future and midnight-spanning blocks. Running timers keep the existing today-only and not-in-the-future restrictions.</p>
           <p>DailyOS due-task hot path (getTasksDueOn / getTasksDueOnOrBefore) now reads a denormalized due_at INTEGER column on journal instead of json_extract(serialized,'$.data.due'). The partial idx_journal_tasks_due_open is rebuilt on the column so the planner streams ORDER BY due_at ASC straight from the index without per-row JSON parsing, eliminating the planner-fragility that required the previous INDEXED BY pin plus JSON-fallback safety net. The due_at shadow is populated by toDbEntity on every upsert and back-filled for every existing task with a non-null data.due — including completed and rejected tasks — by the v41 migration. The serialized JSON payload is unchanged; the column is purely a query-acceleration shadow.</p>
           <p>DailyOS calendar prefetch (sortedCalendarEntries) now coalesces concurrent per-day callers into a single union-range DB round-trip with client-side filtering, modeled on the existing _coalesceOpenTasksDueUpTo pattern. Slow-query telemetry showed 22+ identical date-range queries firing in the same second during multi-day prefetch; the wave collapses them into one read.</p>
           <p>retireExhaustedRequestedEntries and retireAgedOutRequestedEntries now flip rows in pageSize-bounded batches, each in its own transaction, so a large backlog never holds the sync-DB writer lock through a single multi-second UPDATE. Previously a stuck-row backlog could pin the lock for ~1.9 s, starving concurrent reads.</p>

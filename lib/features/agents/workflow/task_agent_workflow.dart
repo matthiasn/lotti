@@ -1353,6 +1353,14 @@ to keep the user-facing suggestion list clean and trustworthy:
       buffer.write(activeTimerSection);
     }
 
+    final editableTimeEntriesSection = await _buildEditableTimeEntriesSection(
+      timeService,
+      taskId,
+    );
+    if (editableTimeEntriesSection.isNotEmpty) {
+      buffer.write(editableTimeEntriesSection);
+    }
+
     if (projectContextJson.isNotEmpty && projectContextJson != '{}') {
       buffer
         ..writeln('## Parent Project Context')
@@ -1769,8 +1777,7 @@ to keep the user-facing suggestion list clean and trustworthy:
           'new `create_time_entry` for the work covered by this timer — '
           'propose `update_running_timer` instead with a richer description. '
           '`create_time_entry` is still appropriate for clearly distinct '
-          'past sessions (earlier today before the timer started, or any '
-          'prior day).',
+          'completed sessions that do not overlap this timer.',
         )
         ..writeln('- timerId: ${current.meta.id}')
         ..writeln('- started: ${dateFrom.toIso8601String()}')
@@ -1791,8 +1798,8 @@ to keep the user-facing suggestion list clean and trustworthy:
           '`create_time_entry` entries on this task whose [startTime, '
           'endTime] interval overlaps the tracked range below — that '
           'time is already being recorded elsewhere. You may still '
-          'propose entries for non-overlapping intervals (earlier today, '
-          'or any prior day). `update_running_timer` is NOT available in '
+          'propose entries for non-overlapping completed intervals. '
+          '`update_running_timer` is NOT available in '
           'this wake because the timer is not for this task.',
         )
         ..writeln(
@@ -1804,6 +1811,57 @@ to keep the user-facing suggestion list clean and trustworthy:
 
     buffer.writeln();
     return buffer.toString();
+  }
+
+  Future<String> _buildEditableTimeEntriesSection(
+    TimeService? timeService,
+    String taskId,
+  ) async {
+    try {
+      final runningId = timeService?.getCurrent()?.meta.id;
+      final linkedEntries = await journalDb.getLinkedEntities(taskId);
+      final entries =
+          linkedEntries
+              .whereType<JournalEntry>()
+              .where((entry) => entry.meta.id != runningId)
+              .toList()
+            ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+
+      if (entries.isEmpty) return '';
+
+      final buffer = StringBuffer()
+        ..writeln('## Editable Time Entries')
+        ..writeln(
+          'These completed time-entry IDs are linked from THIS task. Only '
+          'pass an `entryId` listed here to `update_time_entry`. Do not use '
+          '`update_time_entry` for the currently running timer.',
+        );
+
+      for (final entry in entries.take(20)) {
+        final text = entry.entryText?.plainText.trim() ?? '';
+        buffer
+          ..writeln('- id: ${entry.meta.id}')
+          ..writeln('  dateFrom: ${entry.meta.dateFrom.toIso8601String()}')
+          ..writeln('  dateTo: ${entry.meta.dateTo.toIso8601String()}')
+          ..writeln('  text: ${jsonEncode(_truncateEditableText(text))}');
+      }
+
+      buffer.writeln();
+      return buffer.toString();
+    } catch (error, stackTrace) {
+      _logError(
+        'failed to build editable time entries section',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return '';
+    }
+  }
+
+  String _truncateEditableText(String text) {
+    const maxLength = 200;
+    if (text.length <= maxLength) return text;
+    return '${text.substring(0, maxLength - 1)}…';
   }
 
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible

@@ -899,6 +899,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 días';
 
   @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Actual';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(sin cambios)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Propuesto';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Entrada original no disponible';
+
+  @override
   String get agentSuggestionsActivityAgentFallback => 'el agente';
 
   @override

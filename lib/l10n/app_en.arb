@@ -489,6 +489,10 @@
   },
   "agentStatsWakesLabel": "Wakes",
   "agentStatsWeekTotalLabel": "7-Day Total",
+  "agentSuggestionTimeEntryUpdateCurrent": "Current",
+  "agentSuggestionTimeEntryUpdateNoChange": "(unchanged)",
+  "agentSuggestionTimeEntryUpdateProposed": "Proposed",
+  "agentSuggestionTimeEntryUpdateUnavailable": "Original entry not available",
   "agentSuggestionsActivityAgentFallback": "the agent",
   "agentSuggestionsActivityCountTotal": "{total} total",
   "@agentSuggestionsActivityCountTotal": {

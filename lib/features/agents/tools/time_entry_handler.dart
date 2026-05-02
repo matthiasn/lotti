@@ -15,9 +15,9 @@ import 'package:lotti/services/time_service.dart';
 /// - **Completed session**: both `startTime` and `endTime` provided.
 /// - **Running timer**: only `startTime` provided; hooks into [TimeService].
 ///
-/// Completed sessions are validated against the originating wake timestamp when
-/// that deferred-execution context is available, so delayed approvals do not
-/// incorrectly fail after midnight.
+/// Completed sessions may span any valid local time range where `endTime` is
+/// strictly after `startTime`. Running timers must start today and cannot
+/// start in the future.
 class TimeEntryHandler {
   TimeEntryHandler({
     required PersistenceLogic persistenceLogic,
@@ -111,8 +111,6 @@ class TimeEntryHandler {
     }
 
     final isRunningTimer = !hasEndTime;
-    final completedReference = _resolveCompletedSessionReference(args, now);
-
     if (isRunningTimer) {
       if (!_isSameDay(startTime, now)) {
         return const ToolExecutionResult(
@@ -128,21 +126,6 @@ class TimeEntryHandler {
           errorMessage: 'startTime is in the future',
         );
       }
-    } else {
-      // Completed sessions may be on the wake day OR any earlier day — the
-      // user often dictates work from yesterday or further back. We only
-      // enforce that the entry is not in the future (and at approval time
-      // even that cutoff is relaxed; see below).
-      if (completedReference.enforceFutureCutoff &&
-          startTime.isAfter(completedReference.timestamp)) {
-        return ToolExecutionResult(
-          success: false,
-          output:
-              'Error: startTime must not be after the '
-              '${completedReference.label}',
-          errorMessage: 'startTime is after ${completedReference.label}',
-        );
-      }
     }
 
     if (endTime != null) {
@@ -151,23 +134,6 @@ class TimeEntryHandler {
           success: false,
           output: 'Error: endTime must be after startTime',
           errorMessage: 'endTime is not after startTime',
-        );
-      }
-      if (!_isSameDay(endTime, startTime)) {
-        return const ToolExecutionResult(
-          success: false,
-          output: 'Error: endTime must be on the same day as startTime',
-          errorMessage: 'endTime is on a different day',
-        );
-      }
-      if (completedReference.enforceFutureCutoff &&
-          endTime.isAfter(completedReference.timestamp)) {
-        return ToolExecutionResult(
-          success: false,
-          output:
-              'Error: endTime must not be after the '
-              '${completedReference.label}',
-          errorMessage: 'endTime is after ${completedReference.label}',
         );
       }
     }
@@ -272,41 +238,5 @@ class TimeEntryHandler {
 
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  /// Resolves the reference timestamp used for same-day and future-cutoff
-  /// validation.
-  ///
-  /// When called directly by the agent at wake time, no
-  /// `_referenceTimestamp` arg is injected so `fallback` (clock.now()) is
-  /// used and `enforceFutureCutoff` is `true` — the agent cannot fabricate
-  /// times after the current instant.
-  ///
-  /// At approval time, `ChangeSetConfirmationService` injects the originating
-  /// wake timestamp. The same-day check still runs against that timestamp so
-  /// after-midnight approvals of same-day-as-wake entries still work, but the
-  /// future cutoff is disabled so the user can confirm entries the agent
-  /// estimated to extend past the wake instant (e.g. an ongoing meeting).
-  static ({DateTime timestamp, String label, bool enforceFutureCutoff})
-  _resolveCompletedSessionReference(
-    Map<String, dynamic> args,
-    DateTime fallback,
-  ) {
-    final raw = args[timeEntryReferenceTimestampArg];
-    final parsed = raw is String ? DateTime.tryParse(raw) : null;
-
-    if (parsed == null) {
-      return (
-        timestamp: fallback,
-        label: 'current time',
-        enforceFutureCutoff: true,
-      );
-    }
-
-    return (
-      timestamp: parsed.isUtc ? parsed.toLocal() : parsed,
-      label: 'wake timestamp',
-      enforceFutureCutoff: false,
-    );
   }
 }
