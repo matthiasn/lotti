@@ -1961,196 +1961,6 @@ void main() {
 
       expect(result, same(message));
     });
-
-    test(
-      'uploads bundle file from inline payload and strips children',
-      () async {
-        when(
-          () => room.sendFileEvent(
-            any<MatrixFile>(),
-            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-          ),
-        ).thenAnswer((_) async => 'file-id');
-
-        final entity = AgentDomainEntity.agentState(
-          id: 'state-bundle',
-          agentId: 'agent-bundle',
-          revision: 1,
-          slots: const AgentSlots(),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: const VectorClock({'host-A': 1}),
-        );
-        final message = SyncMessage.agentBundle(
-          agentId: 'agent-bundle',
-          wakeRunKey: 'run-bundle',
-          entities: [
-            SyncMessage.agentEntity(
-                  status: SyncEntryStatus.update,
-                  agentEntity: entity,
-                )
-                as SyncAgentEntity,
-          ],
-        );
-
-        final result = await sender.enrichAndUploadAgentPayloadForTesting(
-          room: room,
-          message: message,
-        );
-
-        expect(result, isA<SyncAgentBundle>());
-        final bundleResult = result! as SyncAgentBundle;
-        // Inline children stripped — receiver fetches the file by jsonPath.
-        expect(bundleResult.entities, isEmpty);
-        expect(bundleResult.links, isEmpty);
-        expect(bundleResult.jsonPath, '/agent_bundles/run-bundle.json');
-
-        // The bundle JSON was written to disk under the wakeRunKey path
-        // before upload, by the legacy-payload codepath that uses
-        // pathBuilder=relativeAgentBundlePath. Decode it to catch
-        // regressions in _savePayloadToDisk / inline-encode.
-        final file = File(
-          '${documentsDirectory.path}/agent_bundles/run-bundle.json',
-        );
-        expect(file.existsSync(), isTrue);
-        final onDisk =
-            SyncMessage.fromJson(
-                  json.decode(file.readAsStringSync()) as Map<String, dynamic>,
-                )
-                as SyncAgentBundle;
-        expect(onDisk.agentId, 'agent-bundle');
-        expect(onDisk.wakeRunKey, 'run-bundle');
-        // The on-disk file carries the original inline child (the Matrix
-        // text event is what gets stripped down to a descriptor).
-        expect(onDisk.entities, hasLength(1));
-        expect(onDisk.entities.single.agentEntity?.id, 'state-bundle');
-        expect(onDisk.jsonPath, isNull);
-      },
-    );
-
-    test('returns null when bundle has no jsonPath and no children', () async {
-      const message = SyncMessage.agentBundle(
-        agentId: 'agent-empty',
-        wakeRunKey: 'run-empty',
-      );
-
-      final result = await sender.enrichAndUploadAgentPayloadForTesting(
-        room: room,
-        message: message,
-      );
-
-      expect(result, isNull);
-      verifyNever(
-        () => room.sendFileEvent(
-          any<MatrixFile>(),
-          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-        ),
-      );
-    });
-  });
-
-  group('ensureOriginatingHostIdForTesting', () {
-    test('seeds bundle and child originatingHostId from local host', () async {
-      final vectorClockService = MockVectorClockService();
-      when(vectorClockService.getHost).thenAnswer((_) async => 'host-Z');
-      sentEventRegistry = SentEventRegistry();
-      sender = MatrixMessageSender(
-        loggingService: loggingService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        sentEventRegistry: sentEventRegistry,
-        vectorClockService: vectorClockService,
-      );
-
-      final entity = AgentDomainEntity.agentState(
-        id: 'state-seed',
-        agentId: 'agent-seed',
-        revision: 1,
-        slots: const AgentSlots(),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: const VectorClock({'host-Z': 1}),
-      );
-      final link = AgentLink.basic(
-        id: 'link-seed',
-        fromId: 'agent-seed',
-        toId: 'state-seed',
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: const VectorClock({'host-Z': 2}),
-      );
-      // Children with NO originatingHostId — must inherit from bundle/host.
-      final message = SyncMessage.agentBundle(
-        agentId: 'agent-seed',
-        wakeRunKey: 'run-seed',
-        entities: [
-          SyncMessage.agentEntity(
-                status: SyncEntryStatus.update,
-                agentEntity: entity,
-              )
-              as SyncAgentEntity,
-        ],
-        links: [
-          SyncMessage.agentLink(
-                status: SyncEntryStatus.update,
-                agentLink: link,
-              )
-              as SyncAgentLink,
-        ],
-      );
-
-      final result = await sender.ensureOriginatingHostIdForTesting(message);
-
-      final bundle = result as SyncAgentBundle;
-      expect(bundle.originatingHostId, 'host-Z');
-      expect(bundle.entities.single.originatingHostId, 'host-Z');
-      expect(bundle.links.single.originatingHostId, 'host-Z');
-    });
-
-    test(
-      'preserves existing bundle originatingHostId, fills only null children',
-      () async {
-        final vectorClockService = MockVectorClockService();
-        when(vectorClockService.getHost).thenAnswer((_) async => 'host-Z');
-        sentEventRegistry = SentEventRegistry();
-        sender = MatrixMessageSender(
-          loggingService: loggingService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          sentEventRegistry: sentEventRegistry,
-          vectorClockService: vectorClockService,
-        );
-
-        final entity = AgentDomainEntity.agentState(
-          id: 'state-preserve',
-          agentId: 'agent-preserve',
-          revision: 1,
-          slots: const AgentSlots(),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: const VectorClock({'remote': 1}),
-        );
-        final message = SyncMessage.agentBundle(
-          agentId: 'agent-preserve',
-          wakeRunKey: 'run-preserve',
-          // Bundle already carries an explicit origin — must not be
-          // overwritten by the local host.
-          originatingHostId: 'remote',
-          entities: [
-            // Child already has an origin — must stay.
-            SyncMessage.agentEntity(
-                  status: SyncEntryStatus.update,
-                  agentEntity: entity,
-                  originatingHostId: 'other',
-                )
-                as SyncAgentEntity,
-          ],
-        );
-
-        final result = await sender.ensureOriginatingHostIdForTesting(message);
-
-        final bundle = result as SyncAgentBundle;
-        expect(bundle.originatingHostId, 'remote');
-        expect(bundle.entities.single.originatingHostId, 'other');
-      },
-    );
   });
 
   group('legacy agent messages without jsonPath', () {
@@ -2789,9 +2599,9 @@ void main() {
     );
 
     test(
-      'fills originatingHostId on agent envelopes (entity / link / '
-      'bundle) inside an outbox bundle so receivers can identify '
-      'self-echoes by host id, exactly like the per-message agent path',
+      'fills originatingHostId on agent envelopes (entity, link) inside '
+      'an outbox bundle so receivers can identify self-echoes by host id, '
+      'exactly like the per-message agent path',
       () async {
         final vectorClockService = MockVectorClockService();
         when(vectorClockService.getHost).thenAnswer((_) async => 'host-A');
@@ -2830,24 +2640,6 @@ void main() {
           updatedAt: DateTime.utc(2026, 4, 25),
           vectorClock: const VectorClock({'host-A': 2}),
         );
-        final wakeBundle = SyncMessage.agentBundle(
-          agentId: 'agent-1',
-          wakeRunKey: 'run-1',
-          entities: [
-            SyncMessage.agentEntity(
-                  status: SyncEntryStatus.update,
-                  agentEntity: agentEntity,
-                )
-                as SyncAgentEntity,
-          ],
-          links: [
-            SyncMessage.agentLink(
-                  status: SyncEntryStatus.update,
-                  agentLink: agentLink,
-                )
-                as SyncAgentLink,
-          ],
-        );
 
         final children = <SyncMessage>[
           SyncMessage.agentEntity(
@@ -2858,7 +2650,6 @@ void main() {
             status: SyncEntryStatus.update,
             agentLink: agentLink,
           ),
-          wakeBundle,
         ];
 
         final stripped = await stamper.sendOutboxBundlePayloadForTesting(
@@ -2884,18 +2675,6 @@ void main() {
         );
         expect(
           (reconstructed[1] as SyncAgentLink).originatingHostId,
-          'host-A',
-        );
-        final reconstructedBundle = reconstructed[2] as SyncAgentBundle;
-        expect(reconstructedBundle.originatingHostId, 'host-A');
-        // Inner agent-bundle children are stamped by the bundle-internal
-        // copy in `_reconcileBundleChildEnvelope`'s SyncAgentBundle case.
-        expect(
-          reconstructedBundle.entities.single.originatingHostId,
-          'host-A',
-        );
-        expect(
-          reconstructedBundle.links.single.originatingHostId,
           'host-A',
         );
       },

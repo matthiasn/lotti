@@ -1149,67 +1149,65 @@ void main() {
       ).called(1);
     });
 
-    test('processes agent bundle entities before links', () async {
-      final entity = AgentDomainEntity.agentState(
-        id: 'state-1',
-        agentId: 'agent-1',
-        revision: 5,
-        slots: const AgentSlots(),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: const VectorClock({'host-a': 1}),
-      );
-      final link = AgentLink.basic(
-        id: 'link-1',
-        fromId: 'agent-1',
-        toId: 'state-1',
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: const VectorClock({'host-a': 2}),
-      );
-      final message = SyncMessage.agentBundle(
-        agentId: 'agent-1',
-        wakeRunKey: 'run-1',
-        originatingHostId: 'host-a',
-        entities: [
-          SyncMessage.agentEntity(
-                agentEntity: entity,
-                status: SyncEntryStatus.update,
-              )
-              as SyncAgentEntity,
-        ],
-        links: [
-          SyncMessage.agentLink(
-                agentLink: link,
-                status: SyncEntryStatus.update,
-              )
-              as SyncAgentLink,
-        ],
-      );
-      when(() => event.text).thenReturn(encodeMessage(message));
+    test(
+      'no-ops a legacy SyncAgentBundle envelope so the marker advances; '
+      'children recover via the per-entity / per-link backfill path',
+      () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-1',
+          agentId: 'agent-1',
+          revision: 5,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 2}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
+          originatingHostId: 'host-a',
+          entities: [
+            SyncMessage.agentEntity(
+                  agentEntity: entity,
+                  status: SyncEntryStatus.update,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  agentLink: link,
+                  status: SyncEntryStatus.update,
+                )
+                as SyncAgentLink,
+          ],
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
+        await processor.process(event: event, journalDb: journalDb);
 
-      // verifyInOrder asserts BOTH calls happened AND in this order. An
-      // agent_task link can only restore a wake subscription after its
-      // identity entity has been upserted, so entities must be applied
-      // before links within a bundle.
-      verifyInOrder([
-        () => mockAgentRepo.upsertEntity(entity),
-        () => mockAgentRepo.upsertLink(link),
-      ]);
-      verify(
-        () => updateNotifications.notify(
-          {'agent-1', 'AGENT_CHANGED'},
-          fromSync: true,
-        ),
-      ).called(1);
-      verify(
-        () => updateNotifications.notify(
-          {'agent-1', 'state-1', 'AGENT_CHANGED'},
-          fromSync: true,
-        ),
-      ).called(1);
-    });
+        // Bundle is intentionally not applied — the agent repo is not
+        // touched, no AGENT_CHANGED notifications fire, and process()
+        // completes cleanly so the inbound queue marker advances. The
+        // sender already recorded each child under per-entity /
+        // per-link sequence-log entries, so backfill picks them up if
+        // they are missing locally.
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verifyNever(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any<bool>(named: 'fromSync'),
+          ),
+        );
+      },
+    );
 
     test(
       'processes agent link variants (agentState, messagePrev, etc)',
@@ -2267,114 +2265,6 @@ void main() {
 
         verify(() => mockAgentRepo.upsertLink(link)).called(1);
       });
-
-      test('resolves agent bundle from jsonPath on disk', () async {
-        final entity = AgentDomainEntity.agentState(
-          id: 'state-disk',
-          agentId: 'agent-disk',
-          revision: 1,
-          slots: const AgentSlots(),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: const VectorClock({'host-a': 1}),
-        );
-        final link = AgentLink.basic(
-          id: 'link-disk',
-          fromId: 'agent-disk',
-          toId: 'state-disk',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: const VectorClock({'host-a': 2}),
-        );
-
-        final fileBundle = SyncMessage.agentBundle(
-          agentId: 'agent-disk',
-          wakeRunKey: 'run-disk',
-          originatingHostId: 'host-a',
-          entities: [
-            SyncMessage.agentEntity(
-                  status: SyncEntryStatus.update,
-                  agentEntity: entity,
-                )
-                as SyncAgentEntity,
-          ],
-          links: [
-            SyncMessage.agentLink(
-                  status: SyncEntryStatus.update,
-                  agentLink: link,
-                )
-                as SyncAgentLink,
-          ],
-        );
-        const relativePath = '/agent_bundles/run-disk.json';
-        final normalized = stripLeadingSlashes(relativePath);
-        final file = File(path.join(tempDir.path, normalized));
-        file.parent.createSync(recursive: true);
-        file.writeAsStringSync(jsonEncode(fileBundle.toJson()));
-
-        const message = SyncMessage.agentBundle(
-          agentId: 'agent-disk',
-          wakeRunKey: 'run-disk',
-          jsonPath: relativePath,
-        );
-        when(() => event.text).thenReturn(encodeMessage(message));
-
-        await processor.process(event: event, journalDb: journalDb);
-
-        verifyInOrder([
-          () => mockAgentRepo.upsertEntity(entity),
-          () => mockAgentRepo.upsertLink(link),
-        ]);
-      });
-
-      test(
-        'agent bundle resolver skips and traces unresolvable children',
-        () async {
-          // A bundled child entity with no entity AND no jsonPath cannot be
-          // resolved — the bundle resolver must skip it (not crash) and
-          // emit a `agentBundle.entity.skipped` trace. Same for an
-          // unresolvable child link.
-          const message = SyncMessage.agentBundle(
-            agentId: 'agent-skip',
-            wakeRunKey: 'run-skip',
-            originatingHostId: 'host-a',
-            entities: [
-              SyncMessage.agentEntity(
-                    status: SyncEntryStatus.update,
-                  )
-                  as SyncAgentEntity,
-            ],
-            links: [
-              SyncMessage.agentLink(
-                    status: SyncEntryStatus.update,
-                  )
-                  as SyncAgentLink,
-            ],
-          );
-          when(() => event.text).thenReturn(encodeMessage(message));
-
-          await processor.process(event: event, journalDb: journalDb);
-
-          // Neither child reached the repository.
-          verifyNever(() => mockAgentRepo.upsertEntity(any()));
-          verifyNever(() => mockAgentRepo.upsertLink(any()));
-
-          // Both skip traces fired.
-          verify(
-            () => loggingService.captureEvent(
-              any<String>(that: contains('agentBundle.entity.skipped')),
-              domain: 'sync',
-              subDomain: 'processor.resolve.bundle',
-            ),
-          ).called(1);
-          verify(
-            () => loggingService.captureEvent(
-              any<String>(that: contains('agentBundle.link.skipped')),
-              domain: 'sync',
-              subDomain: 'processor.resolve.bundle',
-            ),
-          ).called(1);
-        },
-      );
 
       test('skips agent entity with no entity and no jsonPath', () async {
         const message = SyncMessage.agentEntity(
@@ -6847,10 +6737,9 @@ void main() {
     );
 
     test(
-      'apply() returns null for an isSelfEcho-flagged SyncAgentBundle '
-      'whose resolvedAgentBundle is null — symmetric guarantee to the '
-      'outbox-bundle case so every family is covered by the apply-side '
-      'self-echo short-circuit.',
+      'apply() returns null for a legacy SyncAgentBundle envelope — the '
+      'wire variant is retained for compat but the apply branch is a '
+      'no-op so the inbound queue marker advances cleanly.',
       () async {
         const message = SyncMessage.agentBundle(
           agentId: 'agent-self',
@@ -6861,8 +6750,6 @@ void main() {
         final prepared = PreparedSyncEvent.forTesting(
           event: event,
           syncMessage: message,
-          isSelfEcho: true,
-          // resolvedAgentBundle intentionally left null.
         );
 
         final result = await processor.apply(

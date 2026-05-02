@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.987]
+### Fixed
+- Inbox backfill no longer hangs for ten minutes per agent-bundle row. Removed
+  the agent wake-cycle bundling layer that coalesced per-wake agent writes into
+  a `SyncAgentBundle`. With generic dequeue-time outbox bundling in place, the
+  wake-bundle envelope was redundant — and after the outbox bundler started
+  claiming text-only rows in batches it became actively harmful: bundled
+  `SyncAgentBundle` rows shipped a manifest whose envelope-only entries no
+  longer pointed at any uploaded attachment, leaving inbound rows stuck in the
+  10-minute pending-attachment wait until they were skipped. Agent writes now
+  hit the outbox directly as `SyncAgentEntity`/`SyncAgentLink` rows and flow
+  through the same bundling path as journal entities. The `SyncAgentBundle`
+  wire variant remains parseable so messages from peers that predate this
+  change still decode; the receiver no-ops them and any children missing
+  locally resurface via the existing per-(host, counter) backfill path.
+
 ## [0.9.986]
 ### Fixed
 - Reduced idle CPU usage after starting and stopping task timers. Inactive
