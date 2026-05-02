@@ -5,6 +5,8 @@ workflows:
     max_build_duration: 90
     environment:
       flutter: 3.41.4
+      groups:
+        - windows_signing
     triggering:
       events:
         - tag
@@ -37,8 +39,18 @@ workflows:
       - name: Build Windows release
         script: flutter build windows --release
 
+      - name: Decode signing certificate
+        script: |
+          $ErrorActionPreference = "Stop"
+          $pfxPath = "$env:CM_BUILD_DIR\lotti.pfx"
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:MSIX_CERTIFICATE_BASE64))
+          Add-Content -Path $env:CM_ENV -Value "MSIX_CERTIFICATE_PATH=$pfxPath"
+
       - name: Package MSIX
-        script: dart run msix:create --release
+        script: |
+          dart run msix:create --release `
+            --certificate-path $env:MSIX_CERTIFICATE_PATH `
+            --certificate-password $env:MSIX_CERTIFICATE_PASSWORD
 
       - name: Zip release artifacts
         script: |
