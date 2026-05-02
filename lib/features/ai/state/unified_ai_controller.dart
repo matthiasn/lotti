@@ -386,6 +386,7 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
           SkillType.transcription,
           SkillType.imageAnalysis,
           SkillType.promptGeneration,
+          SkillType.imagePromptGeneration,
           SkillType.imageGeneration,
         };
 
@@ -506,6 +507,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 linkedTaskId: params.linkedTaskId,
               );
             case SkillType.promptGeneration:
+            case SkillType.imagePromptGeneration:
               await runner.runPromptGeneration(
                 entryId: params.entityId,
                 automationResult: automationResult,
@@ -524,12 +526,6 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 automationResult: automationResult,
                 linkedTaskId: linkedTaskId,
                 referenceImages: params.referenceImages,
-              );
-            case SkillType.imagePromptGeneration:
-              developer.log(
-                'Skill type ${skill.skillType} not yet supported for '
-                'direct invocation via triggerSkillProvider',
-                name: 'UnifiedAiController',
               );
           }
 

@@ -1677,6 +1677,84 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'persists imagePromptGeneration responses under the matching '
+        'AiResponseType',
+        () async {
+          final imagePromptSkill =
+              AiConfig.skill(
+                    id: 'skill-img-prompt',
+                    name: 'Generate Image Prompt',
+                    skillType: SkillType.imagePromptGeneration,
+                    requiredInputModalities: const [Modality.text],
+                    contextPolicy: ContextPolicy.fullTask,
+                    systemInstructions: 'sys',
+                    userInstructions: 'usr',
+                    useReasoning: true,
+                    createdAt: DateTime(2024),
+                  )
+                  as AiConfigSkill;
+
+          final result = AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-flash',
+              thinkingProvider: testInferenceProvider(),
+            ),
+            skill: imagePromptSkill,
+          );
+
+          final textEntry = makeTextEntry(
+            id: 'text-img-prompt',
+            markdown: 'A serene watercolor of mist over pines',
+          );
+
+          when(
+            () => mockAiInputRepo.getEntity('text-img-prompt'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('## Summary\n…\n## Prompt\nWatercolor scene'),
+            ]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-img-prompt',
+            automationResult: result,
+          );
+
+          final captured = verify(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: captureAny(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+          final data = captured.single as AiResponseData;
+          expect(data.type, AiResponseType.imagePromptGeneration);
+        },
+      );
     });
 
     group('runImageGeneration', () {

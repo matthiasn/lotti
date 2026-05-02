@@ -1641,6 +1641,86 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'routes imagePromptGeneration skills through runPromptGeneration',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-img-prompt',
+                  name: 'Generate Image Prompt',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imagePromptGeneration,
+                  requiredInputModalities: [Modality.text],
+                  contextPolicy: ContextPolicy.fullTask,
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final thinkingProvider =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-prov',
+                  name: 'Gemini',
+                  inferenceProviderType: InferenceProviderType.gemini,
+                  apiKey: 'key',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+
+        final resolvedProfile = ResolvedProfile(
+          thinkingModelId: 'thinking-model',
+          thinkingProvider: thinkingProvider,
+        );
+
+        when(
+          () => mockResolver.resolveForTask('task-img-prompt'),
+        ).thenAnswer((_) async => resolvedProfile);
+
+        when(
+          () => mockRunner.runPromptGeneration(
+            entryId: any(named: 'entryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'entry-img-prompt',
+            skillId: 'skill-img-prompt',
+            linkedTaskId: 'task-img-prompt',
+            referenceImages: null,
+          )).future,
+        );
+
+        verify(
+          () => mockRunner.runPromptGeneration(
+            entryId: 'entry-img-prompt',
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: 'task-img-prompt',
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockRunner.runImageGeneration(
+            entryId: any(named: 'entryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            referenceImages: any(named: 'referenceImages'),
+          ),
+        );
+      },
+    );
+
     // Note: null linkedTaskId is already guarded by an early return before
     // the skill type switch. The image generation case has a redundant
     // null check as defense-in-depth, but it's unreachable.

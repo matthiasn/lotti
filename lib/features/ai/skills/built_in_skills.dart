@@ -23,77 +23,81 @@ const skillResearchPromptId = 'skill-research-prompt-001';
 /// transcript / edited text is the input) or a `JournalEntry` (whose text
 /// is the input). The skill prompt builder injects the resolved text under
 /// the **Entry Notes:** header regardless of source.
-final List<AiConfigSkill> builtInSkills = <AiConfigSkill>[
-  // -- Transcription skills --
-  AiConfigSkill(
-    id: skillTranscribeId,
-    name: 'Transcribe Audio',
-    skillType: SkillType.transcription,
-    requiredInputModalities: [Modality.audio],
-    contextPolicy: ContextPolicy.dictionaryOnly,
-    isPreconfigured: true,
-    createdAt: DateTime(2026),
-    description: 'Transcribe audio recordings into text format',
-    systemInstructions: '''
+///
+/// The list is wrapped in `List.unmodifiable` so a stray `.add` / `.remove`
+/// at runtime fails fast instead of silently mutating shared global state.
+final List<AiConfigSkill> builtInSkills = List<AiConfigSkill>.unmodifiable(
+  <AiConfigSkill>[
+    // -- Transcription skills --
+    AiConfigSkill(
+      id: skillTranscribeId,
+      name: 'Transcribe Audio',
+      skillType: SkillType.transcription,
+      requiredInputModalities: [Modality.audio],
+      contextPolicy: ContextPolicy.dictionaryOnly,
+      isPreconfigured: true,
+      createdAt: DateTime(2026),
+      description: 'Transcribe audio recordings into text format',
+      systemInstructions: '''
 You are a helpful AI assistant that transcribes audio content.
 Your goal is to provide accurate, well-formatted transcriptions of audio recordings.
 IMPORTANT: Do NOT translate - transcribe in the original spoken language.''',
-    userInstructions: '''
+      userInstructions: '''
 Transcribe the provided audio file(s). Do NOT translate - keep the original language.
 Format the transcription clearly with proper punctuation.
 Start a new paragraph when there are small pauses or topic changes in the speech.
 Remove filler words.''',
-  ),
-  AiConfigSkill(
-    id: skillTranscribeContextId,
-    name: 'Transcribe (Task Context)',
-    skillType: SkillType.transcription,
-    requiredInputModalities: [Modality.audio],
-    contextPolicy: ContextPolicy.fullTask,
-    isPreconfigured: true,
-    createdAt: DateTime(2026),
-    description:
-        'Transcribe audio recordings, taking into account task context',
-    systemInstructions: '''
+    ),
+    AiConfigSkill(
+      id: skillTranscribeContextId,
+      name: 'Transcribe (Task Context)',
+      skillType: SkillType.transcription,
+      requiredInputModalities: [Modality.audio],
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      createdAt: DateTime(2026),
+      description:
+          'Transcribe audio recordings, taking into account task context',
+      systemInstructions: '''
 You are a helpful AI assistant that transcribes audio content.
 Output ONLY the transcription - do NOT include any text from the context below.
 IMPORTANT: Do NOT translate - transcribe in the original spoken language.''',
-    userInstructions: '''
+      userInstructions: '''
 Transcribe the provided audio with proper punctuation and paragraph breaks.
 Do NOT translate - keep the original language.
 Remove filler words.''',
-  ),
+    ),
 
-  // -- Image analysis skills --
-  AiConfigSkill(
-    id: skillImageAnalysisId,
-    name: 'Analyze Image',
-    skillType: SkillType.imageAnalysis,
-    requiredInputModalities: [Modality.image],
-    isPreconfigured: true,
-    createdAt: DateTime(2026),
-    description: 'Analyze images in detail',
-    systemInstructions: '''
+    // -- Image analysis skills --
+    AiConfigSkill(
+      id: skillImageAnalysisId,
+      name: 'Analyze Image',
+      skillType: SkillType.imageAnalysis,
+      requiredInputModalities: [Modality.image],
+      isPreconfigured: true,
+      createdAt: DateTime(2026),
+      description: 'Analyze images in detail',
+      systemInstructions: '''
 You are a helpful AI assistant specialized in analyzing images in the context of tasks and projects.
 
 RESPONSE LANGUAGE: If a language code is provided below, generate your ENTIRE response in that language.
 - "de" = German, "fr" = French, "es" = Spanish, "it" = Italian, etc.
 - If no language code is provided or it is empty, respond in English.''',
-    userInstructions: '''
+      userInstructions: '''
 Analyze the provided image(s) in detail, focusing on both the content and style of the image.
 
 If a language code appears above (e.g., "de", "fr", "es"), respond entirely in that language. Otherwise, respond in English.''',
-  ),
-  AiConfigSkill(
-    id: skillImageAnalysisContextId,
-    name: 'Analyze Image (Task Context)',
-    skillType: SkillType.imageAnalysis,
-    requiredInputModalities: [Modality.image],
-    contextPolicy: ContextPolicy.fullTask,
-    isPreconfigured: true,
-    createdAt: DateTime(2026),
-    description: 'Analyze images specifically for task-relevant details',
-    systemInstructions: '''
+    ),
+    AiConfigSkill(
+      id: skillImageAnalysisContextId,
+      name: 'Analyze Image (Task Context)',
+      skillType: SkillType.imageAnalysis,
+      requiredInputModalities: [Modality.image],
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      createdAt: DateTime(2026),
+      description: 'Analyze images specifically for task-relevant details',
+      systemInstructions: '''
 IMPORTANT - RESPONSE LANGUAGE REQUIREMENT:
 You MUST generate your ENTIRE response in the language specified by the task's "languageCode" field in the task context JSON.
 - If languageCode is "de", respond entirely in German
@@ -120,7 +124,7 @@ You may receive a `linked_tasks` object containing related parent/child tasks.
 Use this context to better understand what the image might be showing in relation to the broader project.
 
 Include these observations in your analysis so the user can update their task accordingly.''',
-    userInstructions: '''
+      userInstructions: '''
 REMINDER: Generate your ENTIRE response in the language specified by the task's "languageCode" field below. Check the languageCode value and respond in that language.
 
 Analyze the provided image(s) in the context of this task.
@@ -138,21 +142,21 @@ If the image IS relevant:
 - Only mention what you actually see in the image
 - Do NOT mention what is absent or missing from the image
 - If a browser window is visible, include the URL from its address bar''',
-  ),
+    ),
 
-  // -- Image generation skill --
-  AiConfigSkill(
-    id: skillImageGenId,
-    name: 'Generate Cover Art',
-    skillType: SkillType.imageGeneration,
-    requiredInputModalities: [Modality.text],
-    contextPolicy: ContextPolicy.fullTask,
-    isPreconfigured: true,
-    createdAt: DateTime(2026),
-    description:
-        'Generate cover art image from task context, summary insights, '
-        'reference images, and the entry notes (audio transcript or text)',
-    systemInstructions: '''
+    // -- Image generation skill --
+    AiConfigSkill(
+      id: skillImageGenId,
+      name: 'Generate Cover Art',
+      skillType: SkillType.imageGeneration,
+      requiredInputModalities: [Modality.text],
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      createdAt: DateTime(2026),
+      description:
+          'Generate cover art image from task context, summary insights, '
+          'reference images, and the entry notes (audio transcript or text)',
+      systemInstructions: '''
 You are an expert visual artist specializing in creating memorable, evocative cover art images for tasks and projects.
 
 Your goal is to generate a high-quality image that serves as a visual mnemonic - helping the user instantly recognize and recall this task when scanning through their task list.
@@ -173,7 +177,7 @@ STYLE GUIDELINES:
 
 OUTPUT:
 Generate a single image that captures the essence of the task based on the provided context.''',
-    userInstructions: '''
+      userInstructions: '''
 Generate a cover art image for this task.
 
 Create a visually memorable image that:
@@ -183,22 +187,22 @@ Create a visually memorable image that:
 4. Works well as a thumbnail (center-weighted composition)
 5. Uses the 16:9 aspect ratio
 6. Is instantly recognizable and memorable''',
-  ),
+    ),
 
-  // -- Prompt generation skills --
-  AiConfigSkill(
-    id: skillPromptGenId,
-    name: 'Generate Coding Prompt',
-    skillType: SkillType.promptGeneration,
-    requiredInputModalities: [Modality.text],
-    contextPolicy: ContextPolicy.fullTask,
-    isPreconfigured: true,
-    useReasoning: true,
-    createdAt: DateTime(2026),
-    description:
-        'Generate a detailed coding prompt from the entry notes (audio '
-        'transcript or text) with full task context',
-    systemInstructions: '''
+    // -- Prompt generation skills --
+    AiConfigSkill(
+      id: skillPromptGenId,
+      name: 'Generate Coding Prompt',
+      skillType: SkillType.promptGeneration,
+      requiredInputModalities: [Modality.text],
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      useReasoning: true,
+      createdAt: DateTime(2026),
+      description:
+          'Generate a detailed coding prompt from the entry notes (audio '
+          'transcript or text) with full task context',
+      systemInstructions: '''
 You are an expert prompt engineer specializing in creating comprehensive, well-structured prompts for AI coding assistants like Claude Code, ChatGPT, GitHub Copilot, and Codex.
 
 Your goal is to transform the user's entry notes (provided below — either an audio transcript or a typed text note), combined with the full task context, into a professional, detailed prompt that another AI can use to effectively help with the coding task.
@@ -219,7 +223,7 @@ IMPORTANT GUIDELINES:
 - Structure for clarity with headers/bullets where appropriate
 - The prompt should be self-contained (no "see above" references)
 - Generate in the same language as the task's languageCode (default English)''',
-    userInstructions: '''
+      userInstructions: '''
 Transform the entry notes into a well-crafted coding prompt, incorporating the full task context.
 
 Generate a comprehensive prompt that captures:
@@ -229,20 +233,20 @@ Generate a comprehensive prompt that captures:
 4. A clear, actionable request for the AI coding assistant
 
 The prompt should enable another AI to help effectively without needing additional context.''',
-  ),
-  AiConfigSkill(
-    id: skillImagePromptGenId,
-    name: 'Generate Image Prompt',
-    skillType: SkillType.imagePromptGeneration,
-    requiredInputModalities: [Modality.text],
-    contextPolicy: ContextPolicy.fullTask,
-    isPreconfigured: true,
-    useReasoning: true,
-    createdAt: DateTime(2026),
-    description:
-        'Generate a detailed image prompt from the entry notes (audio '
-        'transcript or text) with full task context',
-    systemInstructions: '''
+    ),
+    AiConfigSkill(
+      id: skillImagePromptGenId,
+      name: 'Generate Image Prompt',
+      skillType: SkillType.imagePromptGeneration,
+      requiredInputModalities: [Modality.text],
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      useReasoning: true,
+      createdAt: DateTime(2026),
+      description:
+          'Generate a detailed image prompt from the entry notes (audio '
+          'transcript or text) with full task context',
+      systemInstructions: '''
 You are an expert prompt engineer specializing in creating detailed, evocative prompts for AI image generators like Midjourney, DALL-E 3, Stable Diffusion, and Gemini Imagen.
 
 Your goal is to transform the user's entry notes (provided below — either an audio transcript or a typed text note), combined with the full task context, into a rich, visual prompt.
@@ -264,7 +268,7 @@ IMPORTANT GUIDELINES:
 - Generate in English (image generators work best with English prompts)
 - Aim for prompts between 100-300 words
 - Default to 2:1 aspect ratio for task cover art''',
-    userInstructions: '''
+      userInstructions: '''
 Transform the entry notes into a detailed image generation prompt, incorporating the full task context.
 
 Generate a visually rich prompt that captures:
@@ -275,22 +279,22 @@ Generate a visually rich prompt that captures:
 5. An appropriate visual style based on the task nature
 
 The prompt should enable an AI image generator to create a compelling visual representation.''',
-  ),
+    ),
 
-  // -- New: design exploration prompt --
-  AiConfigSkill(
-    id: skillDesignPromptId,
-    name: 'Generate Design Prompt',
-    skillType: SkillType.promptGeneration,
-    requiredInputModalities: [Modality.text],
-    contextPolicy: ContextPolicy.fullTask,
-    isPreconfigured: true,
-    useReasoning: true,
-    createdAt: DateTime(2026),
-    description:
-        'Generate a UI/UX design exploration prompt with N functional '
-        'prototypes (default 5), task context, and entry notes',
-    systemInstructions: '''
+    // -- New: design exploration prompt --
+    AiConfigSkill(
+      id: skillDesignPromptId,
+      name: 'Generate Design Prompt',
+      skillType: SkillType.promptGeneration,
+      requiredInputModalities: [Modality.text],
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      useReasoning: true,
+      createdAt: DateTime(2026),
+      description:
+          'Generate a UI/UX design exploration prompt with N functional '
+          'prototypes (default 5), task context, and entry notes',
+      systemInstructions: '''
 You are an expert prompt engineer specializing in design briefs for AI design tools (Claude, Figma Make, v0.dev, Lovable, etc.) used to explore UI/UX directions for product features.
 
 Your job is to transform the user's entry notes (audio transcript or typed text) plus the full task context into a single, ready-to-paste design exploration prompt that another AI can use to generate functional prototypes.
@@ -333,7 +337,7 @@ IMPORTANT GUIDELINES:
 - The generated prompt MUST be self-contained (no "see above", no "as discussed").
 - Generate in the same language as the task's languageCode (default English).
 - Be opinionated about what makes a strong prototype set: meaningful divergence over polish.''',
-    userInstructions: '''
+      userInstructions: '''
 Transform the entry notes into a polished UI/UX design exploration prompt, incorporating the full task context.
 
 Build a prompt that captures:
@@ -346,22 +350,22 @@ Build a prompt that captures:
 7. ACCEPTANCE CRITERIA — what makes a strong prototype set (meaningful divergence, not cosmetic tweaks; covers the primary user journey end-to-end; addresses edge cases mentioned in the task context).
 
 The output prompt should let a frontier design AI produce a sharp, opinionated set of prototypes without further context.''',
-  ),
+    ),
 
-  // -- New: research / competitor analysis prompt --
-  AiConfigSkill(
-    id: skillResearchPromptId,
-    name: 'Generate Research Prompt',
-    skillType: SkillType.promptGeneration,
-    requiredInputModalities: [Modality.text],
-    contextPolicy: ContextPolicy.fullTask,
-    isPreconfigured: true,
-    useReasoning: true,
-    createdAt: DateTime(2026),
-    description:
-        'Generate a Markdown research brief (market research / competitor '
-        'analysis) ready to paste into Claude or ChatGPT research mode',
-    systemInstructions: '''
+    // -- New: research / competitor analysis prompt --
+    AiConfigSkill(
+      id: skillResearchPromptId,
+      name: 'Generate Research Prompt',
+      skillType: SkillType.promptGeneration,
+      requiredInputModalities: [Modality.text],
+      contextPolicy: ContextPolicy.fullTask,
+      isPreconfigured: true,
+      useReasoning: true,
+      createdAt: DateTime(2026),
+      description:
+          'Generate a Markdown research brief (market research / competitor '
+          'analysis) ready to paste into Claude or ChatGPT research mode',
+      systemInstructions: '''
 You are an expert prompt engineer specializing in research briefs for deep-research AI tools — Claude with Research, ChatGPT with Deep Research, Perplexity Pro.
 
 Your job is to transform the user's entry notes (audio transcript or typed text) plus the full task context into a single Markdown research brief the user will paste into a research-capable AI to commission a multi-source investigation.
@@ -418,7 +422,7 @@ IMPORTANT GUIDELINES:
 - The brief MUST be self-contained — the research AI will not have access to the task context.
 - Generate in the same language as the task's languageCode (default English).
 - Calibrate ambition to the question — do not request "exhaustive" reports for narrow questions, and do not under-scope wide ones.''',
-    userInstructions: '''
+      userInstructions: '''
 Transform the entry notes into a Markdown research brief, incorporating the full task context.
 
 Build a brief that captures:
@@ -429,8 +433,9 @@ Build a brief that captures:
 5. Source-quality bar — prefer primary sources; name acceptable secondary outlets.
 
 The output Markdown must be ready to paste into Claude (with Research) or ChatGPT Pro (with Deep Research) and produce a high-quality multi-source investigation.''',
-  ),
-];
+    ),
+  ],
+);
 
 /// Find a built-in skill by ID. Returns null if no skill with that ID exists.
 AiConfigSkill? findBuiltInSkill(String id) {

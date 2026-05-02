@@ -485,14 +485,17 @@ class SkillInferenceRunner {
           );
         }
 
-        // 7. Save result as AiResponseEntry.
+        // 7. Save result as AiResponseEntry. The response type is derived
+        // from the skill so the same runner can serve both
+        // `promptGeneration` and `imagePromptGeneration` skills without
+        // mislabelling persisted responses.
         final data = AiResponseData(
           model: modelId,
           systemMessage: promptResult.systemMessage,
           prompt: promptResult.userMessage,
           thoughts: '',
           response: response,
-          type: AiResponseType.promptGeneration,
+          type: skill.skillType.toResponseType,
         );
 
         await _aiInputRepository.createAiResponseEntry(
@@ -524,9 +527,17 @@ class SkillInferenceRunner {
     required String linkedTaskId,
     List<ProcessedReferenceImage>? referenceImages,
   }) async {
+    // Derive the response type from the skill when present so future skill
+    // variants (or test stubs) drive the status controller correctly.
+    // Falls back to `imageGeneration` only when the automation result is
+    // misconfigured — that path immediately throws inside `_withStatusTracking`.
+    final responseType =
+        automationResult.skill?.skillType.toResponseType ??
+        AiResponseType.imageGeneration;
+
     await _withStatusTracking(
       entityId: entryId,
-      responseType: AiResponseType.imageGeneration,
+      responseType: responseType,
       subDomain: 'runImageGeneration',
       linkedTaskId: linkedTaskId,
       body: () async {
