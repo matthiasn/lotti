@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/slow_query_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -621,6 +621,110 @@ void main() {
       });
 
       test(
+        'first-call stack capture: gate off → no callerStack',
+        () async {
+          interceptor = SlowQueryInterceptor(
+            databaseName: 'test_db',
+            threshold: Duration.zero,
+            superSlowThreshold: Duration.zero,
+            reporter: reportedEntries.add,
+          );
+          when(
+            () => mockExecutor.runSelect(any(), any()),
+          ).thenAnswer((_) async => <Map<String, Object?>>[]);
+
+          await interceptor.runSelect(
+            mockExecutor,
+            'SELECT 1 -- gate-off-no-stack',
+            <Object?>[],
+          );
+
+          expect(reportedEntries, hasLength(1));
+          expect(reportedEntries.first.callerStack, isNull);
+        },
+      );
+
+      test(
+        'first-call stack capture: gate on → exactly one capture per '
+        'unique statement, subsequent fires of the same statement reuse '
+        'the seen-set so the boot wave produces one trace per shape, not '
+        'thousands of duplicates',
+        () async {
+          SlowQueryLoggingGate.captureFirstCallStack = true;
+          addTearDown(SlowQueryLoggingGate.resetForTest);
+
+          interceptor = SlowQueryInterceptor(
+            databaseName: 'test_db',
+            threshold: Duration.zero,
+            superSlowThreshold: Duration.zero,
+            reporter: reportedEntries.add,
+          );
+          when(
+            () => mockExecutor.runSelect(any(), any()),
+          ).thenAnswer((_) async => <Map<String, Object?>>[]);
+
+          await interceptor.runSelect(
+            mockExecutor,
+            'SELECT * FROM unique_stmt_first',
+            <Object?>[],
+          );
+          await interceptor.runSelect(
+            mockExecutor,
+            'SELECT * FROM unique_stmt_first',
+            <Object?>[],
+          );
+          await interceptor.runSelect(
+            mockExecutor,
+            'SELECT * FROM unique_stmt_second',
+            <Object?>[],
+          );
+
+          expect(reportedEntries, hasLength(3));
+          expect(
+            reportedEntries[0].callerStack,
+            isNotNull,
+            reason: 'first occurrence captures stack',
+          );
+          expect(
+            reportedEntries[1].callerStack,
+            isNull,
+            reason: 'duplicate statement skips capture',
+          );
+          expect(
+            reportedEntries[2].callerStack,
+            isNotNull,
+            reason: 'a different statement is its own first occurrence',
+          );
+        },
+      );
+
+      test(
+        'markStatementSeenAndIsFirst returns true exactly once per '
+        'statement and resetForTest clears the seen-set',
+        () {
+          expect(
+            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT a'),
+            isTrue,
+          );
+          expect(
+            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT a'),
+            isFalse,
+          );
+          expect(
+            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT b'),
+            isTrue,
+          );
+
+          SlowQueryLoggingGate.resetForTest();
+          expect(
+            SlowQueryLoggingGate.markStatementSeenAndIsFirst('SELECT a'),
+            isTrue,
+            reason: 'resetForTest clears the seen-set',
+          );
+        },
+      );
+
+      test(
         'EXPLAIN failure does not break the original result or report',
         () async {
           interceptor = SlowQueryInterceptor(
@@ -896,6 +1000,72 @@ void main() {
         startsWith('slow_queries-'),
       );
     });
+
+    test(
+      'super-slow entry with callerStack writes only app-code STACK lines '
+      'and drops drift / dart-runtime / interceptor frames so the log is '
+      'readable instead of buried in identical boilerplate',
+      () async {
+        final reporter = SlowQueryInterceptor.fileReporter(
+          documentsDirectoryPath: tempDir.path,
+        );
+
+        // Synthetic stack covers every filter branch:
+        // - drift/dart-runtime frames that should be dropped
+        // - the slow-query plumbing self-frame that should be dropped
+        // - one application frame that should be kept
+        // - blank lines (separators) that should be dropped
+        const stackLines = <String>[
+          '#0      SlowQueryInterceptor._measure (package:lotti/database/slow_query_logging.dart:200:12)',
+          '#1      _InterceptedExecutor.runSelect (package:drift/src/runtime/executor/interceptor.dart:163:25)',
+          '#2      _rootRunUnary (dart:async/zone_root.dart:48:47)',
+          '<asynchronous suspension>',
+          '#3      JournalDb.getAllDashboards (package:lotti/database/database.dart:3056:34)',
+          '',
+          '#4      DashboardsController.build (package:lotti/features/dashboards/state/dashboards_page_controller.dart:20:14)',
+        ];
+        final stack = StackTrace.fromString(stackLines.join('\n'));
+
+        final entry = SlowQueryLogEntry(
+          databaseName: 'test_db',
+          operation: 'select',
+          statement: 'SELECT * FROM dashboard_definitions',
+          arguments: const <Object?>[],
+          elapsed: const Duration(milliseconds: 500),
+          isSuperSlow: true,
+          callerStack: stack,
+        );
+
+        reporter(entry);
+        await SlowQueryInterceptor.flushFileSinkForTest();
+
+        final logsDir = Directory('${tempDir.path}/logs');
+        final superFile = logsDir.listSync().whereType<File>().firstWhere(
+          (f) => p.basename(f.path).startsWith('super_slow_queries-'),
+        );
+        final superContent = superFile.readAsStringSync();
+
+        // App-code frames are kept and prefixed with `STACK: `.
+        expect(
+          superContent,
+          contains('STACK: #3      JournalDb.getAllDashboards '),
+        );
+        expect(
+          superContent,
+          contains(
+            'STACK: #4      DashboardsController.build ',
+          ),
+        );
+        // Drift / dart runtime frames are dropped.
+        expect(superContent, isNot(contains('package:drift/')));
+        expect(superContent, isNot(contains('dart:async/')));
+        expect(superContent, isNot(contains('asynchronous suspension')));
+        // The slow-query plumbing self-frame is dropped even though it
+        // technically points at `package:lotti/...` — otherwise every
+        // entry would carry a constant boilerplate line.
+        expect(superContent, isNot(contains('slow_query_logging.dart')));
+      },
+    );
 
     test(
       'super-slow entry without plan rows still duplicates the query line',

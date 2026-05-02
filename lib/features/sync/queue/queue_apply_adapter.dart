@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:meta/meta.dart';
 
 const _logDomain = 'sync';
 const _logSub = 'queue.apply';
@@ -307,6 +308,10 @@ class QueueApplyAdapter {
   /// transaction is pure overhead and serialises every concurrent
   /// reader. Errs conservatively: any new payload type defaults to
   /// `true` so we keep the old behaviour until explicitly opted out.
+  @visibleForTesting
+  static bool writesJournalDbForTesting(SyncMessage message) =>
+      _writesJournalDb(message);
+
   static bool _writesJournalDb(SyncMessage message) {
     return message.map(
       // SyncJournalEntity owns its own narrow tx inside
