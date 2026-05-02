@@ -1,0 +1,58 @@
+workflows:
+  windows-release:
+    name: Windows Release
+    instance_type: windows_x2
+    max_build_duration: 90
+    environment:
+      flutter: 3.41.4
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: '*.*.*+*'
+          include: true
+      cancel_previous_builds: true
+    scripts:
+      - name: Show toolchain versions
+        script: |
+          flutter --version
+          dart --version
+
+      - name: Install Rust toolchain (required by flutter_vodozemac/cargokit)
+        script: |
+          $ErrorActionPreference = "Stop"
+          Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe
+          .\rustup-init.exe -y --default-toolchain stable --profile minimal
+          $cargoBin = "$env:USERPROFILE\.cargo\bin"
+          Add-Content -Path $env:CM_ENV -Value "PATH+=$cargoBin"
+          & "$cargoBin\rustc.exe" --version
+          & "$cargoBin\cargo.exe" --version
+
+      - name: Flutter pub get
+        script: flutter pub get
+
+      - name: Flutter analyze
+        script: flutter analyze
+
+      - name: Build Windows release
+        script: flutter build windows --release
+
+      - name: Package MSIX
+        script: dart run msix:create --release
+
+      - name: Zip release artifacts
+        script: |
+          $src = "$env:CM_BUILD_DIR\build\windows\x64\runner\Release"
+          $dst = "$env:CM_BUILD_DIR\lotti-windows-x64.zip"
+          Compress-Archive -Path "$src\*" -DestinationPath $dst -Force
+    artifacts:
+      - build/windows/x64/runner/Release/**/*
+      - lotti-windows-x64.zip
+      - build/windows/**/*.msix
+    publishing:
+      email:
+        recipients:
+          - matthias.nehlsen@gmail.com
+        notify:
+          success: true
+          failure: true
