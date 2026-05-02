@@ -597,6 +597,7 @@ class OutboxService {
 
   Future<bool> _drainOutbox() async {
     for (var pass = 0; pass < _maxDrainPasses; pass++) {
+      if (_isDisposed) return false;
       if (!_activityGate.canProcess) {
         _loggingService.captureEvent(
           'drain.paused activityGate.canProcess=false',
@@ -733,6 +734,7 @@ class OutboxService {
 
       // Allow recent enqueues to settle then attempt one more drain.
       await Future<void>.delayed(_postDrainSettle);
+      if (_isDisposed) return;
       if (!_activityGate.canProcess) {
         _loggingService.captureEvent(
           'sendNext.postSettle.paused activityGate.canProcess=false',

@@ -2248,6 +2248,49 @@ void main() {
       await svc.dispose();
     });
 
+    test(
+      'sendNext aborts second drain when disposed during settle',
+      () async {
+        // Regression: with `outboxPostDrainSettle = 1500ms`, the disposal
+        // window grows. After awaiting the settle, sendNext must not run a
+        // second drain on a disposed service.
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        final gate = createGate();
+
+        var calls = 0;
+        when(() => processor.processQueue()).thenAnswer((_) async {
+          calls++;
+          return OutboxProcessingResult.none;
+        });
+
+        final svc = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+          ownsActivityGate: false,
+          postDrainSettle: const Duration(milliseconds: 50),
+        );
+
+        final pending = svc.sendNext();
+        // Dispose mid-settle, before the trailing drain runs.
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await svc.dispose();
+        await pending;
+
+        // First drain ran; trailing drain skipped because of disposal.
+        expect(calls, 1);
+      },
+    );
+
     test('respects retry backoff and skips immediate re-entry', () async {
       when(
         () => journalDb.getConfigFlag(enableMatrixFlag),
