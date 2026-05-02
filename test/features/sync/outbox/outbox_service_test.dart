@@ -3064,6 +3064,7 @@ void main() {
           activityGate: gate,
           ownsActivityGate: false,
           matrixService: matrixService,
+          postDrainSettle: Duration.zero,
         );
 
         // T=0: DB nudge fires → schedules enqueue after 50ms
