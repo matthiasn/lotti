@@ -826,6 +826,48 @@ void main() {
       },
     );
 
+    testWidgets(
+      'parent rebuilds and hides countdown pill once nextWakeAt elapses',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+        var currentTime = start;
+
+        await withClock(Clock(() => currentTime), () async {
+          final agentEntity = makeTestIdentity();
+          final nextWakeAt = start.add(const Duration(seconds: 2));
+          final stateEntity = makeTestState(
+            agentId: agentEntity.agentId,
+            nextWakeAt: nextWakeAt,
+          );
+
+          await tester.pumpWidget(
+            _buildSubject(
+              taskId: 'task-1',
+              overrides: agentExistsOverrides(
+                agent: agentEntity,
+                agentState: stateEntity,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('0:02'), findsOneWidget);
+
+          // Cross the deadline. The pill's internal timer fires once the
+          // displayed seconds drop to 0, which invokes the parent's
+          // `onExpired` lambda; the parent's `setState` then rebuilds
+          // and the pill subtree is removed.
+          currentTime = start.add(const Duration(seconds: 3));
+          await tester.pump(const Duration(seconds: 1));
+          await tester.pump();
+
+          expect(find.text('0:02'), findsNothing);
+          expect(find.text('0:01'), findsNothing);
+          expect(find.text('0:00'), findsNothing);
+        });
+      },
+    );
+
     testWidgets('does not show countdown when nextWakeAt is in the past', (
       tester,
     ) async {

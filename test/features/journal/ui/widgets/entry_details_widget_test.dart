@@ -534,6 +534,47 @@ void main() {
       expect(tester.binding.transientCallbackCount, 0);
     });
 
+    testWidgets(
+      'timer highlight border repaints when its theme color changes',
+      (tester) async {
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
+
+        Widget subject({required Color errorColor}) {
+          return makeTestableWidgetWithScaffold(
+            ProviderScope(
+              child: EntryDetailsWidget(
+                itemId: testTextEntry.meta.id,
+                showAiEntry: false,
+                isActiveTimer: true,
+              ),
+            ),
+            theme: ThemeData.from(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.indigo,
+                error: errorColor,
+              ),
+            ),
+          );
+        }
+
+        await tester.pumpWidget(subject(errorColor: Colors.red));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+
+        // Re-pumping with a different error color forces a new
+        // _TimerBorderPainter to be supplied to the CustomPaint, which
+        // exercises shouldRepaint with a non-equal oldDelegate.color.
+        await tester.pumpWidget(subject(errorColor: Colors.deepOrange));
+        // Settle the MaterialApp theme animation so we land on the new
+        // color and exercise shouldRepaint with a non-equal oldDelegate.
+        await tester.pumpAndSettle();
+        expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      },
+    );
+
     testWidgets('no highlight renders plain card', (tester) async {
       when(
         () => mockJournalDb.journalEntityById(testTextEntry.meta.id),

@@ -619,6 +619,69 @@ Longer report content.
         });
       },
     );
+
+    testWidgets('countdown pill resyncs when nextWakeAt changes', (
+      tester,
+    ) async {
+      final start = DateTime(2024, 3, 15, 12);
+
+      await withClock(Clock.fixed(start), () async {
+        Widget subject(DateTime nextWakeAt) {
+          return wrap(
+            ExpandableReportSection(
+              title: 'AI Report',
+              body: 'TLDR only.',
+              fullContent: 'TLDR only.',
+              recommendations: const [],
+              nextWakeAt: nextWakeAt,
+              onRefresh: () {},
+            ),
+          );
+        }
+
+        await tester.pumpWidget(
+          subject(start.add(const Duration(seconds: 30))),
+        );
+        await tester.pump();
+        expect(find.text('0:30'), findsOneWidget);
+
+        // Same widget type, new nextWakeAt → didUpdateWidget must call
+        // resyncCountdown so the pill snaps to the new remaining seconds
+        // without waiting for the next periodic tick.
+        await tester.pumpWidget(
+          subject(start.add(const Duration(seconds: 90))),
+        );
+        await tester.pump();
+        expect(find.text('1:30'), findsOneWidget);
+        expect(find.text('0:30'), findsNothing);
+      });
+    });
+
+    testWidgets(
+      'countdown pill hides itself once nextWakeAt has already passed',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+
+        await withClock(Clock.fixed(start), () async {
+          await tester.pumpWidget(
+            wrap(
+              ExpandableReportSection(
+                title: 'AI Report',
+                body: 'TLDR only.',
+                fullContent: 'TLDR only.',
+                recommendations: const [],
+                nextWakeAt: start.subtract(const Duration(seconds: 5)),
+                onRefresh: () {},
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Pill builds with countdownSeconds <= 0 → returns SizedBox.shrink.
+          expect(find.byType(ShowcaseCountdownPill), findsNothing);
+        });
+      },
+    );
   });
 
   group('RecommendationsList', () {
