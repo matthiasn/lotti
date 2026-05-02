@@ -1076,11 +1076,58 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<JournalEntity?> journalEntityById(String id) async {
-    final dbEntity = await entityById(id);
+    final dbEntity = await _coalesceEntityById(id);
     if (dbEntity != null) {
       return fromDbEntity(dbEntity);
     }
     return null;
+  }
+
+  // Microtask-coalescing state for `journalEntityById`. Riverpod
+  // `FutureProvider.autoDispose.family` shapes (e.g.
+  // `taskLiveDataProvider`) spin up one provider per visible row in a
+  // scrolling list; when a tasks page mounts ~30 rows simultaneously,
+  // each fires its own single-id read. The cluster shows up in the
+  // super-slow log as ~30 nearly-identical `WHERE id = ? AND deleted = ?`
+  // selects all reporting the same elapsed time — they're queued behind
+  // each other in the read pool, not actually slow per row. The
+  // coalescer merges every concurrent caller in one microtask wave into
+  // one bulk `journalEntitiesByIdsUnorderedAllPrivate` round-trip; each
+  // caller picks its own id out of the resulting map.
+  //
+  // Only the public `journalEntityById` is coalesced. `entityById` (the
+  // internal read used inside `upsertJournalDbEntity`'s pre-write check)
+  // stays direct so it sees a strict snapshot rather than joining a
+  // microtask wave outside the write transaction.
+  _PendingEntityByIdWave? _pendingEntityByIdWave;
+
+  /// Single-shot bulk fetch executed by the entity-by-id coalescer.
+  /// Extracted as a protected seam so tests can count DB round-trips
+  /// and inject failures without depending on a query interceptor.
+  @protected
+  @visibleForTesting
+  Future<List<JournalDbEntity>> runEntitiesByIdsFetch(Set<String> ids) {
+    return journalEntitiesByIdsUnorderedAllPrivate(ids.toList()).get();
+  }
+
+  Future<JournalDbEntity?> _coalesceEntityById(String id) {
+    final wave = _pendingEntityByIdWave ??= _PendingEntityByIdWave();
+    wave.mergedIds.add(id);
+    if (!wave.scheduled) {
+      wave.scheduled = true;
+      scheduleMicrotask(() async {
+        _pendingEntityByIdWave = null;
+        try {
+          final entities = await runEntitiesByIdsFetch(wave.mergedIds);
+          wave.completer.complete(<String, JournalDbEntity>{
+            for (final entity in entities) entity.id: entity,
+          });
+        } catch (error, stack) {
+          wave.completer.completeError(error, stack);
+        }
+      });
+    }
+    return wave.completer.future.then((map) => map[id]);
   }
 
   /// Bulk-fetches the [JournalEntity] for each id in [ids], returning a
@@ -3406,6 +3453,17 @@ class _PendingCalendarEntriesWave {
   DateTime rangeEnd;
   final Completer<List<JournalEntity>> completer =
       Completer<List<JournalEntity>>.sync();
+}
+
+/// In-flight coalescing wave for `journalEntityById`. Concurrent callers
+/// within the same microtask merge their ids; the wave fires one bulk
+/// `id IN (…)` query and each caller pulls its own row out of the
+/// returned map.
+class _PendingEntityByIdWave {
+  final Set<String> mergedIds = <String>{};
+  bool scheduled = false;
+  final Completer<Map<String, JournalDbEntity>> completer =
+      Completer<Map<String, JournalDbEntity>>.sync();
 }
 
 /// In-flight coalescing wave for `basicLinksForEntryIds`. Concurrent callers

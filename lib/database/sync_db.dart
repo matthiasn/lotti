@@ -347,6 +347,19 @@ class HostActivity extends Table {
   'CREATE INDEX idx_inbound_event_queue_status_due_lease '
   'ON inbound_event_queue (status, next_due_at, lease_until)',
 )
+// `QueueStats.stats()` aggregates `COUNT(*) + MIN(enqueued_at)`
+// filtered by `status IN (...)`. The v18 index above lets the planner
+// seek by status, but `MIN(enqueued_at)` cannot be evaluated without
+// reading the heap because `enqueued_at` is not in any index keyed on
+// `status`. The slow-query log captured this as a 240–550 ms SCAN of
+// the entire queue table on every UI poll. Pairing `(status,
+// enqueued_at)` makes MIN an O(1) index seek per matched status
+// partition (the first entry of each partition is the minimum), and
+// COUNT becomes an index-only walk over a tight key range.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_status_enqueued '
+  'ON inbound_event_queue (status, enqueued_at)',
+)
 class InboundEventQueue extends Table {
   IntColumn get queueId => integer().autoIncrement().named('queue_id')();
 
@@ -1659,7 +1672,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   // Static guard so ANALYZE runs once per process, not per connection.
   // The drift read-pool opens 4 read connections + 1 write; running
@@ -2001,6 +2014,19 @@ class SyncDatabase extends _$SyncDatabase {
           // Refresh stats for the new partition shape so the planner
           // picks the new index immediately on first launch instead of
           // waiting for the next ANALYZE cycle.
+          await customStatement('ANALYZE');
+        }
+        if (from < 19) {
+          // The v18 index seeked on status but couldn't satisfy
+          // `MIN(enqueued_at)` without falling back to the heap, so the
+          // stats query still showed up as a SCAN in the super-slow log
+          // (240–550 ms per poll). Pairing `(status, enqueued_at)`
+          // turns MIN into an O(1) seek per matched status partition.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_status_enqueued '
+            'ON inbound_event_queue (status, enqueued_at)',
+          );
           await customStatement('ANALYZE');
         }
       },
