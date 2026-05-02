@@ -37,23 +37,26 @@ This plan does two things:
    agent does not gain unilateral write access. It also exposes a new
    **Editable Time Entries** section in the wake prompt so the agent can
    reference past entries by ID with confidence.
-2. **Simplifies `create_time_entry`** so its temporal validation matches
-   the new tool. Today's constraints — "today only" for running-timer
-   mode, same-day for `dateTo` vs. `dateFrom`, future cutoff at wake
-   time, `_referenceTimestamp`-based relaxation at confirmation — are
-   all removed. Only `endTime > startTime` remains. If a user wants to
-   create a block for tomorrow, last year, spanning midnight, or
-   anything else, the tool allows it.
+2. **Simplifies `create_time_entry`** so completed sessions use the same
+   temporal model as the new tool. Today's completed-session constraints
+   — same-day for `dateTo` vs. `dateFrom`, future cutoff at wake time,
+   `_referenceTimestamp`-based relaxation at confirmation — are removed.
+   Completed sessions keep only `endTime > startTime`. Running-timer mode
+   stays as it is today: `startTime` must be today and must not be in the
+   future. A timer that starts tomorrow or yesterday is not a running
+   timer in the product model. If a user wants to create a completed block
+   for tomorrow, last year, spanning midnight, or anything else, the tool
+   allows it.
 
-The existing `update_running_timer` tool is **unchanged**. It is the
-*only* time-tracking tool that retains state validation, and its
-validation isn't temporal — it checks that a timer is actively running,
-that the timer belongs to this task, and that the supplied `timerId`
-matches. Those invariants exist to keep `TimeService`'s in-memory
-snapshot consistent with the DB after the live `dateTo = clock.now()`
-write; they have nothing to do with calendar dates. The new tool
-explicitly refuses to operate on the running timer's ID and tells the
-LLM to use `update_running_timer` in that case.
+The existing `update_running_timer` tool is **unchanged**. It retains
+state validation: a timer must be actively running, it must belong to
+this task, and the supplied `timerId` must match. Those invariants keep
+`TimeService`'s in-memory snapshot consistent with the DB after the live
+`dateTo = clock.now()` write. The new historical-edit tool explicitly
+refuses to operate on the running timer's ID and tells the LLM to use
+`update_running_timer` in that case. `create_time_entry` also keeps the
+existing live-timer guards: a new running timer must start today and must
+not start in the future.
 
 ---
 
@@ -77,18 +80,18 @@ LLM to use `update_running_timer` in that case.
    measurement, and habit entries are out of scope for this tool; the
    handler returns an error if `entryId` resolves to a non-`JournalEntry`.
 
-3. **No date restrictions, no future cutoff, no same-day rule —
-   uniform across `create_time_entry` AND `update_time_entry`.** Both
-   tools share one rule: `endTime > startTime` when both are present
-   (a non-positive duration would break duration math throughout the
-   app — `entryDuration`, `formatHhMm`, time-spent aggregations on
-   tasks). Beyond that, anything goes: any day past or future,
-   midnight-spanning, today, yesterday, next year. The wake-anchored
-   `_referenceTimestamp` mechanism is removed entirely from
-   `create_time_entry` since there is no future cutoff left to relax.
-   Only `update_running_timer` retains state validation (running,
-   ownership, ID match) — but that validation is non-temporal and
-   exists to keep `TimeService` in-memory state coherent.
+3. **No date restrictions for completed / historical entries.** Both
+   `create_time_entry` completed sessions and `update_time_entry`
+   historical edits share one temporal rule: `endTime > startTime` when
+   both are present (a non-positive duration would break duration math
+   throughout the app — `entryDuration`, `formatHhMm`, time-spent
+   aggregations on tasks). Beyond that, completed / historical entries
+   may be any day past or future, midnight-spanning, today, yesterday, or
+   next year. The wake-anchored `_referenceTimestamp` mechanism is
+   removed entirely from `create_time_entry` since completed sessions no
+   longer have a future cutoff to relax. Running-timer creation keeps its
+   current `same day as now` and `startTime <= clock.now()` checks because
+   a live timer in this product represents work already underway today.
 
 4. **Deferred tool, human-in-the-loop.** The tool registers in
    `AgentToolRegistry.deferredTools`. Proposals land on the existing
@@ -186,9 +189,9 @@ no-op calls.
 |------|--------|
 | `lib/features/agents/tools/agent_tool_registry.dart` | Add `updateTimeEntry = 'update_time_entry'` to `TaskAgentToolNames`; add `AgentToolDefinition` to `taskAgentTools`; add to `deferredTools` set |
 | `lib/features/agents/workflow/task_tool_dispatcher.dart` | Add `case TaskAgentToolNames.updateTimeEntry:` routing |
-| `lib/features/agents/workflow/task_agent_strategy.dart:884` (`humanSummaryFor`) | Add a case producing `Update entry HH:mm–HH:mm: "..."` for the suggestions list |
-| `lib/features/agents/service/change_set_confirmation_service.dart:355` (`_injectDispatchContext`) | **Remove the entire method.** With no temporal validation left in either time-tracking handler, the wake-timestamp injection has no consumer. Drop the special-case for `createTimeEntry`. (See "Existing-tool simplification" below.) |
-| `lib/features/agents/tools/time_entry_handler.dart` | Strip same-day, future cutoff, today-only checks. Keep `endTime > startTime`, summary validation, "timer already running" guard, source-task lookup. Remove `_resolveCompletedSessionReference` and the `_referenceTimestamp` arg consumer. |
+| `lib/features/agents/workflow/task_agent_strategy.dart` (`_generateHumanSummary`) | Add a case producing `Update entry HH:mm–HH:mm: "..."` for the suggestions list |
+| `lib/features/agents/service/change_set_confirmation_service.dart:355` (`_injectDispatchContext`) | **Remove the entire method.** With no completed-session wake cutoff left, the wake-timestamp injection has no consumer. Drop the special-case for `createTimeEntry`. (See "Existing-tool simplification" below.) |
+| `lib/features/agents/tools/time_entry_handler.dart` | Strip completed-session same-day and future-cutoff checks. Keep `endTime > startTime`, summary validation, running-timer today-only / `startTime <= clock.now()` checks, "timer already running" guard, and source-task lookup. Remove `_resolveCompletedSessionReference` and the `_referenceTimestamp` arg consumer. |
 | `lib/features/agents/time_entry_datetime.dart` | Delete `timeEntryReferenceTimestampArg` constant — no remaining consumer. Keep `parseTimeEntryLocalDateTime` and `formatTimeEntryHhMm`. |
 
 ---
@@ -197,24 +200,19 @@ no-op calls.
 
 **File:** `lib/features/agents/tools/time_entry_handler.dart`
 
-The handler today (lines 113-173) carries multiple temporal rules that
-the user has decided to drop for consistency with `update_time_entry`.
+The handler today (lines 113-173) carries multiple temporal rules. Only
+completed-session creation is loosened to line up with
+`update_time_entry`; live running timers keep their existing "today" and
+"not in the future" constraints.
 Concrete edits:
 
 ### Removed
 
-- **Lines 117-123** — running-timer-mode `_isSameDay(startTime, now)`
-  check. Future change: a running timer with `startTime` on any day is
-  permitted.
-- **Lines 124-130** — running-timer-mode `startTime.isAfter(now)` check.
 - **Lines 136-145** — completed-session future cutoff against the
   resolved reference timestamp.
 - **Lines 156-162** — `_isSameDay(endTime, startTime)` for completed
   sessions.
 - **Lines 163-172** — completed-session `endTime` future cutoff.
-- **Lines 273-275** — `_isSameDay` helper (no remaining caller).
-- **Lines 290-311** — `_resolveCompletedSessionReference` method (no
-  remaining caller).
 - The `args[timeEntryReferenceTimestampArg]` read inside the handler.
 
 ### Kept
@@ -222,31 +220,42 @@ Concrete edits:
 - Summary validation (non-empty, ≤ 500 chars).
 - `startTime` parses cleanly via `parseTimeEntryLocalDateTime`.
 - `endTime` parses cleanly when present (lines 84-111).
+- Running-timer `_isSameDay(startTime, now)` check — a live timer must
+  start today.
+- Running-timer `startTime.isAfter(now)` check — a live timer cannot
+  start in the future.
 - `endTime.isAfter(startTime)` strict ordering check (lines 148-155) —
-  the only surviving temporal rule.
+  the only temporal rule for completed sessions.
 - Source-task lookup (lines 184-194) and category inheritance.
 - "Timer already running" guard (lines 175-182) — non-temporal,
   protects `TimeService` against a second concurrent timer.
 - Persistence via `createMetadata` + `createDbEntity` and the
   `TimeService.start()` call for running-timer mode (lines 196-250).
 
+### Updated helper cleanup
+
+- Keep `_isSameDay` because running-timer validation still uses it.
+- **Lines 290-311** — `_resolveCompletedSessionReference` method (no
+  remaining caller).
+
 ### Tool description rewrite (`agent_tool_registry.dart:351-396`)
 
-Today's description aggressively says "today or any earlier day for
-completed sessions; for a running timer (no endTime) it must be today's
-date." Rewrite to match the new looser semantics:
+Today's description correctly says a running timer must use today's date,
+but it over-constrains completed sessions to today or earlier and same-day
+end times. Rewrite only the completed-session parts:
 
 > Create a time tracking entry for a work session on the current task.
 > Use ONLY when the user has JUST NOW dictated what they worked on.
 > Supports two modes: (1) completed session with start and end times
 > (any day, past or future, including spans across midnight),
-> (2) running timer with start time only (any day). The user reviews
-> the proposal before it persists.
+> (2) running timer with start time only (today only, never the
+> future). The user reviews the proposal before it persists.
 
-Argument descriptions: drop "must be today's date" from `startTime`,
-drop "must be on the same day as startTime" and "Must not be after the
-current wake timestamp" from `endTime`. Keep the local ISO 8601 format
-guidance and the "after startTime" requirement on `endTime`.
+Argument descriptions: keep "must be today's date" and "must not be in
+the future" for running-timer mode. Drop "must be on the same day as
+startTime" and "Must not be after the current wake timestamp" from
+`endTime`. Keep the local ISO 8601 format guidance and the "after
+startTime" requirement on `endTime`.
 
 ### Confirmation service
 
@@ -260,10 +269,11 @@ re-introducing it later is one line).
 ### Tests touched
 
 - `test/features/agents/tools/time_entry_handler_test.dart` —
-  delete the same-day / future-cutoff / today-only assertions and keep
-  the "endTime > startTime" assertion. Add positive cases for: future
-  block, last-year block, midnight-spanning block, running timer
-  starting yesterday.
+  delete the completed-session same-day / future-cutoff assertions and
+  keep the "endTime > startTime" assertion. Keep or add rejection tests
+  for running timers that start on another day or in the future. Add
+  positive cases for: future completed block, last-year block, and
+  midnight-spanning completed block.
 - `test/features/agents/time_entry_datetime_test.dart` — drop the
   reference-timestamp constant assertion.
 - `test/features/agents/service/change_set_confirmation_service_test.dart`
@@ -292,12 +302,13 @@ re-introducing it later is one line).
 2. **Entity lookup & ownership.**
    - Load via `journalDb.journalEntityById(entryId)`.
    - Must be a `JournalEntry` (reject other variants with a clear error).
-   - Must be **linked from** `sourceTaskId`. Reuse the existing
-     "linked-from" lookup the agent context already runs — concretely,
-     check via `journalDb.getLinksFromId(sourceTaskId)` (or whichever helper
-     `aiInputRepository.buildLinkedFromContext` already uses) and confirm
-     `entryId` appears in the result. This guards against an agent that
-     hallucinates an ID from another task it saw in linked-task context.
+   - Must be an outgoing linked entity of `sourceTaskId`. `createDbEntity(
+     linkedId: sourceTaskId)` creates `sourceTaskId → entryId`, and the
+     task-progress / AI-input paths read those children with
+     `JournalDb.getLinkedEntities(sourceTaskId)`. Use that same direction
+     here and confirm the loaded linked-entity IDs contain `entryId`. This
+     guards against an agent that hallucinates an ID from another task it
+     saw in linked-task context.
 
 3. **Running-timer guard.**
    - If `timeService.getCurrent()?.meta.id == entryId`, return
@@ -381,6 +392,10 @@ Future<bool> updateJournalEntry({
 Behavior:
 
 - Look up the entity. Return `false` if missing.
+- Return `false` if `entryText`, `dateFrom`, and `dateTo` are all omitted;
+  otherwise this method would bump `updatedAt` / vector clock without an
+  actual edit. The handler already rejects no-op proposals, but the
+  persistence method should keep the same contract when tested directly.
 - Type-guard: only operate on `JournalEntry` (the one variant the agent
   edit tool targets). For any other variant, return `false` so the caller
   surfaces a clean error. We do not extend the audio/image branches here
@@ -397,9 +412,9 @@ Behavior:
   'updateJournalEntry'`, return `false` on caught exception so callers see
   a failure rather than a silent commit.
 
-`updateJournalEntityText` stays for the running-timer / audio / image
-paths that depend on its audio-flag clearing semantics — no behavior
-changes there.
+`updateJournalEntityText` stays for the existing journal-editor and
+running-timer paths, including audio / image branches that depend on
+their import-flag clearing semantics — no behavior changes there.
 
 ---
 
@@ -415,12 +430,12 @@ Future<String> _buildEditableTimeEntriesSection(
   TimeService? timeService,
 ) async {
   final runningId = timeService?.getCurrent()?.meta.id;
-  // Iterate journal entries linked from `task` (already available
-  // through the same path AiInputRepository uses to build logEntries).
+  // Iterate outgoing entities linked from `task` via
+  // journalDb.getLinkedEntities(task.id), the same link direction used
+  // by createDbEntity(linkedId: task.id), task progress, and AI log input.
   // Filter:
   //   - is JournalEntry (text time entry)
   //   - meta.id != runningId
-  //   - has both dateFrom and dateTo (skip stale running rows)
   // Sort newest-first by dateFrom.
   // Render as a markdown list:
   //   - id: <uuid>
@@ -430,12 +445,14 @@ Future<String> _buildEditableTimeEntriesSection(
 }
 ```
 
-Exact entry-iteration helper: factor a shared private method out of the
-existing `aiInputRepository`-based loop, or call into a small new
-`_listLinkedTimeEntries(task)` on `AiInputRepository` that returns the
-raw `JournalEntry` list. Implementation should reuse whatever
-`buildLinkedFromContext` / direct DB call the workflow already runs to
-avoid an extra round-trip during wake.
+Exact entry-iteration helper: call `journalDb.getLinkedEntities(task.id)`
+directly from `TaskAgentWorkflow` or factor a small private
+`_listEditableTimeEntries(task, timeService)` helper next to
+`_buildActiveTimerSection`. Do **not** use
+`AiInputRepository.buildLinkedFromContext` for this: that method returns
+linked task context, not the raw non-task journal entries needed here.
+`Metadata.dateFrom` and `Metadata.dateTo` are required fields, so no
+nullable `dateTo` filter is needed; the active timer is excluded by ID.
 
 The section is gated:
 
@@ -457,9 +474,10 @@ keeping all time-related context together.
 `_injectDispatchContext` (line 355) is removed entirely. Its sole
 purpose was to carry the originating wake timestamp into
 `create_time_entry` so the handler could relax the future cutoff at
-confirmation time. With every temporal cutoff dropped from both
-time-tracking handlers, no consumer remains. The dispatch path now
-passes `item.args` through unmodified — same as every other tool.
+confirmation time. With the completed-session cutoff dropped, no consumer
+remains. The dispatch path now passes `item.args` through unmodified for
+non-migration tools; the existing `create_follow_up_task` placeholder
+resolution for checklist migration remains.
 
 Reintroducing the mechanism in the future (if a new deferred tool ever
 needs the wake timestamp) is a localized one-method addition.
@@ -485,12 +503,14 @@ Renders a *diff* view so the user can confirm meaningfully:
 - Two-column layout under a single timer icon, similar in spirit to
   `TimeEntryTile` (lines 47-99).
 - Reads `entryId` / `startTime` / `endTime` / `summary` from `args`.
-- Uses a Riverpod provider (`journalEntityProvider(entryId)` or the
-  closest existing accessor — verify in
-  `lib/features/journal/state/`) to fetch the current entry's
-  `dateFrom` / `dateTo` / text. If unavailable (entry deleted,
-  rejected-pending sync), render a degraded "current state unavailable"
-  tile with the proposed values only.
+- Uses a narrow auto-dispose provider in this widget file (for example,
+  a `FutureProvider.family<JournalEntity?, String>`) that reads
+  `journalRepositoryProvider.getJournalEntityById(entryId)` to fetch the
+  current entry's `dateFrom` / `dateTo` / text. There is no existing
+  `journalEntityProvider`; `entryControllerProvider(id: ...)` exists but
+  is editor-oriented and brings focus / draft state along with it. If the
+  entry is unavailable (deleted, rejected-pending sync), render a
+  degraded "current state unavailable" tile with the proposed values only.
 - For each field that the proposal touches, show
   `current → proposed`. Untouched fields are displayed greyed-out
   using the current value only.
@@ -534,9 +554,11 @@ register for de/fr/es; formal `dvs.` for ro.
 |------|--------|
 | `lib/features/agents/tools/agent_tool_registry.dart` | Add tool name, definition, deferred registration |
 | `lib/features/agents/workflow/task_tool_dispatcher.dart` | Dispatch case + `_handleUpdateTimeEntry` |
-| `lib/features/agents/workflow/task_agent_strategy.dart` | `humanSummaryFor` branch |
-| `lib/features/agents/workflow/task_agent_workflow.dart` | New `_buildEditableTimeEntriesSection`; wire into prompt assembly next to active timer section |
-| `lib/features/agents/service/change_set_confirmation_service.dart` | Extend `_injectDispatchContext` to inject `_referenceTimestamp` for `update_time_entry` |
+| `lib/features/agents/workflow/task_agent_strategy.dart` | `_generateHumanSummary` branch |
+| `lib/features/agents/workflow/task_agent_workflow.dart` | New `_buildEditableTimeEntriesSection`; wire into prompt assembly next to active timer section; update active-timer prompt wording that still says `create_time_entry` is only for earlier/prior-day sessions |
+| `lib/features/agents/service/change_set_confirmation_service.dart` | Remove `_injectDispatchContext` and the now-unused `time_entry_datetime.dart` import. |
+| `lib/features/agents/tools/time_entry_handler.dart` | Strip completed-session same-day and future-cutoff checks; remove `_resolveCompletedSessionReference` and the `_referenceTimestamp` consumer; keep running-timer today-only and future-start guards (see *Existing-Tool Simplification*). |
+| `lib/features/agents/time_entry_datetime.dart` | Delete the `timeEntryReferenceTimestampArg` constant — no remaining consumer. |
 | `lib/features/agents/ui/suggestion_row.dart` | Branch on `updateTimeEntry` to render new tile |
 | `lib/logic/persistence_logic.dart` | New `updateJournalEntry({...})` method |
 | `lib/l10n/app_en.arb` (+ cs/de/es/fr/ro/en_GB if spelling differs) | New labels for diff UI |
@@ -549,7 +571,9 @@ register for de/fr/es; formal `dvs.` for ro.
 | `test/features/agents/tools/agent_tool_registry_test.dart` | Tool count assertions, presence of `updateTimeEntry` in deferred set |
 | `test/features/agents/workflow/task_tool_dispatcher_test.dart` | Dispatch routes to handler |
 | `test/features/agents/workflow/task_agent_workflow_test.dart` (or its sibling for prompt assembly) | Editable Time Entries section appears with correct content; running timer is excluded |
-| `test/features/agents/service/change_set_confirmation_service_test.dart` | `_referenceTimestamp` injection covers `update_time_entry` |
+| `test/features/agents/service/change_set_confirmation_service_test.dart` | Drop the existing `_referenceTimestamp` injection assertion for `createTimeEntry` (the method is gone). |
+| `test/features/agents/tools/time_entry_handler_test.dart` | Drop completed-session same-day / future-cutoff assertions; keep or add running-timer wrong-day and future-start rejections; add positive cases for future completed blocks, last-year blocks, and midnight-spanning completed blocks (see *Existing-Tool Simplification*). |
+| `test/features/agents/time_entry_datetime_test.dart` | Drop the `timeEntryReferenceTimestampArg` constant assertion. |
 | `test/features/agents/ui/suggestion_row_test.dart` | Renders `TimeEntryUpdateTile` for `updateTimeEntry` proposals |
 
 No `*.freezed.dart` / `*.g.dart` regeneration is required — the new
@@ -572,7 +596,7 @@ not introducing a new freezed model.
 
 4. Add `updateTimeEntry` constant, `AgentToolDefinition`, deferred-set
    entry.
-5. Add `humanSummaryFor` branch.
+5. Add `_generateHumanSummary` branch.
 6. Update registry tests.
 
 ### Phase 3 — Handler
@@ -585,44 +609,52 @@ not introducing a new freezed model.
 
 ### Phase 4 — `create_time_entry` simplification
 
-11. Strip same-day, future-cutoff, today-only checks from
-    `time_entry_handler.dart` (see *Existing-Tool Simplification*).
+11. Strip completed-session same-day and future-cutoff checks from
+    `time_entry_handler.dart` (see *Existing-Tool Simplification*). Keep
+    running-timer `same day as now` and `startTime <= clock.now()` guards.
 12. Update `create_time_entry`'s tool description and parameter
     descriptions in `agent_tool_registry.dart` to drop the now-stale
-    "today only" / "same day" / "not after wake timestamp" wording.
+    completed-session "same day" / "not after wake timestamp" wording,
+    while keeping the running-timer "today only" / "not in the future"
+    wording.
 13. Remove `_injectDispatchContext` from
     `change_set_confirmation_service.dart` and the
     `timeEntryReferenceTimestampArg` constant from
     `time_entry_datetime.dart`.
-14. Update / drop the affected tests:
-    `time_entry_handler_test.dart` (drop temporal-fail assertions, add
-    loose-rules positive cases), `time_entry_datetime_test.dart`
+14. Update `_buildActiveTimerSection` wording in
+    `task_agent_workflow.dart` so it no longer says distinct
+    `create_time_entry` sessions must be earlier today or prior-day only.
+15. Update / drop the affected tests:
+    `time_entry_handler_test.dart` (drop completed-session temporal-fail
+    assertions, keep / add running-timer wrong-day and future-start
+    failures, add loose completed-session positive cases),
+    `time_entry_datetime_test.dart`
     (drop constant assertion), `change_set_confirmation_service_test.dart`
     (drop injection assertion).
 
 ### Phase 5 — Prompt context
 
-15. Implement `_buildEditableTimeEntriesSection` and the supporting
-    query helper (`_listLinkedTimeEntries` on `AiInputRepository` if
+16. Implement `_buildEditableTimeEntriesSection` and the supporting
+    helper (`_listEditableTimeEntries` in `TaskAgentWorkflow` if
     extracted).
-16. Tests: empty list → no section; with entries → section formatted
+17. Tests: empty list → no section; with entries → section formatted
     correctly; running timer is excluded; cross-task-linked entries are
     excluded; cap of N is enforced and ordering is newest-first.
 
 ### Phase 6 — Review UI
 
-17. Build `TimeEntryUpdateTile` with the diff layout.
-18. Localization: ARB updates → `make l10n` → `make sort_arb_files`.
-19. Branch in `SuggestionRow`; widget tests.
+18. Build `TimeEntryUpdateTile` with the diff layout.
+19. Localization: ARB updates → `make l10n` → `make sort_arb_files`.
+20. Branch in `SuggestionRow`; widget tests.
 
 ### Phase 7 — End-to-end verification
 
-20. `make analyze` — must be zero warnings.
-21. `fvm dart format .`.
-22. Targeted suites green: `time_entry_handler_test`,
+21. `make analyze` — must be zero warnings.
+22. `fvm dart format .`.
+23. Targeted suites green: `time_entry_handler_test`,
     `time_entry_update_handler_test`, `suggestion_row_test`,
     `change_set_confirmation_service_test`, `task_agent_workflow_test`.
-23. Manual smoke tests:
+24. Manual smoke tests:
     - Dictate "the workshop yesterday actually ran 45 minutes longer
       and we covered token budgets too" into a task with a matching
       past entry; verify the agent proposes `update_time_entry`, the
@@ -632,10 +664,10 @@ not introducing a new freezed model.
       offsite" into a task; verify `create_time_entry` accepts the
       future date end-to-end (regression check on the simplified
       handler).
-24. CHANGELOG entry under the current `pubspec.yaml` version (not
+25. CHANGELOG entry under the current `pubspec.yaml` version (not
     `[Unreleased]`); matching `flatpak/com.matthiasn.lotti.metainfo.xml`
     update per project policy.
-25. Update relevant feature READMEs (the agents README under
+26. Update relevant feature READMEs (the agents README under
     `lib/features/agents/`, plus any time-tracking README that lists the
     agent toolset) to reflect the new tool and the
     `create_time_entry` simplification — architecture-first, with a
