@@ -1,10 +1,15 @@
 import 'dart:async';
 
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_activity_indicator.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -125,6 +130,44 @@ void main() {
       expect(navigated, [kSyncOutboxRoute]);
     });
 
+    testWidgets(
+      'tapping with no override switches the Settings tab and beams the '
+      'settings delegate to the sync sub-route — covers the production '
+      'NavService path in `_handleTap`',
+      (tester) async {
+        // Production path: no test override registered, so `_handleTap`
+        // resolves the real NavService via getIt. Register a mock that
+        // records the call sequence; we don't need a real beamer.
+        SyncActivityIndicatorTestHooks.navigatorOverride = null;
+
+        final mockNav = MockNavService();
+        final mockDelegate = _RecordingBeamerDelegate();
+        when(() => mockNav.settingsIndex).thenReturn(6);
+        when(() => mockNav.tapIndex(any())).thenReturn(null);
+        when(() => mockNav.settingsDelegate).thenReturn(mockDelegate);
+        when(
+          () => mockNav.persistNamedRoute(any()),
+        ).thenAnswer((_) async {});
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+        getIt.registerSingleton<NavService>(mockNav);
+        addTearDown(() {
+          if (getIt.isRegistered<NavService>()) {
+            getIt.unregister<NavService>();
+          }
+        });
+
+        await pumpIndicator(tester, outbox: 5);
+        await tester.tap(find.byType(SyncActivityIndicator));
+        await tester.pump();
+
+        verify(() => mockNav.tapIndex(6)).called(1);
+        verify(() => mockNav.persistNamedRoute(kSyncOutboxRoute)).called(1);
+        expect(mockDelegate.beamed, [kSyncOutboxRoute]);
+      },
+    );
+
     /// Returns every LED background colour in widget tree order
     /// (tx first, rx second). LEDs are the only `AnimatedContainer`s
     /// whose decoration uses `BoxShape.circle`, so we filter on that.
@@ -232,4 +275,33 @@ void main() {
       },
     );
   });
+}
+
+/// Captures `beamToNamed` calls without spinning up a real Beamer
+/// router. Used to verify the production `_handleTap` path forwards
+/// the sync outbox route to the Settings delegate.
+class _RecordingBeamerDelegate extends BeamerDelegate {
+  _RecordingBeamerDelegate()
+    : super(
+        locationBuilder: RoutesLocationBuilder(
+          routes: {'*': (_, _, _) => const SizedBox.shrink()},
+        ).call,
+      );
+
+  final List<String> beamed = <String>[];
+
+  @override
+  void beamToNamed(
+    String uri, {
+    Object? data,
+    Object? routeState,
+    bool beamBackOnPop = false,
+    bool popBeamLocationOnPop = false,
+    bool stacked = true,
+    bool replaceRouteInformation = false,
+    TransitionDelegate<dynamic>? transitionDelegate,
+    String? popToNamed,
+  }) {
+    beamed.add(uri);
+  }
 }

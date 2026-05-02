@@ -10,6 +10,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -497,37 +498,133 @@ void main() {
     test(
       'forwards a live depthChanges signal that arrives after the '
       'snapshot — covers the steady-state `relay.add` path once the '
-      'generator has switched into draining mode',
+      'consumer is listening',
       () async {
-        const roomId = '!room:example.org';
-        final stream = inboundQueueDepthStream(queue);
-        // expectLater + emitsThrough waits for the matched value
-        // without polling — synchronises on the actual event we care
-        // about (a depth change of `1`) and times out cleanly on
-        // regression rather than hanging the test runner.
-        final matched = expectLater(stream, emitsThrough(1));
-
-        // Trigger a live depth signal by inserting an active row and
-        // letting the queue emit through `_scheduleDepthEmit`.
+        const roomA = '!a:example.org';
+        const roomB = '!b:example.org';
+        // Insert one row in roomA so the snapshot reports total: 1.
         await db
             .into(db.inboundEventQueue)
             .insert(
               InboundEventQueueCompanion.insert(
-                eventId: r'$live',
-                roomId: roomId,
-                originTs: 2000,
+                eventId: r'$seed',
+                roomId: roomA,
+                originTs: 1000,
                 producer: InboundEventProducer.live.name,
                 rawJson: jsonEncode(<String, dynamic>{}),
                 enqueuedAt: clock.now().millisecondsSinceEpoch,
                 status: const Value('enqueued'),
               ),
             );
-        // The queue's internal `_emitDepth` runs on a microtask boundary.
-        // Nudge it so `expectLater` resolves without a wall-clock wait.
+
+        // `emitsInOrder` waits for the snapshot (1) and then a live
+        // depth signal of (0). The live signal fires when we prune the
+        // stranded row in roomA — `pruneStrandedEntries(roomB)` flips
+        // every active row that doesn't belong to roomB to abandoned
+        // and calls `_scheduleDepthEmit`, exercising the
+        // `relay.hasListener → relay.add(value)` branch.
+        final stream = inboundQueueDepthStream(queue);
+        final matched = expectLater(stream, emitsInOrder(<int>[1, 0]));
+
+        // Yield once so the generator has time to subscribe AND run
+        // its initial `stats()` fetch before we trigger the live emit.
         await Future<void>.value();
+        await Future<void>.value();
+        await queue.pruneStrandedEntries(roomB);
 
         await matched.timeout(const Duration(seconds: 2));
       },
     );
+
+    test(
+      'replays buffered live signals in arrival order when they beat the '
+      '`stats()` snapshot — covers the `else` branch of the '
+      'buffered/snapshot decision in `inboundQueueDepthStream`',
+      () async {
+        // Insert two rows so a future prune emits a depth-of-zero
+        // signal that lands during the generator's `stats()` await.
+        const roomA = '!a:example.org';
+        const roomB = '!b:example.org';
+        for (var i = 0; i < 2; i++) {
+          await db
+              .into(db.inboundEventQueue)
+              .insert(
+                InboundEventQueueCompanion.insert(
+                  eventId: '\$row-$i',
+                  roomId: roomA,
+                  originTs: 1000 + i,
+                  producer: InboundEventProducer.live.name,
+                  rawJson: jsonEncode(<String, dynamic>{}),
+                  enqueuedAt: clock.now().millisecondsSinceEpoch,
+                  status: const Value('enqueued'),
+                ),
+              );
+        }
+
+        // Subscribe to the stream and IMMEDIATELY trigger a depth emit
+        // before the generator's `stats()` await resolves. The signal
+        // lands while the consumer hasn't started listening to the
+        // relay yet (`relay.hasListener == false`), so the value is
+        // captured into the `buffered` list. Once `stats()` settles,
+        // the snapshot branch is skipped (`buffered.isEmpty == false`)
+        // and the buffered values are replayed instead.
+        final received = <int>[];
+        final completer = Completer<void>();
+        final sub = inboundQueueDepthStream(queue).listen((value) {
+          received.add(value);
+          if (received.contains(0) && !completer.isCompleted) {
+            completer.complete();
+          }
+        });
+
+        // Fire the live signal synchronously (no `await` between the
+        // listen() call and the prune) so it races the generator's
+        // `stats()` await.
+        unawaited(queue.pruneStrandedEntries(roomB));
+
+        await completer.future.timeout(const Duration(seconds: 2));
+        await sub.cancel();
+        // The replay path emitted `0` (the post-prune depth). A
+        // regression that emitted `2` (the stale snapshot) before
+        // `0` would still pass `received.contains(0)`, so we also
+        // assert there is no stale `2` ahead of the `0`.
+        expect(received, contains(0));
+        final indexOfZero = received.indexOf(0);
+        expect(received.sublist(0, indexOfZero), isNot(contains(2)));
+      },
+    );
+
+    test(
+      'inboundQueueDepthProvider resolves the queue via MatrixService and '
+      'streams the seeded depth — covers the provider entry point',
+      () async {
+        final mockMatrix = MockMatrixService();
+        final mockCoordinator = _MockQueueCoordinator();
+        when(() => mockMatrix.queueCoordinator).thenReturn(mockCoordinator);
+        when(() => mockCoordinator.queue).thenReturn(queue);
+
+        final container = ProviderContainer(
+          overrides: [matrixServiceProvider.overrideWithValue(mockMatrix)],
+        );
+        addTearDown(container.dispose);
+
+        final completer = Completer<int>();
+        container.listen<AsyncValue<int>>(inboundQueueDepthProvider, (
+          _,
+          next,
+        ) {
+          if (next is AsyncData<int> && !completer.isCompleted) {
+            completer.complete(next.value);
+          }
+        }, fireImmediately: true);
+
+        final value = await completer.future.timeout(
+          const Duration(seconds: 2),
+        );
+        expect(value, 0);
+      },
+    );
   });
 }
+
+class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}

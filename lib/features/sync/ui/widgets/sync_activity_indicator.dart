@@ -11,11 +11,10 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/ui/app_fonts.dart';
 
 /// Test hook used by widget tests to invoke the indicator's tap action
-/// without depending on the live router.
+/// without depending on the live router. Has no instances — its only
+/// purpose is to namespace the static [navigatorOverride] hook.
 @visibleForTesting
-class SyncActivityIndicatorTestHooks {
-  const SyncActivityIndicatorTestHooks._();
-
+abstract final class SyncActivityIndicatorTestHooks {
   /// Override the navigation callback the indicator triggers on tap.
   /// Setting to `null` restores the default `beamToNamed` behaviour.
   static void Function(String path)? navigatorOverride;
