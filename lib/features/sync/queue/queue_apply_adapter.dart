@@ -309,8 +309,15 @@ class QueueApplyAdapter {
   /// `true` so we keep the old behaviour until explicitly opted out.
   static bool _writesJournalDb(SyncMessage message) {
     return message.map(
-      // Journal upsert — JournalDb.
-      journalEntity: (_) => true,
+      // SyncJournalEntity owns its own narrow tx inside
+      // `_persistJournalEntity`; the outer wrap used to also encompass
+      // cross-DB awaits (sync-sequence log write, queued reads through
+      // the entity-by-id coalescer), which held the journal writer
+      // lock for hundreds of ms while readers piled up. Bypassing the
+      // outer wrap lets those non-journal awaits run without blocking
+      // readers; the narrow inner tx still keeps the journal upsert +
+      // embedded entry-link writes in one atomic step.
+      journalEntity: (_) => false,
       // linked_entries upsert — JournalDb.
       entryLink: (_) => true,
       // category/habit/dashboard/measurable/label _definitions —

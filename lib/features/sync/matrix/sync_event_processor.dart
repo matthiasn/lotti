@@ -1226,6 +1226,17 @@ class SyncEventProcessor {
     required JournalDb journalDb,
   }) async {
     final entryLinks = syncMessage.entryLinks;
+
+    // (1) PRE-READ — runs *outside* any journal transaction.
+    //
+    // `applyObserver` only consumes this for diagnostics, and the read
+    // is served by the entity-by-id coalescer which can join an
+    // in-flight wave. Holding the journal writer lock while waiting on
+    // a queued read was one of the worst contention sources in the
+    // super-slow log; the wrap had been added unconditionally by the
+    // queue adapter, so this read was effectively serialized behind
+    // every prior concurrent reader. Now this happens before we open
+    // the inner write transaction.
     var predictedStatus = VclockStatus.b_gt_a;
     if (applyObserver != null) {
       try {
@@ -1248,19 +1259,44 @@ class SyncEventProcessor {
       }
     }
 
+    // (2) WRITE — narrow journal transaction wrapping ONLY the writes
+    //     that need to succeed-or-fail together. The queue adapter no
+    //     longer wraps `SyncJournalEntity` from the outside (see
+    //     `_writesJournalDb` in queue_apply_adapter.dart), so this is
+    //     the *only* journal writer-lock acquisition for this apply.
+    //     Cross-DB awaits (sync-sequence log) and the second
+    //     entry-exists read both run *after* this commits, freeing the
+    //     writer lock for unrelated readers.
     final vcB = journalEntity.meta.vectorClock;
-    final updateResult = await journalDb.updateJournalEntity(journalEntity);
+    final JournalUpdateResult updateResult;
+    final int processedLinksCount;
+    try {
+      final tx = await journalDb.transaction(() async {
+        final result = await journalDb.updateJournalEntity(journalEntity);
+        // Process embedded entry links regardless of journal entity
+        // application status. EntryLinks have their own vector clock
+        // for conflict resolution via upsertEntryLink(). This ensures
+        // links are established even when the entity itself is skipped
+        // (e.g., local version is newer), preventing gray calendar
+        // entries that rely on links for category color lookup.
+        final processed = await _processEmbeddedEntryLinks(
+          entryLinks: entryLinks,
+          journalDb: journalDb,
+        );
+        return (result, processed);
+      });
+      updateResult = tx.$1;
+      processedLinksCount = tx.$2;
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'apply.persistJournalEntity',
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
     final rows = updateResult.rowsWritten ?? 0;
-
-    // Process embedded entry links regardless of journal entity application
-    // status. EntryLinks have their own vector clock for conflict resolution
-    // via upsertEntryLink(). This ensures links are established even when the
-    // entity itself is skipped (e.g., local version is newer), preventing
-    // gray calendar entries that rely on links for category color lookup.
-    final processedLinksCount = await _processEmbeddedEntryLinks(
-      entryLinks: entryLinks,
-      journalDb: journalDb,
-    );
 
     final diag = SyncApplyDiagnostics(
       eventId: event.eventId,
@@ -1287,7 +1323,12 @@ class SyncEventProcessor {
       fromSync: true,
     );
 
-    // Record in sequence log for gap detection (self-healing sync)
+    // (3) POST — sequence-log gap detection. Writes to *sync_db* (a
+    //     separate SQLite database), so it cannot be atomic with the
+    //     journal write in the first place; pulling it out of the
+    //     journal transaction loses no consistency we ever had. Gap
+    //     detection re-runs on next launch, so a crash between (2)
+    //     and (3) is recoverable.
     if (_sequenceLogService != null &&
         syncMessage.vectorClock != null &&
         syncMessage.originatingHostId != null) {
