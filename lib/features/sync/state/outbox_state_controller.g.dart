@@ -339,4 +339,4 @@ final class InboundQueueDepthProvider
   }
 }
 
-String _$inboundQueueDepthHash() => r'c7efe154cf8deca99752a30387edaee2fbc97a34';
+String _$inboundQueueDepthHash() => r'6fba40d4284e5aabc28e5752f2bff2d5b3be3955';

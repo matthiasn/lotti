@@ -414,15 +414,18 @@ TextStyle monoTabularStyle({
   );
 }
 
-/// OpenType features applied to every count-style badge so digit shapes
-/// stay visually steady across renders:
+/// OpenType features applied to every count-style numeric surface
+/// (badges, sidebar sync activity strip, etc.) so digit shapes stay
+/// visually steady across renders:
 ///
 /// - `tnum` / [FontFeature.tabularFigures] — every digit advances by the
 ///   same width; counts ticking from `9` → `10` → `99` no longer twitch.
 /// - `cv02` / `cv03` / `cv04` — Inter's open-digit character variants
 ///   (open four, open six, open nine). The default Inter forms have
 ///   closed counters that read as smudges at small badge sizes; the open
-///   variants stay legible at 11–12 px.
+///   variants stay legible at 11–12 px. Fonts that don't define these
+///   variants (e.g. Inconsolata on the sync activity strip) silently
+///   ignore them, so the constant is safe to share.
 /// - `zero` / [FontFeature.slashedZero] — slashed zero so it cannot be
 ///   confused with `O` or `8` on dense badges.
 const numericBadgeFontFeatures = <FontFeature>[

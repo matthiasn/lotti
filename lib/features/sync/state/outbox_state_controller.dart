@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'outbox_state_controller.g.dart';
@@ -98,10 +99,11 @@ Stream<DateTime> syncActivityRxPulses(Ref ref) =>
 @riverpod
 Stream<int> inboundQueueDepth(Ref ref) {
   final matrixService = ref.watch(matrixServiceProvider);
-  return _inboundQueueDepthStream(matrixService.queueCoordinator.queue);
+  return inboundQueueDepthStream(matrixService.queueCoordinator.queue);
 }
 
-Stream<int> _inboundQueueDepthStream(InboundQueue queue) async* {
+@visibleForTesting
+Stream<int> inboundQueueDepthStream(InboundQueue queue) async* {
   // Subscribe BEFORE awaiting `stats()` so any depth signal that fires
   // while we're computing the initial snapshot is queued in `relay`
   // rather than dropped — `depthChanges` is a broadcast stream with no

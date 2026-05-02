@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/ui/app_fonts.dart';
 
 /// Test hook used by widget tests to invoke the indicator's tap action
@@ -31,16 +33,22 @@ const Duration kSyncActivityLedHold = Duration(milliseconds: 140);
 /// LED active background colors. Sourced directly from the design
 /// handoff in `docs/design/README.md` (variant D4a) — the spec calls
 /// these out as intentionally outside the normal `--fg-*` ramp because
-/// the indicator must read quieter than disabled text.
+/// the indicator must read quieter than disabled text. The TX amber
+/// has no design-system equivalent (the closest token, `warning`, is
+/// far more saturated) so it stays as a literal pending a token
+/// decision; RX is `interactive.enabled` and the focus ring follows
+/// it (resolved from the active theme at build time).
 const Color kSyncActivityTxColor = Color(0xFFC99A4E); // muted amber
-const Color kSyncActivityRxColor = Color(0xFF5ED4B7); // Lotti teal-light
 
+/// Pure-white-with-alpha values for the muted "ambient awareness, not
+/// notification" feel. The handoff calls for these to stay quieter
+/// than the softest design-system text token (64% white), so they are
+/// intentionally below the existing token ramp.
 const Color _ledIdle = Color(0x1AFFFFFF); // 10% white
 const Color _labelColor = Color(0x4DFFFFFF); // 30% white
 const Color _valueActive = Color(0x8CFFFFFF); // 55% white
 const Color _valueIdle = Color(0x52FFFFFF); // 32% white
 const Color _hoverWash = Color(0x0AFFFFFF); // 4% white
-const Color _focusRing = Color(0xFF5ED4B7); // matches Lotti teal-light
 
 /// Ambient sidebar indicator showing live Matrix sync traffic. Two
 /// stacked monospace rows (`tx <count>` / `rx <count>`) each with a
@@ -132,6 +140,11 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
       inbox,
     );
 
+    // RX dot and focus ring follow the active theme's interactive
+    // accent (`#5ED4B7` in dark mode), so they read consistently with
+    // every other primary affordance in the sidebar.
+    final rxColor = context.designTokens.colors.interactive.enabled;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Semantics(
@@ -172,7 +185,7 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                     // stable so neighbouring rows don't jump on
                     // focus-in / focus-out.
                     border: Border.all(
-                      color: focused ? _focusRing : Colors.transparent,
+                      color: focused ? rxColor : Colors.transparent,
                       width: 2,
                     ),
                   ),
@@ -190,7 +203,7 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                       _SyncActivityRow(
                         label: 'rx',
                         on: _rxOn,
-                        color: kSyncActivityRxColor,
+                        color: rxColor,
                         value: inbox,
                       ),
                     ],
@@ -227,7 +240,7 @@ class _SyncActivityRow extends StatelessWidget {
           color: value > 0 ? _valueActive : _valueIdle,
           letterSpacing: 0.3,
         ).copyWith(
-          fontFeatures: const [FontFeature.tabularFigures()],
+          fontFeatures: numericBadgeFontFeatures,
           height: 1.4,
         );
     final labelStyle = AppFonts.inconsolata(

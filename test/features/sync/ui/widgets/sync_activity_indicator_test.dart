@@ -162,9 +162,15 @@ void main() {
       await tester.pump();
 
       final colors = ledColors(tester);
-      // First LED is TX, second is RX (column order).
+      // First LED is TX, second is RX (column order). The RX color is
+      // resolved from `tokens.colors.interactive.enabled` at build
+      // time — assert against "active" rather than against an
+      // imported literal so a token tweak doesn't silently fail this
+      // assertion.
       expect(colors[0], isNot(equals(kSyncActivityTxColor)));
-      expect(colors[1], equals(kSyncActivityRxColor));
+      expect(colors[1], isNotNull);
+      expect(colors[1], isNot(equals(const Color(0x1AFFFFFF))));
+      expect(colors[1], isNot(equals(kSyncActivityTxColor)));
 
       await tester.pump(
         kSyncActivityLedHold + const Duration(milliseconds: 5),
@@ -193,5 +199,28 @@ void main() {
         kSyncActivityLedHold + const Duration(milliseconds: 5),
       );
     });
+
+    testWidgets(
+      'idle background is transparent — sanity check that the hover wash '
+      'is opt-in (the `_hovered = true` path is exercised in manual smoke '
+      'tests; FocusableActionDetector hover hooks do not fire reliably '
+      'under flutter_test pointer simulation, so we do not assert on the '
+      'hovered state here)',
+      (tester) async {
+        await pumpIndicator(tester, outbox: 1);
+
+        final container = tester
+            .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+            .firstWhere(
+              (c) =>
+                  c.padding ==
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            );
+        expect(
+          (container.decoration! as BoxDecoration).color,
+          Colors.transparent,
+        );
+      },
+    );
   });
 }

@@ -94,6 +94,11 @@ void main() {
             description: 'Bundle text-only outbox messages',
             status: false,
           ),
+          const ConfigFlag(
+            name: showSyncActivityIndicatorFlag,
+            description: 'Show live sync activity in the sidebar.',
+            status: false,
+          ),
         },
       ]),
     );
@@ -124,8 +129,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 10 flags in the mock data (8 originals + whats-new + outbox-bundling).
-      expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+      // 11 flags in the mock data (8 originals + whats-new +
+      // outbox-bundling + sync-activity-indicator).
+      expect(find.byType(DesignSystemListItem), findsNWidgets(11));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -134,7 +140,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsIcon), findsNWidgets(10));
+      expect(find.byType(SettingsIcon), findsNWidgets(11));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -365,6 +371,72 @@ void main() {
     });
   });
 
+  group('FlagsPage — sync activity indicator flag', () {
+    testWidgets(
+      'renders the sync activity indicator flag with its localized '
+      'title, description, and the network-check icon — covers the per-flag '
+      'arms in _iconForFlag/_titleForFlag/_subtitleForFlag',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(FlagsPage));
+        final indicatorItem = find.widgetWithText(
+          DesignSystemListItem,
+          context.messages.configFlagShowSyncActivityIndicator,
+        );
+        await tester.ensureVisible(indicatorItem);
+        await tester.pumpAndSettle();
+        expect(indicatorItem, findsOneWidget);
+        expect(
+          find.text(
+            context.messages.configFlagShowSyncActivityIndicatorDescription,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: indicatorItem,
+            matching: find.byIcon(Icons.network_check_rounded),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'toggling persists the sync activity indicator flag via '
+      'PersistenceLogic',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(FlagsPage));
+        final indicatorItem = find.widgetWithText(
+          DesignSystemListItem,
+          context.messages.configFlagShowSyncActivityIndicator,
+        );
+        await tester.ensureVisible(indicatorItem);
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(of: indicatorItem, matching: find.byType(Switch)),
+        );
+        await tester.pump();
+
+        const expected = ConfigFlag(
+          name: showSyncActivityIndicatorFlag,
+          description: 'Show live sync activity in the sidebar.',
+          status: true,
+        );
+        verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
+      },
+    );
+  });
+
   group('FlagsPage — search bar', () {
     testWidgets('renders a single DesignSystemSearch above the list', (
       tester,
@@ -474,7 +546,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
       },
     );
 
@@ -495,7 +567,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pumpAndSettle();
-        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
       },
     );
 
@@ -512,7 +584,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
       },
     );
   });

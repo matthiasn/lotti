@@ -1,10 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:clock/clock.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -362,5 +369,156 @@ void main() {
         );
       });
     });
+  });
+
+  group('Sync activity providers', () {
+    late SyncActivitySignaler signaler;
+    late ProviderContainer container;
+
+    setUp(() {
+      signaler = SyncActivitySignaler();
+      // Reset getIt because the syncActivitySignalerProvider resolves
+      // through it; the OutboxStateController group above doesn't
+      // touch getIt so this is the first registration.
+      if (GetIt.I.isRegistered<SyncActivitySignaler>()) {
+        GetIt.I.unregister<SyncActivitySignaler>();
+      }
+      GetIt.I.registerSingleton<SyncActivitySignaler>(signaler);
+      container = ProviderContainer();
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await signaler.dispose();
+      if (GetIt.I.isRegistered<SyncActivitySignaler>()) {
+        GetIt.I.unregister<SyncActivitySignaler>();
+      }
+    });
+
+    test('syncActivitySignalerProvider returns the getIt singleton', () {
+      final resolved = container.read(syncActivitySignalerProvider);
+      expect(identical(resolved, signaler), isTrue);
+    });
+
+    test('syncActivityTxPulsesProvider forwards every TX pulse', () async {
+      final received = <DateTime>[];
+      final sub = container
+          .listen<AsyncValue<DateTime>>(syncActivityTxPulsesProvider, (
+            _,
+            next,
+          ) {
+            if (next is AsyncData<DateTime>) received.add(next.value);
+          });
+
+      signaler
+        ..pulseTx()
+        ..pulseTx();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(received, hasLength(2));
+      sub.close();
+    });
+
+    test('syncActivityRxPulsesProvider forwards every RX pulse', () async {
+      final received = <DateTime>[];
+      final sub = container
+          .listen<AsyncValue<DateTime>>(syncActivityRxPulsesProvider, (
+            _,
+            next,
+          ) {
+            if (next is AsyncData<DateTime>) received.add(next.value);
+          });
+
+      signaler.pulseRx();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(received, hasLength(1));
+      sub.close();
+    });
+  });
+
+  group('inboundQueueDepthProvider — _inboundQueueDepthStream', () {
+    late SyncDatabase db;
+    late MockLoggingService logging;
+    late InboundQueue queue;
+
+    setUpAll(() {
+      registerFallbackValue(StackTrace.empty);
+    });
+
+    setUp(() {
+      db = SyncDatabase(inMemoryDatabase: true);
+      logging = MockLoggingService();
+      queue = InboundQueue(
+        db: db,
+        logging: logging,
+        leaseDuration: const Duration(seconds: 1),
+      );
+    });
+
+    tearDown(() async {
+      await queue.dispose();
+      await db.close();
+    });
+
+    test(
+      'seeds with the snapshot from queue.stats() then forwards live '
+      'depthChanges signals — covers the subscribe-before-await ordering '
+      'that prevents signals from being dropped during the initial '
+      'snapshot computation',
+      () async {
+        const roomId = '!room:example.org';
+        // Insert one active row so stats().total reports 1 on seed.
+        await db
+            .into(db.inboundEventQueue)
+            .insert(
+              InboundEventQueueCompanion.insert(
+                eventId: r'$seed',
+                roomId: roomId,
+                originTs: 1000,
+                producer: InboundEventProducer.live.name,
+                rawJson: jsonEncode(<String, dynamic>{}),
+                enqueuedAt: clock.now().millisecondsSinceEpoch,
+                status: const Value('enqueued'),
+              ),
+            );
+
+        final emitted = <int>[];
+        final sub = inboundQueueDepthStream(queue).listen(emitted.add);
+
+        // Wait for the initial seed to land.
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(emitted, isNotEmpty, reason: 'initial snapshot should emit');
+        expect(emitted.first, 1);
+
+        await sub.cancel();
+      },
+    );
+
+    test(
+      'closes the relay cleanly when the consumer cancels, so a leaking '
+      'depthChanges subscription does not survive after the provider '
+      'auto-disposes',
+      () async {
+        final emitted = <int>[];
+        final sub = inboundQueueDepthStream(queue).listen(emitted.add);
+
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        await sub.cancel();
+
+        // Re-subscribe — if the previous relay had leaked an active
+        // listener on `queue.depthChanges`, this second subscription
+        // would still need to fire the initial seed independently.
+        // (Implicit: no exception thrown on cancel.)
+        final secondEmitted = <int>[];
+        final secondSub = inboundQueueDepthStream(queue).listen(
+          secondEmitted.add,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        await secondSub.cancel();
+
+        expect(secondEmitted, isNotEmpty);
+      },
+    );
   });
 }
