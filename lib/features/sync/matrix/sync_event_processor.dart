@@ -996,9 +996,8 @@ class SyncEventProcessor {
   };
 
   /// Dispatches the prepare phase per sync message family. Only
-  /// [SyncJournalEntity], [SyncAgentEntity], [SyncAgentLink], and
-  /// [SyncAgentBundle] need I/O (attachment resolution); every other family is
-  /// a passthrough.
+  /// [SyncJournalEntity], [SyncAgentEntity], and [SyncAgentLink] need I/O
+  /// (attachment resolution); every other family is a passthrough.
   Future<PreparedSyncEvent> _prepareForMessage({
     required Event event,
     required SyncMessage syncMessage,
@@ -1043,12 +1042,19 @@ class SyncEventProcessor {
           resolvedAgentLink: resolved,
         );
       case final SyncAgentBundle msg:
-        final resolved = await _resolveAgentBundle(msg);
-        return PreparedSyncEvent._(
-          event: event,
-          syncMessage: msg,
-          resolvedAgentBundle: resolved,
+        // Legacy wire variant — agent wake-cycle bundling has been
+        // removed. The variant is retained on the wire so messages from
+        // peers that still ship it parse without error, but we no longer
+        // resolve or apply them: the bundle's children are recorded
+        // individually in the sender's sequence log, so backfill picks
+        // them up via the per-entity / per-link path. Logging at info so
+        // a sudden reappearance in production surfaces.
+        _trace(
+          'legacyAgentBundle.skip eventId=${event.eventId} '
+          'agentId=${msg.agentId} wakeRunKey=${msg.wakeRunKey}',
+          subDomain: 'processor.resolve.legacyAgentBundle',
         );
+        return PreparedSyncEvent._(event: event, syncMessage: msg);
       case final SyncOutboxBundle msg:
         final resolved = await _outboxBundleUnpacker.prepare(
           event: event,
@@ -1589,76 +1595,6 @@ class SyncEventProcessor {
         typeName: 'agentLink',
       );
 
-  Future<PreparedAgentSyncBundle?> _resolveAgentBundle(
-    SyncAgentBundle msg,
-  ) async {
-    var bundle = msg;
-    if (bundle.entities.isEmpty && bundle.links.isEmpty) {
-      final resolved = await _resolveAgentPayload<SyncAgentBundle>(
-        inline: null,
-        jsonPath: msg.jsonPath,
-        fromJson: (json) {
-          final decoded = SyncMessage.fromJson(json);
-          if (decoded is SyncAgentBundle) return decoded;
-          throw const FormatException('agentBundle payload expected');
-        },
-        typeName: 'agentBundle',
-      );
-      if (resolved == null) return null;
-      bundle = resolved.copyWith(
-        originatingHostId: resolved.originatingHostId ?? msg.originatingHostId,
-        jsonPath: resolved.jsonPath ?? msg.jsonPath,
-      );
-    }
-
-    final origin = bundle.originatingHostId ?? msg.originatingHostId;
-    final entities = <PreparedAgentEntitySync>[];
-    for (final child in bundle.entities) {
-      final normalized = child.originatingHostId == null && origin != null
-          ? child.copyWith(originatingHostId: origin)
-          : child;
-      final resolvedEntity = await _resolveAgentEntity(normalized);
-      if (resolvedEntity == null) {
-        _trace(
-          'agentBundle.entity.skipped id=${normalized.agentEntity?.id} '
-          'jsonPath=${normalized.jsonPath}',
-          subDomain: 'processor.resolve.bundle',
-        );
-        continue;
-      }
-      entities.add(
-        PreparedAgentEntitySync(
-          message: normalized,
-          entity: resolvedEntity,
-        ),
-      );
-    }
-
-    final links = <PreparedAgentLinkSync>[];
-    for (final child in bundle.links) {
-      final normalized = child.originatingHostId == null && origin != null
-          ? child.copyWith(originatingHostId: origin)
-          : child;
-      final resolvedLink = await _resolveAgentLink(normalized);
-      if (resolvedLink == null) {
-        _trace(
-          'agentBundle.link.skipped id=${normalized.agentLink?.id} '
-          'jsonPath=${normalized.jsonPath}',
-          subDomain: 'processor.resolve.bundle',
-        );
-        continue;
-      }
-      links.add(
-        PreparedAgentLinkSync(
-          message: normalized,
-          link: resolvedLink,
-        ),
-      );
-    }
-
-    return PreparedAgentSyncBundle(entities: entities, links: links);
-  }
-
   /// Resolves a [SyncOutboxBundle]'s manifest payload, materializes each
   /// child's `JournalEntity` JSON to the cache on disk, and returns the
   /// reconstructed bundle for the unpacker to walk through prepareChild.
@@ -1671,8 +1607,7 @@ class SyncEventProcessor {
   /// `SyncEntityDefinition`, `SyncThemingSelection`, `SyncBackfillRequest`,
   /// `SyncBackfillResponse`) ship their data inside the freezed envelope
   /// and need no separate `payload` field. Agent envelopes
-  /// (`SyncAgentEntity`, `SyncAgentLink`, `SyncAgentBundle`) likewise carry
-  /// their data inline.
+  /// (`SyncAgentEntity`, `SyncAgentLink`) likewise carry their data inline.
   ///
   /// Vector-clock dominance is checked against the database in **one** bulk
   /// query (no N+1) before any disk write: when the local copy already
@@ -2166,9 +2101,9 @@ class SyncEventProcessor {
     // before the message was sent, so apply has nothing to do for any
     // family. Returning null commits the queue row cleanly (marker
     // advances, no skip count, no retry) and — critically — avoids
-    // dereferencing the unpopulated `journalEntity` / `resolvedAgentBundle`
-    // / `resolvedOutboxBundle` slots that would otherwise null-bang in the
-    // per-family branches below.
+    // dereferencing the unpopulated `journalEntity` / `resolvedOutboxBundle`
+    // slots that would otherwise null-bang in the per-family branches
+    // below.
     if (prepared.isSelfEcho) {
       _trace(
         'apply selfEcho.skip type=${syncMessage.runtimeType} '
@@ -2336,20 +2271,9 @@ class SyncEventProcessor {
         );
         return null;
       case SyncAgentBundle():
-        final bundle = prepared.resolvedAgentBundle;
-        if (bundle == null) return null;
-        for (final item in bundle.entities) {
-          await _applyAgentEntityMessage(
-            msg: item.message,
-            resolvedEntity: item.entity,
-          );
-        }
-        for (final item in bundle.links) {
-          await _applyAgentLinkMessage(
-            msg: item.message,
-            resolvedLink: item.link,
-          );
-        }
+        // Legacy wire variant — already logged + skipped in prepare. Apply
+        // is a no-op so the inbound queue marker advances; missing
+        // children resurface via the per-(host, counter) backfill path.
         return null;
       case SyncOutboxBundle():
         final bundle = prepared.resolvedOutboxBundle;
@@ -2413,7 +2337,6 @@ class PreparedSyncEvent {
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
-    this.resolvedAgentBundle,
     this.resolvedOutboxBundle,
   });
 
@@ -2426,7 +2349,6 @@ class PreparedSyncEvent {
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
-    this.resolvedAgentBundle,
     this.resolvedOutboxBundle,
   });
 
@@ -2449,7 +2371,7 @@ class PreparedSyncEvent {
   /// any message family. The flag is the explicit contract that the
   /// per-family apply branches in [SyncEventProcessor._applyMessage] check
   /// before they expect their resolved-payload slots to be populated. None
-  /// of the other slots (`journalEntity`, `resolvedAgentBundle`, …) are
+  /// of the other slots (`journalEntity`, `resolvedOutboxBundle`, …) are
   /// populated when this is true, so per-family apply must short-circuit
   /// rather than dereference them.
   final bool isSelfEcho;
@@ -2469,45 +2391,11 @@ class PreparedSyncEvent {
   /// semantics as [resolvedAgentEntity].
   final AgentLink? resolvedAgentLink;
 
-  /// Resolved wake bundle when [syncMessage] is a [SyncAgentBundle]. Null
-  /// means the bundle payload could not be resolved and apply will skip it.
-  final PreparedAgentSyncBundle? resolvedAgentBundle;
-
   /// Resolved dequeue-time outbox bundle when [syncMessage] is a
   /// [SyncOutboxBundle]. Each child carries its own [PreparedSyncEvent] so
   /// apply can recurse through the existing per-type pipeline. Null means
   /// the bundle payload could not be resolved and apply will skip it.
   final PreparedOutboxSyncBundle? resolvedOutboxBundle;
-}
-
-class PreparedAgentSyncBundle {
-  PreparedAgentSyncBundle({
-    required this.entities,
-    required this.links,
-  });
-
-  final List<PreparedAgentEntitySync> entities;
-  final List<PreparedAgentLinkSync> links;
-}
-
-class PreparedAgentEntitySync {
-  PreparedAgentEntitySync({
-    required this.message,
-    required this.entity,
-  });
-
-  final SyncAgentEntity message;
-  final AgentDomainEntity entity;
-}
-
-class PreparedAgentLinkSync {
-  PreparedAgentLinkSync({
-    required this.message,
-    required this.link,
-  });
-
-  final SyncAgentLink message;
-  final AgentLink link;
 }
 
 /// One parsed entry from a [SyncOutboxBundle]'s manifest: the deserialized

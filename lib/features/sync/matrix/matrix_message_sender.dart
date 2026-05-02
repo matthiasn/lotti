@@ -88,25 +88,6 @@ class MatrixMessageSender {
       return message.copyWith(originatingHostId: host);
     }
 
-    if (message is SyncAgentBundle) {
-      final origin = message.originatingHostId ?? host;
-      return message.copyWith(
-        originatingHostId: origin,
-        entities: [
-          for (final child in message.entities)
-            child.originatingHostId == null
-                ? child.copyWith(originatingHostId: origin)
-                : child,
-        ],
-        links: [
-          for (final child in message.links)
-            child.originatingHostId == null
-                ? child.copyWith(originatingHostId: origin)
-                : child,
-        ],
-      );
-    }
-
     if (message is SyncOutboxBundle && message.originatingHostId == null) {
       // Stamp the dequeue-time outbox bundle so receivers can identify
       // self-echoes by host id and skip the manifest download/decode
@@ -586,9 +567,9 @@ class MatrixMessageSender {
   /// `SyncAiConfigDelete`, `SyncEntityDefinition`, `SyncThemingSelection`,
   /// `SyncBackfillRequest`, `SyncBackfillResponse`) need no separate payload —
   /// the freezed envelope already carries everything. Agent envelopes
-  /// (`SyncAgentEntity`, `SyncAgentLink`, `SyncAgentBundle`) keep their
-  /// inline data fields populated by upstream writers, so they ride along in
-  /// the envelope unchanged.
+  /// (`SyncAgentEntity`, `SyncAgentLink`) keep their inline data fields
+  /// populated by upstream writers, so they ride along in the envelope
+  /// unchanged.
   Future<SyncOutboxBundle?> _sendOutboxBundlePayload({
     required Room room,
     required SyncOutboxBundle message,
@@ -906,25 +887,6 @@ class MatrixMessageSender {
       return child.copyWith(originatingHostId: host);
     }
 
-    if (child is SyncAgentBundle && host != null) {
-      final origin = child.originatingHostId ?? host;
-      return child.copyWith(
-        originatingHostId: origin,
-        entities: [
-          for (final c in child.entities)
-            c.originatingHostId == null
-                ? c.copyWith(originatingHostId: origin)
-                : c,
-        ],
-        links: [
-          for (final c in child.links)
-            c.originatingHostId == null
-                ? c.copyWith(originatingHostId: origin)
-                : c,
-        ],
-      );
-    }
-
     return child;
   }
 
@@ -962,13 +924,6 @@ class MatrixMessageSender {
         jsonPath = msg.jsonPath;
         pathBuilder = relativeAgentLinkPath;
         logLabel = 'agentLink';
-      case final SyncAgentBundle msg:
-        inlineJson = msg.entities.isNotEmpty || msg.links.isNotEmpty
-            ? json.encode(msg.copyWith(jsonPath: null).toJson())
-            : null;
-        jsonPath = msg.jsonPath;
-        pathBuilder = relativeAgentBundlePath;
-        logLabel = 'agentBundle';
       default:
         return message;
     }
@@ -979,7 +934,6 @@ class MatrixMessageSender {
       final id = switch (message) {
         final SyncAgentEntity m => m.agentEntity!.id,
         final SyncAgentLink m => m.agentLink!.id,
-        final SyncAgentBundle m => m.wakeRunKey,
         _ => throw StateError('unreachable'),
       };
       enrichedPath = pathBuilder(id);
@@ -1014,12 +968,6 @@ class MatrixMessageSender {
       // Agent links are small (like entry links) — keep inline for
       // reliable sync, avoiding race conditions with file downloads.
       final SyncAgentLink m => m.copyWith(jsonPath: enrichedPath),
-      // Bundles contain many child payloads — strip inline and use file only.
-      final SyncAgentBundle m => m.copyWith(
-        jsonPath: enrichedPath,
-        entities: const [],
-        links: const [],
-      ),
       _ => throw StateError('unreachable'),
     };
   }
