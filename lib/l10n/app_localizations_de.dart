@@ -2506,6 +2506,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
 
   @override
+  String get configFlagShowSyncActivityIndicator =>
+      'Sync-Aktivitätsanzeige einblenden';
+
+  @override
+  String get configFlagShowSyncActivityIndicatorDescription =>
+      'Live-Sync-Aktivität in der Seitenleiste anzeigen — eine tx/rx-LED-Leiste mit Outbox- und Inbox-Tiefe.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.';
 
@@ -6074,6 +6082,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechModalTranscriptionProgress => 'Transkriptionsfortschritt';
+
+  @override
+  String syncActivityIndicatorSemantics(int outbox, int inbox) {
+    return 'Sync-Aktivität. Outbox: $outbox. Inbox: $inbox. Sync-Outbox öffnen.';
+  }
 
   @override
   String get syncCreateNewRoom => 'Neuen Raum erstellen';

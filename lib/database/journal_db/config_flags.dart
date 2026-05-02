@@ -197,5 +197,13 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: showSyncActivityIndicatorFlag,
+      description: 'Show live sync activity in the sidebar.',
+      status: false,
+    ),
+  );
+
   // No additional flags for label guardrails: always-on behavior.
 }

@@ -2468,6 +2468,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
+  String get configFlagShowSyncActivityIndicator =>
+      'Show sync activity indicator';
+
+  @override
+  String get configFlagShowSyncActivityIndicatorDescription =>
+      'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Use cloud-based AI services for enhanced features. This requires an internet connection.';
 
@@ -5985,6 +5993,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechModalTranscriptionProgress => 'Transcription Progress';
+
+  @override
+  String syncActivityIndicatorSemantics(int outbox, int inbox) {
+    return 'Sync activity. Outbox: $outbox. Inbox: $inbox. Open sync outbox.';
+  }
 
   @override
   String get syncCreateNewRoom => 'Create New Room';

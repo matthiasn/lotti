@@ -7,6 +7,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
@@ -25,6 +26,7 @@ import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.da
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_activity_indicator.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/tasks_saved_filters_tree.dart';
 import 'package:lotti/features/tasks/ui/tasks_badge_icon.dart';
 import 'package:lotti/features/tasks/ui/tasks_trailing_badge.dart';
@@ -39,6 +41,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
@@ -359,6 +362,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
     final paneWidths = ref.watch(paneWidthControllerProvider);
     final isCollapsed = paneWidths.sidebarCollapsed;
+    final showSyncIndicator =
+        ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
+        false;
 
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
@@ -404,6 +410,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             onToggleCollapsed: () => ref
                 .read(paneWidthControllerProvider.notifier)
                 .toggleSidebarCollapsed(),
+            aboveSettings: showSyncIndicator
+                ? const SyncActivityIndicator()
+                : null,
           ),
           ResizableDivider(
             enabled: !isCollapsed,

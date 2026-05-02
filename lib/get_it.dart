@@ -45,6 +45,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -174,6 +175,7 @@ Future<void> registerSingletons() async {
       ),
     )
     ..registerSingleton<UpdateNotifications>(UpdateNotifications())
+    ..registerSingleton<SyncActivitySignaler>(SyncActivitySignaler())
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<AgentDatabase>(AgentDatabase())
     ..registerSingleton<EditorDb>(EditorDb())
@@ -315,6 +317,7 @@ Future<void> registerSingletons() async {
     updateNotifications: getIt<UpdateNotifications>(),
     attachmentIngestor: queueAttachmentIngestor,
     sentEventRegistry: sentEventRegistry,
+    activitySignaler: getIt<SyncActivitySignaler>(),
   );
 
   final matrixService = MatrixService(
@@ -352,6 +355,7 @@ Future<void> registerSingletons() async {
         matrixService: matrixService,
         sequenceLogService: syncSequenceLogService,
         domainLogger: domainLogger,
+        activitySignaler: getIt<SyncActivitySignaler>(),
       ),
     );
 

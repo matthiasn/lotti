@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 
 abstract class OutboxRepository {
@@ -67,10 +68,12 @@ class DatabaseOutboxRepository implements OutboxRepository {
   DatabaseOutboxRepository(
     this._database, {
     this.maxRetries = 10,
-  });
+    SyncActivitySignaler? activitySignaler,
+  }) : _activitySignaler = activitySignaler;
 
   final SyncDatabase _database;
   final int maxRetries;
+  final SyncActivitySignaler? _activitySignaler;
 
   @override
   Future<List<OutboxItem>> fetchPending({int limit = 10}) {
@@ -110,6 +113,7 @@ class DatabaseOutboxRepository implements OutboxRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
+    _activitySignaler?.pulseTx();
   }
 
   @override
@@ -121,6 +125,7 @@ class DatabaseOutboxRepository implements OutboxRepository {
     await _database.markOutboxItemsSent(
       ids: items.map((item) => item.id).toList(growable: false),
     );
+    _activitySignaler?.pulseTx(count: items.length);
   }
 
   @override

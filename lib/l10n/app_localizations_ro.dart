@@ -2515,6 +2515,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
+  String get configFlagShowSyncActivityIndicator =>
+      'Afișează indicatorul de activitate de sincronizare';
+
+  @override
+  String get configFlagShowSyncActivityIndicatorDescription =>
+      'Afișați activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.';
 
@@ -6125,6 +6133,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechModalTranscriptionProgress => 'Progresul transcrierii';
+
+  @override
+  String syncActivityIndicatorSemantics(int outbox, int inbox) {
+    return 'Activitate sincronizare. Coadă de ieșire: $outbox. Coadă de intrare: $inbox. Deschide coada de ieșire pentru sincronizare.';
+  }
 
   @override
   String get syncCreateNewRoom => 'Creează cameră nouă';

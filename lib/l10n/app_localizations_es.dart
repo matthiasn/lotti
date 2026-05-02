@@ -2544,6 +2544,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
+  String get configFlagShowSyncActivityIndicator =>
+      'Mostrar indicador de actividad de sincronización';
+
+  @override
+  String get configFlagShowSyncActivityIndicatorDescription =>
+      'Muestra la actividad de sincronización en directo en la barra lateral — una franja LED tx/rx con la profundidad de bandejas de entrada y salida.';
+
+  @override
   String get configFlagUseCloudInferenceDescription =>
       'Utiliza servicios de IA basados en la nube para funciones mejoradas. Esto requiere una conexión a Internet.';
 
@@ -6173,6 +6181,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get speechModalTranscriptionProgress => 'Progreso de la transcripción';
+
+  @override
+  String syncActivityIndicatorSemantics(int outbox, int inbox) {
+    return 'Actividad de sincronización. Bandeja de salida: $outbox. Bandeja de entrada: $inbox. Abrir bandeja de salida de sincronización.';
+  }
 
   @override
   String get syncCreateNewRoom => 'Crear nueva sala';

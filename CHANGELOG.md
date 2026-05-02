@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.985]
+### Added
+- Sidebar **Sync activity indicator** (variant D4a). When the new
+  `show_sync_activity_indicator` config flag is enabled, the desktop
+  sidebar gains an ambient two-row monospace strip just above
+  Settings: `tx <outbox-depth>` / `rx <inbox-depth>`, each with a
+  5×5 LED that flashes for ~140 ms per packet committed on that
+  channel (TX = events uploaded to the homeserver, RX = inbound
+  events applied locally). Tap navigates to Settings → Sync. When
+  the flag is on, the legacy red `289` Settings badge is suppressed
+  so the count is shown in exactly one place. Hidden in the
+  collapsed sidebar — the strip is too narrow there. Default off;
+  opt in via Settings → Config Flags.
+
 ## [0.9.984]
 ### Added
 - Task agents can now propose user-reviewed edits to historical time

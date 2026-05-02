@@ -1359,6 +1359,8 @@
   "configFlagRecordLocationDescription": "Automatically record your location with new entries. This helps with location-based organization and search.",
   "configFlagResendAttachments": "Resend attachments",
   "configFlagResendAttachmentsDescription": "Enable this to automatically resend failed attachment uploads when the connection is restored.",
+  "configFlagShowSyncActivityIndicator": "Show sync activity indicator",
+  "configFlagShowSyncActivityIndicatorDescription": "Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.",
   "configFlagUseCloudInferenceDescription": "Use cloud-based AI services for enhanced features. This requires an internet connection.",
   "configFlagUseCompressedJsonAttachments": "Compress JSON sync payloads",
   "configFlagUseCompressedJsonAttachmentsDescription": "Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.",
@@ -2866,6 +2868,17 @@
   "speechModalSelectLanguage": "Select Language",
   "speechModalTitle": "Speech Recognition",
   "speechModalTranscriptionProgress": "Transcription Progress",
+  "syncActivityIndicatorSemantics": "Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.",
+  "@syncActivityIndicatorSemantics": {
+    "placeholders": {
+      "outbox": {
+        "type": "int"
+      },
+      "inbox": {
+        "type": "int"
+      }
+    }
+  },
   "syncCreateNewRoom": "Create New Room",
   "syncCreateNewRoomInstead": "Create New Room Instead",
   "syncDeleteConfigConfirm": "YES, I'M SURE",

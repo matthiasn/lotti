@@ -145,3 +145,198 @@ final class OutboxDailyVolumeProvider
 }
 
 String _$outboxDailyVolumeHash() => r'4b860d94f32e31ae0ac6377ddb62e63baf8a55bc';
+
+/// Looks up the global [SyncActivitySignaler]. Resolved through `getIt`
+/// so tests that swap in a custom signaler do not need a parallel
+/// override in every consumer.
+
+@ProviderFor(syncActivitySignaler)
+final syncActivitySignalerProvider = SyncActivitySignalerProvider._();
+
+/// Looks up the global [SyncActivitySignaler]. Resolved through `getIt`
+/// so tests that swap in a custom signaler do not need a parallel
+/// override in every consumer.
+
+final class SyncActivitySignalerProvider
+    extends
+        $FunctionalProvider<
+          SyncActivitySignaler,
+          SyncActivitySignaler,
+          SyncActivitySignaler
+        >
+    with $Provider<SyncActivitySignaler> {
+  /// Looks up the global [SyncActivitySignaler]. Resolved through `getIt`
+  /// so tests that swap in a custom signaler do not need a parallel
+  /// override in every consumer.
+  SyncActivitySignalerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'syncActivitySignalerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$syncActivitySignalerHash();
+
+  @$internal
+  @override
+  $ProviderElement<SyncActivitySignaler> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SyncActivitySignaler create(Ref ref) {
+    return syncActivitySignaler(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SyncActivitySignaler value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SyncActivitySignaler>(value),
+    );
+  }
+}
+
+String _$syncActivitySignalerHash() =>
+    r'fe8cc1cd49a6214320ad6ad4b946879cba7f7b42';
+
+/// Per-packet TX pulses for the sidebar sync activity indicator. Emits
+/// once per outbound event committed to the homeserver.
+
+@ProviderFor(syncActivityTxPulses)
+final syncActivityTxPulsesProvider = SyncActivityTxPulsesProvider._();
+
+/// Per-packet TX pulses for the sidebar sync activity indicator. Emits
+/// once per outbound event committed to the homeserver.
+
+final class SyncActivityTxPulsesProvider
+    extends
+        $FunctionalProvider<AsyncValue<DateTime>, DateTime, Stream<DateTime>>
+    with $FutureModifier<DateTime>, $StreamProvider<DateTime> {
+  /// Per-packet TX pulses for the sidebar sync activity indicator. Emits
+  /// once per outbound event committed to the homeserver.
+  SyncActivityTxPulsesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'syncActivityTxPulsesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$syncActivityTxPulsesHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<DateTime> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<DateTime> create(Ref ref) {
+    return syncActivityTxPulses(ref);
+  }
+}
+
+String _$syncActivityTxPulsesHash() =>
+    r'7692edbba85b9f0705b31c6d74dd809c48c94eb8';
+
+/// Per-packet RX pulses for the sidebar sync activity indicator. Emits
+/// once per inbound event applied locally.
+
+@ProviderFor(syncActivityRxPulses)
+final syncActivityRxPulsesProvider = SyncActivityRxPulsesProvider._();
+
+/// Per-packet RX pulses for the sidebar sync activity indicator. Emits
+/// once per inbound event applied locally.
+
+final class SyncActivityRxPulsesProvider
+    extends
+        $FunctionalProvider<AsyncValue<DateTime>, DateTime, Stream<DateTime>>
+    with $FutureModifier<DateTime>, $StreamProvider<DateTime> {
+  /// Per-packet RX pulses for the sidebar sync activity indicator. Emits
+  /// once per inbound event applied locally.
+  SyncActivityRxPulsesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'syncActivityRxPulsesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$syncActivityRxPulsesHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<DateTime> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<DateTime> create(Ref ref) {
+    return syncActivityRxPulses(ref);
+  }
+}
+
+String _$syncActivityRxPulsesHash() =>
+    r'd177376085ba2f61b55a117e7e0b24e14e140d92';
+
+/// Live depth of the inbound queue (active rows the worker can still
+/// drain). Used by the sidebar sync activity indicator. Resolves the
+/// queue lazily via `MatrixService.queueCoordinator` because the
+/// coordinator is created during app boot, not during provider
+/// construction.
+
+@ProviderFor(inboundQueueDepth)
+final inboundQueueDepthProvider = InboundQueueDepthProvider._();
+
+/// Live depth of the inbound queue (active rows the worker can still
+/// drain). Used by the sidebar sync activity indicator. Resolves the
+/// queue lazily via `MatrixService.queueCoordinator` because the
+/// coordinator is created during app boot, not during provider
+/// construction.
+
+final class InboundQueueDepthProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, Stream<int>>
+    with $FutureModifier<int>, $StreamProvider<int> {
+  /// Live depth of the inbound queue (active rows the worker can still
+  /// drain). Used by the sidebar sync activity indicator. Resolves the
+  /// queue lazily via `MatrixService.queueCoordinator` because the
+  /// coordinator is created during app boot, not during provider
+  /// construction.
+  InboundQueueDepthProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'inboundQueueDepthProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$inboundQueueDepthHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<int> create(Ref ref) {
+    return inboundQueueDepth(ref);
+  }
+}
+
+String _$inboundQueueDepthHash() => r'c7efe154cf8deca99752a30387edaee2fbc97a34';

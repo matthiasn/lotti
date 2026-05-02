@@ -1,0 +1,107 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
+
+void main() {
+  group('SyncActivitySignaler', () {
+    late SyncActivitySignaler signaler;
+
+    setUp(() {
+      signaler = SyncActivitySignaler();
+    });
+
+    tearDown(() async {
+      await signaler.dispose();
+    });
+
+    test('emits one TX pulse per pulseTx call by default', () async {
+      final pulses = <DateTime>[];
+      final sub = signaler.txPulses.listen(pulses.add);
+
+      signaler.pulseTx();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(pulses, hasLength(1));
+      await sub.cancel();
+    });
+
+    test('emits N TX pulses when count > 1 (bundle send)', () async {
+      final pulses = <DateTime>[];
+      final sub = signaler.txPulses.listen(pulses.add);
+
+      signaler.pulseTx(count: 5);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(pulses, hasLength(5));
+      await sub.cancel();
+    });
+
+    test('drops invalid TX counts (zero / negative)', () async {
+      final pulses = <DateTime>[];
+      final sub = signaler.txPulses.listen(pulses.add);
+
+      signaler
+        ..pulseTx(count: 0)
+        ..pulseTx(count: -1);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(pulses, isEmpty);
+      await sub.cancel();
+    });
+
+    test('emits one RX pulse per pulseRx call', () async {
+      final pulses = <DateTime>[];
+      final sub = signaler.rxPulses.listen(pulses.add);
+
+      signaler
+        ..pulseRx()
+        ..pulseRx();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(pulses, hasLength(2));
+      await sub.cancel();
+    });
+
+    test('TX and RX channels are independent', () async {
+      final tx = <DateTime>[];
+      final rx = <DateTime>[];
+      final txSub = signaler.txPulses.listen(tx.add);
+      final rxSub = signaler.rxPulses.listen(rx.add);
+
+      signaler
+        ..pulseTx()
+        ..pulseRx()
+        ..pulseTx();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(tx, hasLength(2));
+      expect(rx, hasLength(1));
+      await txSub.cancel();
+      await rxSub.cancel();
+    });
+
+    test(
+      'streams are broadcast — late subscriber misses earlier events',
+      () async {
+        signaler.pulseTx();
+        await Future<void>.delayed(Duration.zero);
+
+        final pulses = <DateTime>[];
+        final sub = signaler.txPulses.listen(pulses.add);
+        signaler.pulseTx();
+        await Future<void>.delayed(Duration.zero);
+
+        // Late subscriber should only see the second pulse (broadcast).
+        expect(pulses, hasLength(1));
+        await sub.cancel();
+      },
+    );
+
+    test('after dispose, further pulses are no-ops', () async {
+      await signaler.dispose();
+      // Re-subscribing on a closed broadcast stream throws, so we just
+      // verify pulseTx/pulseRx do not throw post-close.
+      expect(signaler.pulseTx, returnsNormally);
+      expect(signaler.pulseRx, returnsNormally);
+    });
+  });
+}
