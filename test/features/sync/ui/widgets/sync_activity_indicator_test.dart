@@ -82,6 +82,13 @@ void main() {
     testWidgets('exposes a button-role semantics label with both counts', (
       tester,
     ) async {
+      // Semantics are off by default in widget tests; opt them in so
+      // `tester.getSemantics(...)` does not throw a StateError on a
+      // strict Flutter version. The handle must be disposed inline
+      // (not via addTearDown) — the tester verifies that all handles
+      // are released before the test body finishes.
+      final semanticsHandle = tester.ensureSemantics();
+
       await pumpIndicator(tester, outbox: 289, inbox: 14);
 
       final semantics = tester.getSemantics(
@@ -101,6 +108,8 @@ void main() {
       expect(label, isNotEmpty);
       expect(label.toLowerCase(), contains('outbox'));
       expect(label.toLowerCase(), contains('inbox'));
+
+      semanticsHandle.dispose();
     });
 
     testWidgets('tapping invokes navigator override with sync outbox route', (

@@ -104,27 +104,59 @@ Stream<int> inboundQueueDepth(Ref ref) {
 
 @visibleForTesting
 Stream<int> inboundQueueDepthStream(InboundQueue queue) async* {
-  // Subscribe BEFORE awaiting `stats()` so any depth signal that fires
-  // while we're computing the initial snapshot is queued in `relay`
-  // rather than dropped — `depthChanges` is a broadcast stream with no
-  // buffering of its own, so a naive seed-then-yield* sequence would
-  // miss every signal that lands during the await.
-  final relay = StreamController<int>();
+  // Two ordering hazards must be handled together:
+  //
+  // (1) `depthChanges` is a broadcast stream with no buffering, so we
+  //     must subscribe BEFORE awaiting `stats()` — otherwise a signal
+  //     that fires during the snapshot computation is dropped and the
+  //     UI shows a stale count until the next packet.
+  //
+  // (2) The `stats()` snapshot we just awaited is older than any live
+  //     signal that arrived during the await, so emitting `stats.total`
+  //     unconditionally and then replaying buffered live values would
+  //     step the consumer backwards (e.g. `2 → 1 → 2`). The fix: buffer
+  //     live values until `stats()` resolves, emit the snapshot ONLY
+  //     when the buffer is still empty, otherwise drop the stale
+  //     snapshot and emit the buffered live sequence in arrival order
+  //     before switching to forwarding the live tail.
+  final buffered = <int>[];
+  final relay = StreamController<int>.broadcast();
   final sub = queue.depthChanges
       .map((signal) => signal.total)
       .listen(
-        relay.add,
-        onError: relay.addError,
-        onDone: relay.close,
+        (value) {
+          if (relay.hasListener) {
+            relay.add(value);
+          } else {
+            buffered.add(value);
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          if (relay.hasListener) relay.addError(error, stack);
+        },
       );
   try {
+    int? snapshot;
     try {
       final stats = await queue.stats();
-      yield stats.total;
+      snapshot = stats.total;
     } catch (_) {
       // Initial paint failures are non-fatal; the live signal below
       // will provide a count on the next emission.
     }
+
+    if (buffered.isEmpty && snapshot != null) {
+      yield snapshot;
+    } else {
+      // A live signal beat the snapshot to the queue; trust the live
+      // sequence over the now-stale `stats()` result and replay every
+      // buffered value in arrival order before draining the tail.
+      for (final value in buffered) {
+        yield value;
+      }
+      buffered.clear();
+    }
+
     yield* relay.stream;
   } finally {
     await sub.cancel();

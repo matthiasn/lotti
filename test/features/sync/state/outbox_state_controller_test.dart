@@ -402,13 +402,15 @@ void main() {
 
     test('syncActivityTxPulsesProvider forwards every TX pulse', () async {
       final received = <DateTime>[];
-      final sub = container
-          .listen<AsyncValue<DateTime>>(syncActivityTxPulsesProvider, (
-            _,
-            next,
-          ) {
-            if (next is AsyncData<DateTime>) received.add(next.value);
-          });
+      final sub = container.listen<AsyncValue<DateTime>>(
+        syncActivityTxPulsesProvider,
+        (
+          _,
+          next,
+        ) {
+          if (next is AsyncData<DateTime>) received.add(next.value);
+        },
+      );
 
       signaler
         ..pulseTx()
@@ -421,13 +423,15 @@ void main() {
 
     test('syncActivityRxPulsesProvider forwards every RX pulse', () async {
       final received = <DateTime>[];
-      final sub = container
-          .listen<AsyncValue<DateTime>>(syncActivityRxPulsesProvider, (
-            _,
-            next,
-          ) {
-            if (next is AsyncData<DateTime>) received.add(next.value);
-          });
+      final sub = container.listen<AsyncValue<DateTime>>(
+        syncActivityRxPulsesProvider,
+        (
+          _,
+          next,
+        ) {
+          if (next is AsyncData<DateTime>) received.add(next.value);
+        },
+      );
 
       signaler.pulseRx();
       await Future<void>.delayed(Duration.zero);
@@ -462,10 +466,9 @@ void main() {
     });
 
     test(
-      'seeds with the snapshot from queue.stats() then forwards live '
-      'depthChanges signals — covers the subscribe-before-await ordering '
-      'that prevents signals from being dropped during the initial '
-      'snapshot computation',
+      'seeds with the snapshot from queue.stats() — covers the '
+      'subscribe-before-await ordering that prevents signals from being '
+      'dropped during the initial snapshot computation',
       () async {
         const roomId = '!room:example.org';
         // Insert one active row so stats().total reports 1 on seed.
@@ -483,41 +486,47 @@ void main() {
               ),
             );
 
-        final emitted = <int>[];
-        final sub = inboundQueueDepthStream(queue).listen(emitted.add);
-
-        // Wait for the initial seed to land.
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        expect(emitted, isNotEmpty, reason: 'initial snapshot should emit');
-        expect(emitted.first, 1);
-
-        await sub.cancel();
+        // Synchronise on the first emission directly — `.first`
+        // resolves the moment the snapshot is yielded, so we don't
+        // have to guess at a wall-clock budget for `stats()`.
+        final firstEmission = await inboundQueueDepthStream(queue).first;
+        expect(firstEmission, 1);
       },
     );
 
     test(
-      'closes the relay cleanly when the consumer cancels, so a leaking '
-      'depthChanges subscription does not survive after the provider '
-      'auto-disposes',
+      'forwards a live depthChanges signal that arrives after the '
+      'snapshot — covers the steady-state `relay.add` path once the '
+      'generator has switched into draining mode',
       () async {
-        final emitted = <int>[];
-        final sub = inboundQueueDepthStream(queue).listen(emitted.add);
+        const roomId = '!room:example.org';
+        final stream = inboundQueueDepthStream(queue);
+        // expectLater + emitsThrough waits for the matched value
+        // without polling — synchronises on the actual event we care
+        // about (a depth change of `1`) and times out cleanly on
+        // regression rather than hanging the test runner.
+        final matched = expectLater(stream, emitsThrough(1));
 
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        await sub.cancel();
+        // Trigger a live depth signal by inserting an active row and
+        // letting the queue emit through `_scheduleDepthEmit`.
+        await db
+            .into(db.inboundEventQueue)
+            .insert(
+              InboundEventQueueCompanion.insert(
+                eventId: r'$live',
+                roomId: roomId,
+                originTs: 2000,
+                producer: InboundEventProducer.live.name,
+                rawJson: jsonEncode(<String, dynamic>{}),
+                enqueuedAt: clock.now().millisecondsSinceEpoch,
+                status: const Value('enqueued'),
+              ),
+            );
+        // The queue's internal `_emitDepth` runs on a microtask boundary.
+        // Nudge it so `expectLater` resolves without a wall-clock wait.
+        await Future<void>.value();
 
-        // Re-subscribe — if the previous relay had leaked an active
-        // listener on `queue.depthChanges`, this second subscription
-        // would still need to fire the initial seed independently.
-        // (Implicit: no exception thrown on cancel.)
-        final secondEmitted = <int>[];
-        final secondSub = inboundQueueDepthStream(queue).listen(
-          secondEmitted.add,
-        );
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        await secondSub.cancel();
-
-        expect(secondEmitted, isNotEmpty);
+        await matched.timeout(const Duration(seconds: 2));
       },
     );
   });
