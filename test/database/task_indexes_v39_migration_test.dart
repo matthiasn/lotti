@@ -276,35 +276,6 @@ void main() {
     );
 
     test(
-      'beforeOpen self-heals idx_journal_tasks_due_open after v41',
-      () async {
-        // Simulate a device that landed at user_version = 39 but is
-        // missing `idx_journal_tasks_due_open`. The full migration to v41
-        // runs, so the recreated index is the column-keyed shape.
-        final dbFile = File(
-          p.join(testDirectory!.path, 'test_v39_self_heal.db'),
-        );
-        final sqlite = sqlite3.open(dbFile.path);
-        createV38Schema(sqlite);
-        sqlite.execute('PRAGMA user_version = 39');
-        sqlite.dispose();
-
-        final db = JournalDb(overriddenFilename: 'test_v39_self_heal.db');
-        addTearDown(db.close);
-
-        final dueOpenSql = await indexSql(db, 'idx_journal_tasks_due_open');
-        expect(dueOpenSql, contains('due_at ASC'));
-        expect(dueOpenSql, contains("task_status NOT IN ('DONE', 'REJECTED')"));
-
-        final statusPrivateSql = await indexSql(
-          db,
-          'idx_journal_task_status_private',
-        );
-        expect(statusPrivateSql, contains('task_status COLLATE BINARY ASC'));
-      },
-    );
-
-    test(
       'getTasksDueOnOrBefore falls back when INDEXED BY is rejected',
       () async {
         // Simulate a device where the partial index cannot be pinned (the

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -627,13 +628,19 @@ class SyncDatabase extends _$SyncDatabase {
     final reclaimWindow = effectiveNow.subtract(leaseDuration);
 
     return transaction(() async {
-      final candidates =
+      // Split the original `status = pending OR (status = sending AND
+      // updated_at < cutoff)` into two indexed seeks. The combined
+      // predicate prevented the planner from matching either of the
+      // existing outbox indices and forced a SCAN (218 ms in the
+      // super-slow log). Each branch is now a clean equality on
+      // `status` so the planner picks the partial
+      // `idx_outbox_actionable_priority_created_at` (pending + sending,
+      // ordered by `(priority, created_at)`) and walks it index-only.
+      // The merge in Dart is bounded by `2 × maxSize` rows; trivial.
+      final pendingRows =
           await (select(outbox)
                 ..where(
-                  (t) =>
-                      (t.status.equals(OutboxStatus.pending.index)) |
-                      (t.status.equals(_outboxSendingStatus) &
-                          t.updatedAt.isSmallerThanValue(reclaimWindow)),
+                  (t) => t.status.equals(OutboxStatus.pending.index),
                 )
                 ..orderBy([
                   (t) => OrderingTerm(expression: t.priority),
@@ -641,6 +648,28 @@ class SyncDatabase extends _$SyncDatabase {
                 ])
                 ..limit(maxSize))
               .get();
+      final expiredSendingRows =
+          await (select(outbox)
+                ..where(
+                  (t) =>
+                      t.status.equals(_outboxSendingStatus) &
+                      t.updatedAt.isSmallerThanValue(reclaimWindow),
+                )
+                ..orderBy([
+                  (t) => OrderingTerm(expression: t.priority),
+                  (t) => OrderingTerm(expression: t.createdAt),
+                ])
+                ..limit(maxSize))
+              .get();
+      final candidates = <OutboxItem>[...pendingRows, ...expiredSendingRows]
+        ..sort((a, b) {
+          final p = a.priority.compareTo(b.priority);
+          if (p != 0) return p;
+          return a.createdAt.compareTo(b.createdAt);
+        });
+      if (candidates.length > maxSize) {
+        candidates.removeRange(maxSize, candidates.length);
+      }
 
       if (candidates.isEmpty) return const <OutboxItem>[];
 
@@ -1674,28 +1703,9 @@ class SyncDatabase extends _$SyncDatabase {
   @override
   int get schemaVersion => 19;
 
-  // Static guard so ANALYZE runs once per process, not per connection.
-  // The drift read-pool opens 4 read connections + 1 write; running
-  // ANALYZE on every `beforeOpen` would re-walk the stat tables 5x per
-  // launch. Once is enough — stats are persisted in `sqlite_stat1`.
-  static bool _statsAnalyzed = false;
-
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
-      beforeOpen: (details) async {
-        if (!_statsAnalyzed) {
-          _statsAnalyzed = true;
-          // Refresh planner stats so partial-index choices stop drifting.
-          // ANALYZE on small/medium tables is cheap; the queue ledger is
-          // bounded and the sync_sequence_log scan is one-pass.
-          try {
-            await customStatement('ANALYZE');
-          } catch (_) {
-            // Stats refresh is best-effort; never fail the open path.
-          }
-        }
-      },
       onCreate: (Migrator m) async {
         await m.createAll();
       },

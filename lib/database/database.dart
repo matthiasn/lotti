@@ -49,9 +49,6 @@ const String _createIdxJournalTaskStatusPrivateSql =
     'private COLLATE BINARY ASC) '
     "WHERE type = 'Task' AND task = 1 AND deleted = FALSE";
 
-String _asIfNotExists(String createIndexSql) =>
-    createIndexSql.replaceFirst('CREATE INDEX ', 'CREATE INDEX IF NOT EXISTS ');
-
 enum ConflictStatus {
   unresolved,
   resolved,
@@ -118,12 +115,6 @@ class JournalDb extends _$JournalDb {
   @override
   int get schemaVersion => 42;
 
-  // Static guard so ANALYZE runs once per process, not per connection.
-  // The drift read-pool opens 4 read connections + 1 write; running
-  // ANALYZE on every `beforeOpen` would re-walk `sqlite_stat1` 5x per
-  // launch. Once is enough — stats persist in the DB file.
-  static bool _statsAnalyzed = false;
-
   /// Conservative chunk size for `IN :ids` drift queries to stay under
   /// SQLite's default `SQLITE_MAX_VARIABLE_NUMBER` of 999 with headroom
   /// for other variables in the same statement.
@@ -133,42 +124,8 @@ class JournalDb extends _$JournalDb {
   MigrationStrategy get migration {
     return MigrationStrategy(
       beforeOpen: (details) async {
+        // PRAGMA is connection-local — must run on every connection.
         await customStatement('PRAGMA foreign_keys = ON');
-        // Self-heal the partial indexes on every open. Devices that failed
-        // their migration (e.g. aborted mid-upgrade) could otherwise land
-        // with the user_version bumped but the index missing, breaking
-        // every DailyOS query that pins the index via INDEXED BY. Guarded
-        // on `journal` existing because minimal migration-test schemas
-        // omit it.
-        if (await _tableExists('journal')) {
-          // v41 added the denormalized `due_at` column. The partial
-          // `idx_journal_tasks_due_open` re-creation below is keyed on
-          // that column, so the column must exist first. A device that
-          // aborted the v41 migration after bumping user_version but
-          // before adding the column would otherwise crash here.
-          if (!await _columnExists('journal', 'due_at')) {
-            await customStatement(
-              'ALTER TABLE journal ADD COLUMN due_at DATETIME',
-            );
-          }
-          await customStatement(
-            _asIfNotExists(_createIdxJournalTasksDueOpenSql),
-          );
-          await customStatement(
-            _asIfNotExists(_createIdxJournalTaskStatusPrivateSql),
-          );
-        }
-        if (!_statsAnalyzed && !inMemoryDatabase) {
-          _statsAnalyzed = true;
-          // Refresh planner stats once per process. The slow-query log
-          // showed `id IN (...)` queries falling through to
-          // idx_journal_browse instead of the PK; that is a classic
-          // stale-stats symptom on a DB that has grown since the last
-          // ANALYZE. Best-effort: never fail open on stat refresh.
-          try {
-            await customStatement('ANALYZE');
-          } catch (_) {}
-        }
       },
       onCreate: (Migrator m) async {
         return m.createAll();
@@ -706,9 +663,11 @@ class JournalDb extends _$JournalDb {
                 '  to_id COLLATE BINARY ASC)',
               );
             }
-            // After adding new indexes, refresh stats so the planner
-            // picks them on first launch rather than waiting for the
-            // next ANALYZE cycle.
+            // One-shot ANALYZE so the planner picks up the new
+            // indexes immediately. This runs ONCE per device on the
+            // upgrade boot — same trade as any heavy migration step:
+            // a single longer-than-usual launch when the user pulls
+            // the update, then steady-state from then on.
             await customStatement('ANALYZE');
           }();
         }
