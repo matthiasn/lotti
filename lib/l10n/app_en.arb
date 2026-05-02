@@ -490,9 +490,21 @@
   "agentStatsWakesLabel": "Wakes",
   "agentStatsWeekTotalLabel": "7-Day Total",
   "agentSuggestionTimeEntryUpdateCurrent": "Current",
+  "@agentSuggestionTimeEntryUpdateCurrent": {
+    "description": "Label for the current value in an agent-proposed time entry edit diff."
+  },
   "agentSuggestionTimeEntryUpdateNoChange": "(unchanged)",
+  "@agentSuggestionTimeEntryUpdateNoChange": {
+    "description": "Marker shown next to an unchanged current value in an agent-proposed time entry edit diff."
+  },
   "agentSuggestionTimeEntryUpdateProposed": "Proposed",
+  "@agentSuggestionTimeEntryUpdateProposed": {
+    "description": "Label for the proposed value in an agent-proposed time entry edit diff."
+  },
   "agentSuggestionTimeEntryUpdateUnavailable": "Original entry not available",
+  "@agentSuggestionTimeEntryUpdateUnavailable": {
+    "description": "Message shown when the original time entry cannot be loaded for an agent-proposed edit."
+  },
   "agentSuggestionsActivityAgentFallback": "the agent",
   "agentSuggestionsActivityCountTotal": "{total} total",
   "@agentSuggestionsActivityCountTotal": {

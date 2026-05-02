@@ -83,6 +83,42 @@ class _TimeEntryUpdateContent extends StatelessWidget {
     final valueStyle = context.textTheme.bodySmall?.copyWith(
       fontWeight: FontWeight.w600,
     );
+    final fields = [
+      _DiffField(
+        label: context.messages.timeEntryItemStart,
+        currentValue: _formatDateTime(entry?.meta.dateFrom, null),
+        proposedValue: _formatDateTime(
+          _parseDateTime(args['startTime']),
+          _trimmedString(args['startTime']),
+        ),
+        touched: args.containsKey('startTime'),
+        currentUnavailable: currentUnavailable,
+        dimStyle: dimStyle,
+        valueStyle: valueStyle,
+      ),
+      _DiffField(
+        label: context.messages.timeEntryItemEnd,
+        currentValue: _formatDateTime(entry?.meta.dateTo, null),
+        proposedValue: _formatDateTime(
+          _parseDateTime(args['endTime']),
+          _trimmedString(args['endTime']),
+        ),
+        touched: args.containsKey('endTime'),
+        currentUnavailable: currentUnavailable,
+        dimStyle: dimStyle,
+        valueStyle: valueStyle,
+      ),
+      _DiffField(
+        label: context.messages.agentMessageKindSummary,
+        currentValue: _displayText(entry?.entryText?.plainText),
+        proposedValue: _displayText(_trimmedString(args['summary'])),
+        touched: args.containsKey('summary'),
+        currentUnavailable: currentUnavailable,
+        dimStyle: dimStyle,
+        valueStyle: valueStyle,
+        maxLines: 2,
+      ),
+    ].where((field) => field.shouldRender).toList(growable: false);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
@@ -109,42 +145,10 @@ class _TimeEntryUpdateContent extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                 ],
-                _DiffField(
-                  label: context.messages.timeEntryItemStart,
-                  currentValue: _formatDateTime(entry?.meta.dateFrom, null),
-                  proposedValue: _formatDateTime(
-                    _parseDateTime(args['startTime']),
-                    _trimmedString(args['startTime']),
-                  ),
-                  touched: args.containsKey('startTime'),
-                  currentUnavailable: currentUnavailable,
-                  dimStyle: dimStyle,
-                  valueStyle: valueStyle,
-                ),
-                const SizedBox(height: 4),
-                _DiffField(
-                  label: context.messages.timeEntryItemEnd,
-                  currentValue: _formatDateTime(entry?.meta.dateTo, null),
-                  proposedValue: _formatDateTime(
-                    _parseDateTime(args['endTime']),
-                    _trimmedString(args['endTime']),
-                  ),
-                  touched: args.containsKey('endTime'),
-                  currentUnavailable: currentUnavailable,
-                  dimStyle: dimStyle,
-                  valueStyle: valueStyle,
-                ),
-                const SizedBox(height: 4),
-                _DiffField(
-                  label: context.messages.agentMessageKindSummary,
-                  currentValue: _displayText(entry?.entryText?.plainText),
-                  proposedValue: _displayText(_trimmedString(args['summary'])),
-                  touched: args.containsKey('summary'),
-                  currentUnavailable: currentUnavailable,
-                  dimStyle: dimStyle,
-                  valueStyle: valueStyle,
-                  maxLines: 2,
-                ),
+                for (var index = 0; index < fields.length; index++) ...[
+                  if (index > 0) const SizedBox(height: 4),
+                  fields[index],
+                ],
               ],
             ),
           ),
@@ -206,30 +210,46 @@ class _DiffField extends StatelessWidget {
   final TextStyle? valueStyle;
   final int maxLines;
 
+  bool get shouldRender => touched || !currentUnavailable;
+
   @override
   Widget build(BuildContext context) {
+    if (!shouldRender) return const SizedBox.shrink();
+
     final messages = context.messages;
     final currentLabel = messages.agentSuggestionTimeEntryUpdateCurrent;
     final proposedLabel = messages.agentSuggestionTimeEntryUpdateProposed;
     final noChangeLabel = messages.agentSuggestionTimeEntryUpdateNoChange;
-
-    final value = currentUnavailable && touched
-        ? '$proposedLabel: $proposedValue'
-        : touched
-        ? '$currentLabel: $currentValue -> $proposedLabel: $proposedValue'
-        : '$currentLabel: $currentValue $noChangeLabel';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('$label: ', style: dimStyle),
         Expanded(
-          child: Text(
-            value,
-            maxLines: maxLines,
-            overflow: TextOverflow.ellipsis,
-            softWrap: maxLines > 1,
-            style: touched ? valueStyle : dimStyle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!currentUnavailable)
+                Text(
+                  touched
+                      ? '$currentLabel: $currentValue'
+                      : '$currentLabel: $currentValue $noChangeLabel',
+                  maxLines: maxLines,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: maxLines > 1,
+                  style: dimStyle,
+                ),
+              if (touched) ...[
+                if (!currentUnavailable) const SizedBox(height: 2),
+                Text(
+                  '$proposedLabel: $proposedValue',
+                  maxLines: maxLines,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: maxLines > 1,
+                  style: valueStyle,
+                ),
+              ],
+            ],
           ),
         ),
       ],

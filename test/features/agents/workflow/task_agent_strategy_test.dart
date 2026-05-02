@@ -1890,7 +1890,7 @@ void main() {
           expect(csBuilder.items, hasLength(1));
           expect(
             csBuilder.items.first.humanSummary,
-            'Update time entry entry-123: "Added rollout discussion"',
+            'Revise time entry text: "Added rollout discussion"',
           );
         },
       );

@@ -118,6 +118,16 @@ void main() {
         expect(result.errorMessage, 'Missing or invalid entryId');
       });
 
+      test('returns failure when entryId is not a string', () async {
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': 42,
+          'summary': 'Updated notes',
+        });
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Missing or invalid entryId');
+      });
+
       test('returns failure when no changes are specified', () async {
         final result = await handler.handle(sourceTaskId, {'entryId': entryId});
 
@@ -145,6 +155,16 @@ void main() {
         expect(result.output, contains('500 characters'));
       });
 
+      test('returns failure when summary is not a string', () async {
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'summary': 99,
+        });
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Missing, empty, or too-long summary');
+      });
+
       test('returns failure when startTime is unparseable', () async {
         final result = await handler.handle(sourceTaskId, {
           'entryId': entryId,
@@ -166,6 +186,16 @@ void main() {
         expect(result.output, contains('explicit local time'));
       });
 
+      test('returns failure when startTime has invalid type', () async {
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'startTime': 42,
+        });
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Missing or invalid startTime');
+      });
+
       test('returns failure when endTime has timezone suffix', () async {
         final result = await handler.handle(sourceTaskId, {
           'entryId': entryId,
@@ -174,6 +204,16 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.errorMessage, 'Unparseable endTime');
+      });
+
+      test('returns failure when endTime has invalid type', () async {
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'endTime': true,
+        });
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Missing or invalid endTime');
       });
 
       test('returns failure when entry is not found', () async {
@@ -390,6 +430,24 @@ void main() {
             dateTo: DateTime(2027, 1, 2, 0, 30),
           ),
         ).called(1);
+      });
+
+      test('succeeds without a domain logger', () async {
+        stubEntry(makeEntry());
+
+        final handlerWithoutLogger = TimeEntryUpdateHandler(
+          persistenceLogic: mockPersistenceLogic,
+          journalDb: mockJournalDb,
+          timeService: mockTimeService,
+        );
+
+        final result = await handlerWithoutLogger.handle(sourceTaskId, {
+          'entryId': entryId,
+          'summary': 'No logger configured',
+        });
+
+        expect(result.success, isTrue);
+        expect(result.mutatedEntityId, entryId);
       });
 
       test('returns failure when persistence fails', () async {

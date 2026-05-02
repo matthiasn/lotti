@@ -950,9 +950,6 @@ class TaskAgentStrategy extends ConversationStrategy {
         final summary = args['summary'] is String
             ? (args['summary'] as String).trim()
             : '';
-        final entryId = args['entryId'] is String
-            ? (args['entryId'] as String).trim()
-            : '?';
         final start = startRaw != null
             ? parseTimeEntryLocalDateTime(startRaw)
             : null;
@@ -963,10 +960,16 @@ class TaskAgentStrategy extends ConversationStrategy {
           (final String s, final String e) => '$s–$e',
           (final String s, null) => 'from $s',
           (null, final String e) => 'until $e',
-          _ => entryId,
+          _ => '',
         };
-        return summary.isEmpty
-            ? 'Update time entry $range'
+        if (summary.isEmpty) {
+          return range.isEmpty
+              ? 'Update time entry'
+              : 'Update time entry $range';
+        }
+
+        return range.isEmpty
+            ? 'Revise time entry text: "$summary"'
             : 'Update time entry $range: "$summary"';
       }(),
       _ => '$toolName(${args.keys.join(", ")})',

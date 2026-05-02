@@ -63,22 +63,13 @@ void main() {
       );
 
       expect(find.byIcon(Icons.edit_calendar_outlined), findsOneWidget);
+      expect(find.text('Current: 2026-04-15 13:00'), findsOneWidget);
+      expect(find.text('Proposed: 2026-04-15 13:30'), findsOneWidget);
+      expect(find.text('Current: 2026-04-15 14:00'), findsOneWidget);
+      expect(find.text('Proposed: 2026-04-15 14:45'), findsOneWidget);
+      expect(find.text('Current: Original workshop notes'), findsOneWidget);
       expect(
-        find.textContaining(
-          'Current: 2026-04-15 13:00 -> Proposed: 2026-04-15 13:30',
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining(
-          'Current: 2026-04-15 14:00 -> Proposed: 2026-04-15 14:45',
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining(
-          'Current: Original workshop notes -> Proposed: Workshop plus token budgets',
-        ),
+        find.text('Proposed: Workshop plus token budgets'),
         findsOneWidget,
       );
     });
@@ -106,9 +97,11 @@ void main() {
       );
 
       expect(
-        find.textContaining(
-          'Current: Original workshop notes -> Proposed: Repository-backed update',
-        ),
+        find.text('Current: Original workshop notes'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Proposed: Repository-backed update'),
         findsOneWidget,
       );
       verify(() => repository.getJournalEntityById(entryId)).called(1);
@@ -186,6 +179,8 @@ void main() {
         find.textContaining('Proposed: 2026-04-15 15:00'),
         findsOneWidget,
       );
+      expect(find.textContaining('(unchanged)'), findsNothing);
+      expect(find.textContaining('Current: -'), findsNothing);
     });
 
     testWidgets('shows progress indicator when busy', (tester) async {

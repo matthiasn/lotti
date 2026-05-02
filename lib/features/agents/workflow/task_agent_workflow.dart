@@ -1837,13 +1837,13 @@ to keep the user-facing suggestion list clean and trustworthy:
           '`update_time_entry` for the currently running timer.',
         );
 
-      for (final entry in entries.take(20)) {
+      for (final entry in entries) {
         final text = entry.entryText?.plainText.trim() ?? '';
         buffer
           ..writeln('- id: ${entry.meta.id}')
           ..writeln('  dateFrom: ${entry.meta.dateFrom.toIso8601String()}')
           ..writeln('  dateTo: ${entry.meta.dateTo.toIso8601String()}')
-          ..writeln('  text: ${jsonEncode(_truncateEditableText(text))}');
+          ..writeln('  text: ${jsonEncode(text)}');
       }
 
       buffer.writeln();
@@ -1856,12 +1856,6 @@ to keep the user-facing suggestion list clean and trustworthy:
       );
       return '';
     }
-  }
-
-  String _truncateEditableText(String text) {
-    const maxLength = 200;
-    if (text.length <= maxLength) return text;
-    return '${text.substring(0, maxLength - 1)}…';
   }
 
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible

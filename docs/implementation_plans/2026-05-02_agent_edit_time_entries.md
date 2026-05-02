@@ -441,7 +441,7 @@ Future<String> _buildEditableTimeEntriesSection(
   //   - id: <uuid>
   //     dateFrom: <iso>
   //     dateTo:   <iso>
-  //     text:     "<truncated to ~200 chars>"
+  //     text:     "<entry text>"
 }
 ```
 
@@ -639,7 +639,8 @@ not introducing a new freezed model.
     extracted).
 17. Tests: empty list → no section; with entries → section formatted
     correctly; running timer is excluded; cross-task-linked entries are
-    excluded; cap of N is enforced and ordering is newest-first.
+    excluded; all linked completed entries are listed and ordering is
+    newest-first.
 
 ### Phase 6 — Review UI
 
@@ -711,7 +712,7 @@ animation; use `fakeAsync` where timers are involved.
 
 - `_buildEditableTimeEntriesSection` returns empty string when no
   editable entries exist.
-- Section content includes ID, ISO timestamps, truncated text.
+- Section content includes ID, ISO timestamps, and entry text.
 - Running timer entry is excluded.
 - Audio / image / measurement entries are excluded.
 - Cross-task-linked entries are excluded.

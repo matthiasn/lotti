@@ -2656,7 +2656,36 @@ void main() {
         },
       );
 
-      test('truncates long editable time entry text', () async {
+      test(
+        'lists every linked JournalEntry in Editable Time Entries',
+        () async {
+          final entries = List.generate(21, (index) {
+            final id = index.toString().padLeft(2, '0');
+            return _makeLinkedTimeEntry(
+              id: 'entry-$id',
+              dateFrom: DateTime(2024, 6, 15, index),
+              dateTo: DateTime(2024, 6, 15, index, 30),
+              text: 'Entry $id notes',
+            );
+          });
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => entries);
+
+          final message = await executeAndCaptureMessage();
+
+          expect(message, isNotNull);
+          expect('- id:'.allMatches(message!).length, 21);
+          expect(message, contains('id: entry-20'));
+          expect(message, contains('id: entry-00'));
+          expect(
+            message.indexOf('id: entry-20'),
+            lessThan(message.indexOf('id: entry-00')),
+          );
+        },
+      );
+
+      test('includes full editable time entry text', () async {
         final longText = 'x' * 205;
         when(
           () => mockJournalDb.getLinkedEntities(taskId),
@@ -2675,8 +2704,7 @@ void main() {
 
         expect(message, isNotNull);
         expect(message, contains('id: entry-long'));
-        expect(message, contains('"${'x' * 199}…"'));
-        expect(message, isNot(contains(longText)));
+        expect(message, contains(jsonEncode(longText)));
       });
 
       test(

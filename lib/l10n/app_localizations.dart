@@ -1620,25 +1620,25 @@ abstract class AppLocalizations {
   /// **'7-Day Total'**
   String get agentStatsWeekTotalLabel;
 
-  /// No description provided for @agentSuggestionTimeEntryUpdateCurrent.
+  /// Label for the current value in an agent-proposed time entry edit diff.
   ///
   /// In en, this message translates to:
   /// **'Current'**
   String get agentSuggestionTimeEntryUpdateCurrent;
 
-  /// No description provided for @agentSuggestionTimeEntryUpdateNoChange.
+  /// Marker shown next to an unchanged current value in an agent-proposed time entry edit diff.
   ///
   /// In en, this message translates to:
   /// **'(unchanged)'**
   String get agentSuggestionTimeEntryUpdateNoChange;
 
-  /// No description provided for @agentSuggestionTimeEntryUpdateProposed.
+  /// Label for the proposed value in an agent-proposed time entry edit diff.
   ///
   /// In en, this message translates to:
   /// **'Proposed'**
   String get agentSuggestionTimeEntryUpdateProposed;
 
-  /// No description provided for @agentSuggestionTimeEntryUpdateUnavailable.
+  /// Message shown when the original time entry cannot be loaded for an agent-proposed edit.
   ///
   /// In en, this message translates to:
   /// **'Original entry not available'**
