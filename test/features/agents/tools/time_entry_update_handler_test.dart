@@ -311,6 +311,25 @@ void main() {
         ).called(1);
       });
 
+      test('trims surrounding whitespace from datetime arguments', () async {
+        stubEntry(makeEntry());
+
+        final result = await handler.handle(sourceTaskId, {
+          'entryId': entryId,
+          'startTime': ' 2026-04-15T12:30:00 ',
+          'endTime': ' 2026-04-15T14:45:00 ',
+        });
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockPersistenceLogic.updateJournalEntry(
+            journalEntityId: entryId,
+            dateFrom: DateTime(2026, 4, 15, 12, 30),
+            dateTo: DateTime(2026, 4, 15, 14, 45),
+          ),
+        ).called(1);
+      });
+
       test('updates dateTo only', () async {
         stubEntry(makeEntry());
 

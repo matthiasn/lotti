@@ -167,7 +167,7 @@ class TimeEntryUpdateHandler {
     if (!args.containsKey(key)) return (value: null, error: null);
 
     final raw = args[key];
-    if (raw is! String || raw.isEmpty) {
+    if (raw is! String) {
       return (
         value: null,
         error: ToolExecutionResult(
@@ -180,7 +180,21 @@ class TimeEntryUpdateHandler {
       );
     }
 
-    final parsed = parseTimeEntryLocalDateTime(raw);
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return (
+        value: null,
+        error: ToolExecutionResult(
+          success: false,
+          output:
+              'Error: "$key" must be a valid ISO 8601 datetime '
+              'with explicit local time',
+          errorMessage: 'Missing or invalid $key',
+        ),
+      );
+    }
+
+    final parsed = parseTimeEntryLocalDateTime(trimmed);
     if (parsed == null) {
       return (
         value: null,

@@ -131,7 +131,7 @@ not start in the future.
    own `EntryFlag.import` clearing semantics for audio / image.
 
 10. **`[generated]` suffix.** New summary text continues to be persisted
-    with the trailing ` [generated]` marker, matching
+    with the trailing `[generated]` marker, matching
     `RunningTimerUpdateHandler` (`running_timer_update_handler.dart:106`)
     and `TimeEntryHandler` (`time_entry_handler.dart:200`). Skipping the
     suffix on edits would be inconsistent with how authors of these
