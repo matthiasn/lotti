@@ -507,7 +507,7 @@ void main() {
       expect(widget.isHighlighted, isTrue);
     });
 
-    testWidgets('timer highlight renders a glowing border overlay', (
+    testWidgets('timer highlight renders a static border overlay', (
       tester,
     ) async {
       when(
@@ -529,8 +529,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // Verify a CustomPaint overlay is rendered for the glow
+      // Verify a CustomPaint overlay is rendered without leaving a ticker active.
       expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      expect(tester.binding.transientCallbackCount, 0);
     });
 
     testWidgets('no highlight renders plain card', (tester) async {

@@ -129,11 +129,10 @@ class EntryDetailsWidget extends ConsumerWidget {
             child: IgnorePointer(
               child: Padding(
                 padding: cardMargin,
-                child: _PulsingBorder(
+                child: _TimerBorder(
                   color: color,
                   radius: AppTheme.cardBorderRadius,
                   strokeWidth: 1,
-                  duration: const Duration(milliseconds: 1200),
                 ),
               ),
             ),
@@ -165,7 +164,6 @@ class EntryDetailsWidget extends ConsumerWidget {
                   radius: AppTheme.cardBorderRadius,
                   strokeWidth: 1,
                   duration: const Duration(milliseconds: 4800),
-                  loop: false,
                   startDelay: const Duration(milliseconds: 1000),
                   loopCount: 4,
                 ),
@@ -241,7 +239,6 @@ class _PulsingBorder extends StatefulWidget {
     required this.radius,
     required this.strokeWidth,
     required this.duration,
-    this.loop = true,
     this.loopCount,
     this.startDelay = Duration.zero,
   });
@@ -250,7 +247,6 @@ class _PulsingBorder extends StatefulWidget {
   final double radius;
   final double strokeWidth;
   final Duration duration;
-  final bool loop;
   final int? loopCount; // if set, run this many loops, then stop
   final Duration startDelay;
 
@@ -293,12 +289,6 @@ class _PulsingBorderState extends State<_PulsingBorder>
       final sequence = TweenSequence<double>(items);
       return _controller.drive(sequence);
     }
-    if (widget.loop) {
-      // Looping: simple tween; controller repeats elsewhere
-      return Tween<double>(begin: low, end: high).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
-      );
-    }
     // One-shot: low -> high (brief hold) -> long, gentle fade to low
     return TweenSequence<double>([
       // Rise
@@ -328,16 +318,10 @@ class _PulsingBorderState extends State<_PulsingBorder>
   @override
   void initState() {
     super.initState();
-    // Start the animation sequence once; let loopCount/loop dictate behavior.
+    // Start the finite animation sequence once.
     _startDelayTimer = Timer(widget.startDelay, () {
       if (!mounted) return;
-      if (widget.loopCount != null) {
-        _controller.forward();
-      } else if (widget.loop) {
-        _controller.repeat(reverse: true);
-      } else {
-        _controller.forward();
-      }
+      _controller.forward();
     });
   }
 
@@ -372,6 +356,64 @@ class _PulsingBorderState extends State<_PulsingBorder>
         ),
       ),
     );
+  }
+}
+
+class _TimerBorder extends StatelessWidget {
+  const _TimerBorder({
+    required this.color,
+    required this.radius,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _TimerBorderPainter(
+        color: color,
+        radius: radius,
+        strokeWidth: strokeWidth,
+      ),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _TimerBorderPainter extends CustomPainter {
+  const _TimerBorderPainter({
+    required this.color,
+    required this.radius,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double radius;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(
+      rect.deflate(strokeWidth / 2),
+      Radius.circular(radius),
+    );
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..color = color;
+
+    canvas.drawRRect(rrect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TimerBorderPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.radius != radius ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }
 

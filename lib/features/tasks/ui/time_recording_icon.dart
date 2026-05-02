@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
@@ -19,14 +18,18 @@ class TimeRecordingIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeService = getIt<TimeService>();
 
-    return StreamBuilder(
-      stream: timeService.getStream(),
+    return StreamBuilder<String?>(
+      initialData: timeService.linkedFrom?.meta.id,
+      stream: timeService
+          .getStream()
+          .map((_) => timeService.linkedFrom?.meta.id)
+          .distinct(),
       builder:
           (
             _,
-            AsyncSnapshot<JournalEntity?> snapshot,
+            AsyncSnapshot<String?> snapshot,
           ) {
-            if (timeService.linkedFrom?.id != taskId) {
+            if (snapshot.data != taskId) {
               return const SizedBox.shrink();
             }
 

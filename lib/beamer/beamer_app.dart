@@ -426,7 +426,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 const IncomingVerificationWrapper(),
                 IndexedStack(
                   index: index,
-                  children: beamerChildren,
+                  children: [
+                    for (var i = 0; i < beamerChildren.length; i++)
+                      TickerMode(
+                        enabled: i == index,
+                        child: beamerChildren[i],
+                      ),
+                  ],
                 ),
                 const Positioned(
                   left: AppScreenConstants.navigationPadding,
@@ -483,7 +489,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           const IncomingVerificationWrapper(),
           IndexedStack(
             index: index,
-            children: beamerChildren,
+            children: [
+              for (var i = 0; i < beamerChildren.length; i++)
+                TickerMode(
+                  enabled: i == index,
+                  child: beamerChildren[i],
+                ),
+            ],
           ),
           Positioned(
             left: 0,

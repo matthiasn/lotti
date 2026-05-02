@@ -324,7 +324,10 @@ class RunningTimerCategoryId extends _$RunningTimerCategoryId {
 
   void _listen() {
     _subscription = _timeService.getStream().listen((_) {
-      state = _getCurrentCategoryId();
+      final nextCategoryId = _getCurrentCategoryId();
+      if (nextCategoryId != state) {
+        state = nextCategoryId;
+      }
     });
   }
 

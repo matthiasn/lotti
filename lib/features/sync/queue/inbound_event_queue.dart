@@ -58,7 +58,8 @@ enum RetryReason {
 
   /// Waiting for an attachment JSON (descriptor or agent entity
   /// payload) to land on disk. Retried with a longer backoff ladder
-  /// and no `_maxAttempts` cap — see `ApplyOutcome.pendingAttachment`.
+  /// and a wall-clock timeout instead of the generic attempt cap —
+  /// see `ApplyOutcome.pendingAttachment`.
   pendingAttachment,
 }
 
@@ -72,6 +73,7 @@ class InboundQueueEntry {
     required this.roomId,
     required this.originTs,
     required this.producer,
+    required this.enqueuedAt,
     required this.attempts,
     required this.leaseUntil,
     required this.rawJson,
@@ -82,6 +84,7 @@ class InboundQueueEntry {
   final String roomId;
   final int originTs;
   final InboundEventProducer producer;
+  final int enqueuedAt;
   final int attempts;
   final int leaseUntil;
   final String rawJson;
@@ -492,6 +495,7 @@ class InboundQueue {
     roomId: row.roomId,
     originTs: row.originTs,
     producer: _producerFromName(row.producer),
+    enqueuedAt: row.enqueuedAt,
     attempts: row.attempts,
     leaseUntil: leaseUntil,
     rawJson: row.rawJson,

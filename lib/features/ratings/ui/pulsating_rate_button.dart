@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -80,11 +82,10 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
   late final Animation<double> _animation;
   bool _isPulsing = false;
 
-  /// Number of full pulse cycles (forward + reverse = 1 cycle).
-  /// With a 1-second animation duration, each cycle is 2 seconds,
-  /// so 5 cycles ≈ 10 seconds of pulsing.
+  /// Number of full pulse cycles (forward + reverse = 1 cycle). With a
+  /// 1-second animation duration per leg, 5 cycles is about 10 seconds.
   static const _maxPulseCycles = 5;
-  int _completedCycles = 0;
+  static const _repeatIterationsPerCycle = 2;
 
   @override
   void initState() {
@@ -96,28 +97,27 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
     _animation = Tween<double>(begin: 0.4, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-    _controller.addStatusListener(_onAnimationStatus);
 
     if (widget.shouldPulse) {
       _startPulsing();
     }
   }
 
-  void _onAnimationStatus(AnimationStatus status) {
-    // Count a full cycle when the animation completes a reverse pass
-    if (status == AnimationStatus.dismissed && _isPulsing) {
-      _completedCycles++;
-      if (_completedCycles >= _maxPulseCycles) {
-        _controller.stop();
-        setState(() => _isPulsing = false);
-      }
-    }
-  }
-
   void _startPulsing() {
+    if (_isPulsing) return;
     _isPulsing = true;
-    _completedCycles = 0;
-    _controller.repeat(reverse: true);
+    unawaited(
+      _controller
+          .repeat(
+            reverse: true,
+            count: _maxPulseCycles * _repeatIterationsPerCycle,
+          )
+          .whenComplete(() {
+            if (!mounted) return;
+            _controller.value = 1;
+            setState(() => _isPulsing = false);
+          }),
+    );
   }
 
   @override
@@ -130,9 +130,7 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
 
   @override
   void dispose() {
-    _controller
-      ..removeStatusListener(_onAnimationStatus)
-      ..dispose();
+    _controller.dispose();
     super.dispose();
   }
 
