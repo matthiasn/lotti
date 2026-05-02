@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.988]
+### Changed
+- Outbox post-drain settle window raised from 250 ms to 1500 ms and lifted
+  into `SyncTuning.outboxPostDrainSettle`. Bursty edits (rapid typing,
+  imports, multi-entity flows) now coalesce into the next bundle instead
+  of shipping one bundle per write, so the outbox sends fewer, fuller
+  trains while keeping the first-departure latency unchanged.
+
 ### Fixed
 - Faster task-list, projects, and inbound sync queries via new SQLite
   indices and tighter sync transactions.

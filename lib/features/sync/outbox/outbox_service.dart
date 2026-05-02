@@ -52,7 +52,7 @@ class OutboxService {
     // Optional seams for testing/injection
     Stream<List<ConnectivityResult>>? connectivityStream,
     SyncSequenceLogService? sequenceLogService,
-    Duration postDrainSettle = _defaultPostDrainSettle,
+    Duration postDrainSettle = SyncTuning.outboxPostDrainSettle,
     DomainLogger? domainLogger,
     SyncActivitySignaler? activitySignaler,
   }) : _postDrainSettle = postDrainSettle,
@@ -553,7 +553,6 @@ class OutboxService {
   /// runner pass now happily sends the whole backlog back-to-back as
   /// long as nothing is wrong.
   static const int _maxDrainPasses = 2000;
-  static const Duration _defaultPostDrainSettle = Duration(milliseconds: 250);
   final Duration _postDrainSettle;
 
   void _recordBackoff(Duration delay) {
@@ -598,6 +597,7 @@ class OutboxService {
 
   Future<bool> _drainOutbox() async {
     for (var pass = 0; pass < _maxDrainPasses; pass++) {
+      if (_isDisposed) return false;
       if (!_activityGate.canProcess) {
         _loggingService.captureEvent(
           'drain.paused activityGate.canProcess=false',
@@ -734,6 +734,7 @@ class OutboxService {
 
       // Allow recent enqueues to settle then attempt one more drain.
       await Future<void>.delayed(_postDrainSettle);
+      if (_isDisposed) return;
       if (!_activityGate.canProcess) {
         _loggingService.captureEvent(
           'sendNext.postSettle.paused activityGate.canProcess=false',

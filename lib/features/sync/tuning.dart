@@ -109,6 +109,14 @@ class SyncTuning {
   static const Duration outboxDbNudgeDebounce = Duration(milliseconds: 50);
   static const Duration outboxIdleThreshold = Duration(milliseconds: 1200);
 
+  /// Settle window after a successful drain pass before attempting one more
+  /// drain. Lets bursty enqueues (rapid edits, imports, multi-entity flows)
+  /// coalesce into the next bundle so the outbox ships fewer, fuller trains
+  /// instead of one bundle per write. Sized well above [outboxDbNudgeDebounce]
+  /// so a row landing in DB during the settle is reliably observed by the
+  /// follow-up drain.
+  static const Duration outboxPostDrainSettle = Duration(milliseconds: 1500);
+
   // Live-scan / Catch-up coalescing
   static const Duration minLiveScanGap = Duration(seconds: 1);
   static const Duration trailingLiveScanDebounce = Duration(milliseconds: 120);
