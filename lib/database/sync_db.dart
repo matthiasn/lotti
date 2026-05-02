@@ -637,6 +637,12 @@ class SyncDatabase extends _$SyncDatabase {
       // `idx_outbox_actionable_priority_created_at` (pending + sending,
       // ordered by `(priority, created_at)`) and walks it index-only.
       // The merge in Dart is bounded by `2 × maxSize` rows; trivial.
+      // `id` is the third sort key so the merged batch matches the
+      // contiguous-prefix ordering contract `OutboxRepository.
+      // claimNextBatch` and `OutboxProcessor._processBundle` rely on:
+      // when (priority, createdAt) tie, picking a stable order keeps
+      // the first `filePath != null` boundary deterministic across
+      // repeated calls.
       final pendingRows =
           await (select(outbox)
                 ..where(
@@ -645,6 +651,7 @@ class SyncDatabase extends _$SyncDatabase {
                 ..orderBy([
                   (t) => OrderingTerm(expression: t.priority),
                   (t) => OrderingTerm(expression: t.createdAt),
+                  (t) => OrderingTerm(expression: t.id),
                 ])
                 ..limit(maxSize))
               .get();
@@ -658,6 +665,7 @@ class SyncDatabase extends _$SyncDatabase {
                 ..orderBy([
                   (t) => OrderingTerm(expression: t.priority),
                   (t) => OrderingTerm(expression: t.createdAt),
+                  (t) => OrderingTerm(expression: t.id),
                 ])
                 ..limit(maxSize))
               .get();
@@ -665,7 +673,9 @@ class SyncDatabase extends _$SyncDatabase {
         ..sort((a, b) {
           final p = a.priority.compareTo(b.priority);
           if (p != 0) return p;
-          return a.createdAt.compareTo(b.createdAt);
+          final created = a.createdAt.compareTo(b.createdAt);
+          if (created != 0) return created;
+          return a.id.compareTo(b.id);
         });
       if (candidates.length > maxSize) {
         candidates.removeRange(maxSize, candidates.length);

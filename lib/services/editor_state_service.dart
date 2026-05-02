@@ -29,8 +29,13 @@ class EditorStateService {
     // into one `id IN (...)` query collapses the wave and unblocks the
     // editor warm-up.
     final entryIds = {for (final d in drafts) d.entryId};
+    // Unordered variant — we build a `Map<id, entity>` for direct
+    // lookup, so the `ORDER BY date_from DESC` of the ordered drift
+    // query is wasted work here.
     final entities = await _journalDb
-        .journalEntitiesByIdsAllPrivate(entryIds.toList(growable: false))
+        .journalEntitiesByIdsUnorderedAllPrivate(
+          entryIds.toList(growable: false),
+        )
         .get();
     final entityById = <String, JournalDbEntity>{
       for (final entity in entities) entity.id: entity,

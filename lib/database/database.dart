@@ -1236,15 +1236,17 @@ class JournalDb extends _$JournalDb {
 
     final idList = ids.toSet().toList(growable: false);
     final placeholders = List.filled(idList.length, '?').join(', ');
-    // Pin the journal PK index. The slow-query log captured this query
-    // hitting `idx_journal_browse (deleted=?, type=?)` for an `id IN
-    // (...)` predicate, which fans out across the entire (non-deleted,
-    // Task) partition before filtering on `id`. With the autoindex
-    // pinned the planner does N PK seeks instead.
+    // The planner picks the PK (`sqlite_autoindex_journal_1`) on its
+    // own once stats are fresh — we no longer pin it via `INDEXED BY`
+    // because the autoindex name is not part of the public SQLite
+    // contract. The v42 migration runs `ANALYZE` so installs that
+    // pull this branch get accurate planner stats; subsequent
+    // `id IN (...)` queries see the PK seek as the cheap path
+    // without a hint.
     final rows = await customSelect(
       '''
       SELECT id, json_extract(serialized, '\$.data.estimate') AS estimate_us
-      FROM journal INDEXED BY sqlite_autoindex_journal_1
+      FROM journal
       WHERE id IN ($placeholders)
       AND deleted = FALSE
       AND type = 'Task'

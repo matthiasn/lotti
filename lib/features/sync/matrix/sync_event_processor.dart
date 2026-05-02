@@ -816,9 +816,26 @@ class SyncEventProcessor {
     return entries.map((entry) => '${entry.key}:${entry.value}').join('|');
   }
 
+  /// Upserts every embedded entry link and returns the count that
+  /// actually wrote a row.
+  ///
+  /// Set [rethrowOnError] when this runs inside a transaction whose
+  /// commit must be conditional on every link succeeding — e.g. the
+  /// journal-entity apply path, where the entity row + its embedded
+  /// links need to land atomically. Without rethrow, a single
+  /// `upsertEntryLink` failure would be logged and the loop would
+  /// continue, then the transaction would commit the entity *with*
+  /// only some of its links; later redelivery of the same event
+  /// resolves to the duplicate path and never retries the missing
+  /// upserts.
+  ///
+  /// Default `false` preserves the legacy behaviour for callers that
+  /// process links *outside* a transaction (best-effort delivery), so
+  /// a poison link does not block unrelated work.
   Future<int> _processEmbeddedEntryLinks({
     required List<EntryLink>? entryLinks,
     required JournalDb journalDb,
+    bool rethrowOnError = false,
   }) async {
     var processedLinksCount = 0;
     if (entryLinks == null || entryLinks.isEmpty) {
@@ -843,6 +860,7 @@ class SyncEventProcessor {
           subDomain: 'apply.entryLink.embedded',
           stackTrace: st,
         );
+        if (rethrowOnError) rethrow;
       }
     }
     if (affectedIds.isNotEmpty) {
@@ -1279,9 +1297,15 @@ class SyncEventProcessor {
         // links are established even when the entity itself is skipped
         // (e.g., local version is newer), preventing gray calendar
         // entries that rely on links for category color lookup.
+        // `rethrowOnError: true` so a failed `upsertEntryLink` aborts
+        // the enclosing transaction. Without that, the entity row
+        // would commit with only a partial link set, and the next
+        // redelivery of this event resolves to the duplicate path —
+        // those missing links would never be retried.
         final processed = await _processEmbeddedEntryLinks(
           entryLinks: entryLinks,
           journalDb: journalDb,
+          rethrowOnError: true,
         );
         return (result, processed);
       });

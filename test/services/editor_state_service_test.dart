@@ -56,7 +56,7 @@ void main() {
       // Mock entityById and the bulk variant the new init() coalesces to.
       when(() => mockJournalDb.entityById(any())).thenAnswer((_) async => null);
       when(
-        () => mockJournalDb.journalEntitiesByIdsAllPrivate(any()),
+        () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
       ).thenAnswer((_) => FakeJournalEntitiesQuery(const <JournalDbEntity>[]));
 
       getIt
@@ -87,7 +87,7 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.journalEntitiesByIdsAllPrivate(any()),
+        () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
       ).thenAnswer(
         (_) => FakeJournalEntitiesQuery(<JournalDbEntity>[testEntity]),
       );
@@ -122,7 +122,7 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.journalEntitiesByIdsAllPrivate(any()),
+        () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
       ).thenAnswer(
         (_) => FakeJournalEntitiesQuery(<JournalDbEntity>[testEntity]),
       );
