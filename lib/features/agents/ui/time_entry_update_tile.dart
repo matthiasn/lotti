@@ -9,7 +9,7 @@ import 'package:lotti/themes/theme.dart';
 // ignore: specify_nonobvious_property_types
 final timeEntryUpdateTileEntryProvider = FutureProvider.autoDispose
     .family<JournalEntity?, String>((ref, entryId) {
-      return ref.read(journalRepositoryProvider).getJournalEntityById(entryId);
+      return ref.watch(journalRepositoryProvider).getJournalEntityById(entryId);
     });
 
 /// Review presentation for a pending `update_time_entry` proposal.
