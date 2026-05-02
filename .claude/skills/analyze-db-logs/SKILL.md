@@ -16,7 +16,7 @@ The user provides the path to the log directory — typically a gitignored
 local copy they pulled off a device or simulator. Repository convention is
 `./logs/` at the repo root (already in `.gitignore`).
 
-```
+```sh
 /analyze-db-logs ./logs/                       # most recent date in ./logs/
 /analyze-db-logs ./logs/desktop                # platform-scoped subdir
 /analyze-db-logs ./logs/mobile 2026-05-02      # specific date
@@ -64,7 +64,7 @@ end.
 
 Glob discovery rule of thumb:
 
-```
+```text
 <path>/{slow_queries,super_slow_queries}-*.log         # path is leaf
 <path>/*/{slow_queries,super_slow_queries}-*.log       # path is parent
 ```
@@ -76,13 +76,13 @@ is given.
 
 A slow-query line is a single line:
 
-```
+```text
 2026-05-02T19:11:48.592 [db.sqlite] select 388.759ms args=0 SELECT * FROM ...
 ```
 
 A super-slow entry is the same line plus indented continuation lines:
 
-```
+```text
 2026-05-02T19:11:48.592 [db.sqlite] select 388.759ms args=0 SELECT ...
   PLAN: 4|0|SEARCH journal USING INDEX idx_journal_browse (deleted=? AND type=?)
   PLAN: 84|0|USE TEMP B-TREE FOR ORDER BY
@@ -131,12 +131,19 @@ path, or a slow `beforeOpen` hook. The wall-clock measurement starts
 when drift accepts the request, so queue wait shows up as "elapsed".
 
 **Confirm by**:
-- Check whether all entries share `STACK: #5  DatabaseConnectionUser.doWhenOpened` —
-  that means the whole wave was gated by the DB open path.
+- Check the `elapsed` band: a 100ms+ spread *across* the wave with
+  near-identical *finish* timestamps (use the leading ISO timestamp,
+  not the elapsed) means the queries unblocked together. The
+  interceptor strips drift / dart-runtime frames so the original
+  `STACK: #5 DatabaseConnectionUser.doWhenOpened` boilerplate is
+  *not* visible in the log — infer the gate from the timing pattern,
+  not from a frame name.
 - Look at the line *just before* the wave for a long-running write or
   transaction.
 - Boot waves often correlate with `EntitiesCacheService.init` firing
-  `Future.wait` of definitions queries.
+  `Future.wait` of definitions queries — the surviving `STACK:` heads
+  for the wave will point at distinct controllers / repositories
+  whose initial fetches all queued together.
 
 **Likely fixes**:
 - Move `ANALYZE` and other heavy work *off* the boot path (`beforeOpen`
@@ -224,18 +231,28 @@ that includes `USE TEMP B-TREE FOR ORDER BY`, `SCAN <table>`, or an
 index match where the leading column is not the most selective
 predicate.
 
-**Recurring offenders fixed in this branch**:
+**Recurring offenders already fixed in shipped code** — verify these
+still match the current `lib/database/database.drift`,
+`lib/database/sync_db.dart`, and `lib/database/database.dart` before
+citing them. Treat the list as historical context, not an asserted
+current truth:
 - `task_priority_rank` ordering with high-cardinality
-  `category IN (...)` predicate → added partial index
-  `idx_journal_tasks_status_priority_date` so the planner streams the
-  ordered task list without a temp B-tree.
-- `getBulkLinkedTimeSpans` join → added
-  `idx_linked_entries_from_id_hidden_to_id` covering index.
-- `inbound_event_queue` stats `MIN(enqueued_at)` SCAN → added
-  `idx_inbound_event_queue_status_enqueued`.
-- `claimNextOutboxBatch` SCAN from `status = pending OR (status =
-  sending AND updated_at < cutoff)` → split into two indexed seeks
-  merged in Dart.
+  `category IN (...)` predicate. The fix shipped as a partial index
+  named (at the time) `idx_journal_tasks_status_priority_date`; if it
+  is still in `database.drift`, recommend it as the steady-state path,
+  otherwise treat the symptom as an open issue.
+- `getBulkLinkedTimeSpans` join over `linked_entries`. The fix shipped
+  as a covering index `idx_linked_entries_from_id_hidden_to_id`.
+- `inbound_event_queue` stats `MIN(enqueued_at)` SCAN. The fix shipped
+  as `idx_inbound_event_queue_status_enqueued` plus
+  `idx_inbound_event_queue_status_due_lease`.
+- `claimNextOutboxBatch` SCAN from
+  `status = pending OR (status = sending AND updated_at < cutoff)`.
+  The fix shipped as two indexed seeks merged in Dart.
+
+If a query still matches one of these symptom shapes despite the named
+index existing, suspect stale stats first (recommend `ANALYZE`) before
+proposing a new index.
 
 **When inspecting new logs**: if the plan is suboptimal, recommend
 running `ANALYZE` first (planner stats can drift); only after
