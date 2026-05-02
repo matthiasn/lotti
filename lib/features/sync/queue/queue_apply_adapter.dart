@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -187,24 +188,50 @@ class QueueApplyAdapter {
     InboundQueueEntry entry,
     PreparedSyncEvent prepared,
   ) async {
-    // Step 3 — apply inside the writer transaction. Short by design
-    // (pure DB work); attachment I/O already resolved above. Apply-
-    // time failures are treated as retriable because the event has
-    // already survived deserialisation + prepare, so a throw here is
-    // much more likely to be a transient writer failure (lock
+    // Step 3 — apply. Wrap in a JournalDb writer transaction ONLY for
+    // payload families that actually write to JournalDb tables (entity
+    // upserts, entry-link upserts, entity-definition upserts). Other
+    // families (theming, ai-config, agent entity/link/bundle, outbox
+    // bundle, backfill request/response) write to other databases
+    // (settings_db, ai_config_db, agent_db, outbox via sync_db) and
+    // gain nothing from holding the journal writer lock — but they
+    // *cost* readers, who serialise behind the writer for the whole
+    // apply duration. The super-slow log captured this as cluster-
+    // shaped read waves all unblocking together when a non-journal
+    // sync apply released the lock.
+    //
+    // Apply-time failures are treated as retriable because the event
+    // has already survived deserialisation + prepare, so a throw here
+    // is much more likely to be a transient writer failure (lock
     // timeout, disk full, temporary schema conflict) than a poison
     // event. `InboundWorker._maybeRetry` caps retries at
     // `_maxAttempts` and then records `maxAttempts(reason)` via
     // `markSkipped`, so we cannot loop forever on a logic bug — the
     // worker eventually gives up without data loss from a premature
     // permanentSkip that would advance the marker past the event.
+    // `_writesJournalDb` introspects `prepared.syncMessage`; tests mock
+    // `PreparedSyncEvent` without stubbing the field, so guard against
+    // a throw by falling back to the safe (wrapped) path.
+    var wrap = true;
     try {
-      await _journalDb.transaction(() async {
+      wrap = _writesJournalDb(prepared.syncMessage);
+    } catch (_) {
+      wrap = true;
+    }
+    try {
+      if (wrap) {
+        await _journalDb.transaction(() async {
+          await _processor.apply(
+            prepared: prepared,
+            journalDb: _journalDb,
+          );
+        });
+      } else {
         await _processor.apply(
           prepared: prepared,
           journalDb: _journalDb,
         );
-      });
+      }
       return ApplyOutcome.applied;
     } on IOException catch (error, stackTrace) {
       if (_looksLikePendingAttachment(error)) {
@@ -271,6 +298,41 @@ class QueueApplyAdapter {
       }
     }
     return false;
+  }
+
+  /// True for payload families whose `apply` path writes to JournalDb
+  /// tables (`journal`, `linked_entries`, `*_definitions`). Other
+  /// families resolve their writes against other databases and do not
+  /// need the journal writer lock; wrapping them in a JournalDb
+  /// transaction is pure overhead and serialises every concurrent
+  /// reader. Errs conservatively: any new payload type defaults to
+  /// `true` so we keep the old behaviour until explicitly opted out.
+  static bool _writesJournalDb(SyncMessage message) {
+    return message.map(
+      // Journal upsert — JournalDb.
+      journalEntity: (_) => true,
+      // linked_entries upsert — JournalDb.
+      entryLink: (_) => true,
+      // category/habit/dashboard/measurable/label _definitions —
+      // JournalDb.
+      entityDefinition: (_) => true,
+      // ai_config_db.
+      aiConfig: (_) => false,
+      aiConfigDelete: (_) => false,
+      // settings_db.
+      themingSelection: (_) => false,
+      // backfill handler does its own DB selection; conservatively
+      // wrap so any journal-writing branch stays atomic.
+      backfillRequest: (_) => true,
+      backfillResponse: (_) => true,
+      // agent_db.
+      agentEntity: (_) => false,
+      agentLink: (_) => false,
+      agentBundle: (_) => false,
+      // OutboxBundle unpacks into journal/linked_entries via
+      // _outboxBundleUnpacker.apply — keep wrapped.
+      outboxBundle: (_) => true,
+    );
   }
 }
 
