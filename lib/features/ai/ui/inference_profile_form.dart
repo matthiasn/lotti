@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
-import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -181,7 +181,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
               style: context.textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            ...SkillSeedingService.defaultSkills
+            ...builtInSkills
                 .where(
                   (s) =>
                       s.skillType == SkillType.transcription ||
@@ -229,7 +229,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   /// persisting an inconsistent state where a skill claims to be automated
   /// but the profile has no model to execute it.
   ///
-  /// Note: only checks `defaultSkills` — custom/future skills pass through
+  /// Note: only checks built-in skills — custom/future skills pass through
   /// unchanged. Extend this when custom skill editing is added.
   List<SkillAssignment> _sanitizedSkillAssignments() {
     // First, deduplicate legacy same-SkillType entries: keep only the last
@@ -238,9 +238,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     final deduped = <SkillType, SkillAssignment>{};
     final unknown = <SkillAssignment>[];
     for (final a in _skillAssignments) {
-      final skill = SkillSeedingService.defaultSkills
-          .where((s) => s.id == a.skillId)
-          .firstOrNull;
+      final skill = builtInSkills.where((s) => s.id == a.skillId).firstOrNull;
       if (skill == null) {
         unknown.add(a);
       } else {
@@ -253,9 +251,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     // is currently empty.
     return normalized.map((a) {
       if (!a.automate) return a;
-      final skill = SkillSeedingService.defaultSkills
-          .where((s) => s.id == a.skillId)
-          .firstOrNull;
+      final skill = builtInSkills.where((s) => s.id == a.skillId).firstOrNull;
       if (skill == null) return a;
       final hasModel = _modelIdForSkillType(skill.skillType) != null;
       if (hasModel) return a;
@@ -266,14 +262,14 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   void _toggleSkillAssignment(String skillId, {required bool automate}) {
     setState(() {
       // Find the skill type for mutual exclusion.
-      final toggledSkill = SkillSeedingService.defaultSkills
+      final toggledSkill = builtInSkills
           .where((s) => s.id == skillId)
           .firstOrNull;
 
       if (automate && toggledSkill != null) {
         // Remove all assignments of the same SkillType so only one
         // automated skill per capability is active at a time.
-        final sameTypeIds = SkillSeedingService.defaultSkills
+        final sameTypeIds = builtInSkills
             .where((s) => s.skillType == toggledSkill.skillType)
             .map((s) => s.id)
             .toSet();

@@ -3,8 +3,8 @@ import 'dart:developer' as developer;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 
 /// Well-known IDs for default inference profiles (idempotent seeding).
 const profileGeminiFlashId = 'profile-gemini-flash-001';
@@ -116,9 +116,7 @@ class ProfileSeedingService {
       if (template.skillAssignments.isEmpty) continue;
 
       final sanitized = template.skillAssignments.where((a) {
-        final skill = SkillSeedingService.defaultSkills
-            .where((s) => s.id == a.skillId)
-            .firstOrNull;
+        final skill = findBuiltInSkill(a.skillId);
         if (skill == null) return true; // keep unknown skills as-is
         return _hasSlotForSkillType(existing, skill.skillType);
       }).toList();

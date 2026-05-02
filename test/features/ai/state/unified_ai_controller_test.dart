@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
@@ -493,36 +494,16 @@ void main() {
               )
               as AiConfigSkill;
 
-      // Mock the AI config stream for skills
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-      ).thenAnswer((_) => Stream.value([transcriptionSkill]));
-
-      // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          skillRegistryProvider.overrideWithValue([transcriptionSkill]),
           createEntryControllerOverride(audioEntity),
         ],
       );
       containersToDispose.add(testContainer);
 
-      // Keep aiConfigByTypeController alive during the test
-      final skillConfigSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
-        (_, _) {},
-      );
-
-      // Wait for entry controller to be ready
       await testContainer.read(
         entryControllerProvider(id: audioEntity.id).future,
-      );
-
-      // Wait for config provider to be ready
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.skill,
-        ).future,
       );
 
       final hasSkills = await testContainer.read(
@@ -530,7 +511,6 @@ void main() {
       );
 
       expect(hasSkills, true);
-      skillConfigSub.close();
     });
 
     test('returns false when no skills are available', () async {
@@ -544,36 +524,16 @@ void main() {
         ),
       );
 
-      // Mock the AI config stream for skills with empty list
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-      ).thenAnswer((_) => Stream.value([]));
-
-      // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          skillRegistryProvider.overrideWithValue(const []),
           createEntryControllerOverride(journalEntry),
         ],
       );
       containersToDispose.add(testContainer);
 
-      // Keep aiConfigByTypeController alive during the test
-      final skillConfigSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
-        (_, _) {},
-      );
-
-      // Wait for entry controller to be ready
       await testContainer.read(
         entryControllerProvider(id: journalEntry.id).future,
-      );
-
-      // Wait for config provider to be ready
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.skill,
-        ).future,
       );
 
       final hasSkills = await testContainer.read(
@@ -581,7 +541,6 @@ void main() {
       );
 
       expect(hasSkills, false);
-      skillConfigSub.close();
     });
   });
 
@@ -939,46 +898,30 @@ void main() {
           modalities: [Modality.audio],
         );
 
-        when(
-          () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-        ).thenAnswer(
-          (_) => Stream.value([transcriptionSkill, promptSkill]),
-        );
-
         final testContainer = ProviderContainer(
           overrides: [
-            aiConfigRepositoryProvider.overrideWithValue(
-              mockAiConfigRepository,
-            ),
+            skillRegistryProvider.overrideWithValue([
+              transcriptionSkill,
+              promptSkill,
+            ]),
             createEntryControllerOverride(audioEntity),
           ],
         );
         containersToDispose.add(testContainer);
 
-        final skillSub = testContainer.listen(
-          aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
-          (_, _) {},
-        );
-
         await testContainer.read(
           entryControllerProvider(id: audioEntity.id).future,
-        );
-        await testContainer.read(
-          aiConfigByTypeControllerProvider(
-            configType: AiConfigType.skill,
-          ).future,
         );
 
         final skills = await testContainer.read(
           availableSkillsForEntityProvider(audioEntity.id).future,
         );
 
-        // Both transcription and promptGeneration require audio modality
-        // and pass the filter for JournalAudio entities.
+        // Both transcription and promptGeneration pass the filter for
+        // JournalAudio entities.
         expect(skills.length, 2);
         expect(skills.map((s) => s.id), contains('skill-transcription'));
         expect(skills.map((s) => s.id), contains('skill-prompt'));
-        skillSub.close();
       },
     );
 
@@ -1014,32 +957,16 @@ void main() {
           modalities: [Modality.audio],
         );
 
-        when(
-          () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-        ).thenAnswer((_) => Stream.value([imageSkill, promptSkill]));
-
         final testContainer = ProviderContainer(
           overrides: [
-            aiConfigRepositoryProvider.overrideWithValue(
-              mockAiConfigRepository,
-            ),
+            skillRegistryProvider.overrideWithValue([imageSkill, promptSkill]),
             createEntryControllerOverride(imageEntity),
           ],
         );
         containersToDispose.add(testContainer);
 
-        final skillSub = testContainer.listen(
-          aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
-          (_, _) {},
-        );
-
         await testContainer.read(
           entryControllerProvider(id: imageEntity.id).future,
-        );
-        await testContainer.read(
-          aiConfigByTypeControllerProvider(
-            configType: AiConfigType.skill,
-          ).future,
         );
 
         final skills = await testContainer.read(
@@ -1050,7 +977,6 @@ void main() {
         // modality, which is filtered out for JournalImage entities.
         expect(skills.length, 1);
         expect(skills.map((s) => s.id), contains('skill-image'));
-        skillSub.close();
       },
     );
 
@@ -1089,30 +1015,19 @@ void main() {
         modalities: [Modality.audio],
       );
 
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-      ).thenAnswer((_) => Stream.value([audioOnlySkill, promptSkill]));
-
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          skillRegistryProvider.overrideWithValue([
+            audioOnlySkill,
+            promptSkill,
+          ]),
           createEntryControllerOverride(taskEntity),
         ],
       );
       containersToDispose.add(testContainer);
 
-      final skillSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
-        (_, _) {},
-      );
-
       await testContainer.read(
         entryControllerProvider(id: taskEntity.id).future,
-      );
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.skill,
-        ).future,
       );
 
       final skills = await testContainer.read(
@@ -1122,7 +1037,6 @@ void main() {
       // Both audio-only skills are filtered out for Task entities —
       // transcription and promptGeneration both require audio modality.
       expect(skills, isEmpty);
-      skillSub.close();
     });
 
     test('filters out image-only skills for non-image entities', () async {
@@ -1154,30 +1068,16 @@ void main() {
         modalities: [Modality.image],
       );
 
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-      ).thenAnswer((_) => Stream.value([imageOnlySkill]));
-
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          skillRegistryProvider.overrideWithValue([imageOnlySkill]),
           createEntryControllerOverride(taskEntity),
         ],
       );
       containersToDispose.add(testContainer);
 
-      final skillSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
-        (_, _) {},
-      );
-
       await testContainer.read(
         entryControllerProvider(id: taskEntity.id).future,
-      );
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.skill,
-        ).future,
       );
 
       final skills = await testContainer.read(
@@ -1185,7 +1085,6 @@ void main() {
       );
 
       expect(skills, isEmpty);
-      skillSub.close();
     });
 
     test('returns empty list when no skills configured', () async {
@@ -1210,30 +1109,16 @@ void main() {
         ),
       );
 
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-      ).thenAnswer((_) => Stream.value([]));
-
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          skillRegistryProvider.overrideWithValue(const []),
           createEntryControllerOverride(taskEntity),
         ],
       );
       containersToDispose.add(testContainer);
 
-      final skillSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
-        (_, _) {},
-      );
-
       await testContainer.read(
         entryControllerProvider(id: taskEntity.id).future,
-      );
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.skill,
-        ).future,
       );
 
       final skills = await testContainer.read(
@@ -1241,17 +1126,12 @@ void main() {
       );
 
       expect(skills, isEmpty);
-      skillSub.close();
     });
 
     test('returns empty list when entity not found', () async {
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-      ).thenAnswer((_) => Stream.value([]));
-
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          skillRegistryProvider.overrideWithValue(const []),
           // No entry controller override — entity will not be found
           entryControllerProvider(id: 'nonexistent').overrideWith(
             FakeEntryControllerNull.new,
@@ -1284,9 +1164,7 @@ void main() {
     test('returns early when skill not found', () async {
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('nonexistent-skill').overrideWith(
-            (ref) => Future<AiConfig?>.value(),
-          ),
+          skillRegistryProvider.overrideWithValue(const []),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
@@ -1321,9 +1199,7 @@ void main() {
 
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('skill-1').overrideWith(
-            (ref) => Future<AiConfig?>.value(skill),
-          ),
+          skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
@@ -1362,9 +1238,7 @@ void main() {
 
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('skill-2').overrideWith(
-            (ref) => Future<AiConfig?>.value(skill),
-          ),
+          skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
@@ -1439,9 +1313,7 @@ void main() {
 
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('skill-transcribe').overrideWith(
-            (ref) => Future<AiConfig?>.value(skill),
-          ),
+          skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
@@ -1521,9 +1393,7 @@ void main() {
 
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('skill-image').overrideWith(
-            (ref) => Future<AiConfig?>.value(skill),
-          ),
+          skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
@@ -1583,7 +1453,7 @@ void main() {
 
       when(
         () => mockRunner.runPromptGeneration(
-          audioEntryId: any(named: 'audioEntryId'),
+          entryId: any(named: 'entryId'),
           automationResult: any(named: 'automationResult'),
           linkedTaskId: any(named: 'linkedTaskId'),
         ),
@@ -1591,9 +1461,7 @@ void main() {
 
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('skill-prompt').overrideWith(
-            (ref) => Future<AiConfig?>.value(skill),
-          ),
+          skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
@@ -1611,7 +1479,7 @@ void main() {
 
       verify(
         () => mockRunner.runPromptGeneration(
-          audioEntryId: 'audio-entry-2',
+          entryId: 'audio-entry-2',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-prompt',
         ),
@@ -1656,7 +1524,7 @@ void main() {
 
       when(
         () => mockRunner.runImageGeneration(
-          audioEntryId: any(named: 'audioEntryId'),
+          entryId: any(named: 'entryId'),
           automationResult: any(named: 'automationResult'),
           linkedTaskId: any(named: 'linkedTaskId'),
           referenceImages: any(named: 'referenceImages'),
@@ -1665,9 +1533,7 @@ void main() {
 
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('skill-imggen').overrideWith(
-            (ref) => Future<AiConfig?>.value(skill),
-          ),
+          skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
@@ -1685,7 +1551,7 @@ void main() {
 
       verify(
         () => mockRunner.runImageGeneration(
-          audioEntryId: 'audio-entry-3',
+          entryId: 'audio-entry-3',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-imggen',
           // ignore: avoid_redundant_argument_values
@@ -1732,7 +1598,7 @@ void main() {
 
       when(
         () => mockRunner.runImageGeneration(
-          audioEntryId: any(named: 'audioEntryId'),
+          entryId: any(named: 'entryId'),
           automationResult: any(named: 'automationResult'),
           linkedTaskId: any(named: 'linkedTaskId'),
           referenceImages: any(named: 'referenceImages'),
@@ -1749,9 +1615,7 @@ void main() {
 
       final testContainer = ProviderContainer(
         overrides: [
-          aiConfigByIdProvider('skill-imggen2').overrideWith(
-            (ref) => Future<AiConfig?>.value(skill),
-          ),
+          skillRegistryProvider.overrideWithValue([skill]),
           profileAutomationResolverProvider.overrideWithValue(mockResolver),
           skillInferenceRunnerProvider.overrideWithValue(mockRunner),
         ],
@@ -1769,7 +1633,7 @@ void main() {
 
       verify(
         () => mockRunner.runImageGeneration(
-          audioEntryId: 'audio-entry-4',
+          entryId: 'audio-entry-4',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-imggen2',
           referenceImages: refImages,

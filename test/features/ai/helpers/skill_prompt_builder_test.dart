@@ -178,11 +178,11 @@ void main() {
         );
         final result = builder.build(
           skill: skill,
-          audioTranscript: 'I need to fix the login bug',
+          entryContent: 'I need to fix the login bug',
           taskContext: '{"id": "task-1"}',
         );
 
-        expect(result.userMessage, contains('Audio Transcription'));
+        expect(result.userMessage, contains('Entry Notes'));
         expect(
           result.userMessage,
           contains('I need to fix the login bug'),
@@ -207,11 +207,11 @@ void main() {
           skillType: SkillType.promptGeneration,
           contextPolicy: ContextPolicy.fullTask,
         );
-        final result = builder.build(skill: skill, audioTranscript: '');
+        final result = builder.build(skill: skill, entryContent: '');
 
         expect(
           result.userMessage,
-          isNot(contains('Audio Transcription')),
+          isNot(contains('Entry Notes')),
         );
       });
     });
@@ -245,7 +245,7 @@ void main() {
         );
         final result = builder.build(
           skill: skill,
-          audioTranscript: 'Make it blue and modern',
+          entryContent: 'Make it blue and modern',
         );
 
         expect(
@@ -300,10 +300,10 @@ void main() {
         );
         final result = builder.build(
           skill: skill,
-          audioTranscript: 'Create a sunset scene',
+          entryContent: 'Create a sunset scene',
         );
 
-        expect(result.userMessage, contains('Audio Transcription'));
+        expect(result.userMessage, contains('Entry Notes'));
         expect(result.userMessage, contains('Create a sunset scene'));
       });
     });

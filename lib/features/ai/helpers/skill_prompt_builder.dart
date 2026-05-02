@@ -17,13 +17,17 @@ class SkillPromptBuilder {
   ///
   /// Returns a [SkillPromptResult] containing both messages ready for the
   /// inference provider.
+  ///
+  /// [entryContent] is the user-supplied input text for the skill — either
+  /// the latest audio transcript (for `JournalAudio` sources) or the typed
+  /// note body (for `JournalEntry` sources). Source-agnostic by design.
   SkillPromptResult build({
     required AiConfigSkill skill,
     String? speechDictionary,
     String? taskContext,
     String? linkedTasks,
     String? currentTaskSummary,
-    String? audioTranscript,
+    String? entryContent,
     String? languageCode,
     String? correctionExamples,
   }) {
@@ -39,7 +43,7 @@ class SkillPromptBuilder {
       taskContext: taskContext,
       linkedTasks: linkedTasks,
       currentTaskSummary: currentTaskSummary,
-      audioTranscript: audioTranscript,
+      entryContent: entryContent,
       languageCode: languageCode,
       correctionExamples: correctionExamples,
     );
@@ -85,7 +89,7 @@ class SkillPromptBuilder {
     String? taskContext,
     String? linkedTasks,
     String? currentTaskSummary,
-    String? audioTranscript,
+    String? entryContent,
     String? languageCode,
     String? correctionExamples,
   }) {
@@ -135,16 +139,17 @@ class SkillPromptBuilder {
       );
     }
 
-    // Inject audio transcript for prompt generation skills.
+    // Inject the user's entry content (audio transcript or text note) for
+    // skills that consume the entry as their main input.
     if (skill.skillType == SkillType.promptGeneration ||
         skill.skillType == SkillType.imagePromptGeneration ||
         skill.skillType == SkillType.imageGeneration) {
-      if (audioTranscript != null && audioTranscript.isNotEmpty) {
+      if (entryContent != null && entryContent.isNotEmpty) {
         buffer
           ..writeln()
           ..writeln()
-          ..writeln('**Audio Transcription:**')
-          ..writeln(audioTranscript);
+          ..writeln('**Entry Notes:**')
+          ..writeln(entryContent);
       }
     }
 

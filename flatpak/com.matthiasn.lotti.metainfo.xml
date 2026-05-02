@@ -31,6 +31,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.989" date="2026-05-02">
+      <description>
+          <p>The AI assistant menu now appears on text journal entries. Skills that consume entry text (coding-prompt generation, image-prompt generation, cover-art generation) work the same way whether the source is a typed note or a voice recording's transcript.</p>
+          <p>New built-in Generate Design Prompt skill turns task context plus the entry's notes into a UI/UX design exploration prompt that defaults to five functional prototypes (override-able from the entry text), enforces design-system alignment when one is mentioned, and surfaces clarifying questions up front. Output is two-section Markdown ready to paste into Claude, Figma Make, or v0.dev.</p>
+          <p>New built-in Generate Research Prompt skill produces a structured Markdown research brief (Background, Research Questions, Scope, Deliverables, Source Preferences, expected output format, open questions) ready to paste into Claude with Research or ChatGPT Pro with Deep Research.</p>
+          <p>Built-in skills are now defined in code under lib/features/ai/skills/built_in_skills.dart and read via skillRegistryProvider instead of being seeded into the AI config DB. This removes the seeding round-trip and lets skill content stay in lockstep with the code that uses it.</p>
+      </description>
+    </release>
     <release version="0.9.988" date="2026-05-02">
       <description>
           <p>Outbox post-drain settle window raised from 250 ms to 1500 ms and lifted into SyncTuning.outboxPostDrainSettle. Bursty edits (rapid typing, imports, multi-entity flows) now coalesce into the next bundle instead of shipping one bundle per write, so the outbox sends fewer, fuller trains while keeping the first-departure latency unchanged.</p>

@@ -4,6 +4,9 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
@@ -298,5 +301,52 @@ void main() {
       );
       expect(entryDateFromFinder, findsOneWidget);
     });
+
+    testWidgets(
+      'AI assistant icon is visible for text entries when text-modality '
+      'skills are available',
+      (WidgetTester tester) async {
+        final textSkill =
+            AiConfig.skill(
+                  id: 'skill-test-text-1',
+                  name: 'Test Text Skill',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.promptGeneration,
+                  requiredInputModalities: const [Modality.text],
+                  systemInstructions: 'sys',
+                  userInstructions: 'usr',
+                )
+                as AiConfigSkill;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(entryId: testTextEntry.meta.id),
+            overrides: [
+              skillRegistryProvider.overrideWithValue([textSkill]),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.assistant_rounded), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'AI assistant icon is hidden for text entries when no skills match',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailHeader(entryId: testTextEntry.meta.id),
+            overrides: [
+              skillRegistryProvider.overrideWithValue(const []),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.assistant_rounded), findsNothing);
+      },
+    );
   });
 }

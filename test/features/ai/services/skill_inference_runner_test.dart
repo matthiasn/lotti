@@ -172,6 +172,31 @@ void main() {
         as JournalAudio;
   }
 
+  JournalEntry makeTextEntry({
+    String id = 'text-1',
+    String? markdown,
+    String? plainText,
+    String? categoryId,
+  }) {
+    return JournalEntity.journalEntry(
+          meta: Metadata(
+            id: id,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+            categoryId: categoryId,
+          ),
+          entryText: (markdown == null && plainText == null)
+              ? null
+              : EntryText(
+                  plainText: plainText ?? '',
+                  markdown: markdown,
+                ),
+        )
+        as JournalEntry;
+  }
+
   JournalImage makeImageEntity({
     String id = 'img-1',
     String imageDirectory = '/images/',
@@ -990,7 +1015,7 @@ void main() {
 
         expect(
           () => runner.runPromptGeneration(
-            audioEntryId: 'entry-1',
+            entryId: 'entry-1',
             automationResult: result,
           ),
           throwsStateError,
@@ -1005,25 +1030,246 @@ void main() {
 
         expect(
           () => runner.runPromptGeneration(
-            audioEntryId: 'entry-1',
+            entryId: 'entry-1',
             automationResult: result,
           ),
           throwsStateError,
         );
       });
 
-      test('returns early when entity is not JournalAudio', () async {
+      test(
+        'rejects non-text-bearing entities (Task) and never calls inference',
+        () async {
+          when(
+            () => mockAiInputRepo.getEntity('entry-1'),
+          ).thenAnswer((_) async => makeTaskEntity('entry-1'));
+          stubLoggingException();
+
+          await runner.runPromptGeneration(
+            entryId: 'entry-1',
+            automationResult: makePromptGenerationResult(),
+          );
+
+          verifyZeroInteractions(mockCloudRepo);
+          verify(
+            () => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'SkillInferenceRunner',
+              subDomain: 'runPromptGeneration',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('logs error when getEntity returns null', () async {
         when(
-          () => mockAiInputRepo.getEntity('entry-1'),
-        ).thenAnswer((_) async => makeTaskEntity('entry-1'));
+          () => mockAiInputRepo.getEntity('missing-1'),
+        ).thenAnswer((_) async => null);
+        stubLoggingException();
 
         await runner.runPromptGeneration(
-          audioEntryId: 'entry-1',
+          entryId: 'missing-1',
           automationResult: makePromptGenerationResult(),
         );
 
         verifyZeroInteractions(mockCloudRepo);
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'SkillInferenceRunner',
+            subDomain: 'runPromptGeneration',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
+
+      test(
+        'succeeds on a JournalEntry source and threads markdown into prompt',
+        () async {
+          final textEntry = makeTextEntry(
+            id: 'text-prompt',
+            markdown: '# Heading\n\nFix the **login** flow.',
+            plainText: 'Heading\n\nFix the login flow.',
+            categoryId: 'cat-text',
+          );
+
+          when(
+            () => mockAiInputRepo.getEntity('text-prompt'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-text'),
+          ).thenAnswer((_) async => '{"id": "task-text"}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-text'),
+          ).thenAnswer((_) async => '{"linked": []}');
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('## Summary\nLogin\n\n## Prompt\nDo the work'),
+            ]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-prompt',
+            automationResult: makePromptGenerationResult(),
+            linkedTaskId: 'task-text',
+          );
+
+          // Builder should have used markdown (preferred over plainText) and
+          // injected it under the **Entry Notes:** header.
+          final captured = verify(
+            () => mockCloudRepo.generate(
+              captureAny(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).captured;
+          final userMessage = captured.first as String;
+          expect(userMessage, contains('**Entry Notes:**'));
+          expect(userMessage, contains('Fix the **login** flow.'));
+
+          final responseCaptured = verify(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: captureAny(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: captureAny(named: 'linkedId'),
+              categoryId: captureAny(named: 'categoryId'),
+            ),
+          ).captured;
+          expect(responseCaptured[1], 'text-prompt');
+          expect(responseCaptured[2], 'cat-text');
+        },
+      );
+
+      test(
+        'falls back to plainText when JournalEntry has no markdown',
+        () async {
+          final textEntry = makeTextEntry(
+            id: 'text-plain',
+            plainText: 'Plain only body',
+          );
+
+          when(
+            () => mockAiInputRepo.getEntity('text-plain'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('out')]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-plain',
+            automationResult: makePromptGenerationResult(),
+          );
+
+          final captured = verify(
+            () => mockCloudRepo.generate(
+              captureAny(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).captured;
+          final userMessage = captured.first as String;
+          expect(userMessage, contains('Plain only body'));
+        },
+      );
+
+      test(
+        'injects [Empty note] placeholder when JournalEntry has no text',
+        () async {
+          final textEntry = makeTextEntry(id: 'text-empty');
+
+          when(
+            () => mockAiInputRepo.getEntity('text-empty'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('out')]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-empty',
+            automationResult: makePromptGenerationResult(),
+          );
+
+          final captured = verify(
+            () => mockCloudRepo.generate(
+              captureAny(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).captured;
+          final userMessage = captured.first as String;
+          expect(userMessage, contains('[Empty note]'));
+        },
+      );
 
       test('uses high-end thinking model when configured', () async {
         final audioEntity =
@@ -1087,7 +1333,7 @@ void main() {
         stubLoggingEvent();
 
         await runner.runPromptGeneration(
-          audioEntryId: 'audio-prompt',
+          entryId: 'audio-prompt',
           automationResult: makePromptGenerationResult(
             thinkingHighEndModelId: 'models/gemini-pro',
             thinkingHighEndProvider: highEndProvider,
@@ -1163,7 +1409,7 @@ void main() {
 
         // No high-end model configured — should fall back to regular thinking.
         await runner.runPromptGeneration(
-          audioEntryId: 'audio-fallback',
+          entryId: 'audio-fallback',
           automationResult: makePromptGenerationResult(),
         );
 
@@ -1241,7 +1487,7 @@ void main() {
         stubLoggingEvent();
 
         await runner.runPromptGeneration(
-          audioEntryId: 'audio-happy',
+          entryId: 'audio-happy',
           automationResult: makePromptGenerationResult(),
           linkedTaskId: 'task-happy',
         );
@@ -1335,7 +1581,7 @@ void main() {
           stubLoggingEvent();
 
           await runner.runPromptGeneration(
-            audioEntryId: 'audio-transcript',
+            entryId: 'audio-transcript',
             automationResult: makePromptGenerationResult(),
           );
 
@@ -1397,7 +1643,7 @@ void main() {
         stubLoggingException();
 
         await runner.runPromptGeneration(
-          audioEntryId: 'audio-empty',
+          entryId: 'audio-empty',
           automationResult: makePromptGenerationResult(),
         );
 
@@ -1418,7 +1664,7 @@ void main() {
         stubLoggingException();
 
         await runner.runPromptGeneration(
-          audioEntryId: 'entry-1',
+          entryId: 'entry-1',
           automationResult: makePromptGenerationResult(),
         );
 
@@ -1471,7 +1717,7 @@ void main() {
         stubLoggingException();
 
         await runner.runImageGeneration(
-          audioEntryId: 'entry-1',
+          entryId: 'entry-1',
           automationResult: result,
           linkedTaskId: 'task-1',
         );
@@ -1494,7 +1740,7 @@ void main() {
         stubLoggingException();
 
         await runner.runImageGeneration(
-          audioEntryId: 'entry-1',
+          entryId: 'entry-1',
           automationResult: result,
           linkedTaskId: 'task-1',
         );
@@ -1522,7 +1768,7 @@ void main() {
         stubLoggingException();
 
         await runner.runImageGeneration(
-          audioEntryId: 'entry-1',
+          entryId: 'entry-1',
           automationResult: result,
           linkedTaskId: 'task-1',
         );
@@ -1538,13 +1784,46 @@ void main() {
         ).called(1);
       });
 
-      test('returns early when entity is not JournalAudio', () async {
+      test(
+        'rejects non-text-bearing entities (Task) and never calls generator',
+        () async {
+          when(
+            () => mockAiInputRepo.getEntity('entry-1'),
+          ).thenAnswer((_) async => makeTaskEntity('entry-1'));
+          stubLoggingException();
+
+          await runner.runImageGeneration(
+            entryId: 'entry-1',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-1',
+          );
+
+          verifyNever(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+            ),
+          );
+          verify(
+            () => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'SkillInferenceRunner',
+              subDomain: 'runImageGeneration',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('logs error when getEntity returns null', () async {
         when(
-          () => mockAiInputRepo.getEntity('entry-1'),
-        ).thenAnswer((_) async => makeTaskEntity('entry-1'));
+          () => mockAiInputRepo.getEntity('missing-img'),
+        ).thenAnswer((_) async => null);
+        stubLoggingException();
 
         await runner.runImageGeneration(
-          audioEntryId: 'entry-1',
+          entryId: 'missing-img',
           automationResult: makeImageGenResult(),
           linkedTaskId: 'task-1',
         );
@@ -1556,7 +1835,115 @@ void main() {
             provider: any(named: 'provider'),
           ),
         );
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'SkillInferenceRunner',
+            subDomain: 'runImageGeneration',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
+
+      test(
+        'accepts a JournalEntry source and threads its text into the prompt',
+        () async {
+          final textEntry = makeTextEntry(
+            id: 'text-img',
+            markdown: 'Sunset over mountains, painterly style',
+            categoryId: 'cat-img',
+          );
+          final taskEntity = makeTaskEntity('task-text-img');
+
+          when(
+            () => mockAiInputRepo.getEntity('text-img'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-text-img'),
+          ).thenAnswer((_) async => '{"id": "task-text-img"}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-text-img'),
+          ).thenAnswer((_) async => '{"linked": []}');
+          when(
+            () => mockTaskSummaryResolver.resolve('task-text-img'),
+          ).thenAnswer((_) async => 'Mountain photography brief');
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47],
+              mimeType: 'image/png',
+            ),
+          );
+
+          final mockPersistenceLogic = MockPersistenceLogic();
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..registerSingleton<LoggingService>(mockLoggingService);
+
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'gen-img',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+              categoryId: 'cat-img',
+            ),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-text-img'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: any(named: 'journalEntityId'),
+              taskData: any(named: 'taskData'),
+            ),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runImageGeneration(
+            entryId: 'text-img',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-text-img',
+          );
+
+          final captured = verify(
+            () => mockCloudRepo.generateImage(
+              prompt: captureAny(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).captured;
+          final prompt = captured.first as String;
+          expect(prompt, contains('**Entry Notes:**'));
+          expect(prompt, contains('Sunset over mountains, painterly style'));
+        },
+      );
 
       test('logs exception on failure', () async {
         when(
@@ -1565,7 +1952,7 @@ void main() {
         stubLoggingException();
 
         await runner.runImageGeneration(
-          audioEntryId: 'entry-1',
+          entryId: 'entry-1',
           automationResult: makeImageGenResult(),
           linkedTaskId: 'task-1',
         );
@@ -1725,7 +2112,7 @@ void main() {
           );
 
           await testRunner.runImageGeneration(
-            audioEntryId: 'audio-gen',
+            entryId: 'audio-gen',
             automationResult: makeImageGenResult(),
             linkedTaskId: 'task-gen',
           );
@@ -1830,7 +2217,7 @@ void main() {
           stubLoggingException();
 
           await runner.runImageGeneration(
-            audioEntryId: 'audio-err-1',
+            entryId: 'audio-err-1',
             automationResult: makeImageGenResult(),
             linkedTaskId: 'task-err-1',
           );
@@ -1948,7 +2335,7 @@ void main() {
           stubLoggingException();
 
           await runner.runImageGeneration(
-            audioEntryId: 'audio-err-2',
+            entryId: 'audio-err-2',
             automationResult: makeImageGenResult(),
             linkedTaskId: 'task-err-2',
           );
@@ -2067,7 +2454,7 @@ void main() {
           stubLoggingException();
 
           await runner.runImageGeneration(
-            audioEntryId: 'audio-err-3',
+            entryId: 'audio-err-3',
             automationResult: makeImageGenResult(),
             linkedTaskId: 'task-err-3',
           );
@@ -2237,7 +2624,7 @@ void main() {
           );
 
           await testRunner.runImageGeneration(
-            audioEntryId: 'audio-ref',
+            entryId: 'audio-ref',
             automationResult: makeImageGenResult(),
             linkedTaskId: 'task-ref',
             referenceImages: refImages,

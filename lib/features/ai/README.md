@@ -7,7 +7,9 @@ The `ai` feature contains the shared AI plumbing used by manual prompts, skill-d
 Two startup paths shape the feature:
 
 - `aiConfigInitialization` always runs and seeds default inference profiles plus known models.
-- `agentInitialization` runs only when the agents flag is enabled and then seeds templates, skills, and upgrades default profiles with skill assignments.
+- `agentInitialization` runs only when the agents flag is enabled and then seeds templates and upgrades default profiles with skill assignments.
+
+Skills do **not** participate in seeding — they live as code in `skills/built_in_skills.dart` and are read from `skillRegistryProvider` at runtime. The DB-backed `SkillSeedingService` was removed; a future skill-management feature will introduce a separate per-user override layer rather than re-introducing seeding.
 
 ```mermaid
 flowchart TD
@@ -19,8 +21,9 @@ flowchart TD
   Flag -->|yes| AgentInit["agentInitialization"]
   AgentInit --> SeedTemplates["AgentTemplateService.seedDefaults()"]
   AgentInit --> SeedProfilesAgain["ProfileSeedingService.seedDefaults()"]
-  AgentInit --> SeedSkills["SkillSeedingService.seedDefaults()"]
   AgentInit --> UpgradeProfiles["ProfileSeedingService.upgradeExisting()"]
+
+  Skills["skills/built_in_skills.dart<br/>(code, not DB)"] -.read.-> Registry["skillRegistryProvider"]
 ```
 
 ## Configuration Model
@@ -33,7 +36,7 @@ flowchart TD
 | Model | `AiConfig.model` | Provider model ID, modalities, function-calling support |
 | Prompt | `AiConfig.prompt` | Legacy/manual prompt execution through `UnifiedAiInferenceRepository` |
 | Profile | `AiConfig.inferenceProfile` | Capability slots for thinking, transcription, vision, and image generation |
-| Skill | `AiConfig.skill` | User-editable capability contract plus `ContextPolicy` |
+| Skill | `AiConfig.skill` (defined in code) | Capability contract plus `ContextPolicy`. Built-ins live in `skills/built_in_skills.dart`; not persisted in the DB |
 | Resolved profile | `ResolvedProfile` | Runtime profile with providers hydrated from configured model IDs |
 
 The key split is between skills and profiles:
@@ -279,7 +282,7 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` ships with image-analysis automation but no transcription slot
 - `Local Power (Ollama)` currently ships with no default skill assignments
 
-`SkillSeedingService` currently seeds seven skills:
+`skills/built_in_skills.dart` currently exposes nine built-in skills:
 
 - `Transcribe Audio`
 - `Transcribe (Task Context)`
@@ -288,6 +291,10 @@ Operational details from the seeded definitions:
 - `Generate Cover Art`
 - `Generate Coding Prompt`
 - `Generate Image Prompt`
+- `Generate Design Prompt` — produces a UI/UX design exploration prompt requesting 5 functional prototypes by default, aligned with any design system mentioned in the task context, with clarifying questions surfaced up front. Output is two-section Markdown ready to paste into Claude / Figma Make / v0.dev.
+- `Generate Research Prompt` — produces a structured Markdown research brief (Background, Research Questions, Scope, Deliverables, Source Preferences, expected output format, open questions) ready to paste into Claude with Research or ChatGPT Pro with Deep Research.
+
+The prompt-generation and image-generation skills accept any text-bearing entry — both `JournalAudio` (via its transcript) and `JournalEntry` (typed notes) flow through the same `_resolveEntryContent` resolver in `SkillInferenceRunner`.
 
 ## Sharp Edges
 
@@ -305,7 +312,7 @@ If you are tracing the feature in code, start here:
 - `repository/ai_config_repository.dart`
 - `state/ai_config_initialization.dart`
 - `util/profile_seeding_service.dart`
-- `util/skill_seeding_service.dart`
+- `skills/built_in_skills.dart`
 - `util/profile_resolver.dart`
 - `services/profile_automation_service.dart`
 - `services/skill_inference_runner.dart`
