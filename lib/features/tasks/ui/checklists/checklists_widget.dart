@@ -186,55 +186,51 @@ class _ChecklistsSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (checklistCount <= 1) return const SizedBox.shrink();
     return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text(
-          context.messages.checklistsTitle,
-          style: context.textTheme.titleSmall?.copyWith(color: color),
-        ),
-        // Only show menu if there are actions available
-        if (checklistCount > 1)
-          Theme(
-            data: Theme.of(context).copyWith(
-              popupMenuTheme: PopupMenuThemeData(
-                color: context.colorScheme.surfaceContainerHighest,
-                elevation: 8,
-                surfaceTintColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: context.colorScheme.outlineVariant.withValues(
-                      alpha: 0.3,
-                    ),
-                    width: 0.8,
+        Theme(
+          data: Theme.of(context).copyWith(
+            popupMenuTheme: PopupMenuThemeData(
+              color: context.colorScheme.surfaceContainerHighest,
+              elevation: 8,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: context.colorScheme.outlineVariant.withValues(
+                    alpha: 0.3,
                   ),
+                  width: 0.8,
                 ),
               ),
             ),
-            child: PopupMenuButton<String>(
-              key: const Key('checklists-menu'),
-              tooltip: 'More',
-              icon: Icon(Icons.more_vert, color: color, size: 20),
-              position: PopupMenuPosition.under,
-              onSelected: (value) {
-                if (value == 'sort') {
-                  onSortChecklists?.call();
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'sort',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.sort, size: 18),
-                      const SizedBox(width: 8),
-                      Text(context.messages.checklistsReorder),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
+          child: PopupMenuButton<String>(
+            key: const Key('checklists-menu'),
+            tooltip: context.messages.checklistMoreTooltip,
+            icon: Icon(Icons.more_vert, color: color, size: 20),
+            position: PopupMenuPosition.under,
+            onSelected: (value) {
+              if (value == 'sort') {
+                onSortChecklists?.call();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'sort',
+                child: Row(
+                  children: [
+                    const Icon(Icons.sort, size: 18),
+                    const SizedBox(width: 8),
+                    Text(context.messages.checklistsReorder),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

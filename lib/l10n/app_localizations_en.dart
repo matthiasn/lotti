@@ -887,19 +887,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentStatsWeekTotalLabel => '7-Day Total';
 
   @override
-  String get agentSuggestionTimeEntryUpdateCurrent => 'Current';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateNoChange => '(unchanged)';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateProposed => 'Proposed';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateUnavailable =>
-      'Original entry not available';
-
-  @override
   String get agentSuggestionsActivityAgentFallback => 'the agent';
 
   @override
@@ -925,6 +912,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String agentSuggestionsActivityVerdictRetracted(String agentName) {
     return 'Retracted by $agentName';
   }
+
+  @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Current';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(unchanged)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Proposed';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Original entry not available';
 
   @override
   String get agentTabActivity => 'Activity';
@@ -2195,12 +2195,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistAllDone => 'All items completed!';
 
   @override
+  String get checklistCollapseTooltip => 'Collapse';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total done';
   }
 
   @override
   String get checklistDelete => 'Delete checklist?';
+
+  @override
+  String get checklistExpandTooltip => 'Expand';
 
   @override
   String get checklistExportAsMarkdown => 'Export checklist as Markdown';
@@ -3993,13 +3999,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalHideMapHint => 'Hide map';
 
   @override
+  String get journalLinkedEntriesActivityFilterAudio => 'Audio';
+
+  @override
+  String get journalLinkedEntriesActivityFilterImages => 'Images';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTimer => 'Timer';
+
+  @override
   String get journalLinkedEntriesAiLabel => 'Show AI-generated entries:';
+
+  @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filter & Sort';
 
   @override
   String get journalLinkedEntriesHiddenLabel => 'Show hidden entries:';
 
   @override
   String get journalLinkedEntriesLabel => 'Linked Entries';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Show hidden entries';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Sort by';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Newest first';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Oldest first';
 
   @override
   String get journalLinkedFromLabel => 'Linked from:';

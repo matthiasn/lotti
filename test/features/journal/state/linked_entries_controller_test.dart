@@ -9,6 +9,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -607,6 +608,110 @@ void main() {
 
       // Assert
       expect(result, isTrue);
+    });
+  });
+
+  group('LinkedEntriesActivityFilterController', () {
+    const testId = 'test-entry-id';
+
+    test('defaults to all activity kinds active', () {
+      final container = ProviderContainer();
+      final state = container.read(
+        linkedEntriesActivityFilterControllerProvider(id: testId),
+      );
+      expect(state, LinkedEntryActivityFilter.values.toSet());
+    });
+
+    test('toggle removes an active kind', () {
+      final container = ProviderContainer();
+      container
+          .read(
+            linkedEntriesActivityFilterControllerProvider(id: testId).notifier,
+          )
+          .toggle(LinkedEntryActivityFilter.audio);
+
+      final state = container.read(
+        linkedEntriesActivityFilterControllerProvider(id: testId),
+      );
+      expect(state, isNot(contains(LinkedEntryActivityFilter.audio)));
+      expect(state, contains(LinkedEntryActivityFilter.timer));
+      expect(state, contains(LinkedEntryActivityFilter.images));
+    });
+
+    test('toggle restores an inactive kind', () {
+      final container = ProviderContainer();
+      container.read(
+          linkedEntriesActivityFilterControllerProvider(
+            id: testId,
+          ).notifier,
+        )
+        ..toggle(LinkedEntryActivityFilter.timer)
+        ..toggle(LinkedEntryActivityFilter.timer);
+
+      final state = container.read(
+        linkedEntriesActivityFilterControllerProvider(id: testId),
+      );
+      expect(state, contains(LinkedEntryActivityFilter.timer));
+    });
+
+    test('toggle is independent per entry id', () {
+      final container = ProviderContainer();
+      container
+          .read(
+            linkedEntriesActivityFilterControllerProvider(id: 'a').notifier,
+          )
+          .toggle(LinkedEntryActivityFilter.images);
+
+      final stateA = container.read(
+        linkedEntriesActivityFilterControllerProvider(id: 'a'),
+      );
+      final stateB = container.read(
+        linkedEntriesActivityFilterControllerProvider(id: 'b'),
+      );
+      expect(stateA, isNot(contains(LinkedEntryActivityFilter.images)));
+      expect(stateB, contains(LinkedEntryActivityFilter.images));
+    });
+  });
+
+  group('LinkedEntriesSortController', () {
+    const testId = 'test-entry-id';
+
+    test('defaults to newest first', () {
+      final container = ProviderContainer();
+      expect(
+        container.read(linkedEntriesSortControllerProvider(id: testId)),
+        LinkedEntriesSortOrder.newestFirst,
+      );
+    });
+
+    test('order setter updates state', () {
+      final container = ProviderContainer();
+      container
+              .read(linkedEntriesSortControllerProvider(id: testId).notifier)
+              .order =
+          LinkedEntriesSortOrder.oldestFirst;
+
+      expect(
+        container.read(linkedEntriesSortControllerProvider(id: testId)),
+        LinkedEntriesSortOrder.oldestFirst,
+      );
+    });
+
+    test('state is independent per entry id', () {
+      final container = ProviderContainer();
+      container
+              .read(linkedEntriesSortControllerProvider(id: 'a').notifier)
+              .order =
+          LinkedEntriesSortOrder.oldestFirst;
+
+      expect(
+        container.read(linkedEntriesSortControllerProvider(id: 'a')),
+        LinkedEntriesSortOrder.oldestFirst,
+      );
+      expect(
+        container.read(linkedEntriesSortControllerProvider(id: 'b')),
+        LinkedEntriesSortOrder.newestFirst,
+      );
     });
   });
 }

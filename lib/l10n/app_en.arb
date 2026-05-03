@@ -489,22 +489,6 @@
   },
   "agentStatsWakesLabel": "Wakes",
   "agentStatsWeekTotalLabel": "7-Day Total",
-  "agentSuggestionTimeEntryUpdateCurrent": "Current",
-  "@agentSuggestionTimeEntryUpdateCurrent": {
-    "description": "Label for the current value in an agent-proposed time entry edit diff."
-  },
-  "agentSuggestionTimeEntryUpdateNoChange": "(unchanged)",
-  "@agentSuggestionTimeEntryUpdateNoChange": {
-    "description": "Marker shown next to an unchanged current value in an agent-proposed time entry edit diff."
-  },
-  "agentSuggestionTimeEntryUpdateProposed": "Proposed",
-  "@agentSuggestionTimeEntryUpdateProposed": {
-    "description": "Label for the proposed value in an agent-proposed time entry edit diff."
-  },
-  "agentSuggestionTimeEntryUpdateUnavailable": "Original entry not available",
-  "@agentSuggestionTimeEntryUpdateUnavailable": {
-    "description": "Message shown when the original time entry cannot be loaded for an agent-proposed edit."
-  },
   "agentSuggestionsActivityAgentFallback": "the agent",
   "agentSuggestionsActivityCountTotal": "{total} total",
   "@agentSuggestionsActivityCountTotal": {
@@ -535,6 +519,22 @@
         "type": "String"
       }
     }
+  },
+  "agentSuggestionTimeEntryUpdateCurrent": "Current",
+  "@agentSuggestionTimeEntryUpdateCurrent": {
+    "description": "Label for the current value in an agent-proposed time entry edit diff."
+  },
+  "agentSuggestionTimeEntryUpdateNoChange": "(unchanged)",
+  "@agentSuggestionTimeEntryUpdateNoChange": {
+    "description": "Marker shown next to an unchanged current value in an agent-proposed time entry edit diff."
+  },
+  "agentSuggestionTimeEntryUpdateProposed": "Proposed",
+  "@agentSuggestionTimeEntryUpdateProposed": {
+    "description": "Label for the proposed value in an agent-proposed time entry edit diff."
+  },
+  "agentSuggestionTimeEntryUpdateUnavailable": "Original entry not available",
+  "@agentSuggestionTimeEntryUpdateUnavailable": {
+    "description": "Message shown when the original time entry cannot be loaded for an agent-proposed edit."
   },
   "agentTabActivity": "Activity",
   "agentTabConversations": "Conversations",
@@ -1260,6 +1260,7 @@
   "checklistAiSuggestionBody": "This item appears to be completed:",
   "checklistAiSuggestionTitle": "AI Suggestion",
   "checklistAllDone": "All items completed!",
+  "checklistCollapseTooltip": "Collapse",
   "checklistCompletedShort": "{completed}/{total} done",
   "@checklistCompletedShort": {
     "placeholders": {
@@ -1272,6 +1273,7 @@
     }
   },
   "checklistDelete": "Delete checklist?",
+  "checklistExpandTooltip": "Expand",
   "checklistExportAsMarkdown": "Export checklist as Markdown",
   "checklistExportFailed": "Export failed",
   "checklistFilterShowAll": "Show all items",
@@ -1995,9 +1997,17 @@
   "journalFlaggedTooltip": "flagged only",
   "journalHideLinkHint": "Hide link",
   "journalHideMapHint": "Hide map",
+  "journalLinkedEntriesActivityFilterAudio": "Audio",
+  "journalLinkedEntriesActivityFilterImages": "Images",
+  "journalLinkedEntriesActivityFilterTimer": "Timer",
   "journalLinkedEntriesAiLabel": "Show AI-generated entries:",
+  "journalLinkedEntriesFilterModalTitle": "Filter & Sort",
   "journalLinkedEntriesHiddenLabel": "Show hidden entries:",
   "journalLinkedEntriesLabel": "Linked Entries",
+  "journalLinkedEntriesShowHidden": "Show hidden entries",
+  "journalLinkedEntriesSortLabel": "Sort by",
+  "journalLinkedEntriesSortNewestFirst": "Newest first",
+  "journalLinkedEntriesSortOldestFirst": "Oldest first",
   "journalLinkedFromLabel": "Linked from:",
   "journalLinkFromHint": "Link from",
   "journalLinkToHint": "Link to",

@@ -901,19 +901,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 zile';
 
   @override
-  String get agentSuggestionTimeEntryUpdateCurrent => 'Curent';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateNoChange => '(neschimbat)';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateProposed => 'Propus';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateUnavailable =>
-      'Înregistrarea originală nu este disponibilă';
-
-  @override
   String get agentSuggestionsActivityAgentFallback => 'agent';
 
   @override
@@ -939,6 +926,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String agentSuggestionsActivityVerdictRetracted(String agentName) {
     return 'Retrasă de $agentName';
   }
+
+  @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Curent';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(neschimbat)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Propus';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Înregistrarea originală nu este disponibilă';
 
   @override
   String get agentTabActivity => 'Activitate';
@@ -2236,12 +2236,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistAllDone => 'Toate elementele sunt finalizate!';
 
   @override
+  String get checklistCollapseTooltip => 'Restrângeți';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total finalizate';
   }
 
   @override
   String get checklistDelete => 'Șterge lista de verificare?';
+
+  @override
+  String get checklistExpandTooltip => 'Extindeți';
 
   @override
   String get checklistExportAsMarkdown =>
@@ -4057,13 +4063,37 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalHideMapHint => 'Ascunde harta';
 
   @override
+  String get journalLinkedEntriesActivityFilterAudio => 'Audio';
+
+  @override
+  String get journalLinkedEntriesActivityFilterImages => 'Imagini';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTimer => 'Cronometru';
+
+  @override
   String get journalLinkedEntriesAiLabel => 'Afișați intrările generate de AI:';
+
+  @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filtrare și sortare';
 
   @override
   String get journalLinkedEntriesHiddenLabel => 'Afișați intrările ascunse:';
 
   @override
   String get journalLinkedEntriesLabel => 'Legat:';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Afișați intrările ascunse';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Sortați după';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Cele mai noi mai întâi';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Cele mai vechi mai întâi';
 
   @override
   String get journalLinkedFromLabel => 'Legat de la:';

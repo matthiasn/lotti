@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -25,12 +26,12 @@ import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
 class EntryDetailsWidget extends ConsumerWidget {
@@ -101,11 +102,15 @@ class EntryDetailsWidget extends ConsumerWidget {
       bottom: AppTheme.spacingMedium,
     );
 
-    final card = ModernBaseCard(
+    final tokens = context.designTokens;
+    final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.cardPaddingCompact,
+      padding: EdgeInsets.only(
+        left: tokens.spacing.step4,
+        right: tokens.spacing.step4,
+        top: tokens.spacing.step2,
+        bottom: tokens.spacing.step1,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

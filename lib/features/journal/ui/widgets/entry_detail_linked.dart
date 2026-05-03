@@ -1,11 +1,13 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 
 class LinkedEntriesWidget extends ConsumerWidget {
   const LinkedEntriesWidget(
@@ -34,6 +36,12 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final includeAiEntries = ref.watch(
       includeAiEntriesControllerProvider(id: item.id),
     );
+    final activeKinds = ref.watch(
+      linkedEntriesActivityFilterControllerProvider(id: item.id),
+    );
+    final sortOrder = ref.watch(
+      linkedEntriesSortControllerProvider(id: item.id),
+    );
 
     if (entryLinks.isEmpty) {
       return const SizedBox.shrink();
@@ -48,37 +56,26 @@ class LinkedEntriesWidget extends ConsumerWidget {
       }
     }
 
-    final color = context.colorScheme.outline;
+    final sortedLinks = entryLinks
+        .sortedBy((link) => link.createdAt)
+        .toList(growable: false);
+    final orderedLinks = switch (sortOrder) {
+      LinkedEntriesSortOrder.newestFirst => sortedLinks.reversed.toList(),
+      LinkedEntriesSortOrder.oldestFirst => sortedLinks,
+    };
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              context.messages.journalLinkedEntriesLabel,
-              style: context.textTheme.titleSmall?.copyWith(color: color),
-            ),
-            IconButton(
-              icon: Icon(Icons.filter_list, color: color),
-              onPressed: () {
-                ModalUtils.showSinglePageModal<void>(
-                  context: context,
-                  builder: (BuildContext _) =>
-                      LinkedFilterModalContent(entryId: item.id),
-                );
-              },
-            ),
-          ],
-        ),
+        LinkedEntriesActivityFilterBar(entryId: item.id),
         ...List.generate(
-          entryLinks.length,
+          orderedLinks.length,
           (int index) {
-            final link = entryLinks.elementAt(index);
+            final link = orderedLinks.elementAt(index);
             final toId = link.toId;
 
             return RepaintBoundary(
-              child: EntryDetailsWidget(
+              child: _FilteredEntryDetails(
                 key: entryKeyBuilder != null
                     ? entryKeyBuilder!(toId)
                     : Key('${item.id}-$toId'),
@@ -89,6 +86,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
                 hideTaskEntries: hideTaskEntries,
                 isHighlighted: highlightedEntryId == toId,
                 isActiveTimer: activeTimerEntryId == toId,
+                activeKinds: activeKinds,
               ),
             );
           },
@@ -98,64 +96,48 @@ class LinkedEntriesWidget extends ConsumerWidget {
   }
 }
 
-class LinkedFilterModalContent extends ConsumerWidget {
-  const LinkedFilterModalContent({
-    required this.entryId,
+/// Wraps [EntryDetailsWidget] so the activity-filter pill set can hide
+/// entries whose kind has been toggled off without forcing the parent to
+/// pre-resolve every linked entity.
+class _FilteredEntryDetails extends ConsumerWidget {
+  const _FilteredEntryDetails({
+    required this.itemId,
+    required this.showAiEntry,
+    required this.activeKinds,
     super.key,
+    this.hideTaskEntries = false,
+    this.linkedFrom,
+    this.link,
+    this.isHighlighted = false,
+    this.isActiveTimer = false,
   });
 
-  final String entryId;
+  final String itemId;
+  final bool showAiEntry;
+  final bool hideTaskEntries;
+  final bool isHighlighted;
+  final bool isActiveTimer;
+  final JournalEntity? linkedFrom;
+  final EntryLink? link;
+  final Set<LinkedEntryActivityFilter> activeKinds;
 
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
-    final provider = includeHiddenControllerProvider(id: entryId);
-    final notifier = ref.read(provider.notifier);
-    final provider2 = includeAiEntriesControllerProvider(id: entryId);
-    final notifier2 = ref.read(provider2.notifier);
-    final includeHidden = ref.watch(provider);
-    final includeAiEntries = ref.watch(provider2);
-    final color = context.colorScheme.outline;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 50, left: 20, right: 20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                context.messages.journalLinkedEntriesHiddenLabel,
-                style: TextStyle(color: color),
-              ),
-              Checkbox(
-                value: includeHidden,
-                side: BorderSide(color: color),
-                onChanged: (value) {
-                  notifier.includeHidden = value ?? false;
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Text(
-                context.messages.journalLinkedEntriesAiLabel,
-                style: TextStyle(color: color),
-              ),
-              Checkbox(
-                value: includeAiEntries,
-                side: BorderSide(color: color),
-                onChanged: (value) {
-                  notifier2.includeAiEntries = value ?? false;
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entry = ref.watch(entryControllerProvider(id: itemId)).value?.entry;
+    if (entry != null) {
+      final kind = LinkedEntryActivityFilter.fromEntity(entry);
+      if (kind != null && !activeKinds.contains(kind)) {
+        return const SizedBox.shrink();
+      }
+    }
+    return EntryDetailsWidget(
+      itemId: itemId,
+      linkedFrom: linkedFrom,
+      link: link,
+      showAiEntry: showAiEntry,
+      hideTaskEntries: hideTaskEntries,
+      isHighlighted: isHighlighted,
+      isActiveTimer: isActiveTimer,
     );
   }
 }

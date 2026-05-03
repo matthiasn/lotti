@@ -31,6 +31,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.990" date="2026-05-03">
+      <description>
+          <p>Task details page: linked entries section now uses an activity-filter pill row (Timer / Audio / Images) above the entries to toggle which activity types are shown. Checklists keep their dedicated section at the top of the page, so they are not part of the activity filter.</p>
+          <p>A "Newest first / Oldest first" trigger on the right of the activity bar opens a sort and filter modal that reuses the same exclusive-choice pill chrome and palette as the task list filter modal. The modal also exposes a "Show hidden entries" switch.</p>
+          <p>Linked entry cards now use the same design-system card and padding values as the task list card, replacing the prior modern-card treatment. The audio player no longer wraps itself in a second card and sits flush inside the entry's section card. Card top padding is tighter so the trailing IconButtons in the entry header provide the visual breathing room without doubling it.</p>
+          <p>Checklist card header padding tightened, the collapsed pill no longer wastes space at the bottom, and the chevron is now a proper icon button with Collapse / Expand tooltips so it gains a hover state matching the menu button next to it. The "Checklists" subheading on the task details page was removed; the per-task sort menu still appears when there are two or more checklists.</p>
+          <p>Extracted the exclusive-choice filter pill from the private task filter sheet into a shared design-system widget so the task filter modal and the new linked-entries filter modal render the same chip — fill cross-fade, accent border alpha tween, constant border width, 400 ms animation.</p>
+      </description>
+    </release>
     <release version="0.9.989" date="2026-05-02">
       <description>
           <p>The AI assistant menu now appears on text journal entries. Skills that consume entry text (coding-prompt generation, image-prompt generation, cover-art generation) work the same way whether the source is a typed note or a voice recording's transcript.</p>

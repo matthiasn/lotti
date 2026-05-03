@@ -5,6 +5,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/cache_extension.dart';
@@ -104,6 +105,40 @@ class IncludeAiEntriesController extends _$IncludeAiEntriesController {
   }
 
   bool get includeAiEntries => state;
+}
+
+/// Per-entry toggle state for the activity filter pills shown above the
+/// linked entries list (Timer / Audio / Images). Defaults to all kinds
+/// active so existing behavior is preserved when the bar mounts.
+@riverpod
+class LinkedEntriesActivityFilterController
+    extends _$LinkedEntriesActivityFilterController {
+  @override
+  Set<LinkedEntryActivityFilter> build({required String id}) {
+    return LinkedEntryActivityFilter.values.toSet();
+  }
+
+  void toggle(LinkedEntryActivityFilter kind) {
+    final next = {...state};
+    if (!next.add(kind)) next.remove(kind);
+    state = next;
+  }
+}
+
+/// Sort order applied to the linked entries list.
+enum LinkedEntriesSortOrder { newestFirst, oldestFirst }
+
+/// Per-entry sort order for the linked entries list. Defaults to newest
+/// first, matching pre-filter-bar behavior.
+@riverpod
+class LinkedEntriesSortController extends _$LinkedEntriesSortController {
+  @override
+  LinkedEntriesSortOrder build({required String id}) {
+    return LinkedEntriesSortOrder.newestFirst;
+  }
+
+  // ignore: avoid_setters_without_getters
+  set order(LinkedEntriesSortOrder value) => state = value;
 }
 
 @riverpod

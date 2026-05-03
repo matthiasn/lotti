@@ -7,6 +7,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -399,7 +400,7 @@ void main() {
       ).thenAnswer((_) async => toIds);
     }
 
-    testWidgets('shows filter button and label when entries exist', (
+    testWidgets('shows activity filter bar when entries exist', (
       tester,
     ) async {
       mockLinkedEntries([testLink]);
@@ -415,7 +416,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.filter_list), findsOneWidget);
+      expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
     });
 
     testWidgets(
@@ -452,9 +453,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // No label or filter button because all linked entries are tasks
+        // No filter bar because all linked entries are tasks
         // and hideTaskEntries=true
-        expect(find.byIcon(Icons.filter_list), findsNothing);
+        expect(find.byType(LinkedEntriesActivityFilterBar), findsNothing);
       },
     );
 
@@ -477,8 +478,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Non-task entry exists, so section is shown with filter button
-      expect(find.byIcon(Icons.filter_list), findsOneWidget);
+      // Non-task entry exists, so section is shown with filter bar
+      expect(find.byType(LinkedEntriesActivityFilterBar), findsOneWidget);
     });
   });
 }

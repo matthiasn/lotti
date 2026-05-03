@@ -562,7 +562,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
               runSpacing: spacing.step3,
               children: [
                 for (final option in state.searchModeOptions)
-                  _TaskFilterChoicePill(
+                  DesignSystemFilterChoicePill(
                     key: ValueKey(
                       'design-system-task-filter-search-mode-${option.id}',
                     ),
@@ -592,7 +592,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
               runSpacing: spacing.step3,
               children: [
                 for (final option in state.sortOptions)
-                  _TaskFilterChoicePill(
+                  DesignSystemFilterChoicePill(
                     key: ValueKey(
                       'design-system-task-filter-sort-${option.id}',
                     ),
@@ -643,7 +643,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
               runSpacing: spacing.step1,
               children: [
                 for (final option in state.priorityOptions)
-                  _TaskFilterChoicePill(
+                  DesignSystemFilterChoicePill(
                     key: ValueKey(
                       'design-system-task-filter-priority-${option.id}',
                     ),
@@ -745,7 +745,7 @@ class DesignSystemTaskFilterSheet extends StatelessWidget {
               runSpacing: spacing.step3,
               children: [
                 for (final option in state.agentFilterOptions)
-                  _TaskFilterChoicePill(
+                  DesignSystemFilterChoicePill(
                     key: ValueKey(
                       'design-system-task-filter-agent-${option.id}',
                     ),
@@ -1297,150 +1297,10 @@ class _TaskFilterSelectedChip extends StatelessWidget {
 }
 
 /// Duration used to cross-fade the pill's border and fill colours between
-/// the deselected and selected states. 400 ms — the midpoint of the
-/// 300–500 ms range we trialled — so the transition reads as deliberate
-/// without feeling sluggish.
-const _kPillAnimationDuration = Duration(milliseconds: 400);
-
-/// Pinned border width for every chip state. Previously the unselected
-/// state used `1.0` and the selected state used `1.5`; the 0.5 px delta
-/// compounded on both horizontal edges and nudged every sibling in the
-/// Wrap by 1 px on each toggle, producing the "breathing" neighbours the
-/// task called out. Keeping the width constant and only animating the
-/// colour alphas eliminates it.
-const _kPillBorderWidth = 1.5;
-
-class _TaskFilterChoicePill extends StatefulWidget {
-  const _TaskFilterChoicePill({
-    required this.label,
-    required this.selected,
-    required this.palette,
-    required this.textStyle,
-    required this.onTap,
-    this.leading,
-    super.key,
-  });
-
-  final String label;
-  final bool selected;
-  final DesignSystemFilterPalette palette;
-  final TextStyle textStyle;
-  final VoidCallback onTap;
-  final Widget? leading;
-
-  @override
-  State<_TaskFilterChoicePill> createState() => _TaskFilterChoicePillState();
-}
-
-class _TaskFilterChoicePillState extends State<_TaskFilterChoicePill>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final CurvedAnimation _progress;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: _kPillAnimationDuration,
-      value: widget.selected ? 1.0 : 0.0,
-    );
-    _progress = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant _TaskFilterChoicePill oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selected != widget.selected) {
-      if (widget.selected) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _progress.dispose();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final spacing = context.designTokens.spacing;
-    final radii = context.designTokens.radii;
-    final borderRadius = BorderRadius.circular(radii.badgesPills);
-
-    // `Material` is hoisted out of the `AnimatedBuilder` so that only the
-    // `Ink` decoration rebuilds per frame. `Ink` + `InkWell` stay inside
-    // because the decoration is what actually depends on the animation
-    // value; the padded content is passed as the static `child` so it is
-    // built exactly once.
-    return RepaintBoundary(
-      child: Material(
-        color: Colors.transparent,
-        child: AnimatedBuilder(
-          animation: _progress,
-          builder: (context, child) {
-            final t = _progress.value;
-            final fillColor = Color.lerp(
-              widget.palette.pillFill,
-              widget.palette.selectedPillBackground,
-              t,
-            )!;
-            // Accent alpha fades 0 → 1. We never swap to `Colors.transparent`
-            // because the sibling border width is constant, so there's no
-            // layout shift.
-            final borderColor = widget.palette.accent.withValues(alpha: t);
-            return Ink(
-              decoration: BoxDecoration(
-                color: fillColor,
-                borderRadius: borderRadius,
-                border: Border.all(
-                  color: borderColor,
-                  width: _kPillBorderWidth,
-                ),
-              ),
-              child: InkWell(
-                borderRadius: borderRadius,
-                onTap: widget.onTap,
-                child: child,
-              ),
-            );
-          },
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: widget.leading != null
-                  ? spacing.step4
-                  : spacing.step5,
-              vertical: spacing.step3,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.leading != null) ...[
-                  widget.leading!,
-                  SizedBox(width: spacing.step2),
-                ],
-                Text(
-                  widget.label,
-                  style: widget.textStyle.copyWith(
-                    color: widget.palette.primaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// `DesignSystemFilterChoicePill` is the shared exclusive-choice pill —
+// see `design_system_filter_shared.dart`. The previous private copy in
+// this file has been merged into the shared version so the linked-entries
+// filter modal can render the same chrome.
 
 class _TaskFilterPriorityGlyph extends StatelessWidget {
   const _TaskFilterPriorityGlyph({

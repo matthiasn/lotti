@@ -299,6 +299,264 @@ abstract class _$IncludeAiEntriesController extends $Notifier<bool> {
   }
 }
 
+/// Per-entry toggle state for the activity filter pills shown above the
+/// linked entries list (Timer / Audio / Images). Defaults to all kinds
+/// active so existing behavior is preserved when the bar mounts.
+
+@ProviderFor(LinkedEntriesActivityFilterController)
+final linkedEntriesActivityFilterControllerProvider =
+    LinkedEntriesActivityFilterControllerFamily._();
+
+/// Per-entry toggle state for the activity filter pills shown above the
+/// linked entries list (Timer / Audio / Images). Defaults to all kinds
+/// active so existing behavior is preserved when the bar mounts.
+final class LinkedEntriesActivityFilterControllerProvider
+    extends
+        $NotifierProvider<
+          LinkedEntriesActivityFilterController,
+          Set<LinkedEntryActivityFilter>
+        > {
+  /// Per-entry toggle state for the activity filter pills shown above the
+  /// linked entries list (Timer / Audio / Images). Defaults to all kinds
+  /// active so existing behavior is preserved when the bar mounts.
+  LinkedEntriesActivityFilterControllerProvider._({
+    required LinkedEntriesActivityFilterControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'linkedEntriesActivityFilterControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() =>
+      _$linkedEntriesActivityFilterControllerHash();
+
+  @override
+  String toString() {
+    return r'linkedEntriesActivityFilterControllerProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  LinkedEntriesActivityFilterController create() =>
+      LinkedEntriesActivityFilterController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Set<LinkedEntryActivityFilter> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Set<LinkedEntryActivityFilter>>(
+        value,
+      ),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LinkedEntriesActivityFilterControllerProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$linkedEntriesActivityFilterControllerHash() =>
+    r'884815b222085c5f64ce212c96ecc47701fd74c6';
+
+/// Per-entry toggle state for the activity filter pills shown above the
+/// linked entries list (Timer / Audio / Images). Defaults to all kinds
+/// active so existing behavior is preserved when the bar mounts.
+
+final class LinkedEntriesActivityFilterControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          LinkedEntriesActivityFilterController,
+          Set<LinkedEntryActivityFilter>,
+          Set<LinkedEntryActivityFilter>,
+          Set<LinkedEntryActivityFilter>,
+          String
+        > {
+  LinkedEntriesActivityFilterControllerFamily._()
+    : super(
+        retry: null,
+        name: r'linkedEntriesActivityFilterControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Per-entry toggle state for the activity filter pills shown above the
+  /// linked entries list (Timer / Audio / Images). Defaults to all kinds
+  /// active so existing behavior is preserved when the bar mounts.
+
+  LinkedEntriesActivityFilterControllerProvider call({required String id}) =>
+      LinkedEntriesActivityFilterControllerProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'linkedEntriesActivityFilterControllerProvider';
+}
+
+/// Per-entry toggle state for the activity filter pills shown above the
+/// linked entries list (Timer / Audio / Images). Defaults to all kinds
+/// active so existing behavior is preserved when the bar mounts.
+
+abstract class _$LinkedEntriesActivityFilterController
+    extends $Notifier<Set<LinkedEntryActivityFilter>> {
+  late final _$args = ref.$arg as String;
+  String get id => _$args;
+
+  Set<LinkedEntryActivityFilter> build({required String id});
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref
+            as $Ref<
+              Set<LinkedEntryActivityFilter>,
+              Set<LinkedEntryActivityFilter>
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                Set<LinkedEntryActivityFilter>,
+                Set<LinkedEntryActivityFilter>
+              >,
+              Set<LinkedEntryActivityFilter>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
+  }
+}
+
+/// Per-entry sort order for the linked entries list. Defaults to newest
+/// first, matching pre-filter-bar behavior.
+
+@ProviderFor(LinkedEntriesSortController)
+final linkedEntriesSortControllerProvider =
+    LinkedEntriesSortControllerFamily._();
+
+/// Per-entry sort order for the linked entries list. Defaults to newest
+/// first, matching pre-filter-bar behavior.
+final class LinkedEntriesSortControllerProvider
+    extends
+        $NotifierProvider<LinkedEntriesSortController, LinkedEntriesSortOrder> {
+  /// Per-entry sort order for the linked entries list. Defaults to newest
+  /// first, matching pre-filter-bar behavior.
+  LinkedEntriesSortControllerProvider._({
+    required LinkedEntriesSortControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'linkedEntriesSortControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$linkedEntriesSortControllerHash();
+
+  @override
+  String toString() {
+    return r'linkedEntriesSortControllerProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  LinkedEntriesSortController create() => LinkedEntriesSortController();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LinkedEntriesSortOrder value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LinkedEntriesSortOrder>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is LinkedEntriesSortControllerProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$linkedEntriesSortControllerHash() =>
+    r'04284abae1838f0e12967e33040b46d2a1b9ac0d';
+
+/// Per-entry sort order for the linked entries list. Defaults to newest
+/// first, matching pre-filter-bar behavior.
+
+final class LinkedEntriesSortControllerFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          LinkedEntriesSortController,
+          LinkedEntriesSortOrder,
+          LinkedEntriesSortOrder,
+          LinkedEntriesSortOrder,
+          String
+        > {
+  LinkedEntriesSortControllerFamily._()
+    : super(
+        retry: null,
+        name: r'linkedEntriesSortControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Per-entry sort order for the linked entries list. Defaults to newest
+  /// first, matching pre-filter-bar behavior.
+
+  LinkedEntriesSortControllerProvider call({required String id}) =>
+      LinkedEntriesSortControllerProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'linkedEntriesSortControllerProvider';
+}
+
+/// Per-entry sort order for the linked entries list. Defaults to newest
+/// first, matching pre-filter-bar behavior.
+
+abstract class _$LinkedEntriesSortController
+    extends $Notifier<LinkedEntriesSortOrder> {
+  late final _$args = ref.$arg as String;
+  String get id => _$args;
+
+  LinkedEntriesSortOrder build({required String id});
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref as $Ref<LinkedEntriesSortOrder, LinkedEntriesSortOrder>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<LinkedEntriesSortOrder, LinkedEntriesSortOrder>,
+              LinkedEntriesSortOrder,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
+  }
+}
+
 @ProviderFor(NewestLinkedIdController)
 final newestLinkedIdControllerProvider = NewestLinkedIdControllerFamily._();
 

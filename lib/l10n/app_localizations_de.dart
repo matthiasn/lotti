@@ -899,19 +899,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentStatsWeekTotalLabel => '7-Tage-Gesamt';
 
   @override
-  String get agentSuggestionTimeEntryUpdateCurrent => 'Aktuell';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateNoChange => '(unverändert)';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateProposed => 'Vorgeschlagen';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateUnavailable =>
-      'Ursprünglicher Eintrag nicht verfügbar';
-
-  @override
   String get agentSuggestionsActivityAgentFallback => 'dem Agenten';
 
   @override
@@ -937,6 +924,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String agentSuggestionsActivityVerdictRetracted(String agentName) {
     return 'Von $agentName zurückgenommen';
   }
+
+  @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Aktuell';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(unverändert)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Vorgeschlagen';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Ursprünglicher Eintrag nicht verfügbar';
 
   @override
   String get agentTabActivity => 'Aktivität';
@@ -2231,12 +2231,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistAllDone => 'Alle Punkte erledigt!';
 
   @override
+  String get checklistCollapseTooltip => 'Einklappen';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total erledigt';
   }
 
   @override
   String get checklistDelete => 'Checkliste löschen?';
+
+  @override
+  String get checklistExpandTooltip => 'Ausklappen';
 
   @override
   String get checklistExportAsMarkdown => 'Checkliste als Markdown exportieren';
@@ -4048,13 +4054,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalHideMapHint => 'Karte ausblenden';
 
   @override
+  String get journalLinkedEntriesActivityFilterAudio => 'Audio';
+
+  @override
+  String get journalLinkedEntriesActivityFilterImages => 'Bilder';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTimer => 'Timer';
+
+  @override
   String get journalLinkedEntriesAiLabel => 'KI-generierte Einträge anzeigen:';
+
+  @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filtern & Sortieren';
 
   @override
   String get journalLinkedEntriesHiddenLabel => 'Versteckte Einträge anzeigen:';
 
   @override
   String get journalLinkedEntriesLabel => 'Verknüpfte Einträge';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Versteckte Einträge anzeigen';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Sortieren nach';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Neueste zuerst';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Älteste zuerst';
 
   @override
   String get journalLinkedFromLabel => 'Verknüpft von:';

@@ -899,19 +899,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 días';
 
   @override
-  String get agentSuggestionTimeEntryUpdateCurrent => 'Actual';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateNoChange => '(sin cambios)';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateProposed => 'Propuesto';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateUnavailable =>
-      'Entrada original no disponible';
-
-  @override
   String get agentSuggestionsActivityAgentFallback => 'el agente';
 
   @override
@@ -937,6 +924,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String agentSuggestionsActivityVerdictRetracted(String agentName) {
     return 'Retirada por $agentName';
   }
+
+  @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Actual';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(sin cambios)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Propuesto';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Entrada original no disponible';
 
   @override
   String get agentTabActivity => 'Actividad';
@@ -2263,12 +2263,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get checklistAllDone => '¡Todos los elementos completados!';
 
   @override
+  String get checklistCollapseTooltip => 'Contraer';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total completados';
   }
 
   @override
   String get checklistDelete => '¿Eliminar lista de verificación?';
+
+  @override
+  String get checklistExpandTooltip => 'Expandir';
 
   @override
   String get checklistExportAsMarkdown =>
@@ -4093,14 +4099,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalHideMapHint => 'Ocultar mapa';
 
   @override
+  String get journalLinkedEntriesActivityFilterAudio => 'Audio';
+
+  @override
+  String get journalLinkedEntriesActivityFilterImages => 'Imágenes';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTimer => 'Temporizador';
+
+  @override
   String get journalLinkedEntriesAiLabel =>
       'Mostrar entradas generadas por IA:';
+
+  @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filtrar y ordenar';
 
   @override
   String get journalLinkedEntriesHiddenLabel => 'Mostrar entradas ocultas:';
 
   @override
   String get journalLinkedEntriesLabel => 'Entradas vinculadas';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Mostrar entradas ocultas';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Ordenar por';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Más recientes primero';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Más antiguas primero';
 
   @override
   String get journalLinkedFromLabel => 'Vinculado de:';

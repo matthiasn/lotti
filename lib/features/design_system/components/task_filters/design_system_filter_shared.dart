@@ -191,6 +191,139 @@ class DesignSystemFilterActionButton extends StatelessWidget {
   }
 }
 
+/// Animated exclusive-choice pill rendered inside filter modals (sort
+/// option, search mode, etc.). Selected state cross-fades the fill and
+/// border using the design-system filter palette so the chip matches the
+/// rest of the filter surfaces.
+class DesignSystemFilterChoicePill extends StatefulWidget {
+  const DesignSystemFilterChoicePill({
+    required this.label,
+    required this.selected,
+    required this.palette,
+    required this.textStyle,
+    required this.onTap,
+    this.leading,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final DesignSystemFilterPalette palette;
+  final TextStyle textStyle;
+  final VoidCallback onTap;
+  final Widget? leading;
+
+  static const Duration animationDuration = Duration(milliseconds: 400);
+  static const double borderWidth = 1.5;
+
+  @override
+  State<DesignSystemFilterChoicePill> createState() =>
+      _DesignSystemFilterChoicePillState();
+}
+
+class _DesignSystemFilterChoicePillState
+    extends State<DesignSystemFilterChoicePill>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final CurvedAnimation _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: DesignSystemFilterChoicePill.animationDuration,
+      value: widget.selected ? 1.0 : 0.0,
+    );
+    _progress = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant DesignSystemFilterChoicePill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) {
+      if (widget.selected) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _progress.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+    final radii = context.designTokens.radii;
+    final borderRadius = BorderRadius.circular(radii.badgesPills);
+
+    return RepaintBoundary(
+      child: Material(
+        color: Colors.transparent,
+        child: AnimatedBuilder(
+          animation: _progress,
+          builder: (context, child) {
+            final t = _progress.value;
+            final fillColor = Color.lerp(
+              widget.palette.pillFill,
+              widget.palette.selectedPillBackground,
+              t,
+            )!;
+            final borderColor = widget.palette.accent.withValues(alpha: t);
+            return Ink(
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: borderRadius,
+                border: Border.all(
+                  color: borderColor,
+                  width: DesignSystemFilterChoicePill.borderWidth,
+                ),
+              ),
+              child: InkWell(
+                borderRadius: borderRadius,
+                onTap: widget.onTap,
+                child: child,
+              ),
+            );
+          },
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.leading != null
+                  ? spacing.step4
+                  : spacing.step5,
+              vertical: spacing.step3,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.leading != null) ...[
+                  widget.leading!,
+                  SizedBox(width: spacing.step2),
+                ],
+                Text(
+                  widget.label,
+                  style: widget.textStyle.copyWith(
+                    color: widget.palette.primaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class DesignSystemFilterDragHandle extends StatelessWidget {
   const DesignSystemFilterDragHandle({
     required this.color,
