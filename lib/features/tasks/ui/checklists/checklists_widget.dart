@@ -209,7 +209,7 @@ class _ChecklistsSectionHeader extends StatelessWidget {
           ),
           child: PopupMenuButton<String>(
             key: const Key('checklists-menu'),
-            tooltip: 'More',
+            tooltip: context.messages.checklistMoreTooltip,
             icon: Icon(Icons.more_vert, color: color, size: 20),
             position: PopupMenuPosition.under,
             onSelected: (value) {

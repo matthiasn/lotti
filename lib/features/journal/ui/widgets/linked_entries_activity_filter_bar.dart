@@ -157,6 +157,7 @@ class _ActivityPill extends StatelessWidget {
       button: true,
       toggled: active,
       label: spec.label,
+      excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
