@@ -33,7 +33,6 @@ class ChecklistCard extends StatefulWidget {
     required this.completionRate,
     required this.onTitleSave,
     required this.onCreateItem,
-    required this.onReorder,
     this.completedCount,
     this.totalCount,
     this.onDelete,
@@ -60,9 +59,6 @@ class ChecklistCard extends StatefulWidget {
   /// Called when a new item should be created. Returns the new item's id or
   /// null on failure.
   final Future<String?> Function(String?) onCreateItem;
-
-  /// Called after a within-list reorder to persist the new order.
-  final Future<void> Function(List<String>) onReorder;
 
   final VoidCallback? onDelete;
   final VoidCallback? onExportMarkdown;
@@ -274,14 +270,6 @@ class _ChecklistCardState extends State<ChecklistCard> {
                     );
                   } catch (_) {}
                 });
-              },
-              onReorder: (oldIndex, newIndex) {
-                final ids = [..._itemIds];
-                final moved = ids.removeAt(oldIndex);
-                final insertAt = newIndex > oldIndex ? newIndex - 1 : newIndex;
-                ids.insert(insertAt, moved);
-                setState(() => _itemIds = ids);
-                widget.onReorder(ids);
               },
             ),
             secondChild: const SizedBox.shrink(),
@@ -828,7 +816,6 @@ class _Body extends StatelessWidget {
     required this.activeTotalCount,
     required this.focusNode,
     required this.onCreateItem,
-    required this.onReorder,
   });
 
   final List<String> itemIds;
@@ -843,7 +830,6 @@ class _Body extends StatelessWidget {
   final int activeTotalCount;
   final FocusNode focusNode;
   final Future<void> Function(String?) onCreateItem;
-  final void Function(int oldIndex, int newIndex) onReorder;
 
   @override
   Widget build(BuildContext context) {
@@ -882,21 +868,15 @@ class _Body extends StatelessWidget {
             ),
           )
         else
-          ReorderableListView.builder(
+          // Plain ListView — all drag/drop is handled by super_drag_and_drop
+          // on each row (DropRegion + DragItemWidget + DraggableWidget),
+          // routed through the controller's dropChecklistItem which dispatches
+          // to _reorderItem (same list) or moveToChecklist (cross list).
+          // ReorderableListView would re-animate the list on every data
+          // mutation, fighting the OS-native drag image and feeling wobbly.
+          ListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            proxyDecorator: (child, index, animation) => AnimatedBuilder(
-              animation: animation,
-              builder: (context, child) => Material(
-                elevation: 4,
-                borderRadius: BorderRadius.circular(8),
-                color: tokens.colors.background.level02,
-                child: child,
-              ),
-              child: child,
-            ),
-            onReorder: onReorder,
             itemCount: itemIds.length,
             itemBuilder: (context, index) {
               final itemId = itemIds[index];

@@ -31,9 +31,11 @@ const kChecklistDeleteDuration = Duration(seconds: 5);
 /// Features:
 /// - Watches its own [checklistItemControllerProvider] for live updates.
 /// - Swipe right → archive/unarchive; swipe left → delete with undo.
-/// - Long-press (mobile) or drag-handle drag for cross-checklist moves via
-///   `super_drag_and_drop`.
-/// - [ReorderableDragStartListener] on the drag handle for within-list reorder.
+/// - Long-press anywhere on the row to drag via `super_drag_and_drop` —
+///   handles BOTH within-list reorder (routed through the controller's
+///   same-list branch) and cross-checklist moves. The drag-handle icon is
+///   a visual affordance only; wiring a [ReorderableDragStartListener] there
+///   would win the gesture race and trap drags inside the source list.
 /// - AI completion suggestion pulsing indicator.
 /// - Animated hide when filter is "open only" and item is completed/archived.
 class ChecklistItemRow extends ConsumerStatefulWidget {
@@ -266,16 +268,19 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                 constraints: const BoxConstraints(minHeight: 44),
                 child: Row(
                   children: [
-                    // Drag handle — ReorderableDragStartListener for within-list
-                    // reorder; DraggableWidget (below) handles cross-list.
-                    ReorderableDragStartListener(
-                      index: widget.index,
-                      child: Icon(
-                        Icons.drag_indicator,
-                        size: 24,
-                        color: tokens.colors.text.lowEmphasis.withValues(
-                          alpha: 0.32,
-                        ),
+                    // Drag handle — purely visual affordance. Long-press
+                    // anywhere on the row engages the DraggableWidget below,
+                    // which routes through super_drag_and_drop for BOTH
+                    // within-list reorder (via dropChecklistItem ->
+                    // _reorderItem) and cross-checklist moves (via
+                    // moveToChecklist). A ReorderableDragStartListener here
+                    // would win the gesture race and trap drags inside the
+                    // source list.
+                    Icon(
+                      Icons.drag_indicator,
+                      size: 24,
+                      color: tokens.colors.text.lowEmphasis.withValues(
+                        alpha: 0.32,
                       ),
                     ),
                     SizedBox(width: tokens.spacing.step3),

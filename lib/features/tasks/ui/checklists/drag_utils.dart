@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
@@ -54,19 +55,15 @@ Future<bool> handleChecklistItemDrop({
 
 /// Creates a styled container for dragged items in checklists.
 ///
-/// Provides a consistent visual appearance for items being dragged,
-/// with a colored border and solid background.
+/// Matches the inner [ReorderableListView]'s proxy decorator: a level-02
+/// elevation surface with rounded corners and no border, so the dragged row
+/// reads as a lifted version of itself rather than a special boxed object.
 Widget buildDragDecorator(BuildContext context, Widget child) {
-  final theme = Theme.of(context);
-  return Container(
-    decoration: BoxDecoration(
-      color: theme.colorScheme.surface,
-      border: Border.all(
-        color: theme.colorScheme.primary,
-        width: 2,
-      ),
-      borderRadius: BorderRadius.circular(12),
-    ),
+  final tokens = context.designTokens;
+  return Material(
+    elevation: 4,
+    borderRadius: BorderRadius.circular(8),
+    color: tokens.colors.background.level02,
     child: child,
   );
 }
