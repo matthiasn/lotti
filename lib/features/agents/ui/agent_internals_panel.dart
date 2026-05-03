@@ -44,7 +44,12 @@ class AgentInternalsPanel extends ConsumerWidget {
   /// Builds a [PageRoute] that fades the scrim in and slides the panel
   /// in from the right on wide screens, or up from the bottom on
   /// narrow screens. Use via `Navigator.of(context).push(...)`.
+  ///
+  /// Takes [context] so the route can resolve a localized
+  /// `barrierLabel` for the dismissible scrim — assistive tech reads
+  /// it aloud when announcing the modal barrier.
   static PageRoute<void> route({
+    required BuildContext context,
     required String agentId,
     required String? agentName,
   }) {
@@ -52,6 +57,7 @@ class AgentInternalsPanel extends ConsumerWidget {
       opaque: false,
       barrierDismissible: true,
       barrierColor: Colors.black54,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       transitionDuration: const Duration(milliseconds: 220),
       reverseTransitionDuration: const Duration(milliseconds: 180),
       pageBuilder: (context, animation, secondaryAnimation) {

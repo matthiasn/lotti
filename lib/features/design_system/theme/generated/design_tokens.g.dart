@@ -4,9 +4,718 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 
-const DsTokens dsTokensLight = DsTokens(colors: DsColors(text: DsColorsText(highEmphasis: Color(0xE0000000), mediumEmphasis: Color(0xA3000000), lowEmphasis: Color(0x52000000), onInteractiveAlert: Color(0xFFFFFFFF)), surface: DsColorsSurface(enabled: Color(0x0F000000), hover: Color(0x1F000000), focusPressed: Color(0x29000000), selected: Color(0x292BA184), active: Color(0x3D2BA184)), alert: DsColorsAlert(error: DsColorsAlertError(defaultColor: Color(0xFFCC3633), hover: Color(0xFFA32B29), pressed: Color(0xFF7A1F1F)), success: DsColorsAlertSuccess(defaultColor: Color(0xFF59A66B), hover: Color(0xFF478556), pressed: Color(0xFF366340)), warning: DsColorsAlertWarning(defaultColor: Color(0xFFFA8C05), hover: Color(0xFFC87005), pressed: Color(0xFF965402)), info: DsColorsAlertInfo(defaultColor: Color(0xFF1CA3E3), hover: Color(0xFF1783B5), pressed: Color(0xFF116288))), background: DsColorsBackground(level01: Color(0xFFFFFFFF), level02: Color(0xFFF1F4F3), level03: Color(0xFFE3E8E7), alternative01: Color(0xFFEEF7FF)), interactive: DsColorsInteractive(enabled: Color(0xFF2BA184), hover: Color(0xFF1F7963), pressed: Color(0xFF165042)), decorative: DsColorsDecorative(level01: Color(0x1F000000), level02: Color(0x3D000000)), aiCard: DsColorsAiCard(background: Color(0xFF0E1A22), backgroundRaised: Color(0xFF14222C), row: Color(0xB80E1A22), border: Color(0x245ED4B7), borderSoft: Color(0x1A5ED4B7), accent: Color(0xFF5ED4B7), accentSoft: Color(0x295ED4B7), footerWash: Color(0x29000000), footerWashOpen: Color(0x1A000000), rowBorder: Color(0x0FFFFFFF), rowBorderStrong: Color(0x1AFFFFFF), bodyText: Color(0xD9FFFFFF), metaText: Color(0x8CFFFFFF), faintMeta: Color(0x73FFFFFF)), proposalKind: DsColorsProposalKind(add: DsColorsProposalKindAdd(color: Color(0xFF7AB889), surface: Color(0x2E7AB889)), update: DsColorsProposalKindUpdate(color: Color(0xFF7BC0E2), surface: Color(0x2E7BC0E2)), remove: DsColorsProposalKindRemove(color: Color(0xFFFF8A8A), surface: Color(0x2EFF8A8A)), priority: DsColorsProposalKindPriority(color: Color(0xFFFFA28A), surface: Color(0x2EFFA28A)), estimate: DsColorsProposalKindEstimate(color: Color(0xFFFFB778), surface: Color(0x2EFFB778)), status: DsColorsProposalKindStatus(color: Color(0xFF5ED4B7), surface: Color(0x2E5ED4B7)), label: DsColorsProposalKindLabel(color: Color(0xFFA694E5), surface: Color(0x2EA694E5)), due: DsColorsProposalKindDue(color: Color(0xFF7BC0E2), surface: Color(0x2E7BC0E2)))), typography: DsTypography(styles: DsTypographyStyles(display: DsTypographyStylesDisplay(display0: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 158.0,   fontWeight: FontWeight.w700,   height: 1.2152,   letterSpacing: -1.5000, ), display1: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 99.0,   fontWeight: FontWeight.w700,   height: 1.0101,   letterSpacing: -1.5000, ), display2: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 62.0,   fontWeight: FontWeight.w700,   height: 1.1613,   letterSpacing: -1.0, )), heading: DsTypographyStylesHeading(heading1: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 35.0,   fontWeight: FontWeight.w700,   height: 1.2571,   letterSpacing: -0.2500, ), heading2: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 25.0,   fontWeight: FontWeight.w700,   height: 1.2800,   letterSpacing: 0.0, ), heading3: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 20.0,   fontWeight: FontWeight.w700,   height: 1.4000,   letterSpacing: 0.2500, )), subtitle: DsTypographyStylesSubtitle(subtitle1: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 16.0,   fontWeight: FontWeight.w600,   height: 1.5000,   letterSpacing: 0.5000, ), subtitle2: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 14.0,   fontWeight: FontWeight.w600,   height: 1.4286,   letterSpacing: 0.2500, )), body: DsTypographyStylesBody(bodyLarge: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 18.0,   fontWeight: FontWeight.w400,   height: 1.3333,   letterSpacing: 0.0, ), bodyMedium: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 16.0,   fontWeight: FontWeight.w400,   height: 1.5000,   letterSpacing: 0.0, ), bodySmall: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 14.0,   fontWeight: FontWeight.w400,   height: 1.4286,   letterSpacing: 0.0, )), others: DsTypographyStylesOthers(caption: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 12.0,   fontWeight: FontWeight.w400,   height: 1.3333,   letterSpacing: 0.2500, ), overline: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 12.0,   fontWeight: FontWeight.w700,   height: 1.3333,   letterSpacing: 8.0, ))), family: DsTypographyFamily(display: 'Inter', text: 'Inter'), weight: DsTypographyWeight(bold: FontWeight.w700, semiBold: FontWeight.w600, regular: FontWeight.w400), size: DsTypographySize(display0: 158.0, display1: 99.0, display2: 62.0, display3: 50.0, heading1: 35.0, heading2: 25.0, heading3: 20.0, subtitle1: 16.0, subtitle2: 14.0, bodyLarge: 18.0, bodyMedium: 16.0, bodySmall: 14.0, caption: 12.0, overline: 12.0), lineHeight: DsTypographyLineHeight(display0: 192.0, display1: 100.0, display2: 72.0, display3: 60.0, heading1: 44.0, heading2: 32.0, heading3: 28.0, subtitle1: 24.0, subtitle2: 20.0, bodyLarge: 24.0, bodyMedium: 24.0, bodySmall: 20.0, caption: 16.0, overline: 16.0), letterSpacing: DsTypographyLetterSpacing(display0: -1.5000, display1: -1.5000, display2: -1.0, display3: -0.5000, heading1: -0.2500, heading2: 0.0, heading3: 0.2500, subtitle1: 0.5000, subtitle2: 0.2500, bodyLarge: 0.0, bodyMedium: 0.0, bodySmall: 0.0, caption: 0.2500, overline: 8.0)), spacing: DsSpacing(step1: 2.0, step2: 4.0, step3: 8.0, step4: 12.0, step5: 16.0, step6: 24.0, step7: 32.0, step8: 40.0, step9: 48.0, step10: 64.0, step11: 80.0, step12: 96.0, step13: 160.0, cardPadding: 16.0, cardItemSpacing: 12.0, sectionGap: 24.0), radii: DsRadii(xs: 4.0, s: 8.0, m: 12.0, l: 16.0, xl: 24.0, sectionCards: 16.0, badgesPills: 24.0, smallChips: 8.0));
-const DsTokens dsTokensDark = DsTokens(colors: DsColors(text: DsColorsText(highEmphasis: Color(0xFFFFFFFF), mediumEmphasis: Color(0xCCFFFFFF), lowEmphasis: Color(0xA3FFFFFF), onInteractiveAlert: Color(0xFF0D0D0D)), surface: DsColorsSurface(enabled: Color(0x0FFFFFFF), hover: Color(0x1FFFFFFF), focusPressed: Color(0x29FFFFFF), selected: Color(0x295ED4B7), active: Color(0x3D5ED4B7)), alert: DsColorsAlert(error: DsColorsAlertError(defaultColor: Color(0xFFD65E5C), hover: Color(0xFFE08684), pressed: Color(0xFFEBB0AE)), success: DsColorsAlertSuccess(defaultColor: Color(0xFF7AB889), hover: Color(0xFF9CC9A6), pressed: Color(0xFFBDDBC4)), warning: DsColorsAlertWarning(defaultColor: Color(0xFFFBA336), hover: Color(0xFFFCBA69), pressed: Color(0xFFFDD19B)), info: DsColorsAlertInfo(defaultColor: Color(0xFF4AB6E8), hover: Color(0xFF77C8EE), pressed: Color(0xFFA4DAF4))), background: DsColorsBackground(level01: Color(0xFF181818), level02: Color(0xFF222222), level03: Color(0xFF535353), alternative01: Color(0xFF122029)), interactive: DsColorsInteractive(enabled: Color(0xFF5ED4B7), hover: Color(0xFF86DFC9), pressed: Color(0xFFAFEAD8)), decorative: DsColorsDecorative(level01: Color(0x1FFFFFFF), level02: Color(0x3DFFFFFF)), aiCard: DsColorsAiCard(background: Color(0xFF0E1A22), backgroundRaised: Color(0xFF14222C), row: Color(0xB80E1A22), border: Color(0x245ED4B7), borderSoft: Color(0x1A5ED4B7), accent: Color(0xFF5ED4B7), accentSoft: Color(0x295ED4B7), footerWash: Color(0x29000000), footerWashOpen: Color(0x1A000000), rowBorder: Color(0x0FFFFFFF), rowBorderStrong: Color(0x1AFFFFFF), bodyText: Color(0xD9FFFFFF), metaText: Color(0x8CFFFFFF), faintMeta: Color(0x73FFFFFF)), proposalKind: DsColorsProposalKind(add: DsColorsProposalKindAdd(color: Color(0xFF7AB889), surface: Color(0x2E7AB889)), update: DsColorsProposalKindUpdate(color: Color(0xFF7BC0E2), surface: Color(0x2E7BC0E2)), remove: DsColorsProposalKindRemove(color: Color(0xFFFF8A8A), surface: Color(0x2EFF8A8A)), priority: DsColorsProposalKindPriority(color: Color(0xFFFFA28A), surface: Color(0x2EFFA28A)), estimate: DsColorsProposalKindEstimate(color: Color(0xFFFFB778), surface: Color(0x2EFFB778)), status: DsColorsProposalKindStatus(color: Color(0xFF5ED4B7), surface: Color(0x2E5ED4B7)), label: DsColorsProposalKindLabel(color: Color(0xFFA694E5), surface: Color(0x2EA694E5)), due: DsColorsProposalKindDue(color: Color(0xFF7BC0E2), surface: Color(0x2E7BC0E2)))), typography: DsTypography(styles: DsTypographyStyles(display: DsTypographyStylesDisplay(display0: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 158.0,   fontWeight: FontWeight.w700,   height: 1.2152,   letterSpacing: -1.5000, ), display1: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 99.0,   fontWeight: FontWeight.w700,   height: 1.0101,   letterSpacing: -1.5000, ), display2: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 62.0,   fontWeight: FontWeight.w700,   height: 1.1613,   letterSpacing: -1.0, )), heading: DsTypographyStylesHeading(heading1: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 35.0,   fontWeight: FontWeight.w700,   height: 1.2571,   letterSpacing: -0.2500, ), heading2: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 25.0,   fontWeight: FontWeight.w700,   height: 1.2800,   letterSpacing: 0.0, ), heading3: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 20.0,   fontWeight: FontWeight.w700,   height: 1.4000,   letterSpacing: 0.2500, )), subtitle: DsTypographyStylesSubtitle(subtitle1: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 16.0,   fontWeight: FontWeight.w600,   height: 1.5000,   letterSpacing: 0.5000, ), subtitle2: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 14.0,   fontWeight: FontWeight.w600,   height: 1.4286,   letterSpacing: 0.2500, )), body: DsTypographyStylesBody(bodyLarge: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 18.0,   fontWeight: FontWeight.w400,   height: 1.3333,   letterSpacing: 0.0, ), bodyMedium: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 16.0,   fontWeight: FontWeight.w400,   height: 1.5000,   letterSpacing: 0.0, ), bodySmall: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 14.0,   fontWeight: FontWeight.w400,   height: 1.4286,   letterSpacing: 0.0, )), others: DsTypographyStylesOthers(caption: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 12.0,   fontWeight: FontWeight.w400,   height: 1.3333,   letterSpacing: 0.2500, ), overline: TextStyle(   fontFamily: 'Inter',   fontFamilyFallback: const ['Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji'],   fontSize: 12.0,   fontWeight: FontWeight.w700,   height: 1.3333,   letterSpacing: 8.0, ))), family: DsTypographyFamily(display: 'Inter', text: 'Inter'), weight: DsTypographyWeight(bold: FontWeight.w700, semiBold: FontWeight.w600, regular: FontWeight.w400), size: DsTypographySize(display0: 158.0, display1: 99.0, display2: 62.0, display3: 50.0, heading1: 35.0, heading2: 25.0, heading3: 20.0, subtitle1: 16.0, subtitle2: 14.0, bodyLarge: 18.0, bodyMedium: 16.0, bodySmall: 14.0, caption: 12.0, overline: 12.0), lineHeight: DsTypographyLineHeight(display0: 192.0, display1: 100.0, display2: 72.0, display3: 60.0, heading1: 44.0, heading2: 32.0, heading3: 28.0, subtitle1: 24.0, subtitle2: 20.0, bodyLarge: 24.0, bodyMedium: 24.0, bodySmall: 20.0, caption: 16.0, overline: 16.0), letterSpacing: DsTypographyLetterSpacing(display0: -1.5000, display1: -1.5000, display2: -1.0, display3: -0.5000, heading1: -0.2500, heading2: 0.0, heading3: 0.2500, subtitle1: 0.5000, subtitle2: 0.2500, bodyLarge: 0.0, bodyMedium: 0.0, bodySmall: 0.0, caption: 0.2500, overline: 8.0)), spacing: DsSpacing(step1: 2.0, step2: 4.0, step3: 8.0, step4: 12.0, step5: 16.0, step6: 24.0, step7: 32.0, step8: 40.0, step9: 48.0, step10: 64.0, step11: 80.0, step12: 96.0, step13: 160.0, cardPadding: 16.0, cardItemSpacing: 12.0, sectionGap: 24.0), radii: DsRadii(xs: 4.0, s: 8.0, m: 12.0, l: 16.0, xl: 24.0, sectionCards: 16.0, badgesPills: 24.0, smallChips: 8.0));
-
+const DsTokens dsTokensLight = DsTokens(
+  colors: DsColors(
+    text: DsColorsText(
+      highEmphasis: Color(0xE0000000),
+      mediumEmphasis: Color(0xA3000000),
+      lowEmphasis: Color(0x52000000),
+      onInteractiveAlert: Color(0xFFFFFFFF),
+    ),
+    surface: DsColorsSurface(
+      enabled: Color(0x0F000000),
+      hover: Color(0x1F000000),
+      focusPressed: Color(0x29000000),
+      selected: Color(0x292BA184),
+      active: Color(0x3D2BA184),
+    ),
+    alert: DsColorsAlert(
+      error: DsColorsAlertError(
+        defaultColor: Color(0xFFCC3633),
+        hover: Color(0xFFA32B29),
+        pressed: Color(0xFF7A1F1F),
+      ),
+      success: DsColorsAlertSuccess(
+        defaultColor: Color(0xFF59A66B),
+        hover: Color(0xFF478556),
+        pressed: Color(0xFF366340),
+      ),
+      warning: DsColorsAlertWarning(
+        defaultColor: Color(0xFFFA8C05),
+        hover: Color(0xFFC87005),
+        pressed: Color(0xFF965402),
+      ),
+      info: DsColorsAlertInfo(
+        defaultColor: Color(0xFF1CA3E3),
+        hover: Color(0xFF1783B5),
+        pressed: Color(0xFF116288),
+      ),
+    ),
+    background: DsColorsBackground(
+      level01: Color(0xFFFFFFFF),
+      level02: Color(0xFFF1F4F3),
+      level03: Color(0xFFE3E8E7),
+      alternative01: Color(0xFFEEF7FF),
+    ),
+    interactive: DsColorsInteractive(
+      enabled: Color(0xFF2BA184),
+      hover: Color(0xFF1F7963),
+      pressed: Color(0xFF165042),
+    ),
+    decorative: DsColorsDecorative(
+      level01: Color(0x1F000000),
+      level02: Color(0x3D000000),
+    ),
+    aiCard: DsColorsAiCard(
+      background: Color(0xFF0E1A22),
+      backgroundRaised: Color(0xFF14222C),
+      row: Color(0xB80E1A22),
+      border: Color(0x245ED4B7),
+      borderSoft: Color(0x1A5ED4B7),
+      accent: Color(0xFF5ED4B7),
+      accentSoft: Color(0x295ED4B7),
+      footerWash: Color(0x29000000),
+      footerWashOpen: Color(0x1A000000),
+      rowBorder: Color(0x0FFFFFFF),
+      rowBorderStrong: Color(0x1AFFFFFF),
+      bodyText: Color(0xD9FFFFFF),
+      metaText: Color(0x8CFFFFFF),
+      faintMeta: Color(0x73FFFFFF),
+    ),
+    proposalKind: DsColorsProposalKind(
+      add: DsColorsProposalKindAdd(
+        color: Color(0xFF7AB889),
+        surface: Color(0x2E7AB889),
+      ),
+      update: DsColorsProposalKindUpdate(
+        color: Color(0xFF7BC0E2),
+        surface: Color(0x2E7BC0E2),
+      ),
+      remove: DsColorsProposalKindRemove(
+        color: Color(0xFFFF8A8A),
+        surface: Color(0x2EFF8A8A),
+      ),
+      priority: DsColorsProposalKindPriority(
+        color: Color(0xFFFFA28A),
+        surface: Color(0x2EFFA28A),
+      ),
+      estimate: DsColorsProposalKindEstimate(
+        color: Color(0xFFFFB778),
+        surface: Color(0x2EFFB778),
+      ),
+      status: DsColorsProposalKindStatus(
+        color: Color(0xFF5ED4B7),
+        surface: Color(0x2E5ED4B7),
+      ),
+      label: DsColorsProposalKindLabel(
+        color: Color(0xFFA694E5),
+        surface: Color(0x2EA694E5),
+      ),
+      due: DsColorsProposalKindDue(
+        color: Color(0xFF7BC0E2),
+        surface: Color(0x2E7BC0E2),
+      ),
+    ),
+  ),
+  typography: DsTypography(
+    styles: DsTypographyStyles(
+      display: DsTypographyStylesDisplay(
+        display0: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 158.0,
+          fontWeight: FontWeight.w700,
+          height: 1.2152,
+          letterSpacing: -1.5000,
+        ),
+        display1: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 99.0,
+          fontWeight: FontWeight.w700,
+          height: 1.0101,
+          letterSpacing: -1.5000,
+        ),
+        display2: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 62.0,
+          fontWeight: FontWeight.w700,
+          height: 1.1613,
+          letterSpacing: -1.0,
+        ),
+      ),
+      heading: DsTypographyStylesHeading(
+        heading1: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 35.0,
+          fontWeight: FontWeight.w700,
+          height: 1.2571,
+          letterSpacing: -0.2500,
+        ),
+        heading2: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 25.0,
+          fontWeight: FontWeight.w700,
+          height: 1.2800,
+          letterSpacing: 0.0,
+        ),
+        heading3: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 20.0,
+          fontWeight: FontWeight.w700,
+          height: 1.4000,
+          letterSpacing: 0.2500,
+        ),
+      ),
+      subtitle: DsTypographyStylesSubtitle(
+        subtitle1: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 16.0,
+          fontWeight: FontWeight.w600,
+          height: 1.5000,
+          letterSpacing: 0.5000,
+        ),
+        subtitle2: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 14.0,
+          fontWeight: FontWeight.w600,
+          height: 1.4286,
+          letterSpacing: 0.2500,
+        ),
+      ),
+      body: DsTypographyStylesBody(
+        bodyLarge: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 18.0,
+          fontWeight: FontWeight.w400,
+          height: 1.3333,
+          letterSpacing: 0.0,
+        ),
+        bodyMedium: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 16.0,
+          fontWeight: FontWeight.w400,
+          height: 1.5000,
+          letterSpacing: 0.0,
+        ),
+        bodySmall: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 14.0,
+          fontWeight: FontWeight.w400,
+          height: 1.4286,
+          letterSpacing: 0.0,
+        ),
+      ),
+      others: DsTypographyStylesOthers(
+        caption: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 12.0,
+          fontWeight: FontWeight.w400,
+          height: 1.3333,
+          letterSpacing: 0.2500,
+        ),
+        overline: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 12.0,
+          fontWeight: FontWeight.w700,
+          height: 1.3333,
+          letterSpacing: 8.0,
+        ),
+      ),
+    ),
+    family: DsTypographyFamily(display: 'Inter', text: 'Inter'),
+    weight: DsTypographyWeight(
+      bold: FontWeight.w700,
+      semiBold: FontWeight.w600,
+      regular: FontWeight.w400,
+    ),
+    size: DsTypographySize(
+      display0: 158.0,
+      display1: 99.0,
+      display2: 62.0,
+      display3: 50.0,
+      heading1: 35.0,
+      heading2: 25.0,
+      heading3: 20.0,
+      subtitle1: 16.0,
+      subtitle2: 14.0,
+      bodyLarge: 18.0,
+      bodyMedium: 16.0,
+      bodySmall: 14.0,
+      caption: 12.0,
+      overline: 12.0,
+    ),
+    lineHeight: DsTypographyLineHeight(
+      display0: 192.0,
+      display1: 100.0,
+      display2: 72.0,
+      display3: 60.0,
+      heading1: 44.0,
+      heading2: 32.0,
+      heading3: 28.0,
+      subtitle1: 24.0,
+      subtitle2: 20.0,
+      bodyLarge: 24.0,
+      bodyMedium: 24.0,
+      bodySmall: 20.0,
+      caption: 16.0,
+      overline: 16.0,
+    ),
+    letterSpacing: DsTypographyLetterSpacing(
+      display0: -1.5000,
+      display1: -1.5000,
+      display2: -1.0,
+      display3: -0.5000,
+      heading1: -0.2500,
+      heading2: 0.0,
+      heading3: 0.2500,
+      subtitle1: 0.5000,
+      subtitle2: 0.2500,
+      bodyLarge: 0.0,
+      bodyMedium: 0.0,
+      bodySmall: 0.0,
+      caption: 0.2500,
+      overline: 8.0,
+    ),
+  ),
+  spacing: DsSpacing(
+    step1: 2.0,
+    step2: 4.0,
+    step3: 8.0,
+    step4: 12.0,
+    step5: 16.0,
+    step6: 24.0,
+    step7: 32.0,
+    step8: 40.0,
+    step9: 48.0,
+    step10: 64.0,
+    step11: 80.0,
+    step12: 96.0,
+    step13: 160.0,
+    cardPadding: 16.0,
+    cardItemSpacing: 12.0,
+    sectionGap: 24.0,
+  ),
+  radii: DsRadii(
+    xs: 4.0,
+    s: 8.0,
+    m: 12.0,
+    l: 16.0,
+    xl: 24.0,
+    sectionCards: 16.0,
+    badgesPills: 24.0,
+    smallChips: 8.0,
+  ),
+);
+const DsTokens dsTokensDark = DsTokens(
+  colors: DsColors(
+    text: DsColorsText(
+      highEmphasis: Color(0xFFFFFFFF),
+      mediumEmphasis: Color(0xCCFFFFFF),
+      lowEmphasis: Color(0xA3FFFFFF),
+      onInteractiveAlert: Color(0xFF0D0D0D),
+    ),
+    surface: DsColorsSurface(
+      enabled: Color(0x0FFFFFFF),
+      hover: Color(0x1FFFFFFF),
+      focusPressed: Color(0x29FFFFFF),
+      selected: Color(0x295ED4B7),
+      active: Color(0x3D5ED4B7),
+    ),
+    alert: DsColorsAlert(
+      error: DsColorsAlertError(
+        defaultColor: Color(0xFFD65E5C),
+        hover: Color(0xFFE08684),
+        pressed: Color(0xFFEBB0AE),
+      ),
+      success: DsColorsAlertSuccess(
+        defaultColor: Color(0xFF7AB889),
+        hover: Color(0xFF9CC9A6),
+        pressed: Color(0xFFBDDBC4),
+      ),
+      warning: DsColorsAlertWarning(
+        defaultColor: Color(0xFFFBA336),
+        hover: Color(0xFFFCBA69),
+        pressed: Color(0xFFFDD19B),
+      ),
+      info: DsColorsAlertInfo(
+        defaultColor: Color(0xFF4AB6E8),
+        hover: Color(0xFF77C8EE),
+        pressed: Color(0xFFA4DAF4),
+      ),
+    ),
+    background: DsColorsBackground(
+      level01: Color(0xFF181818),
+      level02: Color(0xFF222222),
+      level03: Color(0xFF535353),
+      alternative01: Color(0xFF122029),
+    ),
+    interactive: DsColorsInteractive(
+      enabled: Color(0xFF5ED4B7),
+      hover: Color(0xFF86DFC9),
+      pressed: Color(0xFFAFEAD8),
+    ),
+    decorative: DsColorsDecorative(
+      level01: Color(0x1FFFFFFF),
+      level02: Color(0x3DFFFFFF),
+    ),
+    aiCard: DsColorsAiCard(
+      background: Color(0xFF0E1A22),
+      backgroundRaised: Color(0xFF14222C),
+      row: Color(0xB80E1A22),
+      border: Color(0x245ED4B7),
+      borderSoft: Color(0x1A5ED4B7),
+      accent: Color(0xFF5ED4B7),
+      accentSoft: Color(0x295ED4B7),
+      footerWash: Color(0x29000000),
+      footerWashOpen: Color(0x1A000000),
+      rowBorder: Color(0x0FFFFFFF),
+      rowBorderStrong: Color(0x1AFFFFFF),
+      bodyText: Color(0xD9FFFFFF),
+      metaText: Color(0x8CFFFFFF),
+      faintMeta: Color(0x73FFFFFF),
+    ),
+    proposalKind: DsColorsProposalKind(
+      add: DsColorsProposalKindAdd(
+        color: Color(0xFF7AB889),
+        surface: Color(0x2E7AB889),
+      ),
+      update: DsColorsProposalKindUpdate(
+        color: Color(0xFF7BC0E2),
+        surface: Color(0x2E7BC0E2),
+      ),
+      remove: DsColorsProposalKindRemove(
+        color: Color(0xFFFF8A8A),
+        surface: Color(0x2EFF8A8A),
+      ),
+      priority: DsColorsProposalKindPriority(
+        color: Color(0xFFFFA28A),
+        surface: Color(0x2EFFA28A),
+      ),
+      estimate: DsColorsProposalKindEstimate(
+        color: Color(0xFFFFB778),
+        surface: Color(0x2EFFB778),
+      ),
+      status: DsColorsProposalKindStatus(
+        color: Color(0xFF5ED4B7),
+        surface: Color(0x2E5ED4B7),
+      ),
+      label: DsColorsProposalKindLabel(
+        color: Color(0xFFA694E5),
+        surface: Color(0x2EA694E5),
+      ),
+      due: DsColorsProposalKindDue(
+        color: Color(0xFF7BC0E2),
+        surface: Color(0x2E7BC0E2),
+      ),
+    ),
+  ),
+  typography: DsTypography(
+    styles: DsTypographyStyles(
+      display: DsTypographyStylesDisplay(
+        display0: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 158.0,
+          fontWeight: FontWeight.w700,
+          height: 1.2152,
+          letterSpacing: -1.5000,
+        ),
+        display1: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 99.0,
+          fontWeight: FontWeight.w700,
+          height: 1.0101,
+          letterSpacing: -1.5000,
+        ),
+        display2: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 62.0,
+          fontWeight: FontWeight.w700,
+          height: 1.1613,
+          letterSpacing: -1.0,
+        ),
+      ),
+      heading: DsTypographyStylesHeading(
+        heading1: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 35.0,
+          fontWeight: FontWeight.w700,
+          height: 1.2571,
+          letterSpacing: -0.2500,
+        ),
+        heading2: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 25.0,
+          fontWeight: FontWeight.w700,
+          height: 1.2800,
+          letterSpacing: 0.0,
+        ),
+        heading3: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 20.0,
+          fontWeight: FontWeight.w700,
+          height: 1.4000,
+          letterSpacing: 0.2500,
+        ),
+      ),
+      subtitle: DsTypographyStylesSubtitle(
+        subtitle1: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 16.0,
+          fontWeight: FontWeight.w600,
+          height: 1.5000,
+          letterSpacing: 0.5000,
+        ),
+        subtitle2: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 14.0,
+          fontWeight: FontWeight.w600,
+          height: 1.4286,
+          letterSpacing: 0.2500,
+        ),
+      ),
+      body: DsTypographyStylesBody(
+        bodyLarge: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 18.0,
+          fontWeight: FontWeight.w400,
+          height: 1.3333,
+          letterSpacing: 0.0,
+        ),
+        bodyMedium: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 16.0,
+          fontWeight: FontWeight.w400,
+          height: 1.5000,
+          letterSpacing: 0.0,
+        ),
+        bodySmall: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 14.0,
+          fontWeight: FontWeight.w400,
+          height: 1.4286,
+          letterSpacing: 0.0,
+        ),
+      ),
+      others: DsTypographyStylesOthers(
+        caption: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 12.0,
+          fontWeight: FontWeight.w400,
+          height: 1.3333,
+          letterSpacing: 0.2500,
+        ),
+        overline: TextStyle(
+          fontFamily: 'Inter',
+          fontFamilyFallback: const [
+            'Apple Color Emoji',
+            'Segoe UI Emoji',
+            'Noto Color Emoji',
+          ],
+          fontSize: 12.0,
+          fontWeight: FontWeight.w700,
+          height: 1.3333,
+          letterSpacing: 8.0,
+        ),
+      ),
+    ),
+    family: DsTypographyFamily(display: 'Inter', text: 'Inter'),
+    weight: DsTypographyWeight(
+      bold: FontWeight.w700,
+      semiBold: FontWeight.w600,
+      regular: FontWeight.w400,
+    ),
+    size: DsTypographySize(
+      display0: 158.0,
+      display1: 99.0,
+      display2: 62.0,
+      display3: 50.0,
+      heading1: 35.0,
+      heading2: 25.0,
+      heading3: 20.0,
+      subtitle1: 16.0,
+      subtitle2: 14.0,
+      bodyLarge: 18.0,
+      bodyMedium: 16.0,
+      bodySmall: 14.0,
+      caption: 12.0,
+      overline: 12.0,
+    ),
+    lineHeight: DsTypographyLineHeight(
+      display0: 192.0,
+      display1: 100.0,
+      display2: 72.0,
+      display3: 60.0,
+      heading1: 44.0,
+      heading2: 32.0,
+      heading3: 28.0,
+      subtitle1: 24.0,
+      subtitle2: 20.0,
+      bodyLarge: 24.0,
+      bodyMedium: 24.0,
+      bodySmall: 20.0,
+      caption: 16.0,
+      overline: 16.0,
+    ),
+    letterSpacing: DsTypographyLetterSpacing(
+      display0: -1.5000,
+      display1: -1.5000,
+      display2: -1.0,
+      display3: -0.5000,
+      heading1: -0.2500,
+      heading2: 0.0,
+      heading3: 0.2500,
+      subtitle1: 0.5000,
+      subtitle2: 0.2500,
+      bodyLarge: 0.0,
+      bodyMedium: 0.0,
+      bodySmall: 0.0,
+      caption: 0.2500,
+      overline: 8.0,
+    ),
+  ),
+  spacing: DsSpacing(
+    step1: 2.0,
+    step2: 4.0,
+    step3: 8.0,
+    step4: 12.0,
+    step5: 16.0,
+    step6: 24.0,
+    step7: 32.0,
+    step8: 40.0,
+    step9: 48.0,
+    step10: 64.0,
+    step11: 80.0,
+    step12: 96.0,
+    step13: 160.0,
+    cardPadding: 16.0,
+    cardItemSpacing: 12.0,
+    sectionGap: 24.0,
+  ),
+  radii: DsRadii(
+    xs: 4.0,
+    s: 8.0,
+    m: 12.0,
+    l: 16.0,
+    xl: 24.0,
+    sectionCards: 16.0,
+    badgesPills: 24.0,
+    smallChips: 8.0,
+  ),
+);
 
 @immutable
 class DsColorsText {
@@ -41,10 +750,14 @@ class DsColorsText {
       return this;
     }
     return DsColorsText(
-      highEmphasis: Color.lerp(highEmphasis, other.highEmphasis, t) ?? highEmphasis,
-      mediumEmphasis: Color.lerp(mediumEmphasis, other.mediumEmphasis, t) ?? mediumEmphasis,
+      highEmphasis:
+          Color.lerp(highEmphasis, other.highEmphasis, t) ?? highEmphasis,
+      mediumEmphasis:
+          Color.lerp(mediumEmphasis, other.mediumEmphasis, t) ?? mediumEmphasis,
       lowEmphasis: Color.lerp(lowEmphasis, other.lowEmphasis, t) ?? lowEmphasis,
-      onInteractiveAlert: Color.lerp(onInteractiveAlert, other.onInteractiveAlert, t) ?? onInteractiveAlert,
+      onInteractiveAlert:
+          Color.lerp(onInteractiveAlert, other.onInteractiveAlert, t) ??
+          onInteractiveAlert,
     );
   }
 
@@ -53,13 +766,21 @@ class DsColorsText {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsText && highEmphasis == other.highEmphasis && mediumEmphasis == other.mediumEmphasis && lowEmphasis == other.lowEmphasis && onInteractiveAlert == other.onInteractiveAlert;
+    return other is DsColorsText &&
+        highEmphasis == other.highEmphasis &&
+        mediumEmphasis == other.mediumEmphasis &&
+        lowEmphasis == other.lowEmphasis &&
+        onInteractiveAlert == other.onInteractiveAlert;
   }
 
   @override
-  int get hashCode => Object.hashAll([highEmphasis, mediumEmphasis, lowEmphasis, onInteractiveAlert]);
+  int get hashCode => Object.hashAll([
+    highEmphasis,
+    mediumEmphasis,
+    lowEmphasis,
+    onInteractiveAlert,
+  ]);
 }
-
 
 @immutable
 class DsColorsSurface {
@@ -100,7 +821,8 @@ class DsColorsSurface {
     return DsColorsSurface(
       enabled: Color.lerp(enabled, other.enabled, t) ?? enabled,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
-      focusPressed: Color.lerp(focusPressed, other.focusPressed, t) ?? focusPressed,
+      focusPressed:
+          Color.lerp(focusPressed, other.focusPressed, t) ?? focusPressed,
       selected: Color.lerp(selected, other.selected, t) ?? selected,
       active: Color.lerp(active, other.active, t) ?? active,
     );
@@ -111,13 +833,18 @@ class DsColorsSurface {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsSurface && enabled == other.enabled && hover == other.hover && focusPressed == other.focusPressed && selected == other.selected && active == other.active;
+    return other is DsColorsSurface &&
+        enabled == other.enabled &&
+        hover == other.hover &&
+        focusPressed == other.focusPressed &&
+        selected == other.selected &&
+        active == other.active;
   }
 
   @override
-  int get hashCode => Object.hashAll([enabled, hover, focusPressed, selected, active]);
+  int get hashCode =>
+      Object.hashAll([enabled, hover, focusPressed, selected, active]);
 }
-
 
 @immutable
 class DsColorsAlertError {
@@ -148,7 +875,8 @@ class DsColorsAlertError {
       return this;
     }
     return DsColorsAlertError(
-      defaultColor: Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
+      defaultColor:
+          Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
     );
@@ -159,13 +887,15 @@ class DsColorsAlertError {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsAlertError && defaultColor == other.defaultColor && hover == other.hover && pressed == other.pressed;
+    return other is DsColorsAlertError &&
+        defaultColor == other.defaultColor &&
+        hover == other.hover &&
+        pressed == other.pressed;
   }
 
   @override
   int get hashCode => Object.hashAll([defaultColor, hover, pressed]);
 }
-
 
 @immutable
 class DsColorsAlertSuccess {
@@ -196,7 +926,8 @@ class DsColorsAlertSuccess {
       return this;
     }
     return DsColorsAlertSuccess(
-      defaultColor: Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
+      defaultColor:
+          Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
     );
@@ -207,13 +938,15 @@ class DsColorsAlertSuccess {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsAlertSuccess && defaultColor == other.defaultColor && hover == other.hover && pressed == other.pressed;
+    return other is DsColorsAlertSuccess &&
+        defaultColor == other.defaultColor &&
+        hover == other.hover &&
+        pressed == other.pressed;
   }
 
   @override
   int get hashCode => Object.hashAll([defaultColor, hover, pressed]);
 }
-
 
 @immutable
 class DsColorsAlertWarning {
@@ -244,7 +977,8 @@ class DsColorsAlertWarning {
       return this;
     }
     return DsColorsAlertWarning(
-      defaultColor: Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
+      defaultColor:
+          Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
     );
@@ -255,13 +989,15 @@ class DsColorsAlertWarning {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsAlertWarning && defaultColor == other.defaultColor && hover == other.hover && pressed == other.pressed;
+    return other is DsColorsAlertWarning &&
+        defaultColor == other.defaultColor &&
+        hover == other.hover &&
+        pressed == other.pressed;
   }
 
   @override
   int get hashCode => Object.hashAll([defaultColor, hover, pressed]);
 }
-
 
 @immutable
 class DsColorsAlertInfo {
@@ -292,7 +1028,8 @@ class DsColorsAlertInfo {
       return this;
     }
     return DsColorsAlertInfo(
-      defaultColor: Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
+      defaultColor:
+          Color.lerp(defaultColor, other.defaultColor, t) ?? defaultColor,
       hover: Color.lerp(hover, other.hover, t) ?? hover,
       pressed: Color.lerp(pressed, other.pressed, t) ?? pressed,
     );
@@ -303,13 +1040,15 @@ class DsColorsAlertInfo {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsAlertInfo && defaultColor == other.defaultColor && hover == other.hover && pressed == other.pressed;
+    return other is DsColorsAlertInfo &&
+        defaultColor == other.defaultColor &&
+        hover == other.hover &&
+        pressed == other.pressed;
   }
 
   @override
   int get hashCode => Object.hashAll([defaultColor, hover, pressed]);
 }
-
 
 @immutable
 class DsColorsAlert {
@@ -356,13 +1095,16 @@ class DsColorsAlert {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsAlert && error == other.error && success == other.success && warning == other.warning && info == other.info;
+    return other is DsColorsAlert &&
+        error == other.error &&
+        success == other.success &&
+        warning == other.warning &&
+        info == other.info;
   }
 
   @override
   int get hashCode => Object.hashAll([error, success, warning, info]);
 }
-
 
 @immutable
 class DsColorsBackground {
@@ -400,7 +1142,8 @@ class DsColorsBackground {
       level01: Color.lerp(level01, other.level01, t) ?? level01,
       level02: Color.lerp(level02, other.level02, t) ?? level02,
       level03: Color.lerp(level03, other.level03, t) ?? level03,
-      alternative01: Color.lerp(alternative01, other.alternative01, t) ?? alternative01,
+      alternative01:
+          Color.lerp(alternative01, other.alternative01, t) ?? alternative01,
     );
   }
 
@@ -409,13 +1152,17 @@ class DsColorsBackground {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsBackground && level01 == other.level01 && level02 == other.level02 && level03 == other.level03 && alternative01 == other.alternative01;
+    return other is DsColorsBackground &&
+        level01 == other.level01 &&
+        level02 == other.level02 &&
+        level03 == other.level03 &&
+        alternative01 == other.alternative01;
   }
 
   @override
-  int get hashCode => Object.hashAll([level01, level02, level03, alternative01]);
+  int get hashCode =>
+      Object.hashAll([level01, level02, level03, alternative01]);
 }
-
 
 @immutable
 class DsColorsInteractive {
@@ -457,13 +1204,15 @@ class DsColorsInteractive {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsInteractive && enabled == other.enabled && hover == other.hover && pressed == other.pressed;
+    return other is DsColorsInteractive &&
+        enabled == other.enabled &&
+        hover == other.hover &&
+        pressed == other.pressed;
   }
 
   @override
   int get hashCode => Object.hashAll([enabled, hover, pressed]);
 }
-
 
 @immutable
 class DsColorsDecorative {
@@ -500,13 +1249,14 @@ class DsColorsDecorative {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsDecorative && level01 == other.level01 && level02 == other.level02;
+    return other is DsColorsDecorative &&
+        level01 == other.level01 &&
+        level02 == other.level02;
   }
 
   @override
   int get hashCode => Object.hashAll([level01, level02]);
 }
-
 
 @immutable
 class DsColorsAiCard {
@@ -582,16 +1332,21 @@ class DsColorsAiCard {
     }
     return DsColorsAiCard(
       background: Color.lerp(background, other.background, t) ?? background,
-      backgroundRaised: Color.lerp(backgroundRaised, other.backgroundRaised, t) ?? backgroundRaised,
+      backgroundRaised:
+          Color.lerp(backgroundRaised, other.backgroundRaised, t) ??
+          backgroundRaised,
       row: Color.lerp(row, other.row, t) ?? row,
       border: Color.lerp(border, other.border, t) ?? border,
       borderSoft: Color.lerp(borderSoft, other.borderSoft, t) ?? borderSoft,
       accent: Color.lerp(accent, other.accent, t) ?? accent,
       accentSoft: Color.lerp(accentSoft, other.accentSoft, t) ?? accentSoft,
       footerWash: Color.lerp(footerWash, other.footerWash, t) ?? footerWash,
-      footerWashOpen: Color.lerp(footerWashOpen, other.footerWashOpen, t) ?? footerWashOpen,
+      footerWashOpen:
+          Color.lerp(footerWashOpen, other.footerWashOpen, t) ?? footerWashOpen,
       rowBorder: Color.lerp(rowBorder, other.rowBorder, t) ?? rowBorder,
-      rowBorderStrong: Color.lerp(rowBorderStrong, other.rowBorderStrong, t) ?? rowBorderStrong,
+      rowBorderStrong:
+          Color.lerp(rowBorderStrong, other.rowBorderStrong, t) ??
+          rowBorderStrong,
       bodyText: Color.lerp(bodyText, other.bodyText, t) ?? bodyText,
       metaText: Color.lerp(metaText, other.metaText, t) ?? metaText,
       faintMeta: Color.lerp(faintMeta, other.faintMeta, t) ?? faintMeta,
@@ -603,13 +1358,41 @@ class DsColorsAiCard {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsAiCard && background == other.background && backgroundRaised == other.backgroundRaised && row == other.row && border == other.border && borderSoft == other.borderSoft && accent == other.accent && accentSoft == other.accentSoft && footerWash == other.footerWash && footerWashOpen == other.footerWashOpen && rowBorder == other.rowBorder && rowBorderStrong == other.rowBorderStrong && bodyText == other.bodyText && metaText == other.metaText && faintMeta == other.faintMeta;
+    return other is DsColorsAiCard &&
+        background == other.background &&
+        backgroundRaised == other.backgroundRaised &&
+        row == other.row &&
+        border == other.border &&
+        borderSoft == other.borderSoft &&
+        accent == other.accent &&
+        accentSoft == other.accentSoft &&
+        footerWash == other.footerWash &&
+        footerWashOpen == other.footerWashOpen &&
+        rowBorder == other.rowBorder &&
+        rowBorderStrong == other.rowBorderStrong &&
+        bodyText == other.bodyText &&
+        metaText == other.metaText &&
+        faintMeta == other.faintMeta;
   }
 
   @override
-  int get hashCode => Object.hashAll([background, backgroundRaised, row, border, borderSoft, accent, accentSoft, footerWash, footerWashOpen, rowBorder, rowBorderStrong, bodyText, metaText, faintMeta]);
+  int get hashCode => Object.hashAll([
+    background,
+    backgroundRaised,
+    row,
+    border,
+    borderSoft,
+    accent,
+    accentSoft,
+    footerWash,
+    footerWashOpen,
+    rowBorder,
+    rowBorderStrong,
+    bodyText,
+    metaText,
+    faintMeta,
+  ]);
 }
-
 
 @immutable
 class DsColorsProposalKindAdd {
@@ -631,7 +1414,10 @@ class DsColorsProposalKindAdd {
     );
   }
 
-  DsColorsProposalKindAdd lerp(covariant DsColorsProposalKindAdd? other, double t) {
+  DsColorsProposalKindAdd lerp(
+    covariant DsColorsProposalKindAdd? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -646,13 +1432,14 @@ class DsColorsProposalKindAdd {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKindAdd && color == other.color && surface == other.surface;
+    return other is DsColorsProposalKindAdd &&
+        color == other.color &&
+        surface == other.surface;
   }
 
   @override
   int get hashCode => Object.hashAll([color, surface]);
 }
-
 
 @immutable
 class DsColorsProposalKindUpdate {
@@ -674,7 +1461,10 @@ class DsColorsProposalKindUpdate {
     );
   }
 
-  DsColorsProposalKindUpdate lerp(covariant DsColorsProposalKindUpdate? other, double t) {
+  DsColorsProposalKindUpdate lerp(
+    covariant DsColorsProposalKindUpdate? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -689,13 +1479,14 @@ class DsColorsProposalKindUpdate {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKindUpdate && color == other.color && surface == other.surface;
+    return other is DsColorsProposalKindUpdate &&
+        color == other.color &&
+        surface == other.surface;
   }
 
   @override
   int get hashCode => Object.hashAll([color, surface]);
 }
-
 
 @immutable
 class DsColorsProposalKindRemove {
@@ -717,7 +1508,10 @@ class DsColorsProposalKindRemove {
     );
   }
 
-  DsColorsProposalKindRemove lerp(covariant DsColorsProposalKindRemove? other, double t) {
+  DsColorsProposalKindRemove lerp(
+    covariant DsColorsProposalKindRemove? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -732,13 +1526,14 @@ class DsColorsProposalKindRemove {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKindRemove && color == other.color && surface == other.surface;
+    return other is DsColorsProposalKindRemove &&
+        color == other.color &&
+        surface == other.surface;
   }
 
   @override
   int get hashCode => Object.hashAll([color, surface]);
 }
-
 
 @immutable
 class DsColorsProposalKindPriority {
@@ -760,7 +1555,10 @@ class DsColorsProposalKindPriority {
     );
   }
 
-  DsColorsProposalKindPriority lerp(covariant DsColorsProposalKindPriority? other, double t) {
+  DsColorsProposalKindPriority lerp(
+    covariant DsColorsProposalKindPriority? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -775,13 +1573,14 @@ class DsColorsProposalKindPriority {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKindPriority && color == other.color && surface == other.surface;
+    return other is DsColorsProposalKindPriority &&
+        color == other.color &&
+        surface == other.surface;
   }
 
   @override
   int get hashCode => Object.hashAll([color, surface]);
 }
-
 
 @immutable
 class DsColorsProposalKindEstimate {
@@ -803,7 +1602,10 @@ class DsColorsProposalKindEstimate {
     );
   }
 
-  DsColorsProposalKindEstimate lerp(covariant DsColorsProposalKindEstimate? other, double t) {
+  DsColorsProposalKindEstimate lerp(
+    covariant DsColorsProposalKindEstimate? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -818,13 +1620,14 @@ class DsColorsProposalKindEstimate {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKindEstimate && color == other.color && surface == other.surface;
+    return other is DsColorsProposalKindEstimate &&
+        color == other.color &&
+        surface == other.surface;
   }
 
   @override
   int get hashCode => Object.hashAll([color, surface]);
 }
-
 
 @immutable
 class DsColorsProposalKindStatus {
@@ -846,7 +1649,10 @@ class DsColorsProposalKindStatus {
     );
   }
 
-  DsColorsProposalKindStatus lerp(covariant DsColorsProposalKindStatus? other, double t) {
+  DsColorsProposalKindStatus lerp(
+    covariant DsColorsProposalKindStatus? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -861,13 +1667,14 @@ class DsColorsProposalKindStatus {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKindStatus && color == other.color && surface == other.surface;
+    return other is DsColorsProposalKindStatus &&
+        color == other.color &&
+        surface == other.surface;
   }
 
   @override
   int get hashCode => Object.hashAll([color, surface]);
 }
-
 
 @immutable
 class DsColorsProposalKindLabel {
@@ -889,7 +1696,10 @@ class DsColorsProposalKindLabel {
     );
   }
 
-  DsColorsProposalKindLabel lerp(covariant DsColorsProposalKindLabel? other, double t) {
+  DsColorsProposalKindLabel lerp(
+    covariant DsColorsProposalKindLabel? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -904,13 +1714,14 @@ class DsColorsProposalKindLabel {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKindLabel && color == other.color && surface == other.surface;
+    return other is DsColorsProposalKindLabel &&
+        color == other.color &&
+        surface == other.surface;
   }
 
   @override
   int get hashCode => Object.hashAll([color, surface]);
 }
-
 
 @immutable
 class DsColorsProposalKindDue {
@@ -932,7 +1743,10 @@ class DsColorsProposalKindDue {
     );
   }
 
-  DsColorsProposalKindDue lerp(covariant DsColorsProposalKindDue? other, double t) {
+  DsColorsProposalKindDue lerp(
+    covariant DsColorsProposalKindDue? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -947,13 +1761,14 @@ class DsColorsProposalKindDue {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKindDue && color == other.color && surface == other.surface;
+    return other is DsColorsProposalKindDue &&
+        color == other.color &&
+        surface == other.surface;
   }
 
   @override
   int get hashCode => Object.hashAll([color, surface]);
 }
-
 
 @immutable
 class DsColorsProposalKind {
@@ -1020,13 +1835,29 @@ class DsColorsProposalKind {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColorsProposalKind && add == other.add && update == other.update && remove == other.remove && priority == other.priority && estimate == other.estimate && status == other.status && label == other.label && due == other.due;
+    return other is DsColorsProposalKind &&
+        add == other.add &&
+        update == other.update &&
+        remove == other.remove &&
+        priority == other.priority &&
+        estimate == other.estimate &&
+        status == other.status &&
+        label == other.label &&
+        due == other.due;
   }
 
   @override
-  int get hashCode => Object.hashAll([add, update, remove, priority, estimate, status, label, due]);
+  int get hashCode => Object.hashAll([
+    add,
+    update,
+    remove,
+    priority,
+    estimate,
+    status,
+    label,
+    due,
+  ]);
 }
-
 
 @immutable
 class DsColors {
@@ -1093,13 +1924,29 @@ class DsColors {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsColors && text == other.text && surface == other.surface && alert == other.alert && background == other.background && interactive == other.interactive && decorative == other.decorative && aiCard == other.aiCard && proposalKind == other.proposalKind;
+    return other is DsColors &&
+        text == other.text &&
+        surface == other.surface &&
+        alert == other.alert &&
+        background == other.background &&
+        interactive == other.interactive &&
+        decorative == other.decorative &&
+        aiCard == other.aiCard &&
+        proposalKind == other.proposalKind;
   }
 
   @override
-  int get hashCode => Object.hashAll([text, surface, alert, background, interactive, decorative, aiCard, proposalKind]);
+  int get hashCode => Object.hashAll([
+    text,
+    surface,
+    alert,
+    background,
+    interactive,
+    decorative,
+    aiCard,
+    proposalKind,
+  ]);
 }
-
 
 @immutable
 class DsTypographyStylesDisplay {
@@ -1125,7 +1972,10 @@ class DsTypographyStylesDisplay {
     );
   }
 
-  DsTypographyStylesDisplay lerp(covariant DsTypographyStylesDisplay? other, double t) {
+  DsTypographyStylesDisplay lerp(
+    covariant DsTypographyStylesDisplay? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -1141,13 +1991,15 @@ class DsTypographyStylesDisplay {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyStylesDisplay && display0 == other.display0 && display1 == other.display1 && display2 == other.display2;
+    return other is DsTypographyStylesDisplay &&
+        display0 == other.display0 &&
+        display1 == other.display1 &&
+        display2 == other.display2;
   }
 
   @override
   int get hashCode => Object.hashAll([display0, display1, display2]);
 }
-
 
 @immutable
 class DsTypographyStylesHeading {
@@ -1173,7 +2025,10 @@ class DsTypographyStylesHeading {
     );
   }
 
-  DsTypographyStylesHeading lerp(covariant DsTypographyStylesHeading? other, double t) {
+  DsTypographyStylesHeading lerp(
+    covariant DsTypographyStylesHeading? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -1189,13 +2044,15 @@ class DsTypographyStylesHeading {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyStylesHeading && heading1 == other.heading1 && heading2 == other.heading2 && heading3 == other.heading3;
+    return other is DsTypographyStylesHeading &&
+        heading1 == other.heading1 &&
+        heading2 == other.heading2 &&
+        heading3 == other.heading3;
   }
 
   @override
   int get hashCode => Object.hashAll([heading1, heading2, heading3]);
 }
-
 
 @immutable
 class DsTypographyStylesSubtitle {
@@ -1217,7 +2074,10 @@ class DsTypographyStylesSubtitle {
     );
   }
 
-  DsTypographyStylesSubtitle lerp(covariant DsTypographyStylesSubtitle? other, double t) {
+  DsTypographyStylesSubtitle lerp(
+    covariant DsTypographyStylesSubtitle? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -1232,13 +2092,14 @@ class DsTypographyStylesSubtitle {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyStylesSubtitle && subtitle1 == other.subtitle1 && subtitle2 == other.subtitle2;
+    return other is DsTypographyStylesSubtitle &&
+        subtitle1 == other.subtitle1 &&
+        subtitle2 == other.subtitle2;
   }
 
   @override
   int get hashCode => Object.hashAll([subtitle1, subtitle2]);
 }
-
 
 @immutable
 class DsTypographyStylesBody {
@@ -1264,7 +2125,10 @@ class DsTypographyStylesBody {
     );
   }
 
-  DsTypographyStylesBody lerp(covariant DsTypographyStylesBody? other, double t) {
+  DsTypographyStylesBody lerp(
+    covariant DsTypographyStylesBody? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -1280,13 +2144,15 @@ class DsTypographyStylesBody {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyStylesBody && bodyLarge == other.bodyLarge && bodyMedium == other.bodyMedium && bodySmall == other.bodySmall;
+    return other is DsTypographyStylesBody &&
+        bodyLarge == other.bodyLarge &&
+        bodyMedium == other.bodyMedium &&
+        bodySmall == other.bodySmall;
   }
 
   @override
   int get hashCode => Object.hashAll([bodyLarge, bodyMedium, bodySmall]);
 }
-
 
 @immutable
 class DsTypographyStylesOthers {
@@ -1308,7 +2174,10 @@ class DsTypographyStylesOthers {
     );
   }
 
-  DsTypographyStylesOthers lerp(covariant DsTypographyStylesOthers? other, double t) {
+  DsTypographyStylesOthers lerp(
+    covariant DsTypographyStylesOthers? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -1323,13 +2192,14 @@ class DsTypographyStylesOthers {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyStylesOthers && caption == other.caption && overline == other.overline;
+    return other is DsTypographyStylesOthers &&
+        caption == other.caption &&
+        overline == other.overline;
   }
 
   @override
   int get hashCode => Object.hashAll([caption, overline]);
 }
-
 
 @immutable
 class DsTypographyStyles {
@@ -1381,13 +2251,18 @@ class DsTypographyStyles {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyStyles && display == other.display && heading == other.heading && subtitle == other.subtitle && body == other.body && others == other.others;
+    return other is DsTypographyStyles &&
+        display == other.display &&
+        heading == other.heading &&
+        subtitle == other.subtitle &&
+        body == other.body &&
+        others == other.others;
   }
 
   @override
-  int get hashCode => Object.hashAll([display, heading, subtitle, body, others]);
+  int get hashCode =>
+      Object.hashAll([display, heading, subtitle, body, others]);
 }
-
 
 @immutable
 class DsTypographyFamily {
@@ -1424,13 +2299,14 @@ class DsTypographyFamily {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyFamily && display == other.display && text == other.text;
+    return other is DsTypographyFamily &&
+        display == other.display &&
+        text == other.text;
   }
 
   @override
   int get hashCode => Object.hashAll([display, text]);
 }
-
 
 @immutable
 class DsTypographyWeight {
@@ -1472,13 +2348,15 @@ class DsTypographyWeight {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyWeight && bold == other.bold && semiBold == other.semiBold && regular == other.regular;
+    return other is DsTypographyWeight &&
+        bold == other.bold &&
+        semiBold == other.semiBold &&
+        regular == other.regular;
   }
 
   @override
   int get hashCode => Object.hashAll([bold, semiBold, regular]);
 }
-
 
 @immutable
 class DsTypographySize {
@@ -1575,13 +2453,41 @@ class DsTypographySize {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographySize && display0 == other.display0 && display1 == other.display1 && display2 == other.display2 && display3 == other.display3 && heading1 == other.heading1 && heading2 == other.heading2 && heading3 == other.heading3 && subtitle1 == other.subtitle1 && subtitle2 == other.subtitle2 && bodyLarge == other.bodyLarge && bodyMedium == other.bodyMedium && bodySmall == other.bodySmall && caption == other.caption && overline == other.overline;
+    return other is DsTypographySize &&
+        display0 == other.display0 &&
+        display1 == other.display1 &&
+        display2 == other.display2 &&
+        display3 == other.display3 &&
+        heading1 == other.heading1 &&
+        heading2 == other.heading2 &&
+        heading3 == other.heading3 &&
+        subtitle1 == other.subtitle1 &&
+        subtitle2 == other.subtitle2 &&
+        bodyLarge == other.bodyLarge &&
+        bodyMedium == other.bodyMedium &&
+        bodySmall == other.bodySmall &&
+        caption == other.caption &&
+        overline == other.overline;
   }
 
   @override
-  int get hashCode => Object.hashAll([display0, display1, display2, display3, heading1, heading2, heading3, subtitle1, subtitle2, bodyLarge, bodyMedium, bodySmall, caption, overline]);
+  int get hashCode => Object.hashAll([
+    display0,
+    display1,
+    display2,
+    display3,
+    heading1,
+    heading2,
+    heading3,
+    subtitle1,
+    subtitle2,
+    bodyLarge,
+    bodyMedium,
+    bodySmall,
+    caption,
+    overline,
+  ]);
 }
-
 
 @immutable
 class DsTypographyLineHeight {
@@ -1651,7 +2557,10 @@ class DsTypographyLineHeight {
     );
   }
 
-  DsTypographyLineHeight lerp(covariant DsTypographyLineHeight? other, double t) {
+  DsTypographyLineHeight lerp(
+    covariant DsTypographyLineHeight? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -1678,13 +2587,41 @@ class DsTypographyLineHeight {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyLineHeight && display0 == other.display0 && display1 == other.display1 && display2 == other.display2 && display3 == other.display3 && heading1 == other.heading1 && heading2 == other.heading2 && heading3 == other.heading3 && subtitle1 == other.subtitle1 && subtitle2 == other.subtitle2 && bodyLarge == other.bodyLarge && bodyMedium == other.bodyMedium && bodySmall == other.bodySmall && caption == other.caption && overline == other.overline;
+    return other is DsTypographyLineHeight &&
+        display0 == other.display0 &&
+        display1 == other.display1 &&
+        display2 == other.display2 &&
+        display3 == other.display3 &&
+        heading1 == other.heading1 &&
+        heading2 == other.heading2 &&
+        heading3 == other.heading3 &&
+        subtitle1 == other.subtitle1 &&
+        subtitle2 == other.subtitle2 &&
+        bodyLarge == other.bodyLarge &&
+        bodyMedium == other.bodyMedium &&
+        bodySmall == other.bodySmall &&
+        caption == other.caption &&
+        overline == other.overline;
   }
 
   @override
-  int get hashCode => Object.hashAll([display0, display1, display2, display3, heading1, heading2, heading3, subtitle1, subtitle2, bodyLarge, bodyMedium, bodySmall, caption, overline]);
+  int get hashCode => Object.hashAll([
+    display0,
+    display1,
+    display2,
+    display3,
+    heading1,
+    heading2,
+    heading3,
+    subtitle1,
+    subtitle2,
+    bodyLarge,
+    bodyMedium,
+    bodySmall,
+    caption,
+    overline,
+  ]);
 }
-
 
 @immutable
 class DsTypographyLetterSpacing {
@@ -1754,7 +2691,10 @@ class DsTypographyLetterSpacing {
     );
   }
 
-  DsTypographyLetterSpacing lerp(covariant DsTypographyLetterSpacing? other, double t) {
+  DsTypographyLetterSpacing lerp(
+    covariant DsTypographyLetterSpacing? other,
+    double t,
+  ) {
     if (other == null) {
       return this;
     }
@@ -1781,13 +2721,41 @@ class DsTypographyLetterSpacing {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypographyLetterSpacing && display0 == other.display0 && display1 == other.display1 && display2 == other.display2 && display3 == other.display3 && heading1 == other.heading1 && heading2 == other.heading2 && heading3 == other.heading3 && subtitle1 == other.subtitle1 && subtitle2 == other.subtitle2 && bodyLarge == other.bodyLarge && bodyMedium == other.bodyMedium && bodySmall == other.bodySmall && caption == other.caption && overline == other.overline;
+    return other is DsTypographyLetterSpacing &&
+        display0 == other.display0 &&
+        display1 == other.display1 &&
+        display2 == other.display2 &&
+        display3 == other.display3 &&
+        heading1 == other.heading1 &&
+        heading2 == other.heading2 &&
+        heading3 == other.heading3 &&
+        subtitle1 == other.subtitle1 &&
+        subtitle2 == other.subtitle2 &&
+        bodyLarge == other.bodyLarge &&
+        bodyMedium == other.bodyMedium &&
+        bodySmall == other.bodySmall &&
+        caption == other.caption &&
+        overline == other.overline;
   }
 
   @override
-  int get hashCode => Object.hashAll([display0, display1, display2, display3, heading1, heading2, heading3, subtitle1, subtitle2, bodyLarge, bodyMedium, bodySmall, caption, overline]);
+  int get hashCode => Object.hashAll([
+    display0,
+    display1,
+    display2,
+    display3,
+    heading1,
+    heading2,
+    heading3,
+    subtitle1,
+    subtitle2,
+    bodyLarge,
+    bodyMedium,
+    bodySmall,
+    caption,
+    overline,
+  ]);
 }
-
 
 @immutable
 class DsTypography {
@@ -1844,13 +2812,19 @@ class DsTypography {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTypography && styles == other.styles && family == other.family && weight == other.weight && size == other.size && lineHeight == other.lineHeight && letterSpacing == other.letterSpacing;
+    return other is DsTypography &&
+        styles == other.styles &&
+        family == other.family &&
+        weight == other.weight &&
+        size == other.size &&
+        lineHeight == other.lineHeight &&
+        letterSpacing == other.letterSpacing;
   }
 
   @override
-  int get hashCode => Object.hashAll([styles, family, weight, size, lineHeight, letterSpacing]);
+  int get hashCode =>
+      Object.hashAll([styles, family, weight, size, lineHeight, letterSpacing]);
 }
-
 
 @immutable
 class DsSpacing {
@@ -1947,7 +2921,9 @@ class DsSpacing {
       step12: lerpDouble(step12, other.step12, t) ?? step12,
       step13: lerpDouble(step13, other.step13, t) ?? step13,
       cardPadding: lerpDouble(cardPadding, other.cardPadding, t) ?? cardPadding,
-      cardItemSpacing: lerpDouble(cardItemSpacing, other.cardItemSpacing, t) ?? cardItemSpacing,
+      cardItemSpacing:
+          lerpDouble(cardItemSpacing, other.cardItemSpacing, t) ??
+          cardItemSpacing,
       sectionGap: lerpDouble(sectionGap, other.sectionGap, t) ?? sectionGap,
     );
   }
@@ -1957,13 +2933,45 @@ class DsSpacing {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsSpacing && step1 == other.step1 && step2 == other.step2 && step3 == other.step3 && step4 == other.step4 && step5 == other.step5 && step6 == other.step6 && step7 == other.step7 && step8 == other.step8 && step9 == other.step9 && step10 == other.step10 && step11 == other.step11 && step12 == other.step12 && step13 == other.step13 && cardPadding == other.cardPadding && cardItemSpacing == other.cardItemSpacing && sectionGap == other.sectionGap;
+    return other is DsSpacing &&
+        step1 == other.step1 &&
+        step2 == other.step2 &&
+        step3 == other.step3 &&
+        step4 == other.step4 &&
+        step5 == other.step5 &&
+        step6 == other.step6 &&
+        step7 == other.step7 &&
+        step8 == other.step8 &&
+        step9 == other.step9 &&
+        step10 == other.step10 &&
+        step11 == other.step11 &&
+        step12 == other.step12 &&
+        step13 == other.step13 &&
+        cardPadding == other.cardPadding &&
+        cardItemSpacing == other.cardItemSpacing &&
+        sectionGap == other.sectionGap;
   }
 
   @override
-  int get hashCode => Object.hashAll([step1, step2, step3, step4, step5, step6, step7, step8, step9, step10, step11, step12, step13, cardPadding, cardItemSpacing, sectionGap]);
+  int get hashCode => Object.hashAll([
+    step1,
+    step2,
+    step3,
+    step4,
+    step5,
+    step6,
+    step7,
+    step8,
+    step9,
+    step10,
+    step11,
+    step12,
+    step13,
+    cardPadding,
+    cardItemSpacing,
+    sectionGap,
+  ]);
 }
-
 
 @immutable
 class DsRadii {
@@ -2019,7 +3027,8 @@ class DsRadii {
       m: lerpDouble(m, other.m, t) ?? m,
       l: lerpDouble(l, other.l, t) ?? l,
       xl: lerpDouble(xl, other.xl, t) ?? xl,
-      sectionCards: lerpDouble(sectionCards, other.sectionCards, t) ?? sectionCards,
+      sectionCards:
+          lerpDouble(sectionCards, other.sectionCards, t) ?? sectionCards,
       badgesPills: lerpDouble(badgesPills, other.badgesPills, t) ?? badgesPills,
       smallChips: lerpDouble(smallChips, other.smallChips, t) ?? smallChips,
     );
@@ -2030,13 +3039,21 @@ class DsRadii {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsRadii && xs == other.xs && s == other.s && m == other.m && l == other.l && xl == other.xl && sectionCards == other.sectionCards && badgesPills == other.badgesPills && smallChips == other.smallChips;
+    return other is DsRadii &&
+        xs == other.xs &&
+        s == other.s &&
+        m == other.m &&
+        l == other.l &&
+        xl == other.xl &&
+        sectionCards == other.sectionCards &&
+        badgesPills == other.badgesPills &&
+        smallChips == other.smallChips;
   }
 
   @override
-  int get hashCode => Object.hashAll([xs, s, m, l, xl, sectionCards, badgesPills, smallChips]);
+  int get hashCode =>
+      Object.hashAll([xs, s, m, l, xl, sectionCards, badgesPills, smallChips]);
 }
-
 
 @immutable
 class DsTokens extends ThemeExtension<DsTokens> {
@@ -2085,11 +3102,13 @@ class DsTokens extends ThemeExtension<DsTokens> {
     if (identical(this, other)) {
       return true;
     }
-    return other is DsTokens && colors == other.colors && typography == other.typography && spacing == other.spacing && radii == other.radii;
+    return other is DsTokens &&
+        colors == other.colors &&
+        typography == other.typography &&
+        spacing == other.spacing &&
+        radii == other.radii;
   }
 
   @override
   int get hashCode => Object.hashAll([colors, typography, spacing, radii]);
 }
-
-

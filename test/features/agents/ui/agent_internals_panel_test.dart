@@ -40,6 +40,7 @@ void main() {
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).push(
                 AgentInternalsPanel.route(
+                  context: context,
                   agentId: identity.agentId,
                   agentName: identity.displayName,
                 ),
@@ -158,6 +159,112 @@ void main() {
                 throw StateError('no SizedBox at maxPanelWidth was found'),
           );
       expect(wide.width, AgentInternalsPanel.maxPanelWidth);
+    });
+
+    testWidgets(
+      'narrow screens render the panel as a full-screen modal',
+      (tester) async {
+        // Phone-sized screen below the mobile breakpoint.
+        await pumpPanel(
+          tester,
+          screenSize: const Size(390, 844),
+          overrides: [
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+          ],
+        );
+
+        // The panel takes the full viewport width instead of clamping.
+        final modal = tester
+            .widgetList<SizedBox>(
+              find.descendant(
+                of: find.byType(AgentInternalsPanel),
+                matching: find.byType(SizedBox),
+              ),
+            )
+            .firstWhere(
+              (s) => s.width == 390,
+              orElse: () => throw StateError(
+                'no SizedBox at the device width was found',
+              ),
+            );
+        expect(modal.width, 390);
+      },
+    );
+  });
+
+  group('AgentInternalsPanel – identity fallbacks', () {
+    testWidgets('shows the not-found message once identity resolves to null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+          overrides: [
+            agentIdentityProvider.overrideWith((ref, agentId) async => null),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+          ],
+          child: Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(
+                  AgentInternalsPanel.route(
+                    context: context,
+                    agentId: 'agent-001',
+                    agentName: null,
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // The localized "not found" copy comes from the same key the
+      // standalone detail page uses.
+      expect(find.text('Agent not found.'), findsOneWidget);
+      // The body should not be present in the not-found case.
+      expect(find.byType(AgentInternalsBody), findsNothing);
+    });
+
+    testWidgets('shows the error message when identity provider throws', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+          overrides: [
+            agentIdentityProvider.overrideWith(
+              (ref, agentId) async => Future.error(Exception('nope')),
+            ),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+          ],
+          child: Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(
+                  AgentInternalsPanel.route(
+                    context: context,
+                    agentId: 'agent-001',
+                    agentName: 'Task Laura',
+                  ),
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Error loading agent'), findsOneWidget);
+      expect(find.byType(AgentInternalsBody), findsNothing);
+      // The provided agentName is still surfaced in the header subtitle
+      // even when identity resolution fails.
+      expect(find.text('Task Laura'), findsOneWidget);
     });
   });
 }

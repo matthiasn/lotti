@@ -389,10 +389,12 @@ class _StateRow extends StatelessWidget {
               color: context.colorScheme.onSurfaceVariant,
             ),
           ),
-          Text(
-            value,
-            style: context.textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              value,
+              style: context.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
