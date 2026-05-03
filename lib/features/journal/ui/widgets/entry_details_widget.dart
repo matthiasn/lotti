@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -101,12 +102,15 @@ class EntryDetailsWidget extends ConsumerWidget {
       bottom: AppTheme.spacingMedium,
     );
 
+    final tokens = context.designTokens;
     final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.cardPaddingCompact,
-        vertical: AppTheme.cardPaddingCompact,
+      padding: EdgeInsets.only(
+        left: tokens.spacing.step4,
+        right: tokens.spacing.step4,
+        top: tokens.spacing.step2,
+        bottom: tokens.spacing.step1,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

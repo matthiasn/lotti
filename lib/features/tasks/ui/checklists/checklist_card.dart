@@ -351,7 +351,7 @@ class _Header extends StatelessWidget {
             padding: EdgeInsets.only(
               left: tokens.spacing.step5,
               right: tokens.spacing.step3,
-              top: tokens.spacing.step3,
+              top: tokens.spacing.step1,
               bottom: tokens.spacing.step3,
             ),
             child: ConstrainedBox(
@@ -388,9 +388,12 @@ class _Header extends StatelessWidget {
                   AnimatedRotation(
                     turns: isExpanded ? 0.0 : -0.25,
                     duration: chevronDuration,
-                    child: GestureDetector(
-                      onTap: onToggleExpand,
-                      child: Icon(
+                    child: IconButton(
+                      tooltip: isExpanded
+                          ? context.messages.checklistCollapseTooltip
+                          : context.messages.checklistExpandTooltip,
+                      onPressed: onToggleExpand,
+                      icon: Icon(
                         Icons.expand_less,
                         size: 24,
                         color: tokens.colors.text.lowEmphasis,

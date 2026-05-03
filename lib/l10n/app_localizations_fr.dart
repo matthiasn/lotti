@@ -902,19 +902,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 jours';
 
   @override
-  String get agentSuggestionTimeEntryUpdateCurrent => 'Actuel';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateNoChange => '(inchangé)';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateProposed => 'Proposé';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateUnavailable =>
-      'Entrée d\'origine indisponible';
-
-  @override
   String get agentSuggestionsActivityAgentFallback => 'l\'agent';
 
   @override
@@ -941,6 +928,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String agentSuggestionsActivityVerdictRetracted(String agentName) {
     return 'Retirée par $agentName';
   }
+
+  @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Actuel';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(inchangé)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Proposé';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Entrée d\'origine indisponible';
 
   @override
   String get agentTabActivity => 'Activité';
@@ -2259,12 +2259,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get checklistAllDone => 'Tous les éléments sont terminés !';
 
   @override
+  String get checklistCollapseTooltip => 'Réduire';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total terminés';
   }
 
   @override
   String get checklistDelete => 'Supprimer la liste de contrôle ?';
+
+  @override
+  String get checklistExpandTooltip => 'Développer';
 
   @override
   String get checklistExportAsMarkdown =>
@@ -4092,6 +4098,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get journalHideMapHint => 'Masquer la carte';
+
+  @override
+  String get journalLinkedEntriesActivityFilterAudio => 'Audio';
+
+  @override
+  String get journalLinkedEntriesActivityFilterImages => 'Images';
+
+  @override
+  String get journalLinkedEntriesActivityFilterLabel =>
+      'Afficher les activités :';
+
+  @override
+  String get journalLinkedEntriesActivityFilterLabelMobile =>
+      'Afficher les activités';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTimer => 'Minuteur';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTodo => 'À faire';
 
   @override
   String get journalLinkedEntriesAiLabel =>

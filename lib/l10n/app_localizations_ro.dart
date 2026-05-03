@@ -901,19 +901,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Total 7 zile';
 
   @override
-  String get agentSuggestionTimeEntryUpdateCurrent => 'Curent';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateNoChange => '(neschimbat)';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateProposed => 'Propus';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateUnavailable =>
-      'Înregistrarea originală nu este disponibilă';
-
-  @override
   String get agentSuggestionsActivityAgentFallback => 'agent';
 
   @override
@@ -939,6 +926,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String agentSuggestionsActivityVerdictRetracted(String agentName) {
     return 'Retrasă de $agentName';
   }
+
+  @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Curent';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(neschimbat)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Propus';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Înregistrarea originală nu este disponibilă';
 
   @override
   String get agentTabActivity => 'Activitate';
@@ -2236,12 +2236,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistAllDone => 'Toate elementele sunt finalizate!';
 
   @override
+  String get checklistCollapseTooltip => 'Restrângeți';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total finalizate';
   }
 
   @override
   String get checklistDelete => 'Șterge lista de verificare?';
+
+  @override
+  String get checklistExpandTooltip => 'Extindeți';
 
   @override
   String get checklistExportAsMarkdown =>
@@ -4055,6 +4061,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalHideMapHint => 'Ascunde harta';
+
+  @override
+  String get journalLinkedEntriesActivityFilterAudio => 'Audio';
+
+  @override
+  String get journalLinkedEntriesActivityFilterImages => 'Imagini';
+
+  @override
+  String get journalLinkedEntriesActivityFilterLabel => 'Afișați activitățile:';
+
+  @override
+  String get journalLinkedEntriesActivityFilterLabelMobile =>
+      'Afișați activitățile';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTimer => 'Cronometru';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTodo => 'De făcut';
 
   @override
   String get journalLinkedEntriesAiLabel => 'Afișați intrările generate de AI:';

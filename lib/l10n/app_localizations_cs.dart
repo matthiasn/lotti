@@ -890,19 +890,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentStatsWeekTotalLabel => 'Celkem za 7 dní';
 
   @override
-  String get agentSuggestionTimeEntryUpdateCurrent => 'Aktuální';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateNoChange => '(beze změny)';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateProposed => 'Navrhované';
-
-  @override
-  String get agentSuggestionTimeEntryUpdateUnavailable =>
-      'Původní záznam není k dispozici';
-
-  @override
   String get agentSuggestionsActivityAgentFallback => 'agentem';
 
   @override
@@ -928,6 +915,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String agentSuggestionsActivityVerdictRetracted(String agentName) {
     return 'Staženo $agentName';
   }
+
+  @override
+  String get agentSuggestionTimeEntryUpdateCurrent => 'Aktuální';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateNoChange => '(beze změny)';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateProposed => 'Navrhované';
+
+  @override
+  String get agentSuggestionTimeEntryUpdateUnavailable =>
+      'Původní záznam není k dispozici';
 
   @override
   String get agentTabActivity => 'Aktivita';
@@ -2221,12 +2221,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistAllDone => 'Všechny položky splněny!';
 
   @override
+  String get checklistCollapseTooltip => 'Sbalit';
+
+  @override
   String checklistCompletedShort(int completed, int total) {
     return '$completed/$total hotovo';
   }
 
   @override
   String get checklistDelete => 'Smazat kontrolní seznam?';
+
+  @override
+  String get checklistExpandTooltip => 'Rozbalit';
 
   @override
   String get checklistExportAsMarkdown =>
@@ -4025,6 +4031,25 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalHideMapHint => 'Skrýt mapu';
+
+  @override
+  String get journalLinkedEntriesActivityFilterAudio => 'Audio';
+
+  @override
+  String get journalLinkedEntriesActivityFilterImages => 'Obrázky';
+
+  @override
+  String get journalLinkedEntriesActivityFilterLabel => 'Zobrazit aktivity:';
+
+  @override
+  String get journalLinkedEntriesActivityFilterLabelMobile =>
+      'Zobrazit aktivity';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTimer => 'Časovač';
+
+  @override
+  String get journalLinkedEntriesActivityFilterTodo => 'Úkoly';
 
   @override
   String get journalLinkedEntriesAiLabel => 'Zobrazit záznamy generované AI:';

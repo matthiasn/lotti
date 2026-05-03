@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_icon_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
@@ -127,6 +128,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     String id,
     EntryController notifier,
   ) {
+    final tokens = context.designTokens;
     return Row(
       children: [
         if (widget.isCollapsed) ...[
@@ -134,14 +136,13 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           if (entry is JournalImage) _buildImageThumbnail(entry),
           if (entry is JournalAudio) _buildAudioIcon(context),
           if (entry is JournalEntry) _buildTextIcon(context),
-          const SizedBox(width: AppTheme.spacingSmall),
+          SizedBox(width: tokens.spacing.step3),
           EntryDatetimeWidget(entryId: widget.entryId),
           if (entry is JournalAudio) _buildDurationLabel(context, entry),
         ],
-        if (!widget.isCollapsed) ...[
+        if (!widget.isCollapsed)
           // Expanded: date on left, actions on right
           EntryDatetimeWidget(entryId: widget.entryId),
-        ],
         const Spacer(),
         if (!widget.isCollapsed) ...[
           // Action icons only when expanded

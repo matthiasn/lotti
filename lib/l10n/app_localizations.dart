@@ -1620,30 +1620,6 @@ abstract class AppLocalizations {
   /// **'7-Day Total'**
   String get agentStatsWeekTotalLabel;
 
-  /// Label for the current value in an agent-proposed time entry edit diff.
-  ///
-  /// In en, this message translates to:
-  /// **'Current'**
-  String get agentSuggestionTimeEntryUpdateCurrent;
-
-  /// Marker shown next to an unchanged current value in an agent-proposed time entry edit diff.
-  ///
-  /// In en, this message translates to:
-  /// **'(unchanged)'**
-  String get agentSuggestionTimeEntryUpdateNoChange;
-
-  /// Label for the proposed value in an agent-proposed time entry edit diff.
-  ///
-  /// In en, this message translates to:
-  /// **'Proposed'**
-  String get agentSuggestionTimeEntryUpdateProposed;
-
-  /// Message shown when the original time entry cannot be loaded for an agent-proposed edit.
-  ///
-  /// In en, this message translates to:
-  /// **'Original entry not available'**
-  String get agentSuggestionTimeEntryUpdateUnavailable;
-
   /// No description provided for @agentSuggestionsActivityAgentFallback.
   ///
   /// In en, this message translates to:
@@ -1685,6 +1661,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retracted by {agentName}'**
   String agentSuggestionsActivityVerdictRetracted(String agentName);
+
+  /// Label for the current value in an agent-proposed time entry edit diff.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get agentSuggestionTimeEntryUpdateCurrent;
+
+  /// Marker shown next to an unchanged current value in an agent-proposed time entry edit diff.
+  ///
+  /// In en, this message translates to:
+  /// **'(unchanged)'**
+  String get agentSuggestionTimeEntryUpdateNoChange;
+
+  /// Label for the proposed value in an agent-proposed time entry edit diff.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed'**
+  String get agentSuggestionTimeEntryUpdateProposed;
+
+  /// Message shown when the original time entry cannot be loaded for an agent-proposed edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Original entry not available'**
+  String get agentSuggestionTimeEntryUpdateUnavailable;
 
   /// No description provided for @agentTabActivity.
   ///
@@ -3810,6 +3810,12 @@ abstract class AppLocalizations {
   /// **'All items completed!'**
   String get checklistAllDone;
 
+  /// No description provided for @checklistCollapseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse'**
+  String get checklistCollapseTooltip;
+
   /// No description provided for @checklistCompletedShort.
   ///
   /// In en, this message translates to:
@@ -3821,6 +3827,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete checklist?'**
   String get checklistDelete;
+
+  /// No description provided for @checklistExpandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand'**
+  String get checklistExpandTooltip;
 
   /// No description provided for @checklistExportAsMarkdown.
   ///
@@ -7121,6 +7133,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hide map'**
   String get journalHideMapHint;
+
+  /// No description provided for @journalLinkedEntriesActivityFilterAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get journalLinkedEntriesActivityFilterAudio;
+
+  /// No description provided for @journalLinkedEntriesActivityFilterImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get journalLinkedEntriesActivityFilterImages;
+
+  /// No description provided for @journalLinkedEntriesActivityFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show task activities:'**
+  String get journalLinkedEntriesActivityFilterLabel;
+
+  /// No description provided for @journalLinkedEntriesActivityFilterLabelMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Show task activities'**
+  String get journalLinkedEntriesActivityFilterLabelMobile;
+
+  /// No description provided for @journalLinkedEntriesActivityFilterTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer'**
+  String get journalLinkedEntriesActivityFilterTimer;
+
+  /// No description provided for @journalLinkedEntriesActivityFilterTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo'**
+  String get journalLinkedEntriesActivityFilterTodo;
 
   /// No description provided for @journalLinkedEntriesAiLabel.
   ///
