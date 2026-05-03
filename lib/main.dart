@@ -77,6 +77,16 @@ Future<AppExitResponse> _handleAppExitRequested() async {
     closeIfRegistered<AiConfigRepository>((repo) => repo.close()),
   ]);
 
+  // Flush logs last so any close-time entries (errors caught above, drift
+  // teardown messages) make it to disk before the engine tears down.
+  if (getIt.isRegistered<LoggingService>()) {
+    try {
+      await getIt<LoggingService>().flush();
+    } catch (_) {
+      // Best-effort: the process is exiting; swallow to avoid masking exit.
+    }
+  }
+
   return AppExitResponse.exit;
 }
 
