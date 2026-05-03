@@ -532,7 +532,7 @@ ledger replaces the earlier split between "pending proposals" and "recent
 user decisions" with one unified section the agent reasons about.
 
 Each ledger entry carries a stable fingerprint (`toolName + args`). Open
-entries are rendered in the `AgentSuggestionsPanel` UI for the user to
+entries are rendered in the `AiSummaryCard` UI for the user to
 confirm or reject; resolved entries (user verdicts and agent retractions)
 are kept in the LLM prompt within a bounded window so the agent learns
 from its own history.

@@ -538,6 +538,51 @@
   "aiAssistantTitle": "Asistente de IA",
   "aiAssistantTranscribeAudio": "Transcribir audio",
   "aiBatchToggleTooltip": "Cambiar a grabación estándar",
+  "aiCardActivityRecentLabel": "Actividad reciente",
+  "aiCardActivitySectionLabel": "ACTIVIDAD RECIENTE",
+  "aiCardAgentNameTooltip": "Abrir interior del agente",
+  "aiCardEmptyProposals": "Sin propuestas abiertas · el agente mostrará nuevos cambios aquí",
+  "aiCardHideActivity": "Ocultar actividad",
+  "aiCardHistoryToggle": "Historial · {count}",
+  "@aiCardHistoryToggle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardOpenAgentInternals": "Abrir interior del agente",
+  "aiCardProposalAgoSeparator": "·",
+  "aiCardProposalConfirmed": "Confirmada",
+  "aiCardProposalDismissed": "Descartada",
+  "aiCardProposalKindAdd": "Añadir",
+  "aiCardProposalKindDue": "Vence",
+  "aiCardProposalKindEstimate": "Estimación",
+  "aiCardProposalKindLabel": "Etiqueta",
+  "aiCardProposalKindPriority": "Prioridad",
+  "aiCardProposalKindRemove": "Quitar",
+  "aiCardProposalKindStatus": "Estado",
+  "aiCardProposalKindUpdate": "Actualizar",
+  "aiCardReadMore": "Leer más",
+  "aiCardRecentActions": "{count, plural, =1{{count} acción reciente} other{{count} acciones recientes}}",
+  "@aiCardRecentActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardSeeActivity": "Ver actividad",
+  "aiCardShowLess": "Mostrar menos",
+  "aiCardSummaryAgo": "{relative}",
+  "@aiCardSummaryAgo": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "aiCardTitle": "Resumen de IA",
   "aiChatMessageCopied": "Copiado al portapapeles",
   "aiConfigApiKeyEmptyError": "La clave API no puede estar vacía",
   "aiConfigApiKeyFieldLabel": "Clave API",
@@ -662,6 +707,7 @@
   "aiInferenceErrorUnknownMessage": "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.",
   "aiInferenceErrorUnknownTitle": "Error",
   "aiInferenceErrorViewLogButton": "Ver registro",
+  "aiInternalsTitle": "Interior del agente",
   "aiModelSettings": "Ajustes de modelo AI",
   "aiOllamaModelInstalledSuccessfully": "¡Modelo \"{modelName}\" instalado correctamente!",
   "@aiOllamaModelInstalledSuccessfully": {

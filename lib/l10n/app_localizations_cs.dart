@@ -1178,6 +1178,92 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
 
   @override
+  String get aiCardActivityRecentLabel => 'Nedávná aktivita';
+
+  @override
+  String get aiCardActivitySectionLabel => 'NEDÁVNÁ AKTIVITA';
+
+  @override
+  String get aiCardAgentNameTooltip => 'Otevřít interní informace agenta';
+
+  @override
+  String get aiCardEmptyProposals =>
+      'Žádné otevřené návrhy · agent zde zobrazí nové změny';
+
+  @override
+  String get aiCardHideActivity => 'Skrýt aktivitu';
+
+  @override
+  String aiCardHistoryToggle(int count) {
+    return 'Historie · $count';
+  }
+
+  @override
+  String get aiCardOpenAgentInternals => 'Otevřít interní informace agenta';
+
+  @override
+  String get aiCardProposalAgoSeparator => '·';
+
+  @override
+  String get aiCardProposalConfirmed => 'Potvrzeno';
+
+  @override
+  String get aiCardProposalDismissed => 'Zamítnuto';
+
+  @override
+  String get aiCardProposalKindAdd => 'Přidat';
+
+  @override
+  String get aiCardProposalKindDue => 'Termín';
+
+  @override
+  String get aiCardProposalKindEstimate => 'Odhad';
+
+  @override
+  String get aiCardProposalKindLabel => 'Štítek';
+
+  @override
+  String get aiCardProposalKindPriority => 'Priorita';
+
+  @override
+  String get aiCardProposalKindRemove => 'Odstranit';
+
+  @override
+  String get aiCardProposalKindStatus => 'Stav';
+
+  @override
+  String get aiCardProposalKindUpdate => 'Aktualizovat';
+
+  @override
+  String get aiCardReadMore => 'Číst více';
+
+  @override
+  String aiCardRecentActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count akcí',
+      few: '$count akce',
+      one: '$count akce',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiCardSeeActivity => 'Zobrazit aktivitu';
+
+  @override
+  String get aiCardShowLess => 'Skrýt podrobnosti';
+
+  @override
+  String aiCardSummaryAgo(String relative) {
+    return '$relative';
+  }
+
+  @override
+  String get aiCardTitle => 'Souhrn AI';
+
+  @override
   String get aiChatMessageCopied => 'Zkopírováno do schránky';
 
   @override
@@ -1456,6 +1542,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiInferenceErrorViewLogButton => 'Zobrazit log';
+
+  @override
+  String get aiInternalsTitle => 'Interní informace agenta';
 
   @override
   String get aiModelSettings => 'Nastavení AI modelu';

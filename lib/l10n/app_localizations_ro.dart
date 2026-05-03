@@ -1191,6 +1191,94 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
 
   @override
+  String get aiCardActivityRecentLabel => 'Activitate recentă';
+
+  @override
+  String get aiCardActivitySectionLabel => 'ACTIVITATE RECENTĂ';
+
+  @override
+  String get aiCardAgentNameTooltip =>
+      'Deschideți componentele interne ale agentului';
+
+  @override
+  String get aiCardEmptyProposals =>
+      'Nicio propunere deschisă · agentul va afișa aici noile modificări';
+
+  @override
+  String get aiCardHideActivity => 'Ascundeți activitatea';
+
+  @override
+  String aiCardHistoryToggle(int count) {
+    return 'Istoric · $count';
+  }
+
+  @override
+  String get aiCardOpenAgentInternals =>
+      'Deschideți componentele interne ale agentului';
+
+  @override
+  String get aiCardProposalAgoSeparator => '·';
+
+  @override
+  String get aiCardProposalConfirmed => 'Confirmată';
+
+  @override
+  String get aiCardProposalDismissed => 'Respinsă';
+
+  @override
+  String get aiCardProposalKindAdd => 'Adăugați';
+
+  @override
+  String get aiCardProposalKindDue => 'Scadență';
+
+  @override
+  String get aiCardProposalKindEstimate => 'Estimare';
+
+  @override
+  String get aiCardProposalKindLabel => 'Etichetă';
+
+  @override
+  String get aiCardProposalKindPriority => 'Prioritate';
+
+  @override
+  String get aiCardProposalKindRemove => 'Eliminați';
+
+  @override
+  String get aiCardProposalKindStatus => 'Stare';
+
+  @override
+  String get aiCardProposalKindUpdate => 'Actualizați';
+
+  @override
+  String get aiCardReadMore => 'Citiți mai mult';
+
+  @override
+  String aiCardRecentActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de acțiuni recente',
+      few: '$count acțiuni recente',
+      one: '$count acțiune recentă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiCardSeeActivity => 'Vedeți activitatea';
+
+  @override
+  String get aiCardShowLess => 'Afișați mai puțin';
+
+  @override
+  String aiCardSummaryAgo(String relative) {
+    return '$relative';
+  }
+
+  @override
+  String get aiCardTitle => 'Rezumat AI';
+
+  @override
   String get aiChatMessageCopied => 'Copiat în clipboard';
 
   @override
@@ -1471,6 +1559,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiInferenceErrorViewLogButton => 'Vezi jurnalul';
+
+  @override
+  String get aiInternalsTitle => 'Componente interne ale agentului';
 
   @override
   String get aiModelSettings => 'Setări model AI';

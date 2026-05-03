@@ -179,7 +179,7 @@ flowchart TD
   Load --> AppBar["TaskSliverAppBar (cover image + back / AI / overflow)"]
   Load --> Form["TaskForm"]
   Form --> Header["DesktopTaskHeaderConnector → DesktopTaskHeader"]
-  Form --> Agents["AgentSuggestionsPanel + TaskAgentReportSection"]
+  Form --> Agents["AiSummaryCard"]
   Form --> Linked["LinkedTasksWidget"]
   Form --> Checklists["ChecklistsWidget"]
   Load --> Focus["HighlightScrollMixin + TaskFocusController"]
@@ -193,7 +193,7 @@ Inside `TaskForm`, the composition is also fairly opinionated:
 
 - `DesktopTaskHeaderConnector` for the interactive header: inline multi-line title edit, priority badge, project reference (with a "No project" placeholder when none is linked), work-category chip (or "unassigned" placeholder), due-date chip (or "No due date" placeholder), estimate chip (with progress bar when set), assigned label chips (or "Add Label" placeholder), and status dropdown. Extended actions (share, speech modal, etc.) are owned by the pinned app bar's `more_vert` button, not the header itself. The connector watches `entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal pickers (`TaskStatusModalContent`, `showDueDatePicker`, `showEstimatePicker`, `CategorySelectionModalContent`, `ProjectSelectionModalContent`, `LabelSelectionModalUtils`) plus `EntryController.save / updateTaskStatus / updateTaskPriority / updateCategoryId`
 - an `EditorWidget` only for legacy tasks that already have non-empty entry text
-- `AgentSuggestionsPanel` which embeds `TaskAgentReportSection` plus the unified open-proposal list
+- `AiSummaryCard` — a single deep-teal-tinted-navy surface that hosts the agent's TLDR + expandable inline report, the unified open-proposal list with swipe / button confirm-or-reject + collapsible history, the recent-activity footer (inline expand), and the wake-cycle affordances (countdown, run-now, cancel timer). Tapping the agent name (or the avatar / "Open agent internals" pill) opens `AgentInternalsPanel`, a right-side overlay (600–800px wide) that re-houses the existing `AgentInternalsBody` (Stats / Reports / Conversations / Observations / Activity tabs) without page navigation
 - `LinkedTasksWidget`
 - `ChecklistsWidget`
 

@@ -822,9 +822,9 @@ class AgentRepository {
   ///  * the LLM prompt (`TaskAgentWorkflow._formatProposalLedger`), so the
   ///    agent sees a single status-sorted view of its own history and can
   ///    avoid duplicate proposals or explicitly retract stale ones;
-  ///  * the consolidated `AgentSuggestionsPanel` UI, which renders only
-  ///    open items and exposes resolved history in a collapsed activity
-  ///    strip.
+  ///  * the consolidated `AiSummaryCard` UI, which renders only open
+  ///    items and exposes resolved history in a collapsed history toggle
+  ///    plus an inline recent-activity footer.
   ///
   /// Open entries are extracted from pending/partiallyResolved change sets.
   /// Resolved entries come from all change sets (including resolved and

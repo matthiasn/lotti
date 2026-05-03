@@ -1189,6 +1189,91 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Zur Standardaufnahme wechseln';
 
   @override
+  String get aiCardActivityRecentLabel => 'Letzte Aktivität';
+
+  @override
+  String get aiCardActivitySectionLabel => 'LETZTE AKTIVITÄT';
+
+  @override
+  String get aiCardAgentNameTooltip => 'Agent-Internes öffnen';
+
+  @override
+  String get aiCardEmptyProposals =>
+      'Keine offenen Vorschläge · der Agent zeigt neue Änderungen hier an';
+
+  @override
+  String get aiCardHideActivity => 'Aktivität ausblenden';
+
+  @override
+  String aiCardHistoryToggle(int count) {
+    return 'Verlauf · $count';
+  }
+
+  @override
+  String get aiCardOpenAgentInternals => 'Agent-Internes öffnen';
+
+  @override
+  String get aiCardProposalAgoSeparator => '·';
+
+  @override
+  String get aiCardProposalConfirmed => 'Bestätigt';
+
+  @override
+  String get aiCardProposalDismissed => 'Abgelehnt';
+
+  @override
+  String get aiCardProposalKindAdd => 'Hinzufügen';
+
+  @override
+  String get aiCardProposalKindDue => 'Fällig';
+
+  @override
+  String get aiCardProposalKindEstimate => 'Schätzung';
+
+  @override
+  String get aiCardProposalKindLabel => 'Label';
+
+  @override
+  String get aiCardProposalKindPriority => 'Priorität';
+
+  @override
+  String get aiCardProposalKindRemove => 'Entfernen';
+
+  @override
+  String get aiCardProposalKindStatus => 'Status';
+
+  @override
+  String get aiCardProposalKindUpdate => 'Aktualisieren';
+
+  @override
+  String get aiCardReadMore => 'Mehr lesen';
+
+  @override
+  String aiCardRecentActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aktionen',
+      one: '$count Aktion',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiCardSeeActivity => 'Aktivität anzeigen';
+
+  @override
+  String get aiCardShowLess => 'Weniger anzeigen';
+
+  @override
+  String aiCardSummaryAgo(String relative) {
+    return '$relative';
+  }
+
+  @override
+  String get aiCardTitle => 'KI-Zusammenfassung';
+
+  @override
   String get aiChatMessageCopied => 'In die Zwischenablage kopiert';
 
   @override
@@ -1471,6 +1556,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiInferenceErrorViewLogButton => 'Protokoll anzeigen';
+
+  @override
+  String get aiInternalsTitle => 'Agent-Internes';
 
   @override
   String get aiModelSettings => 'AI-Modell-Einstellungen';

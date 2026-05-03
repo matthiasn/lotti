@@ -538,6 +538,51 @@
   "aiAssistantTitle": "Assistant IA",
   "aiAssistantTranscribeAudio": "Transcrire l'audio",
   "aiBatchToggleTooltip": "Passer à l'enregistrement standard",
+  "aiCardActivityRecentLabel": "Activité récente",
+  "aiCardActivitySectionLabel": "ACTIVITÉ RÉCENTE",
+  "aiCardAgentNameTooltip": "Ouvrir les internes de l'agent",
+  "aiCardEmptyProposals": "Aucune proposition ouverte · l'agent affichera ici les nouvelles modifications",
+  "aiCardHideActivity": "Masquer l'activité",
+  "aiCardHistoryToggle": "Historique · {count}",
+  "@aiCardHistoryToggle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardOpenAgentInternals": "Ouvrir les internes de l'agent",
+  "aiCardProposalAgoSeparator": "·",
+  "aiCardProposalConfirmed": "Confirmée",
+  "aiCardProposalDismissed": "Rejetée",
+  "aiCardProposalKindAdd": "Ajouter",
+  "aiCardProposalKindDue": "Échéance",
+  "aiCardProposalKindEstimate": "Estimation",
+  "aiCardProposalKindLabel": "Étiquette",
+  "aiCardProposalKindPriority": "Priorité",
+  "aiCardProposalKindRemove": "Retirer",
+  "aiCardProposalKindStatus": "Statut",
+  "aiCardProposalKindUpdate": "Mettre à jour",
+  "aiCardReadMore": "Lire plus",
+  "aiCardRecentActions": "{count, plural, =1{{count} action récente} other{{count} actions récentes}}",
+  "@aiCardRecentActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardSeeActivity": "Voir l'activité",
+  "aiCardShowLess": "Afficher moins",
+  "aiCardSummaryAgo": "{relative}",
+  "@aiCardSummaryAgo": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "aiCardTitle": "Résumé IA",
   "aiChatMessageCopied": "Copié dans le presse-papiers",
   "aiConfigApiKeyEmptyError": "La clé API ne peut pas être vide",
   "aiConfigApiKeyFieldLabel": "Clé API",
@@ -662,6 +707,7 @@
   "aiInferenceErrorUnknownMessage": "Une erreur inattendue s'est produite. Réessaie s'il te plaît.",
   "aiInferenceErrorUnknownTitle": "Erreur",
   "aiInferenceErrorViewLogButton": "Voir le journal",
+  "aiInternalsTitle": "Internes de l'agent",
   "aiModelSettings": "Paramètres du modèle AI",
   "aiOllamaModelInstalledSuccessfully": "Modèle « {modelName} » installé avec succès !",
   "@aiOllamaModelInstalledSuccessfully": {

@@ -1189,6 +1189,91 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Cambiar a grabación estándar';
 
   @override
+  String get aiCardActivityRecentLabel => 'Actividad reciente';
+
+  @override
+  String get aiCardActivitySectionLabel => 'ACTIVIDAD RECIENTE';
+
+  @override
+  String get aiCardAgentNameTooltip => 'Abrir interior del agente';
+
+  @override
+  String get aiCardEmptyProposals =>
+      'Sin propuestas abiertas · el agente mostrará nuevos cambios aquí';
+
+  @override
+  String get aiCardHideActivity => 'Ocultar actividad';
+
+  @override
+  String aiCardHistoryToggle(int count) {
+    return 'Historial · $count';
+  }
+
+  @override
+  String get aiCardOpenAgentInternals => 'Abrir interior del agente';
+
+  @override
+  String get aiCardProposalAgoSeparator => '·';
+
+  @override
+  String get aiCardProposalConfirmed => 'Confirmada';
+
+  @override
+  String get aiCardProposalDismissed => 'Descartada';
+
+  @override
+  String get aiCardProposalKindAdd => 'Añadir';
+
+  @override
+  String get aiCardProposalKindDue => 'Vence';
+
+  @override
+  String get aiCardProposalKindEstimate => 'Estimación';
+
+  @override
+  String get aiCardProposalKindLabel => 'Etiqueta';
+
+  @override
+  String get aiCardProposalKindPriority => 'Prioridad';
+
+  @override
+  String get aiCardProposalKindRemove => 'Quitar';
+
+  @override
+  String get aiCardProposalKindStatus => 'Estado';
+
+  @override
+  String get aiCardProposalKindUpdate => 'Actualizar';
+
+  @override
+  String get aiCardReadMore => 'Leer más';
+
+  @override
+  String aiCardRecentActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count acciones recientes',
+      one: '$count acción reciente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiCardSeeActivity => 'Ver actividad';
+
+  @override
+  String get aiCardShowLess => 'Mostrar menos';
+
+  @override
+  String aiCardSummaryAgo(String relative) {
+    return '$relative';
+  }
+
+  @override
+  String get aiCardTitle => 'Resumen de IA';
+
+  @override
   String get aiChatMessageCopied => 'Copiado al portapapeles';
 
   @override
@@ -1485,6 +1570,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiInferenceErrorViewLogButton => 'Ver registro';
+
+  @override
+  String get aiInternalsTitle => 'Interior del agente';
 
   @override
   String get aiModelSettings => 'Ajustes de modelo AI';

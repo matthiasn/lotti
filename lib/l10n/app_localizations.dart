@@ -2130,6 +2130,150 @@ abstract class AppLocalizations {
   /// **'Switch to standard recording'**
   String get aiBatchToggleTooltip;
 
+  /// No description provided for @aiCardActivityRecentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent activity'**
+  String get aiCardActivityRecentLabel;
+
+  /// No description provided for @aiCardActivitySectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'RECENT ACTIVITY'**
+  String get aiCardActivitySectionLabel;
+
+  /// No description provided for @aiCardAgentNameTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open agent internals'**
+  String get aiCardAgentNameTooltip;
+
+  /// No description provided for @aiCardEmptyProposals.
+  ///
+  /// In en, this message translates to:
+  /// **'No open proposals · agent will surface new changes here'**
+  String get aiCardEmptyProposals;
+
+  /// No description provided for @aiCardHideActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide activity'**
+  String get aiCardHideActivity;
+
+  /// No description provided for @aiCardHistoryToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'History · {count}'**
+  String aiCardHistoryToggle(int count);
+
+  /// No description provided for @aiCardOpenAgentInternals.
+  ///
+  /// In en, this message translates to:
+  /// **'Open agent internals'**
+  String get aiCardOpenAgentInternals;
+
+  /// No description provided for @aiCardProposalAgoSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **'·'**
+  String get aiCardProposalAgoSeparator;
+
+  /// No description provided for @aiCardProposalConfirmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get aiCardProposalConfirmed;
+
+  /// No description provided for @aiCardProposalDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed'**
+  String get aiCardProposalDismissed;
+
+  /// No description provided for @aiCardProposalKindAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get aiCardProposalKindAdd;
+
+  /// No description provided for @aiCardProposalKindDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get aiCardProposalKindDue;
+
+  /// No description provided for @aiCardProposalKindEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimate'**
+  String get aiCardProposalKindEstimate;
+
+  /// No description provided for @aiCardProposalKindLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get aiCardProposalKindLabel;
+
+  /// No description provided for @aiCardProposalKindPriority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get aiCardProposalKindPriority;
+
+  /// No description provided for @aiCardProposalKindRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get aiCardProposalKindRemove;
+
+  /// No description provided for @aiCardProposalKindStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get aiCardProposalKindStatus;
+
+  /// No description provided for @aiCardProposalKindUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get aiCardProposalKindUpdate;
+
+  /// No description provided for @aiCardReadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get aiCardReadMore;
+
+  /// No description provided for @aiCardRecentActions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{count} recent action} other{{count} recent actions}}'**
+  String aiCardRecentActions(int count);
+
+  /// No description provided for @aiCardSeeActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'See activity'**
+  String get aiCardSeeActivity;
+
+  /// No description provided for @aiCardShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get aiCardShowLess;
+
+  /// No description provided for @aiCardSummaryAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{relative}'**
+  String aiCardSummaryAgo(String relative);
+
+  /// No description provided for @aiCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI summary'**
+  String get aiCardTitle;
+
   /// No description provided for @aiChatMessageCopied.
   ///
   /// In en, this message translates to:
@@ -2603,6 +2747,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Log'**
   String get aiInferenceErrorViewLogButton;
+
+  /// No description provided for @aiInternalsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent internals'**
+  String get aiInternalsTitle;
 
   /// No description provided for @aiModelSettings.
   ///

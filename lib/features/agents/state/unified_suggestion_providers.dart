@@ -30,7 +30,7 @@ class PendingSuggestion {
   final String fingerprint;
 }
 
-/// What the consolidated `AgentSuggestionsPanel` renders for a single task.
+/// What the consolidated `AiSummaryCard` renders for a single task.
 ///
 /// [open] feeds the active suggestion list the user can act on. [activity]
 /// feeds the collapsed "recent activity" strip so the user can see what
