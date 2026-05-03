@@ -99,5 +99,6 @@ void main() {
         expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
       });
     });
+
   });
 }

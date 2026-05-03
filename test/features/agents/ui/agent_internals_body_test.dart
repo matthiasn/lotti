@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 
 import '../../../test_helper.dart';
 import '../test_data/entity_factories.dart';
+import '../test_data/template_factories.dart';
 
 /// Minimal smoke coverage for [AgentInternalsBody]. The deep behaviour
 /// of each tab (Stats / Reports / Conversations / Observations /
@@ -73,5 +74,56 @@ void main() {
       expect(find.text('State Info'), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
     });
+
+    testWidgets(
+      'tapping the assigned template chip pushes the template detail page',
+      (tester) async {
+        final template = makeTestTemplate();
+        // Bypass `buildSubject` so we can override
+        // `templateForAgentProvider` once and avoid the family-double-
+        // override assertion.
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+            overrides: [
+              agentIdentityProvider.overrideWith(
+                (ref, agentId) async => makeTestIdentity(),
+              ),
+              templateForAgentProvider.overrideWith(
+                (ref, agentId) async => template,
+              ),
+            ],
+            child: const SingleChildScrollView(
+              child: AgentInternalsBody(
+                agentId: 'agent-001',
+                lifecycle: AgentLifecycle.active,
+                stateAsync: AsyncValue.data(null),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The Stats tab surfaces the template name as an ActionChip.
+        expect(find.text(template.displayName), findsOneWidget);
+
+        // Tapping the chip exercises the `onPressed` closure that
+        // pushes `AgentTemplateDetailPage`. The chip lives below the
+        // fold of the test viewport; scroll it into view first so
+        // `tap` resolves to a real hit. We don't assert on the
+        // pushed page's contents (its own tests cover that and it
+        // requires extra provider scaffolding) — only that the
+        // closure runs without throwing.
+        await tester.scrollUntilVisible(
+          find.text(template.displayName),
+          200,
+          scrollable: find
+              .byType(Scrollable)
+              .at(1), // skip the bench's outer Scaffold scroller
+        );
+        await tester.tap(find.text(template.displayName));
+        await tester.pump();
+      },
+    );
   });
 }
