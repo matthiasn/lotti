@@ -539,6 +539,39 @@
   "aiAssistantTranscribeAudio": "Transcribir audio",
   "aiBatchToggleTooltip": "Cambiar a grabación estándar",
   "aiCardActivityRecentLabel": "Actividad reciente",
+  "aiCardActivityRelativeDays": "hace {days} d",
+  "@aiCardActivityRelativeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeHours": "hace {hours} h",
+  "@aiCardActivityRelativeHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeMinutes": "hace {minutes} min",
+  "@aiCardActivityRelativeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeNow": "ahora",
+  "aiCardActivityRelativeWeeks": "hace {weeks} sem",
+  "@aiCardActivityRelativeWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
   "aiCardActivitySectionLabel": "ACTIVIDAD RECIENTE",
   "aiCardAgentNameTooltip": "Abrir interior del agente",
   "aiCardEmptyProposals": "Sin propuestas abiertas · el agente mostrará nuevos cambios aquí",

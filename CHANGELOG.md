@@ -4,6 +4,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.991]
+### Added
+- New unified `AiSummaryCard` on the task details page replacing the
+  separate AI summary panel and decision activity strip. Single
+  deep-teal-tinted-navy surface that hosts the agent TLDR, an inline
+  expandable Goal / Achieved / What's left / Learnings report under a
+  Read more / Show less pill, the actionable proposals list with
+  swipe + button confirm-or-reject and a Confirm-all batch, a
+  collapsible `History · N` toggle for resolved proposals, and a
+  recent-activity footer (See activity / Hide activity) capped at six
+  rows. The wake-cycle affordances (running spinner, run-now refresh,
+  countdown pill, cancel-timer) sit directly in the header.
+- New `AgentInternalsPanel` right-side overlay reachable from the
+  agent name link, the footer avatar, or the "Open agent internals"
+  pill. Clamped to 600–800 px on wide screens; on narrow screens
+  (phones in portrait, slim split-view windows) it renders as a
+  full-screen modal that slides up from the bottom. Hosts the same
+  five tabs (Stats / Reports / Conversations / Observations /
+  Activity) as the standalone agent detail page via the new shared
+  `AgentInternalsBody` widget.
+- Design-system tokens for the AI surface: `color.aiCard.*` (card
+  background, raised surface, row, borders, accent + accent-soft,
+  footer washes, body / meta / faint-meta text) and
+  `color.proposalKind.{add, update, remove, priority, estimate,
+  status, label, due}.{color, surface}`. The token generator now
+  emits these new groups and the matching `DsColorsAiCard` /
+  `DsColorsProposalKind*` classes. Five new localized strings cover
+  the activity row's relative time labels (now / minutes / hours /
+  days / weeks).
+
+### Changed
+- `task_form.dart` now mounts `AiSummaryCard` instead of the old
+  `AgentSuggestionsPanel`. The legacy `AgentSuggestionsPanel` and
+  `TaskAgentReportSection` widgets and their tests are removed (no
+  remaining call sites).
+- `AgentDetailPage` body extracted into the new shared
+  `AgentInternalsBody` so the standalone page and the side panel
+  render the exact same tabs.
+- Agent and tasks feature READMEs updated to describe the new card,
+  the side panel, and the shared body. The tasks README's "Visual
+  surface" section now distinguishes standard `TaskDetailSectionCard`
+  cards from the dedicated AI surface and links to a new follow-up
+  doc, `docs/design/missing_density_typography_tokens.md`, which
+  catalogs every place the card overrides `height` / `letterSpacing`
+  on top of base typography tokens and proposes a `Compact/*`
+  density tier.
+
 ## [0.9.990]
 ### Added
 - Activity-filter pill row above the linked entries section on the task

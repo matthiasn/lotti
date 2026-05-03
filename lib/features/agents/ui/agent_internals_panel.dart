@@ -6,14 +6,19 @@ import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Right-side overlay that surfaces the agent internals view.
+/// Surfaces the agent internals view.
 ///
-/// Slides in from the right over a darkened scrim, sized to a
-/// comfortable reading width (clamped to [minPanelWidth]–[maxPanelWidth]).
-/// The body hosts the same five-tab `AgentInternalsBody` used by the
-/// standalone `AgentDetailPage` (Stats / Reports / Conversations /
-/// Observations / Activity) — this is purely a re-housing of existing
-/// content into a side panel; no functionality is reinvented here.
+/// On wide screens (≥ [mobileBreakpoint]) it slides in from the right
+/// as a comfortable-width panel (clamped to
+/// [minPanelWidth]–[maxPanelWidth]) over a darkened scrim. On narrow
+/// screens — phones in portrait, slim split-view windows — it snaps to
+/// a full-screen modal that slides in from the bottom, so the header
+/// stays on-screen and the body is comfortable to read on small
+/// devices. Either way the body hosts the same five-tab
+/// `AgentInternalsBody` used by the standalone `AgentDetailPage`
+/// (Stats / Reports / Conversations / Observations / Activity); this
+/// is purely a re-housing of existing content, no functionality is
+/// reinvented here.
 class AgentInternalsPanel extends ConsumerWidget {
   const AgentInternalsPanel({
     required this.agentId,
@@ -21,14 +26,24 @@ class AgentInternalsPanel extends ConsumerWidget {
     super.key,
   });
 
+  /// Minimum width before falling back to a full-screen modal layout.
+  /// Below this the side-panel chrome no longer fits without truncating
+  /// the header.
   static const double minPanelWidth = 600;
+
+  /// Maximum width of the side-panel layout on very wide screens.
   static const double maxPanelWidth = 800;
+
+  /// Screen-width threshold under which the panel renders as a
+  /// full-screen modal instead of a right-aligned side panel.
+  static const double mobileBreakpoint = minPanelWidth;
 
   final String agentId;
   final String? agentName;
 
   /// Builds a [PageRoute] that fades the scrim in and slides the panel
-  /// in from the right. Use via `Navigator.of(context).push(...)`.
+  /// in from the right on wide screens, or up from the bottom on
+  /// narrow screens. Use via `Navigator.of(context).push(...)`.
   static PageRoute<void> route({
     required String agentId,
     required String? agentName,
@@ -48,11 +63,14 @@ class AgentInternalsPanel extends ConsumerWidget {
           curve: Curves.easeOutCubic,
           reverseCurve: Curves.easeInCubic,
         );
+        // Pick the slide direction based on the layout the panel will
+        // render in for this screen size.
+        final isMobile = MediaQuery.sizeOf(context).width < mobileBreakpoint;
         return FadeTransition(
           opacity: curved,
           child: SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(1, 0),
+              begin: isMobile ? const Offset(0, 1) : const Offset(1, 0),
               end: Offset.zero,
             ).animate(curved),
             child: child,
@@ -68,7 +86,13 @@ class AgentInternalsPanel extends ConsumerWidget {
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
     final size = MediaQuery.sizeOf(context);
-    final width = size.width.clamp(minPanelWidth, maxPanelWidth);
+    final isMobile = size.width < mobileBreakpoint;
+    // On wide screens the panel takes a comfortable reading width
+    // clamped between [minPanelWidth] and [maxPanelWidth]. On narrow
+    // screens it renders as a full-screen modal at the device width.
+    final width = isMobile
+        ? size.width
+        : size.width.clamp(minPanelWidth, maxPanelWidth);
 
     final identityAsync = ref.watch(agentIdentityProvider(agentId));
     final stateAsync = ref.watch(agentStateProvider(agentId));
@@ -77,6 +101,68 @@ class AgentInternalsPanel extends ConsumerWidget {
         ? agentName!.trim()
         : null;
     final headerSubtitle = resolvedName ?? identity?.displayName;
+    // Distinguish "still resolving" from "resolved but unusable" so the
+    // body shows a spinner only while in flight; an explicit
+    // error / not-found message takes over once the provider settles
+    // (mirrors the fallback in `AgentDetailPage`).
+    final showLoading = identityAsync.isLoading && identity == null;
+    final identityErrorMessage = identityAsync.hasError && identity == null
+        ? messages.agentDetailErrorLoading(identityAsync.error.toString())
+        : (!identityAsync.isLoading && identity == null)
+        ? messages.agentDetailNotFound
+        : null;
+
+    final panelBody = SizedBox(
+      width: width,
+      height: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: ai.background,
+          border: isMobile ? null : Border(left: BorderSide(color: ai.border)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Header(
+              title: messages.aiInternalsTitle,
+              subtitle: headerSubtitle,
+              onClose: () => Navigator.of(context).maybePop(),
+            ),
+            Expanded(
+              child: showLoading
+                  ? const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      ),
+                    )
+                  : identityErrorMessage != null
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          identityErrorMessage,
+                          textAlign: TextAlign.center,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(color: ai.metaText),
+                        ),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      child: AgentInternalsBody(
+                        agentId: agentId,
+                        lifecycle: identity!.lifecycle,
+                        stateAsync: stateAsync,
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
 
     return Material(
       color: Colors.transparent,
@@ -89,50 +175,16 @@ class AgentInternalsPanel extends ConsumerWidget {
             ),
           ),
           Align(
-            alignment: Alignment.centerRight,
+            // Mobile: full-screen modal. Wide screens: right-aligned
+            // panel that vacates the left side for the underlying page.
+            alignment: isMobile ? Alignment.center : Alignment.centerRight,
             child: SafeArea(
-              left: false,
-              child: SizedBox(
-                width: width,
-                height: double.infinity,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: ai.background,
-                    border: Border(
-                      left: BorderSide(color: ai.border),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _Header(
-                        title: messages.aiInternalsTitle,
-                        subtitle: headerSubtitle,
-                        onClose: () => Navigator.of(context).maybePop(),
-                      ),
-                      Expanded(
-                        child: identity == null
-                            ? const Center(
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              )
-                            : SingleChildScrollView(
-                                child: AgentInternalsBody(
-                                  agentId: agentId,
-                                  lifecycle: identity.lifecycle,
-                                  stateAsync: stateAsync,
-                                ),
-                              ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Cover the left inset on mobile (modal occupies the full
+              // width so the system gesture / notch needs padding).
+              // Skip it on wide screens — the panel is right-aligned and
+              // never overlaps the left inset.
+              left: isMobile,
+              child: panelBody,
             ),
           ),
         ],

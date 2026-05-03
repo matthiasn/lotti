@@ -539,6 +539,39 @@
   "aiAssistantTranscribeAudio": "Audio transkribieren",
   "aiBatchToggleTooltip": "Zur Standardaufnahme wechseln",
   "aiCardActivityRecentLabel": "Letzte Aktivität",
+  "aiCardActivityRelativeDays": "vor {days} T",
+  "@aiCardActivityRelativeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeHours": "vor {hours} Std",
+  "@aiCardActivityRelativeHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeMinutes": "vor {minutes} Min",
+  "@aiCardActivityRelativeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeNow": "jetzt",
+  "aiCardActivityRelativeWeeks": "vor {weeks} Wo",
+  "@aiCardActivityRelativeWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
   "aiCardActivitySectionLabel": "LETZTE AKTIVITÄT",
   "aiCardAgentNameTooltip": "Agent-Internes öffnen",
   "aiCardEmptyProposals": "Keine offenen Vorschläge · der Agent zeigt neue Änderungen hier an",

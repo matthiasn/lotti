@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -13,6 +15,8 @@ import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -327,12 +331,26 @@ class _ProfileSection extends ConsumerWidget {
             onProfileSelected: (newProfileId) async {
               if (identity == null) return;
               final service = ref.read(taskAgentServiceProvider);
-              await service.updateAgentProfile(
-                agentId: agentId,
-                profileId: newProfileId,
-              );
-              if (!context.mounted) return;
-              ref.invalidate(agentIdentityProvider(agentId));
+              try {
+                await service.updateAgentProfile(
+                  agentId: agentId,
+                  profileId: newProfileId,
+                );
+                if (!context.mounted) return;
+                ref.invalidate(agentIdentityProvider(agentId));
+              } catch (e, stackTrace) {
+                developer.log(
+                  'updateAgentProfile failed',
+                  name: 'AgentInternalsBody',
+                  error: e,
+                  stackTrace: stackTrace,
+                );
+                if (!context.mounted) return;
+                context.showToast(
+                  tone: DesignSystemToastTone.error,
+                  title: context.messages.commonError,
+                );
+              }
             },
           ),
           if (profileName != null) ...[

@@ -1181,6 +1181,29 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiCardActivityRecentLabel => 'Nedávná aktivita';
 
   @override
+  String aiCardActivityRelativeDays(int days) {
+    return 'před $days d';
+  }
+
+  @override
+  String aiCardActivityRelativeHours(int hours) {
+    return 'před $hours h';
+  }
+
+  @override
+  String aiCardActivityRelativeMinutes(int minutes) {
+    return 'před $minutes min';
+  }
+
+  @override
+  String get aiCardActivityRelativeNow => 'teď';
+
+  @override
+  String aiCardActivityRelativeWeeks(int weeks) {
+    return 'před $weeks t';
+  }
+
+  @override
   String get aiCardActivitySectionLabel => 'NEDÁVNÁ AKTIVITA';
 
   @override

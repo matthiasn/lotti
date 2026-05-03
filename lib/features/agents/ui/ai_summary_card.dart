@@ -939,6 +939,18 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
     if (mounted) setState(() => _dx = 0);
   }
 
+  /// Reset the swipe state when an enclosing scrollable wins the gesture
+  /// arena (which fires a `PointerCancelEvent` instead of pointer-up).
+  /// Without this the row stays translated at its last `_dx` and looks
+  /// stuck off-axis.
+  void _onPointerCancel(PointerCancelEvent event) {
+    if (widget.isResolved || _busy) return;
+    setState(() {
+      _animating = true;
+      _dx = 0;
+    });
+  }
+
   Future<void> _confirm() async {
     final suggestion = widget.suggestion;
     if (suggestion == null || _busy) return;
@@ -1103,6 +1115,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
               onPointerDown: _onPointerDown,
               onPointerMove: _onPointerMove,
               onPointerUp: _onPointerUp,
+              onPointerCancel: _onPointerCancel,
               behavior: HitTestBehavior.opaque,
               child: Opacity(
                 opacity: dimmed ? 0.45 : 1,
@@ -1586,7 +1599,7 @@ class _ActivityRow extends StatelessWidget {
     final kind = _resolveKind(entry.toolName, entry.args);
     final iconData = _activityIcon(kind);
     final color = _activityColor(context, kind);
-    final time = _relativeTime(entry.resolvedAt ?? entry.createdAt);
+    final time = _relativeTime(context, entry.resolvedAt ?? entry.createdAt);
     final agent = agentName?.trim().isNotEmpty == true
         ? agentName!.trim()
         : null;
@@ -1658,7 +1671,7 @@ class _ActivityRow extends StatelessWidget {
       case _ProposalKind.add:
         return palette.add.color;
       case _ProposalKind.status:
-        return palette.estimate.color;
+        return palette.status.color;
       case _ProposalKind.label:
         return palette.label.color;
       case _ProposalKind.priority:
@@ -1674,15 +1687,22 @@ class _ActivityRow extends StatelessWidget {
     }
   }
 
-  String _relativeTime(DateTime when) {
+  String _relativeTime(BuildContext context, DateTime when) {
+    final messages = context.messages;
     final now = clock.now();
     final diff = now.difference(when);
-    if (diff.inMinutes < 1) return 'now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 1) return messages.aiCardActivityRelativeNow;
+    if (diff.inMinutes < 60) {
+      return messages.aiCardActivityRelativeMinutes(diff.inMinutes);
+    }
+    if (diff.inHours < 24) {
+      return messages.aiCardActivityRelativeHours(diff.inHours);
+    }
+    if (diff.inDays < 7) {
+      return messages.aiCardActivityRelativeDays(diff.inDays);
+    }
     final weeks = math.max(1, diff.inDays ~/ 7);
-    return '${weeks}w ago';
+    return messages.aiCardActivityRelativeWeeks(weeks);
   }
 }
 

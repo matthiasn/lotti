@@ -333,6 +333,39 @@
   "aiAssistantTranscribeAudio": "Přepsat zvuk",
   "aiBatchToggleTooltip": "Přepnout na standardní nahrávání",
   "aiCardActivityRecentLabel": "Nedávná aktivita",
+  "aiCardActivityRelativeDays": "před {days} d",
+  "@aiCardActivityRelativeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeHours": "před {hours} h",
+  "@aiCardActivityRelativeHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeMinutes": "před {minutes} min",
+  "@aiCardActivityRelativeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeNow": "teď",
+  "aiCardActivityRelativeWeeks": "před {weeks} t",
+  "@aiCardActivityRelativeWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
   "aiCardActivitySectionLabel": "NEDÁVNÁ AKTIVITA",
   "aiCardAgentNameTooltip": "Otevřít interní informace agenta",
   "aiCardEmptyProposals": "Žádné otevřené návrhy · agent zde zobrazí nové změny",

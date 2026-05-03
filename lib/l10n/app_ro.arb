@@ -539,6 +539,39 @@
   "aiAssistantTranscribeAudio": "Transcrie audio",
   "aiBatchToggleTooltip": "Comutare la înregistrare standard",
   "aiCardActivityRecentLabel": "Activitate recentă",
+  "aiCardActivityRelativeDays": "acum {days} z",
+  "@aiCardActivityRelativeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeHours": "acum {hours} h",
+  "@aiCardActivityRelativeHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeMinutes": "acum {minutes} min",
+  "@aiCardActivityRelativeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeNow": "acum",
+  "aiCardActivityRelativeWeeks": "acum {weeks} săpt",
+  "@aiCardActivityRelativeWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
   "aiCardActivitySectionLabel": "ACTIVITATE RECENTĂ",
   "aiCardAgentNameTooltip": "Deschideți componentele interne ale agentului",
   "aiCardEmptyProposals": "Nicio propunere deschisă · agentul va afișa aici noile modificări",

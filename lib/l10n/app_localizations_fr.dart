@@ -1195,10 +1195,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiCardActivityRecentLabel => 'Activité récente';
 
   @override
+  String aiCardActivityRelativeDays(int days) {
+    return 'il y a $days j';
+  }
+
+  @override
+  String aiCardActivityRelativeHours(int hours) {
+    return 'il y a $hours h';
+  }
+
+  @override
+  String aiCardActivityRelativeMinutes(int minutes) {
+    return 'il y a $minutes min';
+  }
+
+  @override
+  String get aiCardActivityRelativeNow => 'maintenant';
+
+  @override
+  String aiCardActivityRelativeWeeks(int weeks) {
+    return 'il y a $weeks sem';
+  }
+
+  @override
   String get aiCardActivitySectionLabel => 'ACTIVITÉ RÉCENTE';
 
   @override
-  String get aiCardAgentNameTooltip => 'Ouvrir les internes de l\'agent';
+  String get aiCardAgentNameTooltip =>
+      'Ouvrir les détails internes de l\'agent';
 
   @override
   String get aiCardEmptyProposals =>
@@ -1213,7 +1237,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get aiCardOpenAgentInternals => 'Ouvrir les internes de l\'agent';
+  String get aiCardOpenAgentInternals =>
+      'Ouvrir les détails internes de l\'agent';
 
   @override
   String get aiCardProposalAgoSeparator => '·';
@@ -1576,7 +1601,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiInferenceErrorViewLogButton => 'Voir le journal';
 
   @override
-  String get aiInternalsTitle => 'Internes de l\'agent';
+  String get aiInternalsTitle => 'Détails internes de l\'agent';
 
   @override
   String get aiModelSettings => 'Paramètres du modèle AI';

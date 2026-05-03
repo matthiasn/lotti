@@ -1192,6 +1192,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiCardActivityRecentLabel => 'Letzte Aktivität';
 
   @override
+  String aiCardActivityRelativeDays(int days) {
+    return 'vor $days T';
+  }
+
+  @override
+  String aiCardActivityRelativeHours(int hours) {
+    return 'vor $hours Std';
+  }
+
+  @override
+  String aiCardActivityRelativeMinutes(int minutes) {
+    return 'vor $minutes Min';
+  }
+
+  @override
+  String get aiCardActivityRelativeNow => 'jetzt';
+
+  @override
+  String aiCardActivityRelativeWeeks(int weeks) {
+    return 'vor $weeks Wo';
+  }
+
+  @override
   String get aiCardActivitySectionLabel => 'LETZTE AKTIVITÄT';
 
   @override

@@ -2136,6 +2136,36 @@ abstract class AppLocalizations {
   /// **'Recent activity'**
   String get aiCardActivityRecentLabel;
 
+  /// No description provided for @aiCardActivityRelativeDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String aiCardActivityRelativeDays(int days);
+
+  /// No description provided for @aiCardActivityRelativeHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String aiCardActivityRelativeHours(int hours);
+
+  /// No description provided for @aiCardActivityRelativeMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m ago'**
+  String aiCardActivityRelativeMinutes(int minutes);
+
+  /// No description provided for @aiCardActivityRelativeNow.
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get aiCardActivityRelativeNow;
+
+  /// No description provided for @aiCardActivityRelativeWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'{weeks}w ago'**
+  String aiCardActivityRelativeWeeks(int weeks);
+
   /// No description provided for @aiCardActivitySectionLabel.
   ///
   /// In en, this message translates to:
