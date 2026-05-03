@@ -55,6 +55,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         LinkedEntriesActivityFilterBar(entryId: item.id),
         ...List.generate(

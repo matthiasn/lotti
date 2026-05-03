@@ -4005,17 +4005,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterImages => 'Images';
 
   @override
-  String get journalLinkedEntriesActivityFilterLabel => 'Show task activities:';
-
-  @override
-  String get journalLinkedEntriesActivityFilterLabelMobile =>
-      'Show task activities';
-
-  @override
   String get journalLinkedEntriesActivityFilterTimer => 'Timer';
-
-  @override
-  String get journalLinkedEntriesActivityFilterTodo => 'Todo';
 
   @override
   String get journalLinkedEntriesAiLabel => 'Show AI-generated entries:';

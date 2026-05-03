@@ -4069,17 +4069,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterImages => 'Imagini';
 
   @override
-  String get journalLinkedEntriesActivityFilterLabel => 'Afișați activitățile:';
-
-  @override
-  String get journalLinkedEntriesActivityFilterLabelMobile =>
-      'Afișați activitățile';
-
-  @override
   String get journalLinkedEntriesActivityFilterTimer => 'Cronometru';
-
-  @override
-  String get journalLinkedEntriesActivityFilterTodo => 'De făcut';
 
   @override
   String get journalLinkedEntriesAiLabel => 'Afișați intrările generate de AI:';

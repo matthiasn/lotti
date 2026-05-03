@@ -4039,17 +4039,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterImages => 'Obrázky';
 
   @override
-  String get journalLinkedEntriesActivityFilterLabel => 'Zobrazit aktivity:';
-
-  @override
-  String get journalLinkedEntriesActivityFilterLabelMobile =>
-      'Zobrazit aktivity';
-
-  @override
   String get journalLinkedEntriesActivityFilterTimer => 'Časovač';
-
-  @override
-  String get journalLinkedEntriesActivityFilterTodo => 'Úkoly';
 
   @override
   String get journalLinkedEntriesAiLabel => 'Zobrazit záznamy generované AI:';

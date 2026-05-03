@@ -7146,29 +7146,11 @@ abstract class AppLocalizations {
   /// **'Images'**
   String get journalLinkedEntriesActivityFilterImages;
 
-  /// No description provided for @journalLinkedEntriesActivityFilterLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Show task activities:'**
-  String get journalLinkedEntriesActivityFilterLabel;
-
-  /// No description provided for @journalLinkedEntriesActivityFilterLabelMobile.
-  ///
-  /// In en, this message translates to:
-  /// **'Show task activities'**
-  String get journalLinkedEntriesActivityFilterLabelMobile;
-
   /// No description provided for @journalLinkedEntriesActivityFilterTimer.
   ///
   /// In en, this message translates to:
   /// **'Timer'**
   String get journalLinkedEntriesActivityFilterTimer;
-
-  /// No description provided for @journalLinkedEntriesActivityFilterTodo.
-  ///
-  /// In en, this message translates to:
-  /// **'Todo'**
-  String get journalLinkedEntriesActivityFilterTodo;
 
   /// No description provided for @journalLinkedEntriesAiLabel.
   ///

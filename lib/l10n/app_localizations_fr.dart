@@ -4106,18 +4106,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterImages => 'Images';
 
   @override
-  String get journalLinkedEntriesActivityFilterLabel =>
-      'Afficher les activités :';
-
-  @override
-  String get journalLinkedEntriesActivityFilterLabelMobile =>
-      'Afficher les activités';
-
-  @override
   String get journalLinkedEntriesActivityFilterTimer => 'Minuteur';
-
-  @override
-  String get journalLinkedEntriesActivityFilterTodo => 'À faire';
 
   @override
   String get journalLinkedEntriesAiLabel =>
