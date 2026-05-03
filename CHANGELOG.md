@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.990]
+### Added
+- Activity-filter pill row above the linked entries section on the task
+  details page. Three toggleable pills (Timer / Audio / Images) hide or
+  show the corresponding linked entry types; checklists keep their
+  dedicated section at the top of the page. Pills follow the Figma
+  spec — accent fill at 15 % alpha, accent border, accent label when
+  active; design-system tokens drive Timer; Audio and Images use the
+  Figma hex values until those colors land in the token set.
+- Sort + filter modal opened from a "Newest first / Oldest first"
+  trigger on the right of the activity bar. Reuses the
+  `DesignSystemFilterChoicePill` and `DesignSystemFilterPalette` from
+  the task list filter modal so both surfaces share one chrome.
+  Includes a "Show hidden entries" switch using the existing
+  include-hidden controller.
+
+### Changed
+- Linked entry cards now use `TaskDetailSectionCard` (the existing
+  design-system card already used by the linked tasks section) instead
+  of `ModernBaseCard`. Card padding aligned with the task list card —
+  `tokens.spacing.step4` (12 px) horizontal, `step4` vertical at the
+  bottom and `step1` (2 px) at the top so the trailing IconButtons in
+  the entry header provide the visual breathing room without doubling
+  it.
+- Audio player no longer wraps itself in a second card. The redundant
+  `ModernBaseCard` was removed so the player sits flush inside the
+  entry's section card with just a thin vertical pad.
+- Checklist card header padding tightened (`step1` top; collapsed state
+  also drops bottom to `step1`) and the chevron is now a proper
+  `IconButton` with `Collapse` / `Expand` tooltips, so it gains a hover
+  state matching the adjacent menu button.
+- "Checklists" subheading removed from the task details page. The
+  per-task sort menu still appears (right-aligned) when there are two
+  or more checklists.
+- Extracted `DesignSystemFilterChoicePill` from the private task filter
+  sheet into the shared `design_system_filter_shared.dart` so both the
+  task filter modal and the new linked-entries filter modal render the
+  same exclusive-choice pill — fill cross-fade, accent border alpha
+  tween, constant border width, 400 ms animation.
+
 ## [0.9.989]
 ### Added
 - AI assistant icon and skill menu now appear on text journal entries.

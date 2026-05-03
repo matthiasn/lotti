@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
@@ -162,7 +163,7 @@ class _ActivityPill extends StatelessWidget {
           borderRadius: radius,
           onTap: onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
+            duration: DesignSystemFilterChoicePill.animationDuration,
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: radius,
