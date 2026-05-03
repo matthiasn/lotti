@@ -7,6 +7,7 @@ import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -874,7 +875,8 @@ void main() {
             )
             // Set window to now so the rate window is still active
             ..windowStart = DateTime.now()
-            ..responsesInWindow = 5000; // At the limit
+            ..responsesInWindow =
+                SyncTuning.backfillResponseRateLimit; // At the limit
 
       const request = SyncBackfillRequest(
         entries: [

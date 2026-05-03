@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
@@ -363,11 +364,12 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
 
 /// Provider to get available skills for a given entity.
 ///
-/// Filters skills by matching the entity type to the skill's
-/// [requiredInputModalities]:
+/// Filters skills from the built-in skill registry by matching the entity
+/// type to the skill's `requiredInputModalities`:
 /// - [Modality.audio] → entity must be [JournalAudio]
 /// - [Modality.image] → entity must be [JournalImage]
 /// - [Modality.text] → entity can be any type with text content
+///   (`JournalAudio` always satisfies this via its transcript)
 final availableSkillsForEntityProvider = FutureProvider.autoDispose
     .family<List<AiConfigSkill>, String>(
       (ref, entityId) async {
@@ -377,22 +379,18 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
         final entity = entryState?.entry;
         if (entity == null) return [];
 
-        // Watch for changes in skill configurations.
-        final allConfigs = await ref.watch(
-          aiConfigByTypeControllerProvider(
-            configType: AiConfigType.skill,
-          ).future,
-        );
+        final registry = ref.watch(skillRegistryProvider);
 
         // Only show skill types that have a working implementation.
         const supportedTypes = {
           SkillType.transcription,
           SkillType.imageAnalysis,
           SkillType.promptGeneration,
+          SkillType.imagePromptGeneration,
           SkillType.imageGeneration,
         };
 
-        final skills = allConfigs.whereType<AiConfigSkill>().where((skill) {
+        return registry.where((skill) {
           if (!supportedTypes.contains(skill.skillType)) return false;
           final modalities = skill.requiredInputModalities;
           if (modalities.contains(Modality.audio) && entity is! JournalAudio) {
@@ -403,8 +401,6 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
           }
           return true;
         }).toList();
-
-        return skills;
       },
     );
 
@@ -445,10 +441,11 @@ final triggerSkillProvider = FutureProvider.autoDispose
             name: 'UnifiedAiController',
           );
 
-          final config = await ref.read(
-            aiConfigByIdProvider(params.skillId).future,
-          );
-          if (config == null || config is! AiConfigSkill) {
+          final skill = ref
+              .read(skillRegistryProvider)
+              .where((s) => s.id == params.skillId)
+              .firstOrNull;
+          if (skill == null) {
             loggingService.captureEvent(
               'Skill not found: ${params.skillId}',
               domain: 'UnifiedAiController',
@@ -456,7 +453,6 @@ final triggerSkillProvider = FutureProvider.autoDispose
             );
             return;
           }
-          final skill = config;
 
           // Resolve the profile for the linked task.
           if (params.linkedTaskId == null) {
@@ -511,8 +507,9 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 linkedTaskId: params.linkedTaskId,
               );
             case SkillType.promptGeneration:
+            case SkillType.imagePromptGeneration:
               await runner.runPromptGeneration(
-                audioEntryId: params.entityId,
+                entryId: params.entityId,
                 automationResult: automationResult,
                 linkedTaskId: params.linkedTaskId,
               );
@@ -525,16 +522,10 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 );
               }
               await runner.runImageGeneration(
-                audioEntryId: params.entityId,
+                entryId: params.entityId,
                 automationResult: automationResult,
                 linkedTaskId: linkedTaskId,
                 referenceImages: params.referenceImages,
-              );
-            case SkillType.imagePromptGeneration:
-              developer.log(
-                'Skill type ${skill.skillType} not yet supported for '
-                'direct invocation via triggerSkillProvider',
-                name: 'UnifiedAiController',
               );
           }
 

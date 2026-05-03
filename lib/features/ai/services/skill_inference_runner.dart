@@ -396,14 +396,14 @@ class SkillInferenceRunner {
     );
   }
 
-  /// Run skill-based prompt generation on an audio entry.
+  /// Run skill-based prompt generation on a [JournalAudio] or [JournalEntry].
   ///
   /// Uses the profile's high-end thinking model (falling back to the regular
-  /// thinking model) to transform an audio transcript + task context into a
-  /// detailed coding prompt. The result is saved as an [AiResponseEntry]
-  /// linked to the audio entity.
+  /// thinking model) to transform the entry's content (audio transcript or
+  /// typed text) plus task context into a detailed prompt. The result is
+  /// saved as an [AiResponseEntry] linked to the source entry.
   Future<void> runPromptGeneration({
-    required String audioEntryId,
+    required String entryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
   }) async {
@@ -411,7 +411,7 @@ class SkillInferenceRunner {
     final profile = automationResult.resolvedProfile;
     if (skill == null || profile == null) {
       throw StateError(
-        'AutomationResult missing skill or profile for $audioEntryId: '
+        'AutomationResult missing skill or profile for $entryId: '
         'skill=${skill != null}, profile=${profile != null}',
       );
     }
@@ -419,19 +419,26 @@ class SkillInferenceRunner {
     final modelId = profile.effectiveHighEndModelId;
 
     await _withStatusTracking(
-      entityId: audioEntryId,
+      entityId: entryId,
       responseType: skill.skillType.toResponseType,
       subDomain: 'runPromptGeneration',
       linkedTaskId: linkedTaskId,
       body: () async {
-        // 1. Fetch the audio entity.
-        final entity = await _aiInputRepository.getEntity(audioEntryId);
-        if (entity is! JournalAudio) {
-          throw StateError('Entity $audioEntryId is not a JournalAudio');
+        // 1. Fetch the source entity.
+        final entity = await _aiInputRepository.getEntity(entryId);
+        if (entity == null) {
+          throw StateError('Entity $entryId not found for prompt generation');
+        }
+        if (entity is! JournalAudio && entity is! JournalEntry) {
+          throw StateError(
+            'Entity $entryId is not a JournalAudio or JournalEntry '
+            '(got ${entity.runtimeType}); prompt generation requires a '
+            'text-bearing entry',
+          );
         }
 
-        // 2. Extract the audio transcript.
-        final audioTranscript = _resolveAudioTranscript(entity);
+        // 2. Extract the entry content (transcript or typed text).
+        final entryContent = _resolveEntryContent(entity);
 
         // 3. Build task context (parallel for independent calls).
         final (String? taskContext, String? linkedTasks) = linkedTaskId != null
@@ -445,7 +452,7 @@ class SkillInferenceRunner {
         const promptBuilder = SkillPromptBuilder();
         final promptResult = promptBuilder.build(
           skill: skill,
-          audioTranscript: audioTranscript,
+          entryContent: entryContent,
           taskContext: taskContext,
           linkedTasks: linkedTasks,
         );
@@ -474,29 +481,35 @@ class SkillInferenceRunner {
         final response = buffer.toString().trim();
         if (response.isEmpty) {
           throw StateError(
-            'Empty prompt generation response for $audioEntryId',
+            'Empty prompt generation response for $entryId',
           );
         }
 
-        // 7. Save result as AiResponseEntry.
+        // 7. Save result as AiResponseEntry. The response type is derived
+        // from the skill so the same runner can serve both
+        // `promptGeneration` and `imagePromptGeneration` skills without
+        // mislabelling persisted responses. The `skillId` lets the UI
+        // distinguish sibling prompt-generation skills (coding / design /
+        // research) that share the same response type.
         final data = AiResponseData(
           model: modelId,
           systemMessage: promptResult.systemMessage,
           prompt: promptResult.userMessage,
           thoughts: '',
           response: response,
-          type: AiResponseType.promptGeneration,
+          skillId: skill.id,
+          type: skill.skillType.toResponseType,
         );
 
         await _aiInputRepository.createAiResponseEntry(
           data: data,
           start: start,
-          linkedId: audioEntryId,
+          linkedId: entryId,
           categoryId: entity.meta.categoryId,
         );
 
         _loggingService.captureEvent(
-          'Skill-based prompt generation completed for $audioEntryId '
+          'Skill-based prompt generation completed for $entryId '
           '(${response.length} chars)',
           domain: _logTag,
           subDomain: 'runPromptGeneration',
@@ -505,20 +518,29 @@ class SkillInferenceRunner {
     );
   }
 
-  /// Run skill-based image generation on an audio entry.
+  /// Run skill-based image generation on a [JournalAudio] or [JournalEntry].
   ///
-  /// Generates a cover art image using the task context and optional reference
-  /// images. The generated image is automatically imported as a
-  /// [JournalImage] and set as the task's cover art.
+  /// Generates a cover art image using the task context, the entry's content
+  /// (audio transcript or typed text), and optional reference images. The
+  /// generated image is automatically imported as a [JournalImage] and set
+  /// as the task's cover art.
   Future<void> runImageGeneration({
-    required String audioEntryId,
+    required String entryId,
     required AutomationResult automationResult,
     required String linkedTaskId,
     List<ProcessedReferenceImage>? referenceImages,
   }) async {
+    // Derive the response type from the skill when present so future skill
+    // variants (or test stubs) drive the status controller correctly.
+    // Falls back to `imageGeneration` only when the automation result is
+    // misconfigured — that path immediately throws inside `_withStatusTracking`.
+    final responseType =
+        automationResult.skill?.skillType.toResponseType ??
+        AiResponseType.imageGeneration;
+
     await _withStatusTracking(
-      entityId: audioEntryId,
-      responseType: AiResponseType.imageGeneration,
+      entityId: entryId,
+      responseType: responseType,
       subDomain: 'runImageGeneration',
       linkedTaskId: linkedTaskId,
       body: () async {
@@ -529,7 +551,7 @@ class SkillInferenceRunner {
         final profile = automationResult.resolvedProfile;
         if (skill == null || profile == null) {
           throw StateError(
-            'AutomationResult missing skill or profile for $audioEntryId: '
+            'AutomationResult missing skill or profile for $entryId: '
             'skill=${skill != null}, profile=${profile != null}',
           );
         }
@@ -538,18 +560,25 @@ class SkillInferenceRunner {
         if (provider == null || modelId == null) {
           throw StateError(
             'Profile missing image generation provider/model for '
-            '$audioEntryId',
+            '$entryId',
           );
         }
 
-        // 1. Fetch the audio entity for transcript / voice description.
-        final entity = await _aiInputRepository.getEntity(audioEntryId);
-        if (entity is! JournalAudio) {
-          throw StateError('Entity $audioEntryId is not a JournalAudio');
+        // 1. Fetch the source entity (transcript or typed description).
+        final entity = await _aiInputRepository.getEntity(entryId);
+        if (entity == null) {
+          throw StateError('Entity $entryId not found for image generation');
+        }
+        if (entity is! JournalAudio && entity is! JournalEntry) {
+          throw StateError(
+            'Entity $entryId is not a JournalAudio or JournalEntry '
+            '(got ${entity.runtimeType}); image generation requires a '
+            'text-bearing entry',
+          );
         }
 
-        // 2. Extract the audio transcript (user's voice description).
-        final audioTranscript = _resolveAudioTranscript(entity);
+        // 2. Extract the entry content (user's description).
+        final entryContent = _resolveEntryContent(entity);
 
         // 3. Build task context and summary in parallel.
         final (taskContext, linkedTasks) = await (
@@ -565,7 +594,7 @@ class SkillInferenceRunner {
         const promptBuilder = SkillPromptBuilder();
         final promptResult = promptBuilder.build(
           skill: skill,
-          audioTranscript: audioTranscript,
+          entryContent: entryContent,
           taskContext: taskContext,
           linkedTasks: linkedTasks,
           currentTaskSummary: currentTaskSummary,
@@ -645,29 +674,50 @@ class SkillInferenceRunner {
     );
   }
 
-  /// Resolves the audio transcript from a [JournalAudio] entity.
+  /// Resolves the textual content of a source entry for skill input.
   ///
-  /// Prioritises user-edited text over the original transcript, matching the
-  /// behaviour of the legacy prompt builder.
-  static String _resolveAudioTranscript(JournalAudio entity) {
-    final editedText = entity.entryText?.plainText.trim();
-    if (editedText != null && editedText.isNotEmpty) {
-      return editedText;
-    }
-
-    final transcripts = entity.data.transcripts;
-    if (transcripts != null && transcripts.isNotEmpty) {
-      final latestTranscript = transcripts.reduce(
-        (current, candidate) =>
-            candidate.created.isAfter(current.created) ? candidate : current,
-      );
-      final transcriptText = latestTranscript.transcript.trim();
-      if (transcriptText.isNotEmpty) {
-        return transcriptText;
+  /// For [JournalAudio]: prioritises user-edited text, then falls back to
+  /// the latest transcript, then a placeholder. Matches the historic
+  /// "audio transcript" resolution semantics.
+  ///
+  /// For [JournalEntry]: uses the entry's text body directly.
+  ///
+  /// For any other entity type: returns a placeholder.
+  static String _resolveEntryContent(JournalEntity entity) {
+    if (entity is JournalAudio) {
+      final editedText = entity.entryText?.plainText.trim();
+      if (editedText != null && editedText.isNotEmpty) {
+        return editedText;
       }
+
+      final transcripts = entity.data.transcripts;
+      if (transcripts != null && transcripts.isNotEmpty) {
+        final latestTranscript = transcripts.reduce(
+          (current, candidate) =>
+              candidate.created.isAfter(current.created) ? candidate : current,
+        );
+        final transcriptText = latestTranscript.transcript.trim();
+        if (transcriptText.isNotEmpty) {
+          return transcriptText;
+        }
+      }
+
+      return '[No transcription available]';
     }
 
-    return '[No transcription available]';
+    if (entity is JournalEntry) {
+      final markdown = entity.entryText?.markdown?.trim();
+      if (markdown != null && markdown.isNotEmpty) {
+        return markdown;
+      }
+      final plain = entity.entryText?.plainText.trim();
+      if (plain != null && plain.isNotEmpty) {
+        return plain;
+      }
+      return '[Empty note]';
+    }
+
+    return '[No entry content available]';
   }
 
   /// Formats pre-fetched speech dictionary terms into a prompt fragment.

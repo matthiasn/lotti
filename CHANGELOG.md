@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.989]
+### Added
+- AI assistant icon and skill menu now appear on text journal entries.
+  Skills that consume entry text (coding-prompt generation, image-prompt
+  generation, cover-art generation) work the same way whether the source
+  is a typed note or a voice recording's transcript.
+- New built-in **Generate Design Prompt** skill. Turns task context plus
+  the entry's notes into a UI/UX design exploration prompt that defaults
+  to five functional prototypes (override-able from the entry text),
+  enforces design-system alignment when one is mentioned, and surfaces
+  clarifying questions up front. Output is two-section Markdown ready to
+  paste into Claude / Figma Make / v0.dev.
+- New built-in **Generate Research Prompt** skill. Produces a structured
+  Markdown research brief (Background, Research Questions, Scope,
+  Deliverables, Source Preferences, expected output format, open
+  questions) ready to paste into Claude with Research or ChatGPT Pro
+  with Deep Research.
+
+### Changed
+- Built-in skills are now defined in code under
+  `lib/features/ai/skills/built_in_skills.dart` and read via
+  `skillRegistryProvider` instead of being seeded into the AI config DB.
+  This removes the seeding round-trip and lets skill content stay in
+  lockstep with the code that uses it. A future skill-management UI will
+  introduce a separate user-override layer rather than re-introducing
+  seeding.
+- Generated-prompt cards now render the source skill's own name (e.g.
+  "Generate Design Prompt", "Generate Research Prompt") instead of always
+  showing "AI Coding Prompt". `AiResponseData` now carries an optional
+  `skillId` so the same card can distinguish sibling skills that share the
+  `promptGeneration` response type.
+
 ## [0.9.988]
 ### Changed
 - Outbox post-drain settle window raised from 250 ms to 1500 ms and lifted

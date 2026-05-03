@@ -96,7 +96,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
             activeColor: context.colorScheme.error,
           ),
         if (entry != null &&
-            (entry is Task || entry is JournalImage || entry is JournalAudio))
+            (entry is Task ||
+                entry is JournalImage ||
+                entry is JournalAudio ||
+                entry is JournalEntry))
           UnifiedAiPopUpMenu(
             journalEntity: entry,
             linkedFromId: widget.linkedFromId,
@@ -161,7 +164,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
               activeColor: context.colorScheme.error,
             ),
           if (entry != null &&
-              (entry is Task || entry is JournalImage || entry is JournalAudio))
+              (entry is Task ||
+                  entry is JournalImage ||
+                  entry is JournalAudio ||
+                  entry is JournalEntry))
             UnifiedAiPopUpMenu(
               journalEntity: entry,
               linkedFromId: widget.linkedFromId,

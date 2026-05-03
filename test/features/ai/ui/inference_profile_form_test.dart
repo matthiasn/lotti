@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
-import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
@@ -676,7 +676,7 @@ void main() {
         expect(find.text('Automated Skills'), findsOneWidget);
 
         // All transcription and imageAnalysis skills should be listed.
-        final relevantSkills = SkillSeedingService.defaultSkills.where(
+        final relevantSkills = builtInSkills.where(
           (s) =>
               s.skillType == SkillType.transcription ||
               s.skillType == SkillType.imageAnalysis,
@@ -708,7 +708,7 @@ void main() {
             .toList();
 
         // All skill tiles should be disabled since no model slots are set.
-        final relevantSkillCount = SkillSeedingService.defaultSkills
+        final relevantSkillCount = builtInSkills
             .where(
               (s) =>
                   s.skillType == SkillType.transcription ||
@@ -740,7 +740,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Transcription skill tiles should be enabled.
-          final transcriptionSkills = SkillSeedingService.defaultSkills.where(
+          final transcriptionSkills = builtInSkills.where(
             (s) => s.skillType == SkillType.transcription,
           );
           for (final skill in transcriptionSkills) {
@@ -787,8 +787,9 @@ void main() {
           await tester.pumpAndSettle();
 
           // Scroll to the first transcription skill.
-          final firstTranscriptionSkill = SkillSeedingService.defaultSkills
-              .firstWhere((s) => s.skillType == SkillType.transcription);
+          final firstTranscriptionSkill = builtInSkills.firstWhere(
+            (s) => s.skillType == SkillType.transcription,
+          );
           await tester.scrollUntilVisible(
             find.text(firstTranscriptionSkill.name),
             200,

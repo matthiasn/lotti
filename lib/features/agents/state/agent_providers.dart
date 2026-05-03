@@ -23,7 +23,6 @@ import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
-import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
@@ -361,9 +360,11 @@ Future<void> agentInitialization(Ref ref) async {
     syncEventProcessor,
   );
 
-  // 5. Seed default templates, profiles, and skills in parallel, then
+  // 5. Seed default templates and profiles in parallel, then
   //    upgrade existing profiles with skill assignments and restore
   //    subscriptions (which depends on templates being seeded).
+  //    Skills are not seeded — they live as code in the built-in skill
+  //    registry (lib/features/ai/skills/built_in_skills.dart).
   final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
   final profileSeeder = ProfileSeedingService(
     aiConfigRepository: aiConfigRepo,
@@ -371,7 +372,6 @@ Future<void> agentInitialization(Ref ref) async {
   await Future.wait([
     templateService.seedDefaults(),
     profileSeeder.seedDefaults(),
-    SkillSeedingService(aiConfigRepository: aiConfigRepo).seedDefaults(),
   ]);
   // Seed soul documents and assign to templates (depends on templates above).
   await ref.read(soulDocumentServiceProvider).seedDefaults();

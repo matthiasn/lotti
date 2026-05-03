@@ -80,7 +80,7 @@ class SyncTuning {
   /// `SyncOutboxBundle` by `OutboxProcessor`. Tuneable up to 100.
   /// Media-attachment rows (filePath != null) are never bundled — they ship
   /// individually so receivers keep their existing per-attachment handling.
-  static const int outboxBundleMaxSize = 100;
+  static const int outboxBundleMaxSize = 50;
 
   /// Hard cap on the post-gzip size of an outbox bundle's manifest payload.
   /// The cap is a defence-in-depth signal: an outbox bundle of
@@ -232,7 +232,7 @@ class SyncTuning {
   // step-of-20 progress jumps observed during heavy backfill
   // (PR #3038) traced back to that fan-out.
   //
-  // A bundle already amortizes 100 entities into a single download, so
+  // A bundle already amortizes 50 entities into a single download, so
   // the per-batch parallelism added little on top. Drop the worker to
   // batch size 1: each entry runs prepare → apply → commit in
   // sequence, queue depth ticks down per row (smooth visible
@@ -262,7 +262,7 @@ class SyncTuning {
   // Rate limiting - caps total backfill responses per time window to prevent
   // outbox flooding during amplification storms.
   static const Duration backfillResponseRateWindow = Duration(minutes: 1);
-  static const int backfillResponseRateLimit = 5000;
+  static const int backfillResponseRateLimit = 10000;
 
   // Maximum number of entry links to embed inline in a SyncJournalEntity
   // envelope. Links beyond this cap are omitted from the envelope — they sync
