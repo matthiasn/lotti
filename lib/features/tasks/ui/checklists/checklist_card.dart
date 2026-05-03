@@ -352,7 +352,7 @@ class _Header extends StatelessWidget {
               left: tokens.spacing.step5,
               right: tokens.spacing.step3,
               top: tokens.spacing.step1,
-              bottom: tokens.spacing.step3,
+              bottom: isExpanded ? tokens.spacing.step3 : tokens.spacing.step1,
             ),
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: tokens.spacing.step8),
