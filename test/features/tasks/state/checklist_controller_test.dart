@@ -681,144 +681,193 @@ void main() {
         ).thenAnswer((_) async => true);
       });
 
-      test(
-        'links item to target checklist and unlinks from source',
-        () async {
-          final sourceChecklist = Checklist(
-            meta: Metadata(
-              id: 'source-cl',
-              createdAt: DateTime(2025),
-              updatedAt: DateTime(2025),
-              dateFrom: DateTime(2025),
-              dateTo: DateTime(2025),
-            ),
-            data: const ChecklistData(
-              title: 'Source',
-              linkedChecklistItems: ['item-1'],
-              linkedTasks: ['task-1'],
-            ),
-          );
-          final targetChecklist = Checklist(
-            meta: Metadata(
-              id: 'target-cl',
-              createdAt: DateTime(2025),
-              updatedAt: DateTime(2025),
-              dateFrom: DateTime(2025),
-              dateTo: DateTime(2025),
-            ),
-            data: const ChecklistData(
-              title: 'Target',
-              linkedChecklistItems: [],
-              linkedTasks: ['task-1'],
-            ),
-          );
-          final droppedItem = ChecklistItem(
-            meta: Metadata(
-              id: 'item-1',
-              createdAt: DateTime(2025),
-              updatedAt: DateTime(2025),
-              dateFrom: DateTime(2025),
-              dateTo: DateTime(2025),
-            ),
-            data: const ChecklistItemData(
-              title: 'Dropped item',
-              isChecked: false,
-              linkedChecklists: ['source-cl'],
-            ),
-          );
-
-          when(
-            () => mockDb.journalEntityById('source-cl'),
-          ).thenAnswer((_) async => sourceChecklist);
-          when(
-            () => mockDb.journalEntityById('target-cl'),
-          ).thenAnswer((_) async => targetChecklist);
-          when(
-            () => mockDb.journalEntityById('item-1'),
-          ).thenAnswer((_) async => droppedItem);
-
-          final container = ProviderContainer(
-            overrides: [
-              journalRepositoryProvider.overrideWithValue(
-                mockJournalRepository,
-              ),
-              checklistRepositoryProvider.overrideWithValue(
-                mockChecklistRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          // Warm up source + target checklist controllers and the dropped
-          // item controller so all three hold state — production renders
-          // each row, which materialises the item controller before drop.
-          await container.read(
-            checklistControllerProvider((
-              id: 'source-cl',
-              taskId: 'task-1',
-            )).future,
-          );
-          await container.read(
-            checklistControllerProvider((
-              id: 'target-cl',
-              taskId: 'task-1',
-            )).future,
-          );
-          await container.read(
-            checklistItemControllerProvider((
-              id: 'item-1',
-              taskId: 'task-1',
-            )).future,
-          );
-
-          final targetNotifier = container.read(
-            checklistControllerProvider((
-              id: 'target-cl',
-              taskId: 'task-1',
-            )).notifier,
-          );
-
-          await targetNotifier.dropChecklistItem(
-            {'checklistItemId': 'item-1', 'checklistId': 'source-cl'},
-          );
-
-          // Item's linkedChecklists must now point at the target, not the
-          // dropped item's own id (regression: previously passed the item id
-          // as `linkedChecklistId`, corrupting the back-link).
-          final capturedItemData =
-              verify(
-                    () => mockChecklistRepository.updateChecklistItem(
-                      checklistItemId: 'item-1',
-                      data: captureAny(named: 'data'),
-                      taskId: 'task-1',
-                    ),
-                  ).captured.single
-                  as ChecklistItemData;
-          expect(capturedItemData.linkedChecklists, ['target-cl']);
-
-          // Target list now contains the item.
-          final targetUpdate =
-              verify(
-                    () => mockChecklistRepository.updateChecklist(
-                      checklistId: 'target-cl',
-                      data: captureAny(named: 'data'),
-                    ),
-                  ).captured.single
-                  as ChecklistData;
-          expect(targetUpdate.linkedChecklistItems, contains('item-1'));
-
-          // Source list no longer contains the item.
-          final sourceUpdate =
-              verify(
-                    () => mockChecklistRepository.updateChecklist(
-                      checklistId: 'source-cl',
-                      data: captureAny(named: 'data'),
-                    ),
-                  ).captured.single
-                  as ChecklistData;
-          expect(sourceUpdate.linkedChecklistItems, isNot(contains('item-1')));
-        },
+      Checklist makeChecklist(String id, List<String> items) => Checklist(
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
+        ),
+        data: ChecklistData(
+          title: id,
+          linkedChecklistItems: items,
+          linkedTasks: const ['task-1'],
+        ),
       );
+
+      ChecklistItem makeItem(String id, String fromChecklistId) =>
+          ChecklistItem(
+            meta: Metadata(
+              id: id,
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: ChecklistItemData(
+              title: id,
+              isChecked: false,
+              linkedChecklists: [fromChecklistId],
+            ),
+          );
+
+      Future<ProviderContainer> bootstrap({
+        required Checklist source,
+        required Checklist target,
+        required ChecklistItem droppedItem,
+      }) async {
+        when(() => mockDb.journalEntityById(source.id)).thenAnswer(
+          (_) async => source,
+        );
+        when(() => mockDb.journalEntityById(target.id)).thenAnswer(
+          (_) async => target,
+        );
+        when(() => mockDb.journalEntityById(droppedItem.id)).thenAnswer(
+          (_) async => droppedItem,
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            journalRepositoryProvider.overrideWithValue(
+              mockJournalRepository,
+            ),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        // Warm up both checklist controllers and the dropped item controller
+        // so they all hold state — production renders each row, which
+        // materialises the item controller before drop.
+        await container.read(
+          checklistControllerProvider((
+            id: source.id,
+            taskId: 'task-1',
+          )).future,
+        );
+        await container.read(
+          checklistControllerProvider((
+            id: target.id,
+            taskId: 'task-1',
+          )).future,
+        );
+        await container.read(
+          checklistItemControllerProvider((
+            id: droppedItem.id,
+            taskId: 'task-1',
+          )).future,
+        );
+
+        return container;
+      }
+
+      ChecklistController targetNotifier(
+        ProviderContainer container,
+        String targetId,
+      ) => container.read(
+        checklistControllerProvider((
+          id: targetId,
+          taskId: 'task-1',
+        )).notifier,
+      );
+
+      ChecklistData captureUpdate(String checklistId) =>
+          verify(
+                () => mockChecklistRepository.updateChecklist(
+                  checklistId: checklistId,
+                  data: captureAny(named: 'data'),
+                ),
+              ).captured.single
+              as ChecklistData;
+
+      test('links item to target checklist and unlinks from source', () async {
+        final container = await bootstrap(
+          source: makeChecklist('source-cl', const ['item-1']),
+          target: makeChecklist('target-cl', const []),
+          droppedItem: makeItem('item-1', 'source-cl'),
+        );
+
+        await targetNotifier(container, 'target-cl').dropChecklistItem(
+          {'checklistItemId': 'item-1', 'checklistId': 'source-cl'},
+        );
+
+        // Item's linkedChecklists must now point at the target, not the
+        // dropped item's own id (regression: previously passed the item id
+        // as `linkedChecklistId`, corrupting the back-link).
+        final capturedItemData =
+            verify(
+                  () => mockChecklistRepository.updateChecklistItem(
+                    checklistItemId: 'item-1',
+                    data: captureAny(named: 'data'),
+                    taskId: 'task-1',
+                  ),
+                ).captured.single
+                as ChecklistItemData;
+        expect(capturedItemData.linkedChecklists, ['target-cl']);
+
+        expect(captureUpdate('target-cl').linkedChecklistItems, ['item-1']);
+        expect(
+          captureUpdate('source-cl').linkedChecklistItems,
+          isNot(contains('item-1')),
+        );
+      });
+
+      test('inserts at targetIndex when dropping on a row', () async {
+        final container = await bootstrap(
+          source: makeChecklist('source-cl', const ['dragged']),
+          target: makeChecklist('target-cl', const ['a', 'b', 'c']),
+          droppedItem: makeItem('dragged', 'source-cl'),
+        );
+
+        // Dropping on the row at index 1 ('b') means "insert before b".
+        await targetNotifier(container, 'target-cl').dropChecklistItem(
+          {'checklistItemId': 'dragged', 'checklistId': 'source-cl'},
+          targetIndex: 1,
+        );
+
+        expect(
+          captureUpdate('target-cl').linkedChecklistItems,
+          ['a', 'dragged', 'b', 'c'],
+        );
+      });
+
+      test('inserts after targetItemId when only id is provided', () async {
+        final container = await bootstrap(
+          source: makeChecklist('source-cl', const ['dragged']),
+          target: makeChecklist('target-cl', const ['a', 'b', 'c']),
+          droppedItem: makeItem('dragged', 'source-cl'),
+        );
+
+        await targetNotifier(container, 'target-cl').dropChecklistItem(
+          {'checklistItemId': 'dragged', 'checklistId': 'source-cl'},
+          targetItemId: 'b',
+        );
+
+        expect(
+          captureUpdate('target-cl').linkedChecklistItems,
+          ['a', 'b', 'dragged', 'c'],
+        );
+      });
+
+      test('appends to end when no positioning info is provided', () async {
+        final container = await bootstrap(
+          source: makeChecklist('source-cl', const ['dragged']),
+          target: makeChecklist('target-cl', const ['a', 'b']),
+          droppedItem: makeItem('dragged', 'source-cl'),
+        );
+
+        await targetNotifier(container, 'target-cl').dropChecklistItem(
+          {'checklistItemId': 'dragged', 'checklistId': 'source-cl'},
+        );
+
+        expect(
+          captureUpdate('target-cl').linkedChecklistItems,
+          ['a', 'b', 'dragged'],
+        );
+      });
     });
   });
 }

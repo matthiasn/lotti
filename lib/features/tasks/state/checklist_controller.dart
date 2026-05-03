@@ -189,10 +189,12 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
       await updateChecklist(
         (checklist) => checklist.copyWith(
           data: checklist.data.copyWith(
-            linkedChecklistItems: {
-              ...checklist.data.linkedChecklistItems,
+            linkedChecklistItems: _insertItemAt(
+              checklist.data.linkedChecklistItems,
               droppedChecklistItemId,
-            }.toList(),
+              targetIndex: targetIndex,
+              targetItemId: targetItemId,
+            ),
           ),
         ),
       );
@@ -206,6 +208,34 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
           )
           .unlinkItem(droppedChecklistItemId);
     }
+  }
+
+  /// Returns a new list with [itemId] inserted at the position implied by
+  /// [targetIndex] / [targetItemId]. Drops on the empty area of a checklist
+  /// (no target) append to the end. Drops on a row insert at that row's
+  /// index when [targetIndex] is supplied, otherwise after [targetItemId].
+  /// If [itemId] already exists in the list, it is moved (not duplicated).
+  List<String> _insertItemAt(
+    List<String> existing,
+    String itemId, {
+    int? targetIndex,
+    String? targetItemId,
+  }) {
+    final items = existing.toList()..remove(itemId);
+
+    int insertIndex;
+    if (targetIndex != null) {
+      insertIndex = targetIndex;
+    } else if (targetItemId != null) {
+      final targetIdx = items.indexOf(targetItemId);
+      insertIndex = targetIdx != -1 ? targetIdx + 1 : items.length;
+    } else {
+      insertIndex = items.length;
+    }
+
+    insertIndex = insertIndex.clamp(0, items.length);
+    items.insert(insertIndex, itemId);
+    return items;
   }
 
   /// Reorders an item within this checklist.
