@@ -150,9 +150,11 @@ class _ConfirmAllButton extends StatelessWidget {
         ),
       ),
       style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        // Keep the visual chrome compact while honoring the Material
+        // 48dp minimum hit target — the button's inner padding stays
+        // tight, but the inkwell expands to a 48dp touch zone.
+        minimumSize: const Size(48, 48),
         foregroundColor: ai.accent,
       ),
     );
@@ -480,7 +482,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
                       child: Text(
                         cleanText,
                         style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: Colors.white.withValues(alpha: 0.88),
+                          color: ai.bodyText,
                           height: 1.5,
                           decoration: lineThrough
                               ? TextDecoration.lineThrough
@@ -560,9 +562,11 @@ class _RowActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (busy) {
+      // Match the 48×48 footprint of a single non-busy
+      // [_SquareIconButton] so the row doesn't reflow when toggling.
       return SizedBox(
-        width: 26,
-        height: 26,
+        width: 48,
+        height: 48,
         child: Center(
           child: SizedBox(
             width: 14,
@@ -575,6 +579,9 @@ class _RowActions extends StatelessWidget {
         ),
       );
     }
+    // Each [_SquareIconButton] already centers its 26×26 visual inside
+    // a 48×48 hit zone, so the visible chips end up ≈22px apart with
+    // no extra gap — matching the spec'd compact rhythm.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -584,7 +591,6 @@ class _RowActions extends StatelessWidget {
           onPressed: onReject,
           variant: _SquareIconVariant.outline,
         ),
-        const SizedBox(width: 4),
         _SquareIconButton(
           icon: Icons.check_rounded,
           tooltip: context.messages.changeSetSwipeConfirm,
@@ -615,6 +621,11 @@ class _SquareIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ai = context.designTokens.colors.aiCard;
     final isAccent = variant == _SquareIconVariant.accent;
+    // The visual chip stays at the spec'd 26×26, but it's centered
+    // inside a 48×48 hit target so users with reduced motor control or
+    // touch precision still get a Material-compliant tap zone. The
+    // outer SizedBox + InkWell expand the gesture-accepting region;
+    // the inner Container preserves the compact look.
     return Tooltip(
       message: tooltip,
       child: Material(
@@ -622,22 +633,28 @@ class _SquareIconButton extends StatelessWidget {
         child: InkWell(
           onTap: onPressed.call,
           borderRadius: BorderRadius.circular(7),
-          child: Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              color: isAccent ? ai.accent.withValues(alpha: 0.13) : null,
-              border: Border.all(
-                color: isAccent
-                    ? ai.accent.withValues(alpha: 0.33)
-                    : ai.rowBorderStrong,
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: isAccent ? ai.accent.withValues(alpha: 0.13) : null,
+                  border: Border.all(
+                    color: isAccent
+                        ? ai.accent.withValues(alpha: 0.33)
+                        : ai.rowBorderStrong,
+                  ),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Icon(
+                  icon,
+                  size: 14,
+                  color: isAccent ? ai.accent : ai.metaText,
+                ),
               ),
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: Icon(
-              icon,
-              size: 14,
-              color: isAccent ? ai.accent : ai.metaText,
             ),
           ),
         ),

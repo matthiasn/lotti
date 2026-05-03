@@ -41,7 +41,7 @@ class _TldrHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
       child: Row(
         children: [
-          _SparkleBadge(),
+          const _SparkleBadge(),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -125,6 +125,8 @@ class _TldrHeader extends StatelessWidget {
 }
 
 class _SparkleBadge extends StatelessWidget {
+  const _SparkleBadge();
+
   @override
   Widget build(BuildContext context) {
     final ai = context.designTokens.colors.aiCard;

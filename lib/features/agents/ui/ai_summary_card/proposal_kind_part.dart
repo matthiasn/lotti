@@ -57,6 +57,8 @@ _ProposalKind _resolveKind(String toolName, Map<String, dynamic> args) {
       return _ProposalKind.label;
     case TaskAgentToolNames.updateTaskDueDate:
       return _ProposalKind.due;
+    case TaskAgentToolNames.retractSuggestions:
+      return _ProposalKind.remove;
     default:
       return _ProposalKind.update;
   }

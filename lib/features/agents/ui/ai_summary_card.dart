@@ -176,7 +176,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final reportAsync = ref.watch(agentReportProvider(agentId));
     final report = reportAsync.value?.mapOrNull(agentReport: (r) => r);
     final listAsync = ref.watch(unifiedSuggestionListProvider(widget.taskId));
-    final list = listAsync.value ?? const UnifiedSuggestionList.empty();
+    // Distinguish "still resolving" from "resolved-and-empty" so the
+    // proposals section doesn't flash "No open proposals" during the
+    // initial fetch. `hasValue` is `true` once the provider has
+    // produced any data (including a deliberate empty list); on the
+    // first frame we render with no list and the section omits the
+    // empty-state placeholder.
+    final list = listAsync.hasValue ? listAsync.value! : null;
 
     final tldr = _resolveTldr(report);
     final additionalReport = _resolveAdditionalReport(report);
@@ -189,10 +195,23 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final remainingSeconds = _computeRemainingSeconds(nextWakeAt);
 
     ref.listen(agentStateProvider(agentId), (prev, next) {
+      final previousNextWake = prev?.value?.mapOrNull(
+        agentState: (s) => s.nextWakeAt,
+      );
       final newNextWake = next.value?.mapOrNull(
         agentState: (s) => s.nextWakeAt,
       );
-      if (_computeRemainingSeconds(newNextWake) <= 0) {
+      // Clear the manual-cancel flag in two situations: (a) the
+      // current wake has already expired, or (b) a fresh wake has
+      // been scheduled (different timestamp, still in the future).
+      // Without (b) a rescheduled wake would stay hidden after the
+      // user cancels the previous one.
+      final newRemaining = _computeRemainingSeconds(newNextWake);
+      final wakeRescheduled =
+          newNextWake != null &&
+          newNextWake != previousNextWake &&
+          newRemaining > 0;
+      if (newRemaining <= 0 || wakeRescheduled) {
         _cancelledManually = false;
       }
     });
@@ -244,30 +263,36 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                 additionalReport: additionalReport,
                 onOpenInternals: _openInternals,
               ),
-            _ProposalsSection(
-              open: list.open,
-              resolved: list.activity,
-              historyOpen: _historyOpen,
-              onToggleHistory: () =>
-                  setState(() => _historyOpen = !_historyOpen),
-              confirmAllBusy: _confirmAllBusy,
-              onConfirmAll: list.open.length > 1
-                  ? () => _confirmAll(list.open)
-                  : null,
-            ),
-            _ActivityFooter(
-              count: list.activity.length,
-              open: _activityOpen,
-              onToggle: list.activity.isEmpty
-                  ? null
-                  : () => setState(() => _activityOpen = !_activityOpen),
-              onOpenInternals: _openInternals,
-            ),
-            if (_activityOpen && list.activity.isNotEmpty)
-              _ActivityList(
-                activity: list.activity,
-                agentName: widget.identity.displayName,
+            // Hide the proposals + activity sections until the
+            // unified suggestion list has produced its first value.
+            // This avoids briefly rendering the "No open proposals"
+            // placeholder during the initial async fetch.
+            if (list != null) ...[
+              _ProposalsSection(
+                open: list.open,
+                resolved: list.activity,
+                historyOpen: _historyOpen,
+                onToggleHistory: () =>
+                    setState(() => _historyOpen = !_historyOpen),
+                confirmAllBusy: _confirmAllBusy,
+                onConfirmAll: list.open.length > 1
+                    ? () => _confirmAll(list.open)
+                    : null,
               ),
+              _ActivityFooter(
+                count: list.activity.length,
+                open: _activityOpen,
+                onToggle: list.activity.isEmpty
+                    ? null
+                    : () => setState(() => _activityOpen = !_activityOpen),
+                onOpenInternals: _openInternals,
+              ),
+              if (_activityOpen && list.activity.isNotEmpty)
+                _ActivityList(
+                  activity: list.activity,
+                  agentName: widget.identity.displayName,
+                ),
+            ],
           ],
         ),
       ),
