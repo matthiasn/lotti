@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
+import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -84,6 +86,13 @@ void main() {
         title: '',
         linkedChecklistItems: [],
         linkedTasks: [],
+      ),
+    );
+    registerFallbackValue(
+      const ChecklistItemData(
+        title: '',
+        isChecked: false,
+        linkedChecklists: [],
       ),
     );
   });
@@ -648,6 +657,166 @@ void main() {
 
           // item-1 moved to end
           expect(captured.linkedChecklistItems, ['item-2', 'item-3', 'item-1']);
+        },
+      );
+    });
+
+    group('dropChecklistItem - cross-checklist move', () {
+      late MockChecklistRepository mockChecklistRepository;
+
+      setUp(() {
+        mockChecklistRepository = MockChecklistRepository();
+        when(
+          () => mockChecklistRepository.updateChecklist(
+            checklistId: any(named: 'checklistId'),
+            data: any(named: 'data'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => true);
+      });
+
+      test(
+        'links item to target checklist and unlinks from source',
+        () async {
+          final sourceChecklist = Checklist(
+            meta: Metadata(
+              id: 'source-cl',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: const ChecklistData(
+              title: 'Source',
+              linkedChecklistItems: ['item-1'],
+              linkedTasks: ['task-1'],
+            ),
+          );
+          final targetChecklist = Checklist(
+            meta: Metadata(
+              id: 'target-cl',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: const ChecklistData(
+              title: 'Target',
+              linkedChecklistItems: [],
+              linkedTasks: ['task-1'],
+            ),
+          );
+          final droppedItem = ChecklistItem(
+            meta: Metadata(
+              id: 'item-1',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: const ChecklistItemData(
+              title: 'Dropped item',
+              isChecked: false,
+              linkedChecklists: ['source-cl'],
+            ),
+          );
+
+          when(
+            () => mockDb.journalEntityById('source-cl'),
+          ).thenAnswer((_) async => sourceChecklist);
+          when(
+            () => mockDb.journalEntityById('target-cl'),
+          ).thenAnswer((_) async => targetChecklist);
+          when(
+            () => mockDb.journalEntityById('item-1'),
+          ).thenAnswer((_) async => droppedItem);
+
+          final container = ProviderContainer(
+            overrides: [
+              journalRepositoryProvider.overrideWithValue(
+                mockJournalRepository,
+              ),
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          // Warm up source + target checklist controllers and the dropped
+          // item controller so all three hold state — production renders
+          // each row, which materialises the item controller before drop.
+          await container.read(
+            checklistControllerProvider((
+              id: 'source-cl',
+              taskId: 'task-1',
+            )).future,
+          );
+          await container.read(
+            checklistControllerProvider((
+              id: 'target-cl',
+              taskId: 'task-1',
+            )).future,
+          );
+          await container.read(
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).future,
+          );
+
+          final targetNotifier = container.read(
+            checklistControllerProvider((
+              id: 'target-cl',
+              taskId: 'task-1',
+            )).notifier,
+          );
+
+          await targetNotifier.dropChecklistItem(
+            {'checklistItemId': 'item-1', 'checklistId': 'source-cl'},
+          );
+
+          // Item's linkedChecklists must now point at the target, not the
+          // dropped item's own id (regression: previously passed the item id
+          // as `linkedChecklistId`, corrupting the back-link).
+          final capturedItemData =
+              verify(
+                    () => mockChecklistRepository.updateChecklistItem(
+                      checklistItemId: 'item-1',
+                      data: captureAny(named: 'data'),
+                      taskId: 'task-1',
+                    ),
+                  ).captured.single
+                  as ChecklistItemData;
+          expect(capturedItemData.linkedChecklists, ['target-cl']);
+
+          // Target list now contains the item.
+          final targetUpdate =
+              verify(
+                    () => mockChecklistRepository.updateChecklist(
+                      checklistId: 'target-cl',
+                      data: captureAny(named: 'data'),
+                    ),
+                  ).captured.single
+                  as ChecklistData;
+          expect(targetUpdate.linkedChecklistItems, contains('item-1'));
+
+          // Source list no longer contains the item.
+          final sourceUpdate =
+              verify(
+                    () => mockChecklistRepository.updateChecklist(
+                      checklistId: 'source-cl',
+                      data: captureAny(named: 'data'),
+                    ),
+                  ).captured.single
+                  as ChecklistData;
+          expect(sourceUpdate.linkedChecklistItems, isNot(contains('item-1')));
         },
       );
     });

@@ -167,7 +167,6 @@ class ChecklistCardWrapper extends ConsumerWidget {
             isChecked: false,
             categoryId: checklist.meta.categoryId,
           ),
-          onReorder: notifier.updateItemOrder,
           onDelete: notifier.delete,
           onExportMarkdown: () async {
             final nothingMsg = context.messages.checklistNothingToExport;

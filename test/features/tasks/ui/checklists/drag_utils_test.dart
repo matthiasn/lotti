@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+
+import '../../../../widget_test_utils.dart';
 
 class MockChecklistController extends Mock implements ChecklistController {}
 
@@ -39,82 +42,35 @@ class FakeDropItem extends Fake implements DropItem {
 
 void main() {
   group('buildDragDecorator', () {
-    testWidgets('creates container with correct styling', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                final testChild = Container(key: const ValueKey('test-child'));
-                final decoratedWidget = buildDragDecorator(context, testChild);
+    testWidgets('renders Material with elevation, rounded corners, and the '
+        'level-02 background token (no chunky border)', (tester) async {
+      Color? capturedTokenColor;
 
-                return decoratedWidget;
-              },
-            ),
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              capturedTokenColor =
+                  context.designTokens.colors.background.level02;
+              final testChild = Container(key: const ValueKey('test-child'));
+              return buildDragDecorator(context, testChild);
+            },
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      // Find the decorated container
-      final container = tester.widget<Container>(
+      final material = tester.widget<Material>(
         find.ancestor(
           of: find.byKey(const ValueKey('test-child')),
-          matching: find.byType(Container),
+          matching: find.byType(Material),
         ),
       );
 
-      // Verify the decoration
-      expect(container.decoration, isA<BoxDecoration>());
-      final decoration = container.decoration! as BoxDecoration;
-
-      // Verify border styling
-      expect(decoration.border, isA<Border>());
-      final border = decoration.border! as Border;
-      expect(border.top.width, 2);
-      expect(border.bottom.width, 2);
-      expect(border.left.width, 2);
-      expect(border.right.width, 2);
-
-      // Verify border radius
-      expect(decoration.borderRadius, BorderRadius.circular(12));
-
-      // Verify surface color is set
-      expect(decoration.color, isNotNull);
-
-      // Verify child is preserved
-      expect(find.byKey(const ValueKey('test-child')), findsOneWidget);
-    });
-
-    testWidgets('uses theme colors correctly', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                final testChild = Container(key: const ValueKey('test-child'));
-                final decoratedWidget = buildDragDecorator(context, testChild);
-                final theme = Theme.of(context);
-
-                // Verify the decorator uses theme colors
-                final container = decoratedWidget as Container;
-                final decoration = container.decoration! as BoxDecoration;
-                expect(decoration.color, theme.colorScheme.surface);
-
-                final border = decoration.border! as Border;
-                expect(border.top.color, theme.colorScheme.primary);
-
-                return decoratedWidget;
-              },
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
+      expect(material.elevation, 4);
+      expect(material.borderRadius, BorderRadius.circular(8));
+      expect(material.color, capturedTokenColor);
     });
 
     testWidgets('preserves child widget in decoration', (tester) async {
@@ -122,25 +78,21 @@ void main() {
       const testText = 'Test Content';
 
       await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) {
-                final testChild = Container(
-                  key: testKey,
-                  child: const Text(testText),
-                );
-                return buildDragDecorator(context, testChild);
-              },
-            ),
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              final testChild = Container(
+                key: testKey,
+                child: const Text(testText),
+              );
+              return buildDragDecorator(context, testChild);
+            },
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      // Verify child widget and its content are preserved
       expect(find.byKey(testKey), findsOneWidget);
       expect(find.text(testText), findsOneWidget);
     });

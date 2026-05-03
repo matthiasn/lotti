@@ -182,7 +182,7 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
             )).notifier,
           )
           .moveToChecklist(
-            linkedChecklistId: droppedChecklistItemId,
+            linkedChecklistId: id,
             fromChecklistId: fromChecklistId,
           );
 
