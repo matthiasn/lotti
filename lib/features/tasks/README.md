@@ -89,8 +89,8 @@ held on `NavService.desktopTaskDetailStack` (`ValueNotifier<List<String>>`).
 - `TasksLocation` calls `resetDesktopTaskDetail(taskId)` when the URL
   changes, seeding the stack with one entry — the task selected from the
   list pane (the "base").
-- Tapping a `LinkedTaskCard` from inside a task's details calls
-  `pushDesktopTaskDetail(linkedId)` so the linked task is shown on top of
+- Tapping a row inside `LinkedTasksWidget` from inside a task's details
+  calls `pushDesktopTaskDetail(linkedId)` so the linked task is shown on top of
   the base, *strictly inside* the right-hand pane. The list pane on the
   left remains visible. Mobile keeps using `Navigator.push` with a
   `MaterialPageRoute` because the navigator stack and the visible
@@ -107,8 +107,8 @@ held on `NavService.desktopTaskDetailStack` (`ValueNotifier<List<String>>`).
 stateDiagram-v2
   [*] --> Empty
   Empty --> Base: URL → resetDesktopTaskDetail(taskId)
-  Base --> Linked: tap LinkedTaskCard → pushDesktopTaskDetail(otherId)
-  Linked --> Linked: tap LinkedTaskCard → push another
+  Base --> Linked: tap linked-task row → pushDesktopTaskDetail(otherId)
+  Linked --> Linked: tap linked-task row → push another
   Linked --> Base: back arrow → popDesktopTaskDetail()
   Base --> Empty: URL clears task → resetDesktopTaskDetail(null)
 ```
@@ -309,7 +309,7 @@ This is one of those tiny state machines that users feel immediately even if the
 
 ```mermaid
 flowchart LR
-  Header["LinkedTasksHeader"] --> Modal["LinkTaskModal"]
+  Header["LinkedTasksWidget header menu"] --> Modal["LinkTaskModal"]
   Header --> Manage["Manage mode toggle"]
   Modal --> Search["Search eligible tasks"]
   Search --> Link["Create link"]

@@ -43,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   task filter modal and the new linked-entries filter modal render the
   same exclusive-choice pill — fill cross-fade, accent border alpha
   tween, constant border width, 400 ms animation.
+- Linked tasks section on the task detail page is redesigned to match the
+  Figma spec: a single expandable card with a count badge in the header,
+  per-row "to"/"from" direction glyphs (info-blue / success-green), status
+  circles, and dividers between rows. The overflow menu retains the
+  existing link/create/manage actions.
 
 ## [0.9.989]
 ### Added

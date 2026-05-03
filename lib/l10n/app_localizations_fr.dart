@@ -4187,6 +4187,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get legacyPromptsSectionTitle => 'Anciens prompts';
 
   @override
+  String get linkedFromCaption => 'depuis';
+
+  @override
   String get linkedFromLabel => 'LIÉ DEPUIS';
 
   @override
@@ -4197,6 +4200,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get linkedTasksTitle => 'Tâches liées';
+
+  @override
+  String get linkedToCaption => 'vers';
 
   @override
   String get linkedToLabel => 'LIÉ À';

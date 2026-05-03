@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -63,6 +64,8 @@ import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -79,6 +82,7 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
+import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -606,3 +610,26 @@ class MockUrlLauncher extends Mock
     implements UrlLauncherPlatform {}
 
 class FakeLaunchOptions extends Fake implements LaunchOptions {}
+
+class MockLinkedFromEntriesController extends LinkedFromEntriesController {
+  MockLinkedFromEntriesController(this._entities);
+  final List<JournalEntity> _entities;
+
+  @override
+  Future<List<JournalEntity>> build({required String id}) async => _entities;
+}
+
+class MockLinkedTasksControllerManageMode extends LinkedTasksController {
+  @override
+  LinkedTasksState build({required String taskId}) {
+    return const LinkedTasksState(manageMode: true);
+  }
+}
+
+class MockLinkedEntriesController extends LinkedEntriesController {
+  MockLinkedEntriesController([this._links = const []]);
+  final List<EntryLink> _links;
+
+  @override
+  Future<List<EntryLink>> build({required String id}) async => _links;
+}

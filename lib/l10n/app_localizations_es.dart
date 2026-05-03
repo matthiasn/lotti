@@ -4185,6 +4185,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get legacyPromptsSectionTitle => 'Prompts heredados';
 
   @override
+  String get linkedFromCaption => 'desde';
+
+  @override
   String get linkedFromLabel => 'VINCULADO DESDE';
 
   @override
@@ -4195,6 +4198,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get linkedTasksTitle => 'Tareas vinculadas';
+
+  @override
+  String get linkedToCaption => 'a';
 
   @override
   String get linkedToLabel => 'VINCULADO A';

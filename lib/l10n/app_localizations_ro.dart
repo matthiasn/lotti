@@ -4148,6 +4148,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get legacyPromptsSectionTitle => 'Prompturi vechi';
 
   @override
+  String get linkedFromCaption => 'de la';
+
+  @override
   String get linkedFromLabel => 'LEGAT DE LA';
 
   @override
@@ -4158,6 +4161,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkedTasksTitle => 'Sarcini legate';
+
+  @override
+  String get linkedToCaption => 'la';
 
   @override
   String get linkedToLabel => 'LEGAT LA';
