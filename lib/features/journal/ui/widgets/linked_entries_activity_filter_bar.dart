@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_filter_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Activity-filter pill row above the linked entries list.
@@ -30,24 +31,95 @@ class LinkedEntriesActivityFilterBar extends ConsumerWidget {
       linkedEntriesActivityFilterControllerProvider(id: entryId).notifier,
     );
 
+    final sortOrder = ref.watch(
+      linkedEntriesSortControllerProvider(id: entryId),
+    );
+
     return Padding(
       padding: EdgeInsets.only(
         left: tokens.spacing.step3,
-        //        top: tokens.spacing.step3,
+        right: tokens.spacing.step3,
         bottom: tokens.spacing.step4,
       ),
-      child: Wrap(
-        spacing: tokens.spacing.step3,
-        runSpacing: tokens.spacing.step2,
-        children: LinkedEntryActivityFilter.values
-            .map(
-              (kind) => _ActivityPill(
-                kind: kind,
-                active: activeKinds.contains(kind),
-                onTap: () => notifier.toggle(kind),
+      child: Row(
+        children: [
+          Expanded(
+            child: Wrap(
+              spacing: tokens.spacing.step3,
+              runSpacing: tokens.spacing.step2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: LinkedEntryActivityFilter.values
+                  .map(
+                    (kind) => _ActivityPill(
+                      kind: kind,
+                      active: activeKinds.contains(kind),
+                      onTap: () => notifier.toggle(kind),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          _FilterTrigger(
+            entryId: entryId,
+            sortOrder: sortOrder,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterTrigger extends StatelessWidget {
+  const _FilterTrigger({required this.entryId, required this.sortOrder});
+
+  final String entryId;
+  final LinkedEntriesSortOrder sortOrder;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final label = switch (sortOrder) {
+      LinkedEntriesSortOrder.newestFirst =>
+        messages.journalLinkedEntriesSortNewestFirst,
+      LinkedEntriesSortOrder.oldestFirst =>
+        messages.journalLinkedEntriesSortOldestFirst,
+    };
+    final color = tokens.colors.text.lowEmphasis;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => showLinkedEntriesFilterModal(
+          context: context,
+          entryId: entryId,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step3,
+            vertical: tokens.spacing.step2,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.sort,
+                size: 16,
+                color: tokens.colors.interactive.enabled,
               ),
-            )
-            .toList(),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                label,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: color,
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

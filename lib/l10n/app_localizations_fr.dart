@@ -4113,11 +4113,26 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher les entrées générées par l\'IA :';
 
   @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filtrer et trier';
+
+  @override
   String get journalLinkedEntriesHiddenLabel =>
       'Afficher les entrées masquées :';
 
   @override
   String get journalLinkedEntriesLabel => 'Lié :';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Afficher les entrées masquées';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Trier par';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Plus récent d\'abord';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Plus ancien d\'abord';
 
   @override
   String get journalLinkedFromLabel => 'Lié depuis :';

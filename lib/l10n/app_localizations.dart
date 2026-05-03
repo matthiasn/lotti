@@ -7158,6 +7158,12 @@ abstract class AppLocalizations {
   /// **'Show AI-generated entries:'**
   String get journalLinkedEntriesAiLabel;
 
+  /// No description provided for @journalLinkedEntriesFilterModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter & Sort'**
+  String get journalLinkedEntriesFilterModalTitle;
+
   /// No description provided for @journalLinkedEntriesHiddenLabel.
   ///
   /// In en, this message translates to:
@@ -7169,6 +7175,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Linked Entries'**
   String get journalLinkedEntriesLabel;
+
+  /// No description provided for @journalLinkedEntriesShowHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Show hidden entries'**
+  String get journalLinkedEntriesShowHidden;
+
+  /// No description provided for @journalLinkedEntriesSortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by'**
+  String get journalLinkedEntriesSortLabel;
+
+  /// No description provided for @journalLinkedEntriesSortNewestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get journalLinkedEntriesSortNewestFirst;
+
+  /// No description provided for @journalLinkedEntriesSortOldestFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest first'**
+  String get journalLinkedEntriesSortOldestFirst;
 
   /// No description provided for @journalLinkedFromLabel.
   ///

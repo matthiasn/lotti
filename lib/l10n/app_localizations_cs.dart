@@ -4045,10 +4045,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalLinkedEntriesAiLabel => 'Zobrazit záznamy generované AI:';
 
   @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filtrovat a řadit';
+
+  @override
   String get journalLinkedEntriesHiddenLabel => 'Zobrazit skryté záznamy:';
 
   @override
   String get journalLinkedEntriesLabel => 'Propojené záznamy';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Zobrazit skryté záznamy';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Řadit podle';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Nejnovější první';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Nejstarší první';
 
   @override
   String get journalLinkedFromLabel => 'Odkaz z:';

@@ -4011,10 +4011,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalLinkedEntriesAiLabel => 'Show AI-generated entries:';
 
   @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filter & Sort';
+
+  @override
   String get journalLinkedEntriesHiddenLabel => 'Show hidden entries:';
 
   @override
   String get journalLinkedEntriesLabel => 'Linked Entries';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Show hidden entries';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Sort by';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Newest first';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Oldest first';
 
   @override
   String get journalLinkedFromLabel => 'Linked from:';

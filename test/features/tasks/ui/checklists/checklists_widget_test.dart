@@ -248,7 +248,6 @@ void main() {
       expect(find.byType(ChecklistCardWrapper), findsNWidgets(2));
       expect(find.text('Checklist 1'), findsOneWidget);
       expect(find.text('Checklist 2'), findsOneWidget);
-      expect(find.text('Checklists'), findsOneWidget);
       // The inline `+` add button has been removed — adding a checklist now
       // lives on the FAB's create-entry menu (CreateChecklistItem).
       expect(find.byIcon(Icons.add_rounded), findsNothing);

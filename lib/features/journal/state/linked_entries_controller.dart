@@ -108,8 +108,8 @@ class IncludeAiEntriesController extends _$IncludeAiEntriesController {
 }
 
 /// Per-entry toggle state for the activity filter pills shown above the
-/// linked entries list (Timer / Todo / Audio / Images). Defaults to all
-/// kinds active so existing behavior is preserved when the bar mounts.
+/// linked entries list (Timer / Audio / Images). Defaults to all kinds
+/// active so existing behavior is preserved when the bar mounts.
 @riverpod
 class LinkedEntriesActivityFilterController
     extends _$LinkedEntriesActivityFilterController {
@@ -123,6 +123,22 @@ class LinkedEntriesActivityFilterController
     if (!next.add(kind)) next.remove(kind);
     state = next;
   }
+}
+
+/// Sort order applied to the linked entries list.
+enum LinkedEntriesSortOrder { newestFirst, oldestFirst }
+
+/// Per-entry sort order for the linked entries list. Defaults to newest
+/// first, matching pre-filter-bar behavior.
+@riverpod
+class LinkedEntriesSortController extends _$LinkedEntriesSortController {
+  @override
+  LinkedEntriesSortOrder build({required String id}) {
+    return LinkedEntriesSortOrder.newestFirst;
+  }
+
+  // ignore: avoid_setters_without_getters
+  set order(LinkedEntriesSortOrder value) => state = value;
 }
 
 @riverpod

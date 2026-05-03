@@ -4112,10 +4112,25 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar entradas generadas por IA:';
 
   @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filtrar y ordenar';
+
+  @override
   String get journalLinkedEntriesHiddenLabel => 'Mostrar entradas ocultas:';
 
   @override
   String get journalLinkedEntriesLabel => 'Entradas vinculadas';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Mostrar entradas ocultas';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Ordenar por';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Más recientes primero';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Más antiguas primero';
 
   @override
   String get journalLinkedFromLabel => 'Vinculado de:';

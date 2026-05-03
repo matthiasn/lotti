@@ -4075,10 +4075,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalLinkedEntriesAiLabel => 'Afișați intrările generate de AI:';
 
   @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filtrare și sortare';
+
+  @override
   String get journalLinkedEntriesHiddenLabel => 'Afișați intrările ascunse:';
 
   @override
   String get journalLinkedEntriesLabel => 'Legat:';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Afișați intrările ascunse';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Sortați după';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Cele mai noi mai întâi';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Cele mai vechi mai întâi';
 
   @override
   String get journalLinkedFromLabel => 'Legat de la:';

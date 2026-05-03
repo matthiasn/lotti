@@ -4066,10 +4066,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalLinkedEntriesAiLabel => 'KI-generierte Einträge anzeigen:';
 
   @override
+  String get journalLinkedEntriesFilterModalTitle => 'Filtern & Sortieren';
+
+  @override
   String get journalLinkedEntriesHiddenLabel => 'Versteckte Einträge anzeigen:';
 
   @override
   String get journalLinkedEntriesLabel => 'Verknüpfte Einträge';
+
+  @override
+  String get journalLinkedEntriesShowHidden => 'Versteckte Einträge anzeigen';
+
+  @override
+  String get journalLinkedEntriesSortLabel => 'Sortieren nach';
+
+  @override
+  String get journalLinkedEntriesSortNewestFirst => 'Neueste zuerst';
+
+  @override
+  String get journalLinkedEntriesSortOldestFirst => 'Älteste zuerst';
 
   @override
   String get journalLinkedFromLabel => 'Verknüpft von:';
