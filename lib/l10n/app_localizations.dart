@@ -7302,6 +7302,12 @@ abstract class AppLocalizations {
   /// **'Legacy Prompts'**
   String get legacyPromptsSectionTitle;
 
+  /// No description provided for @linkedFromCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'from'**
+  String get linkedFromCaption;
+
   /// No description provided for @linkedFromLabel.
   ///
   /// In en, this message translates to:
@@ -7325,6 +7331,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Linked Tasks'**
   String get linkedTasksTitle;
+
+  /// No description provided for @linkedToCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'to'**
+  String get linkedToCaption;
 
   /// No description provided for @linkedToLabel.
   ///

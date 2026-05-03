@@ -4139,6 +4139,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get legacyPromptsSectionTitle => 'Alte Prompts';
 
   @override
+  String get linkedFromCaption => 'von';
+
+  @override
   String get linkedFromLabel => 'VERKNÜPFT VON';
 
   @override
@@ -4149,6 +4152,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get linkedTasksTitle => 'Verknüpfte Aufgaben';
+
+  @override
+  String get linkedToCaption => 'zu';
 
   @override
   String get linkedToLabel => 'VERKNÜPFT MIT';

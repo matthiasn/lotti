@@ -75,6 +75,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   showing "AI Coding Prompt". `AiResponseData` now carries an optional
   `skillId` so the same card can distinguish sibling skills that share the
   `promptGeneration` response type.
+- Linked tasks section on the task detail page is redesigned to match the
+  Figma spec: a single expandable card with a count badge in the header,
+  per-row "to"/"from" direction glyphs (info-blue / success-green), status
+  circles, and dividers between rows. The overflow menu retains the
+  existing link/create/manage actions.
 
 ## [0.9.988]
 ### Changed

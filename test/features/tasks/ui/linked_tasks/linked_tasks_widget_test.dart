@@ -1,18 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
-import 'package:lotti/features/tasks/ui/linked_tasks/linked_from_section.dart';
-import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_header.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
-import 'package:lotti/features/tasks/ui/linked_tasks/linked_to_section.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
+
+class _MockLinkedFromEntriesController extends LinkedFromEntriesController {
+  _MockLinkedFromEntriesController(this._entities);
+  final List<JournalEntity> _entities;
+
+  @override
+  Future<List<JournalEntity>> build({required String id}) async => _entities;
+}
+
+class _MockLinkedTasksControllerManageMode extends LinkedTasksController {
+  @override
+  LinkedTasksState build({required String taskId}) {
+    return const LinkedTasksState(manageMode: true);
+  }
+}
+
+class _MockLinkedEntriesController extends LinkedEntriesController {
+  _MockLinkedEntriesController([this._links = const []]);
+  final List<EntryLink> _links;
+
+  @override
+  Future<List<EntryLink>> build({required String id}) async => _links;
+}
 
 void main() {
   final now = DateTime(2025, 12, 31, 12);
@@ -46,276 +72,391 @@ void main() {
     );
   }
 
-  group('LinkedTasksWidget', () {
-    setUp(() async {
-      await setUpTestGetIt();
-    });
+  Future<MockJournalRepository> pumpWidget(
+    WidgetTester tester, {
+    required List<JournalEntity> incoming,
+    required List<Task> outgoing,
+    bool manageMode = false,
+  }) async {
+    final journalRepo = MockJournalRepository();
+    when(
+      () => journalRepo.removeLink(
+        fromId: any(named: 'fromId'),
+        toId: any(named: 'toId'),
+      ),
+    ).thenAnswer((_) async => 1);
 
-    tearDown(() async {
-      await tearDownTestGetIt();
-    });
-
-    testWidgets('returns SizedBox.shrink when no linked tasks', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-              LinkedTasksController.new,
-            ),
-            outgoingLinkedTasksProvider('task-main').overrideWith(
-              (ref) => [],
-            ),
-            linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedFromEntriesController([]),
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: LinkedTasksWidget(taskId: 'task-main'),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
+            manageMode
+                ? _MockLinkedTasksControllerManageMode.new
+                : LinkedTasksController.new,
           ),
+          outgoingLinkedTasksProvider('task-main').overrideWith(
+            (ref) => outgoing,
+          ),
+          linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
+            () => _MockLinkedFromEntriesController(incoming),
+          ),
+          linkedEntriesControllerProvider(id: 'task-main').overrideWith(
+            _MockLinkedEntriesController.new,
+          ),
+          journalRepositoryProvider.overrideWithValue(journalRepo),
+        ],
+        child: const WidgetTestBench(
+          child: LinkedTasksWidget(taskId: 'task-main'),
         ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return journalRepo;
+  }
+
+  setUp(() async {
+    await setUpTestGetIt();
+  });
+
+  tearDown(() async {
+    await tearDownTestGetIt();
+  });
+
+  group('LinkedTasksWidget rendering', () {
+    testWidgets('hides entirely when no linked tasks', (tester) async {
+      await pumpWidget(tester, incoming: [], outgoing: []);
+
+      expect(find.text('Linked Tasks'), findsNothing);
+      expect(find.byType(SvgPicture), findsNothing);
+      expect(find.byIcon(Icons.more_vert), findsNothing);
+    });
+
+    testWidgets('shows title and count badge for linked tasks', (
+      tester,
+    ) async {
+      await pumpWidget(
+        tester,
+        incoming: [buildTask(id: 'in-1', title: 'Incoming')],
+        outgoing: [
+          buildTask(id: 'out-1', title: 'Outgoing 1'),
+          buildTask(id: 'out-2', title: 'Outgoing 2'),
+        ],
       );
 
-      await tester.pumpAndSettle();
-
-      expect(find.byType(LinkedTasksHeader), findsNothing);
-      expect(find.byType(LinkedFromSection), findsNothing);
-      expect(find.byType(LinkedToSection), findsNothing);
-    });
-
-    testWidgets('renders header when there are linked tasks', (tester) async {
-      final task = buildTask(id: 'linked-task', title: 'Linked Task');
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-              LinkedTasksController.new,
-            ),
-            outgoingLinkedTasksProvider('task-main').overrideWith(
-              (ref) => [],
-            ),
-            linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedFromEntriesController([task]),
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: LinkedTasksWidget(taskId: 'task-main'),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.byType(LinkedTasksHeader), findsOneWidget);
       expect(find.text('Linked Tasks'), findsOneWidget);
-    });
-
-    testWidgets('renders LinkedFromSection when there are incoming tasks', (
-      tester,
-    ) async {
-      final task = buildTask(id: 'incoming-task', title: 'Incoming Task');
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-              LinkedTasksController.new,
-            ),
-            outgoingLinkedTasksProvider('task-main').overrideWith(
-              (ref) => [],
-            ),
-            linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedFromEntriesController([task]),
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: LinkedTasksWidget(taskId: 'task-main'),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.byType(LinkedFromSection), findsOneWidget);
-      expect(find.text('LINKED FROM'), findsOneWidget);
-      expect(find.text('Incoming Task'), findsOneWidget);
-    });
-
-    testWidgets('renders LinkedToSection when there are outgoing tasks', (
-      tester,
-    ) async {
-      final outgoingTask = buildTask(
-        id: 'outgoing-task',
-        title: 'Outgoing Task',
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-              LinkedTasksController.new,
-            ),
-            outgoingLinkedTasksProvider('task-main').overrideWith(
-              (ref) => [outgoingTask],
-            ),
-            linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedFromEntriesController([]),
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: LinkedTasksWidget(taskId: 'task-main'),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.byType(LinkedToSection), findsOneWidget);
-      expect(find.text('LINKED TO'), findsOneWidget);
-      expect(find.text('Outgoing Task'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });
 
     testWidgets(
-      'renders both sections when there are both incoming and outgoing',
+      'badge count reflects only Task entities, not generic entries',
       (tester) async {
-        final incomingTask = buildTask(id: 'incoming-task', title: 'Incoming');
-        final outgoingTask = buildTask(id: 'outgoing-task', title: 'Outgoing');
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-                LinkedTasksController.new,
-              ),
-              outgoingLinkedTasksProvider('task-main').overrideWith(
-                (ref) => [outgoingTask],
-              ),
-              linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-                () => _MockLinkedFromEntriesController([incomingTask]),
-              ),
-            ],
-            child: const WidgetTestBench(
-              child: LinkedTasksWidget(taskId: 'task-main'),
-            ),
+        final task = buildTask(title: 'Real Task');
+        final textEntry = JournalEntry(
+          meta: Metadata(
+            id: 'text-entry',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
           ),
+          entryText: const EntryText(plainText: 'Some text'),
         );
 
-        await tester.pumpAndSettle();
+        await pumpWidget(
+          tester,
+          incoming: [task, textEntry],
+          outgoing: [],
+        );
 
-        expect(find.byType(LinkedFromSection), findsOneWidget);
-        expect(find.byType(LinkedToSection), findsOneWidget);
-        expect(find.text('LINKED FROM'), findsOneWidget);
-        expect(find.text('LINKED TO'), findsOneWidget);
+        expect(find.text('Real Task'), findsOneWidget);
+        expect(find.text('Some text'), findsNothing);
+        expect(find.text('1'), findsOneWidget);
       },
     );
 
-    testWidgets('filters incoming entries to only tasks', (tester) async {
-      final task = buildTask(title: 'Real Task');
-      final textEntry = JournalEntry(
-        meta: Metadata(
-          id: 'text-entry',
+    testWidgets(
+      'renders to-row for outgoing tasks with subdirectory_arrow_right',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+        );
+
+        expect(find.text('to'), findsOneWidget);
+        expect(find.text('Outgoing Task'), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+
+        final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        // Asset glyphs are wired via SvgAssetLoader; verify the loader points
+        // at the outgoing arrow asset.
+        expect(
+          svg.bytesLoader.toString(),
+          contains('subdirectory_arrow_right'),
+        );
+      },
+    );
+
+    testWidgets(
+      'renders from-row for incoming tasks with subdirectory_arrow_left',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [buildTask(id: 'in-1', title: 'Incoming Task')],
+          outgoing: [],
+        );
+
+        expect(find.text('from'), findsOneWidget);
+        expect(find.text('Incoming Task'), findsOneWidget);
+
+        final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        expect(svg.bytesLoader.toString(), contains('subdirectory_arrow_left'));
+      },
+    );
+
+    testWidgets('renders both directions and a divider between rows', (
+      tester,
+    ) async {
+      await pumpWidget(
+        tester,
+        incoming: [buildTask(id: 'in-1', title: 'Incoming Task')],
+        outgoing: [
+          buildTask(id: 'out-1', title: 'Outgoing 1'),
+          buildTask(id: 'out-2', title: 'Outgoing 2'),
+        ],
+      );
+
+      expect(find.text('Outgoing 1'), findsOneWidget);
+      expect(find.text('Outgoing 2'), findsOneWidget);
+      expect(find.text('Incoming Task'), findsOneWidget);
+      expect(find.text('to'), findsNWidgets(2));
+      expect(find.text('from'), findsOneWidget);
+      // Three rows → two dividers between them.
+      expect(find.byType(Divider), findsNWidgets(2));
+    });
+
+    testWidgets('shows completed glyph for done and rejected tasks', (
+      tester,
+    ) async {
+      final doneTask = buildTask(
+        id: 'done-1',
+        title: 'Done Task',
+        status: TaskStatus.done(
+          id: 's-d',
           createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-        ),
-        entryText: const EntryText(plainText: 'Some text'),
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-              LinkedTasksController.new,
-            ),
-            outgoingLinkedTasksProvider('task-main').overrideWith(
-              (ref) => [],
-            ),
-            linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedFromEntriesController([task, textEntry]),
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: LinkedTasksWidget(taskId: 'task-main'),
-          ),
+          utcOffset: 0,
         ),
       );
+      final rejectedTask = buildTask(
+        id: 'rejected-1',
+        title: 'Rejected Task',
+        status: TaskStatus.rejected(
+          id: 's-r',
+          createdAt: now,
+          utcOffset: 0,
+        ),
+      );
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [doneTask, rejectedTask],
+      );
 
-      await tester.pumpAndSettle();
-
-      // Should only show the task, not the text entry
-      expect(find.text('Real Task'), findsOneWidget);
-      expect(find.text('Some text'), findsNothing);
+      expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+      expect(find.byIcon(Icons.circle_outlined), findsNothing);
     });
 
-    testWidgets('passes manageMode to sections', (tester) async {
-      final task = buildTask(title: 'Linked Task');
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-              _MockLinkedTasksControllerManageMode.new,
+    testWidgets('shows open glyph for open, in-progress, blocked tasks', (
+      tester,
+    ) async {
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [
+          buildTask(id: 't-open', title: 'Open'),
+          buildTask(
+            id: 't-prog',
+            title: 'In Progress',
+            status: TaskStatus.inProgress(
+              id: 's-p',
+              createdAt: now,
+              utcOffset: 0,
             ),
-            outgoingLinkedTasksProvider('task-main').overrideWith(
-              (ref) => [],
-            ),
-            linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedFromEntriesController([task]),
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: LinkedTasksWidget(taskId: 'task-main'),
           ),
-        ),
+          buildTask(
+            id: 't-block',
+            title: 'Blocked',
+            status: TaskStatus.blocked(
+              id: 's-b',
+              createdAt: now,
+              utcOffset: 0,
+              reason: 'waiting',
+            ),
+          ),
+        ],
       );
 
-      await tester.pumpAndSettle();
-
-      // Should show unlink button since manageMode is true
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.circle_outlined), findsNWidgets(3));
+      expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
-    testWidgets('renders inside a Column', (tester) async {
-      final task = buildTask();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
-              LinkedTasksController.new,
-            ),
-            outgoingLinkedTasksProvider('task-main').overrideWith(
-              (ref) => [],
-            ),
-            linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-              () => _MockLinkedFromEntriesController([task]),
-            ),
-          ],
-          child: const WidgetTestBench(
-            child: LinkedTasksWidget(taskId: 'task-main'),
-          ),
-        ),
+    testWidgets('long titles are truncated with ellipsis', (tester) async {
+      const longTitle =
+          'A really long task title that should overflow the row and be '
+          'truncated with an ellipsis when it would otherwise wrap past the '
+          'maximum number of lines allowed in the row layout';
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: longTitle)],
       );
 
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Column), findsWidgets);
+      final titleWidget = tester.widget<Text>(find.text(longTitle));
+      expect(titleWidget.maxLines, 2);
+      expect(titleWidget.overflow, TextOverflow.ellipsis);
     });
   });
-}
 
-class _MockLinkedFromEntriesController extends LinkedFromEntriesController {
-  _MockLinkedFromEntriesController(this._entities);
-  final List<JournalEntity> _entities;
+  group('LinkedTasksWidget expand/collapse', () {
+    testWidgets('starts expanded and toggles on header tap', (tester) async {
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+      );
 
-  @override
-  Future<List<JournalEntity>> build({required String id}) async => _entities;
-}
+      expect(find.text('Outgoing Task'), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
 
-class _MockLinkedTasksControllerManageMode extends LinkedTasksController {
-  @override
-  LinkedTasksState build({required String taskId}) {
-    return const LinkedTasksState(manageMode: true);
-  }
+      await tester.tap(find.text('Linked Tasks'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Outgoing Task'), findsNothing);
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+      await tester.tap(find.text('Linked Tasks'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Outgoing Task'), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+    });
+  });
+
+  group('LinkedTasksWidget overflow menu', () {
+    testWidgets(
+      'shows link/create/manage actions when there are linked tasks',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1')],
+        );
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Link existing task...'), findsOneWidget);
+        expect(find.text('Create new linked task...'), findsOneWidget);
+        expect(find.text('Manage links...'), findsOneWidget);
+      },
+    );
+
+    testWidgets('manage action toggles manage mode UI', (tester) async {
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+      );
+
+      // Default chevron in browse mode.
+      expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Manage links...'));
+      await tester.pumpAndSettle();
+
+      // Chevron replaced by the unlink X.
+      expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+
+      // Toggling again returns to browse mode.
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsNothing);
+    });
+  });
+
+  group('LinkedTasksWidget unlink flows', () {
+    testWidgets('confirming unlink on outgoing row removes link with '
+        'fromId=current, toId=outgoing', (tester) async {
+      final repo = await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+        manageMode: true,
+      );
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      // Confirmation dialog.
+      expect(find.text('Unlink'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repo.removeLink(fromId: 'task-main', toId: 'out-1'),
+      ).called(1);
+    });
+
+    testWidgets('confirming unlink on incoming row removes link with '
+        'fromId=incoming, toId=current', (tester) async {
+      final repo = await pumpWidget(
+        tester,
+        incoming: [buildTask(id: 'in-1', title: 'Incoming Task')],
+        outgoing: [],
+        manageMode: true,
+      );
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repo.removeLink(fromId: 'in-1', toId: 'task-main'),
+      ).called(1);
+    });
+
+    testWidgets('cancelling the confirmation does not call removeLink', (
+      tester,
+    ) async {
+      final repo = await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+        manageMode: true,
+      );
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => repo.removeLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+        ),
+      );
+    });
+  });
 }

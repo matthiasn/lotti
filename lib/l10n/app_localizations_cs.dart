@@ -4117,6 +4117,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get legacyPromptsSectionTitle => 'Starší prompty';
 
   @override
+  String get linkedFromCaption => 'z';
+
+  @override
   String get linkedFromLabel => 'PROPOJENO Z';
 
   @override
@@ -4127,6 +4130,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get linkedTasksTitle => 'Propojené úkoly';
+
+  @override
+  String get linkedToCaption => 'na';
 
   @override
   String get linkedToLabel => 'PROPOJENO NA';

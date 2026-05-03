@@ -36,7 +36,7 @@ class LinkedTasksController extends _$LinkedTasksController {
 
 /// Provider that resolves outgoing entry links to Task entities.
 ///
-/// This is used by LinkedToSection to get resolved Task objects
+/// This is used by LinkedTasksWidget to get resolved Task objects
 /// instead of EntryLinks, avoiding the need to watch individual
 /// entryControllerProviders in the widget tree.
 ///
