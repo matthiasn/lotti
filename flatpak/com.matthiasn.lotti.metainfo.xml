@@ -38,6 +38,7 @@
           <p>Linked entry cards now use the same design-system card and padding values as the task list card, replacing the prior modern-card treatment. The audio player no longer wraps itself in a second card and sits flush inside the entry's section card. Card top padding is tighter so the trailing IconButtons in the entry header provide the visual breathing room without doubling it.</p>
           <p>Checklist card header padding tightened, the collapsed pill no longer wastes space at the bottom, and the chevron is now a proper icon button with Collapse / Expand tooltips so it gains a hover state matching the menu button next to it. The "Checklists" subheading on the task details page was removed; the per-task sort menu still appears when there are two or more checklists.</p>
           <p>Extracted the exclusive-choice filter pill from the private task filter sheet into a shared design-system widget so the task filter modal and the new linked-entries filter modal render the same chip — fill cross-fade, accent border alpha tween, constant border width, 400 ms animation.</p>
+          <p>Linked tasks section on the task detail page is redesigned to match the Figma spec: a single expandable card with a count badge in the header, per-row "to"/"from" direction glyphs (info-blue / success-green), status circles, and dividers between rows. The overflow menu retains the existing link/create/manage actions.</p>
       </description>
     </release>
     <release version="0.9.989" date="2026-05-02">
@@ -46,7 +47,6 @@
           <p>New built-in Generate Design Prompt skill turns task context plus the entry's notes into a UI/UX design exploration prompt that defaults to five functional prototypes (override-able from the entry text), enforces design-system alignment when one is mentioned, and surfaces clarifying questions up front. Output is two-section Markdown ready to paste into Claude, Figma Make, or v0.dev.</p>
           <p>New built-in Generate Research Prompt skill produces a structured Markdown research brief (Background, Research Questions, Scope, Deliverables, Source Preferences, expected output format, open questions) ready to paste into Claude with Research or ChatGPT Pro with Deep Research.</p>
           <p>Built-in skills are now defined in code under lib/features/ai/skills/built_in_skills.dart and read via skillRegistryProvider instead of being seeded into the AI config DB. This removes the seeding round-trip and lets skill content stay in lockstep with the code that uses it.</p>
-          <p>Linked tasks section on the task detail page is redesigned to match the Figma spec: a single expandable card with a count badge in the header, per-row "to"/"from" direction glyphs (info-blue / success-green), status circles, and dividers between rows. The overflow menu retains the existing link/create/manage actions.</p>
       </description>
     </release>
     <release version="0.9.988" date="2026-05-02">

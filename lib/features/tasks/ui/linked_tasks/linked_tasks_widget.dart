@@ -47,6 +47,14 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
   bool _expanded = true;
 
   @override
+  void didUpdateWidget(LinkedTasksWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.taskId != widget.taskId) {
+      _expanded = true;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final taskId = widget.taskId;
     final uiState = ref.watch(linkedTasksControllerProvider(taskId: taskId));
@@ -348,7 +356,9 @@ class _LinkedTaskRow extends ConsumerWidget {
         task.data.status is TaskDone || task.data.status is TaskRejected;
 
     return InkWell(
-      onTap: () => openLinkedTaskDetail(context: context, taskId: task.id),
+      onTap: manageMode
+          ? null
+          : () => openLinkedTaskDetail(context: context, taskId: task.id),
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: tokens.spacing.step5,
@@ -384,9 +394,16 @@ class _LinkedTaskRow extends ConsumerWidget {
             ),
             SizedBox(width: tokens.spacing.step3),
             if (manageMode)
-              GestureDetector(
-                onTap: () => _confirmUnlink(context, ref),
-                child: Icon(
+              IconButton(
+                tooltip: context.messages.unlinkButton,
+                onPressed: () => _confirmUnlink(context, ref),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+                icon: Icon(
                   Icons.close_rounded,
                   size: 16,
                   color: tokens.colors.text.lowEmphasis,

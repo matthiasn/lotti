@@ -6,39 +6,21 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
-
-class _MockLinkedFromEntriesController extends LinkedFromEntriesController {
-  _MockLinkedFromEntriesController(this._entities);
-  final List<JournalEntity> _entities;
-
-  @override
-  Future<List<JournalEntity>> build({required String id}) async => _entities;
-}
-
-class _MockLinkedTasksControllerManageMode extends LinkedTasksController {
-  @override
-  LinkedTasksState build({required String taskId}) {
-    return const LinkedTasksState(manageMode: true);
-  }
-}
-
-class _MockLinkedEntriesController extends LinkedEntriesController {
-  _MockLinkedEntriesController([this._links = const []]);
-  final List<EntryLink> _links;
-
-  @override
-  Future<List<EntryLink>> build({required String id}) async => _links;
-}
 
 void main() {
   final now = DateTime(2025, 12, 31, 12);
@@ -77,6 +59,7 @@ void main() {
     required List<JournalEntity> incoming,
     required List<Task> outgoing,
     bool manageMode = false,
+    MediaQueryData? mediaQueryData,
   }) async {
     final journalRepo = MockJournalRepository();
     when(
@@ -86,27 +69,41 @@ void main() {
       ),
     ).thenAnswer((_) async => 1);
 
+    final outgoingLinks = outgoing
+        .map(
+          (t) => EntryLink.basic(
+            id: 'link-${t.meta.id}',
+            fromId: 'task-main',
+            toId: t.meta.id,
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        )
+        .toList();
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           linkedTasksControllerProvider(taskId: 'task-main').overrideWith(
             manageMode
-                ? _MockLinkedTasksControllerManageMode.new
+                ? MockLinkedTasksControllerManageMode.new
                 : LinkedTasksController.new,
           ),
           outgoingLinkedTasksProvider('task-main').overrideWith(
             (ref) => outgoing,
           ),
           linkedFromEntriesControllerProvider(id: 'task-main').overrideWith(
-            () => _MockLinkedFromEntriesController(incoming),
+            () => MockLinkedFromEntriesController(incoming),
           ),
           linkedEntriesControllerProvider(id: 'task-main').overrideWith(
-            _MockLinkedEntriesController.new,
+            () => MockLinkedEntriesController(outgoingLinks),
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
         ],
-        child: const WidgetTestBench(
-          child: LinkedTasksWidget(taskId: 'task-main'),
+        child: WidgetTestBench(
+          mediaQueryData: mediaQueryData,
+          child: const LinkedTasksWidget(taskId: 'task-main'),
         ),
       ),
     );
@@ -114,8 +111,37 @@ void main() {
     return journalRepo;
   }
 
+  late MockNavService mockNavService;
+  late MockFts5Db mockFts5Db;
+  late MockPersistenceLogic mockPersistenceLogic;
+  late TestGetItMocks getItMocks;
+
   setUp(() async {
-    await setUpTestGetIt();
+    mockNavService = MockNavService();
+    mockFts5Db = MockFts5Db();
+    mockPersistenceLogic = MockPersistenceLogic();
+
+    when(
+      () => mockFts5Db.watchFullTextMatches(any()),
+    ).thenAnswer((_) => Stream.value(<String>[]));
+
+    getItMocks = await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<NavService>(mockNavService)
+          ..registerSingleton<Fts5Db>(mockFts5Db)
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      },
+    );
+
+    when(
+      () => getItMocks.journalDb.getTasks(
+        starredStatuses: any(named: 'starredStatuses'),
+        taskStatuses: any(named: 'taskStatuses'),
+        categoryIds: any(named: 'categoryIds'),
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => <JournalEntity>[]);
   });
 
   tearDown(() async {
@@ -319,6 +345,94 @@ void main() {
   });
 
   group('LinkedTasksWidget expand/collapse', () {
+    testWidgets('resets to expanded when the parent swaps the taskId', (
+      tester,
+    ) async {
+      final taskA = buildTask(id: 'a-out', title: 'Task A linked');
+      final taskB = buildTask(id: 'b-out', title: 'Task B linked');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            linkedTasksControllerProvider(taskId: 'task-a').overrideWith(
+              LinkedTasksController.new,
+            ),
+            linkedTasksControllerProvider(taskId: 'task-b').overrideWith(
+              LinkedTasksController.new,
+            ),
+            outgoingLinkedTasksProvider(
+              'task-a',
+            ).overrideWith((ref) => [taskA]),
+            outgoingLinkedTasksProvider(
+              'task-b',
+            ).overrideWith((ref) => [taskB]),
+            linkedFromEntriesControllerProvider(id: 'task-a').overrideWith(
+              () => MockLinkedFromEntriesController([]),
+            ),
+            linkedFromEntriesControllerProvider(id: 'task-b').overrideWith(
+              () => MockLinkedFromEntriesController([]),
+            ),
+            linkedEntriesControllerProvider(id: 'task-a').overrideWith(
+              MockLinkedEntriesController.new,
+            ),
+            linkedEntriesControllerProvider(id: 'task-b').overrideWith(
+              MockLinkedEntriesController.new,
+            ),
+          ],
+          child: const WidgetTestBench(
+            child: LinkedTasksWidget(taskId: 'task-a'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Collapse for task-a.
+      await tester.tap(find.text('Linked Tasks'));
+      await tester.pumpAndSettle();
+      expect(find.text('Task A linked'), findsNothing);
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+
+      // Swap to task-b without recreating the widget tree above.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            linkedTasksControllerProvider(taskId: 'task-a').overrideWith(
+              LinkedTasksController.new,
+            ),
+            linkedTasksControllerProvider(taskId: 'task-b').overrideWith(
+              LinkedTasksController.new,
+            ),
+            outgoingLinkedTasksProvider(
+              'task-a',
+            ).overrideWith((ref) => [taskA]),
+            outgoingLinkedTasksProvider(
+              'task-b',
+            ).overrideWith((ref) => [taskB]),
+            linkedFromEntriesControllerProvider(id: 'task-a').overrideWith(
+              () => MockLinkedFromEntriesController([]),
+            ),
+            linkedFromEntriesControllerProvider(id: 'task-b').overrideWith(
+              () => MockLinkedFromEntriesController([]),
+            ),
+            linkedEntriesControllerProvider(id: 'task-a').overrideWith(
+              MockLinkedEntriesController.new,
+            ),
+            linkedEntriesControllerProvider(id: 'task-b').overrideWith(
+              MockLinkedEntriesController.new,
+            ),
+          ],
+          child: const WidgetTestBench(
+            child: LinkedTasksWidget(taskId: 'task-b'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // didUpdateWidget should have reset _expanded back to true for task-b.
+      expect(find.text('Task B linked'), findsOneWidget);
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+    });
+
     testWidgets('starts expanded and toggles on header tap', (tester) async {
       await pumpWidget(
         tester,
@@ -391,6 +505,48 @@ void main() {
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsNothing);
     });
+
+    testWidgets(
+      'tapping "Link existing task..." opens the LinkTaskModal',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+        );
+
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Link existing task...'));
+        await tester.pumpAndSettle();
+
+        // Modal renders the LinkTaskModal as a draggable bottom sheet.
+        expect(find.byType(LinkTaskModal), findsOneWidget);
+      },
+    );
+
+    testWidgets('row tap is disabled in manage mode to avoid '
+        'accidental navigation while unlinking', (tester) async {
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+        manageMode: true,
+      );
+
+      // The row InkWell wrapping the title has its onTap nulled out in manage
+      // mode. The header InkWell is unrelated; find the InkWell ancestor of
+      // the task title.
+      final rowInkWell = tester.widget<InkWell>(
+        find
+            .ancestor(
+              of: find.text('Outgoing Task'),
+              matching: find.byType(InkWell),
+            )
+            .first,
+      );
+      expect(rowInkWell.onTap, isNull);
+    });
   });
 
   group('LinkedTasksWidget unlink flows', () {
@@ -435,6 +591,25 @@ void main() {
         () => repo.removeLink(fromId: 'in-1', toId: 'task-main'),
       ).called(1);
     });
+
+    testWidgets(
+      'tapping a row in browse mode pushes the linked task on desktop',
+      (tester) async {
+        await pumpWidget(
+          tester,
+          incoming: [],
+          outgoing: [buildTask(id: 'out-1', title: 'Outgoing Task')],
+          // Desktop sizing routes navigation through NavService instead of
+          // pushing TaskDetailsPage onto the navigator.
+          mediaQueryData: const MediaQueryData(size: Size(1280, 900)),
+        );
+
+        await tester.tap(find.text('Outgoing Task'));
+        await tester.pumpAndSettle();
+
+        verify(() => mockNavService.pushDesktopTaskDetail('out-1')).called(1);
+      },
+    );
 
     testWidgets('cancelling the confirmation does not call removeLink', (
       tester,
