@@ -25,12 +25,12 @@ import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
 class EntryDetailsWidget extends ConsumerWidget {
@@ -101,11 +101,12 @@ class EntryDetailsWidget extends ConsumerWidget {
       bottom: AppTheme.spacingMedium,
     );
 
-    final card = ModernBaseCard(
+    final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
       padding: const EdgeInsets.symmetric(
         horizontal: AppTheme.cardPaddingCompact,
+        vertical: AppTheme.cardPaddingCompact,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

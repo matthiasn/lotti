@@ -10,7 +10,6 @@ import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 const List<double> _speedSequence = <double>[
   0.5,
@@ -36,40 +35,16 @@ class AudioPlayerWidget extends ConsumerWidget {
     final state = ref.watch(audioPlayerControllerProvider);
     final controller = ref.read(audioPlayerControllerProvider.notifier);
     final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final subtleShadows = <BoxShadow>[
-      BoxShadow(
-        color: theme.colorScheme.shadow.withValues(
-          alpha: isDark ? 0.22 : 0.12,
-        ),
-        blurRadius: isDark ? 14 : 10,
-        offset: const Offset(0, 6),
-      ),
-    ];
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: AppTheme.animationDuration),
-      curve: AppTheme.animationCurve,
-      margin: EdgeInsets.zero,
-      child: ModernBaseCard(
-        gradient: isDark ? GradientThemes.cardGradient(context) : null,
-        backgroundColor: isDark
-            ? null
-            : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.92),
-        borderColor: context.colorScheme.primary.withValues(alpha: 0.18),
-        isEnhanced: true,
-        customShadows: subtleShadows,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.cardPadding,
-          vertical: AppTheme.cardPadding * 0.4,
-        ),
-        child: _AudioPlayerCardShell(
-          journalAudio: journalAudio,
-          state: state,
-          controller: controller,
-          isActive: isActive,
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppTheme.cardPadding * 0.4,
+      ),
+      child: _AudioPlayerCardShell(
+        journalAudio: journalAudio,
+        state: state,
+        controller: controller,
+        isActive: isActive,
       ),
     );
   }
