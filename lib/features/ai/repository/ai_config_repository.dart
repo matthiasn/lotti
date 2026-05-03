@@ -487,6 +487,7 @@ class AiConfigRepository {
   Future<void> close() async {
     await _allConfigsSubscription?.cancel();
     await _allConfigsController.close();
+    await _db.close();
   }
 
   AiConfigType _typeForConfig(AiConfig config) {
