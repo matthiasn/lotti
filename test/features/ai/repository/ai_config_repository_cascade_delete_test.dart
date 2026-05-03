@@ -61,6 +61,7 @@ void main() {
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       ),
     );
+    when(() => mockDb.close()).thenAnswer((_) async {});
   });
 
   tearDown(() async {

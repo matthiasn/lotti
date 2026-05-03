@@ -88,6 +88,7 @@ void main() {
       when(
         () => mockDb.watchAllConfigs(),
       ).thenAnswer((_) => const Stream<List<AiConfigDbEntity>>.empty());
+      when(() => mockDb.close()).thenAnswer((_) async {});
     });
 
     tearDown(() async {

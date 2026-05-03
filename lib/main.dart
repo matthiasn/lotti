@@ -10,6 +10,7 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -42,6 +43,12 @@ class AppConstants {
 // ignore: unused_element
 late final AppLifecycleListener _appLifecycleListener;
 
+/// Per-resource close budget. macOS hard-kills the process roughly 10 s after
+/// `applicationShouldTerminate`, so each close must yield well before that —
+/// 5 s gives us a clear log of which resource was the culprit and still leaves
+/// headroom for the rest of the shutdown sequence to run.
+const _closeTimeout = Duration(seconds: 5);
+
 /// Closes every Drift database before the engine tears down isolates.
 ///
 /// Without this, Drift databases are closed via Dart `Finalizer` during VM
@@ -56,7 +63,16 @@ Future<AppExitResponse> _handleAppExitRequested() async {
   ) async {
     if (!getIt.isRegistered<T>()) return;
     try {
-      await close(getIt<T>());
+      await close(getIt<T>()).timeout(_closeTimeout);
+    } on TimeoutException {
+      // Don't rethrow: a stuck close on one resource shouldn't block the
+      // others from getting a chance to close cleanly before exit.
+      getIt<LoggingService>().captureEvent(
+        'close timed out after ${_closeTimeout.inSeconds}s',
+        domain: 'MAIN',
+        subDomain: 'onExitRequested:$T',
+        level: InsightLevel.error,
+      );
     } catch (e, stackTrace) {
       getIt<LoggingService>().captureException(
         e,
