@@ -4,8 +4,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
-import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart'
-    show InstancesGroupKey;
 import 'package:lotti/l10n/app_localizations.dart';
 
 /// Localized label for an [InstanceType], used by the row's type pill, the
@@ -49,87 +47,12 @@ InstanceType? instanceTypeFromAgentKind(String kind) {
   };
 }
 
-/// Pre-computed counts and soul options derived from a [List]<[InstanceVm]>,
-/// passed into the toolbar / popovers / chip row.
+/// Domain view-model for a single Settings → Agents → Instances row.
 ///
-/// Computed once per `vms` reference (see [FilterCounts.from]) so filter
-/// keystrokes / hover / collapse don't re-iterate the row list.
-class FilterCounts {
-  const FilterCounts({
-    required this.types,
-    required this.statuses,
-    required this.soulOptions,
-    required this.soulCounts,
-  });
-
-  factory FilterCounts.from(List<InstanceVm> vms, String unassignedLabel) {
-    final types = <InstanceType, int>{
-      for (final t in InstanceType.values) t: 0,
-    };
-    final statuses = <AgentLifecycle, int>{
-      for (final s in AgentLifecycle.values) s: 0,
-    };
-    final soulCounts = <String, int>{};
-    final soulLabel = <String, String>{};
-
-    for (final vm in vms) {
-      types[vm.type] = (types[vm.type] ?? 0) + 1;
-      statuses[vm.status] = (statuses[vm.status] ?? 0) + 1;
-      final id = vm.soulGroupId();
-      soulCounts[id] = (soulCounts[id] ?? 0) + 1;
-      soulLabel.putIfAbsent(id, () => vm.soulGroupLabel(unassignedLabel));
-    }
-
-    final soulOptions =
-        soulLabel.entries
-            .map(
-              (e) =>
-                  SoulOption(id: e.key, label: e.value, hue: hueForSeed(e.key)),
-            )
-            .toList()
-          ..sort(
-            (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
-          );
-
-    return FilterCounts(
-      types: types,
-      statuses: statuses,
-      soulOptions: soulOptions,
-      soulCounts: soulCounts,
-    );
-  }
-
-  final Map<InstanceType, int> types;
-  final Map<AgentLifecycle, int> statuses;
-  final List<SoulOption> soulOptions;
-  final Map<String, int> soulCounts;
-}
-
-/// Soul row shown in the Filters popover and chip row.
-class SoulOption {
-  const SoulOption({required this.id, required this.label, required this.hue});
-  final String id;
-  final String label;
-  final int hue;
-}
-
-/// Stable hue (0..359) derived from [seed]. Same string in → same hue out,
-/// so a soul / template gets a consistent avatar tint without storing a
-/// colour on the entity. FNV-1a hash, plenty for this use.
-int hueForSeed(String seed) {
-  if (seed.isEmpty) return 0;
-  var h = 2166136261;
-  for (final code in seed.codeUnits) {
-    h = (h ^ code) & 0xFFFFFFFF;
-    h = (h * 16777619) & 0xFFFFFFFF;
-  }
-  return h % 360;
-}
-
-/// View-model row consumed by the instances page.
-///
-/// Hydrated up-front (in [agentInstanceVmsProvider]) so the page can
-/// filter, sort, and group on plain values without per-row async lookups.
+/// Hydrated up-front in [agentInstanceVmsProvider] so the page can
+/// filter / sort / group on plain values without per-row async lookups.
+/// The page adapts these into shared `AgentListRowData` instances at the
+/// boundary.
 class InstanceVm {
   const InstanceVm({
     required this.id,
@@ -176,10 +99,10 @@ class InstanceVm {
   /// Lower-cased blob used by the search input.
   final String searchKey;
 
-  /// Group label / id for [InstancesGroupKey.soul]. Falls back to the
-  /// template name (so instances of a templated-but-soulless agent still
-  /// cluster together) and finally to a sentinel id so unassigned rows
-  /// land in their own bucket.
+  /// Group label / id when grouping by Soul. Falls back to the template
+  /// name (so instances of a templated-but-soulless agent still cluster
+  /// together) and finally to a sentinel id so unassigned rows land in
+  /// their own bucket.
   String soulGroupId() => soulId ?? templateId ?? '__no_soul__';
   String soulGroupLabel(String fallbackUnassigned) =>
       soulName ?? templateName ?? fallbackUnassigned;
@@ -192,9 +115,7 @@ class InstanceVm {
 /// [Future.wait]; the page treats this provider's result as a single
 /// [AsyncValue] so the toolbar and grouped list render together.
 final FutureProvider<List<InstanceVm>> agentInstanceVmsProvider =
-    FutureProvider.autoDispose<List<InstanceVm>>((
-      ref,
-    ) async {
+    FutureProvider.autoDispose<List<InstanceVm>>((ref) async {
       final agentsFuture = ref.watch(allAgentInstancesProvider.future);
       final evolutionsFuture = ref.watch(allEvolutionSessionsProvider.future);
       final agents = await agentsFuture;

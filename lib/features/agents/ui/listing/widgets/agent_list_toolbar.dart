@@ -1,26 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
-import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
+import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart'
+    show monoMetaStyle;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Toolbar row: Filters / Group by / Sort buttons, search input, count.
-class InstancesToolbar extends StatelessWidget {
-  const InstancesToolbar({
+///
+/// Generic over the page's filter axes — Instances, Templates, Souls,
+/// and Pending Wakes all build their own list of [AgentListFilterAxis] /
+/// [AgentListGroupAxis] / [AgentListSortAxis] and feed them to this
+/// shared toolbar.
+class AgentListToolbar extends StatelessWidget {
+  const AgentListToolbar({
     required this.state,
     required this.onChanged,
     required this.totalBeforeFilter,
     required this.totalAfterFilter,
-    required this.counts,
+    required this.filterAxes,
+    required this.groupAxes,
+    required this.sortAxes,
+    required this.searchPlaceholder,
     super.key,
   });
 
-  final InstancesFilterState state;
-  final ValueChanged<InstancesFilterState> onChanged;
+  final AgentListFilterState state;
+  final ValueChanged<AgentListFilterState> onChanged;
   final int totalBeforeFilter;
   final int totalAfterFilter;
-  final FilterCounts counts;
+  final List<AgentListFilterAxis> filterAxes;
+  final List<AgentListGroupAxis> groupAxes;
+  final List<AgentListSortAxis> sortAxes;
+  final String searchPlaceholder;
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +46,7 @@ class InstancesToolbar extends StatelessWidget {
               totalAfterFilter,
               totalBeforeFilter,
             ),
-      style: tokens.typography.styles.others.caption.copyWith(
-        fontFamily: 'Inconsolata',
-        color: tokens.colors.text.lowEmphasis,
-        letterSpacing: 0,
-      ),
+      style: monoMetaStyle(tokens, tokens.colors),
     );
 
     return Padding(
@@ -53,29 +61,51 @@ class InstancesToolbar extends StatelessWidget {
           // Wide enough to keep everything on one line: filter / group /
           // sort buttons (~260) + search (max 280) + count (~110) + gaps.
           final wide = constraints.maxWidth >= 700;
-          final filtersBtn = _FiltersButton(
-            state: state,
-            onChanged: onChanged,
-            counts: counts,
-          );
-          final groupBtn = _GroupByButton(state: state, onChanged: onChanged);
-          final sortBtn = _SortButton(state: state, onChanged: onChanged);
+          final filtersBtn = filterAxes.isEmpty
+              ? null
+              : _FiltersButton(
+                  state: state,
+                  onChanged: onChanged,
+                  axes: filterAxes,
+                );
+          final groupBtn = groupAxes.length < 2
+              ? null
+              : _GroupByButton(
+                  state: state,
+                  onChanged: onChanged,
+                  axes: groupAxes,
+                );
+          final sortBtn = sortAxes.length < 2
+              ? null
+              : _SortButton(
+                  state: state,
+                  onChanged: onChanged,
+                  axes: sortAxes,
+                );
           final search = ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
             child: _SearchField(
               value: state.search,
               onChanged: (v) => onChanged(state.copyWith(search: v)),
+              placeholder: searchPlaceholder,
             ),
           );
 
           if (wide) {
             return Row(
               children: [
-                filtersBtn,
-                SizedBox(width: tokens.spacing.step2),
-                groupBtn,
-                SizedBox(width: tokens.spacing.step2),
-                sortBtn,
+                if (filtersBtn != null) ...[
+                  filtersBtn,
+                  SizedBox(width: tokens.spacing.step2),
+                ],
+                if (groupBtn != null) ...[
+                  groupBtn,
+                  SizedBox(width: tokens.spacing.step2),
+                ],
+                if (sortBtn != null) ...[
+                  sortBtn,
+                  SizedBox(width: tokens.spacing.step2),
+                ],
                 SizedBox(width: tokens.spacing.step3),
                 Flexible(child: search),
                 const Spacer(),
@@ -84,8 +114,8 @@ class InstancesToolbar extends StatelessWidget {
             );
           }
 
-          // Compact: buttons + count wrap across lines, search takes a full
-          // line below so it always has enough width to be usable.
+          // Compact: buttons + count wrap across lines, search takes a
+          // full line below so it always has enough width to be usable.
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -93,7 +123,12 @@ class InstancesToolbar extends StatelessWidget {
                 spacing: tokens.spacing.step2,
                 runSpacing: tokens.spacing.step2,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                children: [filtersBtn, groupBtn, sortBtn, countText],
+                children: [
+                  ?filtersBtn,
+                  ?groupBtn,
+                  ?sortBtn,
+                  countText,
+                ],
               ),
               SizedBox(height: tokens.spacing.step3),
               SizedBox(
@@ -101,6 +136,7 @@ class InstancesToolbar extends StatelessWidget {
                 child: _SearchField(
                   value: state.search,
                   onChanged: (v) => onChanged(state.copyWith(search: v)),
+                  placeholder: searchPlaceholder,
                 ),
               ),
             ],
@@ -178,12 +214,12 @@ class _FiltersButton extends StatelessWidget {
   const _FiltersButton({
     required this.state,
     required this.onChanged,
-    required this.counts,
+    required this.axes,
   });
 
-  final InstancesFilterState state;
-  final ValueChanged<InstancesFilterState> onChanged;
-  final FilterCounts counts;
+  final AgentListFilterState state;
+  final ValueChanged<AgentListFilterState> onChanged;
+  final List<AgentListFilterAxis> axes;
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +232,7 @@ class _FiltersButton extends StatelessWidget {
         context: context,
         state: state,
         onChanged: onChanged,
-        counts: counts,
+        axes: axes,
       ),
       trailing: activeCount > 0 ? _CountBadge(count: activeCount) : null,
       child: Text(messages.agentInstancesToolbarFilters),
@@ -205,41 +241,41 @@ class _FiltersButton extends StatelessWidget {
 }
 
 class _GroupByButton extends StatelessWidget {
-  const _GroupByButton({required this.state, required this.onChanged});
+  const _GroupByButton({
+    required this.state,
+    required this.onChanged,
+    required this.axes,
+  });
 
-  final InstancesFilterState state;
-  final ValueChanged<InstancesFilterState> onChanged;
+  final AgentListFilterState state;
+  final ValueChanged<AgentListFilterState> onChanged;
+  final List<AgentListGroupAxis> axes;
 
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
     final tokens = context.designTokens;
-    final label = switch (state.groupKey) {
-      InstancesGroupKey.soul => messages.agentInstancesGroupBySoul,
-      InstancesGroupKey.type => messages.agentInstancesGroupByType,
-      InstancesGroupKey.status => messages.agentInstancesGroupByStatus,
-    };
+    final current = axes.firstWhere(
+      (a) => a.id == state.groupAxisId,
+      orElse: () => axes.first,
+    );
     return _ToolbarButton(
       icon: Icons.layers_outlined,
       onTap: () async {
-        final next = await _showSingleSelectPopover<InstancesGroupKey>(
+        final next = await _showSingleSelectPopover<String>(
           context: context,
-          current: state.groupKey,
-          options: [
-            (InstancesGroupKey.soul, messages.agentInstancesGroupBySoul),
-            (InstancesGroupKey.type, messages.agentInstancesGroupByType),
-            (InstancesGroupKey.status, messages.agentInstancesGroupByStatus),
-          ],
+          current: current.id,
+          options: [for (final a in axes) (a.id, a.label)],
           width: 150,
         );
-        if (next != null) onChanged(state.copyWith(groupKey: next));
+        if (next != null) onChanged(state.copyWith(groupAxisId: next));
       },
       child: Text.rich(
         TextSpan(
           children: [
             TextSpan(text: '${messages.agentInstancesToolbarGroupBy} '),
             TextSpan(
-              text: label,
+              text: current.label,
               style: TextStyle(color: tokens.colors.interactive.enabled),
             ),
           ],
@@ -250,35 +286,34 @@ class _GroupByButton extends StatelessWidget {
 }
 
 class _SortButton extends StatelessWidget {
-  const _SortButton({required this.state, required this.onChanged});
+  const _SortButton({
+    required this.state,
+    required this.onChanged,
+    required this.axes,
+  });
 
-  final InstancesFilterState state;
-  final ValueChanged<InstancesFilterState> onChanged;
+  final AgentListFilterState state;
+  final ValueChanged<AgentListFilterState> onChanged;
+  final List<AgentListSortAxis> axes;
 
   @override
   Widget build(BuildContext context) {
-    final messages = context.messages;
-    final label = switch (state.sortKey) {
-      InstancesSortKey.recent => messages.agentInstancesSortRecent,
-      InstancesSortKey.oldest => messages.agentInstancesSortOldest,
-      InstancesSortKey.name => messages.agentInstancesSortName,
-    };
+    final current = axes.firstWhere(
+      (a) => a.id == state.sortAxisId,
+      orElse: () => axes.first,
+    );
     return _ToolbarButton(
       icon: Icons.sort,
       onTap: () async {
-        final next = await _showSingleSelectPopover<InstancesSortKey>(
+        final next = await _showSingleSelectPopover<String>(
           context: context,
-          current: state.sortKey,
-          options: [
-            (InstancesSortKey.recent, messages.agentInstancesSortRecent),
-            (InstancesSortKey.oldest, messages.agentInstancesSortOldest),
-            (InstancesSortKey.name, messages.agentInstancesSortName),
-          ],
+          current: current.id,
+          options: [for (final a in axes) (a.id, a.label)],
           width: 150,
         );
-        if (next != null) onChanged(state.copyWith(sortKey: next));
+        if (next != null) onChanged(state.copyWith(sortAxisId: next));
       },
-      child: Text(label),
+      child: Text(current.label),
     );
   }
 }
@@ -313,9 +348,14 @@ class _CountBadge extends StatelessWidget {
 }
 
 class _SearchField extends StatefulWidget {
-  const _SearchField({required this.value, required this.onChanged});
+  const _SearchField({
+    required this.value,
+    required this.onChanged,
+    required this.placeholder,
+  });
   final String value;
   final ValueChanged<String> onChanged;
+  final String placeholder;
 
   @override
   State<_SearchField> createState() => _SearchFieldState();
@@ -418,7 +458,7 @@ class _SearchFieldState extends State<_SearchField> {
                 disabledBorder: InputBorder.none,
                 errorBorder: InputBorder.none,
                 focusedErrorBorder: InputBorder.none,
-                hintText: messages.agentInstancesSearchPlaceholder,
+                hintText: widget.placeholder,
                 hintStyle: tokens.typography.styles.others.caption.copyWith(
                   color: colors.text.lowEmphasis,
                 ),
@@ -446,8 +486,8 @@ class _SearchFieldState extends State<_SearchField> {
 
 // ── Popovers ────────────────────────────────────────────────────────────────
 
-/// Shows a generic popover anchored to the tapped widget. Returns the
-/// selected value (single-select popovers) or `null` if dismissed.
+/// Anchored single-select popover used by Group by / Sort. Returns the
+/// selected option id (string) or null if dismissed.
 Future<T?> _showSingleSelectPopover<T>({
   required BuildContext context,
   required T current,
@@ -492,11 +532,14 @@ Future<T?> _showSingleSelectPopover<T>({
   );
 }
 
+/// Anchored multi-select popover used by Filters. One section per
+/// [AgentListFilterAxis] supplied; per-section "Clear" link wipes that
+/// axis's selections.
 Future<void> _showFiltersPopover({
   required BuildContext context,
-  required InstancesFilterState state,
-  required ValueChanged<InstancesFilterState> onChanged,
-  required FilterCounts counts,
+  required AgentListFilterState state,
+  required ValueChanged<AgentListFilterState> onChanged,
+  required List<AgentListFilterAxis> axes,
 }) async {
   final box = context.findRenderObject() as RenderBox?;
   if (box == null) return;
@@ -526,7 +569,7 @@ Future<void> _showFiltersPopover({
               tokens: tokens,
               state: state,
               onChanged: onChanged,
-              counts: counts,
+              axes: axes,
             ),
           ),
         ],
@@ -540,20 +583,20 @@ class _FiltersPopoverPanel extends StatefulWidget {
     required this.tokens,
     required this.state,
     required this.onChanged,
-    required this.counts,
+    required this.axes,
   });
 
   final DsTokens tokens;
-  final InstancesFilterState state;
-  final ValueChanged<InstancesFilterState> onChanged;
-  final FilterCounts counts;
+  final AgentListFilterState state;
+  final ValueChanged<AgentListFilterState> onChanged;
+  final List<AgentListFilterAxis> axes;
 
   @override
   State<_FiltersPopoverPanel> createState() => _FiltersPopoverPanelState();
 }
 
 class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
-  late InstancesFilterState _local;
+  late AgentListFilterState _local;
 
   @override
   void initState() {
@@ -561,14 +604,13 @@ class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
     _local = widget.state;
   }
 
-  void _push(InstancesFilterState next) {
+  void _push(AgentListFilterState next) {
     setState(() => _local = next);
     widget.onChanged(next);
   }
 
   @override
   Widget build(BuildContext context) {
-    final messages = context.messages;
     final tokens = widget.tokens;
     return Material(
       color: tokens.colors.background.level02,
@@ -584,49 +626,23 @@ class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _PopHeader(
-              label: messages.agentInstancesFilterSectionType,
-              showClear: _local.types.isNotEmpty,
-              onClear: () => _push(_local.copyWith(types: const {})),
-            ),
-            for (final t in InstanceType.values)
-              _PopRow(
-                label: instanceTypeLabel(messages, t),
-                selected: _local.types.contains(t),
-                count: widget.counts.types[t] ?? 0,
-                onTap: () => _push(_local.toggleType(t)),
-              ),
-            SizedBox(height: tokens.spacing.step3),
-            _PopHeader(
-              label: messages.agentInstancesFilterSectionStatus,
-              showClear: _local.statuses.isNotEmpty,
-              onClear: () => _push(_local.copyWith(statuses: const {})),
-            ),
-            for (final s in const [
-              AgentLifecycle.active,
-              AgentLifecycle.dormant,
-              AgentLifecycle.destroyed,
-            ])
-              _PopRow(
-                label: agentLifecycleLabel(messages, s),
-                selected: _local.statuses.contains(s),
-                count: widget.counts.statuses[s] ?? 0,
-                onTap: () => _push(_local.toggleStatus(s)),
-              ),
-            if (widget.counts.soulOptions.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.step3),
+            for (var i = 0; i < widget.axes.length; i++) ...[
+              if (i > 0) SizedBox(height: tokens.spacing.step3),
               _PopHeader(
-                label: messages.agentInstancesFilterSectionSoul,
-                showClear: _local.soulIds.isNotEmpty,
-                onClear: () => _push(_local.copyWith(soulIds: const {})),
+                label: widget.axes[i].sectionLabel,
+                showClear: _local.selectionsFor(widget.axes[i].id).isNotEmpty,
+                onClear: () => _push(_local.clearAxis(widget.axes[i].id)),
               ),
-              for (final s in widget.counts.soulOptions)
+              for (final option in widget.axes[i].options)
                 _PopRow(
-                  label: s.label,
-                  selected: _local.soulIds.contains(s.id),
-                  count: widget.counts.soulCounts[s.id] ?? 0,
-                  swatchHue: s.hue,
-                  onTap: () => _push(_local.toggleSoul(s.id)),
+                  label: option.label,
+                  selected: _local
+                      .selectionsFor(widget.axes[i].id)
+                      .contains(option.id),
+                  count: option.count,
+                  swatchHue: option.swatchHue,
+                  onTap: () =>
+                      _push(_local.toggleOption(widget.axes[i].id, option.id)),
                 ),
             ],
           ],
