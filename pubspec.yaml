@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.991+4037
+version: 0.9.991+4038
 
 msix_config:
   display_name: LottiApp
@@ -21,7 +21,7 @@ dependencies:
   async: ^2.13.0
   beamer: ^1.5.2
   cached_network_image: ^3.2.0
-  calendar_view: ^1.2.0
+  calendar_view: ^2.0.0
   clock: ^1.1.1
   collection: ^1.18.0
   connectivity_plus: ^7.0.0
@@ -51,7 +51,7 @@ dependencies:
   flutter_form_builder: ^10.0.1
   flutter_image_compress: ^2.0.3
   flutter_linkify: ^6.0.0
-  flutter_local_notifications: ^19.0.0
+  flutter_local_notifications: ^21.0.0
   flutter_localizations:
     sdk: flutter
   flutter_map: ^8.0.0
@@ -66,7 +66,7 @@ dependencies:
   form_builder_validators: ^11.0.0
   formz: ^0.8.0
   freezed_annotation: ^3.1.0
-  genui: ^0.8.0
+  genui: ^0.9.0
   geoclue: ^0.1.0
   get_it: ^8.0.2
   glass_kit: ^4.0.1
@@ -116,10 +116,10 @@ dependencies:
   siri_wave: ^2.3.0
   sqflite_common_ffi: ^2.3.3
   sqlite3: ^2.4.5
-  sqlite3_flutter_libs: ^0.5.15
+  sqlite3_flutter_libs: ^0.6.0+eol
   super_clipboard: ^0.9.1
   super_drag_and_drop: ^0.9.1
-  timezone: ^0.10.0
+  timezone: ^0.11.0
   tinycolor2: ^3.0.0
   url_launcher: ^6.1.2
   uuid: ^4.3.3
@@ -141,7 +141,7 @@ dependency_overrides:
   rxdart: ^0.28.0
 
 dev_dependencies:
-  arb_utils: ^0.10.1
+  arb_utils: ^0.11.0
   archive: ^4.0.7
   build_runner: ^2.5.4
   cross_file: any
