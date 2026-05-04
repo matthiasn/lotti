@@ -2130,65 +2130,11 @@ abstract class AppLocalizations {
   /// **'Switch to standard recording'**
   String get aiBatchToggleTooltip;
 
-  /// No description provided for @aiCardActivityRecentLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent activity'**
-  String get aiCardActivityRecentLabel;
-
-  /// No description provided for @aiCardActivityRelativeDays.
-  ///
-  /// In en, this message translates to:
-  /// **'{days}d ago'**
-  String aiCardActivityRelativeDays(int days);
-
-  /// No description provided for @aiCardActivityRelativeHours.
-  ///
-  /// In en, this message translates to:
-  /// **'{hours}h ago'**
-  String aiCardActivityRelativeHours(int hours);
-
-  /// No description provided for @aiCardActivityRelativeMinutes.
-  ///
-  /// In en, this message translates to:
-  /// **'{minutes}m ago'**
-  String aiCardActivityRelativeMinutes(int minutes);
-
-  /// No description provided for @aiCardActivityRelativeNow.
-  ///
-  /// In en, this message translates to:
-  /// **'now'**
-  String get aiCardActivityRelativeNow;
-
-  /// No description provided for @aiCardActivityRelativeWeeks.
-  ///
-  /// In en, this message translates to:
-  /// **'{weeks}w ago'**
-  String aiCardActivityRelativeWeeks(int weeks);
-
-  /// No description provided for @aiCardActivitySectionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'RECENT ACTIVITY'**
-  String get aiCardActivitySectionLabel;
-
-  /// No description provided for @aiCardAgentNameTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Open agent internals'**
-  String get aiCardAgentNameTooltip;
-
   /// No description provided for @aiCardEmptyProposals.
   ///
   /// In en, this message translates to:
   /// **'No open proposals · agent will surface new changes here'**
   String get aiCardEmptyProposals;
-
-  /// No description provided for @aiCardHideActivity.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide activity'**
-  String get aiCardHideActivity;
 
   /// No description provided for @aiCardHistoryToggle.
   ///
@@ -2273,18 +2219,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read more'**
   String get aiCardReadMore;
-
-  /// No description provided for @aiCardRecentActions.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{{count} recent action} other{{count} recent actions}}'**
-  String aiCardRecentActions(int count);
-
-  /// No description provided for @aiCardSeeActivity.
-  ///
-  /// In en, this message translates to:
-  /// **'See activity'**
-  String get aiCardSeeActivity;
 
   /// No description provided for @aiCardShowLess.
   ///

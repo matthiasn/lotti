@@ -1178,43 +1178,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
 
   @override
-  String get aiCardActivityRecentLabel => 'Nedávná aktivita';
-
-  @override
-  String aiCardActivityRelativeDays(int days) {
-    return 'před $days d';
-  }
-
-  @override
-  String aiCardActivityRelativeHours(int hours) {
-    return 'před $hours h';
-  }
-
-  @override
-  String aiCardActivityRelativeMinutes(int minutes) {
-    return 'před $minutes min';
-  }
-
-  @override
-  String get aiCardActivityRelativeNow => 'teď';
-
-  @override
-  String aiCardActivityRelativeWeeks(int weeks) {
-    return 'před $weeks t';
-  }
-
-  @override
-  String get aiCardActivitySectionLabel => 'NEDÁVNÁ AKTIVITA';
-
-  @override
-  String get aiCardAgentNameTooltip => 'Otevřít interní informace agenta';
-
-  @override
   String get aiCardEmptyProposals =>
       'Žádné otevřené návrhy · agent zde zobrazí nové změny';
-
-  @override
-  String get aiCardHideActivity => 'Skrýt aktivitu';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -1259,21 +1224,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiCardReadMore => 'Číst více';
-
-  @override
-  String aiCardRecentActions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count akcí',
-      few: '$count akce',
-      one: '$count akce',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get aiCardSeeActivity => 'Zobrazit aktivitu';
 
   @override
   String get aiCardShowLess => 'Skrýt podrobnosti';

@@ -118,7 +118,7 @@ class _HeaderRow extends StatelessWidget {
                     ),
                   ),
                   AnimatedRotation(
-                    turns: expanded ? 0.5 : 0,
+                    turns: expanded ? 0 : -0.25,
                     duration: AppTheme.chevronRotationDuration,
                     curve: AppTheme.animationCurve,
                     child: Icon(

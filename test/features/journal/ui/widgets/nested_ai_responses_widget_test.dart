@@ -344,21 +344,23 @@ void main() {
       );
       expect(rotationTransition, findsOneWidget);
 
-      // Get initial rotation value - when expanded, value is 0.5
+      // Get initial rotation value — when expanded, the natural
+      // downward `Icons.expand_more` icon is at 0 turns.
       final initialRotation = tester.widget<RotationTransition>(
         rotationTransition,
       );
-      expect(initialRotation.turns.value, equals(0.5));
+      expect(initialRotation.turns.value, equals(0));
 
       // Collapse
       await tester.tap(headerFinder);
       await tester.pumpAndSettle();
 
-      // Verify rotation changed - when collapsed, value is 0.0
+      // Verify rotation changed — when collapsed, the icon rotates
+      // -0.25 turns so the chevron points right.
       final collapsedRotation = tester.widget<RotationTransition>(
         rotationTransition,
       );
-      expect(collapsedRotation.turns.value, equals(0.0));
+      expect(collapsedRotation.turns.value, equals(-0.25));
     });
   });
 

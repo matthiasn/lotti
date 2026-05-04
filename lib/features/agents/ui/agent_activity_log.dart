@@ -337,7 +337,7 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
                     ),
                   ),
                   Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    _expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
                     size: 18,
                     color: context.colorScheme.onSurfaceVariant,
                   ),
@@ -418,7 +418,9 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
                   ),
                   if (isExpandable)
                     Icon(
-                      _expanded ? Icons.expand_less : Icons.expand_more,
+                      _expanded
+                          ? Icons.keyboard_arrow_down
+                          : Icons.chevron_right,
                       size: 18,
                       color: context.colorScheme.onSurfaceVariant,
                     ),

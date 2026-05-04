@@ -81,10 +81,12 @@ class _GeneratedPromptCardState extends State<GeneratedPromptCard>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    // Standard expand/collapse caret: collapsed → right (-0.25 turns
+    // from the natural downward `Icons.expand_more`), expanded → down.
     _rotationAnimation =
         Tween<double>(
-          begin: 0,
-          end: 0.5,
+          begin: -0.25,
+          end: 0,
         ).animate(
           CurvedAnimation(
             parent: _animationController,

@@ -109,7 +109,7 @@ class _CategoryGroupState extends State<_CategoryGroup> {
                 ),
                 const Spacer(),
                 Icon(
-                  _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  _isExpanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
                   size: 18,
                   color: Colors.white.withValues(alpha: 0.4),
                 ),

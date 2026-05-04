@@ -62,7 +62,7 @@ void main() {
       await _pump(tester, initiallyExpanded: true);
 
       expect(find.text('My Checklist'), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
     });
 
     testWidgets('tapping chevron toggles expansion', (tester) async {
@@ -71,14 +71,14 @@ void main() {
       // Expanded → add field hit-testable (non-zero size)
       expect(find.byKey(_addFieldKey).hitTestable(), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.expand_less));
+      await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pump(const Duration(milliseconds: 400));
 
       // Collapsed → add field clipped to zero, not hit-testable
       expect(find.byKey(_addFieldKey).hitTestable(), findsNothing);
 
       // Tap again → expands
-      await tester.tap(find.byIcon(Icons.expand_less));
+      await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byKey(_addFieldKey).hitTestable(), findsOneWidget);
@@ -753,7 +753,7 @@ void main() {
       await tester.pump();
       expect(states, [true]);
 
-      await tester.tap(find.byIcon(Icons.expand_less));
+      await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(states, [true, false]);
@@ -880,7 +880,7 @@ void main() {
       await tester.pump();
 
       // Now collapse — should use real animation duration (250ms).
-      await tester.tap(find.byIcon(Icons.expand_less));
+      await tester.tap(find.byIcon(Icons.expand_more));
 
       // After only 50ms, the cross-fade should still be in progress.
       await tester.pump(const Duration(milliseconds: 50));

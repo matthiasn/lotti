@@ -269,7 +269,7 @@ class _Header extends StatelessWidget {
                 child: GestureDetector(
                   onTap: onToggleExpand,
                   child: Icon(
-                    Icons.expand_less,
+                    Icons.expand_more,
                     size: 24,
                     color: tokens.colors.text.lowEmphasis,
                   ),

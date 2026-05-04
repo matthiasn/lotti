@@ -334,18 +334,19 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Expanded by default — tile visible; the group header shows expand_less.
-        // The tile itself also shows expand_more (its own collapsed state).
-        // So we see both. Check that the tile is present.
+        // Expanded by default — tile visible; the group header shows
+        // keyboard_arrow_down. The tile itself also shows chevron_right
+        // (its own collapsed state). So we see both. Check that the tile
+        // is present.
         expect(find.byType(FeedbackItemTile), findsOneWidget);
-        // The group header expand_less should be present (size 18)
-        final expandLessWidgets = tester
+        // The group header keyboard_arrow_down should be present (size 18)
+        final expandedWidgets = tester
             .widgetList<Icon>(
-              find.byIcon(Icons.expand_less),
+              find.byIcon(Icons.keyboard_arrow_down),
             )
             .where((icon) => icon.size == 18)
             .toList();
-        expect(expandLessWidgets, isNotEmpty);
+        expect(expandedWidgets, isNotEmpty);
       });
 
       testWidgets('tapping category header collapses items', (tester) async {
@@ -370,14 +371,14 @@ void main() {
 
         // After collapse, tile hidden
         expect(find.byType(FeedbackItemTile), findsNothing);
-        // Group header now shows expand_more (size 18)
-        final expandMoreWidgets = tester
+        // Group header now shows chevron_right (size 18)
+        final collapsedWidgets = tester
             .widgetList<Icon>(
-              find.byIcon(Icons.expand_more),
+              find.byIcon(Icons.chevron_right),
             )
             .where((icon) => icon.size == 18)
             .toList();
-        expect(expandMoreWidgets, isNotEmpty);
+        expect(collapsedWidgets, isNotEmpty);
       });
 
       testWidgets('tapping collapsed header re-expands items', (tester) async {

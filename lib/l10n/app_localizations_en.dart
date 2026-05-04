@@ -1173,43 +1173,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Switch to standard recording';
 
   @override
-  String get aiCardActivityRecentLabel => 'Recent activity';
-
-  @override
-  String aiCardActivityRelativeDays(int days) {
-    return '${days}d ago';
-  }
-
-  @override
-  String aiCardActivityRelativeHours(int hours) {
-    return '${hours}h ago';
-  }
-
-  @override
-  String aiCardActivityRelativeMinutes(int minutes) {
-    return '${minutes}m ago';
-  }
-
-  @override
-  String get aiCardActivityRelativeNow => 'now';
-
-  @override
-  String aiCardActivityRelativeWeeks(int weeks) {
-    return '${weeks}w ago';
-  }
-
-  @override
-  String get aiCardActivitySectionLabel => 'RECENT ACTIVITY';
-
-  @override
-  String get aiCardAgentNameTooltip => 'Open agent internals';
-
-  @override
   String get aiCardEmptyProposals =>
       'No open proposals · agent will surface new changes here';
-
-  @override
-  String get aiCardHideActivity => 'Hide activity';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -1254,20 +1219,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiCardReadMore => 'Read more';
-
-  @override
-  String aiCardRecentActions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count recent actions',
-      one: '$count recent action',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get aiCardSeeActivity => 'See activity';
 
   @override
   String get aiCardShowLess => 'Show less';

@@ -211,7 +211,7 @@ void main() {
       await tester.pump();
 
       // Expand icon should be shown for any kind with a contentId.
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
       // Tap to expand and see the payload text.
       await tester.tap(find.byType(InkWell));
@@ -244,7 +244,7 @@ void main() {
       await tester.pump();
 
       // Expand icon should be visible
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
       // Text should not be visible initially
       expect(find.text('This is the observation text'), findsNothing);
@@ -257,7 +257,7 @@ void main() {
 
       // Now the observation text should be visible
       expect(find.text('This is the observation text'), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
 
     testWidgets('shows error message in red when present', (tester) async {
@@ -345,7 +345,7 @@ void main() {
         await tester.pump();
 
         // Expand icon should be visible (thought is expandable)
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
         // Text should not be visible initially
         expect(find.text('Deep thought content'), findsNothing);
@@ -356,7 +356,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Deep thought content'), findsOneWidget);
-        expect(find.byIcon(Icons.expand_less), findsOneWidget);
+        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
       },
     );
 
@@ -390,7 +390,7 @@ void main() {
         await tester.tap(find.byType(InkWell));
         await tester.pump();
         expect(find.text('Observation payload'), findsNothing);
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       },
     );
 
@@ -501,7 +501,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
         await tester.tap(find.byType(InkWell));
         await tester.pump();
@@ -529,7 +529,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.expand_more), findsNothing);
+        expect(find.byIcon(Icons.chevron_right), findsNothing);
         expect(find.textContaining('Content:'), findsNothing);
       },
     );
@@ -656,7 +656,7 @@ void main() {
         findsOneWidget,
       );
       // Collapse icons should be shown (not expand).
-      expect(find.byIcon(Icons.expand_less), findsNWidgets(2));
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsNWidgets(2));
     });
 
     testWidgets('can collapse an initially expanded observation', (
@@ -686,7 +686,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Insight text'), findsNothing);
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
     testWidgets('shows only observation kind badges', (tester) async {
@@ -745,7 +745,7 @@ void main() {
       await tester.pump();
 
       // Should show expand icon (collapsed).
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.text('{"title": "New Title"}'), findsNothing);
     });
 
@@ -773,7 +773,7 @@ void main() {
       await tester.pump();
 
       // Should show collapse icon (expanded).
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
       expect(find.text('{"title": "New Title"}'), findsOneWidget);
     });
 
@@ -799,7 +799,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(find.byIcon(Icons.expand_less), findsOneWidget);
+        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
         expect(find.text('Success: title updated'), findsOneWidget);
       },
     );
@@ -825,7 +825,7 @@ void main() {
       await tester.pump();
 
       // Thought is not a tool call, so it should remain collapsed.
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       expect(find.text('thinking...'), findsNothing);
     });
   });
@@ -934,8 +934,8 @@ void main() {
 
       // First report expanded — GptMarkdown renders content.
       // The second report should be collapsed.
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
     testWidgets('tapping a collapsed report expands it', (tester) async {
@@ -953,19 +953,19 @@ void main() {
       await tester.pumpAndSettle();
 
       // Initially expanded (index 0).
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
 
       // Tap to collapse.
       await tester.tap(find.byType(InkWell));
       await tester.pump();
 
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
       // Tap to expand again.
       await tester.tap(find.byType(InkWell));
       await tester.pump();
 
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
 
     testWidgets('collapsed report shows only TLDR section', (tester) async {

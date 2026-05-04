@@ -60,7 +60,9 @@ class _FeedbackItemTileState extends State<FeedbackItemTile> {
                       ),
                       const Spacer(),
                       Icon(
-                        _expanded ? Icons.expand_less : Icons.expand_more,
+                        _expanded
+                            ? Icons.keyboard_arrow_down
+                            : Icons.chevron_right,
                         size: 16,
                         color: Colors.white.withValues(alpha: 0.3),
                       ),

@@ -372,7 +372,7 @@ class _Header extends StatelessWidget {
                     tokens: tokens,
                   ),
                   SizedBox(width: tokens.spacing.step3),
-                  // Chevron
+                  // Chevron — collapsed points right, expanded points down.
                   AnimatedRotation(
                     turns: isExpanded ? 0.0 : -0.25,
                     duration: chevronDuration,
@@ -382,7 +382,7 @@ class _Header extends StatelessWidget {
                           : context.messages.checklistExpandTooltip,
                       onPressed: onToggleExpand,
                       icon: Icon(
-                        Icons.expand_less,
+                        Icons.expand_more,
                         size: 24,
                         color: tokens.colors.text.lowEmphasis,
                       ),
