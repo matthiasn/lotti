@@ -70,6 +70,8 @@ void main() {
         enableEmbeddingsFlag: false,
         enableVectorSearchFlag: false,
         enableWhatsNewFlag: false,
+        showSyncActivityIndicatorFlag: false,
+        showSidebarWakeQueueFlag: false,
       };
 
       for (final entry in defaults.entries) {

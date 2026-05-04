@@ -99,6 +99,11 @@ void main() {
             description: 'Show live sync activity in the sidebar.',
             status: false,
           ),
+          const ConfigFlag(
+            name: showSidebarWakeQueueFlag,
+            description: 'Show the inline Wake Queue in the sidebar.',
+            status: false,
+          ),
         },
       ]),
     );
@@ -129,9 +134,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 11 flags in the mock data (8 originals + whats-new +
-      // outbox-bundling + sync-activity-indicator).
-      expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+      // 12 flags in the mock data (8 originals + whats-new +
+      // outbox-bundling + sync-activity-indicator + sidebar-wake-queue).
+      expect(find.byType(DesignSystemListItem), findsNWidgets(12));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -140,7 +145,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsIcon), findsNWidgets(11));
+      expect(find.byType(SettingsIcon), findsNWidgets(12));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -437,6 +442,71 @@ void main() {
     );
   });
 
+  group('FlagsPage — sidebar wake queue flag', () {
+    testWidgets(
+      'renders the sidebar wake queue flag with its localized title, '
+      'description, and the alarm icon — covers the per-flag arms in '
+      '_iconForFlag/_titleForFlag/_subtitleForFlag',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(FlagsPage));
+        final wakesItem = find.widgetWithText(
+          DesignSystemListItem,
+          context.messages.configFlagShowSidebarWakeQueue,
+        );
+        await tester.ensureVisible(wakesItem);
+        await tester.pumpAndSettle();
+        expect(wakesItem, findsOneWidget);
+        expect(
+          find.text(
+            context.messages.configFlagShowSidebarWakeQueueDescription,
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: wakesItem,
+            matching: find.byIcon(Icons.alarm_rounded),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'toggling persists the sidebar wake queue flag via PersistenceLogic',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(FlagsPage));
+        final wakesItem = find.widgetWithText(
+          DesignSystemListItem,
+          context.messages.configFlagShowSidebarWakeQueue,
+        );
+        await tester.ensureVisible(wakesItem);
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(of: wakesItem, matching: find.byType(Switch)),
+        );
+        await tester.pump();
+
+        const expected = ConfigFlag(
+          name: showSidebarWakeQueueFlag,
+          description: 'Show the inline Wake Queue in the sidebar.',
+          status: true,
+        );
+        verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
+      },
+    );
+  });
+
   group('FlagsPage — search bar', () {
     testWidgets('renders a single DesignSystemSearch above the list', (
       tester,
@@ -546,7 +616,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
 
@@ -567,7 +637,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pumpAndSettle();
-        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
 
@@ -584,7 +654,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
   });

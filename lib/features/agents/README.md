@@ -137,6 +137,37 @@ Templates and Souls are the only tabs that currently expose create FABs. Those
 buttons are now wrapped with the shared bottom-navigation clearance so they do
 not sink behind the floating app-shell nav on narrow layouts.
 
+### Inline sidebar Wake Queue
+
+`SidebarWakeQueue` (`lib/features/agents/ui/sidebar_wake_queue.dart`) is a
+compact ambient surface that lives in the desktop sidebar's `aboveSettings`
+slot. It watches the same `pendingWakeRecordsProvider` as the full Pending
+Wakes page, surfacing the next two wakes inline so the queue is visible
+without leaving whatever tab the operator is on:
+
+- a `WAKES N` mono header with the total count,
+- up to two compact rows — agent avatar, display name, and a per-row ETA
+  (`now` once due, `mm:ss` under an hour, `Xh MMm` beyond, switching to the
+  warning colour inside the last five minutes),
+- a `+N more →` link that switches to the Settings tab and beams to
+  `/settings/agents/pending-wakes` for the full list.
+
+Each row owns its own one-second countdown timer (same pattern as the cards
+on the full page) and re-derives the remaining seconds from `clock.now()` on
+every tick, so it does not drift when frames arrive late. The block hides
+itself when the queue is empty so the rail collapses cleanly with no
+layout shift. The collapsed (icon-only) sidebar suppresses the slot — the
+header and rows would not fit the narrow column.
+
+```mermaid
+flowchart LR
+  Provider[pendingWakeRecordsProvider]
+  Provider --> WakeBlock[SidebarWakeQueue<br/>aboveSettings slot]
+  Provider --> WakesPage[Pending Wakes page<br/>full list view]
+  WakeBlock -->|tap row| InstanceRoute[/settings/agents/instances/agentId/]
+  WakeBlock -->|tap +N more| WakesPage
+```
+
 ## Persistence Model
 
 Agent persistence lives in `agent.sqlite` via Drift

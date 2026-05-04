@@ -49,13 +49,19 @@ const Color _valueActive = Color(0x8CFFFFFF); // 55% white
 const Color _valueIdle = Color(0x52FFFFFF); // 32% white
 const Color _hoverWash = Color(0x0AFFFFFF); // 4% white
 
-/// Ambient sidebar indicator showing live Matrix sync traffic. Two
-/// stacked monospace rows (`tx <count>` / `rx <count>`) each with a
-/// 5×5 LED that flashes briefly per packet committed on that channel.
+/// Ambient sidebar indicator showing live Matrix sync traffic. A single
+/// monospace row (`• tx 0   • rx 0`) with two 5×5 LEDs that flash
+/// briefly per packet committed on the matching channel.
 ///
 /// Variant **D4a** in `docs/design/`. Visual semantics — colors,
-/// timings, sizes — are pinned to the handoff and reproduced
-/// pixel-for-pixel.
+/// timings, LED sizes — stay pinned to the handoff. The row layout was
+/// adopted later (sidebar Wake Queue handoff, S1) so the indicator can
+/// sit at the very bottom of the rail without claiming two lines.
+///
+/// The numeric slot for each channel is fixed-width so the row never
+/// reflows as the queue depths grow or shrink — the LED, label and
+/// trailing tab stop stay anchored to the same x-coordinate even when
+/// the value rolls over between e.g. `9` and `99`.
 class SyncActivityIndicator extends ConsumerStatefulWidget {
   const SyncActivityIndicator({super.key});
 
@@ -173,8 +179,8 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOut,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
+                    horizontal: 10,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
                     color: _hovered ? _hoverWash : Colors.transparent,
@@ -188,18 +194,17 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                       width: 2,
                     ),
                   ),
-                  child: Column(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SyncActivityRow(
+                      _SyncActivityChannel(
                         label: 'tx',
                         on: _txOn,
                         color: kSyncActivityTxColor,
                         value: outbox,
                       ),
-                      const SizedBox(height: 3),
-                      _SyncActivityRow(
+                      const SizedBox(width: 12),
+                      _SyncActivityChannel(
                         label: 'rx',
                         on: _rxOn,
                         color: rxColor,
@@ -217,8 +222,14 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
   }
 }
 
-class _SyncActivityRow extends StatelessWidget {
-  const _SyncActivityRow({
+/// Width reserved for the numeric column on each channel. Wide enough to
+/// fit a 4-digit count without forcing the surrounding row to reflow —
+/// the value is right-aligned inside this fixed slot, so the LED and
+/// label keep their x-positions even when the count grows or shrinks.
+const double _kSyncActivityValueColumnWidth = 28;
+
+class _SyncActivityChannel extends StatelessWidget {
+  const _SyncActivityChannel({
     required this.label,
     required this.on,
     required this.color,
@@ -256,18 +267,23 @@ class _SyncActivityRow extends StatelessWidget {
         children: [
           _SyncActivityLed(on: on, color: color),
           const SizedBox(width: 6),
-          SizedBox(
-            width: 14,
-            child: ExcludeSemantics(child: Text(label, style: labelStyle)),
-          ),
+          ExcludeSemantics(child: Text(label, style: labelStyle)),
           const SizedBox(width: 6),
-          if (value > 0)
-            ExcludeSemantics(
+          // Fixed-width numeric slot — the value is right-aligned so the
+          // LED + label stay anchored regardless of digit count.
+          SizedBox(
+            width: _kSyncActivityValueColumnWidth,
+            child: ExcludeSemantics(
               child: Text(
-                '$value',
+                value > 0 ? '$value' : '',
                 style: valueStyle,
+                textAlign: TextAlign.left,
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                softWrap: false,
               ),
             ),
+          ),
         ],
       ),
     );

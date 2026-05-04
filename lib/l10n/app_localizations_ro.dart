@@ -2668,6 +2668,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
+  String get configFlagShowSidebarWakeQueue =>
+      'Afișează coada de wakes în bara laterală';
+
+  @override
+  String get configFlagShowSidebarWakeQueueDescription =>
+      'Afișează coada de wakes deasupra Setărilor — anteturile, următoarele două wakes cu numărătoare inversă și un link către lista completă.';
+
+  @override
   String get configFlagShowSyncActivityIndicator =>
       'Afișează indicatorul de activitate de sincronizare';
 
@@ -6290,6 +6298,23 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get sidebarToggleExpandLabel => 'Extinde bara laterală';
+
+  @override
+  String get sidebarWakesCancelTooltip => 'Anulează wake';
+
+  @override
+  String get sidebarWakesHeader => 'Wakes';
+
+  @override
+  String sidebarWakesMore(int count) {
+    return '+$count altele →';
+  }
+
+  @override
+  String get sidebarWakesNow => 'acum';
+
+  @override
+  String get sidebarWakesOpenList => 'Deschide lista →';
 
   @override
   String get skillsSectionTitle => 'Competențe';

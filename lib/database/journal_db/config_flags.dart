@@ -205,5 +205,13 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: showSidebarWakeQueueFlag,
+      description: 'Show the inline Wake Queue in the sidebar.',
+      status: false,
+    ),
+  );
+
   // No additional flags for label guardrails: always-on behavior.
 }

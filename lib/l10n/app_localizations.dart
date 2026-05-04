@@ -4554,6 +4554,18 @@ abstract class AppLocalizations {
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
 
+  /// No description provided for @configFlagShowSidebarWakeQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Show sidebar wake queue'**
+  String get configFlagShowSidebarWakeQueue;
+
+  /// No description provided for @configFlagShowSidebarWakeQueueDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the inline Wake Queue above Settings — header, the next two pending wakes with countdowns, and a link to the full list.'**
+  String get configFlagShowSidebarWakeQueueDescription;
+
   /// No description provided for @configFlagShowSyncActivityIndicator.
   ///
   /// In en, this message translates to:
@@ -10740,6 +10752,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expand sidebar'**
   String get sidebarToggleExpandLabel;
+
+  /// No description provided for @sidebarWakesCancelTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel wake'**
+  String get sidebarWakesCancelTooltip;
+
+  /// No description provided for @sidebarWakesHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Wakes'**
+  String get sidebarWakesHeader;
+
+  /// No description provided for @sidebarWakesMore.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more →'**
+  String sidebarWakesMore(int count);
+
+  /// No description provided for @sidebarWakesNow.
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get sidebarWakesNow;
+
+  /// No description provided for @sidebarWakesOpenList.
+  ///
+  /// In en, this message translates to:
+  /// **'Open list →'**
+  String get sidebarWakesOpenList;
 
   /// No description provided for @skillsSectionTitle.
   ///

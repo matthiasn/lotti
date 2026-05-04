@@ -110,6 +110,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableVectorSearchFlag,
     enableWhatsNewFlag,
     showSyncActivityIndicatorFlag,
+    showSidebarWakeQueueFlag,
   ];
 
   @override
@@ -169,6 +170,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.new_releases_outlined;
       case showSyncActivityIndicatorFlag:
         return Icons.network_check_rounded;
+      case showSidebarWakeQueueFlag:
+        return Icons.alarm_rounded;
       default:
         return Icons.settings;
     }
@@ -220,6 +223,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableWhatsNewDescription;
       case showSyncActivityIndicatorFlag:
         return context.messages.configFlagShowSyncActivityIndicatorDescription;
+      case showSidebarWakeQueueFlag:
+        return context.messages.configFlagShowSidebarWakeQueueDescription;
       default:
         return flag.description;
     }
@@ -269,6 +274,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableWhatsNew;
       case showSyncActivityIndicatorFlag:
         return context.messages.configFlagShowSyncActivityIndicator;
+      case showSidebarWakeQueueFlag:
+        return context.messages.configFlagShowSidebarWakeQueue;
       default:
         return flag.name;
     }

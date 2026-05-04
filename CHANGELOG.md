@@ -70,8 +70,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `DsColorsProposalKind*` classes. Five new localized strings cover
   the activity row's relative time labels (now / minutes / hours /
   days / weeks).
+- New inline `SidebarWakeQueue` block on the desktop sidebar's
+  `aboveSettings` slot (handoff S1). Renders a `WAKES N` header, the
+  next two pending wakes as compact `avatar · agent · ETA` rows, and
+  a `+N more →` link that opens the full Pending Wakes view. The
+  block hides itself when the queue is empty so the rail collapses
+  cleanly. ETAs are localized: `now`, `mm:ss` under an hour, `Xh MMm`
+  beyond — and switch to the warning colour inside the last five
+  minutes. Tapping a row deep-links into the agent's instance page.
 
 ### Changed
+- `SyncActivityIndicator` is now a single fixed-width row (`• tx N
+  • rx N`) pinned to the bottom of the sidebar via the new
+  `belowSettings` slot, so the inline Wake Queue can take its
+  previous position above Settings. Each numeric column reserves a
+  fixed slot so the LEDs and labels never reflow as the outbox /
+  inbox depths roll over between digit counts.
 - `task_form.dart` now mounts `AiSummaryCard` instead of the old
   `AgentSuggestionsPanel`. The legacy `AgentSuggestionsPanel` and
   `TaskAgentReportSection` widgets and their tests are removed (no

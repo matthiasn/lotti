@@ -2648,6 +2648,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
 
   @override
+  String get configFlagShowSidebarWakeQueue =>
+      'Zobrazit frontu wakes v postranním panelu';
+
+  @override
+  String get configFlagShowSidebarWakeQueueDescription =>
+      'Zobrazí frontu wakes nad Nastavením — záhlaví, dva nejbližší naplánované wakes s odpočtem a odkaz na úplný seznam.';
+
+  @override
   String get configFlagShowSyncActivityIndicator =>
       'Zobrazit indikátor aktivity synchronizace';
 
@@ -6251,6 +6259,23 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get sidebarToggleExpandLabel => 'Rozbalit postranní panel';
+
+  @override
+  String get sidebarWakesCancelTooltip => 'Zrušit wake';
+
+  @override
+  String get sidebarWakesHeader => 'Wakes';
+
+  @override
+  String sidebarWakesMore(int count) {
+    return '+$count dalších →';
+  }
+
+  @override
+  String get sidebarWakesNow => 'nyní';
+
+  @override
+  String get sidebarWakesOpenList => 'Otevřít seznam →';
 
   @override
   String get skillsSectionTitle => 'Dovednosti';

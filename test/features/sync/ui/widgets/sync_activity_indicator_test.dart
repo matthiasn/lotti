@@ -52,7 +52,7 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('renders both tx and rx rows with their counts', (
+    testWidgets('renders both tx and rx channels with their counts', (
       tester,
     ) async {
       await pumpIndicator(tester, outbox: 289, inbox: 14);
@@ -68,14 +68,14 @@ void main() {
     ) async {
       await pumpIndicator(tester);
 
-      // Rows still render so the affordance stays clickable, but the
+      // Channels still render so the affordance stays clickable, but the
       // numeric "0" is suppressed — the LEDs alone carry the idle state.
       expect(find.text('tx'), findsOneWidget);
       expect(find.text('rx'), findsOneWidget);
       expect(find.text('0'), findsNothing);
     });
 
-    testWidgets('hides only the zero row when one channel is non-zero', (
+    testWidgets('hides only the zero numeric when one channel is non-zero', (
       tester,
     ) async {
       await pumpIndicator(tester, outbox: 12);
@@ -83,6 +83,23 @@ void main() {
       expect(find.text('12'), findsOneWidget);
       expect(find.text('0'), findsNothing);
     });
+
+    testWidgets(
+      'fixed numeric column keeps the LED + label anchored as the count '
+      'grows or shrinks (no jumpiness)',
+      (tester) async {
+        await pumpIndicator(tester, outbox: 1, inbox: 1);
+        final txLabelXSmall = tester.getTopLeft(find.text('tx')).dx;
+        final rxLabelXSmall = tester.getTopLeft(find.text('rx')).dx;
+
+        await pumpIndicator(tester, outbox: 9999, inbox: 9999);
+        final txLabelXLarge = tester.getTopLeft(find.text('tx')).dx;
+        final rxLabelXLarge = tester.getTopLeft(find.text('rx')).dx;
+
+        expect(txLabelXLarge, equals(txLabelXSmall));
+        expect(rxLabelXLarge, equals(rxLabelXSmall));
+      },
+    );
 
     testWidgets('exposes a button-role semantics label with both counts', (
       tester,
@@ -214,9 +231,9 @@ void main() {
       await tester.pump();
 
       final colors = ledColors(tester);
-      // First LED is TX, second is RX (column order). The RX color is
-      // resolved from `tokens.colors.interactive.enabled` at build
-      // time — assert against "active" rather than against an
+      // First LED is TX, second is RX (row order, left → right). The RX
+      // color is resolved from `tokens.colors.interactive.enabled` at
+      // build time — assert against "active" rather than against an
       // imported literal so a token tweak doesn't silently fail this
       // assertion.
       expect(colors[0], isNot(equals(kSyncActivityTxColor)));
@@ -266,7 +283,7 @@ void main() {
             .firstWhere(
               (c) =>
                   c.padding ==
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             );
         expect(
           (container.decoration! as BoxDecoration).color,

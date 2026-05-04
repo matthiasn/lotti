@@ -22,6 +22,7 @@ const enableVectorSearchFlag = 'enable_vector_search';
 
 const enableWhatsNewFlag = 'enable_whats_new';
 const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';
+const showSidebarWakeQueueFlag = 'show_sidebar_wake_queue';
 
 const logAgentRuntimeFlag = 'log_agent_runtime';
 const logAgentWorkflowFlag = 'log_agent_workflow';

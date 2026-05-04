@@ -1198,6 +1198,8 @@
   "configFlagRecordLocationDescription": "Zeichnet automatisch deinen Standort mit neuen Einträgen auf. Dies hilft bei der ortsbezogenen Organisation und Suche.",
   "configFlagResendAttachments": "Anhänge erneut senden",
   "configFlagResendAttachmentsDescription": "Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.",
+  "configFlagShowSidebarWakeQueue": "Wake-Queue in der Seitenleiste anzeigen",
+  "configFlagShowSidebarWakeQueueDescription": "Zeige die Wake-Queue über den Einstellungen — Header, die nächsten zwei anstehenden Wakes mit Countdown und ein Link zur vollständigen Liste.",
   "configFlagShowSyncActivityIndicator": "Sync-Aktivitätsanzeige einblenden",
   "configFlagShowSyncActivityIndicatorDescription": "Live-Sync-Aktivität in der Seitenleiste anzeigen — eine tx/rx-LED-Leiste mit Outbox- und Inbox-Tiefe.",
   "configFlagUseCloudInferenceDescription": "Cloud-basierte KI-Dienste für erweiterte Funktionen verwenden. Dies erfordert eine Internetverbindung.",
@@ -2645,6 +2647,18 @@
   "showCompleted": "Abgeschlossene anzeigen",
   "sidebarToggleCollapseLabel": "Seitenleiste einklappen",
   "sidebarToggleExpandLabel": "Seitenleiste ausklappen",
+  "sidebarWakesCancelTooltip": "Wake abbrechen",
+  "sidebarWakesHeader": "Wakes",
+  "sidebarWakesMore": "+{count} weitere →",
+  "@sidebarWakesMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarWakesNow": "jetzt",
+  "sidebarWakesOpenList": "Liste öffnen →",
   "skillsSectionTitle": "Skills",
   "speechDictionaryHelper": "Durch Semikolon getrennte Begriffe (max. 50 Zeichen) für bessere Spracherkennung",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

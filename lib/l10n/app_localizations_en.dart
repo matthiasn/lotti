@@ -2617,6 +2617,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
+  String get configFlagShowSidebarWakeQueue => 'Show sidebar wake queue';
+
+  @override
+  String get configFlagShowSidebarWakeQueueDescription =>
+      'Show the inline Wake Queue above Settings — header, the next two pending wakes with countdowns, and a link to the full list.';
+
+  @override
   String get configFlagShowSyncActivityIndicator =>
       'Show sync activity indicator';
 
@@ -6146,6 +6153,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sidebarToggleExpandLabel => 'Expand sidebar';
+
+  @override
+  String get sidebarWakesCancelTooltip => 'Cancel wake';
+
+  @override
+  String get sidebarWakesHeader => 'Wakes';
+
+  @override
+  String sidebarWakesMore(int count) {
+    return '+$count more →';
+  }
+
+  @override
+  String get sidebarWakesNow => 'now';
+
+  @override
+  String get sidebarWakesOpenList => 'Open list →';
 
   @override
   String get skillsSectionTitle => 'Skills';
