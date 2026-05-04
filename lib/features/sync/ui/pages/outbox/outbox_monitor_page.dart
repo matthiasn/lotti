@@ -62,7 +62,13 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   @override
   void initState() {
     super.initState();
-    _fetch();
+    // Defer the first fetch to after the first frame so the localization
+    // and toast dependencies are wired up before any error path runs —
+    // a synchronous DB throw inside initState would otherwise touch
+    // `context.messages` before dependencies are ready.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fetch();
+    });
   }
 
   Future<void> _fetch() async {
@@ -80,9 +86,17 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         stackTrace: stackTrace,
       );
       if (!mounted) return;
-      // Surface the failure but leave any prior snapshot in place so
-      // the user does not lose context on a transient DB error.
+      // Surface the failure to the user — on the initial load, this is
+      // the only signal that something went wrong (otherwise the page
+      // would just render the same "Outbox is clear" empty state as a
+      // legitimately empty outbox). On a refresh failure, leave the
+      // prior snapshot in place so the user does not lose context.
       setState(() => _items ??= const <OutboxItem>[]);
+      if (!context.mounted) return;
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.outboxMonitorFetchFailed,
+      );
     } finally {
       _isFetching = false;
     }

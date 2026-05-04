@@ -2004,6 +2004,7 @@
   "outboxMonitorDeleteSuccess": "Élément supprimé",
   "outboxMonitorEmptyDescription": "Il n'y a aucun élément de synchronisation dans cette vue.",
   "outboxMonitorEmptyTitle": "La boîte d'envoi est vide",
+  "outboxMonitorFetchFailed": "Impossible de charger la boîte d'envoi. Tire vers le bas pour actualiser et réessaie.",
   "outboxMonitorLabelAll": "tout",
   "outboxMonitorLabelError": "erreur",
   "outboxMonitorLabelPending": "en attente",

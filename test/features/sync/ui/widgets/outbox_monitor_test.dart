@@ -368,6 +368,27 @@ void main() {
       expect(find.text('Outbox is clear'), findsOneWidget);
     });
 
+    testWidgets('surfaces a toast when the initial fetch fails', (
+      tester,
+    ) async {
+      final mock = mockSyncDatabaseWithCount(0);
+      when(
+        () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
+      ).thenAnswer((_) async => const <OutboxDailyVolume>[]);
+      when(
+        () => mock.getOutboxItems(limit: any(named: 'limit')),
+      ).thenThrow(Exception('DB offline'));
+
+      await _pumpOutboxMonitorPage(tester, mock: mock);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining("Couldn't load the outbox"), findsOneWidget);
+      // Page must drop out of the loading state so pull-to-refresh is
+      // reachable; without this the spinner would hang forever.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
     testWidgets(
       'mounts a RefreshIndicator wired to the outbox fetch',
       (tester) async {

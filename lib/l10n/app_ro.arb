@@ -2004,6 +2004,7 @@
   "outboxMonitorDeleteSuccess": "Element șters",
   "outboxMonitorEmptyDescription": "Nu există elemente de sincronizare în această vizualizare.",
   "outboxMonitorEmptyTitle": "Căsuța de trimitere este goală",
+  "outboxMonitorFetchFailed": "Căsuța de trimitere nu a putut fi încărcată. Trageți în jos pentru reîmprospătare și încercați din nou.",
   "outboxMonitorLabelAll": "toate",
   "outboxMonitorLabelError": "eroare",
   "outboxMonitorLabelPending": "în așteptare",

@@ -4598,6 +4598,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get outboxMonitorEmptyTitle => 'Odchozí pošta je prázdná';
 
   @override
+  String get outboxMonitorFetchFailed =>
+      'Odchozí poštu se nepodařilo načíst. Stáhněte dolů pro obnovení a zkuste to znovu.';
+
+  @override
   String get outboxMonitorLabelAll => 'vše';
 
   @override

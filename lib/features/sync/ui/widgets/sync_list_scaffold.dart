@@ -76,9 +76,11 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     this.backButton = true,
     super.key,
   }) : assert(
-         (stream == null) != (items == null) || isLoading,
-         'Provide exactly one of `stream` or `items` (or set isLoading with '
-         'items=null to show the spinner before the first fetch resolves).',
+         stream == null || items == null,
+         'Provide at most one of `stream` or `items`. Pass `items: null` '
+         'with `isLoading: true` to render the spinner before the first '
+         'fetch resolves; with `isLoading: false` it falls through to the '
+         'empty state.',
        );
 
   /// Sliver page title.

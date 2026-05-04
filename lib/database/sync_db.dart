@@ -768,6 +768,14 @@ class SyncDatabase extends _$SyncDatabase {
           expression: t.createdAt,
           mode: OrderingMode.desc,
         ),
+        // Deterministic tie-breaker — without this, rows near the
+        // limit boundary can swap places between refreshes when
+        // priority and createdAt match. Matches the id tie-break used
+        // in claimNextOutboxBatch().
+        (t) => OrderingTerm(
+          expression: t.id,
+          mode: OrderingMode.desc,
+        ),
       ])
       ..limit(limit);
   }

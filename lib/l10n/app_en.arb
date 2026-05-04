@@ -2259,6 +2259,7 @@
   "outboxMonitorDeleteSuccess": "Item deleted",
   "outboxMonitorEmptyDescription": "There are no sync items in this view.",
   "outboxMonitorEmptyTitle": "Outbox is clear",
+  "outboxMonitorFetchFailed": "Couldn't load the outbox. Pull to refresh and try again.",
   "outboxMonitorLabelAll": "all",
   "outboxMonitorLabelError": "error",
   "outboxMonitorLabelPending": "pending",
