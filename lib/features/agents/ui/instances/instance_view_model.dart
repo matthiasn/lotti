@@ -1,0 +1,289 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/soul_query_providers.dart';
+import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart'
+    show InstancesGroupKey;
+import 'package:lotti/l10n/app_localizations.dart';
+
+/// Localized label for an [InstanceType], used by the row's type pill, the
+/// filter popover, and the active-filter chip row. Centralised so a new
+/// kind only needs an arb entry plus a switch arm here.
+String instanceTypeLabel(AppLocalizations messages, InstanceType t) {
+  return switch (t) {
+    InstanceType.taskAgent => messages.agentTemplateKindTaskAgent,
+    InstanceType.projectAgent => messages.agentTemplateKindProjectAgent,
+    InstanceType.templateImprover => messages.agentTemplateKindImprover,
+    InstanceType.evolution => messages.agentInstancesKindEvolution,
+  };
+}
+
+/// Localized label for an [AgentLifecycle] used as a status filter / chip
+/// label / pill. Mirrors the lifecycle styling at
+/// `agent_badge_widgets.dart` but as plain text.
+String agentLifecycleLabel(AppLocalizations messages, AgentLifecycle s) {
+  return switch (s) {
+    AgentLifecycle.active => messages.agentLifecycleActive,
+    AgentLifecycle.dormant => messages.agentLifecycleDormant,
+    AgentLifecycle.destroyed => messages.agentLifecycleDestroyed,
+    AgentLifecycle.created => messages.agentLifecycleCreated,
+  };
+}
+
+/// Type axis used by both the type filter and the type group key.
+///
+/// `taskAgent`, `templateImprover`, and `projectAgent` come straight off
+/// [AgentTemplateKind] so a future kind can be added in one enum and the
+/// instances page picks it up. `evolution` is the synthetic type used for
+/// [EvolutionSessionEntity]s, which don't have a template kind.
+enum InstanceType { taskAgent, projectAgent, templateImprover, evolution }
+
+InstanceType? instanceTypeFromAgentKind(String kind) {
+  return switch (kind) {
+    AgentKinds.taskAgent => InstanceType.taskAgent,
+    AgentKinds.projectAgent => InstanceType.projectAgent,
+    AgentKinds.templateImprover => InstanceType.templateImprover,
+    _ => null,
+  };
+}
+
+/// Pre-computed counts and soul options derived from a [List]<[InstanceVm]>,
+/// passed into the toolbar / popovers / chip row.
+///
+/// Computed once per `vms` reference (see [FilterCounts.from]) so filter
+/// keystrokes / hover / collapse don't re-iterate the row list.
+class FilterCounts {
+  const FilterCounts({
+    required this.types,
+    required this.statuses,
+    required this.soulOptions,
+    required this.soulCounts,
+  });
+
+  factory FilterCounts.from(List<InstanceVm> vms, String unassignedLabel) {
+    final types = <InstanceType, int>{
+      for (final t in InstanceType.values) t: 0,
+    };
+    final statuses = <AgentLifecycle, int>{
+      for (final s in AgentLifecycle.values) s: 0,
+    };
+    final soulCounts = <String, int>{};
+    final soulLabel = <String, String>{};
+
+    for (final vm in vms) {
+      types[vm.type] = (types[vm.type] ?? 0) + 1;
+      statuses[vm.status] = (statuses[vm.status] ?? 0) + 1;
+      final id = vm.soulGroupId();
+      soulCounts[id] = (soulCounts[id] ?? 0) + 1;
+      soulLabel.putIfAbsent(id, () => vm.soulGroupLabel(unassignedLabel));
+    }
+
+    final soulOptions =
+        soulLabel.entries
+            .map(
+              (e) =>
+                  SoulOption(id: e.key, label: e.value, hue: hueForSeed(e.key)),
+            )
+            .toList()
+          ..sort(
+            (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
+          );
+
+    return FilterCounts(
+      types: types,
+      statuses: statuses,
+      soulOptions: soulOptions,
+      soulCounts: soulCounts,
+    );
+  }
+
+  final Map<InstanceType, int> types;
+  final Map<AgentLifecycle, int> statuses;
+  final List<SoulOption> soulOptions;
+  final Map<String, int> soulCounts;
+}
+
+/// Soul row shown in the Filters popover and chip row.
+class SoulOption {
+  const SoulOption({required this.id, required this.label, required this.hue});
+  final String id;
+  final String label;
+  final int hue;
+}
+
+/// Stable hue (0..359) derived from [seed]. Same string in → same hue out,
+/// so a soul / template gets a consistent avatar tint without storing a
+/// colour on the entity. FNV-1a hash, plenty for this use.
+int hueForSeed(String seed) {
+  if (seed.isEmpty) return 0;
+  var h = 2166136261;
+  for (final code in seed.codeUnits) {
+    h = (h ^ code) & 0xFFFFFFFF;
+    h = (h * 16777619) & 0xFFFFFFFF;
+  }
+  return h % 360;
+}
+
+/// View-model row consumed by the instances page.
+///
+/// Hydrated up-front (in [agentInstanceVmsProvider]) so the page can
+/// filter, sort, and group on plain values without per-row async lookups.
+class InstanceVm {
+  const InstanceVm({
+    required this.id,
+    required this.displayName,
+    required this.type,
+    required this.status,
+    required this.updatedAt,
+    required this.searchKey,
+    this.sessionNumber,
+    this.soulName,
+    this.soulId,
+    this.templateId,
+    this.templateName,
+  });
+
+  /// Stable id used as a map / list key. For task agents this is the
+  /// `agentId` (matches `/settings/agents/instances/{agentId}` deep-links);
+  /// for evolution sessions this is the session entity id.
+  final String id;
+
+  /// Primary line of text on the row. For task agents this is
+  /// `agent.displayName`; for evolution sessions the row widget builds a
+  /// localized title from [sessionNumber] instead and ignores this value.
+  final String displayName;
+
+  /// Set only for [InstanceType.evolution]; lets the row widget render
+  /// "Evolution #N" through `context.messages.agentEvolutionSessionTitle`.
+  final int? sessionNumber;
+
+  final InstanceType type;
+  final AgentLifecycle status;
+  final DateTime updatedAt;
+
+  /// Resolved soul (via `templateForAgentProvider` → `soulForTemplateProvider`).
+  /// `null` when no soul is assigned.
+  final String? soulName;
+  final String? soulId;
+
+  /// Template the instance was spawned from. `null` for evolution sessions
+  /// or when the template lookup hasn't resolved yet.
+  final String? templateId;
+  final String? templateName;
+
+  /// Lower-cased blob used by the search input.
+  final String searchKey;
+
+  /// Group label / id for [InstancesGroupKey.soul]. Falls back to the
+  /// template name (so instances of a templated-but-soulless agent still
+  /// cluster together) and finally to a sentinel id so unassigned rows
+  /// land in their own bucket.
+  String soulGroupId() => soulId ?? templateId ?? '__no_soul__';
+  String soulGroupLabel(String fallbackUnassigned) =>
+      soulName ?? templateName ?? fallbackUnassigned;
+}
+
+/// All instances (task agents + evolution sessions), enriched with their
+/// resolved template + soul.
+///
+/// Resolves per-agent template + soul lookups in parallel via
+/// [Future.wait]; the page treats this provider's result as a single
+/// [AsyncValue] so the toolbar and grouped list render together.
+final FutureProvider<List<InstanceVm>> agentInstanceVmsProvider =
+    FutureProvider.autoDispose<List<InstanceVm>>((
+      ref,
+    ) async {
+      final agentsFuture = ref.watch(allAgentInstancesProvider.future);
+      final evolutionsFuture = ref.watch(allEvolutionSessionsProvider.future);
+      final agents = await agentsFuture;
+      final evolutions = await evolutionsFuture;
+
+      final identityEntities = agents.whereType<AgentIdentityEntity>().toList();
+      final evolutionEntities = evolutions
+          .whereType<EvolutionSessionEntity>()
+          .toList();
+
+      final templateFutures = identityEntities.map(
+        (a) => ref.watch(templateForAgentProvider(a.agentId).future),
+      );
+      final templates = await Future.wait(templateFutures);
+
+      final soulFutures = templates.map<Future<AgentDomainEntity?>>((t) {
+        final templateEntity = t?.mapOrNull(agentTemplate: (e) => e);
+        if (templateEntity == null) return Future<AgentDomainEntity?>.value();
+        return ref.watch(soulForTemplateProvider(templateEntity.id).future);
+      });
+      final souls = await Future.wait(soulFutures);
+
+      final soulNameById = <String, String>{};
+      if (souls.isNotEmpty) {
+        final allSouls = await ref.watch(allSoulDocumentsProvider.future);
+        for (final entity in allSouls) {
+          final soul = entity.mapOrNull(soulDocument: (e) => e);
+          if (soul != null) {
+            soulNameById[soul.id] = soul.displayName;
+          }
+        }
+      }
+
+      final taskRows = <InstanceVm>[];
+      for (var i = 0; i < identityEntities.length; i++) {
+        final agent = identityEntities[i];
+        final template = templates[i]?.mapOrNull(agentTemplate: (e) => e);
+        final soulVersion = souls[i]?.mapOrNull(soulDocumentVersion: (e) => e);
+        final soulId = soulVersion?.agentId;
+        final soulName = soulId == null ? null : soulNameById[soulId];
+
+        final type = instanceTypeFromAgentKind(agent.kind);
+        if (type == null) continue;
+
+        taskRows.add(
+          InstanceVm(
+            id: agent.agentId,
+            displayName: agent.displayName,
+            type: type,
+            status: agent.lifecycle,
+            updatedAt: agent.updatedAt,
+            soulName: soulName,
+            soulId: soulId,
+            templateId: template?.id,
+            templateName: template?.displayName,
+            searchKey: [
+              agent.displayName,
+              agent.agentId,
+              template?.displayName ?? '',
+              soulName ?? '',
+            ].join(' ').toLowerCase(),
+          ),
+        );
+      }
+
+      final evolutionRows = evolutionEntities.map((session) {
+        return InstanceVm(
+          id: session.id,
+          // Placeholder — the row widget renders the localized
+          // "Evolution #N" title from `sessionNumber` instead.
+          displayName: '',
+          sessionNumber: session.sessionNumber,
+          type: InstanceType.evolution,
+          // Map evolution-session statuses onto the lifecycle axis used by
+          // the status filter / pill colors:
+          //   active    → active    (live, green)
+          //   completed → dormant   (finished cleanly, grey)
+          //   abandoned → destroyed (terminated without result, red)
+          status: switch (session.status) {
+            EvolutionSessionStatus.active => AgentLifecycle.active,
+            EvolutionSessionStatus.completed => AgentLifecycle.dormant,
+            EvolutionSessionStatus.abandoned => AgentLifecycle.destroyed,
+          },
+          updatedAt: session.updatedAt,
+          templateId: session.templateId,
+          searchKey: 'evolution ${session.sessionNumber} ${session.id}'
+              .toLowerCase(),
+        );
+      });
+
+      return [...taskRows, ...evolutionRows];
+    });

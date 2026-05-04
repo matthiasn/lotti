@@ -223,14 +223,56 @@
   "agentFeedbackSourceMetric": "Métrique",
   "agentFeedbackSourceObservation": "Observation",
   "agentFeedbackSourceRating": "Évaluation",
+  "agentInstancesEmptyFiltered": "Aucune instance ne correspond à tes filtres.",
   "agentInstancesEmptyList": "Aucune instance d'agent trouvée",
   "agentInstancesFilterActive": "Actif",
   "agentInstancesFilterAll": "Tous",
+  "agentInstancesFilterClearAll": "Tout effacer",
+  "agentInstancesFilterClearSection": "Effacer",
   "agentInstancesFilterDestroyed": "Détruit",
   "agentInstancesFilterDormant": "En veille",
+  "agentInstancesFilterSectionSoul": "Âme",
+  "agentInstancesFilterSectionStatus": "Statut",
+  "agentInstancesFilterSectionType": "Type",
+  "agentInstancesGroupActiveCount": "{count, plural, =1{1 actif} other{{count} actifs}}",
+  "@agentInstancesGroupActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesGroupBySoul": "Âme",
+  "agentInstancesGroupByStatus": "Statut",
+  "agentInstancesGroupByType": "Type",
   "agentInstancesKindAll": "Tous",
   "agentInstancesKindEvolution": "Évolution",
   "agentInstancesKindTaskAgent": "Agent de tâches",
+  "agentInstancesPageTitle": "Instances d'agents",
+  "agentInstancesResultCountAll": "{count, plural, =1{1 instance} other{{count} instances}}",
+  "@agentInstancesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesResultCountFiltered": "{filtered} sur {total}",
+  "@agentInstancesResultCountFiltered": {
+    "placeholders": {
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesSearchClear": "Effacer la recherche",
+  "agentInstancesSearchPlaceholder": "Rechercher des instances…",
+  "agentInstancesSortName": "Nom",
+  "agentInstancesSortOldest": "Plus anciennes",
+  "agentInstancesSortRecent": "Récentes",
   "agentInstancesStatsSummary": "Total {total} · Actifs {active} · En veille {dormant} · Détruits {destroyed}",
   "@agentInstancesStatsSummary": {
     "placeholders": {
@@ -249,6 +291,9 @@
     }
   },
   "agentInstancesTitle": "Instances",
+  "agentInstancesToolbarFilters": "Filtres",
+  "agentInstancesToolbarGroupBy": "Grouper par",
+  "agentInstancesUnassignedSoul": "Non attribué",
   "agentLifecycleActive": "Actif",
   "agentLifecycleCreated": "Créé",
   "agentLifecycleDestroyed": "Détruit",

@@ -180,16 +180,26 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       _ => null,
     };
 
+    final appBarTitle = switch (selectedTab) {
+      AgentSettingsTab.instances => context.messages.agentInstancesPageTitle,
+      _ => context.messages.agentSettingsTitle,
+    };
     return Scaffold(
-      appBar: AppBar(
-        leading: agentBackButton(context),
-        title: Text(
-          context.messages.agentSettingsTitle,
-          style: appBarTextStyleNewLarge.copyWith(
-            color: Theme.of(context).primaryColor,
-          ),
-        ),
-      ),
+      // Desktop V2 already names the page via the breadcrumb in the
+      // shell header; an AppBar here would just stack a second darker
+      // chrome strip on top of it. Mobile / push-stack contexts keep
+      // the AppBar so the back button and title stay reachable.
+      appBar: _isUrlDriven
+          ? null
+          : AppBar(
+              leading: agentBackButton(context),
+              title: Text(
+                appBarTitle,
+                style: appBarTextStyleNewLarge.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+              ),
+            ),
       body: Column(
         children: [
           // Hide the in-page tab strip on desktop V2 — every tab now

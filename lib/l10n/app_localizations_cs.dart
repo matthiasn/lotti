@@ -397,6 +397,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Hodnocení';
 
   @override
+  String get agentInstancesEmptyFiltered =>
+      'Žádné instance neodpovídají tvým filtrům.';
+
+  @override
   String get agentInstancesEmptyList => 'Nebyly nalezeny žádné instance agenta';
 
   @override
@@ -406,10 +410,46 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentInstancesFilterAll => 'Vše';
 
   @override
+  String get agentInstancesFilterClearAll => 'Vymazat vše';
+
+  @override
+  String get agentInstancesFilterClearSection => 'Vymazat';
+
+  @override
   String get agentInstancesFilterDestroyed => 'Zničené';
 
   @override
   String get agentInstancesFilterDormant => 'Neaktivní';
+
+  @override
+  String get agentInstancesFilterSectionSoul => 'Duše';
+
+  @override
+  String get agentInstancesFilterSectionStatus => 'Stav';
+
+  @override
+  String get agentInstancesFilterSectionType => 'Typ';
+
+  @override
+  String agentInstancesGroupActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aktivních',
+      few: '$count aktivní',
+      one: '1 aktivní',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get agentInstancesGroupBySoul => 'Duše';
+
+  @override
+  String get agentInstancesGroupByStatus => 'Stav';
+
+  @override
+  String get agentInstancesGroupByType => 'Typ';
 
   @override
   String get agentInstancesKindAll => 'Vše';
@@ -419,6 +459,41 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentInstancesKindTaskAgent => 'Agent úkolů';
+
+  @override
+  String get agentInstancesPageTitle => 'Instance agentů';
+
+  @override
+  String agentInstancesResultCountAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count instancí',
+      few: '$count instance',
+      one: '1 instance',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String agentInstancesResultCountFiltered(int filtered, int total) {
+    return '$filtered z $total';
+  }
+
+  @override
+  String get agentInstancesSearchClear => 'Vymazat hledání';
+
+  @override
+  String get agentInstancesSearchPlaceholder => 'Hledat instance…';
+
+  @override
+  String get agentInstancesSortName => 'Název';
+
+  @override
+  String get agentInstancesSortOldest => 'Nejstarší';
+
+  @override
+  String get agentInstancesSortRecent => 'Nejnovější';
 
   @override
   String agentInstancesStatsSummary(
@@ -432,6 +507,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentInstancesTitle => 'Instance';
+
+  @override
+  String get agentInstancesToolbarFilters => 'Filtry';
+
+  @override
+  String get agentInstancesToolbarGroupBy => 'Seskupit podle';
+
+  @override
+  String get agentInstancesUnassignedSoul => 'Nepřiřazeno';
 
   @override
   String get agentLifecycleActive => 'Aktivní';
