@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -50,9 +48,45 @@ class OutboxMonitorBody extends StatelessWidget {
 class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   final SyncDatabase _db = getIt<SyncDatabase>();
 
-  late final Stream<List<OutboxItem>> _stream = _db.watchOutboxItems(
-    limit: 2500,
-  );
+  // The page deliberately does NOT subscribe to a live `watch()` stream.
+  // The outbox grows by hundreds of rows per minute during sync; a live
+  // watcher with the CASE-WHEN ORDER BY required for this page forces
+  // SQLite into a temp B-tree sort on every write and dominates CPU
+  // for as long as the page is open. Snapshot + pull-to-refresh
+  // matches what an operator actually needs here.
+  static const int _fetchLimit = 2500;
+
+  List<OutboxItem>? _items;
+  bool _isFetching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    if (_isFetching) return;
+    _isFetching = true;
+    try {
+      final items = await _db.getOutboxItems(limit: _fetchLimit);
+      if (!mounted) return;
+      setState(() => _items = items);
+    } catch (error, stackTrace) {
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'OUTBOX',
+        subDomain: 'fetch',
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return;
+      // Surface the failure but leave any prior snapshot in place so
+      // the user does not lose context on a transient DB error.
+      setState(() => _items ??= const <OutboxItem>[]);
+    } finally {
+      _isFetching = false;
+    }
+  }
 
   Future<void> _retryItem(BuildContext context, OutboxItem item) async {
     final confirmed = await showConfirmationModal(
@@ -73,6 +107,8 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
           updatedAt: drift.Value(DateTime.now()),
         ),
       );
+
+      await _fetch();
 
       if (!context.mounted) return;
       context.showToast(
@@ -107,6 +143,8 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
     try {
       await _db.deleteOutboxItemById(item.id);
+
+      await _fetch();
 
       if (!context.mounted) return;
       context.showToast(
@@ -180,7 +218,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
     return SyncListScaffold<OutboxItem, _OutboxListFilter>(
       title: context.messages.settingsSyncOutboxTitle,
       subtitle: context.messages.settingsAdvancedOutboxSubtitle,
-      stream: _stream,
+      items: _items,
+      isLoading: _items == null,
+      onRefresh: _fetch,
       headerSliver: const OutboxVolumeChart(),
       filters: filters,
       initialFilter: _OutboxListFilter.pending,

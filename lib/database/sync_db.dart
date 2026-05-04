@@ -742,6 +742,36 @@ class SyncDatabase extends _$SyncDatabase {
     );
   }
 
+  SimpleSelectStatement<$OutboxTable, OutboxItem> _outboxItemsQuery({
+    required int limit,
+    required List<OutboxStatus> statuses,
+  }) {
+    return select(outbox)
+      ..where(
+        (t) => t.status.isIn(
+          statuses.map((OutboxStatus status) => status.index),
+        ),
+      )
+      ..orderBy([
+        // Actionable items (pending/sending) appear before completed ones
+        // so they are never pushed outside the query limit by old sent rows.
+        (t) => OrderingTerm(
+          expression: CustomExpression<int>(
+            'CASE WHEN status IN '
+            '(${OutboxStatus.pending.index}, $_outboxSendingStatus) THEN 0 '
+            'WHEN status = ${OutboxStatus.error.index} THEN 1 '
+            'ELSE 2 END',
+          ),
+        ),
+        (t) => OrderingTerm(expression: t.priority),
+        (t) => OrderingTerm(
+          expression: t.createdAt,
+          mode: OrderingMode.desc,
+        ),
+      ])
+      ..limit(limit);
+  }
+
   Stream<List<OutboxItem>> watchOutboxItems({
     int limit = 1000,
     List<OutboxStatus> statuses = const [
@@ -751,31 +781,23 @@ class SyncDatabase extends _$SyncDatabase {
       OutboxStatus.sent,
     ],
   }) {
-    return (select(outbox)
-          ..where(
-            (t) => t.status.isIn(
-              statuses.map((OutboxStatus status) => status.index),
-            ),
-          )
-          ..orderBy([
-            // Actionable items (pending/sending) appear before completed ones
-            // so they are never pushed outside the query limit by old sent rows.
-            (t) => OrderingTerm(
-              expression: CustomExpression<int>(
-                'CASE WHEN status IN '
-                '(${OutboxStatus.pending.index}, $_outboxSendingStatus) THEN 0 '
-                'WHEN status = ${OutboxStatus.error.index} THEN 1 '
-                'ELSE 2 END',
-              ),
-            ),
-            (t) => OrderingTerm(expression: t.priority),
-            (t) => OrderingTerm(
-              expression: t.createdAt,
-              mode: OrderingMode.desc,
-            ),
-          ])
-          ..limit(limit))
-        .watch();
+    return _outboxItemsQuery(limit: limit, statuses: statuses).watch();
+  }
+
+  /// One-shot fetch with the same shape and ordering as [watchOutboxItems].
+  /// Used by surfaces that explicitly opt out of the live watcher (e.g.
+  /// the outbox monitor page, which would otherwise re-run a temp-B-tree
+  /// sort on every sync write).
+  Future<List<OutboxItem>> getOutboxItems({
+    int limit = 1000,
+    List<OutboxStatus> statuses = const [
+      OutboxStatus.pending,
+      OutboxStatus.sending,
+      OutboxStatus.error,
+      OutboxStatus.sent,
+    ],
+  }) {
+    return _outboxItemsQuery(limit: limit, statuses: statuses).get();
   }
 
   /// Watches the count of actionable (pending + in-flight) outbox items.

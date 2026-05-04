@@ -58,12 +58,15 @@ class SyncFilterOption<T> {
 class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
   const SyncListScaffold({
     required this.title,
-    required this.stream,
     required this.filters,
     required this.itemBuilder,
     required this.emptyIcon,
     required this.emptyTitleBuilder,
     required this.countSummaryBuilder,
+    this.stream,
+    this.items,
+    this.isLoading = false,
+    this.onRefresh,
     this.subtitle,
     this.emptyDescriptionBuilder,
     this.initialFilter,
@@ -72,14 +75,34 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     this.listKey,
     this.backButton = true,
     super.key,
-  });
+  }) : assert(
+         (stream == null) != (items == null) || isLoading,
+         'Provide exactly one of `stream` or `items` (or set isLoading with '
+         'items=null to show the spinner before the first fetch resolves).',
+       );
 
   /// Sliver page title.
   final String title;
   final String? subtitle;
 
-  /// Source stream that yields the full set of items. Filtering occurs locally.
-  final Stream<List<T>> stream;
+  /// Source stream that yields the full set of items. Filtering occurs
+  /// locally. Mutually exclusive with [items]; pages that prefer
+  /// fetch-on-demand should pass [items] + [onRefresh] instead so they
+  /// do not hold a live `watch()` open.
+  final Stream<List<T>>? stream;
+
+  /// Pre-fetched item snapshot. When non-null, [stream] must be null.
+  /// `null` together with [isLoading] = `true` shows the loading
+  /// spinner; `null` with [isLoading] = `false` is treated as empty.
+  final List<T>? items;
+
+  /// When true and [items] is null, render the loading spinner. Used
+  /// while the first fetch is in flight on snapshot-based pages.
+  final bool isLoading;
+
+  /// Optional pull-to-refresh handler. When set, the scaffold wraps its
+  /// scroll view in a Material `RefreshIndicator`.
+  final Future<void> Function()? onRefresh;
 
   /// Filter definitions mapped to their enum identifiers.
   final Map<F, SyncFilterOption<T>> filters;
@@ -198,184 +221,214 @@ class _SyncListScaffoldState<T, F extends Enum>
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<T>>(
-      stream: widget.stream,
-      builder: (context, snapshot) {
-        final locale = Localizations.localeOf(context).toString();
-        final items = snapshot.data ?? <T>[];
+    if (widget.stream != null) {
+      return StreamBuilder<List<T>>(
+        stream: widget.stream,
+        builder: (context, snapshot) => _buildBody(
+          context,
+          items: snapshot.data ?? <T>[],
+          hasData: snapshot.hasData,
+        ),
+      );
+    }
 
-        final counts = <F, int>{
-          for (final entry in widget.filters.entries)
-            entry.key: items.where(entry.value.predicate).length,
-        };
+    return _buildBody(
+      context,
+      items: widget.items ?? <T>[],
+      hasData: !widget.isLoading || widget.items != null,
+    );
+  }
 
-        final filteredItems = items
-            .where(widget.filters[_selectedFilter]!.predicate)
+  Widget _buildBody(
+    BuildContext context, {
+    required List<T> items,
+    required bool hasData,
+  }) {
+    final locale = Localizations.localeOf(context).toString();
+
+    final counts = <F, int>{
+      for (final entry in widget.filters.entries)
+        entry.key: items.where(entry.value.predicate).length,
+    };
+
+    final filteredItems = items
+        .where(widget.filters[_selectedFilter]!.predicate)
+        .toList();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final effectivePadding = _effectivePaddingForWidth(
+          constraints.maxWidth,
+        );
+        final horizontalPaddingForEmpty =
+            (effectivePadding.start + effectivePadding.end) / 2;
+        final listPadding = EdgeInsets.only(
+          left: effectivePadding.start,
+          right: effectivePadding.end,
+          top: AppTheme.spacingSmall,
+          bottom: effectivePadding.bottom,
+        );
+
+        final summaryLabel = _formatLabel(
+          context,
+          widget.filters[_selectedFilter]!,
+          locale,
+        );
+        final summaryText = widget.countSummaryBuilder(
+          context,
+          summaryLabel,
+          filteredItems.length,
+        );
+
+        // Build labels, counts, and icon presence lists for height calculation.
+        final filterEntries = widget.filters.entries.toList(
+          growable: false,
+        );
+        final labels = filterEntries
+            .map(
+              (e) => toBeginningOfSentenceCase(
+                e.value.labelBuilder(context),
+                locale,
+              ),
+            )
+            .toList();
+        final countsList = filterEntries
+            .map((e) => counts[e.key] ?? 0)
+            .toList();
+        final haveIcons = filterEntries
+            .map((e) => e.value.icon != null)
             .toList();
 
-        final hasData = snapshot.hasData;
-
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final effectivePadding = _effectivePaddingForWidth(
-              constraints.maxWidth,
-            );
-            final horizontalPaddingForEmpty =
-                (effectivePadding.start + effectivePadding.end) / 2;
-            final listPadding = EdgeInsets.only(
-              left: effectivePadding.start,
-              right: effectivePadding.end,
-              top: AppTheme.spacingSmall,
-              bottom: effectivePadding.bottom,
-            );
-
-            final summaryLabel = _formatLabel(
-              context,
-              widget.filters[_selectedFilter]!,
-              locale,
-            );
-            final summaryText = widget.countSummaryBuilder(
-              context,
-              summaryLabel,
-              filteredItems.length,
-            );
-
-            // Build labels, counts, and icon presence lists for height calculation.
-            final filterEntries = widget.filters.entries.toList(
-              growable: false,
-            );
-            final labels = filterEntries
-                .map(
-                  (e) => toBeginningOfSentenceCase(
-                    e.value.labelBuilder(context),
-                    locale,
-                  ),
-                )
-                .toList();
-            final countsList = filterEntries
-                .map((e) => counts[e.key] ?? 0)
-                .toList();
-            final haveIcons = filterEntries
-                .map((e) => e.value.icon != null)
-                .toList();
-
-            // Calculate dynamic header height based on actual content.
-            final headerHorizontalPadding =
-                effectivePadding.start + effectivePadding.end;
-            final headerHeight =
-                SettingsHeaderDimensions.calculateFilterHeaderHeight(
-                  context: context,
-                  labels: labels,
-                  counts: countsList,
-                  haveIcons: haveIcons,
-                  availableWidth: constraints.maxWidth,
-                  horizontalPadding: headerHorizontalPadding,
-                  summaryText: summaryText,
-                );
-
-            final headerBottom = _SyncHeaderBottom<T, F>(
-              filters: widget.filters,
-              counts: counts,
-              selected: _selectedFilter,
-              onChanged: (value) => setState(() => _selectedFilter = value),
-              locale: locale,
+        // Calculate dynamic header height based on actual content.
+        final headerHorizontalPadding =
+            effectivePadding.start + effectivePadding.end;
+        final headerHeight =
+            SettingsHeaderDimensions.calculateFilterHeaderHeight(
+              context: context,
+              labels: labels,
+              counts: countsList,
+              haveIcons: haveIcons,
+              availableWidth: constraints.maxWidth,
+              horizontalPadding: headerHorizontalPadding,
               summaryText: summaryText,
+            );
+
+        final headerBottom = _SyncHeaderBottom<T, F>(
+          filters: widget.filters,
+          counts: counts,
+          selected: _selectedFilter,
+          onChanged: (value) => setState(() => _selectedFilter = value),
+          locale: locale,
+          summaryText: summaryText,
+          padding: EdgeInsetsDirectional.only(
+            start: effectivePadding.start,
+            end: effectivePadding.end,
+          ),
+          preferredHeight: headerHeight,
+        );
+
+        final scrollView = CustomScrollView(
+          controller: _scrollController,
+          // RefreshIndicator needs the scroll view to be reachable
+          // even when the list is empty — otherwise pull-to-refresh
+          // can't be triggered from the empty state.
+          physics: widget.onRefresh != null
+              ? const AlwaysScrollableScrollPhysics()
+              : null,
+          slivers: [
+            SettingsPageHeader(
+              title: widget.title,
+              subtitle: widget.subtitle,
+              showBackButton: widget.backButton,
+              bottom: headerBottom,
+            ),
+            if (widget.headerSliver != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    start: effectivePadding.start,
+                    end: effectivePadding.end,
+                  ),
+                  child: widget.headerSliver,
+                ),
+              ),
+            if (!hasData)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: CircularProgressIndicator.adaptive(),
+                ),
+              )
+            else if (filteredItems.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsetsDirectional.symmetric(
+                      horizontal: horizontalPaddingForEmpty,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child:
+                          EmptyStateWidget(
+                            icon: widget.emptyIcon,
+                            title: widget.emptyTitleBuilder(context),
+                            description: widget.emptyDescriptionBuilder?.call(
+                              context,
+                            ),
+                          ).animate().fadeIn(
+                            duration: const Duration(
+                              milliseconds: AppTheme.animationDuration,
+                            ),
+                          ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: listPadding,
+                sliver: SliverList(
+                  key: widget.listKey,
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index.isEven) {
+                        final itemIndex = index ~/ 2;
+                        return widget.itemBuilder(
+                          context,
+                          filteredItems[itemIndex],
+                        );
+                      }
+                      return const SizedBox(height: AppTheme.cardSpacing);
+                    },
+                    childCount: filteredItems.isEmpty
+                        ? 0
+                        : filteredItems.length * 2 - 1,
+                    addAutomaticKeepAlives: false,
+                  ),
+                ),
+              ),
+            SliverPadding(
               padding: EdgeInsetsDirectional.only(
                 start: effectivePadding.start,
                 end: effectivePadding.end,
+                bottom: effectivePadding.bottom,
               ),
-              preferredHeight: headerHeight,
-            );
+              sliver: SliverToBoxAdapter(
+                child: SizedBox(height: widget.listPadding.bottom),
+              ),
+            ),
+          ],
+        );
 
-            return Scaffold(
-              body: CustomScrollView(
-                controller: _scrollController,
-                slivers: [
-                  SettingsPageHeader(
-                    title: widget.title,
-                    subtitle: widget.subtitle,
-                    showBackButton: widget.backButton,
-                    bottom: headerBottom,
-                  ),
-                  if (widget.headerSliver != null)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsetsDirectional.only(
-                          start: effectivePadding.start,
-                          end: effectivePadding.end,
-                        ),
-                        child: widget.headerSliver,
-                      ),
-                    ),
-                  if (!hasData)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: CircularProgressIndicator.adaptive(),
-                      ),
-                    )
-                  else if (filteredItems.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Padding(
-                          padding: EdgeInsetsDirectional.symmetric(
-                            horizontal: horizontalPaddingForEmpty,
-                          ),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 420),
-                            child:
-                                EmptyStateWidget(
-                                  icon: widget.emptyIcon,
-                                  title: widget.emptyTitleBuilder(context),
-                                  description: widget.emptyDescriptionBuilder
-                                      ?.call(context),
-                                ).animate().fadeIn(
-                                  duration: const Duration(
-                                    milliseconds: AppTheme.animationDuration,
-                                  ),
-                                ),
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: listPadding,
-                      sliver: SliverList(
-                        key: widget.listKey,
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            if (index.isEven) {
-                              final itemIndex = index ~/ 2;
-                              return widget.itemBuilder(
-                                context,
-                                filteredItems[itemIndex],
-                              );
-                            }
-                            return const SizedBox(height: AppTheme.cardSpacing);
-                          },
-                          childCount: filteredItems.isEmpty
-                              ? 0
-                              : filteredItems.length * 2 - 1,
-                          addAutomaticKeepAlives: false,
-                        ),
-                      ),
-                    ),
-                  SliverPadding(
-                    padding: EdgeInsetsDirectional.only(
-                      start: effectivePadding.start,
-                      end: effectivePadding.end,
-                      bottom: effectivePadding.bottom,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: SizedBox(height: widget.listPadding.bottom),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+        final onRefresh = widget.onRefresh;
+        return Scaffold(
+          body: onRefresh == null
+              ? scrollView
+              : RefreshIndicator(
+                  onRefresh: onRefresh,
+                  child: scrollView,
+                ),
         );
       },
     );
