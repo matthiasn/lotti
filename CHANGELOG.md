@@ -59,6 +59,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MediaQuery.padding.top` as its own top padding; it now passes
   `padding: EdgeInsets.zero` explicitly so the first row sits flush
   under the filter divider on every form factor.
+- Linux geolocation rewritten as a dual-mode `package:dbus` client.
+  Inside the Flathub sandbox `DeviceLocation` calls
+  `org.freedesktop.portal.Location` (`XdgLocationPortal` in
+  `lib/services/linux_location_portal.dart`); the portal mediates
+  GeoClue on the app's behalf and Lotti now appears under GNOME
+  Settings → Location → Permitted Apps. Outside the sandbox
+  (`flutter run`, dev builds) it talks to `org.freedesktop.GeoClue2`
+  on the system bus directly (`LinuxGeoClueClient` in
+  `lib/services/linux_geoclue_client.dart`), because the portal
+  rejects unsandboxed callers with `Access denied` (the portal keys
+  authorization off the caller's Flatpak/Snap app-id, which is empty
+  for host processes). The picker keys off `/.flatpak-info`. The
+  previous code path used the abandoned `geoclue` Dart package,
+  required `<desktop-id>` to be replaced by the caller, never appeared
+  in GNOME's permitted-apps list, and had no `--talk-name` entry in
+  the Flatpak manifest. The `geoclue` dependency is removed and the
+  manifest now declares `--talk-name=org.freedesktop.portal.Desktop`.
+
+  Note: GeoClue itself still depends on a working WiFi-based
+  geolocation backend. On Ubuntu 24.04 the default Mozilla Location
+  Service URL returns 404 since Mozilla deprecated MLS in 2024;
+  point GeoClue at BeaconDB by dropping into
+  `/etc/geoclue/conf.d/00-beacondb.conf`:
+
+  ```ini
+  [wifi]
+  enable=true
+  url=https://api.beacondb.net/v1/geolocate
+  submission-url=https://api.beacondb.net/v2/geosubmit
+  ```
+
+  then `sudo systemctl restart geoclue`. Without a working backend
+  Lotti silently falls back to IP geolocation on every platform that
+  uses GeoClue under the hood.
 
 ## [0.9.990]
 ### Added

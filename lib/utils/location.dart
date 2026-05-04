@@ -1,16 +1,69 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:geoclue/geoclue.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
+import 'package:lotti/services/linux_geoclue_client.dart';
+import 'package:lotti/services/linux_location_portal.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/platform.dart';
+
+/// Abstracts both Linux backends (portal under Flatpak, direct GeoClue under
+/// `flutter run`) so callers and tests speak a single API.
+abstract class LinuxLocationBackend {
+  Future<PortalLocation> getLocation({required Duration timeout});
+  Future<void> close();
+}
+
+@visibleForTesting
+class PortalBackend implements LinuxLocationBackend {
+  PortalBackend(this._portal);
+  final XdgLocationPortal _portal;
+  @override
+  Future<PortalLocation> getLocation({required Duration timeout}) =>
+      _portal.getLocation(timeout: timeout);
+  @override
+  Future<void> close() => _portal.close();
+}
+
+@visibleForTesting
+class GeoClueBackend implements LinuxLocationBackend {
+  GeoClueBackend(this._client);
+  final LinuxGeoClueClient _client;
+  @override
+  Future<PortalLocation> getLocation({required Duration timeout}) =>
+      _client.getLocation(timeout: timeout);
+  @override
+  Future<void> close() => _client.close();
+}
+
+/// Builds the Linux backend used by [DeviceLocation]. Defaults to the portal
+/// when running inside a Flatpak sandbox (xdg-desktop-portal mediates GeoClue
+/// and the app appears under GNOME Settings → Location → Permitted Apps), and
+/// to direct GeoClue otherwise (the portal rejects unsandboxed callers with
+/// `Access denied`).
+typedef LinuxLocationBackendFactory = LinuxLocationBackend Function();
+
+bool _defaultIsInFlatpak() => File('/.flatpak-info').existsSync();
+
+@visibleForTesting
+LinuxLocationBackend defaultLinuxBackend({bool Function()? isInFlatpak}) {
+  final detect = isInFlatpak ?? _defaultIsInFlatpak;
+  if (detect()) {
+    return PortalBackend(XdgLocationPortal());
+  }
+  return GeoClueBackend(
+    LinuxGeoClueClient(desktopId: LocationConstants.appDesktopId),
+  );
+}
+
+LinuxLocationBackend _defaultLinuxBackendFactory() => defaultLinuxBackend();
 
 class LocationConstants {
   const LocationConstants._();
@@ -23,20 +76,26 @@ class DeviceLocation {
   DeviceLocation({
     Location? locationService,
     IpGeolocationProvider? ipGeolocationProvider,
+    LinuxLocationBackendFactory? linuxBackendFactory,
   }) {
     location = locationService ?? Location();
     _ipGeolocationProvider =
         ipGeolocationProvider ?? defaultIpGeolocationProvider;
+    _linuxBackendFactory = linuxBackendFactory ?? _defaultLinuxBackendFactory;
     init();
   }
 
   late Location location;
   late IpGeolocationProvider _ipGeolocationProvider;
+  late LinuxLocationBackendFactory _linuxBackendFactory;
 
   Future<void> init() async {
     bool serviceEnabled;
 
-    if (isWindows || isTestEnv) {
+    // Linux uses the portal / GeoClue path (see getCurrentGeoLocationLinux);
+    // probing the location plugin here only generates failing-init noise in
+    // Flatpak where the plugin's underlying APIs are unreachable.
+    if (isWindows || isTestEnv || Platform.isLinux) {
       return;
     }
 
@@ -134,48 +193,42 @@ class DeviceLocation {
   }
 
   Future<Geolocation?> getCurrentGeoLocationLinux() async {
+    if (!Platform.isLinux) return null;
+
     final now = DateTime.now();
-
-    if (Platform.isLinux) {
-      final manager = GeoClueManager();
-      GeoClueClient? client;
+    final backend = _linuxBackendFactory();
+    try {
+      final locationData = await backend.getLocation(
+        timeout: LocationConstants.locationTimeout,
+      );
+      return Geolocation(
+        createdAt: now,
+        timezone: now.timeZoneName,
+        utcOffset: now.timeZoneOffset.inMinutes,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        altitude: locationData.altitude,
+        speed: locationData.speed,
+        accuracy: locationData.accuracy,
+        heading: locationData.heading,
+        geohashString: getGeoHash(
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+        ),
+      );
+    } finally {
+      // Best-effort: a thrown close() must not erase a successful native
+      // location, mirroring how Session.Close is treated inside the portal
+      // and GeoClue clients.
       try {
-        await manager.connect();
-        client = await manager.getClient();
-        await client.setDesktopId(LocationConstants.appDesktopId);
-        await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
-        await client.start();
-
-        final locationData = await client.locationUpdated.first.timeout(
-          LocationConstants.locationTimeout,
+        await backend.close();
+      } catch (e) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'LOCATION_SERVICE',
+          subDomain: 'linux_backend_close',
         );
-
-        final longitude = locationData.longitude;
-        final latitude = locationData.latitude;
-
-        return Geolocation(
-          createdAt: now,
-          timezone: now.timeZoneName,
-          utcOffset: now.timeZoneOffset.inMinutes,
-          latitude: latitude,
-          longitude: longitude,
-          altitude: locationData.altitude,
-          speed: locationData.speed,
-          accuracy: locationData.accuracy,
-          heading: locationData.heading,
-          geohashString: getGeoHash(
-            latitude: latitude,
-            longitude: longitude,
-          ),
-        );
-      } finally {
-        if (client != null) {
-          await client.stop();
-        }
-        await manager.close();
       }
     }
-
-    return null;
   }
 }

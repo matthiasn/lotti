@@ -67,7 +67,6 @@ dependencies:
   formz: ^0.8.0
   freezed_annotation: ^3.1.0
   genui: ^0.9.0
-  geoclue: ^0.1.0
   get_it: ^8.0.2
   glass_kit: ^4.0.1
   google_fonts: ^6.1.0
