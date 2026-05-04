@@ -237,7 +237,7 @@ class _SummaryRow extends ConsumerWidget {
               tooltip: messages.projectManageTooltip,
             ),
             AnimatedRotation(
-              turns: expanded ? 0.5 : 0,
+              turns: expanded ? 0 : -0.25,
               duration: const Duration(milliseconds: 200),
               child: Icon(
                 Icons.expand_more,

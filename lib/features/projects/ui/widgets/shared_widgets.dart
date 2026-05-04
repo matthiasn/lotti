@@ -806,8 +806,8 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                         padding: EdgeInsets.only(left: tokens.spacing.step2),
                         child: Icon(
                           _expanded
-                              ? Icons.expand_less_rounded
-                              : Icons.expand_more_rounded,
+                              ? Icons.keyboard_arrow_down_rounded
+                              : Icons.chevron_right_rounded,
                           size: tokens.typography.lineHeight.bodySmall,
                           color: ShowcasePalette.mediumText(context),
                         ),

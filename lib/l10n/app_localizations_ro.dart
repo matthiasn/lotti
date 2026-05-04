@@ -1191,44 +1191,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
 
   @override
-  String get aiCardActivityRecentLabel => 'Activitate recentă';
-
-  @override
-  String aiCardActivityRelativeDays(int days) {
-    return 'acum $days z';
-  }
-
-  @override
-  String aiCardActivityRelativeHours(int hours) {
-    return 'acum $hours h';
-  }
-
-  @override
-  String aiCardActivityRelativeMinutes(int minutes) {
-    return 'acum $minutes min';
-  }
-
-  @override
-  String get aiCardActivityRelativeNow => 'acum';
-
-  @override
-  String aiCardActivityRelativeWeeks(int weeks) {
-    return 'acum $weeks săpt';
-  }
-
-  @override
-  String get aiCardActivitySectionLabel => 'ACTIVITATE RECENTĂ';
-
-  @override
-  String get aiCardAgentNameTooltip =>
-      'Deschideți componentele interne ale agentului';
-
-  @override
   String get aiCardEmptyProposals =>
       'Nicio propunere deschisă · agentul va afișa aici noile modificări';
-
-  @override
-  String get aiCardHideActivity => 'Ascundeți activitatea';
 
   @override
   String aiCardHistoryToggle(int count) {
@@ -1274,21 +1238,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiCardReadMore => 'Citiți mai mult';
-
-  @override
-  String aiCardRecentActions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de acțiuni recente',
-      few: '$count acțiuni recente',
-      one: '$count acțiune recentă',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get aiCardSeeActivity => 'Vedeți activitatea';
 
   @override
   String get aiCardShowLess => 'Afișați mai puțin';

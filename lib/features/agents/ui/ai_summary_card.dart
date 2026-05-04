@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer' as developer;
-import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +27,6 @@ import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 
-part 'ai_summary_card/activity_section_part.dart';
 part 'ai_summary_card/assign_agent_cta_part.dart';
 part 'ai_summary_card/proposal_kind_part.dart';
 part 'ai_summary_card/proposals_section_part.dart';
@@ -39,11 +37,10 @@ part 'ai_summary_card/tldr_section_part.dart';
 /// Replaces the separate "AI Summary" + "Decision Activity" stack with
 /// a single deep-teal-tinted-navy surface that exposes the agent's
 /// TLDR, an expandable inline report, the actionable proposals list,
-/// the resolved-proposal history, and a recent-activity footer. Also
-/// surfaces the wake-cycle affordances (countdown / run-now / cancel)
-/// directly in the header. Uses the same data sources as the prior
-/// `AgentSuggestionsPanel` (proposal ledger, agent report, wake
-/// state).
+/// and the resolved-proposal history. Also surfaces the wake-cycle
+/// affordances (countdown / run-now / cancel) directly in the header.
+/// Uses the same data sources as the prior `AgentSuggestionsPanel`
+/// (proposal ledger, agent report, wake state).
 ///
 /// The card is a library split across part files in the
 /// `ai_summary_card/` directory:
@@ -51,8 +48,6 @@ part 'ai_summary_card/tldr_section_part.dart';
 ///   TLDR body
 /// * `proposals_section_part.dart` — section, row, kind chip, row
 ///   actions, history toggle, resolved tag
-/// * `activity_section_part.dart` — footer, list, row, relative-time
-///   helpers
 /// * `proposal_kind_part.dart` — kind enum + tool-name mapping +
 ///   token lookup
 /// * `assign_agent_cta_part.dart` — fallback CTA + create flow
@@ -95,7 +90,6 @@ class _AiSummaryShell extends ConsumerStatefulWidget {
 
 class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _expanded = false;
-  bool _activityOpen = false;
   bool _historyOpen = false;
   bool _confirmAllBusy = false;
   bool _cancelledManually = false;
@@ -264,11 +258,11 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                 additionalReport: additionalReport,
                 onOpenInternals: _openInternals,
               ),
-            // Hide the proposals + activity sections until the
-            // unified suggestion list has produced its first value.
-            // This avoids briefly rendering the "No open proposals"
+            // Hide the proposals section until the unified
+            // suggestion list has produced its first value. This
+            // avoids briefly rendering the "No open proposals"
             // placeholder during the initial async fetch.
-            if (list != null) ...[
+            if (list != null)
               _ProposalsSection(
                 open: list.open,
                 resolved: list.activity,
@@ -280,20 +274,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                     ? () => _confirmAll(list.open)
                     : null,
               ),
-              _ActivityFooter(
-                count: list.activity.length,
-                open: _activityOpen,
-                onToggle: list.activity.isEmpty
-                    ? null
-                    : () => setState(() => _activityOpen = !_activityOpen),
-                onOpenInternals: _openInternals,
-              ),
-              if (_activityOpen && list.activity.isNotEmpty)
-                _ActivityList(
-                  activity: list.activity,
-                  agentName: widget.identity.displayName,
-                ),
-            ],
           ],
         ),
       ),

@@ -188,7 +188,7 @@ class _ReadMorePill extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Icon(
-                  expanded ? Icons.expand_less : Icons.expand_more,
+                  expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
                   size: 14,
                   color: ai.accent,
                 ),

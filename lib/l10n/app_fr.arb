@@ -538,44 +538,7 @@
   "aiAssistantTitle": "Assistant IA",
   "aiAssistantTranscribeAudio": "Transcrire l'audio",
   "aiBatchToggleTooltip": "Passer à l'enregistrement standard",
-  "aiCardActivityRecentLabel": "Activité récente",
-  "aiCardActivityRelativeDays": "il y a {days} j",
-  "@aiCardActivityRelativeDays": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
-    }
-  },
-  "aiCardActivityRelativeHours": "il y a {hours} h",
-  "@aiCardActivityRelativeHours": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      }
-    }
-  },
-  "aiCardActivityRelativeMinutes": "il y a {minutes} min",
-  "@aiCardActivityRelativeMinutes": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "aiCardActivityRelativeNow": "maintenant",
-  "aiCardActivityRelativeWeeks": "il y a {weeks} sem",
-  "@aiCardActivityRelativeWeeks": {
-    "placeholders": {
-      "weeks": {
-        "type": "int"
-      }
-    }
-  },
-  "aiCardActivitySectionLabel": "ACTIVITÉ RÉCENTE",
-  "aiCardAgentNameTooltip": "Ouvrir les détails internes de l'agent",
   "aiCardEmptyProposals": "Aucune proposition ouverte · l'agent affichera ici les nouvelles modifications",
-  "aiCardHideActivity": "Masquer l'activité",
   "aiCardHistoryToggle": "Historique · {count}",
   "@aiCardHistoryToggle": {
     "placeholders": {
@@ -597,15 +560,6 @@
   "aiCardProposalKindStatus": "Statut",
   "aiCardProposalKindUpdate": "Mettre à jour",
   "aiCardReadMore": "Lire plus",
-  "aiCardRecentActions": "{count, plural, =1{{count} action récente} other{{count} actions récentes}}",
-  "@aiCardRecentActions": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "aiCardSeeActivity": "Voir l'activité",
   "aiCardShowLess": "Afficher moins",
   "aiCardSummaryAgo": "{relative}",
   "@aiCardSummaryAgo": {

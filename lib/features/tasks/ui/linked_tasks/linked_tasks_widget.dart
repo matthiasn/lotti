@@ -170,7 +170,7 @@ class _LinkedTasksHeader extends ConsumerWidget {
             _CountBadge(count: count),
             const Spacer(),
             Icon(
-              expanded ? Icons.expand_less : Icons.expand_more,
+              expanded ? Icons.keyboard_arrow_down : Icons.chevron_right,
               size: 24,
               color: tokens.colors.text.highEmphasis,
             ),
