@@ -1,16 +1,19 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:geoclue/geoclue.dart';
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
+import 'package:lotti/services/linux_location_portal.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/platform.dart';
+
+/// Builds the Linux portal client. Exposed so tests can inject a fake.
+typedef LinuxLocationPortalFactory = XdgLocationPortal Function();
 
 class LocationConstants {
   const LocationConstants._();
@@ -23,15 +26,18 @@ class DeviceLocation {
   DeviceLocation({
     Location? locationService,
     IpGeolocationProvider? ipGeolocationProvider,
+    LinuxLocationPortalFactory? linuxPortalFactory,
   }) {
     location = locationService ?? Location();
     _ipGeolocationProvider =
         ipGeolocationProvider ?? defaultIpGeolocationProvider;
+    _linuxPortalFactory = linuxPortalFactory ?? XdgLocationPortal.new;
     init();
   }
 
   late Location location;
   late IpGeolocationProvider _ipGeolocationProvider;
+  late LinuxLocationPortalFactory _linuxPortalFactory;
 
   Future<void> init() async {
     bool serviceEnabled;
@@ -134,48 +140,32 @@ class DeviceLocation {
   }
 
   Future<Geolocation?> getCurrentGeoLocationLinux() async {
+    if (!Platform.isLinux) return null;
+
     final now = DateTime.now();
-
-    if (Platform.isLinux) {
-      final manager = GeoClueManager();
-      GeoClueClient? client;
-      try {
-        await manager.connect();
-        client = await manager.getClient();
-        await client.setDesktopId(LocationConstants.appDesktopId);
-        await client.setRequestedAccuracyLevel(GeoClueAccuracyLevel.exact);
-        await client.start();
-
-        final locationData = await client.locationUpdated.first.timeout(
-          LocationConstants.locationTimeout,
-        );
-
-        final longitude = locationData.longitude;
-        final latitude = locationData.latitude;
-
-        return Geolocation(
-          createdAt: now,
-          timezone: now.timeZoneName,
-          utcOffset: now.timeZoneOffset.inMinutes,
-          latitude: latitude,
-          longitude: longitude,
-          altitude: locationData.altitude,
-          speed: locationData.speed,
-          accuracy: locationData.accuracy,
-          heading: locationData.heading,
-          geohashString: getGeoHash(
-            latitude: latitude,
-            longitude: longitude,
-          ),
-        );
-      } finally {
-        if (client != null) {
-          await client.stop();
-        }
-        await manager.close();
-      }
+    final portal = _linuxPortalFactory();
+    try {
+      final locationData = await portal.getLocation(
+        // ignore: avoid_redundant_argument_values
+        timeout: LocationConstants.locationTimeout,
+      );
+      return Geolocation(
+        createdAt: now,
+        timezone: now.timeZoneName,
+        utcOffset: now.timeZoneOffset.inMinutes,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        altitude: locationData.altitude,
+        speed: locationData.speed,
+        accuracy: locationData.accuracy,
+        heading: locationData.heading,
+        geohashString: getGeoHash(
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+        ),
+      );
+    } finally {
+      await portal.close();
     }
-
-    return null;
   }
 }

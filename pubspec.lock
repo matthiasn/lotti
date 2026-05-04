@@ -1257,14 +1257,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.0"
-  geoclue:
-    dependency: "direct main"
-    description:
-      name: geoclue
-      sha256: c2a998c77474fc57aa00c6baa2928e58f4b267649057a1c76738656e9dbd2a7f
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.1"
   get_it:
     dependency: "direct main"
     description:

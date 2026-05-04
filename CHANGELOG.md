@@ -59,6 +59,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MediaQuery.padding.top` as its own top padding; it now passes
   `padding: EdgeInsets.zero` explicitly so the first row sits flush
   under the filter divider on every form factor.
+- Linux geolocation now goes through the XDG Desktop Portal
+  (`org.freedesktop.portal.Location`) instead of talking to GeoClue
+  directly. The previous direct-D-Bus path was silently denied inside
+  the Flathub sandbox (no `--system-talk-name=org.freedesktop.GeoClue2`
+  in finish-args) and silently denied outside it whenever the GNOME
+  GeoClue agent could not match the running binary to a `.desktop`
+  file. The portal mediates GeoClue access on the app's behalf, makes
+  Lotti appear under GNOME Settings → Location → Permitted Apps, and
+  works the same way under `flutter run` and Flatpak. The `geoclue`
+  Dart package is removed; a small `XdgLocationPortal` D-Bus client
+  (`lib/services/linux_location_portal.dart`) replaces it. The Flatpak
+  manifest now declares `--talk-name=org.freedesktop.portal.Desktop`.
 
 ## [0.9.990]
 ### Added

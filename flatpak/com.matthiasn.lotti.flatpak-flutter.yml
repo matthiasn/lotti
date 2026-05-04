@@ -15,6 +15,10 @@ finish-args:
   - --filesystem=xdg-documents/Lotti:create
   - --filesystem=xdg-pictures:ro
   - --filesystem=xdg-download/Lotti:create
+  # Geolocation via xdg-desktop-portal (org.freedesktop.portal.Location).
+  # The portal mediates GeoClue access and shows the app under
+  # GNOME Settings → Location → Permitted Apps.
+  - --talk-name=org.freedesktop.portal.Desktop
   # Cursor theme access (fixes "Unable to load from cursor theme" warning)
   - --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
 modules:

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -6,12 +7,39 @@ import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/linux_location_portal.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
+
+class _FakeLocationPortal implements XdgLocationPortal {
+  _FakeLocationPortal({this.result, this.error});
+
+  PortalLocation? result;
+  Exception? error;
+  int closeCount = 0;
+
+  @override
+  Future<PortalLocation> getLocation({
+    Duration timeout = const Duration(seconds: 10),
+    PortalAccuracy accuracy = PortalAccuracy.exact,
+    int distanceThreshold = 0,
+    int timeThreshold = 0,
+  }) async {
+    if (error != null) {
+      throw error!;
+    }
+    return result!;
+  }
+
+  @override
+  Future<void> close() async {
+    closeCount++;
+  }
+}
 
 Future<Geolocation?> nullIpGeolocationProvider({
   http.Client? httpClient,
@@ -116,7 +144,8 @@ void main() {
       });
 
       test('returns native location when permission is granted', () async {
-        // Skip this test on Linux as it uses GeoClue instead of Location service
+        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
+        // location package mocked here.
         if (Platform.isLinux) {
           return;
         }
@@ -194,7 +223,8 @@ void main() {
       });
 
       test('falls back to IP geolocation when native location fails', () async {
-        // Skip this test on Linux as it uses GeoClue instead of Location service
+        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
+        // location package mocked here.
         if (Platform.isLinux) {
           return;
         }
@@ -446,69 +476,84 @@ void main() {
     });
 
     group('Linux-specific location handling', () {
-      test('uses GeoClue on Linux when available', () async {
-        if (!Platform.isLinux) {
-          // Skip this test on non-Linux platforms
-          return;
-        }
+      test(
+        'uses xdg-desktop-portal location on Linux when available',
+        () async {
+          if (!Platform.isLinux) return;
+
+          when(
+            () => mockJournalDb.getConfigFlag(recordLocationFlag),
+          ).thenAnswer((_) async => true);
+
+          final portal = _FakeLocationPortal(
+            result: PortalLocation(
+              latitude: 52.52,
+              longitude: 13.405,
+              altitude: 34,
+              accuracy: 12,
+              speed: 1.5,
+              heading: 90,
+            ),
+          );
+
+          deviceLocation = DeviceLocation(
+            locationService: mockLocation,
+            ipGeolocationProvider: fakeIpGeolocationProvider,
+            linuxPortalFactory: () => portal,
+          );
+          final result = await deviceLocation.getCurrentGeoLocation();
+
+          expect(result, isNotNull);
+          expect(result!.latitude, 52.52);
+          expect(result.longitude, 13.405);
+          expect(result.altitude, 34);
+          expect(result.accuracy, 12);
+          expect(result.speed, 1.5);
+          expect(result.heading, 90);
+          expect(result.geohashString, isNotEmpty);
+          expect(portal.closeCount, 1);
+        },
+      );
+
+      test('falls back to IP when the portal denies or times out', () async {
+        if (!Platform.isLinux) return;
 
         when(
           () => mockJournalDb.getConfigFlag(recordLocationFlag),
         ).thenAnswer((_) async => true);
 
-        deviceLocation = DeviceLocation(
-          locationService: mockLocation,
-          ipGeolocationProvider: fakeIpGeolocationProvider,
-        );
-        final result = await deviceLocation.getCurrentGeoLocation();
-
-        // On Linux, it should try GeoClue first, then fall back to IP
-        expect(result, isNotNull);
-        expect(result!.latitude, 40.7128);
-        expect(result.longitude, -74.0060);
-        expect(result.timezone, 'America/New_York');
-        expect(result.utcOffset, -300);
-        expect(result.accuracy, 50000);
-      });
-
-      test('falls back to IP when GeoClue fails on Linux', () async {
-        if (!Platform.isLinux) {
-          // Skip this test on non-Linux platforms
-          return;
-        }
-
-        when(
-          () => mockJournalDb.getConfigFlag(recordLocationFlag),
-        ).thenAnswer((_) async => true);
-
-        // Mock GeoClue failure by making it throw
-        when(
-          () => mockLoggingService.captureException(
-            any<Exception>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
+        final portal = _FakeLocationPortal(
+          error: TimeoutException(
+            'no signal',
+            const Duration(seconds: 1),
           ),
-        ).thenAnswer((_) async {});
+        );
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,
           ipGeolocationProvider: fakeIpGeolocationProvider,
+          linuxPortalFactory: () => portal,
         );
         final result = await deviceLocation.getCurrentGeoLocation();
 
-        // Should fall back to IP geolocation
         expect(result, isNotNull);
         expect(result!.latitude, 40.7128);
         expect(result.longitude, -74.0060);
-        expect(result.timezone, 'America/New_York');
-        expect(result.utcOffset, -300);
-        expect(result.accuracy, 50000);
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'LOCATION_SERVICE',
+            subDomain: 'linux_native_fallback',
+          ),
+        ).called(1);
+        expect(portal.closeCount, 1);
       });
     });
 
     group('Geolocation data validation', () {
       test('includes geohash for all successful locations', () async {
-        // Skip this test on Linux as it uses GeoClue instead of Location service
+        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
+        // location package mocked here.
         if (Platform.isLinux) {
           return;
         }
@@ -549,7 +594,8 @@ void main() {
       });
 
       test('includes timezone and UTC offset for all locations', () async {
-        // Skip this test on Linux as it uses GeoClue instead of Location service
+        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
+        // location package mocked here.
         if (Platform.isLinux) {
           return;
         }
