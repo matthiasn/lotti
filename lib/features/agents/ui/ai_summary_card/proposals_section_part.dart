@@ -1,5 +1,17 @@
 part of '../ai_summary_card.dart';
 
+/// Width threshold below which the proposal row drops its explicit
+/// confirm/reject buttons. The whole row stays swipeable (right →
+/// confirm, left → dismiss); on narrow phones the chevron-style
+/// icon buttons just consume too much horizontal space and crowd the
+/// proposal text. Matches `AgentInternalsPanel.mobileBreakpoint` so
+/// the AI surface flips between compact and comfortable layouts at
+/// the same screen size.
+const double _proposalRowCompactWidth = 600;
+
+bool _isCompactWidth(BuildContext context) =>
+    MediaQuery.sizeOf(context).width < _proposalRowCompactWidth;
+
 /// Proposals section sandwiched between the TLDR body and the activity
 /// footer. Always shows the section title + pending count badge +
 /// optional "Confirm all" button. The body is either an empty-state
@@ -272,17 +284,26 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
       widget.suggestion?.item.humanSummary ?? widget.entry!.humanSummary;
   ChangeItemStatus? get _resolvedStatus => widget.entry?.status;
 
-  void _onPointerDown(PointerDownEvent event) {
+  // The row uses a `GestureDetector` (not a raw `Listener`) so its
+  // horizontal drag participates in Flutter's gesture arena. This is
+  // what lets a swipe still win when the touch starts inside one of
+  // the row's child InkWells (icon buttons, kind chip) — a `Listener`
+  // with `HitTestBehavior.opaque` only receives pointers that land
+  // outside other interactive children, which made swipe-from-button
+  // start a no-op. The arena correctly hands the pointer to whichever
+  // gesture (tap / horizontal drag) the user actually expressed.
+
+  void _onHorizontalDragStart(DragStartDetails details) {
     if (widget.isResolved || _busy) return;
     setState(() => _animating = false);
   }
 
-  void _onPointerMove(PointerMoveEvent event) {
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (widget.isResolved || _busy) return;
-    setState(() => _dx += event.delta.dx);
+    setState(() => _dx += details.delta.dx);
   }
 
-  Future<void> _onPointerUp(PointerUpEvent event) async {
+  Future<void> _onHorizontalDragEnd(DragEndDetails details) async {
     if (widget.isResolved || _busy) return;
     setState(() => _animating = true);
     if (_dx > _swipeTrigger) {
@@ -293,11 +314,10 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
     if (mounted) setState(() => _dx = 0);
   }
 
-  /// Reset the swipe state when an enclosing scrollable wins the gesture
-  /// arena (which fires a `PointerCancelEvent` instead of pointer-up).
-  /// Without this the row stays translated at its last `_dx` and looks
-  /// stuck off-axis.
-  void _onPointerCancel(PointerCancelEvent event) {
+  /// Reset the swipe state when an enclosing scrollable wins the
+  /// gesture arena. Without this the row stays translated at its
+  /// last `_dx` and looks stuck off-axis.
+  void _onHorizontalDragCancel() {
     if (widget.isResolved || _busy) return;
     setState(() {
       _animating = true;
@@ -465,12 +485,12 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
               border: Border.all(color: ai.rowBorder),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Listener(
-              onPointerDown: _onPointerDown,
-              onPointerMove: _onPointerMove,
-              onPointerUp: _onPointerUp,
-              onPointerCancel: _onPointerCancel,
+            child: GestureDetector(
               behavior: HitTestBehavior.opaque,
+              onHorizontalDragStart: _onHorizontalDragStart,
+              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+              onHorizontalDragEnd: _onHorizontalDragEnd,
+              onHorizontalDragCancel: _onHorizontalDragCancel,
               child: Opacity(
                 opacity: dimmed ? 0.45 : 1,
                 child: Row(
@@ -493,6 +513,14 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
                     const SizedBox(width: 10),
                     if (widget.isResolved)
                       _ResolvedTag(status: _resolvedStatus)
+                    else if (_isCompactWidth(context))
+                      // On narrow viewports the buttons take up too
+                      // much horizontal space — rely on swipe alone
+                      // (the `GestureDetector` above accepts a swipe
+                      // anywhere on the row, and the gradient backdrop
+                      // surfaces the "Confirm" / "Dismiss" intent past
+                      // the swipe threshold).
+                      const SizedBox.shrink()
                     else
                       _RowActions(
                         busy: _busy,

@@ -17,6 +17,15 @@ import '../../../../test_helper.dart';
 import '../../test_data/change_set_factories.dart';
 import '../../test_data/entity_factories.dart';
 
+/// Default test viewport for the AI-summary-card tests. Wider than
+/// the default 390×844 phone bench so the proposal row renders in its
+/// comfortable layout (with explicit confirm/reject buttons) — most
+/// tests assert against those buttons. Mobile-specific tests can opt
+/// into the compact layout by passing a narrower `MediaQueryData`.
+const MediaQueryData desktopMediaQueryData = MediaQueryData(
+  size: Size(900, 800),
+);
+
 /// Shared overrides for the "no agent attached" path.
 class NoAgentOverrides {
   const NoAgentOverrides();
@@ -42,6 +51,7 @@ class AgentTestBench {
     MockChangeSetConfirmationService? confirmationService,
     MockUpdateNotifications? updateNotifications,
     MockTaskAgentService? taskAgentService,
+    MediaQueryData mediaQueryData = desktopMediaQueryData,
   }) : _report = report,
        _suggestions = suggestions,
        _isRunning = isRunning,
@@ -49,7 +59,8 @@ class AgentTestBench {
        _enableAgents = enableAgents,
        _confirmationService = confirmationService,
        _updateNotifications = updateNotifications,
-       _taskAgentService = taskAgentService;
+       _taskAgentService = taskAgentService,
+       _mediaQueryData = mediaQueryData;
 
   static const String taskId = 'task-001';
 
@@ -61,10 +72,12 @@ class AgentTestBench {
   final MockChangeSetConfirmationService? _confirmationService;
   final MockUpdateNotifications? _updateNotifications;
   final MockTaskAgentService? _taskAgentService;
+  final MediaQueryData _mediaQueryData;
 
   Widget build() {
     final identity = makeTestIdentity();
     return RiverpodWidgetTestBench(
+      mediaQueryData: _mediaQueryData,
       overrides: [
         configFlagProvider.overrideWith(
           (ref, flagName) => Stream.value(_enableAgents),
