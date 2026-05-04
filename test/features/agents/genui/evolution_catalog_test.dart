@@ -358,7 +358,9 @@ void main() {
       expect(find.byIcon(Icons.note), findsOneWidget);
     });
 
-    testWidgets('starts collapsed and shows chevron_right icon', (tester) async {
+    testWidgets('starts collapsed and shows chevron_right icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionNoteConfirmationItem, {
@@ -382,7 +384,9 @@ void main() {
       expect(collapsedText, isNotEmpty);
     });
 
-    testWidgets('expands on tap and shows keyboard_arrow_down icon', (tester) async {
+    testWidgets('expands on tap and shows keyboard_arrow_down icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionNoteConfirmationItem, {

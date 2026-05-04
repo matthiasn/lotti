@@ -348,7 +348,9 @@ void main() {
     });
 
     group('expand/collapse', () {
-      testWidgets('starts collapsed showing chevron_right icon', (tester) async {
+      testWidgets('starts collapsed showing chevron_right icon', (
+        tester,
+      ) async {
         final item = makeTestClassifiedFeedbackItem(
           detail: 'Feedback detail text',
           sentiment: FeedbackSentiment.negative,
@@ -364,27 +366,30 @@ void main() {
         expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
       });
 
-      testWidgets('tapping the expand icon toggles to keyboard_arrow_down icon', (
-        tester,
-      ) async {
-        final item = makeTestClassifiedFeedbackItem(
-          detail: 'Feedback detail text',
-          sentiment: FeedbackSentiment.negative,
-          source: 'observation',
-        );
+      testWidgets(
+        'tapping the expand icon toggles to keyboard_arrow_down icon',
+        (
+          tester,
+        ) async {
+          final item = makeTestClassifiedFeedbackItem(
+            detail: 'Feedback detail text',
+            sentiment: FeedbackSentiment.negative,
+            source: 'observation',
+          );
 
-        await tester.pumpWidget(
-          buildSubject(FeedbackItemTile(item: item)),
-        );
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(
+            buildSubject(FeedbackItemTile(item: item)),
+          );
+          await tester.pumpAndSettle();
 
-        // Tile starts collapsed — tap the chevron_right icon to expand
-        await tester.tap(find.byIcon(Icons.chevron_right));
-        await tester.pump(const Duration(milliseconds: 300));
+          // Tile starts collapsed — tap the chevron_right icon to expand
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_right), findsNothing);
-      });
+          expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+          expect(find.byIcon(Icons.chevron_right), findsNothing);
+        },
+      );
 
       testWidgets('tapping expand icon twice returns to collapsed state', (
         tester,

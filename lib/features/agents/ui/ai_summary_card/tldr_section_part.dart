@@ -30,6 +30,13 @@ class _TldrHeader extends StatelessWidget {
   final VoidCallback onCancelTimer;
   final VoidCallback onCountdownExpired;
 
+  /// Width threshold below which the header drops the inline control
+  /// cluster to a second row. Below this, the badge + "AI summary" +
+  /// agent-name column gets the full card width and the wake / refresh
+  /// affordances + Read more pill flow underneath instead of crushing
+  /// the title.
+  static const double _stackedHeaderWidth = 360;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -37,93 +44,124 @@ class _TldrHeader extends StatelessWidget {
     final messages = context.messages;
     final hasAgentName = agentName != null && agentName!.trim().isNotEmpty;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
-      child: Row(
-        children: [
-          const _SparkleBadge(),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  messages.aiCardTitle,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: ai.titleText,
-                    fontWeight: FontWeight.w600,
-                    height: 1.1,
-                  ),
+    final leadingBlock = Row(
+      children: [
+        const _SparkleBadge(),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                messages.aiCardTitle,
+                softWrap: true,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: ai.titleText,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
                 ),
-                if (hasAgentName)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: GestureDetector(
-                      onTap: onAgentTap,
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Text(
-                          agentName!.trim(),
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: ai.metaText,
-                                decoration: TextDecoration.underline,
-                                decorationColor: ai.metaText.withValues(
-                                  alpha: 0.40,
-                                ),
-                              ),
+              ),
+              if (hasAgentName)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: GestureDetector(
+                    onTap: onAgentTap,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Text(
+                        agentName!.trim(),
+                        softWrap: true,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: ai.metaText,
+                          decoration: TextDecoration.underline,
+                          decorationColor: ai.metaText.withValues(alpha: 0.40),
                         ),
                       ),
                     ),
                   ),
-              ],
-            ),
-          ),
-          if (isRunning)
-            SizedBox(
-              width: 28,
-              height: 28,
-              child: Center(
-                child: SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: ai.accent,
-                  ),
                 ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    final controls = <Widget>[
+      if (isRunning)
+        SizedBox(
+          width: 28,
+          height: 28,
+          child: Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: ai.accent,
               ),
             ),
-          // The countdown cluster needs both `showCountdown` and a
-          // non-null `nextWakeAt`; if the parent ever passes
-          // `showCountdown: true` without a timestamp, fall back to
-          // the plain refresh affordance so the header never ends up
-          // with no run / wake control at all.
-          if (!isRunning && (!showCountdown || nextWakeAt == null))
-            _IconAffordance(
-              icon: Icons.refresh_rounded,
-              tooltip: messages.taskAgentRunNowTooltip,
-              onPressed: onRunNow,
-            ),
-          if (showCountdown && nextWakeAt != null) ...[
-            _IconAffordance(
-              icon: Icons.play_arrow_rounded,
-              tooltip: messages.taskAgentRunNowTooltip,
-              onPressed: onRunNow,
-            ),
-            _CountdownPill(
-              nextWakeAt: nextWakeAt!,
-              onExpired: onCountdownExpired,
-            ),
-            _IconAffordance(
-              icon: Icons.close_rounded,
-              tooltip: messages.taskAgentCancelTimerTooltip,
-              onPressed: onCancelTimer,
-              compact: true,
-            ),
-          ],
-          if (hasMore) _ReadMorePill(expanded: expanded, onPressed: onToggle),
-        ],
+          ),
+        ),
+      // The countdown cluster needs both `showCountdown` and a
+      // non-null `nextWakeAt`; if the parent ever passes
+      // `showCountdown: true` without a timestamp, fall back to
+      // the plain refresh affordance so the header never ends up
+      // with no run / wake control at all.
+      if (!isRunning && (!showCountdown || nextWakeAt == null))
+        _IconAffordance(
+          icon: Icons.refresh_rounded,
+          tooltip: messages.taskAgentRunNowTooltip,
+          onPressed: onRunNow,
+        ),
+      if (showCountdown && nextWakeAt != null) ...[
+        _IconAffordance(
+          icon: Icons.play_arrow_rounded,
+          tooltip: messages.taskAgentRunNowTooltip,
+          onPressed: onRunNow,
+        ),
+        _CountdownPill(
+          nextWakeAt: nextWakeAt!,
+          onExpired: onCountdownExpired,
+        ),
+        _IconAffordance(
+          icon: Icons.close_rounded,
+          tooltip: messages.taskAgentCancelTimerTooltip,
+          onPressed: onCancelTimer,
+          compact: true,
+        ),
+      ],
+      if (hasMore) _ReadMorePill(expanded: expanded, onPressed: onToggle),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < _stackedHeaderWidth;
+          if (isNarrow) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                leadingBlock,
+                if (controls.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: controls,
+                  ),
+                ],
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: leadingBlock),
+              ...controls,
+            ],
+          );
+        },
       ),
     );
   }

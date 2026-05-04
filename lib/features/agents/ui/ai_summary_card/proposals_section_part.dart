@@ -48,21 +48,35 @@ class _ProposalsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // Wrap so the confirm-all button drops to its own row on
+          // narrow cards instead of pushing the title + pending-count
+          // pill off-screen.
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            alignment: WrapAlignment.spaceBetween,
             children: [
-              Icon(Icons.fact_check_outlined, size: 16, color: ai.accent),
-              const SizedBox(width: 8),
-              Text(
-                messages.changeSetCardTitle,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: ai.titleText,
-                  fontWeight: FontWeight.w600,
-                  height: 1.1,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.fact_check_outlined, size: 16, color: ai.accent),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      messages.changeSetCardTitle,
+                      softWrap: true,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: ai.titleText,
+                        fontWeight: FontWeight.w600,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _PendingPill(count: open.length),
+                ],
               ),
-              const SizedBox(width: 8),
-              _PendingPill(count: open.length),
-              const Spacer(),
               if (onConfirmAll != null)
                 _ConfirmAllButton(
                   busy: confirmAllBusy,
