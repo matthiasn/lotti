@@ -223,14 +223,55 @@
   "agentFeedbackSourceMetric": "Metrică",
   "agentFeedbackSourceObservation": "Observație",
   "agentFeedbackSourceRating": "Evaluare",
+  "agentInstancesEmptyFiltered": "Nicio instanță nu corespunde filtrelor dvs.",
   "agentInstancesEmptyList": "Nu s-au găsit instanțe de agent",
   "agentInstancesFilterActive": "Activ",
   "agentInstancesFilterAll": "Toate",
+  "agentInstancesFilterClearAll": "Șterge tot",
+  "agentInstancesFilterClearSection": "Șterge",
   "agentInstancesFilterDestroyed": "Distrus",
   "agentInstancesFilterDormant": "Inactiv",
+  "agentInstancesFilterSectionSoul": "Suflet",
+  "agentInstancesFilterSectionStatus": "Stare",
+  "agentInstancesFilterSectionType": "Tip",
+  "agentInstancesGroupActiveCount": "{count} active",
+  "@agentInstancesGroupActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesGroupBySoul": "Suflet",
+  "agentInstancesGroupByStatus": "Stare",
+  "agentInstancesGroupByType": "Tip",
   "agentInstancesKindAll": "Toate",
   "agentInstancesKindEvolution": "Evoluție",
   "agentInstancesKindTaskAgent": "Agent de sarcini",
+  "agentInstancesResultCountAll": "{count} instanțe",
+  "@agentInstancesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesResultCountFiltered": "{filtered} din {total}",
+  "@agentInstancesResultCountFiltered": {
+    "placeholders": {
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesSearchClear": "Șterge căutarea",
+  "agentInstancesSearchPlaceholder": "Caută instanțe…",
+  "agentInstancesSortName": "Nume",
+  "agentInstancesSortOldest": "Cele mai vechi",
+  "agentInstancesSortRecent": "Recente",
   "agentInstancesStatsSummary": "Total {total} · Active {active} · Inactive {dormant} · Distruse {destroyed}",
   "@agentInstancesStatsSummary": {
     "placeholders": {
@@ -249,6 +290,9 @@
     }
   },
   "agentInstancesTitle": "Instanțe",
+  "agentInstancesToolbarFilters": "Filtre",
+  "agentInstancesToolbarGroupBy": "Grupează după",
+  "agentInstancesUnassignedSoul": "Neatribuit",
   "agentLifecycleActive": "Activ",
   "agentLifecycleCreated": "Creat",
   "agentLifecycleDestroyed": "Distrus",

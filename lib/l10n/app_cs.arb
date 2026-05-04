@@ -118,14 +118,55 @@
   "agentFeedbackSourceMetric": "Metrika",
   "agentFeedbackSourceObservation": "Pozorování",
   "agentFeedbackSourceRating": "Hodnocení",
+  "agentInstancesEmptyFiltered": "Žádné instance neodpovídají tvým filtrům.",
   "agentInstancesEmptyList": "Nebyly nalezeny žádné instance agenta",
   "agentInstancesFilterActive": "Aktivní",
   "agentInstancesFilterAll": "Vše",
+  "agentInstancesFilterClearAll": "Vymazat vše",
+  "agentInstancesFilterClearSection": "Vymazat",
   "agentInstancesFilterDestroyed": "Zničené",
   "agentInstancesFilterDormant": "Neaktivní",
+  "agentInstancesFilterSectionSoul": "Duše",
+  "agentInstancesFilterSectionStatus": "Stav",
+  "agentInstancesFilterSectionType": "Typ",
+  "agentInstancesGroupActiveCount": "{count} aktivních",
+  "@agentInstancesGroupActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesGroupBySoul": "Duše",
+  "agentInstancesGroupByStatus": "Stav",
+  "agentInstancesGroupByType": "Typ",
   "agentInstancesKindAll": "Vše",
   "agentInstancesKindEvolution": "Evoluce",
   "agentInstancesKindTaskAgent": "Agent úkolů",
+  "agentInstancesResultCountAll": "{count} instancí",
+  "@agentInstancesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesResultCountFiltered": "{filtered} z {total}",
+  "@agentInstancesResultCountFiltered": {
+    "placeholders": {
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesSearchClear": "Vymazat hledání",
+  "agentInstancesSearchPlaceholder": "Hledat instance…",
+  "agentInstancesSortName": "Název",
+  "agentInstancesSortOldest": "Nejstarší",
+  "agentInstancesSortRecent": "Nejnovější",
   "agentInstancesStatsSummary": "Celkem {total} · Aktivní {active} · Neaktivní {dormant} · Zničené {destroyed}",
   "@agentInstancesStatsSummary": {
     "placeholders": {
@@ -144,6 +185,9 @@
     }
   },
   "agentInstancesTitle": "Instance",
+  "agentInstancesToolbarFilters": "Filtry",
+  "agentInstancesToolbarGroupBy": "Seskupit podle",
+  "agentInstancesUnassignedSoul": "Nepřiřazeno",
   "agentLifecycleActive": "Aktivní",
   "agentLifecycleCreated": "Vytvořen",
   "agentLifecycleDestroyed": "Zničen",

@@ -789,6 +789,12 @@ abstract class AppLocalizations {
   /// **'Rating'**
   String get agentFeedbackSourceRating;
 
+  /// No description provided for @agentInstancesEmptyFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'No instances match your filters.'**
+  String get agentInstancesEmptyFiltered;
+
   /// No description provided for @agentInstancesEmptyList.
   ///
   /// In en, this message translates to:
@@ -807,6 +813,18 @@ abstract class AppLocalizations {
   /// **'All'**
   String get agentInstancesFilterAll;
 
+  /// No description provided for @agentInstancesFilterClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get agentInstancesFilterClearAll;
+
+  /// No description provided for @agentInstancesFilterClearSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get agentInstancesFilterClearSection;
+
   /// No description provided for @agentInstancesFilterDestroyed.
   ///
   /// In en, this message translates to:
@@ -818,6 +836,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dormant'**
   String get agentInstancesFilterDormant;
+
+  /// No description provided for @agentInstancesFilterSectionSoul.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul'**
+  String get agentInstancesFilterSectionSoul;
+
+  /// No description provided for @agentInstancesFilterSectionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get agentInstancesFilterSectionStatus;
+
+  /// No description provided for @agentInstancesFilterSectionType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get agentInstancesFilterSectionType;
+
+  /// No description provided for @agentInstancesGroupActiveCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active'**
+  String agentInstancesGroupActiveCount(int count);
+
+  /// No description provided for @agentInstancesGroupBySoul.
+  ///
+  /// In en, this message translates to:
+  /// **'Soul'**
+  String get agentInstancesGroupBySoul;
+
+  /// No description provided for @agentInstancesGroupByStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get agentInstancesGroupByStatus;
+
+  /// No description provided for @agentInstancesGroupByType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get agentInstancesGroupByType;
 
   /// No description provided for @agentInstancesKindAll.
   ///
@@ -837,6 +897,48 @@ abstract class AppLocalizations {
   /// **'Task Agent'**
   String get agentInstancesKindTaskAgent;
 
+  /// No description provided for @agentInstancesResultCountAll.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} instances'**
+  String agentInstancesResultCountAll(int count);
+
+  /// No description provided for @agentInstancesResultCountFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'{filtered} of {total}'**
+  String agentInstancesResultCountFiltered(int filtered, int total);
+
+  /// No description provided for @agentInstancesSearchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get agentInstancesSearchClear;
+
+  /// No description provided for @agentInstancesSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search instances…'**
+  String get agentInstancesSearchPlaceholder;
+
+  /// No description provided for @agentInstancesSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get agentInstancesSortName;
+
+  /// No description provided for @agentInstancesSortOldest.
+  ///
+  /// In en, this message translates to:
+  /// **'Oldest'**
+  String get agentInstancesSortOldest;
+
+  /// No description provided for @agentInstancesSortRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get agentInstancesSortRecent;
+
   /// No description provided for @agentInstancesStatsSummary.
   ///
   /// In en, this message translates to:
@@ -853,6 +955,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Instances'**
   String get agentInstancesTitle;
+
+  /// No description provided for @agentInstancesToolbarFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get agentInstancesToolbarFilters;
+
+  /// No description provided for @agentInstancesToolbarGroupBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by'**
+  String get agentInstancesToolbarGroupBy;
+
+  /// No description provided for @agentInstancesUnassignedSoul.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get agentInstancesUnassignedSoul;
 
   /// No description provided for @agentLifecycleActive.
   ///

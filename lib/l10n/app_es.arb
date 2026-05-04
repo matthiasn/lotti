@@ -223,14 +223,55 @@
   "agentFeedbackSourceMetric": "Métrica",
   "agentFeedbackSourceObservation": "Observación",
   "agentFeedbackSourceRating": "Calificación",
+  "agentInstancesEmptyFiltered": "Ninguna instancia coincide con tus filtros.",
   "agentInstancesEmptyList": "No se encontraron instancias de agente",
   "agentInstancesFilterActive": "Activo",
   "agentInstancesFilterAll": "Todos",
+  "agentInstancesFilterClearAll": "Limpiar todo",
+  "agentInstancesFilterClearSection": "Limpiar",
   "agentInstancesFilterDestroyed": "Destruido",
   "agentInstancesFilterDormant": "Inactivo",
+  "agentInstancesFilterSectionSoul": "Alma",
+  "agentInstancesFilterSectionStatus": "Estado",
+  "agentInstancesFilterSectionType": "Tipo",
+  "agentInstancesGroupActiveCount": "{count} activo(s)",
+  "@agentInstancesGroupActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesGroupBySoul": "Alma",
+  "agentInstancesGroupByStatus": "Estado",
+  "agentInstancesGroupByType": "Tipo",
   "agentInstancesKindAll": "Todos",
   "agentInstancesKindEvolution": "Evolución",
   "agentInstancesKindTaskAgent": "Agente de tareas",
+  "agentInstancesResultCountAll": "{count} instancias",
+  "@agentInstancesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesResultCountFiltered": "{filtered} de {total}",
+  "@agentInstancesResultCountFiltered": {
+    "placeholders": {
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesSearchClear": "Limpiar búsqueda",
+  "agentInstancesSearchPlaceholder": "Buscar instancias…",
+  "agentInstancesSortName": "Nombre",
+  "agentInstancesSortOldest": "Más antiguas",
+  "agentInstancesSortRecent": "Recientes",
   "agentInstancesStatsSummary": "Total {total} · Activos {active} · Inactivos {dormant} · Destruidos {destroyed}",
   "@agentInstancesStatsSummary": {
     "placeholders": {
@@ -249,6 +290,9 @@
     }
   },
   "agentInstancesTitle": "Instancias",
+  "agentInstancesToolbarFilters": "Filtros",
+  "agentInstancesToolbarGroupBy": "Agrupar por",
+  "agentInstancesUnassignedSoul": "Sin asignar",
   "agentLifecycleActive": "Activo",
   "agentLifecycleCreated": "Creado",
   "agentLifecycleDestroyed": "Destruido",

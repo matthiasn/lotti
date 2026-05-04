@@ -223,14 +223,55 @@
   "agentFeedbackSourceMetric": "Metrik",
   "agentFeedbackSourceObservation": "Beobachtung",
   "agentFeedbackSourceRating": "Bewertung",
+  "agentInstancesEmptyFiltered": "Keine Instanzen passen zu deinen Filtern.",
   "agentInstancesEmptyList": "Keine Agenteninstanzen gefunden",
   "agentInstancesFilterActive": "Aktiv",
   "agentInstancesFilterAll": "Alle",
+  "agentInstancesFilterClearAll": "Alles löschen",
+  "agentInstancesFilterClearSection": "Löschen",
   "agentInstancesFilterDestroyed": "Zerstört",
   "agentInstancesFilterDormant": "Ruhend",
+  "agentInstancesFilterSectionSoul": "Seele",
+  "agentInstancesFilterSectionStatus": "Status",
+  "agentInstancesFilterSectionType": "Typ",
+  "agentInstancesGroupActiveCount": "{count} aktiv",
+  "@agentInstancesGroupActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesGroupBySoul": "Seele",
+  "agentInstancesGroupByStatus": "Status",
+  "agentInstancesGroupByType": "Typ",
   "agentInstancesKindAll": "Alle",
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Aufgaben-Agent",
+  "agentInstancesResultCountAll": "{count} Instanzen",
+  "@agentInstancesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesResultCountFiltered": "{filtered} von {total}",
+  "@agentInstancesResultCountFiltered": {
+    "placeholders": {
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesSearchClear": "Suche löschen",
+  "agentInstancesSearchPlaceholder": "Instanzen suchen…",
+  "agentInstancesSortName": "Name",
+  "agentInstancesSortOldest": "Älteste",
+  "agentInstancesSortRecent": "Neueste",
   "agentInstancesStatsSummary": "Gesamt {total} · Aktiv {active} · Ruhend {dormant} · Zerstört {destroyed}",
   "@agentInstancesStatsSummary": {
     "placeholders": {
@@ -249,6 +290,9 @@
     }
   },
   "agentInstancesTitle": "Instanzen",
+  "agentInstancesToolbarFilters": "Filter",
+  "agentInstancesToolbarGroupBy": "Gruppieren nach",
+  "agentInstancesUnassignedSoul": "Nicht zugewiesen",
   "agentLifecycleActive": "Aktiv",
   "agentLifecycleCreated": "Erstellt",
   "agentLifecycleDestroyed": "Zerstört",

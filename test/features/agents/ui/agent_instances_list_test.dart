@@ -1,16 +1,40 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
+import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
 import '../../../widget_test_utils.dart';
-import '../test_utils.dart';
+
+InstanceVm _vm({
+  required String id,
+  required String name,
+  required InstanceType type,
+  required AgentLifecycle status,
+  required DateTime updatedAt,
+  String? soulName,
+  String? soulId,
+  String? templateName,
+  String? templateId,
+  int? sessionNumber,
+}) {
+  return InstanceVm(
+    id: id,
+    displayName: name,
+    type: type,
+    status: status,
+    updatedAt: updatedAt,
+    sessionNumber: sessionNumber,
+    soulName: soulName,
+    soulId: soulId,
+    templateId: templateId,
+    templateName: templateName,
+    searchKey: '$name $id ${soulName ?? ''} ${templateName ?? ''}'
+        .toLowerCase(),
+  );
+}
 
 void main() {
   setUp(() async {
@@ -21,574 +45,359 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  Widget buildSubject({
-    List<AgentDomainEntity> agents = const [],
-    List<AgentDomainEntity> evolutions = const [],
-  }) {
-    return makeTestableWidgetNoScroll(
-      const Scaffold(body: AgentInstancesList()),
-      overrides: [
-        allAgentInstancesProvider.overrideWith(
-          (ref) async => agents,
-        ),
-        allEvolutionSessionsProvider.overrideWith(
-          (ref) async => evolutions,
-        ),
-        agentIsRunningProvider.overrideWith(
-          (ref, agentId) => Stream.value(false),
-        ),
-        templateForAgentProvider.overrideWith(
-          (ref, agentId) async => null,
-        ),
-      ],
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    required List<InstanceVm> vms,
+  }) async {
+    // Toolbar (filter / group / sort + search) is laid out inline. The
+    // default 800px test surface squeezes the search field below its
+    // minimum content width — match the desktop settings-pane width so
+    // the layout matches what the page is designed for.
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const Scaffold(body: AgentInstancesList()),
+        mediaQueryData: const MediaQueryData(size: Size(1200, 900)),
+        overrides: [
+          agentInstanceVmsProvider.overrideWith((ref) async => vms),
+        ],
+      ),
     );
-  }
-
-  /// Taps a [SegmentedButton] segment by finding the text within it.
-  Future<void> tapSegment(WidgetTester tester, String label) async {
-    // SegmentedButton segments render text; when the same label appears
-    // both in the filter and in a badge, we pick the first occurrence
-    // which is always the filter row (rendered above the list).
-    await tester.tap(find.text(label).first);
     await tester.pumpAndSettle();
   }
 
-  group('AgentInstancesList', () {
-    testWidgets('shows task agents by default', (tester) async {
-      final agent = makeTestIdentity(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        displayName: 'Alpha Agent',
-      );
-
-      await tester.pumpWidget(buildSubject(agents: [agent]));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Alpha Agent'), findsOneWidget);
-    });
-
-    testWidgets('shows both agents and evolutions in All mode', (tester) async {
-      final agent = makeTestIdentity(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        displayName: 'Task Worker',
-      );
-      final session = makeTestEvolutionSession(
-        id: 'evo-1',
-        sessionNumber: 2,
-      );
-
-      await tester.pumpWidget(
-        buildSubject(agents: [agent], evolutions: [session]),
-      );
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      expect(find.text('Task Worker'), findsOneWidget);
-      expect(
-        find.text(context.messages.agentEvolutionSessionTitle(2)),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('filters to only task agents', (tester) async {
-      final agent = makeTestIdentity(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        displayName: 'Task Worker',
-      );
-      final session = makeTestEvolutionSession(
-        id: 'evo-1',
-      );
-
-      await tester.pumpWidget(
-        buildSubject(agents: [agent], evolutions: [session]),
-      );
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      await tapSegment(tester, context.messages.agentInstancesKindTaskAgent);
-
-      expect(find.text('Task Worker'), findsOneWidget);
-      expect(
-        find.text(context.messages.agentEvolutionSessionTitle(1)),
-        findsNothing,
-      );
-    });
-
-    testWidgets('filters to only evolution sessions', (tester) async {
-      final agent = makeTestIdentity(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        displayName: 'Task Worker',
-      );
-      final session = makeTestEvolutionSession(
-        id: 'evo-1',
-        sessionNumber: 5,
-      );
-
-      await tester.pumpWidget(
-        buildSubject(agents: [agent], evolutions: [session]),
-      );
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      await tapSegment(tester, context.messages.agentInstancesKindEvolution);
-
-      expect(find.text('Task Worker'), findsNothing);
-      expect(
-        find.text(context.messages.agentEvolutionSessionTitle(5)),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('lifecycle filter narrows task agents', (tester) async {
-      final activeAgent = makeTestIdentity(
-        id: 'agent-active',
-        agentId: 'agent-active',
-        displayName: 'Active Agent',
-      );
-      final dormantAgent = makeTestIdentity(
-        id: 'agent-dormant',
-        agentId: 'agent-dormant',
-        displayName: 'Dormant Agent',
-        lifecycle: AgentLifecycle.dormant,
-      );
-
-      await tester.pumpWidget(
-        buildSubject(agents: [activeAgent, dormantAgent]),
-      );
-      await tester.pumpAndSettle();
-
-      // Both visible initially
-      expect(find.text('Active Agent'), findsOneWidget);
-      expect(find.text('Dormant Agent'), findsOneWidget);
-
-      // Tap "Active" lifecycle filter (first occurrence is the filter segment)
-      final context = tester.element(find.byType(AgentInstancesList));
-      await tapSegment(tester, context.messages.agentInstancesFilterActive);
-
-      expect(find.text('Active Agent'), findsOneWidget);
-      expect(find.text('Dormant Agent'), findsNothing);
-    });
-
-    testWidgets('shows task agent stats summary under filters', (tester) async {
-      final activeAgent = makeTestIdentity(
-        id: 'agent-active',
-        agentId: 'agent-active',
-        displayName: 'Active Agent',
-      );
-      final dormantAgent = makeTestIdentity(
-        id: 'agent-dormant',
-        agentId: 'agent-dormant',
-        displayName: 'Dormant Agent',
-        lifecycle: AgentLifecycle.dormant,
-      );
-      final destroyedAgent = makeTestIdentity(
-        id: 'agent-destroyed',
-        agentId: 'agent-destroyed',
-        displayName: 'Destroyed Agent',
-        lifecycle: AgentLifecycle.destroyed,
-      );
-      final createdAgent = makeTestIdentity(
-        id: 'agent-created',
-        agentId: 'agent-created',
-        displayName: 'Created Agent',
-        lifecycle: AgentLifecycle.created,
-      );
-
-      await tester.pumpWidget(
-        buildSubject(
-          agents: [activeAgent, dormantAgent, destroyedAgent, createdAgent],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      expect(
-        find.text(
-          context.messages.agentInstancesStatsSummary(4, 1, 1, 1),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('shows empty state when no instances match', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.smart_toy_outlined), findsOneWidget);
-    });
-
-    testWidgets('lifecycle badge is shown on agent card', (tester) async {
-      final activeAgent = makeTestIdentity(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        displayName: 'Agent 1',
-      );
-
-      await tester.pumpWidget(buildSubject(agents: [activeAgent]));
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      // "Active" appears both in the lifecycle filter segment and in the
-      // lifecycle badge on the card — expect at least 2.
-      expect(
-        find.text(context.messages.agentLifecycleActive),
-        findsAtLeast(2),
-      );
-    });
-
-    testWidgets('evolution session card shows status badge', (tester) async {
-      final session = makeTestEvolutionSession(
-        id: 'evo-1',
-        status: EvolutionSessionStatus.completed,
-      );
-
-      await tester.pumpWidget(buildSubject(evolutions: [session]));
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      expect(
-        find.text(context.messages.agentEvolutionStatusCompleted),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('running agent shows progress indicator', (tester) async {
-      final agent = makeTestIdentity(
-        id: 'agent-running',
-        agentId: 'agent-running',
-        displayName: 'Running Agent',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const Scaffold(body: AgentInstancesList()),
-          overrides: [
-            allAgentInstancesProvider.overrideWith(
-              (ref) async => [agent],
-            ),
-            allEvolutionSessionsProvider.overrideWith(
-              (ref) async => <AgentDomainEntity>[],
-            ),
-            agentIsRunningProvider.overrideWith(
-              (ref, agentId) => Stream.value(true),
-            ),
-            templateForAgentProvider.overrideWith(
-              (ref, agentId) async => null,
-            ),
-          ],
-        ),
-      );
-      // Use pump instead of pumpAndSettle since CircularProgressIndicator
-      // animates continuously and never settles.
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('Running Agent'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
-
-    testWidgets('hides lifecycle filter in evolution-only mode', (
+  group('AgentInstancesList — rendering', () {
+    testWidgets('renders one row per VM with title, ID, and time portion', (
       tester,
     ) async {
-      final activeAgent = makeTestIdentity(
-        id: 'agent-active',
-        agentId: 'agent-active',
-        displayName: 'Active Agent',
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'agent-1',
+            name: 'Task Laura',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026, 5, 4, 19, 25),
+            soulName: 'Laura',
+            soulId: 'soul-laura',
+          ),
+        ],
       );
 
-      await tester.pumpWidget(
-        buildSubject(
-          agents: [activeAgent],
-          evolutions: [makeTestEvolutionSession()],
+      expect(find.text('Task Laura'), findsOneWidget);
+      expect(find.text('agent-1'), findsOneWidget);
+      expect(find.text('19:25'), findsOneWidget);
+    });
+
+    testWidgets('evolution row uses localized title from sessionNumber', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'evo-1',
+            name: '',
+            type: InstanceType.evolution,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026, 5, 4, 18),
+            sessionNumber: 7,
+          ),
+        ],
+      );
+
+      final ctx = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(ctx.messages.agentEvolutionSessionTitle(7)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('result count reads "N instances" with no filters', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'a',
+            name: 'A',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+          ),
+          _vm(
+            id: 'b',
+            name: 'B',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026, 1, 2),
+          ),
+        ],
+      );
+
+      final ctx = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(ctx.messages.agentInstancesResultCountAll(2)),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('AgentInstancesList — search', () {
+    testWidgets('typing in search narrows the list and updates the count', (
+      tester,
+    ) async {
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'a',
+            name: 'Alpha',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+          ),
+          _vm(
+            id: 'b',
+            name: 'Bravo',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026, 1, 2),
+          ),
+        ],
+      );
+
+      await tester.enterText(find.byType(TextField), 'alp');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.text('Bravo'), findsNothing);
+
+      final ctx = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(ctx.messages.agentInstancesResultCountFiltered(1, 2)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('search chip shows the query in curly quotes', (tester) async {
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'a',
+            name: 'Alpha',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+          ),
+        ],
+      );
+
+      await tester.enterText(find.byType(TextField), 'alp');
+      await tester.pumpAndSettle();
+      expect(find.text('“alp”'), findsOneWidget);
+    });
+
+    testWidgets('search-field clear icon resets the query', (tester) async {
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'a',
+            name: 'Alpha',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+          ),
+          _vm(
+            id: 'b',
+            name: 'Bravo',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026, 1, 2),
+          ),
+        ],
+      );
+
+      await tester.enterText(find.byType(TextField), 'alp');
+      await tester.pumpAndSettle();
+      expect(find.text('Bravo'), findsNothing);
+
+      await tester.tap(
+        find.byTooltip(
+          tester
+              .element(find.byType(AgentInstancesList))
+              .messages
+              .agentInstancesSearchClear,
         ),
       );
       await tester.pumpAndSettle();
 
-      final context = tester.element(find.byType(AgentInstancesList));
-
-      // Switch to Evolution filter
-      await tapSegment(tester, context.messages.agentInstancesKindEvolution);
-
-      // Lifecycle filter should not be visible
-      expect(
-        find.text(context.messages.agentInstancesFilterDormant),
-        findsNothing,
-      );
-      expect(
-        find.text(context.messages.agentInstancesFilterDestroyed),
-        findsNothing,
-      );
-      expect(
-        find.text(
-          context.messages.agentInstancesStatsSummary(1, 1, 0, 0),
-        ),
-        findsNothing,
-      );
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.text('Bravo'), findsOneWidget);
     });
+  });
 
+  group('AgentInstancesList — empty / error states', () {
     testWidgets(
-      'task agent filter renders when evolution provider is loading',
+      'empty filtered state shows the empty message and clears via "Clear all"',
       (tester) async {
-        final agent = makeTestIdentity(
-          id: 'agent-1',
-          agentId: 'agent-1',
-          displayName: 'Ready Agent',
+        await pumpPage(
+          tester,
+          vms: [
+            _vm(
+              id: 'a',
+              name: 'Alpha',
+              type: InstanceType.taskAgent,
+              status: AgentLifecycle.active,
+              updatedAt: DateTime(2026),
+            ),
+          ],
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            const Scaffold(body: AgentInstancesList()),
-            overrides: [
-              allAgentInstancesProvider.overrideWith(
-                (ref) async => [agent],
-              ),
-              // Evolution provider never completes — simulates slow fetch.
-              allEvolutionSessionsProvider.overrideWith(
-                (ref) => Completer<List<AgentDomainEntity>>().future,
-              ),
-              agentIsRunningProvider.overrideWith(
-                (ref, agentId) => Stream.value(false),
-              ),
-              templateForAgentProvider.overrideWith(
-                (ref, agentId) async => null,
-              ),
-            ],
-          ),
+        await tester.enterText(find.byType(TextField), 'no-such-thing');
+        await tester.pumpAndSettle();
+
+        final ctx = tester.element(find.byType(AgentInstancesList));
+        expect(
+          find.text(ctx.messages.agentInstancesEmptyFiltered),
+          findsOneWidget,
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
 
-        final context = tester.element(find.byType(AgentInstancesList));
-
-        // Select "Task Agent" filter so evolution loading doesn't block us
-        await tapSegment(tester, context.messages.agentInstancesKindTaskAgent);
-
-        // Task agent should be visible despite evolution still loading
-        expect(find.text('Ready Agent'), findsOneWidget);
-        expect(find.byType(CircularProgressIndicator), findsNothing);
+        // Two "Clear all" affordances appear (chip-row text button + empty
+        // state TextButton). Tapping either restores the row.
+        final clearAll = find.text(
+          ctx.messages.agentInstancesFilterClearAll,
+        );
+        expect(clearAll, findsAtLeast(1));
+        await tester.tap(clearAll.first);
+        await tester.pumpAndSettle();
+        expect(find.text('Alpha'), findsOneWidget);
       },
     );
 
-    testWidgets('evolution filter renders when agent provider errors', (
+    testWidgets('renders error state when the VM provider fails', (
       tester,
     ) async {
-      final session = makeTestEvolutionSession(
-        id: 'evo-1',
-        sessionNumber: 7,
-      );
-
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const Scaffold(body: AgentInstancesList()),
           overrides: [
-            // Agent provider errors
-            allAgentInstancesProvider.overrideWith(
-              (ref) async => throw Exception('agent fetch failed'),
-            ),
-            allEvolutionSessionsProvider.overrideWith(
-              (ref) async => [session],
-            ),
-            agentIsRunningProvider.overrideWith(
-              (ref, agentId) => Stream.value(false),
-            ),
-            templateForAgentProvider.overrideWith(
-              (ref, agentId) async => null,
+            agentInstanceVmsProvider.overrideWith(
+              (ref) async => throw Exception('boom'),
             ),
           ],
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
 
-      final context = tester.element(find.byType(AgentInstancesList));
-
-      // Select "Evolution" filter so agent error doesn't block us
-      await tapSegment(tester, context.messages.agentInstancesKindEvolution);
-
-      // Evolution session should be visible despite agent provider error
-      expect(
-        find.text(context.messages.agentEvolutionSessionTitle(7)),
-        findsOneWidget,
-      );
+      final ctx = tester.element(find.byType(AgentInstancesList));
+      expect(find.text(ctx.messages.commonError), findsOneWidget);
     });
+  });
 
-    testWidgets('tapping task agent card navigates to agent detail', (
+  group('AgentInstancesList — sticky group sections', () {
+    testWidgets('groups by Soul by default with active count + total', (
       tester,
     ) async {
-      String? navigatedPath;
-      beamToNamedOverride = (path) => navigatedPath = path;
-
-      final agent = makeTestIdentity(
-        id: 'agent-nav',
-        agentId: 'agent-nav',
-        displayName: 'Nav Agent',
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'a',
+            name: 'Task A',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026, 1, 3),
+            soulName: 'Laura',
+            soulId: 'soul-laura',
+          ),
+          _vm(
+            id: 'b',
+            name: 'Task B',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.dormant,
+            updatedAt: DateTime(2026, 1, 2),
+            soulName: 'Laura',
+            soulId: 'soul-laura',
+          ),
+          _vm(
+            id: 'c',
+            name: 'Task C',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+            soulName: 'Iris',
+            soulId: 'soul-iris',
+          ),
+        ],
       );
 
-      await tester.pumpWidget(buildSubject(agents: [agent]));
+      expect(find.text('Laura'), findsOneWidget);
+      expect(find.text('Iris'), findsOneWidget);
+
+      final ctx = tester.element(find.byType(AgentInstancesList));
+      expect(
+        find.text(ctx.messages.agentInstancesGroupActiveCount(1)),
+        findsAtLeast(2),
+      );
+
+      expect(find.text('· 2'), findsOneWidget);
+      expect(find.text('· 1'), findsOneWidget);
+    });
+
+    testWidgets('clicking a group header collapses its rows', (tester) async {
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'a',
+            name: 'Task A',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+            soulName: 'Laura',
+            soulId: 'soul-laura',
+          ),
+        ],
+      );
+
+      expect(find.text('Task A'), findsOneWidget);
+      await tester.tap(find.text('Laura'));
       await tester.pumpAndSettle();
+      expect(find.text('Task A'), findsNothing);
+    });
+  });
+
+  group('AgentInstancesList — navigation', () {
+    testWidgets('tapping a row beams to /settings/agents/instances/{id}', (
+      tester,
+    ) async {
+      String? navigated;
+      beamToNamedOverride = (path) => navigated = path;
+
+      await pumpPage(
+        tester,
+        vms: [
+          _vm(
+            id: 'agent-nav',
+            name: 'Nav Agent',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+          ),
+        ],
+      );
 
       await tester.tap(find.text('Nav Agent'));
-      expect(navigatedPath, '/settings/agents/instances/agent-nav');
-    });
-
-    testWidgets('tapping evolution card navigates to template detail', (
-      tester,
-    ) async {
-      String? navigatedPath;
-      beamToNamedOverride = (path) => navigatedPath = path;
-
-      final session = makeTestEvolutionSession(
-        id: 'evo-nav',
-        templateId: 'tpl-42',
-      );
-
-      await tester.pumpWidget(buildSubject(evolutions: [session]));
       await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      await tester.tap(
-        find.text(context.messages.agentEvolutionSessionTitle(1)),
-      );
-      expect(navigatedPath, '/settings/agents/templates/tpl-42');
-    });
-
-    testWidgets('shows error state when both providers fail', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const Scaffold(body: AgentInstancesList()),
-          overrides: [
-            allAgentInstancesProvider.overrideWith(
-              (ref) async => throw Exception('agents failed'),
-            ),
-            allEvolutionSessionsProvider.overrideWith(
-              (ref) async => throw Exception('evolutions failed'),
-            ),
-            agentIsRunningProvider.overrideWith(
-              (ref, agentId) => Stream.value(false),
-            ),
-            templateForAgentProvider.overrideWith(
-              (ref, agentId) async => null,
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      expect(find.text(context.messages.commonError), findsOneWidget);
-    });
-
-    testWidgets('shows abandoned evolution status badge', (tester) async {
-      final session = makeTestEvolutionSession(
-        id: 'evo-abandoned',
-        status: EvolutionSessionStatus.abandoned,
-      );
-
-      await tester.pumpWidget(buildSubject(evolutions: [session]));
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      expect(
-        find.text(context.messages.agentEvolutionStatusAbandoned),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('shows created lifecycle badge on agent card', (tester) async {
-      final agent = makeTestIdentity(
-        id: 'agent-created',
-        agentId: 'agent-created',
-        displayName: 'Created Agent',
-        lifecycle: AgentLifecycle.created,
-      );
-
-      await tester.pumpWidget(buildSubject(agents: [agent]));
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      expect(
-        find.text(context.messages.agentLifecycleCreated),
-        findsAtLeast(1),
-      );
-    });
-
-    testWidgets('shows destroyed lifecycle badge on agent card', (
-      tester,
-    ) async {
-      final agent = makeTestIdentity(
-        id: 'agent-destroyed',
-        agentId: 'agent-destroyed',
-        displayName: 'Destroyed Agent',
-        lifecycle: AgentLifecycle.destroyed,
-      );
-
-      await tester.pumpWidget(buildSubject(agents: [agent]));
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      expect(
-        find.text(context.messages.agentLifecycleDestroyed),
-        findsAtLeast(1),
-      );
-    });
-
-    testWidgets('shows template name on task agent card when available', (
-      tester,
-    ) async {
-      final agent = makeTestIdentity(
-        id: 'agent-with-tpl',
-        agentId: 'agent-with-tpl',
-        displayName: 'Worker Agent',
-      );
-
-      final template = makeTestTemplate(
-        id: 'tpl-for-agent',
-        agentId: 'tpl-for-agent',
-        displayName: 'My Template',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const Scaffold(body: AgentInstancesList()),
-          overrides: [
-            allAgentInstancesProvider.overrideWith(
-              (ref) async => [agent],
-            ),
-            allEvolutionSessionsProvider.overrideWith(
-              (ref) async => <AgentDomainEntity>[],
-            ),
-            agentIsRunningProvider.overrideWith(
-              (ref, agentId) => Stream.value(false),
-            ),
-            templateForAgentProvider.overrideWith(
-              (ref, agentId) async => template,
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('My Template'), findsOneWidget);
-    });
-
-    testWidgets('active evolution status badge is shown', (tester) async {
-      final session = makeTestEvolutionSession(
-        id: 'evo-active',
-      );
-
-      await tester.pumpWidget(buildSubject(evolutions: [session]));
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(AgentInstancesList));
-      // "Active" appears in lifecycle filter segment AND in evolution status
-      // badge — verify at least one occurrence from the status badge
-      expect(
-        find.text(context.messages.agentEvolutionStatusActive),
-        findsAtLeast(1),
-      );
+      expect(navigated, '/settings/agents/instances/agent-nav');
     });
   });
 }

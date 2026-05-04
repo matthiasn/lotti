@@ -401,6 +401,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Evaluare';
 
   @override
+  String get agentInstancesEmptyFiltered =>
+      'Nicio instanță nu corespunde filtrelor dvs.';
+
+  @override
   String get agentInstancesEmptyList => 'Nu s-au găsit instanțe de agent';
 
   @override
@@ -410,10 +414,39 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentInstancesFilterAll => 'Toate';
 
   @override
+  String get agentInstancesFilterClearAll => 'Șterge tot';
+
+  @override
+  String get agentInstancesFilterClearSection => 'Șterge';
+
+  @override
   String get agentInstancesFilterDestroyed => 'Distrus';
 
   @override
   String get agentInstancesFilterDormant => 'Inactiv';
+
+  @override
+  String get agentInstancesFilterSectionSoul => 'Suflet';
+
+  @override
+  String get agentInstancesFilterSectionStatus => 'Stare';
+
+  @override
+  String get agentInstancesFilterSectionType => 'Tip';
+
+  @override
+  String agentInstancesGroupActiveCount(int count) {
+    return '$count active';
+  }
+
+  @override
+  String get agentInstancesGroupBySoul => 'Suflet';
+
+  @override
+  String get agentInstancesGroupByStatus => 'Stare';
+
+  @override
+  String get agentInstancesGroupByType => 'Tip';
 
   @override
   String get agentInstancesKindAll => 'Toate';
@@ -423,6 +456,31 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentInstancesKindTaskAgent => 'Agent de sarcini';
+
+  @override
+  String agentInstancesResultCountAll(int count) {
+    return '$count instanțe';
+  }
+
+  @override
+  String agentInstancesResultCountFiltered(int filtered, int total) {
+    return '$filtered din $total';
+  }
+
+  @override
+  String get agentInstancesSearchClear => 'Șterge căutarea';
+
+  @override
+  String get agentInstancesSearchPlaceholder => 'Caută instanțe…';
+
+  @override
+  String get agentInstancesSortName => 'Nume';
+
+  @override
+  String get agentInstancesSortOldest => 'Cele mai vechi';
+
+  @override
+  String get agentInstancesSortRecent => 'Recente';
 
   @override
   String agentInstancesStatsSummary(
@@ -436,6 +494,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentInstancesTitle => 'Instanțe';
+
+  @override
+  String get agentInstancesToolbarFilters => 'Filtre';
+
+  @override
+  String get agentInstancesToolbarGroupBy => 'Grupează după';
+
+  @override
+  String get agentInstancesUnassignedSoul => 'Neatribuit';
 
   @override
   String get agentLifecycleActive => 'Activ';

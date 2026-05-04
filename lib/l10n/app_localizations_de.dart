@@ -401,6 +401,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentFeedbackSourceRating => 'Bewertung';
 
   @override
+  String get agentInstancesEmptyFiltered =>
+      'Keine Instanzen passen zu deinen Filtern.';
+
+  @override
   String get agentInstancesEmptyList => 'Keine Agenteninstanzen gefunden';
 
   @override
@@ -410,10 +414,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentInstancesFilterAll => 'Alle';
 
   @override
+  String get agentInstancesFilterClearAll => 'Alles löschen';
+
+  @override
+  String get agentInstancesFilterClearSection => 'Löschen';
+
+  @override
   String get agentInstancesFilterDestroyed => 'Zerstört';
 
   @override
   String get agentInstancesFilterDormant => 'Ruhend';
+
+  @override
+  String get agentInstancesFilterSectionSoul => 'Seele';
+
+  @override
+  String get agentInstancesFilterSectionStatus => 'Status';
+
+  @override
+  String get agentInstancesFilterSectionType => 'Typ';
+
+  @override
+  String agentInstancesGroupActiveCount(int count) {
+    return '$count aktiv';
+  }
+
+  @override
+  String get agentInstancesGroupBySoul => 'Seele';
+
+  @override
+  String get agentInstancesGroupByStatus => 'Status';
+
+  @override
+  String get agentInstancesGroupByType => 'Typ';
 
   @override
   String get agentInstancesKindAll => 'Alle';
@@ -423,6 +456,31 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentInstancesKindTaskAgent => 'Aufgaben-Agent';
+
+  @override
+  String agentInstancesResultCountAll(int count) {
+    return '$count Instanzen';
+  }
+
+  @override
+  String agentInstancesResultCountFiltered(int filtered, int total) {
+    return '$filtered von $total';
+  }
+
+  @override
+  String get agentInstancesSearchClear => 'Suche löschen';
+
+  @override
+  String get agentInstancesSearchPlaceholder => 'Instanzen suchen…';
+
+  @override
+  String get agentInstancesSortName => 'Name';
+
+  @override
+  String get agentInstancesSortOldest => 'Älteste';
+
+  @override
+  String get agentInstancesSortRecent => 'Neueste';
 
   @override
   String agentInstancesStatsSummary(
@@ -436,6 +494,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentInstancesTitle => 'Instanzen';
+
+  @override
+  String get agentInstancesToolbarFilters => 'Filter';
+
+  @override
+  String get agentInstancesToolbarGroupBy => 'Gruppieren nach';
+
+  @override
+  String get agentInstancesUnassignedSoul => 'Nicht zugewiesen';
 
   @override
   String get agentLifecycleActive => 'Aktiv';

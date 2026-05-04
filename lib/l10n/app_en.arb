@@ -229,14 +229,55 @@
   "agentFeedbackSourceMetric": "Metric",
   "agentFeedbackSourceObservation": "Observation",
   "agentFeedbackSourceRating": "Rating",
+  "agentInstancesEmptyFiltered": "No instances match your filters.",
   "agentInstancesEmptyList": "No agent instances found",
   "agentInstancesFilterActive": "Active",
   "agentInstancesFilterAll": "All",
+  "agentInstancesFilterClearAll": "Clear all",
+  "agentInstancesFilterClearSection": "Clear",
   "agentInstancesFilterDestroyed": "Destroyed",
   "agentInstancesFilterDormant": "Dormant",
+  "agentInstancesFilterSectionSoul": "Soul",
+  "agentInstancesFilterSectionStatus": "Status",
+  "agentInstancesFilterSectionType": "Type",
+  "agentInstancesGroupActiveCount": "{count} active",
+  "@agentInstancesGroupActiveCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesGroupBySoul": "Soul",
+  "agentInstancesGroupByStatus": "Status",
+  "agentInstancesGroupByType": "Type",
   "agentInstancesKindAll": "All",
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Task Agent",
+  "agentInstancesResultCountAll": "{count} instances",
+  "@agentInstancesResultCountAll": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesResultCountFiltered": "{filtered} of {total}",
+  "@agentInstancesResultCountFiltered": {
+    "placeholders": {
+      "filtered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "agentInstancesSearchClear": "Clear search",
+  "agentInstancesSearchPlaceholder": "Search instances…",
+  "agentInstancesSortName": "Name",
+  "agentInstancesSortOldest": "Oldest",
+  "agentInstancesSortRecent": "Recent",
   "agentInstancesStatsSummary": "Total {total} · Active {active} · Dormant {dormant} · Destroyed {destroyed}",
   "@agentInstancesStatsSummary": {
     "placeholders": {
@@ -255,6 +296,9 @@
     }
   },
   "agentInstancesTitle": "Instances",
+  "agentInstancesToolbarFilters": "Filters",
+  "agentInstancesToolbarGroupBy": "Group by",
+  "agentInstancesUnassignedSoul": "Unassigned",
   "agentLifecycleActive": "Active",
   "agentLifecycleCreated": "Created",
   "agentLifecycleDestroyed": "Destroyed",
