@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.992]
 ### Changed
+- Extracted the Settings → Agents → Instances scaffolding (page shell,
+  toolbar, group section, row, filter chip row, soul avatar) into a
+  shared `lib/features/agents/ui/listing/` layer so the Templates,
+  Souls, and Pending Wakes tabs can be re-skinned through the same
+  primitives in the next pass. Public API: `AgentListingShell`,
+  `AgentListRowData` (with a closed `AgentListPillTone` enum and a
+  `Widget Function(BuildContext)?` `trailing` slot), `AgentListLeading`
+  (sealed: avatar / icon), `AgentListFilterAxis` / `GroupAxis` /
+  `SortAxis`, and the pure `buildGroupedAgentList` pipeline.
+  `AgentInstancesPage` is now a thin adapter that maps `InstanceVm`
+  into the shared row VM; rendering, filter / sort / group state, and
+  the empty / loading / error branches all live in the shell. No
+  user-visible change in the Instances page; this is groundwork for
+  the upcoming tab rewrites.
 - Redesigned Settings → Agents → Instances. Replaced the filter strips
   + card list with a denser layout: a toolbar with multi-select Filters
   (Type / Status / Soul), Group by (Soul / Type / Status), Sort

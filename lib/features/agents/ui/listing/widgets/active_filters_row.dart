@@ -1,30 +1,55 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
-import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Removable chip row shown below the toolbar when at least one filter
-/// (type / status / soul / search) is active.
+/// (any axis selection or search) is active.
 class ActiveFiltersRow extends StatelessWidget {
   const ActiveFiltersRow({
     required this.state,
+    required this.axes,
     required this.onChanged,
-    required this.soulOptions,
     super.key,
   });
 
-  final InstancesFilterState state;
-  final ValueChanged<InstancesFilterState> onChanged;
-  final List<SoulOption> soulOptions;
+  final AgentListFilterState state;
+  final List<AgentListFilterAxis> axes;
+  final ValueChanged<AgentListFilterState> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final colors = tokens.colors;
-    final soulLabelById = {for (final s in soulOptions) s.id: s.label};
+
+    final chips = <Widget>[];
+    for (final axis in axes) {
+      final selected = state.selectionsFor(axis.id);
+      if (selected.isEmpty) continue;
+      final accent = _toneAccent(axis.chipTone, colors);
+      for (final option in axis.options) {
+        if (!selected.contains(option.id)) continue;
+        chips.add(
+          ActiveFilterChip(
+            label: option.label,
+            accentColor: accent,
+            onRemove: () => onChanged(state.toggleOption(axis.id, option.id)),
+          ),
+        );
+      }
+    }
+    if (state.search.isNotEmpty) {
+      chips.add(
+        ActiveFilterChip(
+          label: '“${state.search}”',
+          accentColor: colors.decorative.level02,
+          onRemove: () => onChanged(state.copyWith(search: '')),
+        ),
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -38,30 +63,7 @@ class ActiveFiltersRow extends StatelessWidget {
         runSpacing: tokens.spacing.step2,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          for (final t in state.types)
-            ActiveFilterChip(
-              label: instanceTypeLabel(messages, t),
-              accentColor: colors.alert.warning.defaultColor,
-              onRemove: () => onChanged(state.toggleType(t)),
-            ),
-          for (final s in state.statuses)
-            ActiveFilterChip(
-              label: agentLifecycleLabel(messages, s),
-              accentColor: colors.interactive.enabled,
-              onRemove: () => onChanged(state.toggleStatus(s)),
-            ),
-          for (final id in state.soulIds)
-            ActiveFilterChip(
-              label: soulLabelById[id] ?? id,
-              accentColor: colors.decorative.level02,
-              onRemove: () => onChanged(state.toggleSoul(id)),
-            ),
-          if (state.search.isNotEmpty)
-            ActiveFilterChip(
-              label: '“${state.search}”',
-              accentColor: colors.decorative.level02,
-              onRemove: () => onChanged(state.copyWith(search: '')),
-            ),
+          ...chips,
           InkWell(
             onTap: () => onChanged(state.clearAll()),
             child: Padding(
@@ -82,5 +84,16 @@ class ActiveFiltersRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _toneAccent(AgentListPillTone tone, DsColors colors) {
+    return switch (tone) {
+      AgentListPillTone.interactive => colors.interactive.enabled,
+      AgentListPillTone.warning => colors.alert.warning.defaultColor,
+      AgentListPillTone.error => colors.alert.error.defaultColor,
+      AgentListPillTone.info => colors.alert.info.defaultColor,
+      AgentListPillTone.muted => colors.text.mediumEmphasis,
+      AgentListPillTone.neutral => colors.decorative.level02,
+    };
   }
 }
