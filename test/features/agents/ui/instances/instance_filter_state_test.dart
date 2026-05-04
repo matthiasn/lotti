@@ -1,7 +1,10 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 InstanceVm _vm({
   required String id,
@@ -178,6 +181,79 @@ void main() {
       );
     });
 
+    test('groupKey=status clusters rows by their AgentLifecycle name', () {
+      final rows = [
+        _vm(
+          id: 'a',
+          type: InstanceType.taskAgent,
+          status: AgentLifecycle.active,
+          updatedAt: DateTime(2026),
+        ),
+        _vm(
+          id: 'b',
+          type: InstanceType.taskAgent,
+          status: AgentLifecycle.dormant,
+          updatedAt: DateTime(2026),
+        ),
+        _vm(
+          id: 'c',
+          type: InstanceType.taskAgent,
+          status: AgentLifecycle.dormant,
+          updatedAt: DateTime(2026),
+        ),
+      ];
+
+      final result = buildGroupedInstances(
+        all: rows,
+        state: const InstancesFilterState(
+          groupKey: InstancesGroupKey.status,
+        ),
+        unassignedSoulLabel: 'Unassigned',
+      );
+
+      expect(result.groups.map((g) => g.label).toList(), [
+        AgentLifecycle.active.name,
+        AgentLifecycle.dormant.name,
+      ]);
+      expect(
+        result.groups
+            .firstWhere((g) => g.label == AgentLifecycle.dormant.name)
+            .items
+            .length,
+        2,
+      );
+    });
+
+    test('groupKey=type clusters rows by their InstanceType name', () {
+      final rows = [
+        _vm(
+          id: 'a',
+          type: InstanceType.taskAgent,
+          status: AgentLifecycle.active,
+          updatedAt: DateTime(2026),
+        ),
+        _vm(
+          id: 'b',
+          type: InstanceType.evolution,
+          status: AgentLifecycle.active,
+          updatedAt: DateTime(2026),
+        ),
+      ];
+
+      final result = buildGroupedInstances(
+        all: rows,
+        state: const InstancesFilterState(
+          groupKey: InstancesGroupKey.type,
+        ),
+        unassignedSoulLabel: 'Unassigned',
+      );
+
+      expect(result.groups.map((g) => g.label).toSet(), {
+        InstanceType.taskAgent.name,
+        InstanceType.evolution.name,
+      });
+    });
+
     test('rows without a soul fall under the unassigned label', () {
       final rows = [
         _vm(
@@ -209,5 +285,145 @@ void main() {
     test('returns 0 for an empty seed', () {
       expect(hueForSeed(''), 0);
     });
+  });
+
+  group('instanceTypeFromAgentKind', () {
+    test('maps every documented agent kind onto an InstanceType', () {
+      expect(
+        instanceTypeFromAgentKind(AgentKinds.taskAgent),
+        InstanceType.taskAgent,
+      );
+      expect(
+        instanceTypeFromAgentKind(AgentKinds.projectAgent),
+        InstanceType.projectAgent,
+      );
+      expect(
+        instanceTypeFromAgentKind(AgentKinds.templateImprover),
+        InstanceType.templateImprover,
+      );
+    });
+
+    test('unknown kind returns null so the row can be skipped', () {
+      expect(instanceTypeFromAgentKind('unknown_kind'), isNull);
+    });
+  });
+
+  group('label helpers', () {
+    late AppLocalizations messages;
+
+    setUpAll(() async {
+      WidgetsFlutterBinding.ensureInitialized();
+      messages = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    test('instanceTypeLabel covers every InstanceType arm', () {
+      expect(
+        instanceTypeLabel(messages, InstanceType.taskAgent),
+        messages.agentTemplateKindTaskAgent,
+      );
+      expect(
+        instanceTypeLabel(messages, InstanceType.projectAgent),
+        messages.agentTemplateKindProjectAgent,
+      );
+      expect(
+        instanceTypeLabel(messages, InstanceType.templateImprover),
+        messages.agentTemplateKindImprover,
+      );
+      expect(
+        instanceTypeLabel(messages, InstanceType.evolution),
+        messages.agentInstancesKindEvolution,
+      );
+    });
+
+    test('agentLifecycleLabel covers every AgentLifecycle arm', () {
+      expect(
+        agentLifecycleLabel(messages, AgentLifecycle.active),
+        messages.agentLifecycleActive,
+      );
+      expect(
+        agentLifecycleLabel(messages, AgentLifecycle.dormant),
+        messages.agentLifecyclePaused,
+      );
+      expect(
+        agentLifecycleLabel(messages, AgentLifecycle.destroyed),
+        messages.agentLifecycleDestroyed,
+      );
+      expect(
+        agentLifecycleLabel(messages, AgentLifecycle.created),
+        messages.agentLifecycleCreated,
+      );
+    });
+  });
+
+  group('FilterCounts.from', () {
+    test('counts types and statuses across the full vm list', () {
+      final vms = [
+        _vm(
+          id: 'a',
+          type: InstanceType.taskAgent,
+          status: AgentLifecycle.active,
+          updatedAt: DateTime(2026),
+        ),
+        _vm(
+          id: 'b',
+          type: InstanceType.taskAgent,
+          status: AgentLifecycle.dormant,
+          updatedAt: DateTime(2026),
+        ),
+        _vm(
+          id: 'c',
+          type: InstanceType.evolution,
+          status: AgentLifecycle.active,
+          updatedAt: DateTime(2026),
+        ),
+      ];
+
+      final counts = FilterCounts.from(vms, 'Unassigned');
+
+      expect(counts.types[InstanceType.taskAgent], 2);
+      expect(counts.types[InstanceType.evolution], 1);
+      expect(counts.types[InstanceType.projectAgent], 0);
+      expect(counts.statuses[AgentLifecycle.active], 2);
+      expect(counts.statuses[AgentLifecycle.dormant], 1);
+    });
+
+    test(
+      'soul options dedupe by id and surface unassigned label as fallback',
+      () {
+        final vms = [
+          _vm(
+            id: 'a',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+            soulId: 'laura',
+            soulName: 'Laura',
+          ),
+          _vm(
+            id: 'b',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+            soulId: 'laura',
+            soulName: 'Laura',
+          ),
+          _vm(
+            id: 'c',
+            type: InstanceType.taskAgent,
+            status: AgentLifecycle.active,
+            updatedAt: DateTime(2026),
+          ),
+        ];
+
+        final counts = FilterCounts.from(vms, 'No soul');
+
+        expect(
+          counts.soulOptions.map((s) => s.label).toList(),
+          ['Laura', 'No soul'],
+        );
+        expect(counts.soulCounts['laura'], 2);
+        expect(counts.soulCounts['__no_soul__'], 1);
+      },
+    );
   });
 }

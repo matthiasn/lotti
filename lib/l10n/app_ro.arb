@@ -248,6 +248,7 @@
   "agentInstancesKindAll": "Toate",
   "agentInstancesKindEvolution": "Evoluție",
   "agentInstancesKindTaskAgent": "Agent de sarcini",
+  "agentInstancesPageTitle": "Instanțe agenți",
   "agentInstancesResultCountAll": "{count} instanțe",
   "@agentInstancesResultCountAll": {
     "placeholders": {

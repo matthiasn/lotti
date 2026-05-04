@@ -460,6 +460,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentInstancesKindTaskAgent => 'Agent de tâches';
 
   @override
+  String get agentInstancesPageTitle => 'Instances d\'agents';
+
+  @override
   String agentInstancesResultCountAll(int count) {
     return '$count instances';
   }

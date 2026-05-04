@@ -458,6 +458,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentInstancesKindTaskAgent => 'Agent de sarcini';
 
   @override
+  String get agentInstancesPageTitle => 'Instanțe agenți';
+
+  @override
   String agentInstancesResultCountAll(int count) {
     return '$count instanțe';
   }

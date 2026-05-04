@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
-import 'package:lotti/features/agents/ui/instances/widgets/instances_toolbar.dart';
+import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Removable chip row shown below the toolbar when at least one filter
@@ -41,27 +39,27 @@ class ActiveFiltersRow extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           for (final t in state.types)
-            _Chip(
-              label: _typeLabel(messages, t),
-              tone: _ChipTone.warning,
+            ActiveFilterChip(
+              label: instanceTypeLabel(messages, t),
+              accentColor: colors.alert.warning.defaultColor,
               onRemove: () => onChanged(state.toggleType(t)),
             ),
           for (final s in state.statuses)
-            _Chip(
-              label: _statusLabel(messages, s),
-              tone: _ChipTone.interactive,
+            ActiveFilterChip(
+              label: agentLifecycleLabel(messages, s),
+              accentColor: colors.interactive.enabled,
               onRemove: () => onChanged(state.toggleStatus(s)),
             ),
           for (final id in state.soulIds)
-            _Chip(
+            ActiveFilterChip(
               label: soulLabelById[id] ?? id,
-              tone: _ChipTone.neutral,
+              accentColor: colors.decorative.level02,
               onRemove: () => onChanged(state.toggleSoul(id)),
             ),
           if (state.search.isNotEmpty)
-            _Chip(
+            ActiveFilterChip(
               label: '“${state.search}”',
-              tone: _ChipTone.neutral,
+              accentColor: colors.decorative.level02,
               onRemove: () => onChanged(state.copyWith(search: '')),
             ),
           InkWell(
@@ -86,96 +84,4 @@ class ActiveFiltersRow extends StatelessWidget {
       ),
     );
   }
-}
-
-enum _ChipTone { neutral, warning, interactive }
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.onRemove,
-    required this.tone,
-  });
-
-  final String label;
-  final VoidCallback onRemove;
-  final _ChipTone tone;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final colors = tokens.colors;
-    final (fg, bg, border) = switch (tone) {
-      _ChipTone.neutral => (
-        colors.text.highEmphasis,
-        colors.surface.enabled,
-        colors.decorative.level01,
-      ),
-      _ChipTone.warning => (
-        colors.alert.warning.defaultColor,
-        colors.alert.warning.defaultColor.withValues(alpha: 0.10),
-        colors.alert.warning.defaultColor.withValues(alpha: 0.25),
-      ),
-      _ChipTone.interactive => (
-        colors.interactive.enabled,
-        colors.interactive.enabled.withValues(alpha: 0.10),
-        colors.interactive.enabled.withValues(alpha: 0.25),
-      ),
-    };
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-      ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          tokens.spacing.step3,
-          tokens.spacing.step1,
-          tokens.spacing.step2,
-          tokens.spacing.step1,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: fg,
-              ),
-            ),
-            const SizedBox(width: 4),
-            InkWell(
-              onTap: onRemove,
-              borderRadius: BorderRadius.circular(999),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: Icon(Icons.close, size: 12, color: fg),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-String _typeLabel(AppLocalizations messages, InstanceType t) {
-  return switch (t) {
-    InstanceType.taskAgent => messages.agentTemplateKindTaskAgent,
-    InstanceType.projectAgent => messages.agentTemplateKindProjectAgent,
-    InstanceType.templateImprover => messages.agentTemplateKindImprover,
-    InstanceType.evolution => messages.agentInstancesKindEvolution,
-  };
-}
-
-String _statusLabel(AppLocalizations messages, AgentLifecycle s) {
-  return switch (s) {
-    AgentLifecycle.active => messages.agentLifecycleActive,
-    AgentLifecycle.dormant => messages.agentLifecyclePaused,
-    AgentLifecycle.destroyed => messages.agentLifecycleDestroyed,
-    AgentLifecycle.created => messages.agentLifecycleCreated,
-  };
 }

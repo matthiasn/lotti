@@ -248,6 +248,7 @@
   "agentInstancesKindAll": "Alle",
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Aufgaben-Agent",
+  "agentInstancesPageTitle": "Agenten-Instanzen",
   "agentInstancesResultCountAll": "{count} Instanzen",
   "@agentInstancesResultCountAll": {
     "placeholders": {

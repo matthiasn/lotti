@@ -248,6 +248,7 @@
   "agentInstancesKindAll": "Tous",
   "agentInstancesKindEvolution": "Évolution",
   "agentInstancesKindTaskAgent": "Agent de tâches",
+  "agentInstancesPageTitle": "Instances d'agents",
   "agentInstancesResultCountAll": "{count} instances",
   "@agentInstancesResultCountAll": {
     "placeholders": {

@@ -452,6 +452,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentInstancesKindTaskAgent => 'Task Agent';
 
   @override
+  String get agentInstancesPageTitle => 'Agent Instances';
+
+  @override
   String agentInstancesResultCountAll(int count) {
     return '$count instances';
   }

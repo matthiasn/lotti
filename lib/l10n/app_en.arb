@@ -254,6 +254,7 @@
   "agentInstancesKindAll": "All",
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Task Agent",
+  "agentInstancesPageTitle": "Agent Instances",
   "agentInstancesResultCountAll": "{count} instances",
   "@agentInstancesResultCountAll": {
     "placeholders": {

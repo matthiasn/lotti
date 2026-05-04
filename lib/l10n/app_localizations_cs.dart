@@ -454,6 +454,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentInstancesKindTaskAgent => 'Agent úkolů';
 
   @override
+  String get agentInstancesPageTitle => 'Instance agentů';
+
+  @override
   String agentInstancesResultCountAll(int count) {
     return '$count instancí';
   }

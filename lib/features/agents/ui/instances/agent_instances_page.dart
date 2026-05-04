@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/instances/widgets/active_filters_row.dart';
@@ -27,51 +26,60 @@ class _AgentInstancesPageState extends ConsumerState<AgentInstancesPage> {
   InstancesFilterState _filters = const InstancesFilterState();
   final Map<String, bool> _collapsed = {};
 
+  // Cached derived data — recomputed only when the underlying `vms` list
+  // reference or the unassigned-soul label changes (so search keystrokes,
+  // hover, and group-toggle don't re-iterate the rows).
+  List<InstanceVm>? _cachedVms;
+  String? _cachedUnassignedLabel;
+  FilterCounts? _cachedCounts;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final asyncVms = ref.watch(agentInstanceVmsProvider);
 
-    return asyncVms.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, _) => Center(
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacing.step6),
-          child: Text(
-            messages.commonError,
-            style: TextStyle(color: tokens.colors.alert.error.defaultColor),
+    // Background level-02 keeps the page in line with the rest of the
+    // settings surface (the parent Scaffold paints level-01).
+    return ColoredBox(
+      color: tokens.colors.background.level02,
+      child: asyncVms.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) => Center(
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step6),
+            child: Text(
+              messages.commonError,
+              style: TextStyle(color: tokens.colors.alert.error.defaultColor),
+            ),
           ),
         ),
+        data: (vms) => _buildBody(context, vms),
       ),
-      data: (vms) => _buildBody(context, vms),
     );
+  }
+
+  FilterCounts _countsFor(List<InstanceVm> vms, String unassignedLabel) {
+    if (identical(_cachedVms, vms) &&
+        _cachedUnassignedLabel == unassignedLabel &&
+        _cachedCounts != null) {
+      return _cachedCounts!;
+    }
+    final counts = FilterCounts.from(vms, unassignedLabel);
+    _cachedVms = vms;
+    _cachedUnassignedLabel = unassignedLabel;
+    _cachedCounts = counts;
+    return counts;
   }
 
   Widget _buildBody(BuildContext context, List<InstanceVm> vms) {
     final messages = context.messages;
+    final counts = _countsFor(vms, messages.agentInstancesUnassignedSoul);
     final result = buildGroupedInstances(
       all: vms,
       state: _filters,
       unassignedSoulLabel: messages.agentInstancesUnassignedSoul,
     );
-
-    final typeCounts = <InstanceType, int>{
-      for (final t in InstanceType.values)
-        t: vms.where((v) => v.type == t).length,
-    };
-    final statusCounts = <AgentLifecycle, int>{
-      for (final s in AgentLifecycle.values)
-        s: vms.where((v) => v.status == s).length,
-    };
-    final soulOptions = _soulOptions(
-      vms,
-      messages.agentInstancesUnassignedSoul,
-    );
-    final soulCounts = <String, int>{
-      for (final s in soulOptions)
-        s.id: vms.where((v) => v.soulGroupId() == s.id).length,
-    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,16 +89,13 @@ class _AgentInstancesPageState extends ConsumerState<AgentInstancesPage> {
           onChanged: _setFilters,
           totalBeforeFilter: result.totalBeforeFilter,
           totalAfterFilter: result.totalAfterFilter,
-          typeCounts: typeCounts,
-          statusCounts: statusCounts,
-          soulOptions: soulOptions,
-          soulCounts: soulCounts,
+          counts: counts,
         ),
         if (_filters.isAnyFilterActive)
           ActiveFiltersRow(
             state: _filters,
             onChanged: _setFilters,
-            soulOptions: soulOptions,
+            soulOptions: counts.soulOptions,
           ),
         Expanded(
           child: result.groups.isEmpty
@@ -146,23 +151,14 @@ class _AgentInstancesPageState extends ConsumerState<AgentInstancesPage> {
   }
 
   void _setFilters(InstancesFilterState next) {
-    setState(() => _filters = next);
-  }
-
-  List<SoulOption> _soulOptions(List<InstanceVm> vms, String unassignedLabel) {
-    final byId = <String, SoulOption>{};
-    for (final vm in vms) {
-      final id = vm.soulGroupId();
-      if (byId.containsKey(id)) continue;
-      byId[id] = SoulOption(
-        id: id,
-        label: vm.soulGroupLabel(unassignedLabel),
-        hue: hueForSeed(id),
-      );
-    }
-    final list = byId.values.toList()
-      ..sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
-    return list;
+    setState(() {
+      // Drop collapse-state when the group axis changes — old group ids
+      // (e.g. `soul:laura`) won't recur and would otherwise leak.
+      if (next.groupKey != _filters.groupKey) {
+        _collapsed.clear();
+      }
+      _filters = next;
+    });
   }
 }
 

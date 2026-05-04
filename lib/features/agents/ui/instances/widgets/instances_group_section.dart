@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
+import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/instances/widgets/instance_row.dart';
 import 'package:lotti/features/agents/ui/instances/widgets/soul_avatar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -53,17 +54,6 @@ class InstancesGroupHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (group.subLabel != null) ...[
-            SizedBox(width: tokens.spacing.step3),
-            Text(
-              group.subLabel!,
-              style: TextStyle(
-                fontFamily: 'Inconsolata',
-                fontSize: 10.5,
-                color: colors.text.lowEmphasis,
-              ),
-            ),
-          ],
         ],
       );
     } else {
@@ -78,7 +68,7 @@ class InstancesGroupHeader extends StatelessWidget {
     }
 
     return Material(
-      color: colors.background.level01,
+      color: colors.background.level02,
       child: InkWell(
         onTap: onToggle,
         child: DecoratedBox(

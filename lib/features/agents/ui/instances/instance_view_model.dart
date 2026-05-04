@@ -6,6 +6,31 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart'
     show InstancesGroupKey;
+import 'package:lotti/l10n/app_localizations.dart';
+
+/// Localized label for an [InstanceType], used by the row's type pill, the
+/// filter popover, and the active-filter chip row. Centralised so a new
+/// kind only needs an arb entry plus a switch arm here.
+String instanceTypeLabel(AppLocalizations messages, InstanceType t) {
+  return switch (t) {
+    InstanceType.taskAgent => messages.agentTemplateKindTaskAgent,
+    InstanceType.projectAgent => messages.agentTemplateKindProjectAgent,
+    InstanceType.templateImprover => messages.agentTemplateKindImprover,
+    InstanceType.evolution => messages.agentInstancesKindEvolution,
+  };
+}
+
+/// Localized label for an [AgentLifecycle] used as a status filter / chip
+/// label / pill. Mirrors the lifecycle styling at
+/// `agent_badge_widgets.dart` but as plain text.
+String agentLifecycleLabel(AppLocalizations messages, AgentLifecycle s) {
+  return switch (s) {
+    AgentLifecycle.active => messages.agentLifecycleActive,
+    AgentLifecycle.dormant => messages.agentLifecyclePaused,
+    AgentLifecycle.destroyed => messages.agentLifecycleDestroyed,
+    AgentLifecycle.created => messages.agentLifecycleCreated,
+  };
+}
 
 /// Type axis used by both the type filter and the type group key.
 ///
@@ -22,6 +47,83 @@ InstanceType? instanceTypeFromAgentKind(String kind) {
     AgentKinds.templateImprover => InstanceType.templateImprover,
     _ => null,
   };
+}
+
+/// Pre-computed counts and soul options derived from a [List]<[InstanceVm]>,
+/// passed into the toolbar / popovers / chip row.
+///
+/// Computed once per `vms` reference (see [FilterCounts.from]) so filter
+/// keystrokes / hover / collapse don't re-iterate the row list.
+class FilterCounts {
+  const FilterCounts({
+    required this.types,
+    required this.statuses,
+    required this.soulOptions,
+    required this.soulCounts,
+  });
+
+  factory FilterCounts.from(List<InstanceVm> vms, String unassignedLabel) {
+    final types = <InstanceType, int>{
+      for (final t in InstanceType.values) t: 0,
+    };
+    final statuses = <AgentLifecycle, int>{
+      for (final s in AgentLifecycle.values) s: 0,
+    };
+    final soulCounts = <String, int>{};
+    final soulLabel = <String, String>{};
+
+    for (final vm in vms) {
+      types[vm.type] = (types[vm.type] ?? 0) + 1;
+      statuses[vm.status] = (statuses[vm.status] ?? 0) + 1;
+      final id = vm.soulGroupId();
+      soulCounts[id] = (soulCounts[id] ?? 0) + 1;
+      soulLabel.putIfAbsent(id, () => vm.soulGroupLabel(unassignedLabel));
+    }
+
+    final soulOptions =
+        soulLabel.entries
+            .map(
+              (e) =>
+                  SoulOption(id: e.key, label: e.value, hue: hueForSeed(e.key)),
+            )
+            .toList()
+          ..sort(
+            (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
+          );
+
+    return FilterCounts(
+      types: types,
+      statuses: statuses,
+      soulOptions: soulOptions,
+      soulCounts: soulCounts,
+    );
+  }
+
+  final Map<InstanceType, int> types;
+  final Map<AgentLifecycle, int> statuses;
+  final List<SoulOption> soulOptions;
+  final Map<String, int> soulCounts;
+}
+
+/// Soul row shown in the Filters popover and chip row.
+class SoulOption {
+  const SoulOption({required this.id, required this.label, required this.hue});
+  final String id;
+  final String label;
+  final int hue;
+}
+
+/// Stable hue (0..359) derived from [seed]. Same string in → same hue out,
+/// so a soul / template gets a consistent avatar tint without storing a
+/// colour on the entity. FNV-1a hash, plenty for this use.
+int hueForSeed(String seed) {
+  if (seed.isEmpty) return 0;
+  var h = 2166136261;
+  for (final code in seed.codeUnits) {
+    h = (h ^ code) & 0xFFFFFFFF;
+    h = (h * 16777619) & 0xFFFFFFFF;
+  }
+  return h % 360;
 }
 
 /// View-model row consumed by the instances page.

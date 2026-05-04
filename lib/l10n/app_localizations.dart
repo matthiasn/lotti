@@ -897,6 +897,12 @@ abstract class AppLocalizations {
   /// **'Task Agent'**
   String get agentInstancesKindTaskAgent;
 
+  /// No description provided for @agentInstancesPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Instances'**
+  String get agentInstancesPageTitle;
+
   /// No description provided for @agentInstancesResultCountAll.
   ///
   /// In en, this message translates to:

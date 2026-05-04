@@ -100,7 +100,6 @@ class InstancesGroup {
     required this.id,
     required this.label,
     required this.items,
-    this.subLabel,
     this.soulId,
     this.type,
     this.status,
@@ -109,7 +108,6 @@ class InstancesGroup {
   /// Stable id used for collapse-state tracking.
   final String id;
   final String label;
-  final String? subLabel;
   final List<InstanceVm> items;
   final String? soulId;
   final InstanceType? type;
@@ -205,18 +203,4 @@ InstancesGroupedResult buildGroupedInstances({
     totalAfterFilter: filtered.length,
     groups: groups,
   );
-}
-
-/// Hue used for the SoulAvatar tile & swatches. Hashed off the seed string
-/// so each soul gets a stable colour without needing a stored field on the
-/// entity.
-int hueForSeed(String seed) {
-  if (seed.isEmpty) return 0;
-  // FNV-1a-ish stable 32-bit hash → 0..359.
-  var h = 2166136261;
-  for (final code in seed.codeUnits) {
-    h = (h ^ code) & 0xFFFFFFFF;
-    h = (h * 16777619) & 0xFFFFFFFF;
-  }
-  return h % 360;
 }

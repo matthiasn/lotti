@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.992]
+### Changed
+- Redesigned Settings → Agents → Instances. Replaced the filter strips
+  + card list with a denser layout: a toolbar with multi-select Filters
+  (Type / Status / Soul), Group by (Soul / Type / Status), Sort
+  (Recent / Oldest / Name), live search and a result counter; active
+  filters surface below as removable chips with Clear all. Each row
+  shows name + template + ID + type and status pills + last-activity
+  time, under a collapsible group header that surfaces per-group active
+  and total counts. The page now uses background level-02 to match the
+  rest of the settings surface; the AppBar reads "Agent Instances"
+  on this tab.
+- Responsive layout: at narrow widths the toolbar wraps to multiple
+  lines and the search input takes a full line below; instance rows
+  stack title / template / ID, then pills + time + chevron, on two
+  rows.
+- Search field focus is painted on the outer border (teal accent +
+  glow) instead of an inner Material underline.
+- Internal: `_typeLabel` / `_statusLabel` helpers, `SoulOption`, and
+  `hueForSeed` consolidated into one place; per-page filter counts
+  bundled into a cached `FilterCounts` so they're computed only when
+  the row list changes.
+
 ## [0.9.991]
 ### Added
 - New unified `AiSummaryCard` on the task details page replacing the

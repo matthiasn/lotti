@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
-import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/instances/widgets/soul_avatar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -13,7 +12,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// by Type or Status (so the soul stays visually identifiable). When
 /// grouping by Soul the avatar is on the section header instead, so we
 /// suppress it here.
-class InstanceRow extends StatefulWidget {
+class InstanceRow extends StatelessWidget {
   const InstanceRow({
     required this.vm,
     required this.onTap,
@@ -26,18 +25,10 @@ class InstanceRow extends StatefulWidget {
   final bool showSoul;
 
   @override
-  State<InstanceRow> createState() => _InstanceRowState();
-}
-
-class _InstanceRowState extends State<InstanceRow> {
-  bool _hovering = false;
-
-  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final colors = tokens.colors;
     final messages = context.messages;
-    final vm = widget.vm;
 
     final title = vm.type == InstanceType.evolution && vm.sessionNumber != null
         ? messages.agentEvolutionSessionTitle(vm.sessionNumber!)
@@ -49,36 +40,33 @@ class _InstanceRowState extends State<InstanceRow> {
               : null);
     final soulHue = hueForSeed(vm.soulId ?? vm.templateId ?? vm.id);
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: Material(
-        color: _hovering ? colors.surface.hover : Colors.transparent,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      child: InkWell(
         borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          onTap: widget.onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step3,
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 600;
-                if (isCompact) {
-                  return _compactLayout(
-                    tokens,
-                    colors,
-                    title,
-                    task,
-                    soulHue,
-                    vm,
-                  );
-                }
-                return _wideLayout(tokens, colors, title, task, soulHue, vm);
-              },
-            ),
+        onTap: onTap,
+        hoverColor: colors.surface.hover,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step4,
+            vertical: tokens.spacing.step3,
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 600;
+              if (isCompact) {
+                return _compactLayout(
+                  tokens,
+                  colors,
+                  title,
+                  task,
+                  soulHue,
+                  vm,
+                );
+              }
+              return _wideLayout(tokens, colors, title, task, soulHue, vm);
+            },
           ),
         ),
       ),
@@ -95,7 +83,7 @@ class _InstanceRowState extends State<InstanceRow> {
   ) {
     return Row(
       children: [
-        if (widget.showSoul) ...[
+        if (showSoul) ...[
           SoulAvatar(label: vm.soulName ?? '?', hue: soulHue, size: 20),
           SizedBox(width: tokens.spacing.step4),
         ],
@@ -135,7 +123,7 @@ class _InstanceRowState extends State<InstanceRow> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.showSoul) ...[
+            if (showSoul) ...[
               SoulAvatar(label: vm.soulName ?? '?', hue: soulHue, size: 20),
               SizedBox(width: tokens.spacing.step4),
             ],
@@ -275,15 +263,8 @@ class _TypePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final messages = context.messages;
-    final label = switch (type) {
-      InstanceType.taskAgent => messages.agentTemplateKindTaskAgent,
-      InstanceType.projectAgent => messages.agentTemplateKindProjectAgent,
-      InstanceType.templateImprover => messages.agentTemplateKindImprover,
-      InstanceType.evolution => messages.agentInstancesKindEvolution,
-    };
     return _Pill(
-      label: label,
+      label: instanceTypeLabel(context.messages, type),
       bg: tokens.colors.surface.enabled,
       fg: tokens.colors.text.highEmphasis,
     );
@@ -296,32 +277,21 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final colors = tokens.colors;
-    final (label, fg, bg) = switch (status) {
-      AgentLifecycle.active => (
-        messages.agentLifecycleActive,
-        colors.interactive.enabled,
-        colors.interactive.enabled.withValues(alpha: 0.14),
-      ),
-      AgentLifecycle.dormant => (
-        messages.agentLifecyclePaused,
-        colors.text.mediumEmphasis,
-        colors.text.mediumEmphasis.withValues(alpha: 0.06),
-      ),
-      AgentLifecycle.destroyed => (
-        messages.agentLifecycleDestroyed,
-        colors.alert.error.defaultColor,
-        colors.alert.error.defaultColor.withValues(alpha: 0.14),
-      ),
-      AgentLifecycle.created => (
-        messages.agentLifecycleCreated,
-        colors.alert.info.defaultColor,
-        colors.alert.info.defaultColor.withValues(alpha: 0.14),
-      ),
+    final colors = context.designTokens.colors;
+    final accent = switch (status) {
+      AgentLifecycle.active => colors.interactive.enabled,
+      AgentLifecycle.dormant => colors.text.mediumEmphasis,
+      AgentLifecycle.destroyed => colors.alert.error.defaultColor,
+      AgentLifecycle.created => colors.alert.info.defaultColor,
     };
-    return _Pill(label: label, bg: bg, fg: fg);
+    final bg = status == AgentLifecycle.dormant
+        ? accent.withValues(alpha: 0.06)
+        : accent.withValues(alpha: 0.14);
+    return _Pill(
+      label: agentLifecycleLabel(context.messages, status),
+      bg: bg,
+      fg: accent,
+    );
   }
 }
 

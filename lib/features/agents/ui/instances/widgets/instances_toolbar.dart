@@ -3,15 +3,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-
-class SoulOption {
-  const SoulOption({required this.id, required this.label, required this.hue});
-  final String id;
-  final String label;
-  final int hue;
-}
 
 /// Toolbar row: Filters / Group by / Sort buttons, search input, count.
 class InstancesToolbar extends StatelessWidget {
@@ -20,10 +12,7 @@ class InstancesToolbar extends StatelessWidget {
     required this.onChanged,
     required this.totalBeforeFilter,
     required this.totalAfterFilter,
-    required this.typeCounts,
-    required this.statusCounts,
-    required this.soulOptions,
-    required this.soulCounts,
+    required this.counts,
     super.key,
   });
 
@@ -31,10 +20,7 @@ class InstancesToolbar extends StatelessWidget {
   final ValueChanged<InstancesFilterState> onChanged;
   final int totalBeforeFilter;
   final int totalAfterFilter;
-  final Map<InstanceType, int> typeCounts;
-  final Map<AgentLifecycle, int> statusCounts;
-  final List<SoulOption> soulOptions;
-  final Map<String, int> soulCounts;
+  final FilterCounts counts;
 
   @override
   Widget build(BuildContext context) {
@@ -70,10 +56,7 @@ class InstancesToolbar extends StatelessWidget {
           final filtersBtn = _FiltersButton(
             state: state,
             onChanged: onChanged,
-            typeCounts: typeCounts,
-            statusCounts: statusCounts,
-            soulOptions: soulOptions,
-            soulCounts: soulCounts,
+            counts: counts,
           );
           final groupBtn = _GroupByButton(state: state, onChanged: onChanged);
           final sortBtn = _SortButton(state: state, onChanged: onChanged);
@@ -193,18 +176,12 @@ class _FiltersButton extends StatelessWidget {
   const _FiltersButton({
     required this.state,
     required this.onChanged,
-    required this.typeCounts,
-    required this.statusCounts,
-    required this.soulOptions,
-    required this.soulCounts,
+    required this.counts,
   });
 
   final InstancesFilterState state;
   final ValueChanged<InstancesFilterState> onChanged;
-  final Map<InstanceType, int> typeCounts;
-  final Map<AgentLifecycle, int> statusCounts;
-  final List<SoulOption> soulOptions;
-  final Map<String, int> soulCounts;
+  final FilterCounts counts;
 
   @override
   Widget build(BuildContext context) {
@@ -217,10 +194,7 @@ class _FiltersButton extends StatelessWidget {
         context: context,
         state: state,
         onChanged: onChanged,
-        typeCounts: typeCounts,
-        statusCounts: statusCounts,
-        soulOptions: soulOptions,
-        soulCounts: soulCounts,
+        counts: counts,
       ),
       trailing: activeCount > 0 ? _CountBadge(count: activeCount) : null,
       child: Text(messages.agentInstancesToolbarFilters),
@@ -413,7 +387,15 @@ class _SearchFieldState extends State<_SearchField> {
             child: TextField(
               controller: _controller,
               focusNode: _focusNode,
-              onChanged: widget.onChanged,
+              // Guard no-op keystrokes: the controller fires `onChanged`
+              // for every keystroke even when the resulting text matches
+              // the value the parent already holds (e.g. didUpdateWidget
+              // syncs reset the field). Skipping those avoids a full
+              // filter/sort/group rebuild for nothing.
+              onChanged: (v) {
+                if (v == widget.value) return;
+                widget.onChanged(v);
+              },
               cursorColor: colors.interactive.enabled,
               style: TextStyle(fontSize: 12, color: colors.text.highEmphasis),
               decoration: InputDecoration(
@@ -508,10 +490,7 @@ Future<void> _showFiltersPopover({
   required BuildContext context,
   required InstancesFilterState state,
   required ValueChanged<InstancesFilterState> onChanged,
-  required Map<InstanceType, int> typeCounts,
-  required Map<AgentLifecycle, int> statusCounts,
-  required List<SoulOption> soulOptions,
-  required Map<String, int> soulCounts,
+  required FilterCounts counts,
 }) async {
   final box = context.findRenderObject() as RenderBox?;
   if (box == null) return;
@@ -527,7 +506,6 @@ Future<void> _showFiltersPopover({
     builder: (dialogContext) {
       return Stack(
         children: [
-          // Click-outside-to-dismiss layer.
           Positioned.fill(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -541,11 +519,8 @@ Future<void> _showFiltersPopover({
             child: _FiltersPopoverPanel(
               tokens: tokens,
               state: state,
-              onChanged: (next) => onChanged(next),
-              typeCounts: typeCounts,
-              statusCounts: statusCounts,
-              soulOptions: soulOptions,
-              soulCounts: soulCounts,
+              onChanged: onChanged,
+              counts: counts,
             ),
           ),
         ],
@@ -559,19 +534,13 @@ class _FiltersPopoverPanel extends StatefulWidget {
     required this.tokens,
     required this.state,
     required this.onChanged,
-    required this.typeCounts,
-    required this.statusCounts,
-    required this.soulOptions,
-    required this.soulCounts,
+    required this.counts,
   });
 
   final DsTokens tokens;
   final InstancesFilterState state;
   final ValueChanged<InstancesFilterState> onChanged;
-  final Map<InstanceType, int> typeCounts;
-  final Map<AgentLifecycle, int> statusCounts;
-  final List<SoulOption> soulOptions;
-  final Map<String, int> soulCounts;
+  final FilterCounts counts;
 
   @override
   State<_FiltersPopoverPanel> createState() => _FiltersPopoverPanelState();
@@ -616,9 +585,9 @@ class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
             ),
             for (final t in InstanceType.values)
               _PopRow(
-                label: _typeLabel(messages, t),
+                label: instanceTypeLabel(messages, t),
                 selected: _local.types.contains(t),
-                count: widget.typeCounts[t] ?? 0,
+                count: widget.counts.types[t] ?? 0,
                 onTap: () => _push(_local.toggleType(t)),
               ),
             const SizedBox(height: 6),
@@ -633,23 +602,23 @@ class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
               AgentLifecycle.destroyed,
             ])
               _PopRow(
-                label: _statusLabel(messages, s),
+                label: agentLifecycleLabel(messages, s),
                 selected: _local.statuses.contains(s),
-                count: widget.statusCounts[s] ?? 0,
+                count: widget.counts.statuses[s] ?? 0,
                 onTap: () => _push(_local.toggleStatus(s)),
               ),
-            if (widget.soulOptions.isNotEmpty) ...[
+            if (widget.counts.soulOptions.isNotEmpty) ...[
               const SizedBox(height: 6),
               _PopHeader(
                 label: messages.agentInstancesFilterSectionSoul,
                 showClear: _local.soulIds.isNotEmpty,
                 onClear: () => _push(_local.copyWith(soulIds: const {})),
               ),
-              for (final s in widget.soulOptions)
+              for (final s in widget.counts.soulOptions)
                 _PopRow(
                   label: s.label,
                   selected: _local.soulIds.contains(s.id),
-                  count: widget.soulCounts[s.id] ?? 0,
+                  count: widget.counts.soulCounts[s.id] ?? 0,
                   swatchHue: s.hue,
                   onTap: () => _push(_local.toggleSoul(s.id)),
                 ),
@@ -814,22 +783,4 @@ class _SoulSwatch extends StatelessWidget {
       ),
     );
   }
-}
-
-String _typeLabel(AppLocalizations messages, InstanceType t) {
-  return switch (t) {
-    InstanceType.taskAgent => messages.agentTemplateKindTaskAgent,
-    InstanceType.projectAgent => messages.agentTemplateKindProjectAgent,
-    InstanceType.templateImprover => messages.agentTemplateKindImprover,
-    InstanceType.evolution => messages.agentInstancesKindEvolution,
-  };
-}
-
-String _statusLabel(AppLocalizations messages, AgentLifecycle s) {
-  return switch (s) {
-    AgentLifecycle.active => messages.agentLifecycleActive,
-    AgentLifecycle.dormant => messages.agentLifecyclePaused,
-    AgentLifecycle.destroyed => messages.agentLifecycleDestroyed,
-    AgentLifecycle.created => messages.agentLifecycleCreated,
-  };
 }

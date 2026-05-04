@@ -180,11 +180,15 @@ class _AgentSettingsPageState extends ConsumerState<AgentSettingsPage> {
       _ => null,
     };
 
+    final appBarTitle = switch (selectedTab) {
+      AgentSettingsTab.instances => context.messages.agentInstancesPageTitle,
+      _ => context.messages.agentSettingsTitle,
+    };
     return Scaffold(
       appBar: AppBar(
         leading: agentBackButton(context),
         title: Text(
-          context.messages.agentSettingsTitle,
+          appBarTitle,
           style: appBarTextStyleNewLarge.copyWith(
             color: Theme.of(context).primaryColor,
           ),

@@ -124,6 +124,37 @@ void main() {
       );
     });
 
+    testWidgets(
+      'AppBar title says "Agent Instances" only on the Instances tab',
+      (tester) async {
+        final agent = makeTestIdentity(
+          id: 'agent-a',
+          agentId: 'agent-a',
+          displayName: 'Worker Agent',
+        );
+
+        await tester.pumpWidget(buildSubject(agents: [agent]));
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(AgentSettingsPage));
+        // Stats tab → generic "Agents" title.
+        expect(find.text(context.messages.agentSettingsTitle), findsOneWidget);
+        expect(
+          find.text(context.messages.agentInstancesPageTitle),
+          findsNothing,
+        );
+
+        await tester.tap(find.text(context.messages.agentInstancesTitle));
+        await tester.pumpAndSettle();
+
+        // Instances tab → "Agent Instances" in the AppBar.
+        expect(
+          find.text(context.messages.agentInstancesPageTitle),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('switches to Templates tab and shows template cards', (
       tester,
     ) async {

@@ -143,6 +143,7 @@
   "agentInstancesKindAll": "Vše",
   "agentInstancesKindEvolution": "Evoluce",
   "agentInstancesKindTaskAgent": "Agent úkolů",
+  "agentInstancesPageTitle": "Instance agentů",
   "agentInstancesResultCountAll": "{count} instancí",
   "@agentInstancesResultCountAll": {
     "placeholders": {
