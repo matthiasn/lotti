@@ -57,21 +57,24 @@ const DsTokens dsTokensLight = DsTokens(
       level02: Color(0x3D000000),
     ),
     aiCard: DsColorsAiCard(
-      background: Color(0xFF0E1A22),
-      backgroundRaised: Color(0xFF14222C),
-      row: Color(0xB80E1A22),
-      border: Color(0x245ED4B7),
-      borderSoft: Color(0x1A5ED4B7),
-      accent: Color(0xFF5ED4B7),
-      accentSoft: Color(0x295ED4B7),
-      footerWash: Color(0x29000000),
-      footerWashOpen: Color(0x1A000000),
-      rowBorder: Color(0x0FFFFFFF),
-      rowBorderStrong: Color(0x1AFFFFFF),
-      titleText: Color(0xFFFFFFFF),
-      bodyText: Color(0xD9FFFFFF),
-      metaText: Color(0x8CFFFFFF),
-      faintMeta: Color(0x73FFFFFF),
+      background: Color(0xFFE1EEF7),
+      backgroundRaised: Color(0xFFFFFFFF),
+      row: Color(0xB3FFFFFF),
+      border: Color(0x382BA184),
+      borderSoft: Color(0x242BA184),
+      accent: Color(0xFF2BA184),
+      accentSoft: Color(0x242BA184),
+      footerWash: Color(0x0A000000),
+      footerWashOpen: Color(0x05000000),
+      rowBorder: Color(0x14000000),
+      rowBorderStrong: Color(0x24000000),
+      titleText: Color(0xE0000000),
+      bodyText: Color(0xCC000000),
+      metaText: Color(0xA3000000),
+      faintMeta: Color(0x61000000),
+      subtleWash: Color(0x08000000),
+      subtleWashStrong: Color(0x0A000000),
+      subtleBorder: Color(0x1A000000),
     ),
     proposalKind: DsColorsProposalKind(
       add: DsColorsProposalKindAdd(
@@ -429,6 +432,9 @@ const DsTokens dsTokensDark = DsTokens(
       bodyText: Color(0xD9FFFFFF),
       metaText: Color(0x8CFFFFFF),
       faintMeta: Color(0x73FFFFFF),
+      subtleWash: Color(0x05FFFFFF),
+      subtleWashStrong: Color(0x0DFFFFFF),
+      subtleBorder: Color(0x14FFFFFF),
     ),
     proposalKind: DsColorsProposalKind(
       add: DsColorsProposalKindAdd(
@@ -1277,6 +1283,9 @@ class DsColorsAiCard {
   final Color bodyText;
   final Color metaText;
   final Color faintMeta;
+  final Color subtleWash;
+  final Color subtleWashStrong;
+  final Color subtleBorder;
 
   const DsColorsAiCard({
     required this.background,
@@ -1294,6 +1303,9 @@ class DsColorsAiCard {
     required this.bodyText,
     required this.metaText,
     required this.faintMeta,
+    required this.subtleWash,
+    required this.subtleWashStrong,
+    required this.subtleBorder,
   });
 
   DsColorsAiCard copyWith({
@@ -1312,6 +1324,9 @@ class DsColorsAiCard {
     Color? bodyText,
     Color? metaText,
     Color? faintMeta,
+    Color? subtleWash,
+    Color? subtleWashStrong,
+    Color? subtleBorder,
   }) {
     return DsColorsAiCard(
       background: background ?? this.background,
@@ -1329,6 +1344,9 @@ class DsColorsAiCard {
       bodyText: bodyText ?? this.bodyText,
       metaText: metaText ?? this.metaText,
       faintMeta: faintMeta ?? this.faintMeta,
+      subtleWash: subtleWash ?? this.subtleWash,
+      subtleWashStrong: subtleWashStrong ?? this.subtleWashStrong,
+      subtleBorder: subtleBorder ?? this.subtleBorder,
     );
   }
 
@@ -1357,6 +1375,12 @@ class DsColorsAiCard {
       bodyText: Color.lerp(bodyText, other.bodyText, t) ?? bodyText,
       metaText: Color.lerp(metaText, other.metaText, t) ?? metaText,
       faintMeta: Color.lerp(faintMeta, other.faintMeta, t) ?? faintMeta,
+      subtleWash: Color.lerp(subtleWash, other.subtleWash, t) ?? subtleWash,
+      subtleWashStrong:
+          Color.lerp(subtleWashStrong, other.subtleWashStrong, t) ??
+          subtleWashStrong,
+      subtleBorder:
+          Color.lerp(subtleBorder, other.subtleBorder, t) ?? subtleBorder,
     );
   }
 
@@ -1380,7 +1404,10 @@ class DsColorsAiCard {
         titleText == other.titleText &&
         bodyText == other.bodyText &&
         metaText == other.metaText &&
-        faintMeta == other.faintMeta;
+        faintMeta == other.faintMeta &&
+        subtleWash == other.subtleWash &&
+        subtleWashStrong == other.subtleWashStrong &&
+        subtleBorder == other.subtleBorder;
   }
 
   @override
@@ -1400,6 +1427,9 @@ class DsColorsAiCard {
     bodyText,
     metaText,
     faintMeta,
+    subtleWash,
+    subtleWashStrong,
+    subtleBorder,
   ]);
 }
 

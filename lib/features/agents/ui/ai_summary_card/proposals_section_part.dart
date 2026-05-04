@@ -122,7 +122,7 @@ class _PendingPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: hasItems
             ? ai.accent.withValues(alpha: 0.10)
-            : Colors.white.withValues(alpha: 0.05),
+            : ai.subtleWashStrong,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -189,9 +189,9 @@ class _EmptyProposalsRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.02),
+        color: ai.subtleWash,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: ai.subtleBorder),
       ),
       child: Center(
         child: Text(
@@ -589,9 +589,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
                 : Duration.zero,
             transform: Matrix4.translationValues(dx, 0, 0),
             decoration: BoxDecoration(
-              color: widget.isResolved
-                  ? Colors.white.withValues(alpha: 0.02)
-                  : ai.row,
+              color: widget.isResolved ? ai.subtleWash : ai.row,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: ai.rowBorder),
             ),

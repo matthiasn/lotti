@@ -74,7 +74,7 @@ class _ActivityFooter extends StatelessWidget {
                   height: 26,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
+                    color: ai.subtleWashStrong,
                     borderRadius: BorderRadius.circular(13),
                     border: Border.all(color: ai.rowBorderStrong),
                   ),
@@ -188,7 +188,7 @@ class _ActivityRow extends StatelessWidget {
                 Text(
                   entry.humanSummary,
                   style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.82),
+                    color: ai.bodyText,
                     height: 1.35,
                   ),
                 ),
