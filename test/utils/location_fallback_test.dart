@@ -15,20 +15,15 @@ import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
 
-class _FakeLocationPortal implements XdgLocationPortal {
-  _FakeLocationPortal({this.result, this.error});
+class _FakeLinuxBackend implements LinuxLocationBackend {
+  _FakeLinuxBackend({this.result, this.error});
 
   PortalLocation? result;
   Exception? error;
   int closeCount = 0;
 
   @override
-  Future<PortalLocation> getLocation({
-    Duration timeout = const Duration(seconds: 10),
-    PortalAccuracy accuracy = PortalAccuracy.exact,
-    int distanceThreshold = 0,
-    int timeThreshold = 0,
-  }) async {
+  Future<PortalLocation> getLocation({required Duration timeout}) async {
     if (error != null) {
       throw error!;
     }
@@ -485,7 +480,7 @@ void main() {
             () => mockJournalDb.getConfigFlag(recordLocationFlag),
           ).thenAnswer((_) async => true);
 
-          final portal = _FakeLocationPortal(
+          final backend = _FakeLinuxBackend(
             result: PortalLocation(
               latitude: 52.52,
               longitude: 13.405,
@@ -499,7 +494,7 @@ void main() {
           deviceLocation = DeviceLocation(
             locationService: mockLocation,
             ipGeolocationProvider: fakeIpGeolocationProvider,
-            linuxPortalFactory: () => portal,
+            linuxBackendFactory: () => backend,
           );
           final result = await deviceLocation.getCurrentGeoLocation();
 
@@ -511,7 +506,7 @@ void main() {
           expect(result.speed, 1.5);
           expect(result.heading, 90);
           expect(result.geohashString, isNotEmpty);
-          expect(portal.closeCount, 1);
+          expect(backend.closeCount, 1);
         },
       );
 
@@ -522,7 +517,7 @@ void main() {
           () => mockJournalDb.getConfigFlag(recordLocationFlag),
         ).thenAnswer((_) async => true);
 
-        final portal = _FakeLocationPortal(
+        final backend = _FakeLinuxBackend(
           error: TimeoutException(
             'no signal',
             const Duration(seconds: 1),
@@ -532,7 +527,7 @@ void main() {
         deviceLocation = DeviceLocation(
           locationService: mockLocation,
           ipGeolocationProvider: fakeIpGeolocationProvider,
-          linuxPortalFactory: () => portal,
+          linuxBackendFactory: () => backend,
         );
         final result = await deviceLocation.getCurrentGeoLocation();
 
@@ -546,7 +541,7 @@ void main() {
             subDomain: 'linux_native_fallback',
           ),
         ).called(1);
-        expect(portal.closeCount, 1);
+        expect(backend.closeCount, 1);
       });
     });
 

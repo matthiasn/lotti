@@ -6,14 +6,56 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/ip_geolocation_service.dart';
+import 'package:lotti/services/linux_geoclue_client.dart';
 import 'package:lotti/services/linux_location_portal.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/platform.dart';
 
-/// Builds the Linux portal client. Exposed so tests can inject a fake.
-typedef LinuxLocationPortalFactory = XdgLocationPortal Function();
+/// Abstracts both Linux backends (portal under Flatpak, direct GeoClue under
+/// `flutter run`) so callers and tests speak a single API.
+abstract class LinuxLocationBackend {
+  Future<PortalLocation> getLocation({required Duration timeout});
+  Future<void> close();
+}
+
+class _PortalBackend implements LinuxLocationBackend {
+  _PortalBackend(this._portal);
+  final XdgLocationPortal _portal;
+  @override
+  Future<PortalLocation> getLocation({required Duration timeout}) =>
+      _portal.getLocation(timeout: timeout);
+  @override
+  Future<void> close() => _portal.close();
+}
+
+class _GeoClueBackend implements LinuxLocationBackend {
+  _GeoClueBackend(this._client);
+  final LinuxGeoClueClient _client;
+  @override
+  Future<PortalLocation> getLocation({required Duration timeout}) =>
+      _client.getLocation(timeout: timeout);
+  @override
+  Future<void> close() => _client.close();
+}
+
+/// Builds the Linux backend used by [DeviceLocation]. Defaults to the portal
+/// when running inside a Flatpak sandbox (xdg-desktop-portal mediates GeoClue
+/// and the app appears under GNOME Settings → Location → Permitted Apps), and
+/// to direct GeoClue otherwise (the portal rejects unsandboxed callers with
+/// `Access denied`).
+typedef LinuxLocationBackendFactory = LinuxLocationBackend Function();
+
+LinuxLocationBackend _defaultLinuxBackend() {
+  final inFlatpak = File('/.flatpak-info').existsSync();
+  if (inFlatpak) {
+    return _PortalBackend(XdgLocationPortal());
+  }
+  return _GeoClueBackend(
+    LinuxGeoClueClient(desktopId: LocationConstants.appDesktopId),
+  );
+}
 
 class LocationConstants {
   const LocationConstants._();
@@ -26,18 +68,18 @@ class DeviceLocation {
   DeviceLocation({
     Location? locationService,
     IpGeolocationProvider? ipGeolocationProvider,
-    LinuxLocationPortalFactory? linuxPortalFactory,
+    LinuxLocationBackendFactory? linuxBackendFactory,
   }) {
     location = locationService ?? Location();
     _ipGeolocationProvider =
         ipGeolocationProvider ?? defaultIpGeolocationProvider;
-    _linuxPortalFactory = linuxPortalFactory ?? XdgLocationPortal.new;
+    _linuxBackendFactory = linuxBackendFactory ?? _defaultLinuxBackend;
     init();
   }
 
   late Location location;
   late IpGeolocationProvider _ipGeolocationProvider;
-  late LinuxLocationPortalFactory _linuxPortalFactory;
+  late LinuxLocationBackendFactory _linuxBackendFactory;
 
   Future<void> init() async {
     bool serviceEnabled;
@@ -143,10 +185,9 @@ class DeviceLocation {
     if (!Platform.isLinux) return null;
 
     final now = DateTime.now();
-    final portal = _linuxPortalFactory();
+    final backend = _linuxBackendFactory();
     try {
-      final locationData = await portal.getLocation(
-        // ignore: avoid_redundant_argument_values
+      final locationData = await backend.getLocation(
         timeout: LocationConstants.locationTimeout,
       );
       return Geolocation(
@@ -165,7 +206,7 @@ class DeviceLocation {
         ),
       );
     } finally {
-      await portal.close();
+      await backend.close();
     }
   }
 }
