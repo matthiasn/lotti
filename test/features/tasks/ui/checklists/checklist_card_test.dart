@@ -797,6 +797,55 @@ void main() {
       },
     );
 
+    // ── Body padding ────────────────────────────────────────────────────────
+
+    testWidgets(
+      'body ListView opts out of ambient MediaQuery.padding so safe-area '
+      'insets (e.g. iPhone notch) do not push items below the filter strip',
+      (tester) async {
+        // Wrap the card in a MediaQuery that simulates a 47px notch top
+        // inset reaching the body. Without `padding: EdgeInsets.zero` on
+        // the ListView, BoxScrollView absorbs MediaQuery.padding into its
+        // resolved SliverPadding — which is what produced the spacing bug
+        // when #3060 swapped ReorderableListView.builder for ListView.
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            MediaQuery(
+              data: const MediaQueryData(
+                size: Size(390, 844),
+                padding: EdgeInsets.only(top: 47),
+              ),
+              child: ChecklistCard(
+                id: 'cl-1',
+                taskId: 'task-1',
+                title: 'My Checklist',
+                itemIds: const [],
+                completionRate: 0,
+                initiallyExpanded: true,
+                onTitleSave: (_) {},
+                onCreateItem: (_) async => null,
+              ),
+            ),
+          ),
+        );
+
+        // The ListView resolves its slivers down through a SliverPadding.
+        // With the fix in place, that resolved padding is zero — even with
+        // a 47px top inset above the card. Without the fix, BoxScrollView
+        // would build SliverPadding(EdgeInsets.only(top: 47)) here.
+        final sliverPadding = tester.widget<SliverPadding>(
+          find.descendant(
+            of: find.descendant(
+              of: find.byType(ChecklistCard),
+              matching: find.byType(ListView),
+            ),
+            matching: find.byType(SliverPadding),
+          ),
+        );
+        expect(sliverPadding.padding, EdgeInsets.zero);
+      },
+    );
+
     // ── Initial animation skip ─────────────────────────────────────────────
 
     testWidgets('body appears instantly on first render without animation', (
