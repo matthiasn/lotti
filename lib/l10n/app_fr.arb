@@ -2394,6 +2394,8 @@
   "settingsDashboardSaveLabel": "Enregistrer",
   "settingsDashboardsSubtitle": "Personnaliser tes vues de tableau de bord",
   "settingsDashboardsTitle": "Gestion du tableau de bord",
+  "settingsDefinitionsSubtitle": "Habitudes, catégories, étiquettes, tableaux de bord et mesures",
+  "settingsDefinitionsTitle": "Définitions",
   "settingsFlagsEmptySearch": "Aucun indicateur ne correspond à ta recherche",
   "settingsFlagsSearchHint": "Rechercher des indicateurs",
   "settingsFlagsSubtitle": "Configurer les indicateurs et options",

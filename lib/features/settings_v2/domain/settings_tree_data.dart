@@ -170,18 +170,55 @@ List<SettingsNode> buildSettingsTree({
           ),
       ],
     ),
-    if (enableHabits) leaf('habits', Icons.repeat_rounded, panel: 'habits'),
-    leaf('categories', Icons.category_rounded, panel: 'categories'),
-    leaf('labels', Icons.label_rounded, panel: 'labels'),
-    if (enableDashboards)
-      leaf('dashboards', Icons.dashboard_rounded, panel: 'dashboards'),
-    leaf('measurables', Icons.straighten_rounded, panel: 'measurables'),
+    // Entity definitions branch — groups habits / categories / labels /
+    // dashboards / measurables behind a single "Definitions" entry so the
+    // root list reads as: AI · Agents · Sync · Definitions · Theming ·
+    // Advanced. New users see five entity types fewer at the top level.
+    //
+    // Leaf ids are namespaced under `definitions/` (e.g.
+    // `definitions/habits`) but their public Beamer URLs stay flat
+    // (`/settings/habits`, …) — `settingsNodeUrls` does the translation.
+    // Panel ids (`habits`, `categories`, …) stay unchanged so the
+    // panel_registry continues to dispatch on stable keys.
+    branch(
+      'definitions',
+      Icons.account_tree_outlined,
+      children: [
+        if (enableHabits)
+          leaf(
+            'definitions/habits',
+            Icons.repeat_rounded,
+            panel: 'habits',
+          ),
+        leaf(
+          'definitions/categories',
+          Icons.category_rounded,
+          panel: 'categories',
+        ),
+        leaf('definitions/labels', Icons.label_rounded, panel: 'labels'),
+        if (enableDashboards)
+          leaf(
+            'definitions/dashboards',
+            Icons.dashboard_rounded,
+            panel: 'dashboards',
+          ),
+        leaf(
+          'definitions/measurables',
+          Icons.straighten_rounded,
+          panel: 'measurables',
+        ),
+      ],
+    ),
     leaf('theming', Icons.palette_outlined, panel: 'theming'),
-    leaf('flags', Icons.flag_outlined, panel: 'flags'),
     branch(
       'advanced',
       Icons.settings_suggest_outlined,
       children: [
+        // Config flags moved here from the top level so casual users
+        // aren't faced with a "Configure flags" entry alongside genuinely
+        // first-class settings. Power users still reach it through
+        // Advanced. URL stays `/settings/flags` for deep-link compat.
+        leaf('advanced/flags', Icons.flag_outlined, panel: 'flags'),
         leaf(
           'advanced/logging',
           Icons.bug_report_outlined,

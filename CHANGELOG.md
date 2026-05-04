@@ -50,6 +50,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   catalogs every place the card overrides `height` / `letterSpacing`
   on top of base typography tokens and proposes a `Compact/*`
   density tier.
+- Settings root list is shorter and friendlier for new users.
+  Habits, Categories, Labels, Dashboards, and Measurables now sit
+  under a single new "Definitions" entry; Config Flags moved into
+  the Advanced sub-page next to Logging, Maintenance, and About.
+  Existing deep links (`/settings/habits`, `/settings/flags`, …)
+  are unchanged so bookmarks keep resolving.
 
 ### Fixed
 - Checklist body no longer leaves a fat empty band between the

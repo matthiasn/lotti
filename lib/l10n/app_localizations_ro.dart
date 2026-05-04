@@ -5627,6 +5627,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsDashboardsTitle => 'Panouri de bord';
 
   @override
+  String get settingsDefinitionsSubtitle =>
+      'Obiceiuri, categorii, etichete, panouri și unități măsurabile';
+
+  @override
+  String get settingsDefinitionsTitle => 'Definiții';
+
+  @override
   String get settingsFlagsEmptySearch =>
       'Niciun marcaj nu corespunde căutării dvs.';
 

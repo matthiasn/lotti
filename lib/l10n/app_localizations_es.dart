@@ -5668,6 +5668,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsDashboardsTitle => 'Paneles';
 
   @override
+  String get settingsDefinitionsSubtitle =>
+      'Hábitos, categorías, etiquetas, paneles y medibles';
+
+  @override
+  String get settingsDefinitionsTitle => 'Definiciones';
+
+  @override
   String get settingsFlagsEmptySearch =>
       'Ningún indicador coincide con tu búsqueda';
 

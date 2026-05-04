@@ -5678,6 +5678,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsDashboardsTitle => 'Gestion du tableau de bord';
 
   @override
+  String get settingsDefinitionsSubtitle =>
+      'Habitudes, catégories, étiquettes, tableaux de bord et mesures';
+
+  @override
+  String get settingsDefinitionsTitle => 'Définitions';
+
+  @override
   String get settingsFlagsEmptySearch =>
       'Aucun indicateur ne correspond à ta recherche';
 

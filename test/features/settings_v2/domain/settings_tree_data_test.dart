@@ -58,47 +58,47 @@ void main() {
 
   group('buildSettingsTree — always-on nodes', () {
     test('root order is stable with every flag on', () {
-      // Sync sits directly below Agents — both are runtime / system
-      // concerns and read better as a pair than separated by the
-      // taxonomy leaves (habits / categories / labels).
+      // Entity definitions (habits / categories / labels / dashboards
+      // / measurables) collapse into the single `definitions` branch;
+      // config flags reparent under `advanced`. Root reads as
+      // AI · Agents · Sync · Definitions · Theming · Advanced.
       final rootIds = _tree().map((n) => n.id).toList();
       expect(rootIds, [
         'whats-new',
         'ai',
         'agents',
         'sync',
-        'habits',
-        'categories',
-        'labels',
-        'dashboards',
-        'measurables',
+        'definitions',
         'theming',
-        'flags',
         'advanced',
       ]);
     });
 
-    test('categories, labels, measurables, theming, flags always present', () {
-      final ids = _ids(
-        _tree(
-          enableAgents: false,
-          enableHabits: false,
-          enableDashboards: false,
-          enableMatrix: false,
-          enableWhatsNew: false,
-        ),
-      );
-      expect(
-        ids,
-        containsAll(<String>[
-          'categories',
-          'labels',
-          'measurables',
-          'theming',
-          'flags',
-        ]),
-      );
-    });
+    test(
+      'categories, labels, measurables, theming, advanced/flags always present',
+      () {
+        final ids = _ids(
+          _tree(
+            enableAgents: false,
+            enableHabits: false,
+            enableDashboards: false,
+            enableMatrix: false,
+            enableWhatsNew: false,
+          ),
+        );
+        expect(
+          ids,
+          containsAll(<String>[
+            'definitions',
+            'definitions/categories',
+            'definitions/labels',
+            'definitions/measurables',
+            'theming',
+            'advanced/flags',
+          ]),
+        );
+      },
+    );
 
     test('AI, Sync, and Advanced branches are unconditional', () {
       final ids = _ids(
@@ -177,29 +177,94 @@ void main() {
   });
 
   group('buildSettingsTree — enableHabits', () {
-    test('omits habits when off', () {
-      expect(_ids(_tree(enableHabits: false)), isNot(contains('habits')));
+    test('omits habits leaf when off; siblings under definitions remain', () {
+      final ids = _ids(_tree(enableHabits: false));
+      expect(ids, isNot(contains('definitions/habits')));
+      expect(ids, contains('definitions'));
+      expect(ids, contains('definitions/categories'));
     });
 
-    test('renders habits as a leaf with the habits panel when on', () {
-      final habits = _tree().firstWhere((n) => n.id == 'habits');
-      expect(habits.hasChildren, isFalse);
+    test('renders habits leaf under definitions with the habits panel', () {
+      final habits = SettingsTreeIndexTestHelper.findInTree(
+        _tree(),
+        'definitions/habits',
+      );
+      expect(habits, isNotNull);
+      expect(habits!.hasChildren, isFalse);
       expect(habits.panel, 'habits');
     });
   });
 
   group('buildSettingsTree — enableDashboards', () {
-    test('omits dashboards when off', () {
-      expect(
-        _ids(_tree(enableDashboards: false)),
-        isNot(contains('dashboards')),
-      );
+    test(
+      'omits dashboards leaf when off; siblings under definitions remain',
+      () {
+        final ids = _ids(_tree(enableDashboards: false));
+        expect(ids, isNot(contains('definitions/dashboards')));
+        expect(ids, contains('definitions'));
+        expect(ids, contains('definitions/measurables'));
+      },
+    );
+
+    test(
+      'renders dashboards leaf under definitions with the dashboards panel',
+      () {
+        final dashboards = SettingsTreeIndexTestHelper.findInTree(
+          _tree(),
+          'definitions/dashboards',
+        );
+        expect(dashboards, isNotNull);
+        expect(dashboards!.hasChildren, isFalse);
+        expect(dashboards.panel, 'dashboards');
+      },
+    );
+  });
+
+  group('buildSettingsTree — definitions branch', () {
+    test('definitions is a pure branch (no panel) with stable child order', () {
+      final definitions = _tree().firstWhere((n) => n.id == 'definitions');
+      expect(definitions.panel, isNull);
+      expect(definitions.children!.map((n) => n.id).toList(), [
+        'definitions/habits',
+        'definitions/categories',
+        'definitions/labels',
+        'definitions/dashboards',
+        'definitions/measurables',
+      ]);
     });
 
-    test('renders dashboards as a leaf with the dashboards panel when on', () {
-      final dashboards = _tree().firstWhere((n) => n.id == 'dashboards');
-      expect(dashboards.hasChildren, isFalse);
-      expect(dashboards.panel, 'dashboards');
+    test(
+      'with habits and dashboards off, definitions keeps its other leaves',
+      () {
+        final tree = _tree(enableHabits: false, enableDashboards: false);
+        final definitions = tree.firstWhere((n) => n.id == 'definitions');
+        expect(definitions.children!.map((n) => n.id).toList(), [
+          'definitions/categories',
+          'definitions/labels',
+          'definitions/measurables',
+        ]);
+      },
+    );
+  });
+
+  group('buildSettingsTree — advanced/flags reparenting', () {
+    test('advanced branch carries flags as its first child', () {
+      final advanced = _tree().firstWhere((n) => n.id == 'advanced');
+      expect(advanced.children!.map((n) => n.id).toList(), [
+        'advanced/flags',
+        'advanced/logging',
+        'advanced/maintenance',
+        'advanced/about',
+      ]);
+    });
+
+    test('advanced/flags carries the flags panel', () {
+      final flags = SettingsTreeIndexTestHelper.findInTree(
+        _tree(),
+        'advanced/flags',
+      );
+      expect(flags, isNotNull);
+      expect(flags!.panel, 'flags');
     });
   });
 
@@ -264,18 +329,18 @@ void main() {
         'agents/instances': 'agents-instances',
         'agents/souls': 'agents-souls',
         'agents/pending-wakes': 'agents-pending-wakes',
-        'habits': 'habits',
-        'categories': 'categories',
-        'labels': 'labels',
+        'definitions/habits': 'habits',
+        'definitions/categories': 'categories',
+        'definitions/labels': 'labels',
         'sync/backfill': 'sync-backfill',
         'sync/stats': 'sync-stats',
         'sync/outbox': 'sync-outbox',
         'sync/conflicts': 'sync-conflicts',
         'sync/matrix-maintenance': 'sync-matrix-maintenance',
-        'dashboards': 'dashboards',
-        'measurables': 'measurables',
+        'definitions/dashboards': 'dashboards',
+        'definitions/measurables': 'measurables',
         'theming': 'theming',
-        'flags': 'flags',
+        'advanced/flags': 'flags',
         'advanced/logging': 'advanced-logging',
         'advanced/maintenance': 'advanced-maintenance',
         'advanced/about': 'advanced-about',
@@ -283,10 +348,10 @@ void main() {
     });
 
     test('pure branch nodes have no panel', () {
-      // Only `advanced` is a pure (landing-page-less) branch now.
-      // `ai`, `agents`, and `sync` carry their own landing panel
-      // (asserted separately below).
-      for (final id in ['advanced']) {
+      // `advanced` and `definitions` are pure (landing-page-less)
+      // branches. `ai`, `agents`, and `sync` carry their own landing
+      // panel (asserted separately below).
+      for (final id in ['advanced', 'definitions']) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, id);
         expect(node, isNotNull, reason: 'expected $id to be present');
@@ -316,12 +381,13 @@ void main() {
       expect(ai.children!.map((n) => n.id).toList(), ['ai/profiles']);
     });
 
-    test('Advanced has logging / maintenance / about in order', () {
-      // Conflicts moved out of Advanced and into Sync — Advanced now
-      // only carries the developer-tooling leaves. The order locks
-      // visual stability across the menu.
+    test('Advanced has flags / logging / maintenance / about in order', () {
+      // Conflicts moved out of Advanced and into Sync; flags moved
+      // in from the root list. The order locks visual stability
+      // across the menu.
       final advanced = _tree().firstWhere((n) => n.id == 'advanced');
       expect(advanced.children!.map((n) => n.id).toList(), [
+        'advanced/flags',
         'advanced/logging',
         'advanced/maintenance',
         'advanced/about',
@@ -360,11 +426,8 @@ void main() {
         // and sits directly below the AI/Agents-family slot regardless
         // of which optional taxonomy branches are gated off.
         'sync',
-        'categories',
-        'labels',
-        'measurables',
+        'definitions',
         'theming',
-        'flags',
         'advanced',
       ]);
     });

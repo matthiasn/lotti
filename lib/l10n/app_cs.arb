@@ -2139,6 +2139,8 @@
   "settingsDashboardSaveLabel": "Uložit",
   "settingsDashboardsSubtitle": "Přizpůsobit zobrazení panelu",
   "settingsDashboardsTitle": "Panely",
+  "settingsDefinitionsSubtitle": "Návyky, kategorie, štítky, panely a měřitelné údaje",
+  "settingsDefinitionsTitle": "Definice",
   "settingsFlagsEmptySearch": "Žádné příznaky neodpovídají vašemu hledání",
   "settingsFlagsSearchHint": "Hledat příznaky",
   "settingsFlagsSubtitle": "Konfigurace příznaků a možností",

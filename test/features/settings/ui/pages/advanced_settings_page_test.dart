@@ -1,3 +1,4 @@
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -51,8 +52,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Desktop: Logging Domains, Maintenance, About (3 items, no health)
-      expect(find.byType(DesignSystemListItem), findsNWidgets(3));
+      // Desktop: Flags, Logging Domains, Maintenance, About
+      // (4 items, no health).
+      expect(find.byType(DesignSystemListItem), findsNWidgets(4));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -64,7 +66,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsIcon), findsNWidgets(3));
+      expect(find.byType(SettingsIcon), findsNWidgets(4));
     });
 
     testWidgets('shows correct titles and subtitles', (tester) async {
@@ -78,6 +80,11 @@ void main() {
 
       final context = tester.element(find.byType(AdvancedSettingsPage));
 
+      expect(find.text(context.messages.settingsFlagsTitle), findsOneWidget);
+      expect(
+        find.text(context.messages.settingsFlagsSubtitle),
+        findsOneWidget,
+      );
       expect(
         find.text(context.messages.settingsLoggingDomainsTitle),
         findsOneWidget,
@@ -104,7 +111,7 @@ void main() {
 
       expect(
         find.byIcon(Icons.chevron_right_rounded),
-        findsNWidgets(3),
+        findsNWidgets(4),
       );
     });
 
@@ -137,8 +144,8 @@ void main() {
         find.text(context.messages.settingsHealthImportTitle),
         findsOneWidget,
       );
-      // Mobile: 4 items (logging, health, maintenance, about)
-      expect(find.byType(DesignSystemListItem), findsNWidgets(4));
+      // Mobile: flags, logging, health, maintenance, about (5 items).
+      expect(find.byType(DesignSystemListItem), findsNWidgets(5));
     });
 
     testWidgets('hides health import card on desktop', (tester) async {
@@ -168,6 +175,66 @@ void main() {
 
       expect(find.byType(DecoratedBox), findsAtLeastNWidgets(1));
       expect(find.byType(ClipRRect), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('every row beams to its canonical /settings/... URL on tap', (
+      tester,
+    ) async {
+      // Wraps the page in a real Beamer so the onTap callbacks
+      // (`context.beamToNamed(...)`) execute. Routes are no-op stubs
+      // — we only assert the beam request URL.
+      platform.isMobile = true;
+      final delegate = BeamerDelegate(
+        locationBuilder: RoutesLocationBuilder(
+          routes: <String, Widget Function(BuildContext, BeamState, Object?)>{
+            '/': (_, _, _) => const Material(child: AdvancedSettingsPage()),
+            '/settings/flags': (_, _, _) => const SizedBox.shrink(),
+            '/settings/advanced/logging_domains': (_, _, _) =>
+                const SizedBox.shrink(),
+            '/settings/health_import': (_, _, _) => const SizedBox.shrink(),
+            '/settings/advanced/maintenance': (_, _, _) =>
+                const SizedBox.shrink(),
+            '/settings/advanced/about': (_, _, _) => const SizedBox.shrink(),
+          },
+        ).call,
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          BeamerProvider(
+            routerDelegate: delegate,
+            child: const Material(child: AdvancedSettingsPage()),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(AdvancedSettingsPage));
+
+      for (final entry in <(String, String)>[
+        (context.messages.settingsFlagsTitle, '/settings/flags'),
+        (
+          context.messages.settingsLoggingDomainsTitle,
+          '/settings/advanced/logging_domains',
+        ),
+        (
+          context.messages.settingsHealthImportTitle,
+          '/settings/health_import',
+        ),
+        (
+          context.messages.settingsMaintenanceTitle,
+          '/settings/advanced/maintenance',
+        ),
+        (context.messages.settingsAboutTitle, '/settings/advanced/about'),
+      ]) {
+        await tester.tap(find.text(entry.$1));
+        await tester.pumpAndSettle();
+        expect(
+          delegate.configuration.uri.toString(),
+          entry.$2,
+          reason: 'tapping "${entry.$1}" should beam to ${entry.$2}',
+        );
+      }
     });
   });
 }

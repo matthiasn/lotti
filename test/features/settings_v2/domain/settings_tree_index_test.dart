@@ -84,7 +84,10 @@ void main() {
     });
 
     test('query string is stripped before prefix matching', () {
-      expect(beamUrlToPath('/settings/categories?focus=new'), ['categories']);
+      expect(beamUrlToPath('/settings/categories?focus=new'), [
+        'definitions',
+        'definitions/categories',
+      ]);
     });
 
     test('fragment is stripped before prefix matching', () {
@@ -95,7 +98,10 @@ void main() {
     });
 
     test('query and fragment together both stripped', () {
-      expect(beamUrlToPath('/settings/flags?x=1#top'), ['flags']);
+      expect(beamUrlToPath('/settings/flags?x=1#top'), [
+        'advanced',
+        'advanced/flags',
+      ]);
     });
 
     test(
@@ -152,21 +158,21 @@ void main() {
     test('category detail UUID is treated as panel-local', () {
       expect(
         beamUrlToPath('/settings/categories/abc-123'),
-        ['categories'],
+        ['definitions', 'definitions/categories'],
       );
     });
 
     test('label detail UUID is treated as panel-local', () {
       expect(
         beamUrlToPath('/settings/labels/some-label-id'),
-        ['labels'],
+        ['definitions', 'definitions/labels'],
       );
     });
 
     test('habit detail UUID is treated as panel-local', () {
       expect(
         beamUrlToPath('/settings/habits/by_id/some-habit'),
-        ['habits'],
+        ['definitions', 'definitions/habits'],
       );
     });
 

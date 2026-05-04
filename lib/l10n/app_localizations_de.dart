@@ -5579,6 +5579,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsDashboardsTitle => 'Dashboards';
 
   @override
+  String get settingsDefinitionsSubtitle =>
+      'Gewohnheiten, Kategorien, Labels, Dashboards und Messgrößen';
+
+  @override
+  String get settingsDefinitionsTitle => 'Definitionen';
+
+  @override
   String get settingsFlagsEmptySearch => 'Keine Flags entsprechen deiner Suche';
 
   @override

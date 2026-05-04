@@ -17,6 +17,15 @@ class AdvancedSettingsPage extends ConsumerWidget {
 
     final items =
         <({String title, String subtitle, IconData icon, VoidCallback onTap})>[
+          // Config flags moved here from the v1 settings root so the
+          // top-level list isn't dominated by power-user entries. URL
+          // stays `/settings/flags` for deep-link compatibility.
+          (
+            title: context.messages.settingsFlagsTitle,
+            subtitle: context.messages.settingsFlagsSubtitle,
+            icon: Icons.flag_outlined,
+            onTap: () => context.beamToNamed('/settings/flags'),
+          ),
           (
             title: context.messages.settingsLoggingDomainsTitle,
             subtitle: context.messages.settingsLoggingDomainsSubtitle,

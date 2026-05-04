@@ -2394,6 +2394,8 @@
   "settingsDashboardSaveLabel": "Guardar",
   "settingsDashboardsSubtitle": "Personaliza tus vistas del panel",
   "settingsDashboardsTitle": "Paneles",
+  "settingsDefinitionsSubtitle": "Hábitos, categorías, etiquetas, paneles y medibles",
+  "settingsDefinitionsTitle": "Definiciones",
   "settingsFlagsEmptySearch": "Ningún indicador coincide con tu búsqueda",
   "settingsFlagsSearchHint": "Buscar indicadores",
   "settingsFlagsSubtitle": "Configurar indicadores y opciones",
