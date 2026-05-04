@@ -135,7 +135,13 @@ void main() {
           );
 
           await tester.pumpWidget(bench.build());
-          await tester.pumpAndSettle();
+          // Bounded pumps to flush async providers (taskAgent /
+          // agentState / unifiedSuggestionList all resolve via Futures)
+          // without advancing into the WakeCountdownState 1s timer
+          // boundary. Stay below 1000ms total so the timer never fires.
+          for (var i = 0; i < 5; i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
 
           // Initial: countdown pill visible, no refresh affordance.
           expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
