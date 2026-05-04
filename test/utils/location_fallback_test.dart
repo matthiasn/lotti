@@ -16,10 +16,11 @@ import 'package:mocktail/mocktail.dart';
 import '../helpers/fallbacks.dart';
 
 class _FakeLinuxBackend implements LinuxLocationBackend {
-  _FakeLinuxBackend({this.result, this.error});
+  _FakeLinuxBackend({this.result, this.error, this.closeError});
 
   PortalLocation? result;
   Exception? error;
+  Exception? closeError;
   int closeCount = 0;
 
   @override
@@ -33,6 +34,7 @@ class _FakeLinuxBackend implements LinuxLocationBackend {
   @override
   Future<void> close() async {
     closeCount++;
+    if (closeError != null) throw closeError!;
   }
 }
 
@@ -558,6 +560,44 @@ void main() {
         ).called(1);
         expect(backend.closeCount, 1);
       });
+
+      test(
+        'returns the native location even when backend.close() throws',
+        () async {
+          if (!Platform.isLinux) return;
+
+          when(
+            () => mockJournalDb.getConfigFlag(recordLocationFlag),
+          ).thenAnswer((_) async => true);
+
+          final backend = _FakeLinuxBackend(
+            result: PortalLocation(latitude: 1, longitude: 2),
+            closeError: Exception('cleanup boom'),
+          );
+
+          deviceLocation = DeviceLocation(
+            locationService: mockLocation,
+            ipGeolocationProvider: fakeIpGeolocationProvider,
+            linuxBackendFactory: () => backend,
+          );
+          final result = await deviceLocation.getCurrentGeoLocation();
+
+          // Native location is preserved (not replaced by IP fallback) and the
+          // close failure is logged through LoggingService instead of being
+          // rethrown out of the finally block.
+          expect(result, isNotNull);
+          expect(result!.latitude, 1);
+          expect(result.longitude, 2);
+          verify(
+            () => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'LOCATION_SERVICE',
+              subDomain: 'linux_backend_close',
+            ),
+          ).called(1);
+          expect(backend.closeCount, 1);
+        },
+      );
     });
 
     group('Geolocation data validation', () {

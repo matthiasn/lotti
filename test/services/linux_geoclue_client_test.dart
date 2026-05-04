@@ -138,6 +138,19 @@ class _FakeGeoClueDBus implements GeoClueDBus {
     );
   }
 
+  void emitSignalError(Object error) {
+    final ctrl =
+        _controllers[_SignalKey(
+          'org.freedesktop.GeoClue2.Client',
+          'LocationUpdated',
+          clientPath,
+        )];
+    if (ctrl == null) {
+      throw StateError('LocationUpdated not subscribed yet');
+    }
+    ctrl.addError(error);
+  }
+
   bool wasCalled(String interface, String name) =>
       calls.any((_Call c) => c.interface == interface && c.name == name);
 
@@ -264,6 +277,16 @@ void main() {
     test('close() forwards to the bus', () async {
       await client.close();
       expect(fake.closed, isTrue);
+    });
+
+    test('propagates LocationUpdated stream errors', () async {
+      final future = client.getLocation(
+        timeout: const Duration(seconds: 5),
+      );
+      await Future<void>.delayed(Duration.zero);
+      fake.emitSignalError(StateError('stream blew up'));
+
+      await expectLater(future, throwsA(isA<StateError>()));
     });
   });
 }

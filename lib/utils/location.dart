@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:location/location.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/database/database.dart';
@@ -20,8 +21,9 @@ abstract class LinuxLocationBackend {
   Future<void> close();
 }
 
-class _PortalBackend implements LinuxLocationBackend {
-  _PortalBackend(this._portal);
+@visibleForTesting
+class PortalBackend implements LinuxLocationBackend {
+  PortalBackend(this._portal);
   final XdgLocationPortal _portal;
   @override
   Future<PortalLocation> getLocation({required Duration timeout}) =>
@@ -30,8 +32,9 @@ class _PortalBackend implements LinuxLocationBackend {
   Future<void> close() => _portal.close();
 }
 
-class _GeoClueBackend implements LinuxLocationBackend {
-  _GeoClueBackend(this._client);
+@visibleForTesting
+class GeoClueBackend implements LinuxLocationBackend {
+  GeoClueBackend(this._client);
   final LinuxGeoClueClient _client;
   @override
   Future<PortalLocation> getLocation({required Duration timeout}) =>
@@ -47,15 +50,20 @@ class _GeoClueBackend implements LinuxLocationBackend {
 /// `Access denied`).
 typedef LinuxLocationBackendFactory = LinuxLocationBackend Function();
 
-LinuxLocationBackend _defaultLinuxBackend() {
-  final inFlatpak = File('/.flatpak-info').existsSync();
-  if (inFlatpak) {
-    return _PortalBackend(XdgLocationPortal());
+bool _defaultIsInFlatpak() => File('/.flatpak-info').existsSync();
+
+@visibleForTesting
+LinuxLocationBackend defaultLinuxBackend({bool Function()? isInFlatpak}) {
+  final detect = isInFlatpak ?? _defaultIsInFlatpak;
+  if (detect()) {
+    return PortalBackend(XdgLocationPortal());
   }
-  return _GeoClueBackend(
+  return GeoClueBackend(
     LinuxGeoClueClient(desktopId: LocationConstants.appDesktopId),
   );
 }
+
+LinuxLocationBackend _defaultLinuxBackendFactory() => defaultLinuxBackend();
 
 class LocationConstants {
   const LocationConstants._();
@@ -73,7 +81,7 @@ class DeviceLocation {
     location = locationService ?? Location();
     _ipGeolocationProvider =
         ipGeolocationProvider ?? defaultIpGeolocationProvider;
-    _linuxBackendFactory = linuxBackendFactory ?? _defaultLinuxBackend;
+    _linuxBackendFactory = linuxBackendFactory ?? _defaultLinuxBackendFactory;
     init();
   }
 

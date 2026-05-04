@@ -140,6 +140,32 @@ class _FakePortalDBus implements PortalDBus {
     );
   }
 
+  void emitLocationError(Object error) {
+    final ctrl =
+        _controllers[const _SignalKey(
+          'org.freedesktop.portal.Location',
+          'LocationUpdated',
+          null,
+        )];
+    if (ctrl == null) {
+      throw StateError('LocationUpdated not subscribed yet');
+    }
+    ctrl.addError(error);
+  }
+
+  void emitResponseError(Object error) {
+    final ctrl =
+        _controllers[_SignalKey(
+          'org.freedesktop.portal.Request',
+          'Response',
+          requestPath,
+        )];
+    if (ctrl == null) {
+      throw StateError('Response not subscribed yet');
+    }
+    ctrl.addError(error);
+  }
+
   void emitResponse(int response) {
     final ctrl =
         _controllers[_SignalKey(
@@ -379,6 +405,78 @@ void main() {
     test('close() forwards to the bus', () async {
       await portal.close();
       expect(fake.closed, isTrue);
+    });
+
+    test('propagates LocationUpdated stream errors', () async {
+      final future = portal.getLocation(
+        timeout: const Duration(seconds: 5),
+      );
+      await Future<void>.delayed(Duration.zero);
+      fake.emitLocationError(StateError('stream blew up'));
+
+      await expectLater(future, throwsA(isA<StateError>()));
+    });
+
+    test('propagates Response stream errors', () async {
+      final future = portal.getLocation(
+        timeout: const Duration(seconds: 5),
+      );
+      await Future<void>.delayed(Duration.zero);
+      fake.emitResponseError(StateError('response stream blew up'));
+
+      await expectLater(future, throwsA(isA<StateError>()));
+    });
+  });
+
+  group('XdgLocationPortal default token factory', () {
+    test('generates distinct UUID-shaped tokens per call', () async {
+      final fake = _FakePortalDBus(
+        sessionPath: DBusObjectPath('/x/session'),
+        requestPath: DBusObjectPath('/x/request'),
+      );
+      // No tokenFactory override — exercises the production default.
+      final portal = XdgLocationPortal(bus: fake);
+      final future = portal.getLocation(
+        timeout: const Duration(seconds: 5),
+      );
+      await Future<void>.delayed(Duration.zero);
+      fake.emitLocation({
+        'Latitude': const DBusDouble(0),
+        'Longitude': const DBusDouble(0),
+      });
+      await future;
+
+      final create =
+          fake.calls.firstWhere((c) => c.name == 'CreateSession').values[0]
+              as DBusDict;
+      final start =
+          fake.calls.firstWhere((c) => c.name == 'Start').values[2] as DBusDict;
+      final sessionToken = create
+          .children[const DBusString(
+            'session_handle_token',
+          )]!
+          .asVariant()
+          .asString();
+      final requestToken = start
+          .children[const DBusString(
+            'handle_token',
+          )]!
+          .asVariant()
+          .asString();
+
+      // UUID v4 with dashes replaced by underscores → 36-char string with 4
+      // underscores in the canonical positions.
+      expect(sessionToken, hasLength(36));
+      expect('_'.allMatches(sessionToken).length, 4);
+      expect(requestToken, hasLength(36));
+      expect(requestToken, isNot(sessionToken));
+    });
+  });
+
+  group('PortalLocationException', () {
+    test('toString() includes the message', () {
+      final ex = PortalLocationException('denied');
+      expect(ex.toString(), 'PortalLocationException: denied');
     });
   });
 }
