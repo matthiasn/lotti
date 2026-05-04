@@ -9748,6 +9748,18 @@ abstract class AppLocalizations {
   /// **'Dashboards'**
   String get settingsDashboardsTitle;
 
+  /// No description provided for @settingsDefinitionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Habits, categories, labels, dashboards, and measurables'**
+  String get settingsDefinitionsSubtitle;
+
+  /// No description provided for @settingsDefinitionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Definitions'**
+  String get settingsDefinitionsTitle;
+
   /// No description provided for @settingsFlagsEmptySearch.
   ///
   /// In en, this message translates to:

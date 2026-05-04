@@ -2730,6 +2730,8 @@
   "settingsDashboardSaveLabel": "Save",
   "settingsDashboardsSubtitle": "Customize your dashboard views",
   "settingsDashboardsTitle": "Dashboards",
+  "settingsDefinitionsSubtitle": "Habits, categories, labels, dashboards, and measurables",
+  "settingsDefinitionsTitle": "Definitions",
   "settingsFlagsEmptySearch": "No flags match your search",
   "settingsFlagsSearchHint": "Search flags",
   "settingsFlagsSubtitle": "Configure feature flags and options",

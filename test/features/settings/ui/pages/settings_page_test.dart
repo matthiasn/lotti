@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/features/whats_new/ui/whats_new_indicator.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -69,12 +71,15 @@ void main() {
       expect(find.text('Settings'), findsOneWidget);
 
       expect(find.text('AI Settings'), findsOneWidget);
-      expect(find.text('Habits'), findsOneWidget);
-      expect(find.text('Categories'), findsOneWidget);
-      expect(find.text('Dashboards'), findsOneWidget);
-      expect(find.text('Measurable Types'), findsOneWidget);
+      // Habits / Categories / Dashboards / Measurables / Flags moved
+      // off the root list — they live behind Definitions / Advanced.
+      expect(find.text('Habits'), findsNothing);
+      expect(find.text('Categories'), findsNothing);
+      expect(find.text('Dashboards'), findsNothing);
+      expect(find.text('Measurable Types'), findsNothing);
+      expect(find.text('Definitions'), findsOneWidget);
       expect(find.text('Theming'), findsOneWidget);
-      expect(find.text('Config Flags'), findsOneWidget);
+      expect(find.text('Config Flags'), findsNothing);
       expect(find.text('Advanced Settings'), findsOneWidget);
     });
 
@@ -87,8 +92,8 @@ void main() {
 
       await _pumpSettingsPage(tester, mockJournalDb);
 
-      // Core items always visible: AI, Categories, Labels, Theming, Flags, Advanced
-      expect(find.byType(DesignSystemListItem), findsNWidgets(6));
+      // Core items always visible: AI, Definitions, Theming, Advanced.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(4));
     });
 
     testWidgets('shows Sync tile when Matrix flag is ON', (tester) async {
@@ -119,33 +124,37 @@ void main() {
       expect(find.text('Sync Settings'), findsOneWidget);
     });
 
-    testWidgets('hides Habits when enableHabitsPageFlag is OFF', (
-      tester,
-    ) async {
-      when(mockJournalDb.watchConfigFlags).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          {
-            const ConfigFlag(
-              name: enableHabitsPageFlag,
-              description: 'Enable Habits Page?',
-              status: false,
-            ),
-            const ConfigFlag(
-              name: enableDashboardsPageFlag,
-              description: 'Enable Dashboards Page?',
-              status: true,
-            ),
-          },
-        ]),
-      );
+    testWidgets(
+      'root list always shows Definitions regardless of habits flag',
+      (tester) async {
+        // Habits / Dashboards toggles no longer affect the root list —
+        // their gating moved into DefinitionsPage. The root entry for
+        // Definitions is unconditional.
+        when(mockJournalDb.watchConfigFlags).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([
+            {
+              const ConfigFlag(
+                name: enableHabitsPageFlag,
+                description: 'Enable Habits Page?',
+                status: false,
+              ),
+              const ConfigFlag(
+                name: enableDashboardsPageFlag,
+                description: 'Enable Dashboards Page?',
+                status: true,
+              ),
+            },
+          ]),
+        );
 
-      await _pumpSettingsPage(tester, mockJournalDb);
+        await _pumpSettingsPage(tester, mockJournalDb);
 
-      expect(find.text('Habits'), findsNothing);
-      // Dashboards and Measurables visible when dashboards enabled
-      expect(find.text('Dashboards'), findsOneWidget);
-      expect(find.text('Measurable Types'), findsOneWidget);
-    });
+        expect(find.text('Habits'), findsNothing);
+        expect(find.text('Dashboards'), findsNothing);
+        expect(find.text('Measurable Types'), findsNothing);
+        expect(find.text('Definitions'), findsOneWidget);
+      },
+    );
 
     testWidgets('shows Agents card when enableAgentsFlag is ON', (
       tester,
@@ -232,8 +241,64 @@ void main() {
     );
 
     testWidgets(
-      'hides Dashboards and Measurable Types when enableDashboardsPageFlag is OFF',
+      'tapping the Definitions row beams to /settings/definitions',
       (tester) async {
+        // Wraps SettingsPage in a Beamer so the onTap closure
+        // (`context.beamToNamed('/settings/definitions')`) executes
+        // and we can read the resulting URL back from the delegate.
+        when(mockJournalDb.watchConfigFlags).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
+        );
+
+        final delegate = BeamerDelegate(
+          locationBuilder: RoutesLocationBuilder(
+            routes: <String, Widget Function(BuildContext, BeamState, Object?)>{
+              '/': (_, _, _) => const SettingsPage(),
+              '/settings/definitions': (_, _, _) => const SizedBox.shrink(),
+              '/settings/ai': (_, _, _) => const SizedBox.shrink(),
+              '/settings/theming': (_, _, _) => const SizedBox.shrink(),
+              '/settings/advanced': (_, _, _) => const SizedBox.shrink(),
+            },
+          ).call,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BeamerProvider(
+              routerDelegate: delegate,
+              child: const SettingsPage(),
+            ),
+            theme: DesignSystemTheme.light(),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockJournalDb),
+              whatsNewControllerProvider.overrideWith(
+                _TestWhatsNewController.new,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(SettingsPage));
+        await tester.tap(
+          find.text(context.messages.settingsDefinitionsTitle),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          delegate.configuration.uri.toString(),
+          '/settings/definitions',
+        );
+      },
+    );
+
+    testWidgets(
+      'root list still shows Definitions when dashboards flag is OFF',
+      (tester) async {
+        // Dashboards gating moved into DefinitionsPage. Toggling the
+        // dashboards flag does not affect what's at the root level —
+        // Definitions stays put because Categories / Labels /
+        // Measurables are unconditional.
         when(mockJournalDb.watchConfigFlags).thenAnswer(
           (_) => Stream<Set<ConfigFlag>>.fromIterable([
             {
@@ -253,9 +318,8 @@ void main() {
 
         await _pumpSettingsPage(tester, mockJournalDb);
 
-        // Habits still visible when habits enabled
-        expect(find.text('Habits'), findsOneWidget);
-        // Dashboards and Measurables hidden
+        expect(find.text('Definitions'), findsOneWidget);
+        expect(find.text('Habits'), findsNothing);
         expect(find.text('Dashboards'), findsNothing);
         expect(find.text('Measurable Types'), findsNothing);
       },

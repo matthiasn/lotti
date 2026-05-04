@@ -5679,6 +5679,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsDashboardsTitle => 'Panely';
 
   @override
+  String get settingsDefinitionsSubtitle =>
+      'Návyky, kategorie, štítky, panely a měřitelné údaje';
+
+  @override
+  String get settingsDefinitionsTitle => 'Definice';
+
+  @override
   String get settingsFlagsEmptySearch =>
       'Žádné příznaky neodpovídají vašemu hledání';
 

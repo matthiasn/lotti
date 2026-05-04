@@ -49,20 +49,26 @@ Future<void> _pumpView(
 void main() {
   group('SettingsTreeView — flag-off baseline', () {
     testWidgets(
-      'renders every always-on top-level section (categories, labels, '
-      'measurables, theming, flags, ai, sync, advanced)',
+      'renders every always-on top-level section (ai, sync, definitions, '
+      'theming, advanced)',
       (tester) async {
         await _pumpView(tester);
         expect(find.text('AI Settings'), findsOneWidget);
-        expect(find.text('Categories'), findsOneWidget);
-        expect(find.text('Labels'), findsOneWidget);
-        expect(find.text('Measurable Types'), findsOneWidget);
+        expect(find.text('Definitions'), findsOneWidget);
         expect(find.text('Theming'), findsOneWidget);
-        expect(find.text('Config Flags'), findsOneWidget);
         // Sync stays visible regardless of Matrix so the Conflicts
         // leaf inside it is always reachable.
         expect(find.text('Sync Settings'), findsOneWidget);
         expect(find.text('Advanced Settings'), findsOneWidget);
+        // Categories / Labels / Measurables / Config Flags moved off
+        // the root list — they now hang off the Definitions / Advanced
+        // branches. The branches are collapsed by default but the
+        // children are mounted (kept-alive for the expand/collapse
+        // animation), so `find.text` still locates them.
+        expect(find.text('Categories'), findsOneWidget);
+        expect(find.text('Labels'), findsOneWidget);
+        expect(find.text('Measurable Types'), findsOneWidget);
+        expect(find.text('Config Flags'), findsOneWidget);
       },
     );
 
@@ -118,25 +124,21 @@ void main() {
       'every root node renders through SettingsTreeNodeWidget (not raw rows)',
       (tester) async {
         // With every flag off the root list is the always-on set
-        // declared in `buildSettingsTree`: ai, categories, labels,
-        // sync, measurables, theming, flags, advanced. Sync stays
-        // visible so the always-on Conflicts leaf inside it remains
-        // reachable. A depth-0 `SettingsTreeNodeWidget` per root
-        // proves every entry rendered through the widget, not a raw
-        // row.
+        // declared in `buildSettingsTree`: ai, sync, definitions,
+        // theming, advanced. Sync stays visible so the always-on
+        // Conflicts leaf inside it remains reachable. A depth-0
+        // `SettingsTreeNodeWidget` per root proves every entry
+        // rendered through the widget, not a raw row.
         await _pumpView(tester);
         final rootNodeFinder = find.byWidgetPredicate(
           (w) => w is SettingsTreeNodeWidget && w.depth == 0,
         );
-        expect(rootNodeFinder, findsNWidgets(8));
+        expect(rootNodeFinder, findsNWidgets(5));
         for (final title in const [
           'AI Settings',
-          'Categories',
-          'Labels',
           'Sync Settings',
-          'Measurable Types',
+          'Definitions',
           'Theming',
-          'Config Flags',
           'Advanced Settings',
         ]) {
           expect(
@@ -149,20 +151,24 @@ void main() {
     );
 
     testWidgets(
-      'tapping a leaf row updates settingsTreePathProvider to its id',
+      'tapping a root branch updates settingsTreePathProvider to its id',
       (tester) async {
+        // Theming is a leaf at the root level, so tapping its row sets
+        // a single-segment path. (Config Flags moved under Advanced
+        // and is no longer reachable without expanding that branch
+        // first.)
         await _pumpView(tester);
-        final flagsRow = find.ancestor(
-          of: find.text('Config Flags'),
+        final themingRow = find.ancestor(
+          of: find.text('Theming'),
           matching: find.byType(SettingsTreeRow),
         );
-        await tester.tap(flagsRow);
+        await tester.tap(themingRow);
         await tester.pump();
         final container = ProviderScope.containerOf(
           tester.element(find.byType(SettingsTreeView)),
           listen: false,
         );
-        expect(container.read(settingsTreePathProvider), ['flags']);
+        expect(container.read(settingsTreePathProvider), ['theming']);
       },
     );
   });

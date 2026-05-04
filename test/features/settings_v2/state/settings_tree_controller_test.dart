@@ -78,8 +78,8 @@ void main() {
     test('selecting a leaf at depth 0 sets a single-segment path', () {
       final c = ProviderContainer();
       addTearDown(c.dispose);
-      _notifierFrom(c).onNodeTap('categories', depth: 0, hasChildren: false);
-      expect(c.read(settingsTreePathProvider), ['categories']);
+      _notifierFrom(c).onNodeTap('theming', depth: 0, hasChildren: false);
+      expect(c.read(settingsTreePathProvider), ['theming']);
     });
 
     test('selecting a leaf under an open branch appends it', () {
@@ -112,13 +112,13 @@ void main() {
           addTearDown(c.dispose);
           _notifierFrom(
             c,
-          ).onNodeTap('categories', depth: 0, hasChildren: false);
+          ).onNodeTap('theming', depth: 0, hasChildren: false);
           final first = c.read(settingsTreePathProvider);
           _notifierFrom(
             c,
-          ).onNodeTap('categories', depth: 0, hasChildren: false);
+          ).onNodeTap('theming', depth: 0, hasChildren: false);
           final second = c.read(settingsTreePathProvider);
-          expect(second, ['categories']);
+          expect(second, ['theming']);
           // No mutation expected — identity-equal confirms rule 4 short-
           // circuits before reassigning state.
           expect(identical(first, second), isTrue);
@@ -152,8 +152,8 @@ void main() {
       addTearDown(c.dispose);
       _notifierFrom(
         c,
-      ).onNodeTap('categories', depth: 5, hasChildren: false);
-      expect(c.read(settingsTreePathProvider), ['categories']);
+      ).onNodeTap('theming', depth: 5, hasChildren: false);
+      expect(c.read(settingsTreePathProvider), ['theming']);
     });
 
     test('clamps a negative depth to the root', () {
@@ -256,7 +256,10 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       _notifierFrom(c).syncFromUrl('/settings/categories/abc-123');
-      expect(c.read(settingsTreePathProvider), ['categories']);
+      expect(c.read(settingsTreePathProvider), [
+        'definitions',
+        'definitions/categories',
+      ]);
     });
 
     test('idempotent: same URL twice does not notify listeners twice', () {

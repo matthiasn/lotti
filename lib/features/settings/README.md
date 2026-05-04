@@ -25,6 +25,7 @@ That last point matters. Settings is mostly a router, but not only a router.
 - Shared list/detail scaffolding such as [`ui/pages/definitions_list_page.dart`](ui/pages/definitions_list_page.dart) and [`ui/widgets/entity_detail_card.dart`](ui/widgets/entity_detail_card.dart)
 - Utility pages such as:
   - [`ui/pages/theming_page.dart`](ui/pages/theming_page.dart)
+  - [`ui/pages/definitions_page.dart`](ui/pages/definitions_page.dart)
   - [`ui/pages/flags_page.dart`](ui/pages/flags_page.dart)
   - [`ui/pages/advanced_settings_page.dart`](ui/pages/advanced_settings_page.dart)
   - [`ui/pages/advanced/logging_settings_page.dart`](ui/pages/advanced/logging_settings_page.dart)
@@ -66,6 +67,7 @@ lib/features/settings/
     │   ├── measurables/
     │   ├── advanced_settings_page.dart
     │   ├── definitions_list_page.dart
+    │   ├── definitions_page.dart
     │   ├── flags_page.dart
     │   ├── health_import_page.dart
     │   ├── sliver_box_adapter_page.dart
@@ -96,7 +98,7 @@ flowchart TD
   Location --> Section["Optional section page stays in stack"]
   Section --> Leaf["Optional detail/editor page"]
 
-  Base --> AI["AI / Agents / Labels / Categories / Sync / Theming / Flags / Advanced"]
+  Base --> AI["AI / Agents / Sync / Definitions / Theming / Advanced"]
   Section --> Editor["Dashboard, measurable, habit, project, category, agent, conflict, etc."]
 ```
 
@@ -112,12 +114,22 @@ Concrete examples from the current implementation:
 /settings/advanced/about
   -> [SettingsPage, AdvancedSettingsPage, AboutPage]
 
+/settings/definitions
+  -> [SettingsPage, DefinitionsPage]
+
 /settings/dashboards/:dashboardId
   -> [SettingsPage, DashboardSettingsPage, EditDashboardPage]
 
 /settings/categories/:categoryId
   -> [SettingsPage, CategoriesListPage, CategoryDetailsPage]
 ```
+
+The Definitions hub is intentionally a flat sub-page rather than a stack
+parent: tapping Habits, Categories, Labels, Dashboards, or Measurables
+beams to the existing leaf URL (e.g. `/settings/categories`), which then
+resolves into `[SettingsPage, CategoriesListPage]`. The hub is replaced
+on navigation, not pushed underneath, so back from a leaf returns
+straight to `/settings` instead of bouncing through Definitions.
 
 That stacked model is why detail pages can feel like descendants of a section instead of random teleports. Beamer is doing real work here, which is nice for once.
 
@@ -127,15 +139,16 @@ That stacked model is why detail pages can feel like descendants of a section in
 flowchart LR
   Landing["/settings"] --> AI["AI settings"]
   Landing --> Agents["Agents settings"]
-  Landing --> Habits["Habits"]
-  Landing --> Categories["Categories"]
-  Landing --> Labels["Labels"]
   Landing --> Sync["Sync"]
-  Landing --> Dashboards["Dashboards"]
-  Landing --> Measurables["Measurables"]
+  Landing --> Definitions["Definitions"]
   Landing --> Theming["Theming"]
-  Landing --> Flags["Flags"]
   Landing --> Advanced["Advanced"]
+
+  Definitions --> Habits["Habits"]
+  Definitions --> Categories["Categories"]
+  Definitions --> Labels["Labels"]
+  Definitions --> Dashboards["Dashboards"]
+  Definitions --> Measurables["Measurables"]
 
   Categories --> Projects["Project create/detail routes"]
   Sync --> MatrixMaint["Matrix maintenance"]
@@ -143,6 +156,7 @@ flowchart LR
   Sync --> Conflicts["Conflicts page via /settings/advanced/conflicts"]
   Sync --> Stats["Sync stats"]
   Sync --> Backfill["Backfill settings"]
+  Advanced --> Flags["Config flags"]
   Advanced --> Logging["Logging domains"]
   Advanced --> Health["Health import (mobile only)"]
   Advanced --> Maint["Maintenance"]
@@ -155,7 +169,8 @@ One slightly awkward but code-accurate detail: the Sync landing page links to co
 
 [`ui/pages/settings_page.dart`](ui/pages/settings_page.dart) is not a static list. It is assembled from live state:
 
-- `configFlagProvider(...)` gates Habits, Dashboards, Agents, and What's New
+- `configFlagProvider(...)` gates Agents and What's New at the root level
+- Habits and Dashboards gating moved into [`ui/pages/definitions_page.dart`](ui/pages/definitions_page.dart) — the root entry for Definitions is unconditional because Categories, Labels, and Measurables are always visible
 - `JournalDb.watchConfigFlag(enableMatrixFlag)` decides whether Sync is shown
 - the Agents tile overlays a pending ritual indicator
 - the What's New feature appears both as an app-bar action and as a settings card when enabled
@@ -232,6 +247,12 @@ It does three concrete things:
 
 Theme selection is persisted in `SettingsDb`, and the theming controller also watches settings notifications so synced preference changes can be applied back into live state.
 
+### Definitions
+
+[`ui/pages/definitions_page.dart`](ui/pages/definitions_page.dart) is a flat hub that groups the entity-definition entry points (Habits, Categories, Labels, Dashboards, Measurables). It exists so the v1 root list reads as `AI · Agents · Sync · Definitions · Theming · Advanced` instead of fanning every entity type into a top-level row.
+
+Each row beams to the existing leaf URL (`/settings/categories`, `/settings/labels`, …). Habits and Dashboards are still feature-flag-gated, but the gating now lives inside this hub rather than the root list.
+
 ### Flags
 
 [`ui/pages/flags_page.dart`](ui/pages/flags_page.dart) renders a curated subset of config flags in a fixed order. It is intentionally not a raw dump of everything in the database.
@@ -243,12 +264,15 @@ Each visible flag has:
 - a hand-picked icon
 - a `Switch.adaptive` that writes back through `PersistenceLogic`
 
+The Flags entry is reached through Advanced; the `/settings/flags` URL itself is unchanged so existing deep links keep resolving.
+
 ### Advanced
 
 [`ui/pages/advanced_settings_page.dart`](ui/pages/advanced_settings_page.dart) is the non-sync maintenance hub.
 
 It currently links to:
 
+- config flags (moved here from the v1 root list)
 - logging domains
 - health import on mobile only
 - maintenance
@@ -335,6 +359,7 @@ This is the route shape that currently matters in practice:
 - `/settings/sync/outbox`
 - `/settings/sync/stats`
 - `/settings/sync/backfill`
+- `/settings/definitions`
 - `/settings/theming`
 - `/settings/flags`
 - `/settings/health_import`

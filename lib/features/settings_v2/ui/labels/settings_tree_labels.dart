@@ -51,14 +51,19 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.agentPendingWakesTitle,
           desc: m.settingsAgentsPendingWakesSubtitle,
         );
-      case 'habits':
+      case 'definitions':
+        return (
+          title: m.settingsDefinitionsTitle,
+          desc: m.settingsDefinitionsSubtitle,
+        );
+      case 'definitions/habits':
         return (title: m.settingsHabitsTitle, desc: m.settingsHabitsSubtitle);
-      case 'categories':
+      case 'definitions/categories':
         return (
           title: m.settingsCategoriesTitle,
           desc: m.settingsCategoriesSubtitle,
         );
-      case 'labels':
+      case 'definitions/labels':
         return (
           title: m.settingsLabelsTitle,
           desc: m.settingsLabelsSubtitle,
@@ -85,12 +90,12 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsMatrixMaintenanceTitle,
           desc: m.settingsMatrixMaintenanceSubtitle,
         );
-      case 'dashboards':
+      case 'definitions/dashboards':
         return (
           title: m.settingsDashboardsTitle,
           desc: m.settingsDashboardsSubtitle,
         );
-      case 'measurables':
+      case 'definitions/measurables':
         return (
           title: m.settingsMeasurablesTitle,
           desc: m.settingsMeasurablesSubtitle,
@@ -100,7 +105,7 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsThemingTitle,
           desc: m.settingsThemingSubtitle,
         );
-      case 'flags':
+      case 'advanced/flags':
         return (title: m.settingsFlagsTitle, desc: m.settingsFlagsSubtitle);
       case 'advanced':
         return (

@@ -196,10 +196,14 @@ void main() {
         // Agents flag is on, so the agents branch should be present.
         expect(scope.index.findById('agents'), isNotNull);
         // Habits flag is off, so the habits leaf should not be in
-        // the gated tree.
-        expect(scope.index.findById('habits'), isNull);
-        // Always-on leaves stay regardless of flag state.
-        expect(scope.index.findById('flags'), isNotNull);
+        // the gated tree (now namespaced under `definitions/`).
+        expect(scope.index.findById('definitions/habits'), isNull);
+        // Always-on entries stay regardless of flag state.
+        // `flags` reparented under `advanced` in the V2 tree, and
+        // categories now hangs off the `definitions` branch.
+        expect(scope.index.findById('advanced/flags'), isNotNull);
+        expect(scope.index.findById('definitions'), isNotNull);
+        expect(scope.index.findById('definitions/categories'), isNotNull);
       },
     );
   });

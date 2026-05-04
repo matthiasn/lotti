@@ -25,6 +25,7 @@ import 'package:lotti/features/settings/ui/pages/advanced_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
+import 'package:lotti/features/settings/ui/pages/definitions_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart';
@@ -141,6 +142,7 @@ void main() {
         '/settings/agents/instances/:agentId',
         '/settings/flags',
         '/settings/theming',
+        '/settings/definitions',
         '/settings/advanced',
         '/settings/advanced/logging_domains',
         '/settings/advanced/conflicts/:conflictId',
@@ -721,6 +723,21 @@ void main() {
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<AdvancedSettingsPage>());
+    });
+
+    test('buildPages builds DefinitionsPage', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/settings/definitions'),
+      );
+      final location = SettingsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final pages = location.buildPages(
+        mockBuildContext,
+        beamState,
+      );
+      expect(pages.length, 2);
+      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[1].child, isA<DefinitionsPage>());
     });
 
     test('buildPages builds OutboxMonitorPage under /settings/sync/outbox', () {

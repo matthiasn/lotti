@@ -20,10 +20,9 @@ class SettingsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableHabits =
-        ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false;
-    final enableDashboards =
-        ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
+    // Habits and dashboards are now gated inside the Definitions
+    // sub-page (`definitions_page.dart`) — the root list always shows
+    // the single Definitions entry regardless of those flags.
     final enableAgents =
         ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
     final enableWhatsNew =
@@ -60,31 +59,6 @@ class SettingsPage extends ConsumerWidget {
           onTap: () => context.beamToNamed('/settings/agents'),
           trailingExtra: const RitualPendingIndicator(),
         ),
-      if (enableHabits)
-        _SettingsItem(
-          id: '/settings/habits',
-          title: context.messages.settingsHabitsTitle,
-          subtitle: context.messages.settingsHabitsSubtitle,
-          icon: Icons.repeat_rounded,
-          routePrefix: '/settings/habits',
-          onTap: () => context.beamToNamed('/settings/habits'),
-        ),
-      _SettingsItem(
-        id: '/settings/categories',
-        title: context.messages.settingsCategoriesTitle,
-        subtitle: context.messages.settingsCategoriesSubtitle,
-        icon: Icons.category_rounded,
-        routePrefix: '/settings/categories',
-        onTap: () => context.beamToNamed('/settings/categories'),
-      ),
-      _SettingsItem(
-        id: '/settings/labels',
-        title: context.messages.settingsLabelsTitle,
-        subtitle: context.messages.settingsLabelsSubtitle,
-        icon: Icons.label_rounded,
-        routePrefix: '/settings/labels',
-        onTap: () => context.beamToNamed('/settings/labels'),
-      ),
       if (enableMatrix)
         _SettingsItem(
           id: '/settings/sync',
@@ -94,24 +68,20 @@ class SettingsPage extends ConsumerWidget {
           routePrefix: '/settings/sync',
           onTap: () => context.beamToNamed('/settings/sync'),
         ),
-      if (enableDashboards)
-        _SettingsItem(
-          id: '/settings/dashboards',
-          title: context.messages.settingsDashboardsTitle,
-          subtitle: context.messages.settingsDashboardsSubtitle,
-          icon: Icons.dashboard_rounded,
-          routePrefix: '/settings/dashboards',
-          onTap: () => context.beamToNamed('/settings/dashboards'),
-        ),
-      if (enableDashboards)
-        _SettingsItem(
-          id: '/settings/measurables',
-          title: context.messages.settingsMeasurablesTitle,
-          subtitle: context.messages.settingsMeasurablesSubtitle,
-          icon: Icons.trending_up_rounded,
-          routePrefix: '/settings/measurables',
-          onTap: () => context.beamToNamed('/settings/measurables'),
-        ),
+      // Entity definitions (habits, categories, labels, dashboards,
+      // measurables) live behind a single "Definitions" entry that
+      // beams to a dedicated sub-page. Keeps the root list shorter for
+      // new users; power users still reach every leaf with one extra
+      // tap. Habits and dashboards continue to honor their feature
+      // flags inside the sub-page.
+      _SettingsItem(
+        id: '/settings/definitions',
+        title: context.messages.settingsDefinitionsTitle,
+        subtitle: context.messages.settingsDefinitionsSubtitle,
+        icon: Icons.account_tree_outlined,
+        routePrefix: '/settings/definitions',
+        onTap: () => context.beamToNamed('/settings/definitions'),
+      ),
       _SettingsItem(
         id: '/settings/theming',
         title: context.messages.settingsThemingTitle,
@@ -119,14 +89,6 @@ class SettingsPage extends ConsumerWidget {
         icon: Icons.palette_rounded,
         routePrefix: '/settings/theming',
         onTap: () => context.beamToNamed('/settings/theming'),
-      ),
-      _SettingsItem(
-        id: '/settings/flags',
-        title: context.messages.settingsFlagsTitle,
-        subtitle: context.messages.settingsFlagsSubtitle,
-        icon: Icons.tune_rounded,
-        routePrefix: '/settings/flags',
-        onTap: () => context.beamToNamed('/settings/flags'),
       ),
       _SettingsItem(
         id: '/settings/advanced',

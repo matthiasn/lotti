@@ -28,9 +28,19 @@ const Map<String, String> settingsNodeUrls = {
   'agents/souls': '/settings/agents/souls',
   'agents/instances': '/settings/agents/instances',
   'agents/pending-wakes': '/settings/agents/pending-wakes',
-  'habits': '/settings/habits',
-  'categories': '/settings/categories',
-  'labels': '/settings/labels',
+  // The `definitions` branch itself maps to `/settings/definitions`
+  // so desktop tree selection updates the address bar (and the v1
+  // mobile root list beams to the same URL to render the
+  // [DefinitionsPage]).
+  'definitions': '/settings/definitions',
+  // Entity-definition leaves live under the `definitions/` branch in
+  // the V2 tree, but their public Beamer URLs remain flat
+  // (`/settings/habits`, `/settings/categories`, …) so existing deep
+  // links and what's-new releases keep resolving. The greedy URL → id
+  // resolver picks these up regardless of which branch they hang from.
+  'definitions/habits': '/settings/habits',
+  'definitions/categories': '/settings/categories',
+  'definitions/labels': '/settings/labels',
   'sync': '/settings/sync',
   'sync/backfill': '/settings/sync/backfill',
   'sync/stats': '/settings/sync/stats',
@@ -44,10 +54,12 @@ const Map<String, String> settingsNodeUrls = {
   // regardless of which tree branch the leaf hangs from.
   'sync/conflicts': '/settings/advanced/conflicts',
   'sync/matrix-maintenance': '/settings/sync/matrix/maintenance',
-  'dashboards': '/settings/dashboards',
-  'measurables': '/settings/measurables',
+  'definitions/dashboards': '/settings/dashboards',
+  'definitions/measurables': '/settings/measurables',
   'theming': '/settings/theming',
-  'flags': '/settings/flags',
+  // `flags` moved under the `advanced` branch in the V2 tree; its URL
+  // stays `/settings/flags` for deep-link compatibility.
+  'advanced/flags': '/settings/flags',
   'advanced': '/settings/advanced',
   'advanced/logging': '/settings/advanced/logging_domains',
   'advanced/maintenance': '/settings/advanced/maintenance',

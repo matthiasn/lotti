@@ -117,12 +117,13 @@ void main() {
           initialRoute: _route('/settings/categories'),
         );
         expect(harness.container.read(settingsTreePathProvider), [
-          'categories',
+          'definitions',
+          'definitions/categories',
         ]);
 
         // Drill into a category detail — should NOT re-seed the tree
         // path (greedy longest-prefix match still lands on
-        // 'categories'), and must not re-emit a beam.
+        // 'definitions/categories'), and must not re-emit a beam.
         final spyCountBefore = harness.spy.uris.length;
         harness.nav.desktopSelectedSettingsRoute.value = _route(
           '/settings/categories/abc-123',
@@ -131,7 +132,8 @@ void main() {
         await tester.pump();
 
         expect(harness.container.read(settingsTreePathProvider), [
-          'categories',
+          'definitions',
+          'definitions/categories',
         ]);
         expect(harness.spy.uris.length, spyCountBefore);
       },
@@ -145,10 +147,14 @@ void main() {
         final harness = await _pumpBridge(tester);
         harness.container
             .read(settingsTreePathProvider.notifier)
-            .onNodeTap('flags', depth: 0, hasChildren: false);
+            .onNodeTap('advanced', depth: 0, hasChildren: true);
+        await tester.pump();
+        harness.container
+            .read(settingsTreePathProvider.notifier)
+            .onNodeTap('advanced/flags', depth: 1, hasChildren: false);
         await tester.pump();
 
-        expect(harness.spy.uris, ['/settings/flags']);
+        expect(harness.spy.uris, ['/settings/advanced', '/settings/flags']);
       },
     );
 
@@ -207,12 +213,13 @@ void main() {
           tester,
           initialRoute: _route('/settings/flags'),
         );
-        // Tree was seeded to ['flags'] on mount; tapping 'flags' again
-        // is a rule-4 no-op anyway, but even if an upstream flip
-        // produced the same path, we don't want a beam storm.
+        // Tree was seeded to ['advanced', 'advanced/flags'] on mount;
+        // tapping the same leaf again is a rule-4 no-op anyway, but
+        // even if an upstream flip produced the same path, we don't
+        // want a beam storm.
         harness.container
             .read(settingsTreePathProvider.notifier)
-            .onNodeTap('flags', depth: 0, hasChildren: false);
+            .onNodeTap('advanced/flags', depth: 1, hasChildren: false);
         await tester.pump();
 
         expect(harness.spy.uris, isEmpty);
@@ -228,7 +235,11 @@ void main() {
         final harness = await _pumpBridge(tester);
         harness.container
             .read(settingsTreePathProvider.notifier)
-            .onNodeTap('flags', depth: 0, hasChildren: false);
+            .onNodeTap('advanced', depth: 0, hasChildren: true);
+        await tester.pump();
+        harness.container
+            .read(settingsTreePathProvider.notifier)
+            .onNodeTap('advanced/flags', depth: 1, hasChildren: false);
         await tester.pump();
 
         // Simulate Beamer updating the route in response to our
@@ -240,9 +251,13 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Exactly one beam — the original tree-driven call.
-        expect(harness.spy.uris, ['/settings/flags']);
-        expect(harness.container.read(settingsTreePathProvider), ['flags']);
+        // Two beams — branch open then leaf select; the route echo
+        // back from Beamer must not produce a third beam.
+        expect(harness.spy.uris, ['/settings/advanced', '/settings/flags']);
+        expect(harness.container.read(settingsTreePathProvider), [
+          'advanced',
+          'advanced/flags',
+        ]);
       },
     );
   });
