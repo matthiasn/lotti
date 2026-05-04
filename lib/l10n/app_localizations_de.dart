@@ -2657,11 +2657,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueue =>
-      'Wake-Queue in der Seitenleiste anzeigen';
+      'Weckvorgang-Warteschlange in der Seitenleiste anzeigen';
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Zeige die Wake-Queue über den Einstellungen — Header, die nächsten zwei anstehenden Wakes mit Countdown und ein Link zur vollständigen Liste.';
+      'Zeige die Weckvorgang-Warteschlange über den Einstellungen — Header, die nächsten zwei anstehenden Weckvorgänge mit Countdown und ein Link zur vollständigen Liste.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -6246,21 +6246,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Seitenleiste ausklappen';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Wake abbrechen';
+  String get sidebarWakesCancelTooltip => 'Weckvorgang abbrechen';
 
   @override
-  String get sidebarWakesHeader => 'Wakes';
+  String get sidebarWakesHeader => 'Weckvorgänge';
 
   @override
   String sidebarWakesMore(int count) {
-    return '+$count weitere →';
+    return '+$count weitere';
   }
 
   @override
   String get sidebarWakesNow => 'jetzt';
 
   @override
-  String get sidebarWakesOpenList => 'Liste öffnen →';
+  String get sidebarWakesOpenList => 'Liste öffnen';
 
   @override
   String get skillsSectionTitle => 'Skills';

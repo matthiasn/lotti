@@ -6162,14 +6162,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String sidebarWakesMore(int count) {
-    return '+$count more →';
+    return '+$count more';
   }
 
   @override
   String get sidebarWakesNow => 'now';
 
   @override
-  String get sidebarWakesOpenList => 'Open list →';
+  String get sidebarWakesOpenList => 'Open list';
 
   @override
   String get skillsSectionTitle => 'Skills';

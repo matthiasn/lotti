@@ -277,7 +277,7 @@ class _SyncActivityChannel extends StatelessWidget {
               child: Text(
                 value > 0 ? '$value' : '',
                 style: valueStyle,
-                textAlign: TextAlign.left,
+                textAlign: TextAlign.right,
                 maxLines: 1,
                 overflow: TextOverflow.clip,
                 softWrap: false,

@@ -2691,11 +2691,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueue =>
-      'Afficher la file des wakes dans la barre latérale';
+      'Afficher la file des réveils dans la barre latérale';
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Affiche la file des wakes au-dessus des Réglages — l\'en-tête, les deux prochains wakes avec compte à rebours, et un lien vers la liste complète.';
+      'Affiche la file des réveils au-dessus des Réglages — l\'en-tête, les deux prochains réveils avec compte à rebours, et un lien vers la liste complète.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -6354,21 +6354,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Développer la barre latérale';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Annuler le wake';
+  String get sidebarWakesCancelTooltip => 'Annuler le réveil';
 
   @override
-  String get sidebarWakesHeader => 'Wakes';
+  String get sidebarWakesHeader => 'Réveils';
 
   @override
   String sidebarWakesMore(int count) {
-    return '+$count de plus →';
+    return '+$count de plus';
   }
 
   @override
   String get sidebarWakesNow => 'maintenant';
 
   @override
-  String get sidebarWakesOpenList => 'Ouvrir la liste →';
+  String get sidebarWakesOpenList => 'Ouvrir la liste';
 
   @override
   String get skillsSectionTitle => 'Compétences';

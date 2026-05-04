@@ -2669,11 +2669,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get configFlagShowSidebarWakeQueue =>
-      'Afișează coada de wakes în bara laterală';
+      'Afișează coada de treziri în bara laterală';
 
   @override
   String get configFlagShowSidebarWakeQueueDescription =>
-      'Afișează coada de wakes deasupra Setărilor — anteturile, următoarele două wakes cu numărătoare inversă și un link către lista completă.';
+      'Afișează coada de treziri deasupra Setărilor — anteturile, următoarele două treziri cu numărătoare inversă și un link către lista completă.';
 
   @override
   String get configFlagShowSyncActivityIndicator =>
@@ -6300,21 +6300,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Extinde bara laterală';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Anulează wake';
+  String get sidebarWakesCancelTooltip => 'Anulează trezirea';
 
   @override
-  String get sidebarWakesHeader => 'Wakes';
+  String get sidebarWakesHeader => 'Treziri';
 
   @override
   String sidebarWakesMore(int count) {
-    return '+$count altele →';
+    return '+$count altele';
   }
 
   @override
   String get sidebarWakesNow => 'acum';
 
   @override
-  String get sidebarWakesOpenList => 'Deschide lista →';
+  String get sidebarWakesOpenList => 'Deschide lista';
 
   @override
   String get skillsSectionTitle => 'Competențe';

@@ -109,10 +109,17 @@ class _Header extends StatelessWidget {
       color: tokens.colors.text.lowEmphasis,
       letterSpacing: 1.2,
     );
+    // Warning-orange when there is at least one wake pending — gives the
+    // header the same urgency cue the per-row ETA picks up below five
+    // minutes. When the queue is empty the count drops back to the
+    // low-emphasis text colour so the section reads as quiet idle state
+    // rather than implying an active alert.
     final countStyle = AppFonts.inconsolata(
       fontSize: 10,
       fontWeight: FontWeight.w700,
-      color: tokens.colors.alert.warning.defaultColor,
+      color: count > 0
+          ? tokens.colors.alert.warning.defaultColor
+          : tokens.colors.text.lowEmphasis,
       letterSpacing: 0.4,
     ).copyWith(fontFeatures: numericBadgeFontFeatures);
 
@@ -361,9 +368,13 @@ class _MoreLink extends StatelessWidget {
       fontWeight: FontWeight.w500,
       color: tokens.colors.text.lowEmphasis,
     );
-    final label = hiddenCount > 0
+    // The arrow glyph is appended at render time rather than baked
+    // into the localized string, so the symbol stays universal across
+    // locales and translators don't have to keep it in their copy.
+    final base = hiddenCount > 0
         ? context.messages.sidebarWakesMore(hiddenCount)
         : context.messages.sidebarWakesOpenList;
+    final label = '$base →';
 
     return InkWell(
       onTap: _openWakesList,
@@ -394,27 +405,22 @@ class _MoreLink extends StatelessWidget {
 ///    delegate to its root the way [NavService.tapIndex] would when
 ///    re-entering the same tab) and then beam the Settings delegate.
 ///
-/// Both the index switch and the beam are deferred to a post-frame
-/// callback. Riverpod's settings-tree URL sync writes provider state
-/// from inside the Beamer's `buildPages` pass, so a synchronous
-/// `beamToNamed` triggered from a tap handler produced
-/// `Tried to modify a provider while the widget tree was building`.
-/// Scheduling the work for the next frame moves it outside the build
-/// phase entirely.
+/// The build-phase Riverpod write that surfaced under this navigation
+/// path lives inside `SettingsTreeUrlSync` and is now deferred there,
+/// so we can run synchronously here — no post-frame wrapper, no extra
+/// frame of latency between the tap and the route swap.
 void _navigateToAgentRoute(String route) {
   final override = SidebarWakeQueueTestHooks.navigatorOverride;
   if (override != null) {
     override(route);
     return;
   }
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    final navService = getIt<NavService>();
-    if (navService.index != navService.settingsIndex) {
-      navService.setIndex(navService.settingsIndex);
-    }
-    navService.settingsDelegate.beamToNamed(route);
-    unawaited(navService.persistNamedRoute(route));
-  });
+  final navService = getIt<NavService>();
+  if (navService.index != navService.settingsIndex) {
+    navService.setIndex(navService.settingsIndex);
+  }
+  navService.settingsDelegate.beamToNamed(route);
+  unawaited(navService.persistNamedRoute(route));
 }
 
 /// 16 px square avatar tile with the agent's first display-name letter,
@@ -428,9 +434,14 @@ class _AgentAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final letter = displayName.trim().isEmpty
+    final trimmed = displayName.trim();
+    // Use `runes.first` rather than `[0]` so the avatar tile renders the
+    // full Unicode codepoint when an agent display name starts with a
+    // non-BMP character (e.g. an emoji): String indexing would slice in
+    // the middle of a UTF-16 surrogate pair and produce a tofu glyph.
+    final letter = trimmed.isEmpty
         ? '?'
-        : displayName.trim()[0].toUpperCase();
+        : String.fromCharCode(trimmed.runes.first).toUpperCase();
     final hue = _hueForName(displayName);
     final isDark = tokens.colors.background.level02.computeLuminance() < 0.5;
     final base = HSLColor.fromAHSL(1, hue, 0.40, isDark ? 0.32 : 0.55);

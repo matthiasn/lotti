@@ -83,7 +83,7 @@ void main() {
       );
       expect(find.text('0'), findsOneWidget);
       expect(
-        find.text(element.messages.sidebarWakesOpenList),
+        find.text('${element.messages.sidebarWakesOpenList} →'),
         findsOneWidget,
       );
 
@@ -107,7 +107,7 @@ void main() {
       );
       expect(find.text('0'), findsOneWidget);
       expect(
-        find.text(element.messages.sidebarWakesOpenList),
+        find.text('${element.messages.sidebarWakesOpenList} →'),
         findsOneWidget,
       );
       // No row InkWell, but the "Open list" link still has its own InkWell.
@@ -174,7 +174,9 @@ void main() {
     expect(find.text('00:50'), findsOneWidget);
 
     // +N more affordance shows the rollover count, not the total.
-    expect(find.text(messages.sidebarWakesMore(3)), findsOneWidget);
+    // The trailing arrow is appended in the widget (not in the ARB),
+    // so we assert against the rendered composition.
+    expect(find.text('${messages.sidebarWakesMore(3)} →'), findsOneWidget);
   });
 
   testWidgets('shows "now" when the next wake is due', (tester) async {
@@ -258,7 +260,7 @@ void main() {
     });
 
     final element = tester.element(find.byType(SidebarWakeQueue));
-    await tester.tap(find.text(element.messages.sidebarWakesMore(3)));
+    await tester.tap(find.text('${element.messages.sidebarWakesMore(3)} →'));
     await tester.pump();
 
     expect(captured, kSidebarWakeQueueListRoute);

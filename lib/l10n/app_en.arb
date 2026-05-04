@@ -2954,7 +2954,7 @@
   "sidebarToggleExpandLabel": "Expand sidebar",
   "sidebarWakesCancelTooltip": "Cancel wake",
   "sidebarWakesHeader": "Wakes",
-  "sidebarWakesMore": "+{count} more →",
+  "sidebarWakesMore": "+{count} more",
   "@sidebarWakesMore": {
     "placeholders": {
       "count": {
@@ -2963,7 +2963,7 @@
     }
   },
   "sidebarWakesNow": "now",
-  "sidebarWakesOpenList": "Open list →",
+  "sidebarWakesOpenList": "Open list",
   "skillsSectionTitle": "Skills",
   "speechDictionaryHelper": "Semicolon-separated terms (max 50 chars) for better speech recognition",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

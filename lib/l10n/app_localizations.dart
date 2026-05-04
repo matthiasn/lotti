@@ -10768,7 +10768,7 @@ abstract class AppLocalizations {
   /// No description provided for @sidebarWakesMore.
   ///
   /// In en, this message translates to:
-  /// **'+{count} more →'**
+  /// **'+{count} more'**
   String sidebarWakesMore(int count);
 
   /// No description provided for @sidebarWakesNow.
@@ -10780,7 +10780,7 @@ abstract class AppLocalizations {
   /// No description provided for @sidebarWakesOpenList.
   ///
   /// In en, this message translates to:
-  /// **'Open list →'**
+  /// **'Open list'**
   String get sidebarWakesOpenList;
 
   /// No description provided for @skillsSectionTitle.
