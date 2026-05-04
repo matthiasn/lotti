@@ -234,7 +234,7 @@
   "agentInstancesFilterSectionSoul": "Seele",
   "agentInstancesFilterSectionStatus": "Status",
   "agentInstancesFilterSectionType": "Typ",
-  "agentInstancesGroupActiveCount": "{count} aktiv",
+  "agentInstancesGroupActiveCount": "{count, plural, =1{1 aktiv} other{{count} aktiv}}",
   "@agentInstancesGroupActiveCount": {
     "placeholders": {
       "count": {
@@ -249,7 +249,7 @@
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Aufgaben-Agent",
   "agentInstancesPageTitle": "Agenten-Instanzen",
-  "agentInstancesResultCountAll": "{count} Instanzen",
+  "agentInstancesResultCountAll": "{count, plural, =1{1 Instanz} other{{count} Instanzen}}",
   "@agentInstancesResultCountAll": {
     "placeholders": {
       "count": {

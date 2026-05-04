@@ -20,7 +20,10 @@ class SoulAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initial = label.isEmpty ? '?' : label.characters.first.toUpperCase();
+    final trimmed = label.trim();
+    final initial = trimmed.isEmpty
+        ? '?'
+        : trimmed.characters.first.toUpperCase();
     final h = hue.toDouble();
     final bg = HSLColor.fromAHSL(1, h, 0.30, 0.22).toColor();
     final fg = HSLColor.fromAHSL(1, h, 0.55, 0.85).toColor();

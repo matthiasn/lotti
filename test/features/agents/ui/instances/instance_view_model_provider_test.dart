@@ -21,7 +21,6 @@ void main() {
       id: 'agent-1',
       agentId: 'agent-1',
       displayName: 'Task Laura',
-      kind: 'task_agent',
       updatedAt: DateTime(2026, 5, 4, 10),
     );
     final template = makeTestTemplate(
@@ -90,7 +89,6 @@ void main() {
   test('evolution sessions map status onto the lifecycle axis', () async {
     final activeSession = makeTestEvolutionSession(
       id: 'evo-active',
-      sessionNumber: 1,
     );
     final completedSession = makeTestEvolutionSession(
       id: 'evo-done',

@@ -234,7 +234,7 @@
   "agentInstancesFilterSectionSoul": "Âme",
   "agentInstancesFilterSectionStatus": "Statut",
   "agentInstancesFilterSectionType": "Type",
-  "agentInstancesGroupActiveCount": "{count} actif(s)",
+  "agentInstancesGroupActiveCount": "{count, plural, =1{1 actif} other{{count} actifs}}",
   "@agentInstancesGroupActiveCount": {
     "placeholders": {
       "count": {
@@ -249,7 +249,7 @@
   "agentInstancesKindEvolution": "Évolution",
   "agentInstancesKindTaskAgent": "Agent de tâches",
   "agentInstancesPageTitle": "Instances d'agents",
-  "agentInstancesResultCountAll": "{count} instances",
+  "agentInstancesResultCountAll": "{count, plural, =1{1 instance} other{{count} instances}}",
   "@agentInstancesResultCountAll": {
     "placeholders": {
       "count": {

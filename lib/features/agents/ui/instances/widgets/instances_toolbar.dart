@@ -34,10 +34,10 @@ class InstancesToolbar extends StatelessWidget {
               totalAfterFilter,
               totalBeforeFilter,
             ),
-      style: TextStyle(
+      style: tokens.typography.styles.others.caption.copyWith(
         fontFamily: 'Inconsolata',
-        fontSize: 11,
         color: tokens.colors.text.lowEmphasis,
+        letterSpacing: 0,
       ),
     );
 
@@ -134,12 +134,15 @@ class _ToolbarButton extends StatelessWidget {
     final colors = tokens.colors;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(7),
+      borderRadius: BorderRadius.circular(tokens.radii.s),
       child: InkWell(
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step4,
+            vertical: tokens.spacing.step2,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -150,10 +153,9 @@ class _ToolbarButton extends StatelessWidget {
                     ? colors.text.highEmphasis
                     : colors.text.mediumEmphasis,
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: tokens.spacing.step3),
               DefaultTextStyle.merge(
-                style: TextStyle(
-                  fontSize: 11.5,
+                style: tokens.typography.styles.others.caption.copyWith(
                   color: emphasised
                       ? colors.text.highEmphasis
                       : colors.text.mediumEmphasis,
@@ -161,7 +163,7 @@ class _ToolbarButton extends StatelessWidget {
                 child: child,
               ),
               if (trailing != null) ...[
-                const SizedBox(width: 6),
+                SizedBox(width: tokens.spacing.step3),
                 trailing!,
               ],
             ],
@@ -291,19 +293,19 @@ class _CountBadge extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minWidth: 16),
       height: 16,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: tokens.colors.interactive.enabled,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
       child: Text(
         '$count',
-        style: TextStyle(
+        style: tokens.typography.styles.others.caption.copyWith(
           fontFamily: 'Inconsolata',
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
+          fontWeight: tokens.typography.weight.bold,
           color: tokens.colors.text.onInteractiveAlert,
+          letterSpacing: 0,
         ),
       ),
     );
@@ -368,7 +370,7 @@ class _SearchFieldState extends State<_SearchField> {
       decoration: BoxDecoration(
         color: colors.surface.enabled,
         border: Border.all(color: borderColor),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
         boxShadow: _focused
             ? [
                 BoxShadow(
@@ -378,11 +380,14 @@ class _SearchFieldState extends State<_SearchField> {
               ]
             : null,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step4,
+        vertical: tokens.spacing.step1,
+      ),
       child: Row(
         children: [
           Icon(Icons.search, size: 13, color: colors.text.lowEmphasis),
-          const SizedBox(width: 6),
+          SizedBox(width: tokens.spacing.step3),
           Expanded(
             child: TextField(
               controller: _controller,
@@ -397,7 +402,9 @@ class _SearchFieldState extends State<_SearchField> {
                 widget.onChanged(v);
               },
               cursorColor: colors.interactive.enabled,
-              style: TextStyle(fontSize: 12, color: colors.text.highEmphasis),
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: colors.text.highEmphasis,
+              ),
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -412,8 +419,7 @@ class _SearchFieldState extends State<_SearchField> {
                 errorBorder: InputBorder.none,
                 focusedErrorBorder: InputBorder.none,
                 hintText: messages.agentInstancesSearchPlaceholder,
-                hintStyle: TextStyle(
-                  fontSize: 12,
+                hintStyle: tokens.typography.styles.others.caption.copyWith(
                   color: colors.text.lowEmphasis,
                 ),
               ),
@@ -567,13 +573,13 @@ class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
     return Material(
       color: tokens.colors.background.level02,
       elevation: 8,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(tokens.radii.m),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(tokens.radii.m),
           border: Border.all(color: tokens.colors.decorative.level01),
         ),
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(tokens.spacing.step3),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -590,7 +596,7 @@ class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
                 count: widget.counts.types[t] ?? 0,
                 onTap: () => _push(_local.toggleType(t)),
               ),
-            const SizedBox(height: 6),
+            SizedBox(height: tokens.spacing.step3),
             _PopHeader(
               label: messages.agentInstancesFilterSectionStatus,
               showClear: _local.statuses.isNotEmpty,
@@ -608,7 +614,7 @@ class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
                 onTap: () => _push(_local.toggleStatus(s)),
               ),
             if (widget.counts.soulOptions.isNotEmpty) ...[
-              const SizedBox(height: 6),
+              SizedBox(height: tokens.spacing.step3),
               _PopHeader(
                 label: messages.agentInstancesFilterSectionSoul,
                 showClear: _local.soulIds.isNotEmpty,
@@ -645,16 +651,21 @@ class _PopHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step3,
+        tokens.spacing.step2,
+        tokens.spacing.step3,
+        tokens.spacing.step3,
+      ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label.toUpperCase(),
-              style: TextStyle(
-                fontSize: 9.5,
-                letterSpacing: 1.2,
-                fontWeight: FontWeight.w700,
+              // Closest DS token is `overline` (12px / 700 / wide
+              // letter-spacing). Tighter than 9.5 but reads as the
+              // intended uppercase section header.
+              style: tokens.typography.styles.others.overline.copyWith(
                 color: tokens.colors.text.lowEmphasis,
               ),
             ),
@@ -663,13 +674,12 @@ class _PopHeader extends StatelessWidget {
             InkWell(
               onTap: onClear,
               child: Padding(
-                padding: const EdgeInsets.all(2),
+                padding: EdgeInsets.all(tokens.spacing.step1),
                 child: Text(
                   context.messages.agentInstancesFilterClearSection,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+                  style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
+                    fontWeight: tokens.typography.weight.semiBold,
                   ),
                 ),
               ),
@@ -703,12 +713,15 @@ class _PopRow extends StatelessWidget {
       color: selected
           ? colors.interactive.enabled.withValues(alpha: 0.10)
           : Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(tokens.radii.s),
       child: InkWell(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step3,
+            vertical: tokens.spacing.step3,
+          ),
           child: Row(
             children: [
               SizedBox(
@@ -722,7 +735,7 @@ class _PopRow extends StatelessWidget {
                     border: selected
                         ? null
                         : Border.all(color: colors.decorative.level01),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(tokens.radii.xs),
                   ),
                   child: selected
                       ? Icon(
@@ -733,17 +746,18 @@ class _PopRow extends StatelessWidget {
                       : const SizedBox.shrink(),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: tokens.spacing.step3),
               if (swatchHue != null) ...[
                 _SoulSwatch(hue: swatchHue!),
-                const SizedBox(width: 6),
+                SizedBox(width: tokens.spacing.step3),
               ],
               Expanded(
                 child: Text(
                   label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    fontWeight: selected
+                        ? tokens.typography.weight.semiBold
+                        : tokens.typography.weight.regular,
                     color: selected
                         ? colors.text.highEmphasis
                         : colors.text.mediumEmphasis,
@@ -754,10 +768,10 @@ class _PopRow extends StatelessWidget {
               if (count != null)
                 Text(
                   '$count',
-                  style: TextStyle(
+                  style: tokens.typography.styles.others.caption.copyWith(
                     fontFamily: 'Inconsolata',
-                    fontSize: 10,
                     color: colors.text.lowEmphasis,
+                    letterSpacing: 0,
                   ),
                 ),
             ],

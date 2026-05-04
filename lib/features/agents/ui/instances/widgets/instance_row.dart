@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/instances/widgets/soul_avatar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -87,20 +86,13 @@ class InstanceRow extends StatelessWidget {
           SoulAvatar(label: vm.soulName ?? '?', hue: soulHue, size: 20),
           SizedBox(width: tokens.spacing.step4),
         ],
-        Expanded(child: _titleAndId(colors, title, task, vm)),
+        Expanded(child: _titleAndId(tokens, colors, title, task, vm)),
         SizedBox(width: tokens.spacing.step4),
         _TypePill(type: vm.type),
         SizedBox(width: tokens.spacing.step3),
         _StatusPill(status: vm.status),
         SizedBox(width: tokens.spacing.step4),
-        Text(
-          _formatTime(vm.updatedAt),
-          style: TextStyle(
-            fontFamily: 'Inconsolata',
-            fontSize: 10.5,
-            color: colors.text.lowEmphasis,
-          ),
-        ),
+        Text(_formatTime(vm.updatedAt), style: _monoMeta(tokens, colors)),
         SizedBox(width: tokens.spacing.step3),
         Icon(Icons.chevron_right, size: 16, color: colors.text.lowEmphasis),
       ],
@@ -133,9 +125,7 @@ class InstanceRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                       color: colors.text.highEmphasis,
                     ),
                     maxLines: 1,
@@ -145,9 +135,7 @@ class InstanceRow extends StatelessWidget {
                     SizedBox(height: tokens.spacing.step1),
                     Text(
                       task,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
+                      style: tokens.typography.styles.others.caption.copyWith(
                         color: colors.text.lowEmphasis,
                       ),
                       maxLines: 1,
@@ -157,11 +145,7 @@ class InstanceRow extends StatelessWidget {
                   SizedBox(height: tokens.spacing.step1),
                   Text(
                     vm.id,
-                    style: TextStyle(
-                      fontFamily: 'Inconsolata',
-                      fontSize: 10,
-                      color: colors.text.lowEmphasis,
-                    ),
+                    style: _monoMeta(tokens, colors),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -177,14 +161,7 @@ class InstanceRow extends StatelessWidget {
             SizedBox(width: tokens.spacing.step3),
             _StatusPill(status: vm.status),
             const Spacer(),
-            Text(
-              _formatTime(vm.updatedAt),
-              style: TextStyle(
-                fontFamily: 'Inconsolata',
-                fontSize: 10.5,
-                color: colors.text.lowEmphasis,
-              ),
-            ),
+            Text(_formatTime(vm.updatedAt), style: _monoMeta(tokens, colors)),
             SizedBox(width: tokens.spacing.step3),
             Icon(Icons.chevron_right, size: 16, color: colors.text.lowEmphasis),
           ],
@@ -194,52 +171,41 @@ class InstanceRow extends StatelessWidget {
   }
 
   Widget _titleAndId(
+    DsTokens tokens,
     DsColors colors,
     String title,
     String? task,
     InstanceVm vm,
   ) {
+    final titleStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
+      color: colors.text.highEmphasis,
+    );
+    final taskStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: colors.text.lowEmphasis,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text.rich(
           TextSpan(
             children: [
-              TextSpan(
-                text: title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: colors.text.highEmphasis,
-                ),
-              ),
+              TextSpan(text: title, style: titleStyle),
               if (task != null) ...[
                 TextSpan(
                   text: '  ·  ',
                   style: TextStyle(color: colors.text.lowEmphasis),
                 ),
-                TextSpan(
-                  text: task,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: colors.text.lowEmphasis,
-                  ),
-                ),
+                TextSpan(text: task, style: taskStyle),
               ],
             ],
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: tokens.spacing.step1),
         Text(
           vm.id,
-          style: TextStyle(
-            fontFamily: 'Inconsolata',
-            fontSize: 10,
-            color: colors.text.lowEmphasis,
-          ),
+          style: _monoMeta(tokens, colors),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -249,11 +215,23 @@ class InstanceRow extends StatelessWidget {
 }
 
 String _formatTime(DateTime dt) {
-  // Reuses the agent date formatter so locale changes propagate, then
-  // takes the time portion only — matches the design's `HH:MM` cell.
-  final full = formatAgentDateTime(dt);
-  final space = full.indexOf(' ');
-  return space < 0 ? full : full.substring(space + 1);
+  // 24h HH:MM, locale-independent — the row only needs the time-of-day
+  // cell. Avoids parsing back from a localized date string.
+  final hour = dt.hour.toString().padLeft(2, '0');
+  final minute = dt.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
+/// Mono-metadata cell style (id, time, group counts). Closest DS token is
+/// `caption`; we keep the Inconsolata override locally because the design
+/// system has no mono family token. Letter-spacing zeroed so timestamps and
+/// short ids stay legible at small sizes.
+TextStyle _monoMeta(DsTokens tokens, DsColors colors) {
+  return tokens.typography.styles.others.caption.copyWith(
+    fontFamily: 'Inconsolata',
+    color: colors.text.lowEmphasis,
+    letterSpacing: 0,
+  );
 }
 
 class _TypePill extends StatelessWidget {
@@ -303,19 +281,21 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step1,
+      ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
       ),
       child: Text(
         label,
-        style: TextStyle(
+        style: tokens.typography.styles.others.caption.copyWith(
           color: fg,
-          fontSize: 10.5,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.2,
+          fontWeight: tokens.typography.weight.semiBold,
         ),
       ),
     );

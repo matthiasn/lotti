@@ -56,7 +56,7 @@ class AgentLifecycleBadge extends StatelessWidget {
     return switch (lifecycle) {
       AgentLifecycle.created => (l10n.agentLifecycleCreated, scheme.tertiary),
       AgentLifecycle.active => (l10n.agentLifecycleActive, scheme.primary),
-      AgentLifecycle.dormant => (l10n.agentLifecyclePaused, scheme.outline),
+      AgentLifecycle.dormant => (l10n.agentLifecycleDormant, scheme.outline),
       AgentLifecycle.destroyed => (l10n.agentLifecycleDestroyed, scheme.error),
     };
   }

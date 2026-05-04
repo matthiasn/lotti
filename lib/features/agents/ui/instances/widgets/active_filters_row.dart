@@ -71,9 +71,8 @@ class ActiveFiltersRow extends StatelessWidget {
               ),
               child: Text(
                 messages.agentInstancesFilterClearAll,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  fontWeight: tokens.typography.weight.semiBold,
                   color: colors.text.mediumEmphasis,
                   decoration: TextDecoration.underline,
                 ),

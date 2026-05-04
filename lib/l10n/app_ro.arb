@@ -234,7 +234,7 @@
   "agentInstancesFilterSectionSoul": "Suflet",
   "agentInstancesFilterSectionStatus": "Stare",
   "agentInstancesFilterSectionType": "Tip",
-  "agentInstancesGroupActiveCount": "{count} active",
+  "agentInstancesGroupActiveCount": "{count, plural, =1{1 activă} few{{count} active} other{{count} de active}}",
   "@agentInstancesGroupActiveCount": {
     "placeholders": {
       "count": {
@@ -249,7 +249,7 @@
   "agentInstancesKindEvolution": "Evoluție",
   "agentInstancesKindTaskAgent": "Agent de sarcini",
   "agentInstancesPageTitle": "Instanțe agenți",
-  "agentInstancesResultCountAll": "{count} instanțe",
+  "agentInstancesResultCountAll": "{count, plural, =1{1 instanță} few{{count} instanțe} other{{count} de instanțe}}",
   "@agentInstancesResultCountAll": {
     "placeholders": {
       "count": {

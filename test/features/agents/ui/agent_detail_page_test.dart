@@ -151,7 +151,7 @@ void main() {
       expect(find.text('Active'), findsOneWidget);
     });
 
-    testWidgets('shows lifecycle badge as Paused for dormant agent', (
+    testWidgets('shows lifecycle badge as Dormant for dormant agent', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -161,7 +161,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Paused'), findsOneWidget);
+      expect(find.text('Dormant'), findsOneWidget);
     });
 
     testWidgets('shows lifecycle badge as Destroyed', (tester) async {

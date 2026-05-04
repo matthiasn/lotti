@@ -26,7 +26,7 @@ String instanceTypeLabel(AppLocalizations messages, InstanceType t) {
 String agentLifecycleLabel(AppLocalizations messages, AgentLifecycle s) {
   return switch (s) {
     AgentLifecycle.active => messages.agentLifecycleActive,
-    AgentLifecycle.dormant => messages.agentLifecyclePaused,
+    AgentLifecycle.dormant => messages.agentLifecycleDormant,
     AgentLifecycle.destroyed => messages.agentLifecycleDestroyed,
     AgentLifecycle.created => messages.agentLifecycleCreated,
   };
@@ -268,10 +268,11 @@ final FutureProvider<List<InstanceVm>> agentInstanceVmsProvider =
           displayName: '',
           sessionNumber: session.sessionNumber,
           type: InstanceType.evolution,
-          // Map evolution-session statuses onto the lifecycle axis used for
-          // status filtering / grouping. `active` is the only "live" state;
-          // completed and abandoned both end up under `destroyed` so the same
-          // green/red/grey pill palette covers them.
+          // Map evolution-session statuses onto the lifecycle axis used by
+          // the status filter / pill colors:
+          //   active    → active    (live, green)
+          //   completed → dormant   (finished cleanly, grey)
+          //   abandoned → destroyed (terminated without result, red)
           status: switch (session.status) {
             EvolutionSessionStatus.active => AgentLifecycle.active,
             EvolutionSessionStatus.completed => AgentLifecycle.dormant,

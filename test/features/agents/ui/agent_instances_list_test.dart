@@ -613,9 +613,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Group headers now use the type-name string.
-      expect(find.text('taskAgent'), findsOneWidget);
-      expect(find.text('evolution'), findsOneWidget);
+      // Group headers now show the localized type label, not the raw
+      // enum name.
+      expect(
+        find.text(ctx.messages.agentTemplateKindTaskAgent),
+        findsAtLeast(1),
+      );
+      expect(
+        find.text(ctx.messages.agentInstancesKindEvolution),
+        findsAtLeast(1),
+      );
     });
 
     testWidgets(
@@ -657,9 +664,15 @@ void main() {
           find.textContaining(ctx.messages.agentInstancesGroupByStatus),
           findsAtLeast(1),
         );
-        // Status group headers paint with the lowercased lifecycle name.
-        expect(find.text('active'), findsOneWidget);
-        expect(find.text('dormant'), findsOneWidget);
+        // Status group headers paint the localized lifecycle label.
+        expect(
+          find.text(ctx.messages.agentLifecycleActive),
+          findsAtLeast(1),
+        );
+        expect(
+          find.text(ctx.messages.agentLifecycleDormant),
+          findsAtLeast(1),
+        );
       },
     );
 

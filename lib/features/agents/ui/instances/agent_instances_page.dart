@@ -39,10 +39,11 @@ class _AgentInstancesPageState extends ConsumerState<AgentInstancesPage> {
     final messages = context.messages;
     final asyncVms = ref.watch(agentInstanceVmsProvider);
 
-    // Background level-02 keeps the page in line with the rest of the
-    // settings surface (the parent Scaffold paints level-01).
+    // Match the Settings V2 shell (tree nav, header) — `background.level01`
+    // is the surface used by the rest of the settings page so the
+    // instances pane reads as part of the same chrome.
     return ColoredBox(
-      color: tokens.colors.background.level02,
+      color: tokens.colors.background.level01,
       child: asyncVms.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => Center(

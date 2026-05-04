@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/instance_filter_state.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
+import 'package:lotti/features/agents/ui/instances/widgets/soul_avatar.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 InstanceVm _vm({
@@ -342,7 +343,7 @@ void main() {
       );
       expect(
         agentLifecycleLabel(messages, AgentLifecycle.dormant),
-        messages.agentLifecyclePaused,
+        messages.agentLifecycleDormant,
       );
       expect(
         agentLifecycleLabel(messages, AgentLifecycle.destroyed),
@@ -352,6 +353,35 @@ void main() {
         agentLifecycleLabel(messages, AgentLifecycle.created),
         messages.agentLifecycleCreated,
       );
+    });
+  });
+
+  group('SoulAvatar', () {
+    testWidgets(
+      'whitespace-only label falls back to "?" rather than a blank glyph',
+      (tester) async {
+        await tester.pumpWidget(
+          const Directionality(
+            textDirection: TextDirection.ltr,
+            child: Center(
+              child: SoulAvatar(label: '   ', hue: 200),
+            ),
+          ),
+        );
+        expect(find.text('?'), findsOneWidget);
+      },
+    );
+
+    testWidgets('non-empty label uses its first character (uppercased)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: Center(child: SoulAvatar(label: 'laura', hue: 142)),
+        ),
+      );
+      expect(find.text('L'), findsOneWidget);
     });
   });
 

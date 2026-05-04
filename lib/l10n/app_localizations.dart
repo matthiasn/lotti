@@ -858,7 +858,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentInstancesGroupActiveCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} active'**
+  /// **'{count, plural, =1{1 active} other{{count} active}}'**
   String agentInstancesGroupActiveCount(int count);
 
   /// No description provided for @agentInstancesGroupBySoul.
@@ -906,7 +906,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentInstancesResultCountAll.
   ///
   /// In en, this message translates to:
-  /// **'{count} instances'**
+  /// **'{count, plural, =1{1 instance} other{{count} instances}}'**
   String agentInstancesResultCountAll(int count);
 
   /// No description provided for @agentInstancesResultCountFiltered.

@@ -240,7 +240,7 @@
   "agentInstancesFilterSectionSoul": "Soul",
   "agentInstancesFilterSectionStatus": "Status",
   "agentInstancesFilterSectionType": "Type",
-  "agentInstancesGroupActiveCount": "{count} active",
+  "agentInstancesGroupActiveCount": "{count, plural, =1{1 active} other{{count} active}}",
   "@agentInstancesGroupActiveCount": {
     "placeholders": {
       "count": {
@@ -255,7 +255,7 @@
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Task Agent",
   "agentInstancesPageTitle": "Agent Instances",
-  "agentInstancesResultCountAll": "{count} instances",
+  "agentInstancesResultCountAll": "{count, plural, =1{1 instance} other{{count} instances}}",
   "@agentInstancesResultCountAll": {
     "placeholders": {
       "count": {

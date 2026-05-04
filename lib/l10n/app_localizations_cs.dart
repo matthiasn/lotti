@@ -432,7 +432,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String agentInstancesGroupActiveCount(int count) {
-    return '$count aktivních';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aktivních',
+      few: '$count aktivní',
+      one: '1 aktivní',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -458,7 +465,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String agentInstancesResultCountAll(int count) {
-    return '$count instancí';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count instancí',
+      few: '$count instance',
+      one: '1 instance',
+    );
+    return '$_temp0';
   }
 
   @override

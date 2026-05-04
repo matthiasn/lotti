@@ -234,7 +234,7 @@
   "agentInstancesFilterSectionSoul": "Alma",
   "agentInstancesFilterSectionStatus": "Estado",
   "agentInstancesFilterSectionType": "Tipo",
-  "agentInstancesGroupActiveCount": "{count} activo(s)",
+  "agentInstancesGroupActiveCount": "{count, plural, =1{1 activo} other{{count} activos}}",
   "@agentInstancesGroupActiveCount": {
     "placeholders": {
       "count": {
@@ -249,7 +249,7 @@
   "agentInstancesKindEvolution": "Evolución",
   "agentInstancesKindTaskAgent": "Agente de tareas",
   "agentInstancesPageTitle": "Instancias de agentes",
-  "agentInstancesResultCountAll": "{count} instancias",
+  "agentInstancesResultCountAll": "{count, plural, =1{1 instancia} other{{count} instancias}}",
   "@agentInstancesResultCountAll": {
     "placeholders": {
       "count": {

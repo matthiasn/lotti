@@ -129,7 +129,7 @@
   "agentInstancesFilterSectionSoul": "Duše",
   "agentInstancesFilterSectionStatus": "Stav",
   "agentInstancesFilterSectionType": "Typ",
-  "agentInstancesGroupActiveCount": "{count} aktivních",
+  "agentInstancesGroupActiveCount": "{count, plural, =1{1 aktivní} few{{count} aktivní} other{{count} aktivních}}",
   "@agentInstancesGroupActiveCount": {
     "placeholders": {
       "count": {
@@ -144,7 +144,7 @@
   "agentInstancesKindEvolution": "Evoluce",
   "agentInstancesKindTaskAgent": "Agent úkolů",
   "agentInstancesPageTitle": "Instance agentů",
-  "agentInstancesResultCountAll": "{count} instancí",
+  "agentInstancesResultCountAll": "{count, plural, =1{1 instance} few{{count} instance} other{{count} instancí}}",
   "@agentInstancesResultCountAll": {
     "placeholders": {
       "count": {
