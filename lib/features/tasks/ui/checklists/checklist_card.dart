@@ -875,6 +875,11 @@ class _Body extends StatelessWidget {
           // ReorderableListView would re-animate the list on every data
           // mutation, fighting the OS-native drag image and feeling wobbly.
           ListView.builder(
+            // EdgeInsets.zero — without this BoxScrollView absorbs the
+            // ambient MediaQuery.padding (e.g. iPhone notch) as its top
+            // padding, pushing the first item far below the filter strip
+            // on mobile.
+            padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: itemIds.length,

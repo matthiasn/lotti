@@ -51,6 +51,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on top of base typography tokens and proposes a `Compact/*`
   density tier.
 
+### Fixed
+- Checklist body no longer leaves a fat empty band between the
+  Open / Done / All filter strip and the first item on devices with
+  a top safe-area inset (notched iPhones). The plain
+  `ListView.builder` introduced in #3060 was inheriting the ambient
+  `MediaQuery.padding.top` as its own top padding; it now passes
+  `padding: EdgeInsets.zero` explicitly so the first row sits flush
+  under the filter divider on every form factor.
+
 ## [0.9.990]
 ### Added
 - Activity-filter pill row above the linked entries section on the task
