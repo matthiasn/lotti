@@ -13,6 +13,7 @@ AgentListRowData _row({
   required String title,
   String? subtitle,
   Widget Function(BuildContext)? trailing,
+  VoidCallback? onTap,
 }) {
   return AgentListRowData(
     id: id,
@@ -21,6 +22,7 @@ AgentListRowData _row({
     sortAt: DateTime(2026),
     searchKey: '$title $id ${subtitle ?? ''}'.toLowerCase(),
     trailing: trailing,
+    onTap: onTap,
   );
 }
 
@@ -145,13 +147,26 @@ void main() {
     );
 
     testWidgets(
-      'rows without a trailing builder fall back to the chevron',
+      'actionable rows without a trailing builder fall back to the chevron',
+      (tester) async {
+        await pumpShell(
+          tester,
+          rowsAsync: AsyncValue.data([
+            _row(id: 'r1', title: 'Row 1', onTap: () {}),
+          ]),
+        );
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'non-actionable rows render no chevron and no custom trailing',
       (tester) async {
         await pumpShell(
           tester,
           rowsAsync: AsyncValue.data([_row(id: 'r1', title: 'Row 1')]),
         );
-        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right), findsNothing);
       },
     );
   });

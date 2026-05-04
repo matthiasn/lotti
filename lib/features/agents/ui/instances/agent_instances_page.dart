@@ -202,6 +202,7 @@ List<AgentListFilterAxis> _buildFilterAxes(
       chipTone: AgentListPillTone.interactive,
       options: [
         for (final s in const [
+          AgentLifecycle.created,
           AgentLifecycle.active,
           AgentLifecycle.dormant,
           AgentLifecycle.destroyed,

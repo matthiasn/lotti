@@ -64,7 +64,7 @@ class AgentListRow extends StatelessWidget {
         if (data.trailing != null) ...[
           SizedBox(width: tokens.spacing.step3),
           data.trailing!(context),
-        ] else ...[
+        ] else if (data.onTap != null) ...[
           SizedBox(width: tokens.spacing.step3),
           Icon(Icons.chevron_right, size: 16, color: colors.text.lowEmphasis),
         ],
@@ -103,7 +103,7 @@ class AgentListRow extends StatelessWidget {
             if (data.trailing != null) ...[
               SizedBox(width: tokens.spacing.step3),
               data.trailing!(context),
-            ] else ...[
+            ] else if (data.onTap != null) ...[
               SizedBox(width: tokens.spacing.step3),
               Icon(
                 Icons.chevron_right,

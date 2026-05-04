@@ -21,12 +21,14 @@ class AgentListFilterState {
   final String groupAxisId;
   final String sortAxisId;
 
+  bool get hasSearch => search.trim().isNotEmpty;
+
   bool get isAnyFilterActive =>
-      search.isNotEmpty || selectionsByAxis.values.any((s) => s.isNotEmpty);
+      hasSearch || selectionsByAxis.values.any((s) => s.isNotEmpty);
 
   int get activeFilterCount =>
       selectionsByAxis.values.fold<int>(0, (n, s) => n + s.length) +
-      (search.isEmpty ? 0 : 1);
+      (hasSearch ? 1 : 0);
 
   Set<String> selectionsFor(String axisId) =>
       selectionsByAxis[axisId] ?? const <String>{};

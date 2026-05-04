@@ -228,6 +228,17 @@ void main() {
           .copyWith(search: 'q');
       expect(loaded.activeFilterCount, 4);
     });
+
+    test('whitespace-only search is treated as empty', () {
+      const s = AgentListFilterState(
+        groupAxisId: 'all',
+        sortAxisId: 'recent',
+        search: '   ',
+      );
+      expect(s.hasSearch, isFalse);
+      expect(s.isAnyFilterActive, isFalse);
+      expect(s.activeFilterCount, 0);
+    });
   });
 
   group('hueForSeed', () {

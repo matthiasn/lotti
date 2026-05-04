@@ -17,9 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SortAxis`, and the pure `buildGroupedAgentList` pipeline.
   `AgentInstancesPage` is now a thin adapter that maps `InstanceVm`
   into the shared row VM; rendering, filter / sort / group state, and
-  the empty / loading / error branches all live in the shell. No
-  user-visible change in the Instances page; this is groundwork for
-  the upcoming tab rewrites.
+  the empty / loading / error branches all live in the shell. This
+  scaffolding extraction is internal-only — the Instances redesign
+  below is what users will see.
 - Redesigned Settings → Agents → Instances. Replaced the filter strips
   + card list with a denser layout: a toolbar with multi-select Filters
   (Type / Status / Soul), Group by (Soul / Type / Status), Sort
