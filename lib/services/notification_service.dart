@@ -28,7 +28,7 @@ class NotificationService {
   NotificationService() {
     try {
       flutterLocalNotificationsPlugin.initialize(
-        const InitializationSettings(
+        settings: const InitializationSettings(
           linux: LinuxInitializationSettings(
             defaultActionName: NotificationConstants.defaultActionName,
           ),
@@ -98,15 +98,15 @@ class NotificationService {
     }
 
     await flutterLocalNotificationsPlugin.cancel(
-      NotificationConstants.badgeNotificationId,
+      id: NotificationConstants.badgeNotificationId,
     );
 
     if (badgeCount == 0 || !notifyEnabled) {
       await flutterLocalNotificationsPlugin.show(
-        NotificationConstants.badgeNotificationId,
-        '',
-        '',
-        NotificationDetails(
+        id: NotificationConstants.badgeNotificationId,
+        title: '',
+        body: '',
+        notificationDetails: NotificationDetails(
           iOS: DarwinNotificationDetails(
             presentAlert: false,
             presentBadge: true,
@@ -129,10 +129,10 @@ class NotificationService {
           : NotificationConstants.encouragementHigh;
 
       await flutterLocalNotificationsPlugin.show(
-        NotificationConstants.badgeNotificationId,
-        title,
-        body,
-        NotificationDetails(
+        id: NotificationConstants.badgeNotificationId,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
           iOS: DarwinNotificationDetails(
             presentAlert: false,
             presentBadge: true,
@@ -196,7 +196,7 @@ class NotificationService {
     }
 
     await _requestPermissions();
-    await flutterLocalNotificationsPlugin.cancel(notificationId);
+    await flutterLocalNotificationsPlugin.cancel(id: notificationId);
     final now = DateTime.now();
     final localTimezone = await getLocalTimezone();
     final location = getLocation(localTimezone);
@@ -212,11 +212,11 @@ class NotificationService {
     );
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
-      notificationId,
-      title,
-      body,
-      scheduledDate,
-      NotificationDetails(
+      id: notificationId,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: NotificationDetails(
         iOS: showOnMobile
             ? const DarwinNotificationDetails(
                 presentAlert: true,
@@ -245,7 +245,7 @@ class NotificationService {
       return;
     }
 
-    await flutterLocalNotificationsPlugin.cancel(notificationId);
+    await flutterLocalNotificationsPlugin.cancel(id: notificationId);
   }
 
   Future<void> showNotification({
@@ -261,13 +261,13 @@ class NotificationService {
     }
 
     await _requestPermissions();
-    await flutterLocalNotificationsPlugin.cancel(notificationId);
+    await flutterLocalNotificationsPlugin.cancel(id: notificationId);
 
     await flutterLocalNotificationsPlugin.show(
-      notificationId,
-      title,
-      body,
-      const NotificationDetails(
+      id: notificationId,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
         iOS: DarwinNotificationDetails(
           presentAlert: true,
           presentSound: true,

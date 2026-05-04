@@ -10,7 +10,6 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
-import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 /// Constants for database backup operations
 const String _backupDirectoryName = 'backup';
@@ -146,10 +145,6 @@ LazyDatabase openDbConnection(
         message:
             'Failed to create DB directory at ${file.parent.path}: $e\n$st',
       );
-    }
-
-    if (Platform.isAndroid) {
-      await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
     }
 
     try {
