@@ -1183,11 +1183,27 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Sélectionner un modèle';
 
   @override
+  String get agentTemplatesEmptyFiltered =>
+      'Aucun modèle ne correspond à tes filtres.';
+
+  @override
   String get agentTemplateSettingsSubtitle =>
       'Gérer les personnalités et directives des agents';
 
   @override
   String get agentTemplateSettingsTab => 'Paramètres';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Type';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Type';
+
+  @override
+  String get agentTemplatesGroupNone => 'Tous';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Rechercher des modèles…';
 
   @override
   String get agentTemplateStatsTab => 'Statistiques';

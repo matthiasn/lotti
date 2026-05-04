@@ -1171,11 +1171,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Select Template';
 
   @override
+  String get agentTemplatesEmptyFiltered =>
+      'Žádné šablony neodpovídají tvým filtrům.';
+
+  @override
   String get agentTemplateSettingsSubtitle =>
       'Manage agent personalities and directives';
 
   @override
   String get agentTemplateSettingsTab => 'Nastavení';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Druh';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Druh';
+
+  @override
+  String get agentTemplatesGroupNone => 'Vše';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Hledat šablony…';
 
   @override
   String get agentTemplateStatsTab => 'Statistiky';

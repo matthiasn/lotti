@@ -1181,11 +1181,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Vorlage auswählen';
 
   @override
+  String get agentTemplatesEmptyFiltered =>
+      'Keine Vorlagen passen zu deinen Filtern.';
+
+  @override
   String get agentTemplateSettingsSubtitle =>
       'Agenten-Persönlichkeiten und Anweisungen verwalten';
 
   @override
   String get agentTemplateSettingsTab => 'Einstellungen';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Art';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Art';
+
+  @override
+  String get agentTemplatesGroupNone => 'Alle';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Vorlagen suchen…';
 
   @override
   String get agentTemplateStatsTab => 'Statistiken';

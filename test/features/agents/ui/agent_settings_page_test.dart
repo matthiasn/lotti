@@ -178,8 +178,17 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pumpAndSettle();
 
-      expect(find.text('Laura'), findsOneWidget);
-      expect(find.text('Tom'), findsOneWidget);
+      // Title + subtitle are rendered together via `Text.rich`, so the
+      // text widget's plain text is `'Laura  ·  models/gemini-3-flash-preview'`.
+      // Match through the rich span.
+      expect(
+        find.textContaining('Laura', findRichText: true),
+        findsAtLeast(1),
+      );
+      expect(
+        find.textContaining('Tom', findRichText: true),
+        findsAtLeast(1),
+      );
     });
 
     testWidgets('shows empty state when no templates', (tester) async {
@@ -191,7 +200,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(context.messages.agentTemplateEmptyList),
+        find.text(context.messages.agentTemplatesEmptyFiltered),
         findsOneWidget,
       );
     });
@@ -336,7 +345,14 @@ void main() {
         find.text(context.messages.agentTemplateKindTaskAgent),
         findsOneWidget,
       );
-      expect(find.text('models/gemini-3-flash-preview'), findsOneWidget);
+      // Model id renders inside the row's `Text.rich` (title · model).
+      expect(
+        find.textContaining(
+          'models/gemini-3-flash-preview',
+          findRichText: true,
+        ),
+        findsAtLeast(1),
+      );
     });
 
     testWidgets('shows templateImprover kind badge', (tester) async {
@@ -498,10 +514,10 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(context.messages.agentTemplateVersionLabel(3)),
-        findsOneWidget,
-      );
+      // The new shared listing renders the active version as a compact
+      // mono cell ("v3") in the row's metaRight slot, not the legacy
+      // "Version 3" label.
+      expect(find.text('v3'), findsOneWidget);
     });
 
     testWidgets('tapping FAB navigates to template creation', (tester) async {
@@ -539,29 +555,19 @@ void main() {
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Nav Template'));
+      await tester.tap(
+        find.textContaining('Nav Template', findRichText: true),
+      );
       expect(navigatedPath, '/settings/agents/templates/tpl-nav');
     });
 
-    Finder pendingDotInCard(String templateName) {
-      final card = find.ancestor(
-        of: find.text(templateName),
-        matching: find.byType(ListTile),
-      );
-      return find.descendant(
-        of: card,
-        matching: find.byWidgetPredicate((widget) {
-          if (widget is Container) {
-            final decoration = widget.decoration;
-            if (decoration is BoxDecoration) {
-              return decoration.shape == BoxShape.circle &&
-                  decoration.color == AgentPalette.purple;
-            }
-          }
-          return false;
-        }),
-      );
-    }
+    // The new shared listing replaces the legacy Stack(Icon + purple
+    // circle) with a leading Icon whose color flips to AgentPalette.purple
+    // when the template is in `templatesPendingReviewProvider`'s set.
+    // This finder counts those purple icons.
+    Finder pendingPurpleIcon() => find.byWidgetPredicate(
+      (w) => w is Icon && w.color == AgentPalette.purple,
+    );
 
     for (final (label, pendingIds, expectVisible) in [
       ('visible when pending', {'tpl-dot'}, true),
@@ -591,9 +597,9 @@ void main() {
         await tester.pumpAndSettle();
 
         if (expectVisible) {
-          expect(pendingDotInCard('Dot Template'), findsOneWidget);
+          expect(pendingPurpleIcon(), findsOneWidget);
         } else {
-          expect(pendingDotInCard('Dot Template'), findsNothing);
+          expect(pendingPurpleIcon(), findsNothing);
         }
       });
     }
@@ -833,7 +839,7 @@ void main() {
 
           final context = tester.element(find.byType(AgentSettingsPage));
           expect(
-            find.text(context.messages.agentTemplateEmptyList),
+            find.text(context.messages.agentTemplatesEmptyFiltered),
             findsOneWidget,
           );
           // Sibling-tab bodies must not be on-stage.
@@ -865,7 +871,7 @@ void main() {
 
           final context = tester.element(find.byType(AgentSettingsPage));
           expect(
-            find.text(context.messages.agentTemplateEmptyList),
+            find.text(context.messages.agentTemplatesEmptyFiltered),
             findsOneWidget,
           );
 
@@ -881,7 +887,7 @@ void main() {
           );
           // Templates empty-state must now be offstage.
           expect(
-            find.text(context.messages.agentTemplateEmptyList),
+            find.text(context.messages.agentTemplatesEmptyFiltered),
             findsNothing,
           );
         },
@@ -1009,8 +1015,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // The Templates empty-state icon is the active-tab signal.
-        expect(find.byIcon(Icons.smart_toy_outlined), findsOneWidget);
+        // The Templates empty-state copy is the active-tab signal.
+        var ctx = tester.element(find.byType(AgentSettingsPage));
+        expect(
+          find.text(ctx.messages.agentTemplatesEmptyFiltered),
+          findsOneWidget,
+        );
 
         // Swap initialTab on the same harness — didUpdateWidget fires
         // on the existing _AgentSettingsPageState. The Souls empty
@@ -1018,7 +1028,8 @@ void main() {
         _InitialTabHarnessState.current!.swap(AgentSettingsTab.souls);
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.psychology_outlined), findsOneWidget);
+        ctx = tester.element(find.byType(AgentSettingsPage));
+        expect(find.text(ctx.messages.agentSoulEmptyList), findsOneWidget);
       },
     );
   });

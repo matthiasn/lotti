@@ -2088,6 +2088,12 @@ abstract class AppLocalizations {
   /// **'Select Template'**
   String get agentTemplateSelectTitle;
 
+  /// No description provided for @agentTemplatesEmptyFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'No templates match your filters.'**
+  String get agentTemplatesEmptyFiltered;
+
   /// Subtitle shown under the agent templates settings entry.
   ///
   /// In en, this message translates to:
@@ -2099,6 +2105,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get agentTemplateSettingsTab;
+
+  /// No description provided for @agentTemplatesFilterSectionKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get agentTemplatesFilterSectionKind;
+
+  /// No description provided for @agentTemplatesGroupByKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get agentTemplatesGroupByKind;
+
+  /// No description provided for @agentTemplatesGroupNone.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get agentTemplatesGroupNone;
+
+  /// No description provided for @agentTemplatesSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search templates…'**
+  String get agentTemplatesSearchPlaceholder;
 
   /// Tab label for the stats tab in agent template detail.
   ///
