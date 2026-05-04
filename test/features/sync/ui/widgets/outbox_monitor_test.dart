@@ -52,7 +52,8 @@ Future<void> _pumpOutboxMonitorPage(
 
 MockSyncDatabase _prepareMock({
   int count = 0,
-  Stream<List<OutboxItem>>? itemStream,
+  List<OutboxItem>? items,
+  Future<List<OutboxItem>>? itemsFuture,
   List<OutboxDailyVolume> volumeData = const [],
 }) {
   final mock = mockSyncDatabaseWithCount(count);
@@ -61,10 +62,14 @@ MockSyncDatabase _prepareMock({
     () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
   ).thenAnswer((_) async => volumeData);
 
-  if (itemStream != null) {
+  if (itemsFuture != null) {
     when(
-      () => mock.watchOutboxItems(limit: any(named: 'limit')),
-    ).thenAnswer((_) => itemStream);
+      () => mock.getOutboxItems(limit: any(named: 'limit')),
+    ).thenAnswer((_) => itemsFuture);
+  } else if (items != null) {
+    when(
+      () => mock.getOutboxItems(limit: any(named: 'limit')),
+    ).thenAnswer((_) async => items);
   }
 
   return mock;
@@ -92,40 +97,38 @@ void main() {
     ) async {
       final mock = _prepareMock(
         count: 999,
-        itemStream: Stream<List<OutboxItem>>.fromIterable([
-          [
-            OutboxItem(
-              id: 1,
-              createdAt: _epoch,
-              updatedAt: _epoch,
-              status: 1, // sent
-              retries: 0,
-              message: '{"runtimeType":"aiConfigDelete","id":"config-id"}',
-              subject: 'error-subject',
-              priority: OutboxPriority.low.index,
-            ),
-            OutboxItem(
-              id: 2,
-              createdAt: _epoch,
-              updatedAt: _epoch,
-              status: 0, // pending
-              retries: 1,
-              message: '{"runtimeType":"aiConfigDelete","id":"pending"}',
-              subject: 'pending-subject',
-              priority: OutboxPriority.low.index,
-            ),
-            OutboxItem(
-              id: 3,
-              createdAt: _epoch,
-              updatedAt: _epoch,
-              status: 2, // error
-              retries: 2,
-              message: '{"runtimeType":"aiConfigDelete","id":"sent"}',
-              subject: 'sent-subject',
-              priority: OutboxPriority.low.index,
-            ),
-          ],
-        ]),
+        items: [
+          OutboxItem(
+            id: 1,
+            createdAt: _epoch,
+            updatedAt: _epoch,
+            status: 1, // sent
+            retries: 0,
+            message: '{"runtimeType":"aiConfigDelete","id":"config-id"}',
+            subject: 'error-subject',
+            priority: OutboxPriority.low.index,
+          ),
+          OutboxItem(
+            id: 2,
+            createdAt: _epoch,
+            updatedAt: _epoch,
+            status: 0, // pending
+            retries: 1,
+            message: '{"runtimeType":"aiConfigDelete","id":"pending"}',
+            subject: 'pending-subject',
+            priority: OutboxPriority.low.index,
+          ),
+          OutboxItem(
+            id: 3,
+            createdAt: _epoch,
+            updatedAt: _epoch,
+            status: 2, // error
+            retries: 2,
+            message: '{"runtimeType":"aiConfigDelete","id":"sent"}',
+            subject: 'sent-subject',
+            priority: OutboxPriority.low.index,
+          ),
+        ],
       );
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
@@ -170,20 +173,18 @@ void main() {
       (tester) async {
         final mock = _prepareMock(
           count: 1,
-          itemStream: Stream<List<OutboxItem>>.fromIterable([
-            [
-              OutboxItem(
-                id: 1,
-                createdAt: _epoch,
-                updatedAt: _epoch,
-                status: 2,
-                retries: 5,
-                message: '{"runtimeType":"journalEntity","id":"test-id"}',
-                subject: 'error-subject',
-                priority: OutboxPriority.low.index,
-              ),
-            ],
-          ]),
+          items: [
+            OutboxItem(
+              id: 1,
+              createdAt: _epoch,
+              updatedAt: _epoch,
+              status: 2,
+              retries: 5,
+              message: '{"runtimeType":"journalEntity","id":"test-id"}',
+              subject: 'error-subject',
+              priority: OutboxPriority.low.index,
+            ),
+          ],
         );
 
         when(() => mock.deleteOutboxItemById(1)).thenAnswer((_) async => 1);
@@ -209,20 +210,18 @@ void main() {
     testWidgets('confirming delete shows a success toast', (tester) async {
       final mock = _prepareMock(
         count: 1,
-        itemStream: Stream<List<OutboxItem>>.fromIterable([
-          [
-            OutboxItem(
-              id: 42,
-              createdAt: _epoch,
-              updatedAt: _epoch,
-              status: 2,
-              retries: 5,
-              message: '{"runtimeType":"journalEntity","id":"test-id"}',
-              subject: 'error-subject',
-              priority: OutboxPriority.low.index,
-            ),
-          ],
-        ]),
+        items: [
+          OutboxItem(
+            id: 42,
+            createdAt: _epoch,
+            updatedAt: _epoch,
+            status: 2,
+            retries: 5,
+            message: '{"runtimeType":"journalEntity","id":"test-id"}',
+            subject: 'error-subject',
+            priority: OutboxPriority.low.index,
+          ),
+        ],
       );
       when(() => mock.deleteOutboxItemById(42)).thenAnswer((_) async => 1);
 
@@ -244,20 +243,18 @@ void main() {
     testWidgets('delete failure shows an error toast', (tester) async {
       final mock = _prepareMock(
         count: 1,
-        itemStream: Stream<List<OutboxItem>>.fromIterable([
-          [
-            OutboxItem(
-              id: 43,
-              createdAt: _epoch,
-              updatedAt: _epoch,
-              status: 2,
-              retries: 5,
-              message: '{"runtimeType":"journalEntity","id":"test-id"}',
-              subject: 'error-subject',
-              priority: OutboxPriority.low.index,
-            ),
-          ],
-        ]),
+        items: [
+          OutboxItem(
+            id: 43,
+            createdAt: _epoch,
+            updatedAt: _epoch,
+            status: 2,
+            retries: 5,
+            message: '{"runtimeType":"journalEntity","id":"test-id"}',
+            subject: 'error-subject',
+            priority: OutboxPriority.low.index,
+          ),
+        ],
       );
       when(
         () => mock.deleteOutboxItemById(43),
@@ -280,20 +277,18 @@ void main() {
     testWidgets('confirming retry shows a success toast', (tester) async {
       final mock = _prepareMock(
         count: 1,
-        itemStream: Stream<List<OutboxItem>>.fromIterable([
-          [
-            OutboxItem(
-              id: 77,
-              createdAt: _epoch,
-              updatedAt: _epoch,
-              status: 2,
-              retries: 5,
-              message: '{"runtimeType":"journalEntity","id":"test-id"}',
-              subject: 'error-subject',
-              priority: OutboxPriority.low.index,
-            ),
-          ],
-        ]),
+        items: [
+          OutboxItem(
+            id: 77,
+            createdAt: _epoch,
+            updatedAt: _epoch,
+            status: 2,
+            retries: 5,
+            message: '{"runtimeType":"journalEntity","id":"test-id"}',
+            subject: 'error-subject',
+            priority: OutboxPriority.low.index,
+          ),
+        ],
       );
       when(() => mock.updateOutboxItem(any())).thenAnswer((_) async => 1);
 
@@ -315,20 +310,18 @@ void main() {
     testWidgets('retry failure shows an error toast', (tester) async {
       final mock = _prepareMock(
         count: 1,
-        itemStream: Stream<List<OutboxItem>>.fromIterable([
-          [
-            OutboxItem(
-              id: 78,
-              createdAt: _epoch,
-              updatedAt: _epoch,
-              status: 2,
-              retries: 5,
-              message: '{"runtimeType":"journalEntity","id":"test-id"}',
-              subject: 'error-subject',
-              priority: OutboxPriority.low.index,
-            ),
-          ],
-        ]),
+        items: [
+          OutboxItem(
+            id: 78,
+            createdAt: _epoch,
+            updatedAt: _epoch,
+            status: 2,
+            retries: 5,
+            message: '{"runtimeType":"journalEntity","id":"test-id"}',
+            subject: 'error-subject',
+            priority: OutboxPriority.low.index,
+          ),
+        ],
       );
       when(
         () => mock.updateOutboxItem(any()),
@@ -349,9 +342,7 @@ void main() {
     });
 
     testWidgets('renders empty state when no outbox items', (tester) async {
-      final mock = _prepareMock(
-        itemStream: Stream<List<OutboxItem>>.fromIterable([<OutboxItem>[]]),
-      );
+      final mock = _prepareMock(items: const <OutboxItem>[]);
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
       await tester.pumpAndSettle();
@@ -360,22 +351,114 @@ void main() {
       expect(find.textContaining('0 items'), findsOneWidget);
     });
 
-    testWidgets('shows loader before first snapshot then empty state', (
+    testWidgets('shows loader before first fetch resolves then empty state', (
       tester,
     ) async {
-      final controller = StreamController<List<OutboxItem>>();
-      final mock = _prepareMock(itemStream: controller.stream);
+      final completer = Completer<List<OutboxItem>>();
+      final mock = _prepareMock(itemsFuture: completer.future);
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      controller.add(<OutboxItem>[]);
+      completer.complete(const <OutboxItem>[]);
       await tester.pumpAndSettle();
 
       expect(find.text('Outbox is clear'), findsOneWidget);
-      await controller.close();
+    });
+
+    testWidgets('surfaces a toast when the initial fetch fails', (
+      tester,
+    ) async {
+      final mock = mockSyncDatabaseWithCount(0);
+      when(
+        () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
+      ).thenAnswer((_) async => const <OutboxDailyVolume>[]);
+      when(
+        () => mock.getOutboxItems(limit: any(named: 'limit')),
+      ).thenThrow(Exception('DB offline'));
+
+      await _pumpOutboxMonitorPage(tester, mock: mock);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining("Couldn't load the outbox"), findsOneWidget);
+      // Page must drop out of the loading state so pull-to-refresh is
+      // reachable; without this the spinner would hang forever.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets(
+      'mounts a RefreshIndicator wired to the outbox fetch',
+      (tester) async {
+        var fetchCount = 0;
+        final mock = mockSyncDatabaseWithCount(0);
+        when(
+          () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
+        ).thenAnswer((_) async => const <OutboxDailyVolume>[]);
+        when(
+          () => mock.getOutboxItems(limit: any(named: 'limit')),
+        ).thenAnswer((_) async {
+          fetchCount += 1;
+          return const <OutboxItem>[];
+        });
+
+        await _pumpOutboxMonitorPage(tester, mock: mock);
+        await tester.pumpAndSettle();
+        expect(fetchCount, 1);
+
+        // The page must mount a RefreshIndicator so users can pull to
+        // re-query without a live `watch()` stream. The post-mutation
+        // refetch tests below exercise the same `_fetch` path.
+        final indicator = tester.widget<RefreshIndicator>(
+          find.byType(RefreshIndicator),
+        );
+        await indicator.onRefresh();
+        expect(fetchCount, 2);
+      },
+    );
+
+    testWidgets('confirming delete refetches the outbox', (tester) async {
+      var fetchCount = 0;
+      final mock = mockSyncDatabaseWithCount(1);
+      when(
+        () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
+      ).thenAnswer((_) async => const <OutboxDailyVolume>[]);
+      when(
+        () => mock.getOutboxItems(limit: any(named: 'limit')),
+      ).thenAnswer((_) async {
+        fetchCount += 1;
+        return [
+          OutboxItem(
+            id: 99,
+            createdAt: _epoch,
+            updatedAt: _epoch,
+            status: 2,
+            retries: 5,
+            message: '{"runtimeType":"journalEntity","id":"test-id"}',
+            subject: 'error-subject',
+            priority: OutboxPriority.low.index,
+          ),
+        ];
+      });
+      when(() => mock.deleteOutboxItemById(99)).thenAnswer((_) async => 1);
+
+      await _pumpOutboxMonitorPage(tester, mock: mock);
+      await tester.pumpAndSettle();
+      expect(fetchCount, 1);
+
+      await tester.tap(find.text('Error'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('outboxDelete-99')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('DELETE'));
+      await tester.pumpAndSettle();
+
+      verify(() => mock.deleteOutboxItemById(99)).called(1);
+      // Initial init() fetch + post-delete refresh.
+      expect(fetchCount, 2);
     });
 
     group('OutboxVolumeChart integration', () {
@@ -383,7 +466,7 @@ void main() {
         'renders bar chart when volume data exists',
         (tester) async {
           final mock = _prepareMock(
-            itemStream: Stream<List<OutboxItem>>.fromIterable([<OutboxItem>[]]),
+            items: const <OutboxItem>[],
             volumeData: [
               OutboxDailyVolume(
                 date: DateTime(2024, 3, 10),
@@ -410,9 +493,7 @@ void main() {
       testWidgets(
         'hides bar chart when no volume data exists',
         (tester) async {
-          final mock = _prepareMock(
-            itemStream: Stream<List<OutboxItem>>.fromIterable([<OutboxItem>[]]),
-          );
+          final mock = _prepareMock(items: const <OutboxItem>[]);
 
           await _pumpOutboxMonitorPage(tester, mock: mock);
           await tester.pumpAndSettle();
@@ -425,9 +506,7 @@ void main() {
       testWidgets(
         'shows error state when provider fails',
         (tester) async {
-          final mock = _prepareMock(
-            itemStream: Stream<List<OutboxItem>>.fromIterable([<OutboxItem>[]]),
-          );
+          final mock = _prepareMock(items: const <OutboxItem>[]);
 
           await _pumpOutboxMonitorPage(
             tester,
@@ -469,20 +548,18 @@ void main() {
         (tester) async {
           final mock = _prepareMock(
             count: 1,
-            itemStream: Stream<List<OutboxItem>>.fromIterable([
-              [
-                OutboxItem(
-                  id: 1,
-                  createdAt: _epoch,
-                  updatedAt: _epoch,
-                  status: 0,
-                  retries: 0,
-                  message: '{"runtimeType":"aiConfigDelete","id":"test"}',
-                  subject: 'test-subject',
-                  priority: OutboxPriority.low.index,
-                ),
-              ],
-            ]),
+            items: [
+              OutboxItem(
+                id: 1,
+                createdAt: _epoch,
+                updatedAt: _epoch,
+                status: 0,
+                retries: 0,
+                message: '{"runtimeType":"aiConfigDelete","id":"test"}',
+                subject: 'test-subject',
+                priority: OutboxPriority.low.index,
+              ),
+            ],
             volumeData: [
               OutboxDailyVolume(
                 date: DateTime(2024, 3, 15),

@@ -2004,6 +2004,7 @@
   "outboxMonitorDeleteSuccess": "Element gelöscht",
   "outboxMonitorEmptyDescription": "In dieser Ansicht befinden sich keine Sync-Elemente.",
   "outboxMonitorEmptyTitle": "Postausgang ist leer",
+  "outboxMonitorFetchFailed": "Der Postausgang konnte nicht geladen werden. Zieh zum Aktualisieren und versuch es erneut.",
   "outboxMonitorLabelAll": "alle",
   "outboxMonitorLabelError": "Fehler",
   "outboxMonitorLabelPending": "ausstehend",

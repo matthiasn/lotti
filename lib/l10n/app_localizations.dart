@@ -8044,6 +8044,12 @@ abstract class AppLocalizations {
   /// **'Outbox is clear'**
   String get outboxMonitorEmptyTitle;
 
+  /// No description provided for @outboxMonitorFetchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the outbox. Pull to refresh and try again.'**
+  String get outboxMonitorFetchFailed;
+
   /// No description provided for @outboxMonitorLabelAll.
   ///
   /// In en, this message translates to:

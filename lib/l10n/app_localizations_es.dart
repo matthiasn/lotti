@@ -4668,6 +4668,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get outboxMonitorEmptyTitle => 'La bandeja de salida está vacía';
 
   @override
+  String get outboxMonitorFetchFailed =>
+      'No se pudo cargar la bandeja de salida. Tira hacia abajo para actualizar e inténtalo de nuevo.';
+
+  @override
   String get outboxMonitorLabelAll => 'todos';
 
   @override

@@ -2004,6 +2004,7 @@
   "outboxMonitorDeleteSuccess": "Elemento eliminado",
   "outboxMonitorEmptyDescription": "No hay elementos de sincronización en esta vista.",
   "outboxMonitorEmptyTitle": "La bandeja de salida está vacía",
+  "outboxMonitorFetchFailed": "No se pudo cargar la bandeja de salida. Tira hacia abajo para actualizar e inténtalo de nuevo.",
   "outboxMonitorLabelAll": "todos",
   "outboxMonitorLabelError": "error",
   "outboxMonitorLabelPending": "pendiente",

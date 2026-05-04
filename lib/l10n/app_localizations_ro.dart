@@ -4623,6 +4623,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get outboxMonitorEmptyTitle => 'Căsuța de trimitere este goală';
 
   @override
+  String get outboxMonitorFetchFailed =>
+      'Căsuța de trimitere nu a putut fi încărcată. Trageți în jos pentru reîmprospătare și încercați din nou.';
+
+  @override
   String get outboxMonitorLabelAll => 'toate';
 
   @override

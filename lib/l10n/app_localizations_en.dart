@@ -4536,6 +4536,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get outboxMonitorEmptyTitle => 'Outbox is clear';
 
   @override
+  String get outboxMonitorFetchFailed =>
+      'Couldn\'t load the outbox. Pull to refresh and try again.';
+
+  @override
   String get outboxMonitorLabelAll => 'all';
 
   @override

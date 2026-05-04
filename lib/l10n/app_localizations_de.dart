@@ -4598,6 +4598,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get outboxMonitorEmptyTitle => 'Postausgang ist leer';
 
   @override
+  String get outboxMonitorFetchFailed =>
+      'Der Postausgang konnte nicht geladen werden. Zieh zum Aktualisieren und versuch es erneut.';
+
+  @override
   String get outboxMonitorLabelAll => 'alle';
 
   @override

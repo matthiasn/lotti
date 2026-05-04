@@ -4673,6 +4673,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get outboxMonitorEmptyTitle => 'La boîte d\'envoi est vide';
 
   @override
+  String get outboxMonitorFetchFailed =>
+      'Impossible de charger la boîte d\'envoi. Tire vers le bas pour actualiser et réessaie.';
+
+  @override
   String get outboxMonitorLabelAll => 'tout';
 
   @override
