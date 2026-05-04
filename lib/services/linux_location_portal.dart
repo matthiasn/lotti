@@ -199,9 +199,12 @@ class XdgLocationPortal {
             },
           );
 
+      // Per the portal spec, Location.Start is invoked on the portal frontend
+      // object; the session handle returned by CreateSession is passed as the
+      // first argument, not used as the call path.
       final startReply = await _bus.callMethod(
         destination: _portalDestination,
-        path: sessionHandle,
+        path: _portalPath,
         interface: _locationInterface,
         name: 'Start',
         values: [

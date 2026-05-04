@@ -6,7 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/services/linux_location_portal.dart';
 
 class _RecordedCall {
-  _RecordedCall(this.interface, this.name, this.values);
+  _RecordedCall(this.path, this.interface, this.name, this.values);
+  final DBusObjectPath path;
   final String interface;
   final String name;
   final List<DBusValue> values;
@@ -57,10 +58,11 @@ class _FakePortalDBus implements PortalDBus {
     DBusSignature? replySignature,
   }) async {
     final valueList = values.toList();
-    calls.add(_RecordedCall(interface, name, valueList));
+    calls.add(_RecordedCall(path, interface, name, valueList));
 
     if (interface == 'org.freedesktop.portal.Location' &&
         name == 'CreateSession') {
+      _expectPortalPath(path, 'CreateSession');
       if (createSessionThrows) {
         throw DBusServiceUnknownException(
           DBusMethodErrorResponse(
@@ -72,6 +74,7 @@ class _FakePortalDBus implements PortalDBus {
       return DBusMethodSuccessResponse([sessionPath]);
     }
     if (interface == 'org.freedesktop.portal.Location' && name == 'Start') {
+      _expectPortalPath(path, 'Start');
       if (startThrows) {
         throw StateError('Start failed');
       }
@@ -84,6 +87,18 @@ class _FakePortalDBus implements PortalDBus {
       return DBusMethodSuccessResponse([]);
     }
     throw StateError('Unexpected call $interface.$name');
+  }
+
+  // Per the portal spec, both CreateSession and Start live on the portal
+  // frontend object — never on the session path. Asserting here pins down
+  // the mistake the previous fake silently allowed.
+  void _expectPortalPath(DBusObjectPath actual, String name) {
+    final expected = DBusObjectPath('/org/freedesktop/portal/desktop');
+    if (actual != expected) {
+      throw StateError(
+        '$name must be called on $expected, got $actual',
+      );
+    }
   }
 
   @override

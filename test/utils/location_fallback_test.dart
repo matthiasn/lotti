@@ -187,6 +187,11 @@ void main() {
       });
 
       test('falls back to IP geolocation when permission is denied', () async {
+        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
+        // location package mocked here.
+        if (Platform.isLinux) {
+          return;
+        }
         when(
           () => mockJournalDb.getConfigFlag(recordLocationFlag),
         ).thenAnswer((_) async => true);
@@ -294,6 +299,11 @@ void main() {
       );
 
       test('handles service not enabled by falling back to IP', () async {
+        // Skip on Linux: that platform uses the xdg-desktop-portal path, not the
+        // location package mocked here.
+        if (Platform.isLinux) {
+          return;
+        }
         when(
           () => mockJournalDb.getConfigFlag(recordLocationFlag),
         ).thenAnswer((_) async => true);
@@ -334,6 +344,11 @@ void main() {
       test(
         'handles permission permanently denied by falling back to IP',
         () async {
+          // Skip on Linux: that platform uses the xdg-desktop-portal path, not
+          // the location package mocked here.
+          if (Platform.isLinux) {
+            return;
+          }
           when(
             () => mockJournalDb.getConfigFlag(recordLocationFlag),
           ).thenAnswer((_) async => true);

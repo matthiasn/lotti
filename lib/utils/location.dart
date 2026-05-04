@@ -84,7 +84,10 @@ class DeviceLocation {
   Future<void> init() async {
     bool serviceEnabled;
 
-    if (isWindows || isTestEnv) {
+    // Linux uses the portal / GeoClue path (see getCurrentGeoLocationLinux);
+    // probing the location plugin here only generates failing-init noise in
+    // Flatpak where the plugin's underlying APIs are unreachable.
+    if (isWindows || isTestEnv || Platform.isLinux) {
       return;
     }
 
@@ -206,7 +209,18 @@ class DeviceLocation {
         ),
       );
     } finally {
-      await backend.close();
+      // Best-effort: a thrown close() must not erase a successful native
+      // location, mirroring how Session.Close is treated inside the portal
+      // and GeoClue clients.
+      try {
+        await backend.close();
+      } catch (e) {
+        getIt<LoggingService>().captureException(
+          e,
+          domain: 'LOCATION_SERVICE',
+          subDomain: 'linux_backend_close',
+        );
+      }
     }
   }
 }
