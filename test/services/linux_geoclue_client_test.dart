@@ -71,7 +71,7 @@ class _FakeGeoClueDBus implements GeoClueDBus {
     calls.add(_Call(path.value, interface, name, list));
 
     if (interface == 'org.freedesktop.GeoClue2.Manager' &&
-        name == 'GetClient') {
+        name == 'CreateClient') {
       return DBusMethodSuccessResponse([clientPath]);
     }
     if (interface == 'org.freedesktop.GeoClue2.Manager' &&
@@ -240,6 +240,30 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+      'uses CreateClient (per-call) rather than the shared GetClient',
+      () async {
+        final future = client.getLocation(
+          timeout: const Duration(seconds: 5),
+        );
+        await Future<void>.delayed(Duration.zero);
+        fake.emitLocationUpdated();
+        await future;
+
+        expect(
+          fake.wasCalled('org.freedesktop.GeoClue2.Manager', 'CreateClient'),
+          isTrue,
+        );
+        expect(
+          fake.wasCalled('org.freedesktop.GeoClue2.Manager', 'GetClient'),
+          isFalse,
+          reason:
+              'GetClient is shared per peer; concurrent getLocation() '
+              'calls would tear each other down via DeleteClient.',
+        );
+      },
+    );
 
     test(
       'propagates Start AccessDenied (silently denied authorization)',

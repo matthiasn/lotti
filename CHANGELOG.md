@@ -83,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   point GeoClue at BeaconDB by dropping into
   `/etc/geoclue/conf.d/00-beacondb.conf`:
 
-  ```
+  ```ini
   [wifi]
   enable=true
   url=https://api.beacondb.net/v1/geolocate

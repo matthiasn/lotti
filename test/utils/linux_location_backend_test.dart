@@ -96,7 +96,7 @@ void main() {
 
       await expectLater(
         backend.getLocation(timeout: const Duration(milliseconds: 50)),
-        // GetClient throws via the stub before any signal can fire.
+        // CreateClient throws via the stub before any signal can fire.
         throwsA(anything),
       );
 

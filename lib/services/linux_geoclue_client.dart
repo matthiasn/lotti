@@ -103,15 +103,19 @@ class LinuxGeoClueClient {
     DBusObjectPath? clientPath;
     StreamSubscription<DBusSignal>? sub;
     try {
-      final getClient = await _bus.callMethod(
+      // CreateClient (not GetClient) so concurrent getLocation() calls from
+      // the same process each get their own client. GetClient returns the
+      // shared per-peer client, which the per-call DeleteClient in the
+      // finally block would tear out from under another in-flight call.
+      final createClient = await _bus.callMethod(
         destination: _geoclueDestination,
         path: _managerPath,
         interface: _managerInterface,
-        name: 'GetClient',
+        name: 'CreateClient',
         values: const [],
         replySignature: DBusSignature('o'),
       );
-      clientPath = getClient.returnValues[0].asObjectPath();
+      clientPath = createClient.returnValues[0].asObjectPath();
       final clientObject = clientPath;
 
       await _setProperty(
