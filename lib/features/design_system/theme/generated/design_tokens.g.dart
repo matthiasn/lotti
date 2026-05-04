@@ -68,6 +68,7 @@ const DsTokens dsTokensLight = DsTokens(
       footerWashOpen: Color(0x1A000000),
       rowBorder: Color(0x0FFFFFFF),
       rowBorderStrong: Color(0x1AFFFFFF),
+      titleText: Color(0xFFFFFFFF),
       bodyText: Color(0xD9FFFFFF),
       metaText: Color(0x8CFFFFFF),
       faintMeta: Color(0x73FFFFFF),
@@ -424,6 +425,7 @@ const DsTokens dsTokensDark = DsTokens(
       footerWashOpen: Color(0x1A000000),
       rowBorder: Color(0x0FFFFFFF),
       rowBorderStrong: Color(0x1AFFFFFF),
+      titleText: Color(0xFFFFFFFF),
       bodyText: Color(0xD9FFFFFF),
       metaText: Color(0x8CFFFFFF),
       faintMeta: Color(0x73FFFFFF),
@@ -1271,6 +1273,7 @@ class DsColorsAiCard {
   final Color footerWashOpen;
   final Color rowBorder;
   final Color rowBorderStrong;
+  final Color titleText;
   final Color bodyText;
   final Color metaText;
   final Color faintMeta;
@@ -1287,6 +1290,7 @@ class DsColorsAiCard {
     required this.footerWashOpen,
     required this.rowBorder,
     required this.rowBorderStrong,
+    required this.titleText,
     required this.bodyText,
     required this.metaText,
     required this.faintMeta,
@@ -1304,6 +1308,7 @@ class DsColorsAiCard {
     Color? footerWashOpen,
     Color? rowBorder,
     Color? rowBorderStrong,
+    Color? titleText,
     Color? bodyText,
     Color? metaText,
     Color? faintMeta,
@@ -1320,6 +1325,7 @@ class DsColorsAiCard {
       footerWashOpen: footerWashOpen ?? this.footerWashOpen,
       rowBorder: rowBorder ?? this.rowBorder,
       rowBorderStrong: rowBorderStrong ?? this.rowBorderStrong,
+      titleText: titleText ?? this.titleText,
       bodyText: bodyText ?? this.bodyText,
       metaText: metaText ?? this.metaText,
       faintMeta: faintMeta ?? this.faintMeta,
@@ -1347,6 +1353,7 @@ class DsColorsAiCard {
       rowBorderStrong:
           Color.lerp(rowBorderStrong, other.rowBorderStrong, t) ??
           rowBorderStrong,
+      titleText: Color.lerp(titleText, other.titleText, t) ?? titleText,
       bodyText: Color.lerp(bodyText, other.bodyText, t) ?? bodyText,
       metaText: Color.lerp(metaText, other.metaText, t) ?? metaText,
       faintMeta: Color.lerp(faintMeta, other.faintMeta, t) ?? faintMeta,
@@ -1370,6 +1377,7 @@ class DsColorsAiCard {
         footerWashOpen == other.footerWashOpen &&
         rowBorder == other.rowBorder &&
         rowBorderStrong == other.rowBorderStrong &&
+        titleText == other.titleText &&
         bodyText == other.bodyText &&
         metaText == other.metaText &&
         faintMeta == other.faintMeta;
@@ -1388,6 +1396,7 @@ class DsColorsAiCard {
     footerWashOpen,
     rowBorder,
     rowBorderStrong,
+    titleText,
     bodyText,
     metaText,
     faintMeta,

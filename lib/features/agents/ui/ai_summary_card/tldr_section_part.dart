@@ -50,7 +50,7 @@ class _TldrHeader extends StatelessWidget {
                 Text(
                   messages.aiCardTitle,
                   style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: Colors.white,
+                    color: ai.titleText,
                     fontWeight: FontWeight.w600,
                     height: 1.1,
                   ),
@@ -94,7 +94,12 @@ class _TldrHeader extends StatelessWidget {
                 ),
               ),
             ),
-          if (!isRunning && !showCountdown)
+          // The countdown cluster needs both `showCountdown` and a
+          // non-null `nextWakeAt`; if the parent ever passes
+          // `showCountdown: true` without a timestamp, fall back to
+          // the plain refresh affordance so the header never ends up
+          // with no run / wake control at all.
+          if (!isRunning && (!showCountdown || nextWakeAt == null))
             _IconAffordance(
               icon: Icons.refresh_rounded,
               tooltip: messages.taskAgentRunNowTooltip,

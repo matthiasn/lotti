@@ -55,7 +55,7 @@ class _ProposalsSection extends StatelessWidget {
               Text(
                 messages.changeSetCardTitle,
                 style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: Colors.white,
+                  color: ai.titleText,
                   fontWeight: FontWeight.w600,
                   height: 1.1,
                 ),
@@ -400,7 +400,16 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (widget.isResolved || _busy) return;
-    setState(() => _dx += details.delta.dx);
+    // Clamp to ±2× the swipe trigger so very fast or very long drags
+    // can't translate the row off-screen — the gradient backdrop and
+    // intent label both look sensible up to this range, past it the
+    // row would just disappear without communicating anything new.
+    setState(
+      () => _dx = (_dx + details.delta.dx).clamp(
+        -_swipeTrigger * 2,
+        _swipeTrigger * 2,
+      ),
+    );
   }
 
   Future<void> _onHorizontalDragEnd(DragEndDetails details) async {
@@ -639,12 +648,29 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
     );
   }
 
+  // Cache the cleaned proposal text so the kind-prefix regex isn't
+  // recompiled on every frame — `build` runs continuously while the
+  // row is being dragged or wiggled, and a `RegExp` allocation per
+  // frame shows up under DevTools. Cleared whenever the underlying
+  // tool / summary or the kind-label-driving locale changes.
+  // Stays nullable so the cache hit branch is naturally guarded by
+  // the input-key compare; promoting to `late` would make the cold
+  // path indistinguishable from a hit on first build.
+  // ignore: use_late_for_private_fields_and_variables
+  String? _cachedCleanText;
+  String? _cachedCleanInputKey;
+
   String _cleanText(String summary, String kindLabel) {
+    final key = '$kindLabel\u0000$summary';
+    if (_cachedCleanInputKey == key) return _cachedCleanText!;
     final pattern = RegExp(
       '^\\s*${RegExp.escape(kindLabel)}\\b[\\s:]*',
       caseSensitive: false,
     );
-    return summary.replaceFirst(pattern, '').trim();
+    final result = summary.replaceFirst(pattern, '').trim();
+    _cachedCleanInputKey = key;
+    _cachedCleanText = result;
+    return result;
   }
 }
 
