@@ -77,7 +77,13 @@ class _ProposalsSection extends StatelessWidget {
             for (var i = 0; i < open.length; i++)
               Padding(
                 padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
-                child: _ProposalRow(suggestion: open[i]),
+                child: _ProposalRow(
+                  suggestion: open[i],
+                  // Only the first pending row gets the swipe-affordance
+                  // wiggle hint so the page doesn't pulse with every
+                  // visible row.
+                  isFirst: i == 0,
+                ),
               ),
           if (resolved.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -253,15 +259,28 @@ class _HistoryToggle extends StatelessWidget {
 /// past `±_swipeTrigger` to confirm or reject. The `[✕]` / `[✓]`
 /// icon buttons fire the same callbacks immediately. Resolved rows
 /// render as a dimmed body with a Confirmed / Dismissed tag.
+///
+/// Pass `isFirst: true` to the topmost pending row to opt into a
+/// one-shot wiggle hint that runs on narrow viewports (where the
+/// confirm/reject buttons are hidden) so users learn the row is
+/// swipeable. The hint respects `MediaQuery.disableAnimationsOf` and
+/// is suppressed once the user starts interacting.
 class _ProposalRow extends ConsumerStatefulWidget {
-  const _ProposalRow({required PendingSuggestion this.suggestion})
-    : entry = null;
+  const _ProposalRow({
+    required PendingSuggestion this.suggestion,
+    this.isFirst = false,
+  }) : entry = null;
 
   const _ProposalRow.fromLedger({required LedgerEntry this.entry})
-    : suggestion = null;
+    : suggestion = null,
+      isFirst = false;
 
   final PendingSuggestion? suggestion;
   final LedgerEntry? entry;
+
+  /// Whether this row is the topmost pending row. Drives the
+  /// swipe-affordance wiggle hint on narrow viewports.
+  final bool isFirst;
 
   bool get isResolved => entry != null;
 
@@ -269,12 +288,90 @@ class _ProposalRow extends ConsumerStatefulWidget {
   ConsumerState<_ProposalRow> createState() => _ProposalRowState();
 }
 
-class _ProposalRowState extends ConsumerState<_ProposalRow> {
+class _ProposalRowState extends ConsumerState<_ProposalRow>
+    with SingleTickerProviderStateMixin {
   static const double _swipeTrigger = 70;
+
+  /// Peek distance for the swipe-affordance wiggle hint. The row
+  /// peeks once to the right, settles back to zero, briefly holds at
+  /// rest, then peeks once to the left and settles. Two distinct
+  /// "look, I move this way" demos rather than one continuous
+  /// sweep — the rest plateau is what separates them.
+  static const double _wiggleAmplitude = 14;
 
   double _dx = 0;
   bool _animating = false;
   bool _busy = false;
+
+  AnimationController? _wiggleController;
+  Animation<double>? _wiggleOffset;
+  Timer? _wiggleStartTimer;
+  bool _wiggleScheduled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Kick the wiggle hint off the first time we get a real
+    // `BuildContext` (so we can read media queries), then never again.
+    // The hint runs on every viewport — on desktop it teaches the
+    // user the row is swipeable in addition to the buttons; on
+    // mobile it's the only swipe affordance besides the gradient
+    // backdrop. The only opt-out is system reduce-motion.
+    if (_wiggleScheduled || widget.isResolved || !widget.isFirst) return;
+    if (MediaQuery.of(context).disableAnimations) {
+      _wiggleScheduled = true;
+      return;
+    }
+    _wiggleScheduled = true;
+    _wiggleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+    // Right peek (350ms out + 350ms back, easeInOutSine), brief
+    // hold at rest (200ms), then left peek (same shape mirrored).
+    // The plateau at zero is the whole point of this variant —
+    // it makes the right and left peeks read as two separate
+    // demonstrations instead of one continuous sweep, so the
+    // gradient backdrop has time to settle between them.
+    Animatable<double> sineLeg(double from, double to) => Tween<double>(
+      begin: from,
+      end: to,
+    ).chain(CurveTween(curve: Curves.easeInOutSine));
+    _wiggleOffset =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: sineLeg(0, _wiggleAmplitude), weight: 7),
+          TweenSequenceItem(tween: sineLeg(_wiggleAmplitude, 0), weight: 7),
+          TweenSequenceItem(
+            tween: ConstantTween<double>(0),
+            weight: 4,
+          ),
+          TweenSequenceItem(tween: sineLeg(0, -_wiggleAmplitude), weight: 7),
+          TweenSequenceItem(tween: sineLeg(-_wiggleAmplitude, 0), weight: 7),
+        ]).animate(_wiggleController!)..addListener(() {
+          if (mounted) setState(() {});
+        });
+    // Small delay so the row is settled and visible before it
+    // wiggles — avoids fighting the page's own appear animation.
+    _wiggleStartTimer = Timer(const Duration(milliseconds: 350), () {
+      _wiggleStartTimer = null;
+      if (!mounted || _wiggleController == null) return;
+      _wiggleController!.forward(from: 0);
+    });
+  }
+
+  void _stopWiggle() {
+    _wiggleStartTimer?.cancel();
+    _wiggleStartTimer = null;
+    _wiggleController?.stop();
+    _wiggleController?.value = 0;
+  }
+
+  @override
+  void dispose() {
+    _wiggleStartTimer?.cancel();
+    _wiggleController?.dispose();
+    super.dispose();
+  }
 
   String get _toolName =>
       widget.suggestion?.item.toolName ?? widget.entry!.toolName;
@@ -295,6 +392,9 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
 
   void _onHorizontalDragStart(DragStartDetails details) {
     if (widget.isResolved || _busy) return;
+    // The user is interacting — drop the hint immediately so it
+    // doesn't fight the real drag offset.
+    _stopWiggle();
     setState(() => _animating = false);
   }
 
@@ -409,7 +509,9 @@ class _ProposalRowState extends ConsumerState<_ProposalRow> {
     final kindMeta = _kindMeta(context, kind);
     final cleanText = _cleanText(_humanSummary, kindMeta.label);
 
-    final dx = _dx;
+    // Combine the user's drag offset with any hint-wiggle so the
+    // gradient backdrop and the row translation stay in sync.
+    final dx = _dx + (_wiggleOffset?.value ?? 0);
     final intentLabel = dx > 30
         ? context.messages.changeSetSwipeConfirm
         : dx < -30
