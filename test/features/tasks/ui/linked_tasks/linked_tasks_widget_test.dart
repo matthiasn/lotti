@@ -390,7 +390,7 @@ void main() {
       await tester.tap(find.text('Linked Tasks'));
       await tester.pumpAndSettle();
       expect(find.text('Task A linked'), findsNothing);
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
       // Swap to task-b without recreating the widget tree above.
       await tester.pumpWidget(
@@ -430,7 +430,7 @@ void main() {
 
       // didUpdateWidget should have reset _expanded back to true for task-b.
       expect(find.text('Task B linked'), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
 
     testWidgets('starts expanded and toggles on header tap', (tester) async {
@@ -441,19 +441,19 @@ void main() {
       );
 
       expect(find.text('Outgoing Task'), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
 
       await tester.tap(find.text('Linked Tasks'));
       await tester.pumpAndSettle();
 
       expect(find.text('Outgoing Task'), findsNothing);
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
       await tester.tap(find.text('Linked Tasks'));
       await tester.pumpAndSettle();
 
       expect(find.text('Outgoing Task'), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
     });
   });
 

@@ -53,7 +53,7 @@ class ThinkingDisclosureState extends State<ThinkingDisclosure> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AnimatedRotation(
-                      turns: _expanded ? 0.5 : 0.0,
+                      turns: _expanded ? 0 : -0.25,
                       duration: const Duration(milliseconds: 170),
                       curve: Curves.easeOut,
                       child: Icon(

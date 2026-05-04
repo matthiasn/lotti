@@ -50,7 +50,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the expand icon to trigger expand
-        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.tap(find.byIcon(Icons.chevron_right));
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(
@@ -348,7 +348,7 @@ void main() {
     });
 
     group('expand/collapse', () {
-      testWidgets('starts collapsed showing expand_more icon', (tester) async {
+      testWidgets('starts collapsed showing chevron_right icon', (tester) async {
         final item = makeTestClassifiedFeedbackItem(
           detail: 'Feedback detail text',
           sentiment: FeedbackSentiment.negative,
@@ -360,11 +360,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
-        expect(find.byIcon(Icons.expand_less), findsNothing);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+        expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
       });
 
-      testWidgets('tapping the expand icon toggles to expand_less icon', (
+      testWidgets('tapping the expand icon toggles to keyboard_arrow_down icon', (
         tester,
       ) async {
         final item = makeTestClassifiedFeedbackItem(
@@ -378,12 +378,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Tile starts collapsed — tap the expand_more icon to expand
-        await tester.tap(find.byIcon(Icons.expand_more));
+        // Tile starts collapsed — tap the chevron_right icon to expand
+        await tester.tap(find.byIcon(Icons.chevron_right));
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.expand_less), findsOneWidget);
-        expect(find.byIcon(Icons.expand_more), findsNothing);
+        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right), findsNothing);
       });
 
       testWidgets('tapping expand icon twice returns to collapsed state', (
@@ -399,15 +399,15 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // First tap: expand via expand_more icon
-        await tester.tap(find.byIcon(Icons.expand_more));
+        // First tap: expand via chevron_right icon
+        await tester.tap(find.byIcon(Icons.chevron_right));
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.byIcon(Icons.expand_less), findsOneWidget);
+        expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
 
-        // Second tap: collapse via expand_less icon
-        await tester.tap(find.byIcon(Icons.expand_less));
+        // Second tap: collapse via keyboard_arrow_down icon
+        await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
         await tester.pump(const Duration(milliseconds: 300));
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       });
     });
   });

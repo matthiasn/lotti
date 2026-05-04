@@ -1258,7 +1258,7 @@ void main() {
       expect(find.text('Test Task 1'), findsWidgets);
 
       // User manually collapses by tapping expand/collapse icon
-      final expandIcon = find.byIcon(Icons.keyboard_arrow_up);
+      final expandIcon = find.byIcon(Icons.keyboard_arrow_down);
       expect(expandIcon, findsOneWidget);
       await tester.tap(expandIcon);
       await tester.pump();

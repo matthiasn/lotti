@@ -215,8 +215,8 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
                         padding: const EdgeInsets.all(4),
                         child: Icon(
                           _isExpanded
-                              ? Icons.keyboard_arrow_up
-                              : Icons.keyboard_arrow_down,
+                              ? Icons.keyboard_arrow_down
+                              : Icons.chevron_right,
                           size: 20,
                           color: context.colorScheme.onSurfaceVariant,
                         ),

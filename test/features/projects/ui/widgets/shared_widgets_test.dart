@@ -438,7 +438,7 @@ Longer report content.
         expect(find.text('Recommendations'), findsNothing);
         expect(find.text('Ship the fix'), findsNothing);
 
-        await tester.tap(find.byIcon(Icons.expand_more_rounded));
+        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Longer report content'), findsOneWidget);
@@ -461,7 +461,7 @@ Longer report content.
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.expand_more_rounded), findsNothing);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
         expect(find.text('Recommendations'), findsNothing);
         expect(find.text('Ship the fix'), findsNothing);
       },
@@ -492,7 +492,7 @@ Longer report content.
 
         expect(find.textContaining('Short summary'), findsOneWidget);
         expect(find.textContaining('Longer report content'), findsNothing);
-        expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       },
     );
 
@@ -519,9 +519,9 @@ Longer report content.
           find.textContaining('Full report body with more context'),
           findsNothing,
         );
-        expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.expand_more_rounded));
+        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
         await tester.pumpAndSettle();
 
         expect(
@@ -1141,7 +1141,7 @@ Detailed analysis section.
 
       expect(find.textContaining('Only body text here'), findsOneWidget);
       // No expand icon since there's no additional content
-      expect(find.byIcon(Icons.expand_more_rounded), findsNothing);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
     });
   });
 
@@ -1435,14 +1435,14 @@ Full details here.
 
       // Initially expanded - full details visible
       expect(find.textContaining('Full details here'), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
 
       // Collapse
-      await tester.tap(find.byIcon(Icons.expand_less_rounded));
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Full details here'), findsNothing);
-      expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
     });
   });
 
@@ -1474,7 +1474,7 @@ Full details here.
         );
 
         // Has expand icon because fullContent differs from body
-        expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       },
     );
   });
@@ -1499,9 +1499,9 @@ Full details here.
       await tester.pump();
 
       // Should have expand affordance
-      expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.expand_more_rounded));
+      await tester.tap(find.byIcon(Icons.chevron_right_rounded));
       await tester.pumpAndSettle();
 
       // H1 should NOT appear in the expanded content
@@ -1536,9 +1536,9 @@ Full details here.
 
         // The expand affordance should be present because after stripping
         // the H1, 'Some real content here.' remains.
-        expect(find.byIcon(Icons.expand_more_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.expand_more_rounded));
+        await tester.tap(find.byIcon(Icons.chevron_right_rounded));
         await tester.pumpAndSettle();
 
         // The H1 should be stripped from expanded view

@@ -45,7 +45,7 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.expand_more), findsOneWidget);
       expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });
 
@@ -281,13 +281,13 @@ void main() {
 
       expect(find.text('Fix payment status update bug'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.expand_less));
+      await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pump();
 
       expect(find.text('Fix payment status update bug'), findsNothing);
       expect(find.text('0/2 done'), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.expand_less));
+      await tester.tap(find.byIcon(Icons.expand_more));
       await tester.pump();
 
       expect(find.text('Fix payment status update bug'), findsOneWidget);

@@ -425,7 +425,7 @@ void main() {
       await tester.pump();
 
       // Tool call should be expanded (collapse icon visible).
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
       expect(find.text('{"title": "New"}'), findsOneWidget);
     });
   });

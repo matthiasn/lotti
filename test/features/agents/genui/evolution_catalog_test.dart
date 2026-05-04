@@ -358,7 +358,7 @@ void main() {
       expect(find.byIcon(Icons.note), findsOneWidget);
     });
 
-    testWidgets('starts collapsed and shows expand_more icon', (tester) async {
+    testWidgets('starts collapsed and shows chevron_right icon', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionNoteConfirmationItem, {
@@ -370,8 +370,8 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
-      expect(find.byIcon(Icons.expand_less), findsNothing);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
 
       // The collapsed text should have maxLines: 2
       final collapsedText = tester
@@ -382,7 +382,7 @@ void main() {
       expect(collapsedText, isNotEmpty);
     });
 
-    testWidgets('expands on tap and shows expand_less icon', (tester) async {
+    testWidgets('expands on tap and shows keyboard_arrow_down icon', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionNoteConfirmationItem, {
@@ -398,8 +398,8 @@ void main() {
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
-      expect(find.byIcon(Icons.expand_more), findsNothing);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
     });
 
     testWidgets('collapses again on second tap', (tester) async {
@@ -415,12 +415,12 @@ void main() {
       // Tap to expand
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
 
       // Tap again to collapse
       await tester.tap(find.byType(GestureDetector).first);
       await tester.pumpAndSettle();
-      expect(find.byIcon(Icons.expand_more), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
   });
 
