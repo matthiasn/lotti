@@ -50,30 +50,30 @@ class _ProposalsSection extends StatelessWidget {
         children: [
           // Wrap so the confirm-all button drops to its own row on
           // narrow cards instead of pushing the title + pending-count
-          // pill off-screen.
+          // pill off-screen. The title block is itself a Wrap (not a
+          // Row + Flexible) because the outer Wrap hands its children
+          // unbounded width — Flexible/Expanded inside an unbounded
+          // Row throws at layout time.
           Wrap(
             spacing: 8,
             runSpacing: 6,
             crossAxisAlignment: WrapCrossAlignment.center,
             alignment: WrapAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Icon(Icons.fact_check_outlined, size: 16, color: ai.accent),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      messages.changeSetCardTitle,
-                      softWrap: true,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: ai.titleText,
-                        fontWeight: FontWeight.w600,
-                        height: 1.1,
-                      ),
+                  Text(
+                    messages.changeSetCardTitle,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: ai.titleText,
+                      fontWeight: FontWeight.w600,
+                      height: 1.1,
                     ),
                   ),
-                  const SizedBox(width: 8),
                   _PendingPill(count: open.length),
                 ],
               ),
