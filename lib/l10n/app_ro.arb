@@ -538,6 +538,84 @@
   "aiAssistantTitle": "Asistent AI",
   "aiAssistantTranscribeAudio": "Transcrie audio",
   "aiBatchToggleTooltip": "Comutare la înregistrare standard",
+  "aiCardActivityRecentLabel": "Activitate recentă",
+  "aiCardActivityRelativeDays": "acum {days} z",
+  "@aiCardActivityRelativeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeHours": "acum {hours} h",
+  "@aiCardActivityRelativeHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeMinutes": "acum {minutes} min",
+  "@aiCardActivityRelativeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeNow": "acum",
+  "aiCardActivityRelativeWeeks": "acum {weeks} săpt",
+  "@aiCardActivityRelativeWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivitySectionLabel": "ACTIVITATE RECENTĂ",
+  "aiCardAgentNameTooltip": "Deschideți componentele interne ale agentului",
+  "aiCardEmptyProposals": "Nicio propunere deschisă · agentul va afișa aici noile modificări",
+  "aiCardHideActivity": "Ascundeți activitatea",
+  "aiCardHistoryToggle": "Istoric · {count}",
+  "@aiCardHistoryToggle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardOpenAgentInternals": "Deschideți componentele interne ale agentului",
+  "aiCardProposalAgoSeparator": "·",
+  "aiCardProposalConfirmed": "Confirmată",
+  "aiCardProposalDismissed": "Respinsă",
+  "aiCardProposalKindAdd": "Adăugați",
+  "aiCardProposalKindDue": "Scadență",
+  "aiCardProposalKindEstimate": "Estimare",
+  "aiCardProposalKindLabel": "Etichetă",
+  "aiCardProposalKindPriority": "Prioritate",
+  "aiCardProposalKindRemove": "Eliminați",
+  "aiCardProposalKindStatus": "Stare",
+  "aiCardProposalKindUpdate": "Actualizați",
+  "aiCardReadMore": "Citiți mai mult",
+  "aiCardRecentActions": "{count, plural, =1{{count} acțiune recentă} few{{count} acțiuni recente} other{{count} de acțiuni recente}}",
+  "@aiCardRecentActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardSeeActivity": "Vedeți activitatea",
+  "aiCardShowLess": "Afișați mai puțin",
+  "aiCardSummaryAgo": "{relative}",
+  "@aiCardSummaryAgo": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "aiCardTitle": "Rezumat AI",
   "aiChatMessageCopied": "Copiat în clipboard",
   "aiConfigApiKeyEmptyError": "Cheia API nu poate fi goală",
   "aiConfigApiKeyFieldLabel": "Cheie API",
@@ -662,6 +740,7 @@
   "aiInferenceErrorUnknownMessage": "A apărut o eroare neașteptată. Vă rugăm să încercați din nou.",
   "aiInferenceErrorUnknownTitle": "Eroare",
   "aiInferenceErrorViewLogButton": "Vezi jurnalul",
+  "aiInternalsTitle": "Componente interne ale agentului",
   "aiModelSettings": "Setări model AI",
   "aiOllamaModelInstalledSuccessfully": "Modelul „{modelName}” a fost instalat cu succes!",
   "@aiOllamaModelInstalledSuccessfully": {

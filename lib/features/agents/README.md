@@ -532,7 +532,7 @@ ledger replaces the earlier split between "pending proposals" and "recent
 user decisions" with one unified section the agent reasons about.
 
 Each ledger entry carries a stable fingerprint (`toolName + args`). Open
-entries are rendered in the `AgentSuggestionsPanel` UI for the user to
+entries are rendered in the `AiSummaryCard` UI for the user to
 confirm or reject; resolved entries (user verdicts and agent retractions)
 are kept in the LLM prompt within a bounded window so the agent learns
 from its own history.
@@ -881,6 +881,80 @@ Why that is still on the roadmap:
 This is not implemented today. The current runtime still resolves behavior from
 the existing template and version directive fields, and message history is not
 yet compacted into summary messages.
+
+## User-Facing UI Surfaces
+
+The runtime described above is consumed by three concrete UI widgets.
+None of them owns business logic — they all read from the providers in
+`state/agent_providers.dart` and dispatch through the same services.
+
+### `AiSummaryCard` — the task-details AI surface
+
+`lib/features/agents/ui/ai_summary_card.dart` is the single AI surface
+on the task detail page. It replaced the earlier
+`AgentSuggestionsPanel` + `TaskAgentReportSection` split (deleted) with
+one deep-teal-tinted-navy card that exposes everything the task-level
+agent runtime produces:
+
+- TLDR header (`AgentReportEntity.tldr`, falling back to the report's
+  first paragraph) plus an inline expandable Goal / Achieved / Next /
+  Learnings block (`AgentReportEntity.content`) under a
+  `Read more / Show less` pill
+- a `Proposed changes` section that sources its rows from
+  `unifiedSuggestionListProvider`. Each row is a
+  `PendingSuggestion`; rows can be confirmed or rejected via tap or
+  swipe (`> 70px` → confirm, `< -70px` → reject; in-between snaps
+  back). All confirms route through `ChangeSetConfirmationService`.
+  A `Confirm all` button batches `confirmAll` over distinct change
+  sets.
+- a `History · N` toggle that lazily expands resolved ledger entries,
+  rendered with `Confirmed` / `Dismissed` tags and a strikethrough.
+- a footer that surfaces the recent-actions count (full ledger total)
+  and a `See activity / Hide activity` pill that expands a
+  `RECENT ACTIVITY` list capped at 6 entries.
+- the wake-cycle affordances directly in the header: a running spinner
+  while a wake is in flight, otherwise a refresh icon button (calls
+  `TaskAgentService.triggerReanalysis`) when no wake is scheduled, or
+  a play button + countdown pill (`m:ss`) + cancel button (calls
+  `cancelScheduledWake`) while one is.
+
+The card is the only entry point in `task_form.dart`; the legacy
+`AgentSuggestionsPanel` is gone.
+
+### `AgentInternalsPanel` — right-side overlay
+
+`lib/features/agents/ui/agent_internals_panel.dart` is a dismissable
+right-side overlay (clamped between 600 and 800 px) reachable from
+three affordances inside the AI card: tapping the agent name link
+under the title, the avatar in the activity footer, and the `Open
+agent internals` pill that appears under the expanded report. The
+panel itself is a thin shell — header + close button + scrim — that
+hosts `AgentInternalsBody` once the `agentIdentityProvider` resolves.
+A `barrierDismissible: true` route plus an explicit full-screen
+`GestureDetector` cover both pop paths.
+
+### `AgentInternalsBody` — the canonical five tabs
+
+`lib/features/agents/ui/agent_internals_body.dart` is the shared
+tabbed body — Stats / Reports / Conversations / Observations /
+Activity — used both inside the side panel and as the body of the
+standalone `AgentDetailPage`. Each tab is owned by an existing
+component (`AgentTokenUsageSection`, `AgentReportHistoryLog`,
+`AgentConversationLog`, `AgentObservationLog`, `AgentActivityLog`)
+plus a Stats card that wraps the agent's template, profile, controls,
+and current `AgentStateEntity`. There is no logic specific to the
+panel here; both consumers see the same tabs and behavior.
+
+```mermaid
+flowchart LR
+  Form["TaskForm"] --> Card["AiSummaryCard"]
+  Card -->|TLDR / report| Report["AgentReportEntity"]
+  Card -->|proposals + history| Ledger["unifiedSuggestionListProvider → ProposalLedger"]
+  Card -->|wake controls| Service["TaskAgentService"]
+  Card -->|open internals| Panel["AgentInternalsPanel"]
+  Panel --> Body["AgentInternalsBody (Stats / Reports / Conversations / Observations / Activity)"]
+  DetailPage["AgentDetailPage"] --> Body
+```
 
 ## Code Reading Guide
 

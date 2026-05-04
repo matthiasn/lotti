@@ -6,8 +6,7 @@ import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/ui/agent_suggestions_panel.dart';
-import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -147,10 +146,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DesktopTaskHeaderConnector), findsOneWidget);
-      // AgentSuggestionsPanel composes TaskAgentReportSection internally,
-      // so both should be found in the tree after the consolidation.
-      expect(find.byType(AgentSuggestionsPanel), findsOneWidget);
-      expect(find.byType(TaskAgentReportSection), findsOneWidget);
+      // The new unified AI surface replaces the prior AgentSuggestionsPanel
+      // + TaskAgentReportSection split, so the form embeds a single card.
+      expect(find.byType(AiSummaryCard), findsOneWidget);
       expect(find.byType(LinkedTasksWidget), findsOneWidget);
       expect(find.byType(ChecklistsWidget), findsOneWidget);
     });
@@ -184,8 +182,9 @@ void main() {
       await tester.pumpWidget(buildSubject(task: testTask));
       await tester.pumpAndSettle();
 
-      // TaskAgentReportSection is in the tree but renders nothing
-      expect(find.byType(TaskAgentReportSection), findsOneWidget);
+      // AiSummaryCard is in the tree; with no agent attached it surfaces
+      // the "Assign Agent" CTA and no TLDR copy.
+      expect(find.byType(AiSummaryCard), findsOneWidget);
       expect(find.textContaining('TLDR'), findsNothing);
     });
   });

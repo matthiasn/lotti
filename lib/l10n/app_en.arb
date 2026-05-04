@@ -779,6 +779,84 @@
   "aiAssistantTitle": "AI Assistant",
   "aiAssistantTranscribeAudio": "Transcribe audio",
   "aiBatchToggleTooltip": "Switch to standard recording",
+  "aiCardActivityRecentLabel": "Recent activity",
+  "aiCardActivityRelativeDays": "{days}d ago",
+  "@aiCardActivityRelativeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeHours": "{hours}h ago",
+  "@aiCardActivityRelativeHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeMinutes": "{minutes}m ago",
+  "@aiCardActivityRelativeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeNow": "now",
+  "aiCardActivityRelativeWeeks": "{weeks}w ago",
+  "@aiCardActivityRelativeWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivitySectionLabel": "RECENT ACTIVITY",
+  "aiCardAgentNameTooltip": "Open agent internals",
+  "aiCardEmptyProposals": "No open proposals · agent will surface new changes here",
+  "aiCardHideActivity": "Hide activity",
+  "aiCardHistoryToggle": "History · {count}",
+  "@aiCardHistoryToggle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardOpenAgentInternals": "Open agent internals",
+  "aiCardProposalAgoSeparator": "·",
+  "aiCardProposalConfirmed": "Confirmed",
+  "aiCardProposalDismissed": "Dismissed",
+  "aiCardProposalKindAdd": "Add",
+  "aiCardProposalKindDue": "Due",
+  "aiCardProposalKindEstimate": "Estimate",
+  "aiCardProposalKindLabel": "Label",
+  "aiCardProposalKindPriority": "Priority",
+  "aiCardProposalKindRemove": "Remove",
+  "aiCardProposalKindStatus": "Status",
+  "aiCardProposalKindUpdate": "Update",
+  "aiCardReadMore": "Read more",
+  "aiCardRecentActions": "{count, plural, =1{{count} recent action} other{{count} recent actions}}",
+  "@aiCardRecentActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardSeeActivity": "See activity",
+  "aiCardShowLess": "Show less",
+  "aiCardSummaryAgo": "{relative}",
+  "@aiCardSummaryAgo": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "aiCardTitle": "AI summary",
   "aiChatMessageCopied": "Copied to clipboard",
   "aiConfigApiKeyEmptyError": "API key cannot be empty",
   "aiConfigApiKeyFieldLabel": "API Key",
@@ -903,6 +981,7 @@
   "aiInferenceErrorUnknownMessage": "An unexpected error occurred. Please try again.",
   "aiInferenceErrorUnknownTitle": "Error",
   "aiInferenceErrorViewLogButton": "View Log",
+  "aiInternalsTitle": "Agent internals",
   "aiModelSettings": "AI Model Settings",
   "aiOllamaModelInstalledSuccessfully": "Model \"{modelName}\" installed successfully!",
   "@aiOllamaModelInstalledSuccessfully": {

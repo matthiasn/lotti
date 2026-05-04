@@ -538,6 +538,84 @@
   "aiAssistantTitle": "Assistant IA",
   "aiAssistantTranscribeAudio": "Transcrire l'audio",
   "aiBatchToggleTooltip": "Passer à l'enregistrement standard",
+  "aiCardActivityRecentLabel": "Activité récente",
+  "aiCardActivityRelativeDays": "il y a {days} j",
+  "@aiCardActivityRelativeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeHours": "il y a {hours} h",
+  "@aiCardActivityRelativeHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeMinutes": "il y a {minutes} min",
+  "@aiCardActivityRelativeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeNow": "maintenant",
+  "aiCardActivityRelativeWeeks": "il y a {weeks} sem",
+  "@aiCardActivityRelativeWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivitySectionLabel": "ACTIVITÉ RÉCENTE",
+  "aiCardAgentNameTooltip": "Ouvrir les détails internes de l'agent",
+  "aiCardEmptyProposals": "Aucune proposition ouverte · l'agent affichera ici les nouvelles modifications",
+  "aiCardHideActivity": "Masquer l'activité",
+  "aiCardHistoryToggle": "Historique · {count}",
+  "@aiCardHistoryToggle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardOpenAgentInternals": "Ouvrir les détails internes de l'agent",
+  "aiCardProposalAgoSeparator": "·",
+  "aiCardProposalConfirmed": "Confirmée",
+  "aiCardProposalDismissed": "Rejetée",
+  "aiCardProposalKindAdd": "Ajouter",
+  "aiCardProposalKindDue": "Échéance",
+  "aiCardProposalKindEstimate": "Estimation",
+  "aiCardProposalKindLabel": "Étiquette",
+  "aiCardProposalKindPriority": "Priorité",
+  "aiCardProposalKindRemove": "Retirer",
+  "aiCardProposalKindStatus": "Statut",
+  "aiCardProposalKindUpdate": "Mettre à jour",
+  "aiCardReadMore": "Lire plus",
+  "aiCardRecentActions": "{count, plural, =1{{count} action récente} other{{count} actions récentes}}",
+  "@aiCardRecentActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardSeeActivity": "Voir l'activité",
+  "aiCardShowLess": "Afficher moins",
+  "aiCardSummaryAgo": "{relative}",
+  "@aiCardSummaryAgo": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "aiCardTitle": "Résumé IA",
   "aiChatMessageCopied": "Copié dans le presse-papiers",
   "aiConfigApiKeyEmptyError": "La clé API ne peut pas être vide",
   "aiConfigApiKeyFieldLabel": "Clé API",
@@ -662,6 +740,7 @@
   "aiInferenceErrorUnknownMessage": "Une erreur inattendue s'est produite. Réessaie s'il te plaît.",
   "aiInferenceErrorUnknownTitle": "Erreur",
   "aiInferenceErrorViewLogButton": "Voir le journal",
+  "aiInternalsTitle": "Détails internes de l'agent",
   "aiModelSettings": "Paramètres du modèle AI",
   "aiOllamaModelInstalledSuccessfully": "Modèle « {modelName} » installé avec succès !",
   "@aiOllamaModelInstalledSuccessfully": {

@@ -56,6 +56,60 @@ const DsTokens dsTokensLight = DsTokens(
       level01: Color(0x1F000000),
       level02: Color(0x3D000000),
     ),
+    aiCard: DsColorsAiCard(
+      background: Color(0xFFE1EEF7),
+      backgroundRaised: Color(0xFFFFFFFF),
+      row: Color(0xB3FFFFFF),
+      border: Color(0x382BA184),
+      borderSoft: Color(0x242BA184),
+      accent: Color(0xFF2BA184),
+      accentSoft: Color(0x242BA184),
+      footerWash: Color(0x0A000000),
+      footerWashOpen: Color(0x05000000),
+      rowBorder: Color(0x14000000),
+      rowBorderStrong: Color(0x24000000),
+      titleText: Color(0xE0000000),
+      bodyText: Color(0xCC000000),
+      metaText: Color(0xA3000000),
+      faintMeta: Color(0x61000000),
+      subtleWash: Color(0x08000000),
+      subtleWashStrong: Color(0x0A000000),
+      subtleBorder: Color(0x1A000000),
+    ),
+    proposalKind: DsColorsProposalKind(
+      add: DsColorsProposalKindAdd(
+        color: Color(0xFF7AB889),
+        surface: Color(0x2E7AB889),
+      ),
+      update: DsColorsProposalKindUpdate(
+        color: Color(0xFF7BC0E2),
+        surface: Color(0x2E7BC0E2),
+      ),
+      remove: DsColorsProposalKindRemove(
+        color: Color(0xFFFF8A8A),
+        surface: Color(0x2EFF8A8A),
+      ),
+      priority: DsColorsProposalKindPriority(
+        color: Color(0xFFFFA28A),
+        surface: Color(0x2EFFA28A),
+      ),
+      estimate: DsColorsProposalKindEstimate(
+        color: Color(0xFFFFB778),
+        surface: Color(0x2EFFB778),
+      ),
+      status: DsColorsProposalKindStatus(
+        color: Color(0xFF5ED4B7),
+        surface: Color(0x2E5ED4B7),
+      ),
+      label: DsColorsProposalKindLabel(
+        color: Color(0xFFA694E5),
+        surface: Color(0x2EA694E5),
+      ),
+      due: DsColorsProposalKindDue(
+        color: Color(0xFF7BC0E2),
+        surface: Color(0x2E7BC0E2),
+      ),
+    ),
   ),
   typography: DsTypography(
     styles: DsTypographyStyles(
@@ -361,6 +415,60 @@ const DsTokens dsTokensDark = DsTokens(
     decorative: DsColorsDecorative(
       level01: Color(0x1FFFFFFF),
       level02: Color(0x3DFFFFFF),
+    ),
+    aiCard: DsColorsAiCard(
+      background: Color(0xFF0E1A22),
+      backgroundRaised: Color(0xFF14222C),
+      row: Color(0xB80E1A22),
+      border: Color(0x245ED4B7),
+      borderSoft: Color(0x1A5ED4B7),
+      accent: Color(0xFF5ED4B7),
+      accentSoft: Color(0x295ED4B7),
+      footerWash: Color(0x29000000),
+      footerWashOpen: Color(0x1A000000),
+      rowBorder: Color(0x0FFFFFFF),
+      rowBorderStrong: Color(0x1AFFFFFF),
+      titleText: Color(0xFFFFFFFF),
+      bodyText: Color(0xD9FFFFFF),
+      metaText: Color(0x8CFFFFFF),
+      faintMeta: Color(0x73FFFFFF),
+      subtleWash: Color(0x05FFFFFF),
+      subtleWashStrong: Color(0x0DFFFFFF),
+      subtleBorder: Color(0x14FFFFFF),
+    ),
+    proposalKind: DsColorsProposalKind(
+      add: DsColorsProposalKindAdd(
+        color: Color(0xFF7AB889),
+        surface: Color(0x2E7AB889),
+      ),
+      update: DsColorsProposalKindUpdate(
+        color: Color(0xFF7BC0E2),
+        surface: Color(0x2E7BC0E2),
+      ),
+      remove: DsColorsProposalKindRemove(
+        color: Color(0xFFFF8A8A),
+        surface: Color(0x2EFF8A8A),
+      ),
+      priority: DsColorsProposalKindPriority(
+        color: Color(0xFFFFA28A),
+        surface: Color(0x2EFFA28A),
+      ),
+      estimate: DsColorsProposalKindEstimate(
+        color: Color(0xFFFFB778),
+        surface: Color(0x2EFFB778),
+      ),
+      status: DsColorsProposalKindStatus(
+        color: Color(0xFF5ED4B7),
+        surface: Color(0x2E5ED4B7),
+      ),
+      label: DsColorsProposalKindLabel(
+        color: Color(0xFFA694E5),
+        surface: Color(0x2EA694E5),
+      ),
+      due: DsColorsProposalKindDue(
+        color: Color(0xFF7BC0E2),
+        surface: Color(0x2E7BC0E2),
+      ),
     ),
   ),
   typography: DsTypography(
@@ -1159,6 +1267,638 @@ class DsColorsDecorative {
 }
 
 @immutable
+class DsColorsAiCard {
+  final Color background;
+  final Color backgroundRaised;
+  final Color row;
+  final Color border;
+  final Color borderSoft;
+  final Color accent;
+  final Color accentSoft;
+  final Color footerWash;
+  final Color footerWashOpen;
+  final Color rowBorder;
+  final Color rowBorderStrong;
+  final Color titleText;
+  final Color bodyText;
+  final Color metaText;
+  final Color faintMeta;
+  final Color subtleWash;
+  final Color subtleWashStrong;
+  final Color subtleBorder;
+
+  const DsColorsAiCard({
+    required this.background,
+    required this.backgroundRaised,
+    required this.row,
+    required this.border,
+    required this.borderSoft,
+    required this.accent,
+    required this.accentSoft,
+    required this.footerWash,
+    required this.footerWashOpen,
+    required this.rowBorder,
+    required this.rowBorderStrong,
+    required this.titleText,
+    required this.bodyText,
+    required this.metaText,
+    required this.faintMeta,
+    required this.subtleWash,
+    required this.subtleWashStrong,
+    required this.subtleBorder,
+  });
+
+  DsColorsAiCard copyWith({
+    Color? background,
+    Color? backgroundRaised,
+    Color? row,
+    Color? border,
+    Color? borderSoft,
+    Color? accent,
+    Color? accentSoft,
+    Color? footerWash,
+    Color? footerWashOpen,
+    Color? rowBorder,
+    Color? rowBorderStrong,
+    Color? titleText,
+    Color? bodyText,
+    Color? metaText,
+    Color? faintMeta,
+    Color? subtleWash,
+    Color? subtleWashStrong,
+    Color? subtleBorder,
+  }) {
+    return DsColorsAiCard(
+      background: background ?? this.background,
+      backgroundRaised: backgroundRaised ?? this.backgroundRaised,
+      row: row ?? this.row,
+      border: border ?? this.border,
+      borderSoft: borderSoft ?? this.borderSoft,
+      accent: accent ?? this.accent,
+      accentSoft: accentSoft ?? this.accentSoft,
+      footerWash: footerWash ?? this.footerWash,
+      footerWashOpen: footerWashOpen ?? this.footerWashOpen,
+      rowBorder: rowBorder ?? this.rowBorder,
+      rowBorderStrong: rowBorderStrong ?? this.rowBorderStrong,
+      titleText: titleText ?? this.titleText,
+      bodyText: bodyText ?? this.bodyText,
+      metaText: metaText ?? this.metaText,
+      faintMeta: faintMeta ?? this.faintMeta,
+      subtleWash: subtleWash ?? this.subtleWash,
+      subtleWashStrong: subtleWashStrong ?? this.subtleWashStrong,
+      subtleBorder: subtleBorder ?? this.subtleBorder,
+    );
+  }
+
+  DsColorsAiCard lerp(covariant DsColorsAiCard? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsAiCard(
+      background: Color.lerp(background, other.background, t) ?? background,
+      backgroundRaised:
+          Color.lerp(backgroundRaised, other.backgroundRaised, t) ??
+          backgroundRaised,
+      row: Color.lerp(row, other.row, t) ?? row,
+      border: Color.lerp(border, other.border, t) ?? border,
+      borderSoft: Color.lerp(borderSoft, other.borderSoft, t) ?? borderSoft,
+      accent: Color.lerp(accent, other.accent, t) ?? accent,
+      accentSoft: Color.lerp(accentSoft, other.accentSoft, t) ?? accentSoft,
+      footerWash: Color.lerp(footerWash, other.footerWash, t) ?? footerWash,
+      footerWashOpen:
+          Color.lerp(footerWashOpen, other.footerWashOpen, t) ?? footerWashOpen,
+      rowBorder: Color.lerp(rowBorder, other.rowBorder, t) ?? rowBorder,
+      rowBorderStrong:
+          Color.lerp(rowBorderStrong, other.rowBorderStrong, t) ??
+          rowBorderStrong,
+      titleText: Color.lerp(titleText, other.titleText, t) ?? titleText,
+      bodyText: Color.lerp(bodyText, other.bodyText, t) ?? bodyText,
+      metaText: Color.lerp(metaText, other.metaText, t) ?? metaText,
+      faintMeta: Color.lerp(faintMeta, other.faintMeta, t) ?? faintMeta,
+      subtleWash: Color.lerp(subtleWash, other.subtleWash, t) ?? subtleWash,
+      subtleWashStrong:
+          Color.lerp(subtleWashStrong, other.subtleWashStrong, t) ??
+          subtleWashStrong,
+      subtleBorder:
+          Color.lerp(subtleBorder, other.subtleBorder, t) ?? subtleBorder,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsAiCard &&
+        background == other.background &&
+        backgroundRaised == other.backgroundRaised &&
+        row == other.row &&
+        border == other.border &&
+        borderSoft == other.borderSoft &&
+        accent == other.accent &&
+        accentSoft == other.accentSoft &&
+        footerWash == other.footerWash &&
+        footerWashOpen == other.footerWashOpen &&
+        rowBorder == other.rowBorder &&
+        rowBorderStrong == other.rowBorderStrong &&
+        titleText == other.titleText &&
+        bodyText == other.bodyText &&
+        metaText == other.metaText &&
+        faintMeta == other.faintMeta &&
+        subtleWash == other.subtleWash &&
+        subtleWashStrong == other.subtleWashStrong &&
+        subtleBorder == other.subtleBorder;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    background,
+    backgroundRaised,
+    row,
+    border,
+    borderSoft,
+    accent,
+    accentSoft,
+    footerWash,
+    footerWashOpen,
+    rowBorder,
+    rowBorderStrong,
+    titleText,
+    bodyText,
+    metaText,
+    faintMeta,
+    subtleWash,
+    subtleWashStrong,
+    subtleBorder,
+  ]);
+}
+
+@immutable
+class DsColorsProposalKindAdd {
+  final Color color;
+  final Color surface;
+
+  const DsColorsProposalKindAdd({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsProposalKindAdd copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsProposalKindAdd(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsProposalKindAdd lerp(
+    covariant DsColorsProposalKindAdd? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKindAdd(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKindAdd &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsProposalKindUpdate {
+  final Color color;
+  final Color surface;
+
+  const DsColorsProposalKindUpdate({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsProposalKindUpdate copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsProposalKindUpdate(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsProposalKindUpdate lerp(
+    covariant DsColorsProposalKindUpdate? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKindUpdate(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKindUpdate &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsProposalKindRemove {
+  final Color color;
+  final Color surface;
+
+  const DsColorsProposalKindRemove({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsProposalKindRemove copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsProposalKindRemove(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsProposalKindRemove lerp(
+    covariant DsColorsProposalKindRemove? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKindRemove(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKindRemove &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsProposalKindPriority {
+  final Color color;
+  final Color surface;
+
+  const DsColorsProposalKindPriority({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsProposalKindPriority copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsProposalKindPriority(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsProposalKindPriority lerp(
+    covariant DsColorsProposalKindPriority? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKindPriority(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKindPriority &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsProposalKindEstimate {
+  final Color color;
+  final Color surface;
+
+  const DsColorsProposalKindEstimate({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsProposalKindEstimate copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsProposalKindEstimate(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsProposalKindEstimate lerp(
+    covariant DsColorsProposalKindEstimate? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKindEstimate(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKindEstimate &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsProposalKindStatus {
+  final Color color;
+  final Color surface;
+
+  const DsColorsProposalKindStatus({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsProposalKindStatus copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsProposalKindStatus(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsProposalKindStatus lerp(
+    covariant DsColorsProposalKindStatus? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKindStatus(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKindStatus &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsProposalKindLabel {
+  final Color color;
+  final Color surface;
+
+  const DsColorsProposalKindLabel({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsProposalKindLabel copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsProposalKindLabel(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsProposalKindLabel lerp(
+    covariant DsColorsProposalKindLabel? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKindLabel(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKindLabel &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsProposalKindDue {
+  final Color color;
+  final Color surface;
+
+  const DsColorsProposalKindDue({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsProposalKindDue copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsProposalKindDue(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsProposalKindDue lerp(
+    covariant DsColorsProposalKindDue? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKindDue(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKindDue &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsProposalKind {
+  final DsColorsProposalKindAdd add;
+  final DsColorsProposalKindUpdate update;
+  final DsColorsProposalKindRemove remove;
+  final DsColorsProposalKindPriority priority;
+  final DsColorsProposalKindEstimate estimate;
+  final DsColorsProposalKindStatus status;
+  final DsColorsProposalKindLabel label;
+  final DsColorsProposalKindDue due;
+
+  const DsColorsProposalKind({
+    required this.add,
+    required this.update,
+    required this.remove,
+    required this.priority,
+    required this.estimate,
+    required this.status,
+    required this.label,
+    required this.due,
+  });
+
+  DsColorsProposalKind copyWith({
+    DsColorsProposalKindAdd? add,
+    DsColorsProposalKindUpdate? update,
+    DsColorsProposalKindRemove? remove,
+    DsColorsProposalKindPriority? priority,
+    DsColorsProposalKindEstimate? estimate,
+    DsColorsProposalKindStatus? status,
+    DsColorsProposalKindLabel? label,
+    DsColorsProposalKindDue? due,
+  }) {
+    return DsColorsProposalKind(
+      add: add ?? this.add,
+      update: update ?? this.update,
+      remove: remove ?? this.remove,
+      priority: priority ?? this.priority,
+      estimate: estimate ?? this.estimate,
+      status: status ?? this.status,
+      label: label ?? this.label,
+      due: due ?? this.due,
+    );
+  }
+
+  DsColorsProposalKind lerp(covariant DsColorsProposalKind? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsProposalKind(
+      add: add.lerp(other.add, t),
+      update: update.lerp(other.update, t),
+      remove: remove.lerp(other.remove, t),
+      priority: priority.lerp(other.priority, t),
+      estimate: estimate.lerp(other.estimate, t),
+      status: status.lerp(other.status, t),
+      label: label.lerp(other.label, t),
+      due: due.lerp(other.due, t),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsProposalKind &&
+        add == other.add &&
+        update == other.update &&
+        remove == other.remove &&
+        priority == other.priority &&
+        estimate == other.estimate &&
+        status == other.status &&
+        label == other.label &&
+        due == other.due;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    add,
+    update,
+    remove,
+    priority,
+    estimate,
+    status,
+    label,
+    due,
+  ]);
+}
+
+@immutable
 class DsColors {
   final DsColorsText text;
   final DsColorsSurface surface;
@@ -1166,6 +1906,8 @@ class DsColors {
   final DsColorsBackground background;
   final DsColorsInteractive interactive;
   final DsColorsDecorative decorative;
+  final DsColorsAiCard aiCard;
+  final DsColorsProposalKind proposalKind;
 
   const DsColors({
     required this.text,
@@ -1174,6 +1916,8 @@ class DsColors {
     required this.background,
     required this.interactive,
     required this.decorative,
+    required this.aiCard,
+    required this.proposalKind,
   });
 
   DsColors copyWith({
@@ -1183,6 +1927,8 @@ class DsColors {
     DsColorsBackground? background,
     DsColorsInteractive? interactive,
     DsColorsDecorative? decorative,
+    DsColorsAiCard? aiCard,
+    DsColorsProposalKind? proposalKind,
   }) {
     return DsColors(
       text: text ?? this.text,
@@ -1191,6 +1937,8 @@ class DsColors {
       background: background ?? this.background,
       interactive: interactive ?? this.interactive,
       decorative: decorative ?? this.decorative,
+      aiCard: aiCard ?? this.aiCard,
+      proposalKind: proposalKind ?? this.proposalKind,
     );
   }
 
@@ -1205,6 +1953,8 @@ class DsColors {
       background: background.lerp(other.background, t),
       interactive: interactive.lerp(other.interactive, t),
       decorative: decorative.lerp(other.decorative, t),
+      aiCard: aiCard.lerp(other.aiCard, t),
+      proposalKind: proposalKind.lerp(other.proposalKind, t),
     );
   }
 
@@ -1219,7 +1969,9 @@ class DsColors {
         alert == other.alert &&
         background == other.background &&
         interactive == other.interactive &&
-        decorative == other.decorative;
+        decorative == other.decorative &&
+        aiCard == other.aiCard &&
+        proposalKind == other.proposalKind;
   }
 
   @override
@@ -1230,6 +1982,8 @@ class DsColors {
     background,
     interactive,
     decorative,
+    aiCard,
+    proposalKind,
   ]);
 }
 

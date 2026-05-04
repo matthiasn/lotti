@@ -538,6 +538,84 @@
   "aiAssistantTitle": "KI-Assistent",
   "aiAssistantTranscribeAudio": "Audio transkribieren",
   "aiBatchToggleTooltip": "Zur Standardaufnahme wechseln",
+  "aiCardActivityRecentLabel": "Letzte Aktivität",
+  "aiCardActivityRelativeDays": "vor {days} T",
+  "@aiCardActivityRelativeDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeHours": "vor {hours} Std",
+  "@aiCardActivityRelativeHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeMinutes": "vor {minutes} Min",
+  "@aiCardActivityRelativeMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivityRelativeNow": "jetzt",
+  "aiCardActivityRelativeWeeks": "vor {weeks} Wo",
+  "@aiCardActivityRelativeWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardActivitySectionLabel": "LETZTE AKTIVITÄT",
+  "aiCardAgentNameTooltip": "Agent-Internes öffnen",
+  "aiCardEmptyProposals": "Keine offenen Vorschläge · der Agent zeigt neue Änderungen hier an",
+  "aiCardHideActivity": "Aktivität ausblenden",
+  "aiCardHistoryToggle": "Verlauf · {count}",
+  "@aiCardHistoryToggle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardOpenAgentInternals": "Agent-Internes öffnen",
+  "aiCardProposalAgoSeparator": "·",
+  "aiCardProposalConfirmed": "Bestätigt",
+  "aiCardProposalDismissed": "Abgelehnt",
+  "aiCardProposalKindAdd": "Hinzufügen",
+  "aiCardProposalKindDue": "Fällig",
+  "aiCardProposalKindEstimate": "Schätzung",
+  "aiCardProposalKindLabel": "Label",
+  "aiCardProposalKindPriority": "Priorität",
+  "aiCardProposalKindRemove": "Entfernen",
+  "aiCardProposalKindStatus": "Status",
+  "aiCardProposalKindUpdate": "Aktualisieren",
+  "aiCardReadMore": "Mehr lesen",
+  "aiCardRecentActions": "{count, plural, =1{{count} Aktion} other{{count} Aktionen}}",
+  "@aiCardRecentActions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiCardSeeActivity": "Aktivität anzeigen",
+  "aiCardShowLess": "Weniger anzeigen",
+  "aiCardSummaryAgo": "{relative}",
+  "@aiCardSummaryAgo": {
+    "placeholders": {
+      "relative": {
+        "type": "String"
+      }
+    }
+  },
+  "aiCardTitle": "KI-Zusammenfassung",
   "aiChatMessageCopied": "In die Zwischenablage kopiert",
   "aiConfigApiKeyEmptyError": "API-Schlüssel darf nicht leer sein",
   "aiConfigApiKeyFieldLabel": "API-Schlüssel",
@@ -662,6 +740,7 @@
   "aiInferenceErrorUnknownMessage": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
   "aiInferenceErrorUnknownTitle": "Fehler",
   "aiInferenceErrorViewLogButton": "Protokoll anzeigen",
+  "aiInternalsTitle": "Agent-Internes",
   "aiModelSettings": "AI-Modell-Einstellungen",
   "aiOllamaModelInstalledSuccessfully": "Modell \"{modelName}\" erfolgreich installiert!",
   "@aiOllamaModelInstalledSuccessfully": {

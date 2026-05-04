@@ -31,6 +31,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.991" date="2026-05-04">
+      <description>
+          <p>Task details page: a new unified AI summary card replaces the previous AI summary panel and decision activity strip. One deep-teal-tinted-navy surface now hosts the agent's TLDR, an inline expandable Goal / Achieved / What's left / Learnings report under a Read more / Show less pill, the actionable proposals list with swipe and button confirm-or-reject (and a Confirm-all batch), a collapsible History toggle for resolved proposals, and a recent-activity footer capped at six rows. The wake-cycle controls — running spinner, run-now refresh, countdown pill, and cancel-timer — sit directly in the card header.</p>
+          <p>Tapping the agent name, the footer avatar, or the "Open agent internals" pill opens a new agent internals panel. On wide screens it slides in from the right at a comfortable 600 to 800 pixel width over a darkened scrim. On narrow screens (phones in portrait, slim split-view windows) the same panel renders as a full-screen modal that slides up from the bottom, so the header stays on screen and the body is comfortable to read on small devices. Either way it hosts the same five tabs as the standalone agent detail page: Stats, Reports, Conversations, Observations, and Activity. The agent detail page now shares the exact same body widget as the panel.</p>
+          <p>Design-system tokens were added for the AI surface itself and for the proposed-changes kind chips (Add, Update, Remove, Priority, Estimate, Status, Label, Due), each in foreground and surface-tint variants. The activity row's relative time labels (now / minutes / hours / days / weeks ago) are now properly localized in all supported languages. A follow-up doc captures the typography density gap surfaced while building this card so the remaining hand-tuned line-height overrides can be replaced with a Compact density tier in the next pass.</p>
+      </description>
+    </release>
     <release version="0.9.990" date="2026-05-03">
       <description>
           <p>Task details page: linked entries section now uses an activity-filter pill row (Timer / Audio / Images) above the entries to toggle which activity types are shown. Checklists keep their dedicated section at the top of the page, so they are not part of the activity filter.</p>

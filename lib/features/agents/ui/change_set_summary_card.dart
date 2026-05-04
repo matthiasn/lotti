@@ -22,7 +22,7 @@ import 'package:lotti/widgets/cards/modern_base_card.dart';
 /// confirm or reject individual items via swipe gestures or buttons.
 ///
 /// Renders nothing when no pending change sets exist. Task-level
-/// suggestions are rendered by `AgentSuggestionsPanel`, which goes
+/// suggestions are rendered by `AiSummaryCard`, which goes
 /// through the proposal ledger; this card still serves the project-agent
 /// path until the same consolidation lands there.
 class ChangeSetSummaryCard extends ConsumerWidget {

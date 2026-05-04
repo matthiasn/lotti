@@ -1192,6 +1192,116 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Passer à l\'enregistrement standard';
 
   @override
+  String get aiCardActivityRecentLabel => 'Activité récente';
+
+  @override
+  String aiCardActivityRelativeDays(int days) {
+    return 'il y a $days j';
+  }
+
+  @override
+  String aiCardActivityRelativeHours(int hours) {
+    return 'il y a $hours h';
+  }
+
+  @override
+  String aiCardActivityRelativeMinutes(int minutes) {
+    return 'il y a $minutes min';
+  }
+
+  @override
+  String get aiCardActivityRelativeNow => 'maintenant';
+
+  @override
+  String aiCardActivityRelativeWeeks(int weeks) {
+    return 'il y a $weeks sem';
+  }
+
+  @override
+  String get aiCardActivitySectionLabel => 'ACTIVITÉ RÉCENTE';
+
+  @override
+  String get aiCardAgentNameTooltip =>
+      'Ouvrir les détails internes de l\'agent';
+
+  @override
+  String get aiCardEmptyProposals =>
+      'Aucune proposition ouverte · l\'agent affichera ici les nouvelles modifications';
+
+  @override
+  String get aiCardHideActivity => 'Masquer l\'activité';
+
+  @override
+  String aiCardHistoryToggle(int count) {
+    return 'Historique · $count';
+  }
+
+  @override
+  String get aiCardOpenAgentInternals =>
+      'Ouvrir les détails internes de l\'agent';
+
+  @override
+  String get aiCardProposalAgoSeparator => '·';
+
+  @override
+  String get aiCardProposalConfirmed => 'Confirmée';
+
+  @override
+  String get aiCardProposalDismissed => 'Rejetée';
+
+  @override
+  String get aiCardProposalKindAdd => 'Ajouter';
+
+  @override
+  String get aiCardProposalKindDue => 'Échéance';
+
+  @override
+  String get aiCardProposalKindEstimate => 'Estimation';
+
+  @override
+  String get aiCardProposalKindLabel => 'Étiquette';
+
+  @override
+  String get aiCardProposalKindPriority => 'Priorité';
+
+  @override
+  String get aiCardProposalKindRemove => 'Retirer';
+
+  @override
+  String get aiCardProposalKindStatus => 'Statut';
+
+  @override
+  String get aiCardProposalKindUpdate => 'Mettre à jour';
+
+  @override
+  String get aiCardReadMore => 'Lire plus';
+
+  @override
+  String aiCardRecentActions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions récentes',
+      one: '$count action récente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiCardSeeActivity => 'Voir l\'activité';
+
+  @override
+  String get aiCardShowLess => 'Afficher moins';
+
+  @override
+  String aiCardSummaryAgo(String relative) {
+    return '$relative';
+  }
+
+  @override
+  String get aiCardTitle => 'Résumé IA';
+
+  @override
   String get aiChatMessageCopied => 'Copié dans le presse-papiers';
 
   @override
@@ -1489,6 +1599,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiInferenceErrorViewLogButton => 'Voir le journal';
+
+  @override
+  String get aiInternalsTitle => 'Détails internes de l\'agent';
 
   @override
   String get aiModelSettings => 'Paramètres du modèle AI';
