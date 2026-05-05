@@ -1,6 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 import 'package:drift/drift.dart' hide isNotNull, isNull;
-import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -24,6 +24,137 @@ OutboxCompanion _buildOutbox({
         ? const Value.absent()
         : Value<String?>(filePath),
   );
+}
+
+enum _GeneratedOutboxStatus {
+  pending,
+  expiredSending,
+  activeSending,
+  sent,
+  error,
+}
+
+class _OutboxClaimRowSpec {
+  const _OutboxClaimRowSpec({
+    required this.createdMinute,
+    required this.hasMedia,
+    required this.status,
+  });
+
+  final int createdMinute;
+  final bool hasMedia;
+  final _GeneratedOutboxStatus status;
+
+  DateTime createdAt(DateTime base) =>
+      base.add(Duration(minutes: createdMinute));
+
+  OutboxStatus get dbStatus => switch (status) {
+    _GeneratedOutboxStatus.pending => OutboxStatus.pending,
+    _GeneratedOutboxStatus.expiredSending => OutboxStatus.sending,
+    _GeneratedOutboxStatus.activeSending => OutboxStatus.sending,
+    _GeneratedOutboxStatus.sent => OutboxStatus.sent,
+    _GeneratedOutboxStatus.error => OutboxStatus.error,
+  };
+
+  DateTime updatedAt(DateTime base, DateTime now) => switch (status) {
+    _GeneratedOutboxStatus.expiredSending => now.subtract(
+      const Duration(minutes: 10),
+    ),
+    _GeneratedOutboxStatus.activeSending => now,
+    _ => createdAt(base),
+  };
+}
+
+class _OutboxClaimScenario {
+  const _OutboxClaimScenario({
+    required this.maxSize,
+    required this.rows,
+  });
+
+  final int maxSize;
+  final List<_OutboxClaimRowSpec> rows;
+}
+
+class _OutboxClaimModelRow {
+  const _OutboxClaimModelRow({
+    required this.id,
+    required this.spec,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  final int id;
+  final _OutboxClaimRowSpec spec;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  bool get isPending => spec.status == _GeneratedOutboxStatus.pending;
+
+  bool get isExpiredSending =>
+      spec.status == _GeneratedOutboxStatus.expiredSending;
+
+  bool get hasMedia => spec.hasMedia;
+}
+
+extension _AnyOutboxClaimScenario on Any {
+  Generator<_GeneratedOutboxStatus> get generatedOutboxStatus =>
+      choose(_GeneratedOutboxStatus.values);
+
+  Generator<_OutboxClaimRowSpec> get outboxClaimRowSpec => combine3(
+    intInRange(0, 6),
+    any.bool,
+    generatedOutboxStatus,
+    (int createdMinute, bool hasMedia, _GeneratedOutboxStatus status) =>
+        _OutboxClaimRowSpec(
+          createdMinute: createdMinute,
+          hasMedia: hasMedia,
+          status: status,
+        ),
+  );
+
+  Generator<_OutboxClaimScenario> get outboxClaimScenario => combine2(
+    intInRange(0, 8),
+    listWithLengthInRange(0, 12, outboxClaimRowSpec),
+    (int maxSize, List<_OutboxClaimRowSpec> rows) => _OutboxClaimScenario(
+      maxSize: maxSize,
+      rows: rows,
+    ),
+  );
+}
+
+List<_OutboxClaimModelRow> _expectedClaimedRows({
+  required List<_OutboxClaimModelRow> rows,
+  required int maxSize,
+}) {
+  if (maxSize <= 0) return const [];
+
+  int compareByCreatedAtThenId(
+    _OutboxClaimModelRow a,
+    _OutboxClaimModelRow b,
+  ) {
+    final created = a.createdAt.compareTo(b.createdAt);
+    if (created != 0) return created;
+    return a.id.compareTo(b.id);
+  }
+
+  final pendingRows = rows.where((row) => row.isPending).toList()
+    ..sort(compareByCreatedAtThenId);
+  final expiredSendingRows = rows.where((row) => row.isExpiredSending).toList()
+    ..sort(compareByCreatedAtThenId);
+
+  final candidates = <_OutboxClaimModelRow>[
+    ...pendingRows.take(maxSize),
+    ...expiredSendingRows.take(maxSize),
+  ]..sort(compareByCreatedAtThenId);
+  if (candidates.length > maxSize) {
+    candidates.removeRange(maxSize, candidates.length);
+  }
+  if (candidates.isEmpty) return const [];
+
+  if (candidates.first.hasMedia) return [candidates.first];
+
+  final stopAt = candidates.indexWhere((row) => row.hasMedia);
+  return stopAt == -1 ? candidates : candidates.sublist(0, stopAt);
 }
 
 void main() {
@@ -684,6 +815,80 @@ void main() {
         final next = await database.claimNextOutboxBatch(maxSize: 5);
         expect(next.map((r) => r.id).toList(), [6, 7]);
       });
+
+      Glados(any.outboxClaimScenario, ExploreConfig(numRuns: 40)).test(
+        'claims the modelled eligible media-bounded prefix',
+        (scenario) async {
+          final database = SyncDatabase(inMemoryDatabase: true);
+          final base = DateTime(2024, 1);
+          final now = DateTime(2024, 1, 1, 12);
+          const leaseDuration = Duration(minutes: 5);
+          final modelRows = <_OutboxClaimModelRow>[];
+
+          try {
+            for (var i = 0; i < scenario.rows.length; i++) {
+              final spec = scenario.rows[i];
+              final createdAt = spec.createdAt(base);
+              final updatedAt = spec.updatedAt(base, now);
+              final id = await database.addOutboxItem(
+                OutboxCompanion(
+                  status: Value(spec.dbStatus.index),
+                  subject: Value('row-$i'),
+                  message: Value('{"row":$i}'),
+                  createdAt: Value(createdAt),
+                  updatedAt: Value(updatedAt),
+                  retries: const Value(0),
+                  filePath: spec.hasMedia
+                      ? Value<String?>('media-$i.bin')
+                      : const Value.absent(),
+                ),
+              );
+              modelRows.add(
+                _OutboxClaimModelRow(
+                  id: id,
+                  spec: spec,
+                  createdAt: createdAt,
+                  updatedAt: updatedAt,
+                ),
+              );
+            }
+
+            final expected = _expectedClaimedRows(
+              rows: modelRows,
+              maxSize: scenario.maxSize,
+            );
+
+            final claimed = await database.claimNextOutboxBatch(
+              maxSize: scenario.maxSize,
+              leaseDuration: leaseDuration,
+              now: now,
+            );
+
+            expect(
+              claimed.map((row) => row.id).toList(),
+              expected.map((row) => row.id).toList(),
+            );
+
+            final selectedIds = expected.map((row) => row.id).toSet();
+            final storedRows = {
+              for (final row in await database.allOutboxItems) row.id: row,
+            };
+
+            for (final row in modelRows) {
+              final stored = storedRows[row.id]!;
+              if (selectedIds.contains(row.id)) {
+                expect(stored.status, OutboxStatus.sending.index);
+                expect(stored.updatedAt, now);
+              } else {
+                expect(stored.status, row.spec.dbStatus.index);
+                expect(stored.updatedAt, row.updatedAt);
+              }
+            }
+          } finally {
+            await database.close();
+          }
+        },
+      );
     });
 
     test('updateOutboxItem can set status to error', () async {

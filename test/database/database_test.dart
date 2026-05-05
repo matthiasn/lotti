@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -188,6 +189,130 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
 };
+
+enum _ConflictClockRelation {
+  equal,
+  incomingNewer,
+  incomingOlder,
+  concurrent,
+}
+
+class _ConflictMergeScenario {
+  const _ConflictMergeScenario({
+    required this.relation,
+    required this.overrideComparison,
+    required this.preExistingConflict,
+    required this.baseA,
+    required this.baseB,
+    required this.bumpA,
+    required this.bumpB,
+  });
+
+  final _ConflictClockRelation relation;
+  final bool overrideComparison;
+  final bool preExistingConflict;
+  final int baseA;
+  final int baseB;
+  final int bumpA;
+  final int bumpB;
+
+  VectorClock get existingClock {
+    return switch (relation) {
+      _ConflictClockRelation.equal => VectorClock({
+        'a': baseA,
+        'b': baseB,
+      }),
+      _ConflictClockRelation.incomingNewer => VectorClock({
+        'a': baseA,
+        'b': baseB,
+      }),
+      _ConflictClockRelation.incomingOlder => VectorClock({
+        'a': baseA + bumpA + 1,
+        'b': baseB + bumpB,
+      }),
+      _ConflictClockRelation.concurrent => VectorClock({
+        'a': baseA + bumpA + 1,
+        'b': baseB,
+      }),
+    };
+  }
+
+  VectorClock get incomingClock {
+    return switch (relation) {
+      _ConflictClockRelation.equal => VectorClock({
+        'a': baseA,
+        'b': baseB,
+      }),
+      _ConflictClockRelation.incomingNewer => VectorClock({
+        'a': baseA + bumpA + 1,
+        'b': baseB + bumpB,
+      }),
+      _ConflictClockRelation.incomingOlder => VectorClock({
+        'a': baseA,
+        'b': baseB,
+      }),
+      _ConflictClockRelation.concurrent => VectorClock({
+        'a': baseA,
+        'b': baseB + bumpB + 1,
+      }),
+    };
+  }
+
+  VclockStatus get expectedStatus {
+    return switch (relation) {
+      _ConflictClockRelation.equal => VclockStatus.equal,
+      _ConflictClockRelation.incomingNewer => VclockStatus.b_gt_a,
+      _ConflictClockRelation.incomingOlder => VclockStatus.a_gt_b,
+      _ConflictClockRelation.concurrent => VclockStatus.concurrent,
+    };
+  }
+
+  @override
+  String toString() {
+    return '_ConflictMergeScenario('
+        'relation: $relation, '
+        'overrideComparison: $overrideComparison, '
+        'preExistingConflict: $preExistingConflict, '
+        'baseA: $baseA, '
+        'baseB: $baseB, '
+        'bumpA: $bumpA, '
+        'bumpB: $bumpB'
+        ')';
+  }
+}
+
+extension _AnyConflictMergeScenario on glados.Any {
+  glados.Generator<_ConflictClockRelation> get conflictClockRelation =>
+      glados.AnyUtils(this).choose(_ConflictClockRelation.values);
+
+  glados.Generator<_ConflictMergeScenario> get conflictMergeScenario =>
+      glados.CombinableAny(this).combine7(
+        conflictClockRelation,
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 3),
+        (
+          _ConflictClockRelation relation,
+          bool overrideComparison,
+          bool preExistingConflict,
+          int baseA,
+          int baseB,
+          int bumpA,
+          int bumpB,
+        ) => _ConflictMergeScenario(
+          relation: relation,
+          overrideComparison: overrideComparison,
+          preExistingConflict: preExistingConflict,
+          baseA: baseA,
+          baseB: baseB,
+          bumpA: bumpA,
+          bumpB: bumpB,
+        ),
+      );
+}
 
 void main() {
   setUpAll(() {
@@ -4468,6 +4593,110 @@ void main() {
         final nowA = await db?.journalEntityById(entryA.meta.id);
         expect(nowA?.meta.id, entryA.meta.id);
       });
+
+      glados.Glados(
+        _AnyConflictMergeScenario(glados.any).conflictMergeScenario,
+        glados.ExploreConfig(numRuns: 40),
+      ).test(
+        'updateJournalEntity follows generated vector-clock merge semantics',
+        (scenario) async {
+          final id = UniqueKey().toString();
+          final existingText = 'existing-${scenario.relation.name}';
+          final incomingText = 'incoming-${scenario.relation.name}';
+          final existingEntry = createJournalEntryWithVclock(
+            scenario.existingClock,
+            id: id,
+          ).copyWith(entryText: EntryText(plainText: existingText));
+          final incomingEntry = createJournalEntryWithVclock(
+            scenario.incomingClock,
+            id: id,
+          ).copyWith(entryText: EntryText(plainText: incomingText));
+
+          expect(
+            VectorClock.compare(
+              scenario.existingClock,
+              scenario.incomingClock,
+            ),
+            scenario.expectedStatus,
+          );
+
+          final initialResult = await db!.updateJournalEntity(existingEntry);
+          expect(initialResult.applied, isTrue);
+
+          if (scenario.preExistingConflict) {
+            await db!.addConflict(
+              Conflict(
+                id: id,
+                createdAt: _testDate,
+                updatedAt: _testDate,
+                serialized: jsonEncode(existingEntry),
+                schemaVersion: db!.schemaVersion,
+                status: ConflictStatus.unresolved.index,
+              ),
+            );
+          }
+
+          final result = await db!.updateJournalEntity(
+            incomingEntry,
+            overrideComparison: scenario.overrideComparison,
+          );
+          final shouldApply =
+              scenario.expectedStatus == VclockStatus.b_gt_a ||
+              scenario.overrideComparison;
+
+          expect(result.applied, shouldApply);
+          if (!shouldApply) {
+            expect(
+              result.skipReason,
+              scenario.expectedStatus == VclockStatus.concurrent
+                  ? JournalUpdateSkipReason.conflict
+                  : JournalUpdateSkipReason.olderOrEqual,
+            );
+          }
+
+          final stored = await db!.journalEntityById(id);
+          expect(stored, isNotNull);
+          expect(
+            stored?.entryText?.plainText,
+            shouldApply ? incomingText : existingText,
+          );
+          expect(
+            stored?.meta.vectorClock,
+            shouldApply ? scenario.incomingClock : scenario.existingClock,
+          );
+
+          final conflict = await db!.conflictById(id);
+          if (shouldApply) {
+            if (scenario.preExistingConflict ||
+                scenario.expectedStatus == VclockStatus.concurrent) {
+              expect(conflict, isNotNull);
+              expect(conflict?.status, ConflictStatus.resolved.index);
+            } else {
+              expect(conflict, isNull);
+            }
+          } else if (scenario.expectedStatus == VclockStatus.concurrent) {
+            expect(conflict, isNotNull);
+            expect(conflict?.status, ConflictStatus.unresolved.index);
+            final serializedEntity =
+                jsonDecode(conflict!.serialized) as Map<String, dynamic>;
+            expect(serializedEntity['meta'], isA<Map<String, dynamic>>());
+            expect(
+              (serializedEntity['meta'] as Map<String, dynamic>)['id'],
+              id,
+            );
+            expect(
+              (serializedEntity['entryText']
+                  as Map<String, dynamic>)['plainText'],
+              incomingText,
+            );
+          } else if (scenario.preExistingConflict) {
+            expect(conflict, isNotNull);
+            expect(conflict?.status, ConflictStatus.unresolved.index);
+          } else {
+            expect(conflict, isNull);
+          }
+        },
+      );
 
       test('resolves existing conflict when applying newer update', () async {
         const staleClock = VectorClock(<String, int>{'device1': 1});

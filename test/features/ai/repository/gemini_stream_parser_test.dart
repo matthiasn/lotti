@@ -1,7 +1,56 @@
 import 'dart:convert';
 
-import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
+
+class _GeminiPayload {
+  const _GeminiPayload({
+    required this.text,
+    required this.number,
+    required this.flag,
+  });
+
+  final String text;
+  final int number;
+  final bool flag;
+
+  Map<String, dynamic> toJson() => {
+    'text': text,
+    'number': number,
+    'flag': flag,
+    'nested': {'braced': '{$text}'},
+  };
+}
+
+extension _AnyGeminiPayload on Any {
+  Generator<_GeminiPayload> get geminiPayload => combine3(
+    nonEmptyLetterOrDigits,
+    intInRange(-100, 100),
+    any.bool,
+    (String text, int number, bool flag) => _GeminiPayload(
+      text: text,
+      number: number,
+      flag: flag,
+    ),
+  );
+
+  Generator<List<_GeminiPayload>> get geminiPayloads =>
+      listWithLengthInRange(0, 8, geminiPayload);
+}
+
+List<String> _splitRandomly(String text, Random random) {
+  if (text.isEmpty) return [''];
+
+  final chunks = <String>[];
+  var index = 0;
+  while (index < text.length) {
+    final remaining = text.length - index;
+    final width = 1 + random.nextInt(remaining);
+    chunks.add(text.substring(index, index + width));
+    index += width;
+  }
+  return chunks;
+}
 
 void main() {
   group('GeminiStreamParser', () {
@@ -95,5 +144,24 @@ void main() {
       expect(out.first['z'], 9);
       expect(small.remainder().length <= 32, isTrue);
     });
+
+    Glados(any.geminiPayloads).testWithRandom(
+      'parses the same objects regardless of stream chunk boundaries',
+      (payloads, random) {
+        final payload = payloads.map((p) => jsonEncode(p.toJson())).join('\n');
+
+        final wholeParser = GeminiStreamParser();
+        final whole = wholeParser.addChunk(payload);
+
+        final chunkedParser = GeminiStreamParser();
+        final chunked = <Map<String, dynamic>>[];
+        for (final chunk in _splitRandomly(payload, random)) {
+          chunked.addAll(chunkedParser.addChunk(chunk));
+        }
+
+        expect(chunked, whole);
+        expect(chunkedParser.remainder(), wholeParser.remainder());
+      },
+    );
   });
 }
