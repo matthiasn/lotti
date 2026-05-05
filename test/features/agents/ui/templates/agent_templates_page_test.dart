@@ -211,4 +211,160 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'selecting a Kind filter hides rows of other kinds via the matcher',
+    (tester) async {
+      await pumpPage(
+        tester,
+        templates: [
+          makeTestTemplate(id: 'a', agentId: 'a', displayName: 'Task A'),
+          makeTestTemplate(
+            id: 'b',
+            agentId: 'b',
+            displayName: 'Project B',
+            kind: AgentTemplateKind.projectAgent,
+          ),
+        ],
+      );
+
+      final ctx = tester.element(find.byType(AgentTemplatesPage));
+
+      // Open the Filters popover and tick "Project agent" so the axis
+      // matcher (`_matchRow`) gets exercised against every row.
+      await tester.tap(find.text(ctx.messages.agentInstancesToolbarFilters));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text(ctx.messages.agentTemplateKindProjectAgent).last,
+      );
+      await tester.pumpAndSettle();
+      // Dismiss the popover by tapping outside.
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Project B', findRichText: true),
+        findsAtLeast(1),
+      );
+      expect(
+        find.textContaining('Task A', findRichText: true),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('switching Sort to Recent orders newest updates first', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      templates: [
+        makeTestTemplate(
+          id: 'old',
+          agentId: 'old',
+          displayName: 'Older',
+          updatedAt: DateTime(2025),
+        ),
+        makeTestTemplate(
+          id: 'new',
+          agentId: 'new',
+          displayName: 'Newer',
+          updatedAt: DateTime(2026, 6),
+        ),
+      ],
+    );
+
+    final ctx = tester.element(find.byType(AgentTemplatesPage));
+    await tester.tap(find.text(ctx.messages.agentInstancesSortName));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text(ctx.messages.agentInstancesSortRecent).last,
+    );
+    await tester.pumpAndSettle();
+
+    final newerY = tester
+        .getTopLeft(find.textContaining('Newer', findRichText: true))
+        .dy;
+    final olderY = tester
+        .getTopLeft(find.textContaining('Older', findRichText: true))
+        .dy;
+    expect(newerY < olderY, isTrue);
+  });
+
+  testWidgets('switching Sort to Oldest orders earliest updates first', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      templates: [
+        makeTestTemplate(
+          id: 'new',
+          agentId: 'new',
+          displayName: 'Newer',
+          updatedAt: DateTime(2026, 6),
+        ),
+        makeTestTemplate(
+          id: 'old',
+          agentId: 'old',
+          displayName: 'Older',
+          updatedAt: DateTime(2025),
+        ),
+      ],
+    );
+
+    final ctx = tester.element(find.byType(AgentTemplatesPage));
+    await tester.tap(find.text(ctx.messages.agentInstancesSortName));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text(ctx.messages.agentInstancesSortOldest).last,
+    );
+    await tester.pumpAndSettle();
+
+    final newerY = tester
+        .getTopLeft(find.textContaining('Newer', findRichText: true))
+        .dy;
+    final olderY = tester
+        .getTopLeft(find.textContaining('Older', findRichText: true))
+        .dy;
+    expect(olderY < newerY, isTrue);
+  });
+
+  testWidgets(
+    'name sort falls back to id when two templates share a display name',
+    (tester) async {
+      // Identical display names force the secondary `a.id.compareTo(b.id)`
+      // tiebreaker in the name sort comparator.
+      await pumpPage(
+        tester,
+        templates: [
+          makeTestTemplate(
+            id: 'tpl-zeta',
+            agentId: 'tpl-zeta',
+            displayName: 'Same Name',
+          ),
+          makeTestTemplate(
+            id: 'tpl-alpha',
+            agentId: 'tpl-alpha',
+            displayName: 'Same Name',
+          ),
+        ],
+      );
+
+      // Default sort is by name; with identical names the lower id wins.
+      final matches = find.textContaining('Same Name', findRichText: true);
+      expect(matches, findsNWidgets(2));
+      final firstY = tester.getTopLeft(matches.at(0)).dy;
+      final secondY = tester.getTopLeft(matches.at(1)).dy;
+      expect(firstY < secondY, isTrue);
+      // The version pill (`v1`) is keyed off the id, but the row's
+      // ordering is what we actually want — confirm it via the leading
+      // icon's onTap target. Tapping the first row should beam to the
+      // alpha id (alphabetically smaller).
+      String? navigated;
+      beamToNamedOverride = (path) => navigated = path;
+      await tester.tap(matches.first);
+      await tester.pumpAndSettle();
+      expect(navigated, '/settings/agents/templates/tpl-alpha');
+    },
+  );
 }

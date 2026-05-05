@@ -34,16 +34,20 @@ class AgentTemplatesPage extends ConsumerWidget {
       data: (a) => _buildFilterAxes(a, messages),
       orElse: () => const <AgentListFilterAxis>[],
     );
+    final hints = adapted.maybeWhen(
+      data: (a) => a.hints,
+      orElse: () => const <String, AgentTemplateKind>{},
+    );
 
     return AgentListingShell(
       rowsAsync: adapted.whenData((a) => a.rows),
       filterAxes: filterAxes,
-      groupAxes: _buildGroupAxes(messages, adapted),
+      groupAxes: _buildGroupAxes(messages, hints),
       sortAxes: _buildSortAxes(messages),
       searchPlaceholder: messages.agentTemplatesSearchPlaceholder,
       emptyMessage: messages.agentTemplatesEmptyFiltered,
       axisMatcher: (axisId, selected, row) =>
-          _matchRow(adapted, row, axisId, selected),
+          _matchRow(hints, row, axisId, selected),
     );
   }
 }
@@ -122,13 +126,8 @@ List<AgentListFilterAxis> _buildFilterAxes(
 
 List<AgentListGroupAxis> _buildGroupAxes(
   AppLocalizations messages,
-  AsyncValue<_AdaptedRows> adapted,
+  Map<String, AgentTemplateKind> hints,
 ) {
-  Map<String, AgentTemplateKind> hintsOf() => adapted.maybeWhen(
-    data: (a) => a.hints,
-    orElse: () => const <String, AgentTemplateKind>{},
-  );
-
   return [
     AgentListGroupAxis(
       id: _groupNone,
@@ -140,7 +139,7 @@ List<AgentListGroupAxis> _buildGroupAxes(
     AgentListGroupAxis(
       id: _groupByKind,
       label: messages.agentTemplatesGroupByKind,
-      buildGroups: (rows) => _groupByKindFn(rows, hintsOf(), messages),
+      buildGroups: (rows) => _groupByKindFn(rows, hints, messages),
     ),
   ];
 }
@@ -196,15 +195,11 @@ List<AgentListGroup> _groupByKindFn(
 // ── Axis matcher ────────────────────────────────────────────────────────────
 
 bool _matchRow(
-  AsyncValue<_AdaptedRows> adapted,
+  Map<String, AgentTemplateKind> hints,
   AgentListRowData row,
   String axisId,
   Set<String> selected,
 ) {
-  final hints = adapted.maybeWhen(
-    data: (a) => a.hints,
-    orElse: () => const <String, AgentTemplateKind>{},
-  );
   final kind = hints[row.id];
   if (kind == null) return true;
   return switch (axisId) {
