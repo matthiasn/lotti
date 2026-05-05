@@ -2763,7 +2763,7 @@
   "taskActionBarAudioRecordingActive": "Grabación de audio en curso",
   "taskActionBarMoreActions": "Más acciones",
   "taskActionBarOpenRunningTimer": "Abrir cronómetro en curso",
-  "taskActionBarStopTracking": "Detener seguimiento",
+  "taskActionBarStopTracking": "Detener registro de tiempo",
   "taskActionBarTrackTime": "Registrar tiempo",
   "taskAgentCancelTimerTooltip": "Cancelar",
   "taskAgentChipLabel": "Agente",

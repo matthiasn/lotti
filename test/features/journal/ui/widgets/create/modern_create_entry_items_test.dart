@@ -31,8 +31,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
-class MockEntryCreationService extends Mock implements EntryCreationService {}
-
 class FakeBuildContext extends Fake implements BuildContext {}
 
 class TestEntryController extends EntryController {

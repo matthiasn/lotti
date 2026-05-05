@@ -15,6 +15,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -66,8 +67,6 @@ class _FakeTimeService implements TimeService {
 
   Future<void> close() => _controller.close();
 }
-
-class _MockEntryCreationService extends Mock implements EntryCreationService {}
 
 /// Stand-in for the audio recorder controller so the action bar can
 /// observe a recorder state without booting the real recorder
@@ -133,7 +132,7 @@ Future<void> _settleStream(WidgetTester tester) async {
 
 void main() {
   late _FakeTimeService fakeTimeService;
-  late _MockEntryCreationService mockCreationService;
+  late MockEntryCreationService mockCreationService;
 
   setUpAll(() {
     registerFallbackValue(testTask);
@@ -142,7 +141,7 @@ void main() {
 
   setUp(() async {
     fakeTimeService = _FakeTimeService();
-    mockCreationService = _MockEntryCreationService();
+    mockCreationService = MockEntryCreationService();
 
     await setUpTestGetIt(
       additionalSetup: () {

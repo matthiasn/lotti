@@ -84,6 +84,7 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
@@ -633,3 +634,5 @@ class MockLinkedEntriesController extends LinkedEntriesController {
   @override
   Future<List<EntryLink>> build({required String id}) async => _links;
 }
+
+class MockEntryCreationService extends Mock implements EntryCreationService {}
