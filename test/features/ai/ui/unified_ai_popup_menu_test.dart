@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -587,6 +588,103 @@ void main() {
       expect(descriptionText.maxLines, 3);
       expect(descriptionText.overflow, TextOverflow.ellipsis);
     });
+  });
+
+  group('UnifiedAiSkillsList hover dividers', () {
+    testWidgets(
+      'hovering a row turns the divider above it transparent so the hovered '
+      'row is never visually bisected',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiSkillsList(
+              journalEntity: testAudioEntity,
+              onSkillSelected: (_) async {},
+            ),
+            overrides: [
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value(testSkills)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Two dividers between three rows; both opaque before hover.
+        final dividersBefore = tester.widgetList<Divider>(find.byType(Divider));
+        expect(dividersBefore, hasLength(2));
+        for (final d in dividersBefore) {
+          expect(d.color, isNot(Colors.transparent));
+        }
+
+        // Hover the middle skill: both adjacent dividers should go transparent.
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await gesture.moveTo(
+          tester.getCenter(find.text(testSkills[1].name)),
+        );
+        await tester.pumpAndSettle();
+
+        final dividersAfter = tester
+            .widgetList<Divider>(find.byType(Divider))
+            .toList();
+        expect(dividersAfter[0].color, Colors.transparent);
+        expect(dividersAfter[1].color, Colors.transparent);
+
+        // Move pointer away — dividers return to default color.
+        await gesture.moveTo(const Offset(-100, -100));
+        await tester.pumpAndSettle();
+
+        final dividersFinal = tester
+            .widgetList<Divider>(find.byType(Divider))
+            .toList();
+        expect(dividersFinal[0].color, isNot(Colors.transparent));
+        expect(dividersFinal[1].color, isNot(Colors.transparent));
+      },
+    );
+
+    testWidgets(
+      'tapping a row invokes onSkillSelected with the hovered skill',
+      (tester) async {
+        AiConfigSkill? selected;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiSkillsList(
+              journalEntity: testAudioEntity,
+              onSkillSelected: (skill) async {
+                selected = skill;
+              },
+            ),
+            overrides: [
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value(testSkills)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Hover, then tap — exercises both the hover-enter callback and
+        // the onTap path on the same row.
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await gesture.moveTo(
+          tester.getCenter(find.text(testSkills[2].name)),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(testSkills[2].name));
+        await tester.pumpAndSettle();
+
+        expect(selected?.id, testSkills[2].id);
+      },
+    );
   });
 
   group('UnifiedAiModal Tests', () {

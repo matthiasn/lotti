@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -311,5 +312,132 @@ void main() {
       find.text(context.messages.agentTemplateSelectTitle),
       findsOneWidget,
     );
+  });
+
+  testWidgets(
+    'hovering a template row turns the divider above it transparent',
+    (tester) async {
+      final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+
+      await tester.pumpWidget(
+        _buildSubject(
+          profiles: [testInferenceProfile()],
+          resultNotifier: resultNotifier,
+          templateCount: 3,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Two dividers between three template rows.
+      final dividersBefore = tester
+          .widgetList<Divider>(find.byType(Divider))
+          .toList();
+      expect(dividersBefore, hasLength(2));
+      for (final d in dividersBefore) {
+        expect(d.color, isNot(Colors.transparent));
+      }
+
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer(location: Offset.zero);
+      await gesture.moveTo(tester.getCenter(find.text('Template 1')));
+      await tester.pumpAndSettle();
+
+      final dividersAfter = tester
+          .widgetList<Divider>(find.byType(Divider))
+          .toList();
+      expect(dividersAfter[0].color, Colors.transparent);
+      expect(dividersAfter[1].color, Colors.transparent);
+    },
+  );
+
+  testWidgets(
+    'hovering a profile row turns the divider above it transparent',
+    (tester) async {
+      final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+
+      await tester.pumpWidget(
+        _buildSubject(
+          profiles: [
+            testInferenceProfile(id: 'p-0', name: 'Profile 0'),
+            testInferenceProfile(id: 'p-1', name: 'Profile 1'),
+            testInferenceProfile(id: 'p-2', name: 'Profile 2'),
+          ],
+          resultNotifier: resultNotifier,
+          templateCount: 1,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      // Single template skips to profile page directly. Three profiles → 2
+      // dividers, both opaque before hover.
+      final dividersBefore = tester
+          .widgetList<Divider>(find.byType(Divider))
+          .toList();
+      expect(dividersBefore, hasLength(2));
+      for (final d in dividersBefore) {
+        expect(d.color, isNot(Colors.transparent));
+      }
+
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer(location: Offset.zero);
+      await gesture.moveTo(tester.getCenter(find.text('Profile 1')));
+      await tester.pumpAndSettle();
+
+      final dividersAfter = tester
+          .widgetList<Divider>(find.byType(Divider))
+          .toList();
+      expect(dividersAfter[0].color, Colors.transparent);
+      expect(dividersAfter[1].color, Colors.transparent);
+
+      // Pointer leaves — dividers return to default color.
+      await gesture.moveTo(const Offset(-100, -100));
+      await tester.pumpAndSettle();
+
+      final dividersFinal = tester
+          .widgetList<Divider>(find.byType(Divider))
+          .toList();
+      for (final d in dividersFinal) {
+        expect(d.color, isNot(Colors.transparent));
+      }
+    },
+  );
+
+  testWidgets('desktop-only profiles render the desktop trailing icon', (
+    tester,
+  ) async {
+    final resultNotifier = ValueNotifier<AgentCreationResult?>(null);
+    final desktopProfile = testInferenceProfile(
+      id: 'desk',
+      name: 'Desktop Only',
+      desktopOnly: true,
+    );
+
+    await tester.pumpWidget(
+      _buildSubject(
+        profiles: [desktopProfile],
+        resultNotifier: resultNotifier,
+        templateCount: 1,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Modal'));
+    await tester.pumpAndSettle();
+
+    // The trailing widget for desktop-only profiles is the desktop_windows
+    // icon — verifies the trailing branch in _ProfileList.
+    expect(find.byIcon(Icons.desktop_windows_outlined), findsOneWidget);
   });
 }
