@@ -11275,6 +11275,12 @@ abstract class AppLocalizations {
   /// **'More actions'**
   String get taskActionBarMoreActions;
 
+  /// No description provided for @taskActionBarOpenRunningTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Open running timer'**
+  String get taskActionBarOpenRunningTimer;
+
   /// No description provided for @taskActionBarStopTracking.
   ///
   /// In en, this message translates to:

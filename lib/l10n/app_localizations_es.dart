@@ -6644,6 +6644,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskActionBarMoreActions => 'Más acciones';
 
   @override
+  String get taskActionBarOpenRunningTimer => 'Abrir cronómetro en curso';
+
+  @override
   String get taskActionBarStopTracking => 'Detener seguimiento';
 
   @override

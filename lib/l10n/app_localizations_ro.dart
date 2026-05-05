@@ -6601,6 +6601,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskActionBarMoreActions => 'Mai multe acțiuni';
 
   @override
+  String get taskActionBarOpenRunningTimer => 'Deschide cronometrul activ';
+
+  @override
   String get taskActionBarStopTracking => 'Oprește cronometrul';
 
   @override

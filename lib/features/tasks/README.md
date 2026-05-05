@@ -175,14 +175,28 @@ Checklist content is modeled separately through checklist entities and linked ch
 - `TaskActionBar` — a sticky frosted-glass bar hosted in the page's
   `Scaffold.bottomNavigationBar` slot, replacing the floating action
   button. It exposes the most-frequent inline actions directly: a
-  "Track time" pill that toggles into a live elapsed-time readout when
-  a timer is running on this task, plus round affordances for
-  add-checklist, import-image, audio recording, "more actions" (opens
-  `CreateEntryModal` for the long-tail items), and capture-screenshot.
+  "Track time" pill plus round affordances for add-checklist,
+  import-image, audio recording, and "more actions" (opens
+  `CreateEntryModal` for long-tail items — Event / Text / Paste image /
+  link to event, plus capture-screenshot on macOS and Linux). The pill
+  has two states:
+  - Idle: tapping starts a new timer linked to this task.
+  - Tracking-this-task: the live elapsed time replaces the label, with
+    an inset stop circle on the leading edge. Tapping the pill body
+    navigates to the running timer entry (mirrors the desktop sidebar
+    timer card); only the inset stop circle stops the timer. The
+    duration text uses `numericBadgeFontFeatures` (tabular figures,
+    slashed zero, cv02/03/04) so digits don't shift width as they tick.
+
   The button row is a `Wrap`, so on narrow phone viewports the trailing
   icons reflow onto a second run instead of overflowing the right edge.
   The page sets `Scaffold.extendBody: true` so body content paints
-  behind the bar — that's what the `BackdropFilter` blurs.
+  behind the bar — that's what the `BackdropFilter` blurs. The mobile
+  shell hides its bottom nav pill whenever the active beamer route is
+  `/tasks/<uuid>` (computed in `_AppScreenState._isMobileImmersiveRoute`,
+  no per-page lifecycle plumbing), so the action bar can dock flush
+  against the home indicator. TaskActionBar consumes the safe-area
+  inset internally.
 
 ```mermaid
 flowchart TD
@@ -197,6 +211,7 @@ flowchart TD
   Load --> ActionBar["TaskActionBar (sticky bottom)"]
   ActionBar --> TimeService["getIt<TimeService>().getStream()"]
   TimeService --> ActionBar
+  ActionBar --> NavHide["_AppScreenState route check (hide shell pill on mobile)"]
   Open --> Drop["Desktop drag-and-drop media import"]
   Drop --> ImageAnalysis["Optional automatic image analysis trigger"]
 ```

@@ -6560,6 +6560,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskActionBarMoreActions => 'Další akce';
 
   @override
+  String get taskActionBarOpenRunningTimer => 'Otevřít aktivní časovač';
+
+  @override
   String get taskActionBarStopTracking => 'Zastavit sledování času';
 
   @override

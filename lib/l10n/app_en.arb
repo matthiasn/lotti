@@ -3073,6 +3073,7 @@
   "syncStepLabels": "Labels",
   "syncStepMeasurables": "Measurables",
   "taskActionBarMoreActions": "More actions",
+  "taskActionBarOpenRunningTimer": "Open running timer",
   "taskActionBarStopTracking": "Stop time tracking",
   "taskActionBarTrackTime": "Track time",
   "taskAgentCancelTimerTooltip": "Cancel",

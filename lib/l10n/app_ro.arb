@@ -2761,6 +2761,7 @@
   "syncStepLabels": "Etichete",
   "syncStepMeasurables": "Măsurabile",
   "taskActionBarMoreActions": "Mai multe acțiuni",
+  "taskActionBarOpenRunningTimer": "Deschide cronometrul activ",
   "taskActionBarStopTracking": "Oprește cronometrul",
   "taskActionBarTrackTime": "Înregistrează timpul",
   "taskAgentCancelTimerTooltip": "Anulează",

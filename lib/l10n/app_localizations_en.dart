@@ -6450,6 +6450,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskActionBarMoreActions => 'More actions';
 
   @override
+  String get taskActionBarOpenRunningTimer => 'Open running timer';
+
+  @override
   String get taskActionBarStopTracking => 'Stop time tracking';
 
   @override

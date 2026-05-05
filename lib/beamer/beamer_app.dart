@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -45,6 +46,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
@@ -315,14 +317,33 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           );
         }
 
-        return _buildMobileLayout(
-          context: context,
-          index: index,
-          destinations: destinations,
-          beamerChildren: beamerChildren,
+        // Listen to the tasks delegate so the mobile shell rebuilds when
+        // its current route changes (push to / pop from task details).
+        // That's how we know whether to hide the bottom nav pill — see
+        // [_isMobileImmersiveRoute].
+        return ListenableBuilder(
+          listenable: navService.tasksDelegate,
+          builder: (context, _) => _buildMobileLayout(
+            context: context,
+            index: index,
+            destinations: destinations,
+            beamerChildren: beamerChildren,
+          ),
         );
       },
     );
+  }
+
+  /// True when the active mobile tab's beamer route is one that should
+  /// take over the bottom edge — currently just `/tasks/<uuid>`. Pure
+  /// function of router state, no widget-lifecycle race.
+  bool _isMobileImmersiveRoute(int activeTabIndex) {
+    // Tasks is always the first destination; if any other tab is
+    // active the tasks delegate's current path is irrelevant.
+    if (activeTabIndex != 0) return false;
+    final loc = navService.tasksDelegate.currentBeamLocation;
+    if (loc is! TasksLocation) return false;
+    return isUuid(loc.state.pathParameters['taskId']);
   }
 
   Widget _buildDesktopLayout({
@@ -463,6 +484,15 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     required List<_AppNavigationDestination> destinations,
     required List<Widget> beamerChildren,
   }) {
+    // Visibility is a pure function of the active beamer route. Routes
+    // that take over the bottom edge with their own sticky surface
+    // (e.g. `/tasks/<uuid>` with TaskActionBar) suppress the nav pill —
+    // including the time/audio recording indicators that ride above it
+    // — so the page-owned bar can dock flush against the home
+    // indicator. The enclosing ListenableBuilder ensures we rebuild on
+    // every route change.
+    final showBottomNav = !_isMobileImmersiveRoute(index);
+
     final designSystemBottomNavigationBar = DesignSystemBottomNavigationBar(
       items: [
         for (var i = 0; i < destinations.length; i++)
@@ -501,12 +531,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ),
             ],
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: designSystemBottomNavigationBar,
-          ),
+          if (showBottomNav)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: designSystemBottomNavigationBar,
+            ),
         ],
       ),
     );

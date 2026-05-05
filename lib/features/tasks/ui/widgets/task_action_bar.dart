@@ -11,6 +11,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:lotti/widgets/misc/timer_navigation.dart';
 
 /// Sticky action bar pinned to the bottom of the task details page.
 ///
@@ -18,13 +20,14 @@ import 'package:lotti/services/time_service.dart';
 /// (top hairline + backdrop blur + soft top→bottom gradient) that
 /// surfaces the most-frequent task actions:
 ///
-/// * a primary "Track time" pill that toggles into a live elapsed-time
-///   readout while a timer is running on this task — tapping it then
-///   stops the timer
-/// * round affordances: add checklist, import image, record audio,
+/// * a primary "Track time" pill. Idle: tap starts a new timer. While a
+///   timer is running on this task: tapping the pill body navigates to
+///   the running timer entry (mirrors the sidebar timer card); only the
+///   inset stop circle stops the timer.
+/// * round affordances: add checklist, import image, record audio, and
 ///   "more actions" (opens the existing create-entry menu for long-tail
-///   items like Event / Text / Paste image / link to event), and
-///   capture screenshot
+///   items like Event / Text / Paste image / link to event / capture
+///   screenshot — the latter is desktop-only inside that menu)
 ///
 /// The action row is a [Wrap], so on narrow viewports — typically
 /// phones — the trailing icons reflow onto a second run instead of
@@ -37,9 +40,18 @@ class TaskActionBar extends ConsumerStatefulWidget {
 
   final Task task;
 
-  /// Stable test key for the Track time pill.
+  /// Stable test key for the Track time pill body — the outer tap zone.
+  /// Idle: tapping starts a timer. Tracking-this-task: tapping
+  /// navigates to the running timer entry.
   @visibleForTesting
   static const Key trackTimeKey = ValueKey('task-action-bar-track-time');
+
+  /// Stable test key for the inset stop button that appears inside the
+  /// pill while tracking. Tapping it stops the timer.
+  @visibleForTesting
+  static const Key trackTimeStopKey = ValueKey(
+    'task-action-bar-track-time-stop',
+  );
 
   /// Stable test key for the checklist icon button.
   @visibleForTesting
@@ -56,10 +68,6 @@ class TaskActionBar extends ConsumerStatefulWidget {
   /// Stable test key for the "more actions" icon button.
   @visibleForTesting
   static const Key moreKey = ValueKey('task-action-bar-more');
-
-  /// Stable test key for the screenshot icon button.
-  @visibleForTesting
-  static const Key screenshotKey = ValueKey('task-action-bar-screenshot');
 
   /// Round-button diameter and pill height. The design system has no
   /// dedicated icon-button-size token; this matches `tokens.spacing.step9`
@@ -104,14 +112,30 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
     return _timeService.linkedFrom?.meta.id == widget.task.meta.id;
   }
 
-  Future<void> _onTrackTimePressed() async {
-    if (_isTrackingThisTask) {
-      await _timeService.stop();
-      return;
-    }
+  /// Idle-state handler: tapping the pill creates a new timer linked to
+  /// the open task and starts it.
+  Future<void> _onStartTimer() async {
     final service = ref.read(entryCreationServiceProvider);
     await service.createTimerEntry(linked: widget.task);
   }
+
+  /// Tracking-state body handler: tapping the pill navigates to the
+  /// running timer entry. Mirrors the desktop sidebar's timer card so
+  /// users have a consistent way to jump to the timer.
+  void _onNavigateToRunningEntry() {
+    final running = _running;
+    if (running == null) return;
+    navigateToTimerTarget(
+      ref: ref,
+      current: running,
+      linkedFrom: _timeService.linkedFrom,
+    );
+  }
+
+  /// Tracking-state stop-button handler: stops the live timer. Only
+  /// fires when the inset stop circle is tapped, never when the
+  /// surrounding pill body is tapped.
+  Future<void> _onStopTimer() => _timeService.stop();
 
   Future<void> _onChecklistPressed() async {
     await ref
@@ -150,16 +174,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
         );
   }
 
-  Future<void> _onScreenshotPressed() async {
-    await ref
-        .read(entryCreationServiceProvider)
-        .createScreenshotEntry(
-          linkedId: widget.task.meta.id,
-          categoryId: widget.task.meta.categoryId,
-          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
-        );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -177,13 +191,19 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
     // page must use `Scaffold.extendBody: true` so body content paints
     // behind this strip — that's what BackdropFilter samples and blurs.
     //
-    // No SafeArea here: the host page lifts the bar above the mobile
-    // bottom-nav pill via DesignSystemBottomNavigationBar.occupiedHeight.
+    // The bottom of the inner padding adds the system home-indicator
+    // inset (e.g. iPhones with no home button). The glass surface still
+    // extends edge-to-edge into that inset, while the touchable row sits
+    // above it.
+    final safeBottomInset = MediaQuery.paddingOf(context).bottom;
+
     return DesignSystemGlassStrip(
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: spacing.step5,
-          vertical: spacing.step4,
+        padding: EdgeInsets.fromLTRB(
+          spacing.step5,
+          spacing.step4,
+          spacing.step5,
+          spacing.step4 + safeBottomInset,
         ),
         // Wrap so the trailing icons reflow onto a second run on narrow
         // viewports instead of overflowing the right edge. Using a real
@@ -200,8 +220,11 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
               isTracking: isTracking,
               label: elapsedLabel,
               idleSemanticLabel: messages.taskActionBarTrackTime,
+              navigateSemanticLabel: messages.taskActionBarOpenRunningTimer,
               stopSemanticLabel: messages.taskActionBarStopTracking,
-              onPressed: _onTrackTimePressed,
+              onStartTimer: _onStartTimer,
+              onNavigateToRunningEntry: _onNavigateToRunningEntry,
+              onStop: _onStopTimer,
             ),
             _RoundActionButton(
               key: TaskActionBar.checklistKey,
@@ -227,12 +250,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
               semanticLabel: messages.taskActionBarMoreActions,
               onPressed: _onMorePressed,
             ),
-            _RoundActionButton(
-              key: TaskActionBar.screenshotKey,
-              icon: Icons.screenshot_rounded,
-              semanticLabel: messages.addActionAddScreenshot,
-              onPressed: _onScreenshotPressed,
-            ),
           ],
         ),
       ),
@@ -240,24 +257,37 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
   }
 }
 
-/// Primary "Track time" pill. Idle: stopwatch icon + localized label,
-/// tap starts a new timer. Recording-this-task: stop icon + live elapsed
-/// duration, tap stops the timer.
+/// Primary "Track time" pill.
+///
+/// Idle: stopwatch icon + localized label; the entire pill is one tap
+/// target that starts a new timer.
+///
+/// Tracking-this-task: live-elapsed duration with the inset stop circle
+/// on the leading edge. The pill body and the stop circle are
+/// independent tap zones — tapping the body navigates to the running
+/// timer entry (matching the sidebar timer card), tapping the stop
+/// circle stops the timer.
 class _TrackTimePill extends StatelessWidget {
   const _TrackTimePill({
     required this.isTracking,
     required this.label,
     required this.idleSemanticLabel,
+    required this.navigateSemanticLabel,
     required this.stopSemanticLabel,
-    required this.onPressed,
+    required this.onStartTimer,
+    required this.onNavigateToRunningEntry,
+    required this.onStop,
     super.key,
   });
 
   final bool isTracking;
   final String label;
   final String idleSemanticLabel;
+  final String navigateSemanticLabel;
   final String stopSemanticLabel;
-  final VoidCallback onPressed;
+  final VoidCallback onStartTimer;
+  final VoidCallback onNavigateToRunningEntry;
+  final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) {
@@ -269,43 +299,102 @@ class _TrackTimePill extends StatelessWidget {
     // The error palette has no dedicated on-color token — its
     // defaultColor is a vivid red across both themes, so a fixed white
     // foreground stays legible on top.
-    final iconColor = isTracking
+    final foreground = isTracking
         ? Colors.white
         : tokens.colors.text.highEmphasis;
-    final textColor = iconColor;
+    final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
 
     return Semantics(
       button: true,
-      label: isTracking ? stopSemanticLabel : idleSemanticLabel,
+      label: isTracking ? navigateSemanticLabel : idleSemanticLabel,
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-          onTap: onPressed,
+          borderRadius: pillRadius,
+          onTap: isTracking ? onNavigateToRunningEntry : onStartTimer,
           child: Container(
             height: TaskActionBar.buttonSize,
-            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
+            padding: EdgeInsets.symmetric(
+              horizontal: isTracking ? spacing.step2 : spacing.step5,
+            ),
             decoration: BoxDecoration(
               color: fillColor,
-              borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+              borderRadius: pillRadius,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  isTracking ? Icons.stop_rounded : Icons.timer_outlined,
-                  size: TaskActionBar.iconSize,
-                  color: iconColor,
-                ),
+                if (isTracking)
+                  _PillStopButton(
+                    onStop: onStop,
+                    semanticLabel: stopSemanticLabel,
+                  )
+                else
+                  Icon(
+                    Icons.timer_outlined,
+                    size: TaskActionBar.iconSize,
+                    color: foreground,
+                  ),
                 SizedBox(width: spacing.step2),
-                Text(
-                  label,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: textColor,
+                Padding(
+                  padding: EdgeInsets.only(right: spacing.step3),
+                  child: Text(
+                    label,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: foreground,
+                      // Tabular figures + slashed zero + cv02/03/04
+                      // (open 4/6/9), matching the sidebar timer pill so
+                      // the elapsed digits don't shift width as they
+                      // tick.
+                      fontFeatures: isTracking
+                          ? numericBadgeFontFeatures
+                          : null,
+                    ),
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Inset stop circle that lives on the leading edge of the running
+/// pill. Its own [InkWell] absorbs the tap so it does not bubble up to
+/// the pill body's navigate handler.
+class _PillStopButton extends StatelessWidget {
+  const _PillStopButton({
+    required this.onStop,
+    required this.semanticLabel,
+  });
+
+  final VoidCallback onStop;
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      excludeSemantics: true,
+      child: Material(
+        key: TaskActionBar.trackTimeStopKey,
+        color: Colors.white.withValues(alpha: 0.18),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onStop,
+          child: const SizedBox(
+            width: 32,
+            height: 32,
+            child: Icon(
+              Icons.stop_rounded,
+              size: 18,
+              color: Colors.white,
             ),
           ),
         ),

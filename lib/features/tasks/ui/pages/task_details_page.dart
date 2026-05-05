@@ -20,7 +20,6 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
@@ -127,76 +126,83 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         // bottomNavigationBar slot, so we don't need a magic-number
         // bottom padding on the slivers.
         extendBody: true,
-        bottomNavigationBar: Padding(
-          // Lift the bar above the mobile bottom-navigation pill
-          // (occupiedHeight is 0 on desktop where the sidebar replaces
-          // the nav bar) and leave step3 of breathing room so the two
-          // glass surfaces don't sit flush against each other.
-          padding: EdgeInsets.only(
-            bottom:
-                DesignSystemBottomNavigationBar.occupiedHeight(context) +
-                context.designTokens.spacing.step3,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AiRunningAnimationWrapperCard(
-                entryId: widget.taskId,
-                height: 50,
-                isInteractive: true,
-                responseTypes: const {
-                  AiResponseType.imageAnalysis,
-                  AiResponseType.audioTranscription,
-                  AiResponseType.promptGeneration,
-                  AiResponseType.imageGeneration,
-                },
+        // The mobile shell hides its bottom nav bar whenever the
+        // current beamer route is `/tasks/<uuid>` (see
+        // _AppScreenState._isMobileImmersiveRoute), so the action bar
+        // sits flush with the home indicator. TaskActionBar handles its
+        // own bottom safe-inset padding.
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AiRunningAnimationWrapperCard(
+              entryId: widget.taskId,
+              height: 50,
+              isInteractive: true,
+              responseTypes: const {
+                AiResponseType.imageAnalysis,
+                AiResponseType.audioTranscription,
+                AiResponseType.promptGeneration,
+                AiResponseType.imageGeneration,
+              },
+            ),
+            TaskActionBar(task: task),
+          ],
+        ),
+        // Builder so MediaQuery.paddingOf reads the Scaffold-modified
+        // value: with extendBody: true, Scaffold adds the
+        // bottomNavigationBar slot height (action bar + AI overlay when
+        // running) to padding.bottom on the body's MediaQuery. The
+        // trailing SliverPadding consumes that inset so the last entry
+        // can scroll fully above the bar instead of being hidden behind.
+        body: Builder(
+          builder: (context) => CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              TaskSliverAppBar(taskId: widget.taskId),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: 15,
+                    right: 15,
+                    top: 10,
+                  ),
+                  child: TaskForm(taskId: widget.taskId),
+                ),
               ),
-              TaskActionBar(task: task),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    top: 8,
+                    left: 10,
+                    right: 10,
+                  ),
+                  child:
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: <Widget>[
+                          LinkedEntriesWithTimer(
+                            item: task,
+                            entryKeyBuilder: _getEntryKey,
+                            highlightedEntryId: highlightedEntryId,
+                            hideTaskEntries: true,
+                          ),
+                          LinkedFromEntriesWidget(
+                            task,
+                            hideTaskEntries: true,
+                          ),
+                        ],
+                      ).animate().fadeIn(
+                        duration: const Duration(milliseconds: 100),
+                      ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
+              ),
             ],
           ),
-        ),
-        body: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            TaskSliverAppBar(taskId: widget.taskId),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  left: 15,
-                  right: 15,
-                  top: 10,
-                ),
-                child: TaskForm(taskId: widget.taskId),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 8,
-                  left: 10,
-                  right: 10,
-                ),
-                child:
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        LinkedEntriesWithTimer(
-                          item: task,
-                          entryKeyBuilder: _getEntryKey,
-                          highlightedEntryId: highlightedEntryId,
-                          hideTaskEntries: true,
-                        ),
-                        LinkedFromEntriesWidget(
-                          task,
-                          hideTaskEntries: true,
-                        ),
-                      ],
-                    ).animate().fadeIn(
-                      duration: const Duration(milliseconds: 100),
-                    ),
-              ),
-            ),
-          ],
         ),
       ),
     );

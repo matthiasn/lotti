@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -132,13 +133,6 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => mockCreationService.createScreenshotEntry(
-        linkedId: any(named: 'linkedId'),
-        categoryId: any(named: 'categoryId'),
-        analysisTrigger: any(named: 'analysisTrigger'),
-      ),
-    ).thenAnswer((_) async => null);
-    when(
       () => mockCreationService.showCreateEntryModal(
         any(),
         linkedFromId: any(named: 'linkedFromId'),
@@ -173,7 +167,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('renders Track time pill plus all five icon affordances', (
+  testWidgets('renders Track time pill plus all four icon affordances', (
     tester,
   ) async {
     await pumpBar(tester);
@@ -183,13 +177,12 @@ void main() {
     expect(find.byKey(TaskActionBar.imageKey), findsOneWidget);
     expect(find.byKey(TaskActionBar.audioKey), findsOneWidget);
     expect(find.byKey(TaskActionBar.moreKey), findsOneWidget);
-    expect(find.byKey(TaskActionBar.screenshotKey), findsOneWidget);
 
     // Idle state: localized "Track time" label + stopwatch icon, no
-    // stop icon.
+    // inset stop button.
     expect(find.text('Track time'), findsOneWidget);
     expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.stop_rounded), findsNothing);
+    expect(find.byKey(TaskActionBar.trackTimeStopKey), findsNothing);
   });
 
   testWidgets(
@@ -207,7 +200,7 @@ void main() {
   );
 
   testWidgets(
-    'while a timer is running on this task: shows live elapsed and stop icon',
+    'while a timer is running on this task: shows live elapsed and inset stop button',
     (tester) async {
       await pumpBar(tester);
 
@@ -220,33 +213,98 @@ void main() {
       // formatDuration normalises the leading hour digit, so 1m30s →
       // "00:01:30" (the helper prepends a 0 when position 1 is a colon).
       expect(find.text('00:01:30'), findsOneWidget);
-      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+      expect(find.byKey(TaskActionBar.trackTimeStopKey), findsOneWidget);
       expect(find.byIcon(Icons.timer_outlined), findsNothing);
       expect(find.text('Track time'), findsNothing);
     },
   );
 
-  testWidgets('tapping the pill while tracking this task calls stop()', (
-    tester,
-  ) async {
-    await pumpBar(tester);
+  testWidgets(
+    'duration text uses tabular figures + cv02/03/04 + slashed zero',
+    (tester) async {
+      await pumpBar(tester);
 
-    fakeTimeService
-      ..linkedFrom = testTask
-      ..emit(
-        _runningTimerEntry(id: 'timer-1', elapsed: const Duration(seconds: 5)),
+      fakeTimeService
+        ..linkedFrom = testTask
+        ..emit(
+          _runningTimerEntry(
+            id: 'timer-1',
+            elapsed: const Duration(seconds: 5),
+          ),
+        );
+      await _settleStream(tester);
+
+      final durationText = tester.widget<Text>(find.text('00:00:05'));
+      final features =
+          durationText.style?.fontFeatures ?? const <FontFeature>[];
+      expect(features, contains(const FontFeature.tabularFigures()));
+      expect(features, contains(const FontFeature('cv02')));
+      expect(features, contains(const FontFeature('cv03')));
+      expect(features, contains(const FontFeature('cv04')));
+      expect(features, contains(const FontFeature.slashedZero()));
+    },
+  );
+
+  testWidgets(
+    'tapping the inset stop button stops the timer; the body does not',
+    (tester) async {
+      await pumpBar(tester);
+
+      fakeTimeService
+        ..linkedFrom = testTask
+        ..emit(
+          _runningTimerEntry(
+            id: 'timer-1',
+            elapsed: const Duration(seconds: 5),
+          ),
+        );
+      await _settleStream(tester);
+
+      await tester.tap(find.byKey(TaskActionBar.trackTimeStopKey));
+      await tester.pump();
+
+      expect(fakeTimeService.stopCount, 1);
+      verifyNever(
+        () =>
+            mockCreationService.createTimerEntry(linked: any(named: 'linked')),
       );
-    await _settleStream(tester);
+    },
+  );
 
-    await tester.tap(find.byKey(TaskActionBar.trackTimeKey));
-    await tester.pump();
+  testWidgets(
+    'tapping the pill body while tracking navigates to the running '
+    'task and does NOT stop the timer',
+    (tester) async {
+      String? navigatedPath;
+      beamToNamedOverride = (path) => navigatedPath = path;
+      addTearDown(() => beamToNamedOverride = null);
 
-    expect(fakeTimeService.stopCount, 1);
-    // Idle handler must NOT also fire when we were in the running state.
-    verifyNever(
-      () => mockCreationService.createTimerEntry(linked: any(named: 'linked')),
-    );
-  });
+      await pumpBar(tester);
+
+      fakeTimeService
+        ..linkedFrom = testTask
+        ..emit(
+          _runningTimerEntry(
+            id: 'timer-1',
+            elapsed: const Duration(seconds: 5),
+          ),
+        );
+      await _settleStream(tester);
+
+      // The duration text is the visible centre of the pill body, well
+      // away from the inset stop circle on the leading edge — so a
+      // direct tap on it can only hit the navigate handler.
+      await tester.tap(find.text('00:00:05'));
+      await tester.pump();
+
+      expect(navigatedPath, '/tasks/${testTask.meta.id}');
+      expect(fakeTimeService.stopCount, 0);
+      verifyNever(
+        () =>
+            mockCreationService.createTimerEntry(linked: any(named: 'linked')),
+      );
+    },
+  );
 
   testWidgets(
     'a timer running for a different task leaves this bar in the idle state',
@@ -335,23 +393,6 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('screenshot tap calls createScreenshotEntry with task ids', (
-    tester,
-  ) async {
-    await pumpBar(tester);
-
-    await tester.tap(find.byKey(TaskActionBar.screenshotKey));
-    await tester.pump();
-
-    verify(
-      () => mockCreationService.createScreenshotEntry(
-        linkedId: testTask.meta.id,
-        categoryId: testTask.meta.categoryId,
-        analysisTrigger: any(named: 'analysisTrigger'),
-      ),
-    ).called(1);
-  });
-
   testWidgets(
     'each round button only fires its own handler — wiring is not crossed',
     (tester) async {
@@ -381,13 +422,6 @@ void main() {
           any(),
           linkedFromId: any(named: 'linkedFromId'),
           categoryId: any(named: 'categoryId'),
-        ),
-      );
-      verifyNever(
-        () => mockCreationService.createScreenshotEntry(
-          linkedId: any(named: 'linkedId'),
-          categoryId: any(named: 'categoryId'),
-          analysisTrigger: any(named: 'analysisTrigger'),
         ),
       );
       verifyNever(
@@ -436,7 +470,6 @@ void main() {
         TaskActionBar.imageKey,
         TaskActionBar.audioKey,
         TaskActionBar.moreKey,
-        TaskActionBar.screenshotKey,
       ]) {
         final finder = find.byKey(key);
         expect(finder, findsOneWidget, reason: '$key should be rendered');

@@ -8,7 +8,6 @@ import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_mod
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/create/create_entry.dart' as create_entry;
 import 'package:lotti/logic/image_import.dart' as image_import;
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -101,19 +100,6 @@ class EntryCreationService {
   }) {
     return image_import.importImageAssets(
       context,
-      linkedId: linkedId,
-      categoryId: categoryId,
-      analysisTrigger: analysisTrigger,
-    );
-  }
-
-  /// Captures a screenshot via the platform tooling.
-  Future<JournalEntity?> createScreenshotEntry({
-    String? linkedId,
-    String? categoryId,
-    AutomaticImageAnalysisTrigger? analysisTrigger,
-  }) {
-    return create_entry.createScreenshot(
       linkedId: linkedId,
       categoryId: categoryId,
       analysisTrigger: analysisTrigger,

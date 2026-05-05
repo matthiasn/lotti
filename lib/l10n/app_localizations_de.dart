@@ -6547,6 +6547,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskActionBarMoreActions => 'Weitere Aktionen';
 
   @override
+  String get taskActionBarOpenRunningTimer => 'Laufenden Timer öffnen';
+
+  @override
   String get taskActionBarStopTracking => 'Zeiterfassung beenden';
 
   @override

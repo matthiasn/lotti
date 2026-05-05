@@ -6656,6 +6656,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskActionBarMoreActions => 'Plus d\'actions';
 
   @override
+  String get taskActionBarOpenRunningTimer => 'Ouvrir le minuteur en cours';
+
+  @override
   String get taskActionBarStopTracking => 'Arrêter le suivi';
 
   @override

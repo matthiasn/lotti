@@ -2761,6 +2761,7 @@
   "syncStepLabels": "Etiquetas de color",
   "syncStepMeasurables": "Medibles",
   "taskActionBarMoreActions": "Más acciones",
+  "taskActionBarOpenRunningTimer": "Abrir cronómetro en curso",
   "taskActionBarStopTracking": "Detener seguimiento",
   "taskActionBarTrackTime": "Registrar tiempo",
   "taskAgentCancelTimerTooltip": "Cancelar",

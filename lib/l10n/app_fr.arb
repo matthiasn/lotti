@@ -2761,6 +2761,7 @@
   "syncStepLabels": "Étiquettes",
   "syncStepMeasurables": "Mesurables",
   "taskActionBarMoreActions": "Plus d'actions",
+  "taskActionBarOpenRunningTimer": "Ouvrir le minuteur en cours",
   "taskActionBarStopTracking": "Arrêter le suivi",
   "taskActionBarTrackTime": "Suivre le temps",
   "taskAgentCancelTimerTooltip": "Annuler",
