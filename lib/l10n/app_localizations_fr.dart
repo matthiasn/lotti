@@ -6390,6 +6390,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get showCompleted => 'Afficher les terminées';
 
   @override
+  String get sidebarRunningTimerLabel => 'Minuteur en cours';
+
+  @override
+  String get sidebarRunningTimerStopTooltip => 'Arrêter le minuteur';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Réduire la barre latérale';
 
   @override

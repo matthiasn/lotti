@@ -2658,6 +2658,8 @@
   "settingThemingDark": "Thème sombre",
   "settingThemingLight": "Thème clair",
   "showCompleted": "Afficher les terminées",
+  "sidebarRunningTimerLabel": "Minuteur en cours",
+  "sidebarRunningTimerStopTooltip": "Arrêter le minuteur",
   "sidebarToggleCollapseLabel": "Réduire la barre latérale",
   "sidebarToggleExpandLabel": "Développer la barre latérale",
   "sidebarWakesCancelTooltip": "Annuler le réveil",

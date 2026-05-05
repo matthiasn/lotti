@@ -169,7 +169,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
                       destinations[i].expandedChildBuilder!(),
                     ],
                     if (i < destinations.length - 1)
-                      SizedBox(height: tokens.spacing.step6),
+                      SizedBox(height: tokens.spacing.step5),
                   ],
                 ],
               ),

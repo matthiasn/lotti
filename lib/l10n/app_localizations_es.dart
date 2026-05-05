@@ -6380,6 +6380,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get showCompleted => 'Mostrar completadas';
 
   @override
+  String get sidebarRunningTimerLabel => 'Temporizador en curso';
+
+  @override
+  String get sidebarRunningTimerStopTooltip => 'Detener temporizador';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Contraer barra lateral';
 
   @override

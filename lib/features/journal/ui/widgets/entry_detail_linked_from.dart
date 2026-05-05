@@ -25,6 +25,11 @@ class LinkedFromEntriesWidget extends ConsumerWidget {
     final provider = linkedFromEntriesControllerProvider(id: item.id);
     var items = ref.watch(provider).value ?? [];
 
+    // Projects link many tasks but are never useful surfacing as
+    // "linked from" context on a task-detail view, so they are
+    // filtered out unconditionally.
+    items = items.where((e) => e is! ProjectEntry).toList();
+
     if (hideTaskEntries) {
       items = items.where((e) => e is! Task).toList();
     }

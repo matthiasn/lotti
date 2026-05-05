@@ -2388,6 +2388,8 @@
   "settingThemingDark": "Tmavé téma",
   "settingThemingLight": "Světlé téma",
   "showCompleted": "Zobrazit dokončené",
+  "sidebarRunningTimerLabel": "Běžící časovač",
+  "sidebarRunningTimerStopTooltip": "Zastavit časovač",
   "sidebarToggleCollapseLabel": "Sbalit postranní panel",
   "sidebarToggleExpandLabel": "Rozbalit postranní panel",
   "sidebarWakesCancelTooltip": "Zrušit probuzení",

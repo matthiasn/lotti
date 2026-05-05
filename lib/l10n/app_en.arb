@@ -2963,6 +2963,8 @@
   "settingThemingDark": "Dark Theme",
   "settingThemingLight": "Light Theme",
   "showCompleted": "Show completed",
+  "sidebarRunningTimerLabel": "Running timer",
+  "sidebarRunningTimerStopTooltip": "Stop timer",
   "sidebarToggleCollapseLabel": "Collapse sidebar",
   "sidebarToggleExpandLabel": "Expand sidebar",
   "sidebarWakesCancelTooltip": "Cancel wake",

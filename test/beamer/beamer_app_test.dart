@@ -24,6 +24,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:matrix/encryption.dart';
@@ -613,45 +614,45 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('desktop indicators are positioned without bottom bar offset', (
-      tester,
-    ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'desktop layout has no floating TimeRecordingIndicator — '
+      'the running timer lives in the sidebar instead',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      final mockNavService = MockNavService();
-      await _stubNavService(
-        mockNavService,
-        indexStream: Stream.value(0),
-        isProjectsEnabled: () => true,
-        isDailyOsEnabled: () => true,
-        isHabitsEnabled: () => true,
-        isDashboardsEnabled: () => true,
-      );
-      await _registerAppScreenGetIt(mockNavService);
-      addTearDown(tearDownTestGetIt);
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
 
-      await _pumpAppScreen(tester, navService: mockNavService);
+        await _pumpAppScreen(tester, navService: mockNavService);
 
-      final timeIndicator = tester.widget<Positioned>(
-        find.ancestor(
-          of: find.byType(TimeRecordingIndicator),
-          matching: find.byType(Positioned),
-        ),
-      );
+        // The legacy bottom-anchored TimeRecordingIndicator must not appear in
+        // the desktop layout; it has been replaced by SidebarTimerSection
+        // which renders inside the desktop sidebar's aboveSettings slot.
+        expect(find.byType(TimeRecordingIndicator), findsNothing);
+        expect(
+          find.byType(SidebarTimerSection),
+          findsOneWidget,
+          reason:
+              'SidebarTimerSection should be wired into the desktop sidebar.',
+        );
 
-      // In desktop mode, no bottom bar offset
-      expect(
-        timeIndicator.bottom,
-        AppScreenConstants.navigationTimeIndicatorBottom,
-      );
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
 
     testWidgets('disables tickers for inactive desktop tabs', (tester) async {
       tester.view
