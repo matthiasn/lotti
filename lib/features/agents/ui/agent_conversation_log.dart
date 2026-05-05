@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -217,6 +218,7 @@ class _ThreadReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ai = context.designTokens.colors.aiCard;
     return Card(
       margin: const EdgeInsets.symmetric(
         horizontal: AppTheme.cardPaddingHalf,
@@ -224,8 +226,12 @@ class _ThreadReportCard extends StatelessWidget {
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: BorderSide(color: ai.rowBorder),
       ),
-      color: context.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+      // Tinted with the AI accent so the inline report card reads as
+      // "this thread produced a report" rather than just another row.
+      color: Color.alphaBlend(ai.accent.withValues(alpha: 0.10), ai.row),
+      elevation: 0,
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(
           horizontal: AppTheme.cardPaddingCompact,

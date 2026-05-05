@@ -103,7 +103,7 @@ void main() {
         findsAtLeast(1),
       );
       // Countdown lands in the trailing slot via the page-scoped ticker.
-      expect(find.text('2m 5s'), findsOneWidget);
+      expect(find.text('02:05'), findsOneWidget);
     });
   });
 

@@ -1146,6 +1146,12 @@ abstract class AppLocalizations {
   /// **'Pending'**
   String get agentPendingWakesPendingLabel;
 
+  /// No description provided for @agentPendingWakesRunningHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Running now} other{Running now ({count})}}'**
+  String agentPendingWakesRunningHeading(int count);
+
   /// No description provided for @agentPendingWakesScheduledLabel.
   ///
   /// In en, this message translates to:
@@ -1173,7 +1179,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentPendingWakesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Pending Wakes'**
+  /// **'Wake Cycles'**
   String get agentPendingWakesTitle;
 
   /// No description provided for @agentReportErrorLoading.

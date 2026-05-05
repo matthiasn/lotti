@@ -19,6 +19,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sidebar nav-item vertical spacing tightened from `step6` (24 px) to
   `step5` (16 px) — a 33 % reduction — to make room for the new timer
   section without the rail feeling crowded.
+- Agent UI/UX refinements across the AI summary card, sidebar Wake
+  Queue, and the renamed "Wake Cycles" settings page. The AI card's
+  outer glow is trimmed to a soft tinted edge instead of a wash, the
+  underlined subtitle below "AI summary" now reads the agent template
+  name (e.g. "Task Laura") rather than the generic kind label, the
+  Confirm-all button pins to the right edge of the proposals header
+  to line up with the Read more pill above it, and the cards inside
+  the agent internals panel (Reports / Conversations / Observations /
+  Activity) now sit on the AI panel's row token so the dark backdrop
+  reads as a unified surface. Settings → "Pending Wakes" is renamed
+  to "Wake Cycles", its countdown is now zero-padded MM:SS (or
+  HH:MM:SS once over an hour) with tabular figures so digits no
+  longer breathe, refresh keeps the previously-loaded rows on screen
+  instead of blanking to a spinner, and a new "Running now" block at
+  the top of the page surfaces the currently-executing wake instances
+  with a live elapsed pill. The desktop sidebar Wake Queue gains an
+  Ongoing block (live duration since wake start), filters its
+  inline scheduled rows to the next hour (the rest collapse under the
+  trailing "+N more →" link), drops the per-row letter avatar, uses
+  smaller mono font with ellipsis for long titles, prefers the agent
+  template name as the row label, and the WAKES header is now an
+  open-in-new link straight to the full Wake Cycles page.
 
 ### Fixed
 - Task detail "Linked from" no longer surfaces parent projects. Tasks

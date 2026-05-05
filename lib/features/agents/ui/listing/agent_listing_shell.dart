@@ -78,22 +78,32 @@ class _AgentListingShellState extends State<AgentListingShell> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final rowsAsync = widget.rowsAsync;
+
+    // Keep the previous rows on screen while a refresh is in flight, so
+    // pulling-to-refresh / explicit invalidate doesn't briefly blank the
+    // page out to a spinner. We only show the spinner the first time we
+    // have nothing to render at all.
+    Widget body;
+    if (rowsAsync.hasValue) {
+      body = _buildBody(context, rowsAsync.requireValue);
+    } else if (rowsAsync.hasError) {
+      body = Center(
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spacing.step6),
+          child: Text(
+            messages.commonError,
+            style: TextStyle(color: tokens.colors.alert.error.defaultColor),
+          ),
+        ),
+      );
+    } else {
+      body = const Center(child: CircularProgressIndicator());
+    }
 
     return ColoredBox(
       color: tokens.colors.background.level01,
-      child: widget.rowsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) => Center(
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step6),
-            child: Text(
-              messages.commonError,
-              style: TextStyle(color: tokens.colors.alert.error.defaultColor),
-            ),
-          ),
-        ),
-        data: (rows) => _buildBody(context, rows),
-      ),
+      child: body,
     );
   }
 

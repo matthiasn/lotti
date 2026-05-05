@@ -328,11 +328,12 @@
   "agentPendingWakesFilterSectionType": "Typ",
   "agentPendingWakesGroupByType": "Typ",
   "agentPendingWakesPendingLabel": "Ausstehend",
+  "agentPendingWakesRunningHeading": "{count, plural, =1{Läuft jetzt} other{Läuft jetzt ({count})}}",
   "agentPendingWakesScheduledLabel": "Geplant",
   "agentPendingWakesSearchPlaceholder": "Weckvorgänge suchen…",
   "agentPendingWakesSortDueLatest": "Fällig zuletzt",
   "agentPendingWakesSortDueSoonest": "Fällig zuerst",
-  "agentPendingWakesTitle": "Ausstehende Weckvorgänge",
+  "agentPendingWakesTitle": "Weckzyklen",
   "agentReportErrorLoading": "Bericht konnte nicht geladen werden: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

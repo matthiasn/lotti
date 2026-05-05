@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
+import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
@@ -33,22 +34,212 @@ class AgentPendingWakesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = context.messages;
     final asyncVms = ref.watch(agentPendingWakeRowVmsProvider);
+    final ongoingAsync = ref.watch(ongoingWakeRecordsProvider);
 
-    final adapted = asyncVms.whenData(
-      (vms) => _AdaptedRows.from(vms, messages),
-    );
+    // Build the adapted state directly from `valueOrNull` so the
+    // previous result survives a refresh. Going through `whenData`
+    // here would emit a fresh `AsyncLoading` with no preserved value,
+    // which makes the shell drop back to a spinner on every delete /
+    // refresh — that's the flicker we're avoiding.
+    final vms = asyncVms.value;
+    final adaptedData = vms == null ? null : _AdaptedRows.from(vms, messages);
+    final AsyncValue<_AdaptedRows> adapted;
+    if (adaptedData != null) {
+      adapted = AsyncValue.data(adaptedData);
+    } else if (asyncVms.hasError) {
+      adapted = AsyncValue.error(
+        asyncVms.error!,
+        asyncVms.stackTrace ?? StackTrace.current,
+      );
+    } else {
+      adapted = const AsyncValue.loading();
+    }
+    final AsyncValue<List<AgentListRowData>> rowsAsync;
+    if (adaptedData != null) {
+      rowsAsync = AsyncValue.data(adaptedData.rows);
+    } else if (asyncVms.hasError) {
+      rowsAsync = AsyncValue.error(
+        asyncVms.error!,
+        asyncVms.stackTrace ?? StackTrace.current,
+      );
+    } else {
+      rowsAsync = const AsyncValue.loading();
+    }
 
-    return AgentListingShell(
-      rowsAsync: adapted.whenData((a) => a.rows),
-      filterAxes: _buildFilterAxes(adapted, messages),
-      groupAxes: _buildGroupAxes(messages, adapted),
-      sortAxes: _buildSortAxes(messages),
-      searchPlaceholder: messages.agentPendingWakesSearchPlaceholder,
-      emptyMessage: messages.agentPendingWakesEmptyFiltered,
-      axisMatcher: (axisId, selected, row) =>
-          _matchRow(adapted, row, axisId, selected),
+    final ongoing = ongoingAsync.value ?? const <OngoingWakeRecord>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (ongoing.isNotEmpty) _RunningInstancesBlock(records: ongoing),
+        Expanded(
+          child: AgentListingShell(
+            rowsAsync: rowsAsync,
+            filterAxes: _buildFilterAxes(adapted, messages),
+            groupAxes: _buildGroupAxes(messages, adapted),
+            sortAxes: _buildSortAxes(messages),
+            searchPlaceholder: messages.agentPendingWakesSearchPlaceholder,
+            emptyMessage: messages.agentPendingWakesEmptyFiltered,
+            axisMatcher: (axisId, selected, row) =>
+                _matchRow(adapted, row, axisId, selected),
+          ),
+        ),
+      ],
     );
   }
+}
+
+/// Surfaces the currently-running wake instances above the scheduled
+/// list so the user can see at-a-glance which agents are executing
+/// right now and how long they've been at it. The duration is driven
+/// by [wakeCountdownTickerProvider] so all rows share a single
+/// page-scoped 1Hz tick.
+class _RunningInstancesBlock extends ConsumerWidget {
+  const _RunningInstancesBlock({required this.records});
+
+  final List<OngoingWakeRecord> records;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final accent = tokens.colors.alert.success.defaultColor;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step6,
+        vertical: tokens.spacing.step3,
+      ),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        border: Border(
+          bottom: BorderSide(color: tokens.colors.decorative.level01),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                messages.agentPendingWakesRunningHeading(records.length),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: tokens.colors.text.mediumEmphasis,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          for (final record in records)
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spacing.step1),
+              child: _RunningInstanceRow(record: record),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RunningInstanceRow extends ConsumerWidget {
+  const _RunningInstanceRow({required this.record});
+
+  final OngoingWakeRecord record;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final accent = tokens.colors.alert.success.defaultColor;
+    // `select` keeps each running row independent of every other row's
+    // tick — the row only rebuilds when its own visible duration
+    // string would change.
+    final elapsedLabel = ref.watch(
+      wakeCountdownTickerProvider.select((async) {
+        final now = async.value;
+        if (now == null) return '…';
+        final duration = now.difference(record.startedAt);
+        return _formatRunningElapsed(duration);
+      }),
+    );
+
+    return InkWell(
+      onTap: () => beamToNamed('/settings/agents/instances/${record.agentId}'),
+      borderRadius: BorderRadius.circular(tokens.radii.xs),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: tokens.spacing.step1,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                record.title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: tokens.colors.text.highEmphasis,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step3,
+                vertical: tokens.spacing.step1,
+              ),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(tokens.radii.xs),
+              ),
+              child: Text(
+                elapsedLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: accent,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Format `now - startedAt` for the running-instance pill on the Wake
+/// Cycles page. Mirrors the `formatWakeCountdown` shape so the two
+/// metrics read symmetrically across the page: under an hour the
+/// label is `MM:SS`, otherwise `HH:MM:SS`. Tabular figures at the
+/// call site keeps each segment width-stable as digits change.
+String _formatRunningElapsed(Duration elapsed) {
+  final totalSeconds = elapsed.inSeconds < 0 ? 0 : elapsed.inSeconds;
+  final clamped = totalSeconds > 99 * 3600 + 59 * 60 + 59
+      ? 99 * 3600 + 59 * 60 + 59
+      : totalSeconds;
+  final hours = clamped ~/ 3600;
+  final minutes = (clamped % 3600) ~/ 60;
+  final seconds = clamped % 60;
+  final mm = minutes.toString().padLeft(2, '0');
+  final ss = seconds.toString().padLeft(2, '0');
+  if (hours == 0) return '$mm:$ss';
+  final hh = hours.toString().padLeft(2, '0');
+  return '$hh:$mm:$ss';
 }
 
 /// Adapter output: row list + per-id hint with the typed wake fields so

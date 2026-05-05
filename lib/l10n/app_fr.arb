@@ -328,11 +328,12 @@
   "agentPendingWakesFilterSectionType": "Type",
   "agentPendingWakesGroupByType": "Type",
   "agentPendingWakesPendingLabel": "En attente",
+  "agentPendingWakesRunningHeading": "{count, plural, =1{En cours} other{En cours ({count})}}",
   "agentPendingWakesScheduledLabel": "Planifié",
   "agentPendingWakesSearchPlaceholder": "Rechercher des réveils…",
   "agentPendingWakesSortDueLatest": "Prévu en dernier",
   "agentPendingWakesSortDueSoonest": "Prévu en premier",
-  "agentPendingWakesTitle": "Réveils en attente",
+  "agentPendingWakesTitle": "Cycles de réveil",
   "agentReportErrorLoading": "Échec du chargement du rapport : {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

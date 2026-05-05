@@ -48,34 +48,36 @@ class _ProposalsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Wrap so the confirm-all button drops to its own row on
-          // narrow cards instead of pushing the title + pending-count
-          // pill off-screen. The title block is itself a Wrap (not a
-          // Row + Flexible) because the outer Wrap hands its children
-          // unbounded width — Flexible/Expanded inside an unbounded
-          // Row throws at layout time.
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            alignment: WrapAlignment.spaceBetween,
+          // Title block on the left (icon + label + pending-count
+          // pill, wraps internally if the card is too narrow to fit
+          // them on one line) and the Confirm-all button pinned to
+          // the right edge so it lines up with the Read-more pill in
+          // the header above. `Expanded` collapses harmlessly on
+          // empty/single-child rows when the button isn't shown.
+          Row(
             children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Icon(Icons.fact_check_outlined, size: 16, color: ai.accent),
-                  Text(
-                    messages.changeSetCardTitle,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: ai.titleText,
-                      fontWeight: FontWeight.w600,
-                      height: 1.1,
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.fact_check_outlined,
+                      size: 16,
+                      color: ai.accent,
                     ),
-                  ),
-                  _PendingPill(count: open.length),
-                ],
+                    Text(
+                      messages.changeSetCardTitle,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: ai.titleText,
+                        fontWeight: FontWeight.w600,
+                        height: 1.1,
+                      ),
+                    ),
+                    _PendingPill(count: open.length),
+                  ],
+                ),
               ),
               if (onConfirmAll != null)
                 _ConfirmAllButton(

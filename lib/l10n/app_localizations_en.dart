@@ -617,6 +617,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentPendingWakesPendingLabel => 'Pending';
 
   @override
+  String agentPendingWakesRunningHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Running now ($count)',
+      one: 'Running now',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentPendingWakesScheduledLabel => 'Scheduled';
 
   @override
@@ -629,7 +640,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentPendingWakesSortDueSoonest => 'Due soonest';
 
   @override
-  String get agentPendingWakesTitle => 'Pending Wakes';
+  String get agentPendingWakesTitle => 'Wake Cycles';
 
   @override
   String agentReportErrorLoading(String error) {

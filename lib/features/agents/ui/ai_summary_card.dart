@@ -100,12 +100,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     return remaining.clamp(0, WakeOrchestrator.throttleWindow.inSeconds);
   }
 
-  void _openInternals() {
+  void _openInternals({String? agentName}) {
     Navigator.of(context).push(
       AgentInternalsPanel.route(
         context: context,
         agentId: widget.identity.agentId,
-        agentName: widget.identity.displayName,
+        agentName: agentName ?? widget.identity.displayName,
       ),
     );
   }
@@ -183,6 +183,20 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final additionalReport = _resolveAdditionalReport(report);
 
     final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
+    // Prefer the template's display name (e.g. "Task Laura") over the
+    // generic agent kind label ("Task Agent") so the subtitle reads as
+    // the named persona the user picked. Falls back to the agent's
+    // own displayName until the template async resolves or if the
+    // agent has none assigned.
+    final templateAsync = ref.watch(templateForAgentProvider(agentId));
+    final templateEntity = templateAsync.value;
+    final templateName = templateEntity is AgentTemplateEntity
+        ? templateEntity.displayName.trim()
+        : null;
+    final subtitle = templateName != null && templateName.isNotEmpty
+        ? templateName
+        : widget.identity.displayName;
+
     final agentStateAsync = ref.watch(agentStateProvider(agentId));
     final nextWakeAt = agentStateAsync.value?.mapOrNull(
       agentState: (s) => s.nextWakeAt,
@@ -219,11 +233,15 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         color: ai.background,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: ai.border),
+        // Just enough glow to lift the card off the page background;
+        // the previous (alpha 0.10, blur 24) bled noticeably outside
+        // the card outline. The border colour now drives the halo so
+        // it reads as a soft tinted edge rather than a wash.
         boxShadow: [
           BoxShadow(
             color: ai.accent.withValues(alpha: 0.10),
-            blurRadius: 24,
-            spreadRadius: -6,
+            blurRadius: 6,
+            spreadRadius: -2,
           ),
         ],
       ),
@@ -233,11 +251,11 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _TldrHeader(
-              agentName: widget.identity.displayName,
+              agentName: subtitle,
               hasMore: tldr.isNotEmpty || additionalReport != null,
               expanded: _expanded,
               onToggle: () => setState(() => _expanded = !_expanded),
-              onAgentTap: _openInternals,
+              onAgentTap: () => _openInternals(agentName: subtitle),
               isRunning: isRunning,
               showCountdown: showCountdown,
               nextWakeAt: nextWakeAt,
@@ -256,7 +274,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                 tldr: tldr,
                 expanded: _expanded,
                 additionalReport: additionalReport,
-                onOpenInternals: _openInternals,
+                onOpenInternals: () => _openInternals(agentName: subtitle),
               ),
             // Hide the proposals section until the unified
             // suggestion list has produced its first value. This

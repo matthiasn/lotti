@@ -354,11 +354,19 @@
   "agentPendingWakesFilterSectionType": "Type",
   "agentPendingWakesGroupByType": "Type",
   "agentPendingWakesPendingLabel": "Pending",
+  "agentPendingWakesRunningHeading": "{count, plural, =1{Running now} other{Running now ({count})}}",
+  "@agentPendingWakesRunningHeading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentPendingWakesScheduledLabel": "Scheduled",
   "agentPendingWakesSearchPlaceholder": "Search wakes…",
   "agentPendingWakesSortDueLatest": "Due latest",
   "agentPendingWakesSortDueSoonest": "Due soonest",
-  "agentPendingWakesTitle": "Pending Wakes",
+  "agentPendingWakesTitle": "Wake Cycles",
   "agentReportErrorLoading": "Failed to load report: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

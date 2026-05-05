@@ -622,6 +622,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentPendingWakesPendingLabel => 'Čekající';
 
   @override
+  String agentPendingWakesRunningHeading(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Právě běží ($count)',
+      one: 'Právě běží',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get agentPendingWakesScheduledLabel => 'Naplánované';
 
   @override
@@ -634,7 +645,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentPendingWakesSortDueSoonest => 'Spustí se nejdříve';
 
   @override
-  String get agentPendingWakesTitle => 'Čekající probuzení';
+  String get agentPendingWakesTitle => 'Cykly probouzení';
 
   @override
   String agentReportErrorLoading(String error) {
