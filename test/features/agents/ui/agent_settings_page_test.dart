@@ -13,9 +13,9 @@ import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/state/token_stats_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
-import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
+import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -261,8 +261,15 @@ void main() {
       await tester.tap(find.text(context.messages.agentPendingWakesTitle));
       await tester.pumpAndSettle();
 
-      expect(find.text('Wake dashboard polish'), findsOneWidget);
-      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      // Subject title + agent display name share a single Text.rich
+      // in the shared row, so use `findRichText: true` to match through it.
+      expect(
+        find.textContaining('Wake dashboard polish', findRichText: true),
+        findsAtLeast(1),
+      );
+      // The new shared row uses an hourglass icon for "pending" wakes,
+      // sourced from `_PendingWakeTrailing`'s leading.
+      expect(find.byIcon(Icons.hourglass_bottom_rounded), findsOneWidget);
     });
 
     testWidgets('keeps all tab bodies mounted in an IndexedStack', (
@@ -299,7 +306,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byType(AgentPendingWakesList, skipOffstage: false),
+        find.byType(AgentPendingWakesPage, skipOffstage: false),
         findsOneWidget,
       );
     });
@@ -845,7 +852,7 @@ void main() {
           // Sibling-tab bodies must not be on-stage.
           expect(find.byType(TokenStatsTab), findsNothing);
           expect(find.byType(AgentInstancesList), findsNothing);
-          expect(find.byType(AgentPendingWakesList), findsNothing);
+          expect(find.byType(AgentPendingWakesPage), findsNothing);
         },
       );
 
@@ -856,7 +863,7 @@ void main() {
           await tester.pumpWidget(buildSubject());
           await tester.pumpAndSettle();
 
-          expect(find.byType(AgentPendingWakesList), findsOneWidget);
+          expect(find.byType(AgentPendingWakesPage), findsOneWidget);
           expect(find.byType(TokenStatsTab), findsNothing);
           expect(find.byType(AgentInstancesList), findsNothing);
         },
@@ -904,7 +911,7 @@ void main() {
 
           final context = tester.element(find.byType(AgentSettingsPage));
           // Tab labels only appear inside the in-page tab bar — the
-          // tab body widgets (`_TemplatesTab`, `AgentPendingWakesList`,
+          // tab body widgets (`_TemplatesTab`, `AgentPendingWakesPage`,
           // …) render their own content, not the tab name. So a
           // `find.text(label)` of zero is the cleanest "bar is hidden"
           // signal without reaching into a private widget class.

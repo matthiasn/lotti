@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
-import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
+import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
 import 'package:lotti/features/agents/ui/souls/agent_souls_page.dart';
 import 'package:lotti/features/agents/ui/templates/agent_templates_page.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
@@ -394,7 +394,7 @@ class _AgentSettingsTabBody extends ConsumerWidget {
         AgentTemplatesPage(),
         AgentInstancesList(),
         AgentSoulsPage(),
-        AgentPendingWakesList(),
+        AgentPendingWakesPage(),
       ],
     );
   }

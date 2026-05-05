@@ -611,13 +611,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentPendingWakesDueAtLabel => 'Prévu à';
 
   @override
+  String get agentPendingWakesEmptyFiltered =>
+      'Aucun réveil ne correspond à tes filtres.';
+
+  @override
   String get agentPendingWakesEmptyList => 'Aucun réveil en attente';
+
+  @override
+  String get agentPendingWakesFilterSectionType => 'Type';
+
+  @override
+  String get agentPendingWakesGroupByType => 'Type';
 
   @override
   String get agentPendingWakesPendingLabel => 'En attente';
 
   @override
   String get agentPendingWakesScheduledLabel => 'Planifié';
+
+  @override
+  String get agentPendingWakesSearchPlaceholder => 'Rechercher des réveils…';
+
+  @override
+  String get agentPendingWakesSortDueLatest => 'Prévu en dernier';
+
+  @override
+  String get agentPendingWakesSortDueSoonest => 'Prévu en premier';
 
   @override
   String get agentPendingWakesTitle => 'Réveils en attente';
@@ -858,11 +877,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentSoulSelectTitle => 'Sélectionner une âme';
 
   @override
-  String get agentSoulSettingsTab => 'Paramètres';
-
-  @override
   String get agentSoulsEmptyFiltered =>
       'Aucune âme ne correspond à tes filtres.';
+
+  @override
+  String get agentSoulSettingsTab => 'Paramètres';
 
   @override
   String get agentSoulsSearchPlaceholder => 'Rechercher des âmes…';

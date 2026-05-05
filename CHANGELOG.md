@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.993]
+### Changed
+- Re-skinned Settings → Agents → Pending Wakes onto the shared listing
+  shell. The legacy stacked `_PendingWakeCard` column is replaced by
+  the same toolbar / row primitives Instances, Templates, and Souls
+  use: search, an optional Type filter (only when both `pending` and
+  `scheduled` records exist), Group by All / Type, and Sort by Due
+  soonest (default) / Due latest / Name. Each row shows the linked
+  task or project title (or the agent name when no subject is
+  attached), agent kind + wake type pills, and a live countdown chip
+  that ticks once a second (the absolute due timestamp surfaces as
+  the chip's tooltip). Internal: the per-row `Timer.periodic` is
+  replaced by a single page-scoped `wakeCountdownTickerProvider`;
+  rows derive their visible countdown via
+  `ref.watch(... .select(...))` so 1K rows collapse to one timer and
+  only rebuild when their displayed string changes. New
+  `agentPendingWakeRowVmsProvider` joins `pendingWakeRecordsProvider`
+  with `pendingWakeTargetTitleProvider` (one parallel `Future.wait`)
+  into `PendingWakeVm`s the page maps into the shared
+  `AgentListRowData`. Removed the legacy `agent_pending_wakes_list.dart`
+  and the inline `WakeActivityChart` from this tab — the chart still
+  lives under the Stats tab as a 24h overview.
+- Re-skinned Settings → Agents → Souls onto the shared listing shell.
+  The legacy ModernBaseCard / ListTile column is replaced by the same
+  toolbar / row / search primitives Instances and Templates now use:
+  search input, Sort by Name (default) / Recent / Oldest, and a hue-
+  tinted `SoulAvatar` initial-tile leading. Each row shows the soul
+  name and the active version as a mono `vN` cell. Tap target (deep-
+  link to the soul detail) and the create-soul FAB are unchanged.
+  Internal: new `agentSoulRowVmsProvider` joins
+  `allSoulDocumentsProvider` + `activeSoulVersionProvider` into
+  `SoulVm`s the page maps into the shared `AgentListRowData`; the old
+  inline `_SoulsTab` / `_SoulListTile` widgets are removed.
+
 ## [0.9.992]
 ### Added
 - New inline `SidebarWakeQueue` block on the desktop sidebar's
@@ -28,17 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fixed slot — values right-aligned inside it — so the LEDs and
   labels never reflow as the outbox / inbox depths roll over between
   digit counts.
-- Re-skinned Settings → Agents → Souls onto the shared listing shell.
-  The legacy ModernBaseCard / ListTile column is replaced by the same
-  toolbar / row / search primitives Instances and Templates now use:
-  search input, Sort by Name (default) / Recent / Oldest, and a hue-
-  tinted `SoulAvatar` initial-tile leading. Each row shows the soul
-  name and the active version as a mono `vN` cell. Tap target (deep-
-  link to the soul detail) and the create-soul FAB are unchanged.
-  Internal: new `agentSoulRowVmsProvider` joins
-  `allSoulDocumentsProvider` + `activeSoulVersionProvider` into
-  `SoulVm`s the page maps into the shared `AgentListRowData`; the old
-  inline `_SoulsTab` / `_SoulListTile` widgets are removed.
 - Re-skinned Settings → Agents → Templates onto the shared listing
   shell. The legacy ListTile + ModernBaseCard list is replaced by the
   same toolbar / group / row primitives the Instances tab now uses:

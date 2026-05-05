@@ -611,13 +611,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentPendingWakesDueAtLabel => 'Programată la';
 
   @override
+  String get agentPendingWakesEmptyFiltered =>
+      'Nicio trezire nu se potrivește cu filtrele dvs.';
+
+  @override
   String get agentPendingWakesEmptyList => 'Nu există treziri în așteptare';
+
+  @override
+  String get agentPendingWakesFilterSectionType => 'Tip';
+
+  @override
+  String get agentPendingWakesGroupByType => 'Tip';
 
   @override
   String get agentPendingWakesPendingLabel => 'În așteptare';
 
   @override
   String get agentPendingWakesScheduledLabel => 'Programată';
+
+  @override
+  String get agentPendingWakesSearchPlaceholder => 'Caută treziri…';
+
+  @override
+  String get agentPendingWakesSortDueLatest => 'Programate ultimele';
+
+  @override
+  String get agentPendingWakesSortDueSoonest => 'Programate primele';
 
   @override
   String get agentPendingWakesTitle => 'Treziri în așteptare';
@@ -858,11 +877,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulSelectTitle => 'Selectează un suflet';
 
   @override
-  String get agentSoulSettingsTab => 'Setări';
-
-  @override
   String get agentSoulsEmptyFiltered =>
       'Niciun suflet nu se potrivește cu filtrele dvs.';
+
+  @override
+  String get agentSoulSettingsTab => 'Setări';
 
   @override
   String get agentSoulsSearchPlaceholder => 'Caută suflete…';
