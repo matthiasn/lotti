@@ -1184,11 +1184,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Selectează un șablon';
 
   @override
+  String get agentTemplatesEmptyFiltered =>
+      'Niciun șablon nu corespunde filtrelor dvs.';
+
+  @override
   String get agentTemplateSettingsSubtitle =>
       'Gestionează personalitățile și directivele agenților';
 
   @override
   String get agentTemplateSettingsTab => 'Setări';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Tip';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Tip';
+
+  @override
+  String get agentTemplatesGroupNone => 'Toate';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Caută șabloane…';
 
   @override
   String get agentTemplateStatsTab => 'Statistici';

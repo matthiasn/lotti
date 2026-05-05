@@ -1164,11 +1164,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Select Template';
 
   @override
+  String get agentTemplatesEmptyFiltered => 'No templates match your filters.';
+
+  @override
   String get agentTemplateSettingsSubtitle =>
       'Manage agent personalities and directives';
 
   @override
   String get agentTemplateSettingsTab => 'Settings';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Kind';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Kind';
+
+  @override
+  String get agentTemplatesGroupNone => 'All';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Search templates…';
 
   @override
   String get agentTemplateStatsTab => 'Stats';

@@ -3,15 +3,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
-import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
+import 'package:lotti/features/agents/ui/templates/agent_templates_page.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/tabs/design_system_tab.dart';
@@ -398,168 +395,11 @@ class _AgentSettingsTabBody extends ConsumerWidget {
       index: selectedTab.index,
       children: const [
         TokenStatsTab(),
-        _TemplatesTab(),
+        AgentTemplatesPage(),
         AgentInstancesList(),
         _SoulsTab(),
         AgentPendingWakesList(),
       ],
-    );
-  }
-}
-
-/// Inline templates list extracted from `AgentTemplateListPage`.
-class _TemplatesTab extends ConsumerWidget {
-  const _TemplatesTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final templatesAsync = ref.watch(agentTemplatesProvider);
-
-    return templatesAsync.when(
-      data: (templates) => _buildTemplatesList(context, ref, templates),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(
-            context.messages.commonError,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: context.colorScheme.error,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTemplatesList(
-    BuildContext context,
-    WidgetRef ref,
-    List<AgentDomainEntity> templates,
-  ) {
-    if (templates.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.smart_toy_outlined,
-              size: 64,
-              color: Theme.of(context).disabledColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              context.messages.agentTemplateEmptyList,
-              style: context.textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).disabledColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    final sorted = templates.whereType<AgentTemplateEntity>().toList()
-      ..sort(
-        (a, b) =>
-            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
-      );
-
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        math.max(16, DesignSystemBottomNavigationBar.occupiedHeight(context)),
-      ),
-      itemCount: sorted.length,
-      itemBuilder: (context, index) {
-        final template = sorted[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: _TemplateListTile(template: template),
-        );
-      },
-    );
-  }
-}
-
-class _TemplateListTile extends ConsumerWidget {
-  const _TemplateListTile({required this.template});
-
-  final AgentTemplateEntity template;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activeVersionAsync = ref.watch(
-      activeTemplateVersionProvider(template.id),
-    );
-    final versionNumber = activeVersionAsync.value?.mapOrNull(
-      agentTemplateVersion: (v) => v.version,
-    );
-    final hasPending = ref.watch(
-      templatesPendingReviewProvider.select(
-        (async) => async.value?.contains(template.id) ?? false,
-      ),
-    );
-
-    return ModernBaseCard(
-      onTap: () => beamToNamed('/settings/agents/templates/${template.id}'),
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Stack(
-          children: [
-            Icon(
-              Icons.smart_toy_outlined,
-              size: 32,
-              color: context.colorScheme.primary,
-            ),
-            if (hasPending)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: AgentPalette.purple,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        title: Text(
-          template.displayName,
-          style: context.textTheme.titleMedium,
-        ),
-        subtitle: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: AppTheme.spacingSmall,
-          runSpacing: AppTheme.spacingXSmall,
-          children: [
-            _KindBadge(kind: template.kind),
-            Text(
-              template.modelId,
-              style: context.textTheme.bodySmall,
-            ),
-            if (versionNumber != null)
-              Text(
-                context.messages.agentTemplateVersionLabel(versionNumber),
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              ),
-          ],
-        ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: context.colorScheme.onSurfaceVariant,
-        ),
-      ),
     );
   }
 }
@@ -681,41 +521,6 @@ class _SoulListTile extends ConsumerWidget {
         trailing: Icon(
           Icons.chevron_right,
           color: context.colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-class _KindBadge extends StatelessWidget {
-  const _KindBadge({required this.kind});
-
-  final AgentTemplateKind kind;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (kind) {
-      AgentTemplateKind.taskAgent =>
-        context.messages.agentTemplateKindTaskAgent,
-      AgentTemplateKind.templateImprover =>
-        context.messages.agentTemplateKindImprover,
-      AgentTemplateKind.projectAgent =>
-        context.messages.agentTemplateKindProjectAgent,
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.spacingSmall,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: context.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(AppTheme.spacingXSmall),
-      ),
-      child: Text(
-        label,
-        style: context.textTheme.labelSmall?.copyWith(
-          color: context.colorScheme.onPrimaryContainer,
         ),
       ),
     );

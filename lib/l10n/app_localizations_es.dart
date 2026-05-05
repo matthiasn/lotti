@@ -1179,11 +1179,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Seleccionar plantilla';
 
   @override
+  String get agentTemplatesEmptyFiltered =>
+      'Ninguna plantilla coincide con tus filtros.';
+
+  @override
   String get agentTemplateSettingsSubtitle =>
       'Gestionar personalidades y directivas de agentes';
 
   @override
   String get agentTemplateSettingsTab => 'Ajustes';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Tipo';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Tipo';
+
+  @override
+  String get agentTemplatesGroupNone => 'Todas';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Buscar plantillas…';
 
   @override
   String get agentTemplateStatsTab => 'Estadísticas';

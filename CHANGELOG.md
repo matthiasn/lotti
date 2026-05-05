@@ -28,6 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fixed slot — values right-aligned inside it — so the LEDs and
   labels never reflow as the outbox / inbox depths roll over between
   digit counts.
+- Re-skinned Settings → Agents → Templates onto the shared listing
+  shell. The legacy ListTile + ModernBaseCard list is replaced by the
+  same toolbar / group / row primitives the Instances tab now uses:
+  search input, optional Kind filter (only when 2+ kinds exist),
+  Group by Kind / All, Sort by Name / Recent / Oldest. Each row shows
+  the template name, model id, kind pill, and active version (`v{N}`)
+  in the mono meta cell; a pending-review template gets an
+  `AgentPalette.purple`-tinted leading icon instead of the legacy
+  positioned dot. Tap target and FAB behaviour are unchanged.
+  Internal: new `agentTemplateRowVmsProvider` joins
+  `agentTemplatesProvider` + `activeTemplateVersionProvider` +
+  `templatesPendingReviewProvider` into `TemplateVm`s the page maps
+  into the shared `AgentListRowData`.
 - Extracted the Settings → Agents → Instances scaffolding (page shell,
   toolbar, group section, row, filter chip row, soul avatar) into a
   shared `lib/features/agents/ui/listing/` layer so the Templates,

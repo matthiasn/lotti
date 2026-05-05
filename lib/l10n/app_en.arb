@@ -755,6 +755,7 @@
   "@agentTemplateSelectTitle": {
     "description": "Title for the template selection dialog when creating an agent."
   },
+  "agentTemplatesEmptyFiltered": "No templates match your filters.",
   "agentTemplateSettingsSubtitle": "Manage agent personalities and directives",
   "@agentTemplateSettingsSubtitle": {
     "description": "Subtitle shown under the agent templates settings entry."
@@ -763,6 +764,10 @@
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
+  "agentTemplatesFilterSectionKind": "Kind",
+  "agentTemplatesGroupByKind": "Kind",
+  "agentTemplatesGroupNone": "All",
+  "agentTemplatesSearchPlaceholder": "Search templates…",
   "agentTemplateStatsTab": "Stats",
   "@agentTemplateStatsTab": {
     "description": "Tab label for the stats tab in agent template detail."
