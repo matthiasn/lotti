@@ -1439,6 +1439,8 @@
   "configFlagRecordLocationDescription": "Automatically record your location with new entries. This helps with location-based organization and search.",
   "configFlagResendAttachments": "Resend attachments",
   "configFlagResendAttachmentsDescription": "Enable this to automatically resend failed attachment uploads when the connection is restored.",
+  "configFlagShowSidebarWakeQueue": "Show sidebar wake queue",
+  "configFlagShowSidebarWakeQueueDescription": "Show the inline Wake Queue above Settings — header, the next two pending wakes with countdowns, and a link to the full list.",
   "configFlagShowSyncActivityIndicator": "Show sync activity indicator",
   "configFlagShowSyncActivityIndicatorDescription": "Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.",
   "configFlagUseCloudInferenceDescription": "Use cloud-based AI services for enhanced features. This requires an internet connection.",
@@ -2950,6 +2952,18 @@
   "showCompleted": "Show completed",
   "sidebarToggleCollapseLabel": "Collapse sidebar",
   "sidebarToggleExpandLabel": "Expand sidebar",
+  "sidebarWakesCancelTooltip": "Cancel wake",
+  "sidebarWakesHeader": "Wakes",
+  "sidebarWakesMore": "+{count} more",
+  "@sidebarWakesMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarWakesNow": "now",
+  "sidebarWakesOpenList": "Open list",
   "skillsSectionTitle": "Skills",
   "speechDictionaryHelper": "Semicolon-separated terms (max 50 chars) for better speech recognition",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

@@ -2656,6 +2656,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
 
   @override
+  String get configFlagShowSidebarWakeQueue =>
+      'Weckvorgang-Warteschlange in der Seitenleiste anzeigen';
+
+  @override
+  String get configFlagShowSidebarWakeQueueDescription =>
+      'Zeige die Weckvorgang-Warteschlange über den Einstellungen — Header, die nächsten zwei anstehenden Weckvorgänge mit Countdown und ein Link zur vollständigen Liste.';
+
+  @override
   String get configFlagShowSyncActivityIndicator =>
       'Sync-Aktivitätsanzeige einblenden';
 
@@ -6236,6 +6244,23 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get sidebarToggleExpandLabel => 'Seitenleiste ausklappen';
+
+  @override
+  String get sidebarWakesCancelTooltip => 'Weckvorgang abbrechen';
+
+  @override
+  String get sidebarWakesHeader => 'Weckvorgänge';
+
+  @override
+  String sidebarWakesMore(int count) {
+    return '+$count weitere';
+  }
+
+  @override
+  String get sidebarWakesNow => 'jetzt';
+
+  @override
+  String get sidebarWakesOpenList => 'Liste öffnen';
 
   @override
   String get skillsSectionTitle => 'Skills';

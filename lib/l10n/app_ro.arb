@@ -1198,6 +1198,8 @@
   "configFlagRecordLocationDescription": "Înregistrează automat locația dvs. cu intrări noi. Acest lucru ajută la organizarea și căutarea pe baza locației.",
   "configFlagResendAttachments": "Retrimite atașamentele",
   "configFlagResendAttachmentsDescription": "Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.",
+  "configFlagShowSidebarWakeQueue": "Afișează coada de treziri în bara laterală",
+  "configFlagShowSidebarWakeQueueDescription": "Afișează coada de treziri deasupra Setărilor — anteturile, următoarele două treziri cu numărătoare inversă și un link către lista completă.",
   "configFlagShowSyncActivityIndicator": "Afișează indicatorul de activitate de sincronizare",
   "configFlagShowSyncActivityIndicatorDescription": "Afișează activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.",
   "configFlagUseCloudInferenceDescription": "Utilizați servicii AI bazate pe cloud pentru funcții îmbunătățite. Acest lucru necesită o conexiune la internet.",
@@ -2645,6 +2647,18 @@
   "showCompleted": "Afișează finalizate",
   "sidebarToggleCollapseLabel": "Restrânge bara laterală",
   "sidebarToggleExpandLabel": "Extinde bara laterală",
+  "sidebarWakesCancelTooltip": "Anulează trezirea",
+  "sidebarWakesHeader": "Treziri",
+  "sidebarWakesMore": "+{count} altele",
+  "@sidebarWakesMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarWakesNow": "acum",
+  "sidebarWakesOpenList": "Deschide lista",
   "skillsSectionTitle": "Competențe",
   "speechDictionaryHelper": "Termeni separați prin punct și virgulă (max 50 caractere) pentru o mai bună recunoaștere vocală",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

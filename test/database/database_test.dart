@@ -182,6 +182,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Show live sync activity in the sidebar.',
     status: false,
   ),
+  const ConfigFlag(
+    name: showSidebarWakeQueueFlag,
+    description: 'Show the inline Wake Queue in the sidebar.',
+    status: false,
+  ),
 };
 
 void main() {

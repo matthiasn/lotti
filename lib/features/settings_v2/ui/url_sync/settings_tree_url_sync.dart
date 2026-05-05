@@ -1,4 +1,5 @@
 import 'package:beamer/beamer.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
@@ -100,6 +101,31 @@ class _SettingsTreeUrlSyncState extends ConsumerState<SettingsTreeUrlSync> {
   }
 
   void _onRouteChanged() {
+    if (_programmaticBeams > 0) return;
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    // Beamer's `SettingsLocation.buildPages` mutates the
+    // `desktopSelectedSettingsRoute` ValueNotifier *inside* the build
+    // pass, which fires this listener synchronously. Riverpod forbids
+    // mutating provider state during build, so when we land here while
+    // a frame is in `persistentCallbacks` (build/layout/paint) we
+    // defer the actual sync to the next frame. Outside the build pass
+    // we run synchronously — that's the path most user-driven URL
+    // changes take and keeps the visible behaviour unchanged.
+    final inBuildPhase =
+        phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.transientCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks;
+    if (inBuildPhase) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _runRouteSync();
+      });
+      return;
+    }
+    _runRouteSync();
+  }
+
+  void _runRouteSync() {
     if (_programmaticBeams > 0) return;
     final route = _navService.desktopSelectedSettingsRoute.value;
     final url = route?.path ?? settingsRootUrl;

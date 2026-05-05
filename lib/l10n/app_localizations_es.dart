@@ -2694,6 +2694,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
+  String get configFlagShowSidebarWakeQueue =>
+      'Mostrar la cola de despertares en la barra lateral';
+
+  @override
+  String get configFlagShowSidebarWakeQueueDescription =>
+      'Muestra la cola de despertares encima de Ajustes — la cabecera, los dos próximos despertares con cuenta atrás y un enlace a la lista completa.';
+
+  @override
   String get configFlagShowSyncActivityIndicator =>
       'Mostrar indicador de actividad de sincronización';
 
@@ -6335,6 +6343,23 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get sidebarToggleExpandLabel => 'Expandir barra lateral';
+
+  @override
+  String get sidebarWakesCancelTooltip => 'Cancelar despertar';
+
+  @override
+  String get sidebarWakesHeader => 'Despertares';
+
+  @override
+  String sidebarWakesMore(int count) {
+    return '+$count más';
+  }
+
+  @override
+  String get sidebarWakesNow => 'ahora';
+
+  @override
+  String get sidebarWakesOpenList => 'Abrir lista';
 
   @override
   String get skillsSectionTitle => 'Habilidades';

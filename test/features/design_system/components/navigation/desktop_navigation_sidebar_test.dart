@@ -618,6 +618,61 @@ void main() {
         expect(find.byKey(slotKey), findsNothing);
       },
     );
+
+    testWidgets(
+      'belowSettings slot renders BELOW the Settings row in expanded mode '
+      'and stays hidden in collapsed mode',
+      (tester) async {
+        const slotKey = Key('below-settings-slot');
+        const slot = SizedBox(
+          key: slotKey,
+          height: 18,
+          child: Text('sync activity'),
+        );
+        final settings = DesktopSidebarDestination(
+          label: 'Settings',
+          iconBuilder: ({required bool active}) => const Icon(Icons.settings),
+        );
+
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              settingsDestination: settings,
+              belowSettings: slot,
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byKey(slotKey), findsOneWidget);
+
+        final settingsY = tester.getCenter(find.text('Settings')).dy;
+        final slotY = tester.getCenter(find.byKey(slotKey)).dy;
+        expect(
+          slotY,
+          greaterThan(settingsY),
+          reason: 'belowSettings must sit below the Settings row',
+        );
+
+        // Collapsed mode — same suppression rule as aboveSettings.
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              settingsDestination: settings,
+              belowSettings: slot,
+              collapsed: true,
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(find.byKey(slotKey), findsNothing);
+      },
+    );
   });
 
   group('DesktopNavigationSidebar collapsed', () {

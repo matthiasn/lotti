@@ -961,6 +961,8 @@
   "configFlagRecordLocationDescription": "Automaticky zaznamenejte vaši polohu s novými záznamy. To pomáhá s organizací a vyhledáváním podle polohy.",
   "configFlagResendAttachments": "Odeslat přílohy znovu",
   "configFlagResendAttachmentsDescription": "Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.",
+  "configFlagShowSidebarWakeQueue": "Zobrazit frontu probuzení v postranním panelu",
+  "configFlagShowSidebarWakeQueueDescription": "Zobrazí frontu probuzení nad Nastavením — záhlaví, dvě nejbližší naplánovaná probuzení s odpočtem a odkaz na úplný seznam.",
   "configFlagShowSyncActivityIndicator": "Zobrazit indikátor aktivity synchronizace",
   "configFlagShowSyncActivityIndicatorDescription": "Zobrazit živou aktivitu synchronizace v postranním panelu — tx/rx LED proužek s hloubkou odchozí a příchozí fronty.",
   "configFlagUseCloudInferenceDescription": "Používat AI služby v cloudu pro vylepšené funkce. Vyžaduje připojení k internetu.",
@@ -2375,6 +2377,18 @@
   "showCompleted": "Zobrazit dokončené",
   "sidebarToggleCollapseLabel": "Sbalit postranní panel",
   "sidebarToggleExpandLabel": "Rozbalit postranní panel",
+  "sidebarWakesCancelTooltip": "Zrušit probuzení",
+  "sidebarWakesHeader": "Probuzení",
+  "sidebarWakesMore": "+{count} dalších",
+  "@sidebarWakesMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarWakesNow": "nyní",
+  "sidebarWakesOpenList": "Otevřít seznam",
   "skillsSectionTitle": "Dovednosti",
   "speechDictionaryHelper": "Výrazy oddělené středníkem (max. 50 znaků) pro lepší rozpoznávání řeči",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

@@ -1198,6 +1198,8 @@
   "configFlagRecordLocationDescription": "Enregistrer automatiquement ta position avec les nouvelles entrées. Cela facilite l'organisation et la recherche basées sur la localisation.",
   "configFlagResendAttachments": "Renvoyer les pièces jointes",
   "configFlagResendAttachmentsDescription": "Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.",
+  "configFlagShowSidebarWakeQueue": "Afficher la file des réveils dans la barre latérale",
+  "configFlagShowSidebarWakeQueueDescription": "Affiche la file des réveils au-dessus des Réglages — l'en-tête, les deux prochains réveils avec compte à rebours, et un lien vers la liste complète.",
   "configFlagShowSyncActivityIndicator": "Afficher l'indicateur d'activité de synchronisation",
   "configFlagShowSyncActivityIndicatorDescription": "Affiche l'activité de synchronisation en direct dans la barre latérale — une bande LED tx/rx avec la profondeur des files d'entrée et de sortie.",
   "configFlagUseCloudInferenceDescription": "Utiliser les services d'IA basés sur le cloud pour des fonctionnalités améliorées. Cela nécessite une connexion Internet.",
@@ -2645,6 +2647,18 @@
   "showCompleted": "Afficher les terminées",
   "sidebarToggleCollapseLabel": "Réduire la barre latérale",
   "sidebarToggleExpandLabel": "Développer la barre latérale",
+  "sidebarWakesCancelTooltip": "Annuler le réveil",
+  "sidebarWakesHeader": "Réveils",
+  "sidebarWakesMore": "+{count} de plus",
+  "@sidebarWakesMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarWakesNow": "maintenant",
+  "sidebarWakesOpenList": "Ouvrir la liste",
   "skillsSectionTitle": "Compétences",
   "speechDictionaryHelper": "Termes séparés par des points-virgules (max 50 caractères) pour une meilleure reconnaissance vocale",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

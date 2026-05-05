@@ -9,6 +9,7 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
@@ -365,6 +366,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final showSyncIndicator =
         ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
         false;
+    final showSidebarWakeQueue =
+        ref.watch(configFlagProvider(showSidebarWakeQueueFlag)).value ?? false;
 
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
@@ -410,7 +413,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             onToggleCollapsed: () => ref
                 .read(paneWidthControllerProvider.notifier)
                 .toggleSidebarCollapsed(),
-            aboveSettings: showSyncIndicator
+            aboveSettings: showSidebarWakeQueue
+                ? const SidebarWakeQueue()
+                : null,
+            belowSettings: showSyncIndicator
                 ? const SyncActivityIndicator()
                 : null,
           ),

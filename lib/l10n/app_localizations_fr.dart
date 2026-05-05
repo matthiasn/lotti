@@ -2690,6 +2690,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.';
 
   @override
+  String get configFlagShowSidebarWakeQueue =>
+      'Afficher la file des réveils dans la barre latérale';
+
+  @override
+  String get configFlagShowSidebarWakeQueueDescription =>
+      'Affiche la file des réveils au-dessus des Réglages — l\'en-tête, les deux prochains réveils avec compte à rebours, et un lien vers la liste complète.';
+
+  @override
   String get configFlagShowSyncActivityIndicator =>
       'Afficher l\'indicateur d\'activité de synchronisation';
 
@@ -6344,6 +6352,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get sidebarToggleExpandLabel => 'Développer la barre latérale';
+
+  @override
+  String get sidebarWakesCancelTooltip => 'Annuler le réveil';
+
+  @override
+  String get sidebarWakesHeader => 'Réveils';
+
+  @override
+  String sidebarWakesMore(int count) {
+    return '+$count de plus';
+  }
+
+  @override
+  String get sidebarWakesNow => 'maintenant';
+
+  @override
+  String get sidebarWakesOpenList => 'Ouvrir la liste';
 
   @override
   String get skillsSectionTitle => 'Compétences';

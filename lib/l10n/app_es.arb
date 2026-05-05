@@ -1198,6 +1198,8 @@
   "configFlagRecordLocationDescription": "Registrar automáticamente tu ubicación con las nuevas entradas. Esto ayuda con la organización y la búsqueda basadas en la ubicación.",
   "configFlagResendAttachments": "Reenviar archivos adjuntos",
   "configFlagResendAttachmentsDescription": "Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.",
+  "configFlagShowSidebarWakeQueue": "Mostrar la cola de despertares en la barra lateral",
+  "configFlagShowSidebarWakeQueueDescription": "Muestra la cola de despertares encima de Ajustes — la cabecera, los dos próximos despertares con cuenta atrás y un enlace a la lista completa.",
   "configFlagShowSyncActivityIndicator": "Mostrar indicador de actividad de sincronización",
   "configFlagShowSyncActivityIndicatorDescription": "Muestra la actividad de sincronización en directo en la barra lateral — una franja LED tx/rx con la profundidad de bandejas de entrada y salida.",
   "configFlagUseCloudInferenceDescription": "Utiliza servicios de IA basados en la nube para funciones mejoradas. Esto requiere una conexión a Internet.",
@@ -2645,6 +2647,18 @@
   "showCompleted": "Mostrar completadas",
   "sidebarToggleCollapseLabel": "Contraer barra lateral",
   "sidebarToggleExpandLabel": "Expandir barra lateral",
+  "sidebarWakesCancelTooltip": "Cancelar despertar",
+  "sidebarWakesHeader": "Despertares",
+  "sidebarWakesMore": "+{count} más",
+  "@sidebarWakesMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sidebarWakesNow": "ahora",
+  "sidebarWakesOpenList": "Abrir lista",
   "skillsSectionTitle": "Habilidades",
   "speechDictionaryHelper": "Términos separados por punto y coma (máx. 50 caracteres) para mejor reconocimiento de voz",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",

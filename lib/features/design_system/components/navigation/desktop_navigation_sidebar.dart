@@ -64,6 +64,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.collapsedWidth = 72,
     this.onToggleCollapsed,
     this.aboveSettings,
+    this.belowSettings,
     super.key,
   });
 
@@ -100,10 +101,17 @@ class DesktopNavigationSidebar extends StatelessWidget {
 
   /// Optional widget rendered between the scrollable nav and the
   /// Settings row in the expanded layout. The Lotti app uses this slot
-  /// to host the ambient sync activity indicator (variant D4a). The
-  /// slot is intentionally suppressed in [collapsed] mode — its monospace
-  /// LED strip would not fit the icon-only column.
+  /// to host the inline Wake Queue (sidebar handoff S1). The slot is
+  /// intentionally suppressed in [collapsed] mode — the monospace
+  /// header and avatar/title rows would not fit the icon-only column.
   final Widget? aboveSettings;
+
+  /// Optional widget rendered immediately below the Settings row in the
+  /// expanded layout. The Lotti app uses this slot to host the ambient
+  /// sync activity indicator (variant D4a) so the LED strip sits flush
+  /// against the bottom of the rail. Suppressed in [collapsed] mode for
+  /// the same reason as [aboveSettings].
+  final Widget? belowSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -184,6 +192,13 @@ class DesktopNavigationSidebar extends StatelessWidget {
               collapsed: collapsed,
               onTap: onSettingsSelected,
             ),
+
+          // Optional ambient indicator slot pinned beneath Settings.
+          // Hidden in collapsed mode for the same reason as [aboveSettings].
+          if (!collapsed && belowSettings != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            belowSettings!,
+          ],
         ],
       ),
     );

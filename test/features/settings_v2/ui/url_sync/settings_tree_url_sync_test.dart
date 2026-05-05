@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
@@ -258,6 +259,116 @@ void main() {
           'advanced',
           'advanced/flags',
         ]);
+      },
+    );
+  });
+
+  group('SettingsTreeUrlSync — build-phase deferral', () {
+    testWidgets(
+      'mutating desktopSelectedSettingsRoute from inside a build pass '
+      'defers the Riverpod write to the next frame instead of throwing '
+      '"Tried to modify a provider while the widget tree was building" — '
+      'covers the persistentCallbacks branch in `_onRouteChanged`',
+      (tester) async {
+        final harness = await _pumpBridge(tester);
+
+        // Reproduce the production race: Beamer's `SettingsLocation.
+        // buildPages` writes to the ValueNotifier during build, which
+        // synchronously fires `_onRouteChanged`. We do the same here
+        // by mutating from inside a Builder's build method.
+        var buildRan = 0;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Material(
+              child: Column(
+                children: [
+                  SettingsTreeUrlSync(beamToReplacementNamed: harness.spy.call),
+                  Builder(
+                    builder: (context) {
+                      buildRan++;
+                      // Confirm we are actually inside a build pass when
+                      // the mutation happens (covers the
+                      // persistentCallbacks arm rather than idle).
+                      expect(
+                        SchedulerBinding.instance.schedulerPhase,
+                        SchedulerPhase.persistentCallbacks,
+                      );
+                      if (buildRan == 1) {
+                        harness.nav.desktopSelectedSettingsRoute.value = _route(
+                          '/settings/advanced/about',
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // First pump runs the Builder, which mutates the notifier in
+        // build phase. Without the deferral, this would throw a
+        // Riverpod "modified during build" error and fail the test.
+        await tester.pump();
+        await tester.pump();
+
+        expect(harness.container.read(settingsTreePathProvider), [
+          'advanced',
+          'advanced/about',
+        ]);
+        // Sanity — the build callback ran at least once. We don't pin
+        // a hard count because Flutter may rebuild the Builder during
+        // the deferred frame as well.
+        expect(buildRan, greaterThanOrEqualTo(1));
+      },
+    );
+
+    testWidgets(
+      'when a build-phase route change schedules a deferred callback and '
+      'the bridge unmounts before the next frame, the post-frame '
+      '`if (!mounted) return;` guard short-circuits the work without '
+      'mutating Riverpod state',
+      (tester) async {
+        final harness = await _pumpBridge(tester);
+
+        // 1) Trigger a route change from inside a build pass. The
+        // listener fires synchronously and (because we are in
+        // `persistentCallbacks`) defers a post-frame callback that
+        // would otherwise run `_runRouteSync` on the next frame.
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Material(
+              child: Column(
+                children: [
+                  SettingsTreeUrlSync(beamToReplacementNamed: harness.spy.call),
+                  Builder(
+                    builder: (_) {
+                      harness.nav.desktopSelectedSettingsRoute.value = _route(
+                        '/settings/sync',
+                      );
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // 2) Replace the bridge with an empty widget *before* the
+        // post-frame callback gets a chance to fire. The bridge's
+        // State is disposed, so when the deferred callback runs on
+        // the next frame the `mounted` check trips.
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(const SizedBox.shrink()),
+        );
+        // Drain the pending post-frame callback.
+        await tester.pump();
+
+        // The deferred sync should have been short-circuited by the
+        // mounted-guard, so no beams were emitted.
+        expect(harness.spy.uris, isEmpty);
       },
     );
   });
