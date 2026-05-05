@@ -2658,6 +2658,8 @@
   "settingThemingDark": "Tema oscuro",
   "settingThemingLight": "Tema claro",
   "showCompleted": "Mostrar completadas",
+  "sidebarRunningTimerLabel": "Temporizador en curso",
+  "sidebarRunningTimerStopTooltip": "Detener temporizador",
   "sidebarToggleCollapseLabel": "Contraer barra lateral",
   "sidebarToggleExpandLabel": "Expandir barra lateral",
   "sidebarWakesCancelTooltip": "Cancelar despertar",

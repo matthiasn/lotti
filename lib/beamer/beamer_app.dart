@@ -44,6 +44,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
+import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:lotti/widgets/misc/zoom_wrapper.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -413,9 +414,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             onToggleCollapsed: () => ref
                 .read(paneWidthControllerProvider.notifier)
                 .toggleSidebarCollapsed(),
-            aboveSettings: showSidebarWakeQueue
-                ? const SidebarWakeQueue()
-                : null,
+            aboveSettings: _DesktopSidebarAboveSettings(
+              showWakeQueue: showSidebarWakeQueue,
+            ),
             belowSettings: showSyncIndicator
                 ? const SyncActivityIndicator()
                 : null,
@@ -439,11 +440,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                         child: beamerChildren[i],
                       ),
                   ],
-                ),
-                const Positioned(
-                  left: AppScreenConstants.navigationPadding,
-                  bottom: AppScreenConstants.navigationTimeIndicatorBottom,
-                  child: TimeRecordingIndicator(),
                 ),
                 if (!_isRunningInFlatpak())
                   const Positioned(
@@ -700,6 +696,34 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Composer for the desktop sidebar's `aboveSettings` slot. Stacks the
+/// running-timer panel (when a timer is active) above the optional
+/// inline Wake Queue (when its config flag is enabled). When neither is
+/// visible, collapses to [SizedBox.shrink] so the slot consumes no
+/// vertical space.
+class _DesktopSidebarAboveSettings extends StatelessWidget {
+  const _DesktopSidebarAboveSettings({required this.showWakeQueue});
+
+  final bool showWakeQueue;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SidebarTimerSection(),
+        if (showWakeQueue) ...[
+          SizedBox(height: tokens.spacing.step3),
+          const SidebarWakeQueue(),
+        ],
+      ],
     );
   }
 }

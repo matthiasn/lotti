@@ -6188,6 +6188,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get showCompleted => 'Show completed';
 
   @override
+  String get sidebarRunningTimerLabel => 'Running timer';
+
+  @override
+  String get sidebarRunningTimerStopTooltip => 'Stop timer';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Collapse sidebar';
 
   @override

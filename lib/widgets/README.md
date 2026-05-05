@@ -187,8 +187,16 @@ Widget displaying multiple task count statistics.
 ### TasksCountWidget
 Individual task count display component.
 
+### SidebarTimerSection
+Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever a time-recording session is active. Replaces the legacy bottom-anchored floating indicator on desktop.
+
+- Layout: title row (briefcase icon + task title) over a body row with timer icon, monospaced HH:MM:SS, and a circular stop button.
+- Typography: Inter with `numericBadgeFontFeatures` (tabular figures, slashed zero, `cv02`/`cv03`/`cv04` open digits) so 4/6/9 stay legible at small sizes and digits do not breathe.
+- Interactions: tapping the body navigates to the running task (or the timer's journal entry, if not task-linked); tapping the stop button calls `TimeService.stop()`.
+- Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
+
 ### TimeRecordingIndicator
-Visual indicator showing whether time recording is currently active.
+Visual indicator showing whether time recording is currently active. Used on **mobile** only — it sits in the bottom-nav overlay above the navigation bar. On desktop the running timer is rendered by `SidebarTimerSection` instead.
 
 - Typography: Uses `monoTabularStyle` with tabular figures to ensure the duration text does not jitter as digits change.
 - Dimensions: Matches width/height with the audio recording indicator to keep overlays consistent.

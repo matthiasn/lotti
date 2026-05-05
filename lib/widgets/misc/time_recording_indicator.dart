@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
-import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/misc/timer_navigation.dart';
 
 class TimeRecordingIndicator extends ConsumerWidget {
   const TimeRecordingIndicator({
@@ -45,26 +44,11 @@ class TimeRecordingIndicator extends ConsumerWidget {
             );
 
             return GestureDetector(
-              onTap: () {
-                final linkedFrom = timeService.linkedFrom;
-                if (linkedFrom != null) {
-                  if (linkedFrom is Task) {
-                    // Publish focus intent for task-linked timers
-                    publishTaskFocus(
-                      taskId: linkedFrom.meta.id,
-                      entryId: current.meta.id,
-                      ref: ref,
-                    );
-                    beamToNamed('/tasks/${linkedFrom.meta.id}');
-                  } else {
-                    // Journal-linked timer - no focus intent needed
-                    beamToNamed('/journal/${linkedFrom.meta.id}');
-                  }
-                } else {
-                  // Timer not linked to task - navigate to journal entry
-                  beamToNamed('/journal/${current.meta.id}');
-                }
-              },
+              onTap: () => navigateToTimerTarget(
+                current: current,
+                linkedFrom: timeService.linkedFrom,
+                ref: ref,
+              ),
               child: MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: ClipRRect(

@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.993]
 ### Changed
+- Desktop running-timer is now an inline sidebar section in the
+  `aboveSettings` slot, replacing the bottom-anchored floating
+  indicator. The new panel shows the running task title, a ticking
+  HH:MM:SS counter, and a stop button. Tapping the body navigates to
+  the running task (or the timer's journal entry); tapping the stop
+  button stops the timer. The mobile bottom-nav overlay is unchanged.
+  The timer text uses Inter with tabular figures, slashed zero, and
+  the `cv02`/`cv03`/`cv04` open-digit variants so 4/6/9 stay legible
+  and digits don't breathe.
+- Sidebar nav-item vertical spacing tightened from `step6` (24 px) to
+  `step5` (16 px) — a 33 % reduction — to make room for the new timer
+  section without the rail feeling crowded.
+
+### Fixed
+- Task detail "Linked from" no longer surfaces parent projects. Tasks
+  link to a project as their organising context, but listing the
+  project alongside other linked entries adds noise without the user
+  ever wanting to act on it; `LinkedFromEntriesWidget` now filters
+  out `ProjectEntry` items unconditionally.
+
+### Changed
 - Task filter modal action bar now uses the new "Apply filter" glass
   footer: a full-width frosted-glass strip flush to the bottom of the
   modal, with a hairline divider on top and right-aligned Clear all,

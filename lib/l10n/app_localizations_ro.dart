@@ -6336,6 +6336,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get showCompleted => 'Afișează finalizate';
 
   @override
+  String get sidebarRunningTimerLabel => 'Cronometru în execuție';
+
+  @override
+  String get sidebarRunningTimerStopTooltip => 'Oprește cronometrul';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Restrânge bara laterală';
 
   @override

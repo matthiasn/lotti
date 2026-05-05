@@ -6282,6 +6282,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get showCompleted => 'Abgeschlossene anzeigen';
 
   @override
+  String get sidebarRunningTimerLabel => 'Laufender Timer';
+
+  @override
+  String get sidebarRunningTimerStopTooltip => 'Timer stoppen';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Seitenleiste einklappen';
 
   @override

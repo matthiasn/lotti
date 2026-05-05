@@ -2658,6 +2658,8 @@
   "settingThemingDark": "Dunkles Design",
   "settingThemingLight": "Helles Design",
   "showCompleted": "Abgeschlossene anzeigen",
+  "sidebarRunningTimerLabel": "Laufender Timer",
+  "sidebarRunningTimerStopTooltip": "Timer stoppen",
   "sidebarToggleCollapseLabel": "Seitenleiste einklappen",
   "sidebarToggleExpandLabel": "Seitenleiste ausklappen",
   "sidebarWakesCancelTooltip": "Weckvorgang abbrechen",

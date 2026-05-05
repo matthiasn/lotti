@@ -10819,6 +10819,18 @@ abstract class AppLocalizations {
   /// **'Show completed'**
   String get showCompleted;
 
+  /// No description provided for @sidebarRunningTimerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Running timer'**
+  String get sidebarRunningTimerLabel;
+
+  /// No description provided for @sidebarRunningTimerStopTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop timer'**
+  String get sidebarRunningTimerStopTooltip;
+
   /// No description provided for @sidebarToggleCollapseLabel.
   ///
   /// In en, this message translates to:

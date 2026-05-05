@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -35,6 +36,8 @@ JournalDbEntity _journalDbEntity(JournalEntity entity) {
     type = 'JournalAudio';
   } else if (entity is Task) {
     type = 'Task';
+  } else if (entity is ProjectEntry) {
+    type = 'ProjectEntry';
   } else {
     type = 'JournalEntry';
   }
@@ -320,6 +323,56 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Linked from:'), findsNothing);
+    });
+
+    ProjectEntry buildProject(String id) {
+      final now = DateTime(2026, 5, 5, 21);
+      return ProjectEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: ProjectData(
+          title: 'Demo project',
+          status: ProjectStatus.active(
+            id: 'project-status-$id',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+    }
+
+    testWidgets('hides ProjectEntry when it is the only linked entry', (
+      tester,
+    ) async {
+      mockLinkedFromEntries([buildProject('project-only')]);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedFromEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Linked from:'), findsNothing);
+    });
+
+    testWidgets('hides ProjectEntry but keeps other linked entries', (
+      tester,
+    ) async {
+      mockLinkedFromEntries([buildProject('project-mixed'), testTextEntry]);
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          LinkedFromEntriesWidget(testTask),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Linked from:'), findsOneWidget);
+      expect(find.text('Demo project'), findsNothing);
     });
   });
 }

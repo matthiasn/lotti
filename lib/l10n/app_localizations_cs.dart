@@ -6296,6 +6296,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get showCompleted => 'Zobrazit dokončené';
 
   @override
+  String get sidebarRunningTimerLabel => 'Běžící časovač';
+
+  @override
+  String get sidebarRunningTimerStopTooltip => 'Zastavit časovač';
+
+  @override
   String get sidebarToggleCollapseLabel => 'Sbalit postranní panel';
 
   @override

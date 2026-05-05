@@ -2658,6 +2658,8 @@
   "settingThemingDark": "Temă întunecată",
   "settingThemingLight": "Temă luminoasă",
   "showCompleted": "Afișează finalizate",
+  "sidebarRunningTimerLabel": "Cronometru în execuție",
+  "sidebarRunningTimerStopTooltip": "Oprește cronometrul",
   "sidebarToggleCollapseLabel": "Restrânge bara laterală",
   "sidebarToggleExpandLabel": "Extinde bara laterală",
   "sidebarWakesCancelTooltip": "Anulează trezirea",
