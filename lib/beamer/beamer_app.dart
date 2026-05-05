@@ -421,7 +421,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             ),
             belowSettings: showSyncIndicator
                 ? const SyncActivityIndicator()
-                : null,
+                : SizedBox(height: context.designTokens.spacing.step3),
           ),
           ResizableDivider(
             enabled: !isCollapsed,

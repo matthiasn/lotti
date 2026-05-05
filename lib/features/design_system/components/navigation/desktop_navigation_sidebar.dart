@@ -124,7 +124,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
         tokens.spacing.step5,
         tokens.spacing.step6,
         tokens.spacing.step5,
-        tokens.spacing.step6,
+        tokens.spacing.step3,
       ),
       decoration: BoxDecoration(
         // Sidebar sits on the lighter `background.level02` so it reads as a

@@ -150,72 +150,68 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
     // every other primary affordance in the sidebar.
     final rxColor = context.designTokens.colors.interactive.enabled;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Semantics(
-        button: true,
-        label: semanticsLabel,
-        child: FocusableActionDetector(
-          mouseCursor: SystemMouseCursors.click,
-          onShowHoverHighlight: (hovered) {
-            if (!mounted) return;
-            setState(() => _hovered = hovered);
-          },
-          actions: <Type, Action<Intent>>{
-            ActivateIntent: CallbackAction<ActivateIntent>(
-              onInvoke: (_) {
-                _handleTap();
-                return null;
-              },
-            ),
-          },
-          child: Builder(
-            builder: (context) {
-              final focused = Focus.of(context).hasFocus;
-              return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _handleTap,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _hovered ? _hoverWash : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    // Always render a 2 px border and toggle its color
-                    // on focus — keeps the strip's outer dimensions
-                    // stable so neighbouring rows don't jump on
-                    // focus-in / focus-out.
-                    border: Border.all(
-                      color: focused ? rxColor : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _SyncActivityChannel(
-                        label: 'tx',
-                        on: _txOn,
-                        color: kSyncActivityTxColor,
-                        value: outbox,
-                      ),
-                      const SizedBox(width: 12),
-                      _SyncActivityChannel(
-                        label: 'rx',
-                        on: _rxOn,
-                        color: rxColor,
-                        value: inbox,
-                      ),
-                    ],
-                  ),
-                ),
-              );
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      child: FocusableActionDetector(
+        mouseCursor: SystemMouseCursors.click,
+        onShowHoverHighlight: (hovered) {
+          if (!mounted) return;
+          setState(() => _hovered = hovered);
+        },
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              _handleTap();
+              return null;
             },
           ),
+        },
+        child: Builder(
+          builder: (context) {
+            final focused = Focus.of(context).hasFocus;
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _handleTap,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: _hovered ? _hoverWash : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  // Always render a 2 px border and toggle its color
+                  // on focus — keeps the strip's outer dimensions
+                  // stable so neighbouring rows don't jump on
+                  // focus-in / focus-out.
+                  border: Border.all(
+                    color: focused ? rxColor : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _SyncActivityChannel(
+                      label: 'tx',
+                      on: _txOn,
+                      color: kSyncActivityTxColor,
+                      value: outbox,
+                    ),
+                    _SyncActivityChannel(
+                      label: 'rx',
+                      on: _rxOn,
+                      color: rxColor,
+                      value: inbox,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
