@@ -119,7 +119,14 @@ Future<void> showDesignSystemFilterModal({
                           stateNotifier.value = nextState;
                         },
                 ),
-                SizedBox(height: spacing.step10),
+                // Clearance for the floating glass footer at the bottom of
+                // the modal. The footer is ~96 tall (padT 16 + button 56 +
+                // padB 24); `step10` (64) leaves the last filter section
+                // visibly crowded against the divider. `step12` (96)
+                // matches the footer height so the last item sits flush
+                // above the divider when fully scrolled, with a clear
+                // breathing-room gap when not scrolled.
+                SizedBox(height: spacing.step12),
               ],
             );
           },

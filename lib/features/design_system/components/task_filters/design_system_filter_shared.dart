@@ -40,6 +40,8 @@ class DesignSystemFilterPalette {
     required this.priorityP1,
     required this.priorityP2,
     required this.priorityP3,
+    required this.glassFooterOverlayStart,
+    required this.glassFooterOverlayEnd,
   });
 
   factory DesignSystemFilterPalette.fromTokens(DsTokens tokens) {
@@ -65,6 +67,11 @@ class DesignSystemFilterPalette {
         priorityP1: const Color(0xFFFBA337),
         priorityP2: const Color(0xFF4AB6E8),
         priorityP3: const Color(0xFF7AB889),
+        // Figma "Apply filter" footer GLASS effect: transparent → ~19%
+        // white. Alpha pre-multiplied with the spec's 0.8 layer opacity
+        // so the overlay paints in a single pass (no Opacity widget).
+        glassFooterOverlayStart: const Color(0x00FFFFFF),
+        glassFooterOverlayEnd: const Color(0x31FFFFFF),
       );
     }
 
@@ -87,6 +94,12 @@ class DesignSystemFilterPalette {
       priorityP1: const Color(0xFFF19819),
       priorityP2: const Color(0xFF44AEEF),
       priorityP3: const Color(0xFF6C9E71),
+      // Figma's GLASS shine reads as white-on-near-white in the light
+      // sheet (#FFFCF8), so we keep the same overlay stops as dark for
+      // theme-architectural consistency. Light-mode visual is pending
+      // designer review — tweak these stops here, not at the call site.
+      glassFooterOverlayStart: const Color(0x00FFFFFF),
+      glassFooterOverlayEnd: const Color(0x31FFFFFF),
     );
   }
 
@@ -108,6 +121,14 @@ class DesignSystemFilterPalette {
   final Color priorityP1;
   final Color priorityP2;
   final Color priorityP3;
+
+  /// Top stop of the sticky-footer "glass" gradient overlay (transparent).
+  final Color glassFooterOverlayStart;
+
+  /// Bottom stop of the sticky-footer "glass" gradient overlay. Alpha is
+  /// pre-multiplied with the Figma layer opacity so the overlay can be
+  /// painted without an extra `Opacity` saveLayer.
+  final Color glassFooterOverlayEnd;
 }
 
 class DesignSystemFilterActionButton extends StatelessWidget {
