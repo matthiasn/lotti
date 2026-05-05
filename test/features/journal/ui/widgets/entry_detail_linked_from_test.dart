@@ -373,6 +373,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Linked from:'), findsOneWidget);
       expect(find.text('Demo project'), findsNothing);
+      // The non-project linked entry must still render — without this
+      // assertion the test would pass even if every entry got filtered out.
+      expect(find.byKey(ValueKey(testTextEntry.meta.id)), findsOneWidget);
     });
   });
 }

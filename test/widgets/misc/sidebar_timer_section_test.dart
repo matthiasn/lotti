@@ -13,17 +13,14 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
-class _MockNavService extends Mock implements NavService {
-  String? lastPath;
-
-  @override
-  void beamToNamed(String path, {Object? data}) {
-    lastPath = path;
-  }
-}
-
+/// Stateful fake of [TimeService] used for stream-driven UI assertions.
+/// Mocktail's `Mock` doesn't fit here — we want emissions and a real
+/// stream subscription, not stubbed return values. The shared
+/// `MockTimeService` in `test/mocks/mocks.dart` is for tests that only
+/// need stubbed methods.
 class _FakeTimeService extends TimeService {
   final _controller = StreamController<JournalEntity?>.broadcast();
   JournalEntity? _linkedFrom;
@@ -54,22 +51,35 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _FakeTimeService timeService;
-  late _MockNavService navService;
+  late MockNavService navService;
 
-  setUp(() {
-    getIt.pushNewScope();
+  setUp(() async {
     timeService = _FakeTimeService();
-    navService = _MockNavService();
-    getIt
-      ..registerSingleton<TimeService>(timeService)
-      ..registerSingleton<NavService>(navService);
+    navService = MockNavService();
+    // Mocktail records every call by default; nav routes are inspected
+    // via `verify(...).captured` in the assertion phase.
+    when(() => navService.beamToNamed(any())).thenAnswer((_) {});
+
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<TimeService>(timeService)
+          ..registerSingleton<NavService>(navService);
+      },
+    );
   });
 
   tearDown(() async {
     timeService.disposeController();
-    await getIt.resetScope();
-    await getIt.popScope();
+    await tearDownTestGetIt();
   });
+
+  String? lastBeamedPath() {
+    final captured = verify(
+      () => navService.beamToNamed(captureAny()),
+    ).captured;
+    return captured.isEmpty ? null : captured.last as String;
+  }
 
   JournalEntity makeTimerEntry(String id, {Duration elapsed = Duration.zero}) {
     final from = DateTime(2026, 5, 5, 21, 30);
@@ -193,7 +203,7 @@ void main() {
     await tester.tap(find.text('Implement sidebar timer'));
     await tester.pumpAndSettle();
 
-    expect(navService.lastPath, equals('/tasks/task-3'));
+    expect(lastBeamedPath(), equals('/tasks/task-3'));
     final intent = container.read(taskFocusControllerProvider(id: 'task-3'));
     expect(intent, isNotNull);
     expect(intent!.taskId, equals('task-3'));
@@ -217,7 +227,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(timeService.stopCalls, equals(1));
-    expect(navService.lastPath, isNull);
+    verifyNever(() => navService.beamToNamed(any()));
     // After stopping, the section collapses
     expect(find.byIcon(Icons.timer_outlined), findsNothing);
   });
@@ -253,6 +263,6 @@ void main() {
     await tester.tap(find.byIcon(Icons.timer_outlined));
     await tester.pumpAndSettle();
 
-    expect(navService.lastPath, equals('/journal/linked-6'));
+    expect(lastBeamedPath(), equals('/journal/linked-6'));
   });
 }

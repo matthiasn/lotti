@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -33,7 +35,7 @@ class SidebarTimerSection extends ConsumerWidget {
         return _SidebarTimerCard(
           current: current,
           linkedFrom: timeService.linkedFrom,
-          onStop: () async => timeService.stop(),
+          onStop: () => unawaited(timeService.stop()),
           onTapBody: () => navigateToTimerTarget(
             ref: ref,
             current: current,
@@ -55,7 +57,7 @@ class _SidebarTimerCard extends StatelessWidget {
 
   final JournalEntity current;
   final JournalEntity? linkedFrom;
-  final Future<void> Function() onStop;
+  final VoidCallback onStop;
   final VoidCallback onTapBody;
 
   @override
@@ -121,25 +123,13 @@ class _TimerTitleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Row(
-      children: [
-        Icon(
-          Icons.work_outline_rounded,
-          size: 16,
-          color: tokens.colors.text.mediumEmphasis,
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-        ),
-      ],
+    return Text(
+      title,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.mediumEmphasis,
+      ),
     );
   }
 }
@@ -151,7 +141,7 @@ class _TimerBodyRow extends StatelessWidget {
   });
 
   final String durationText;
-  final Future<void> Function() onStop;
+  final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +173,7 @@ class _TimerBodyRow extends StatelessWidget {
 class _StopTimerButton extends StatelessWidget {
   const _StopTimerButton({required this.onStop});
 
-  final Future<void> Function() onStop;
+  final VoidCallback onStop;
 
   @override
   Widget build(BuildContext context) {

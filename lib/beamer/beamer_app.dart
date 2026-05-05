@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -42,6 +43,7 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_timer_section.dart';
@@ -702,9 +704,10 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 
 /// Composer for the desktop sidebar's `aboveSettings` slot. Stacks the
 /// running-timer panel (when a timer is active) above the optional
-/// inline Wake Queue (when its config flag is enabled). When neither is
-/// visible, collapses to [SizedBox.shrink] so the slot consumes no
-/// vertical space.
+/// inline Wake Queue (when its config flag is enabled). The separator
+/// between the two is rendered only when both are visible — otherwise
+/// an idle timer would push an 8 px gap above the wake queue with no
+/// visible neighbour to separate from.
 class _DesktopSidebarAboveSettings extends StatelessWidget {
   const _DesktopSidebarAboveSettings({required this.showWakeQueue});
 
@@ -714,16 +717,22 @@ class _DesktopSidebarAboveSettings extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SidebarTimerSection(),
-        if (showWakeQueue) ...[
-          SizedBox(height: tokens.spacing.step3),
-          const SidebarWakeQueue(),
-        ],
-      ],
+    return StreamBuilder<JournalEntity?>(
+      stream: getIt<TimeService>().getStream(),
+      builder: (context, snapshot) {
+        final hasTimer = snapshot.data != null;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SidebarTimerSection(),
+            if (showWakeQueue) ...[
+              if (hasTimer) SizedBox(height: tokens.spacing.step3),
+              const SidebarWakeQueue(),
+            ],
+          ],
+        );
+      },
     );
   }
 }
