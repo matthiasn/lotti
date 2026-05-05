@@ -2,9 +2,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -189,6 +191,246 @@ void main() {
       expect(records, isEmpty);
     },
   );
+
+  group('ongoingWakeRecordsProvider', () {
+    test('returns empty when nothing is running', () async {
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+      final container = ProviderContainer(
+        overrides: [wakeRunnerProvider.overrideWithValue(runner)],
+      );
+      addTearDown(container.dispose);
+
+      final records = await container.read(
+        ongoingWakeRecordsProvider.future,
+      );
+      expect(records, isEmpty);
+    });
+
+    test('uses linked task title when slots point at a task', () async {
+      final fixed = DateTime(2026, 5, 5, 21);
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+      final mockRepository = MockAgentRepository();
+      final mockAgentService = MockAgentService();
+      final mockJournalDb = MockJournalDb();
+      final notifications = UpdateNotifications();
+      addTearDown(notifications.dispose);
+
+      when(
+        () => mockRepository.getAgentState('agent-a'),
+      ).thenAnswer(
+        (_) async => makeTestState(
+          agentId: 'agent-a',
+          slots: const AgentSlots(activeTaskId: 'task-1'),
+        ),
+      );
+      when(() => mockJournalDb.journalEntityById('task-1')).thenAnswer(
+        (_) async => makeTestTask(id: 'task-1', title: 'Refine sidebar'),
+      );
+
+      await withClock(Clock.fixed(fixed), () async {
+        await runner.tryAcquire('agent-a');
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          wakeRunnerProvider.overrideWithValue(runner),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          agentServiceProvider.overrideWithValue(mockAgentService),
+          journalDbProvider.overrideWithValue(mockJournalDb),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final records = await container.read(
+        ongoingWakeRecordsProvider.future,
+      );
+      expect(records, hasLength(1));
+      expect(records.single.agentId, 'agent-a');
+      expect(records.single.title, 'Refine sidebar');
+      expect(records.single.startedAt, fixed);
+      expect(records.single.id, 'ongoing:agent-a');
+      verifyNever(() => mockAgentService.getAgent(any()));
+    });
+
+    test(
+      'falls back to agent display name when no subject is linked',
+      () async {
+        final fixed = DateTime(2026, 5, 5, 21);
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
+        final mockRepository = MockAgentRepository();
+        final mockAgentService = MockAgentService();
+        final mockJournalDb = MockJournalDb();
+        final notifications = UpdateNotifications();
+        addTearDown(notifications.dispose);
+
+        when(
+          () => mockRepository.getAgentState('agent-z'),
+        ).thenAnswer(
+          (_) async => makeTestState(agentId: 'agent-z'),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-z'),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            agentId: 'agent-z',
+            displayName: 'Improver',
+          ),
+        );
+
+        await withClock(Clock.fixed(fixed), () async {
+          await runner.tryAcquire('agent-z');
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            wakeRunnerProvider.overrideWithValue(runner),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final records = await container.read(
+          ongoingWakeRecordsProvider.future,
+        );
+        expect(records.single.title, 'Improver');
+      },
+    );
+
+    test(
+      'falls back to the agentId when neither subject nor identity is found',
+      () async {
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
+        final mockRepository = MockAgentRepository();
+        final mockAgentService = MockAgentService();
+        final mockJournalDb = MockJournalDb();
+        final notifications = UpdateNotifications();
+        addTearDown(notifications.dispose);
+
+        when(
+          () => mockRepository.getAgentState('agent-missing'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentService.getAgent('agent-missing'),
+        ).thenAnswer((_) async => null);
+
+        await runner.tryAcquire('agent-missing');
+
+        final container = ProviderContainer(
+          overrides: [
+            wakeRunnerProvider.overrideWithValue(runner),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final records = await container.read(
+          ongoingWakeRecordsProvider.future,
+        );
+        expect(records.single.title, 'agent-missing');
+      },
+    );
+
+    test(
+      'swallows subject lookup errors and falls back to display name',
+      () async {
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
+        final mockRepository = MockAgentRepository();
+        final mockAgentService = MockAgentService();
+        final mockJournalDb = MockJournalDb();
+        final notifications = UpdateNotifications();
+        addTearDown(notifications.dispose);
+
+        when(
+          () => mockRepository.getAgentState('agent-err'),
+        ).thenThrow(StateError('db boom'));
+        when(
+          () => mockAgentService.getAgent('agent-err'),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            agentId: 'agent-err',
+            displayName: 'Backup name',
+          ),
+        );
+
+        await runner.tryAcquire('agent-err');
+
+        final container = ProviderContainer(
+          overrides: [
+            wakeRunnerProvider.overrideWithValue(runner),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final records = await container.read(
+          ongoingWakeRecordsProvider.future,
+        );
+        expect(records.single.title, 'Backup name');
+      },
+    );
+
+    test('sorts results by startedAt ascending', () async {
+      final earlier = DateTime(2026, 5, 5, 20);
+      final later = DateTime(2026, 5, 5, 21);
+      final runner = WakeRunner();
+      addTearDown(runner.dispose);
+      final mockRepository = MockAgentRepository();
+      final mockAgentService = MockAgentService();
+      final mockJournalDb = MockJournalDb();
+      final notifications = UpdateNotifications();
+      addTearDown(notifications.dispose);
+
+      for (final id in ['agent-late', 'agent-early']) {
+        when(
+          () => mockRepository.getAgentState(id),
+        ).thenAnswer((_) async => makeTestState(agentId: id));
+        when(() => mockAgentService.getAgent(id)).thenAnswer(
+          (_) async => makeTestIdentity(agentId: id, displayName: id),
+        );
+      }
+
+      await withClock(Clock.fixed(later), () async {
+        await runner.tryAcquire('agent-late');
+      });
+      await withClock(Clock.fixed(earlier), () async {
+        await runner.tryAcquire('agent-early');
+      });
+
+      final container = ProviderContainer(
+        overrides: [
+          wakeRunnerProvider.overrideWithValue(runner),
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          agentServiceProvider.overrideWithValue(mockAgentService),
+          journalDbProvider.overrideWithValue(mockJournalDb),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final records = await container.read(
+        ongoingWakeRecordsProvider.future,
+      );
+      expect(
+        records.map((r) => r.agentId).toList(),
+        ['agent-early', 'agent-late'],
+      );
+    });
+  });
 
   group('pendingWakeTargetTitleProvider', () {
     late MockJournalDb mockJournalDb;

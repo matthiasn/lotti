@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
+import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
@@ -9,6 +10,8 @@ import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart'
     show monoMetaStyle;
 import 'package:lotti/features/agents/ui/pending_wakes/pending_wake_view_model.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
+import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart'
+    show agentInstanceRoute;
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -33,20 +36,162 @@ class AgentPendingWakesPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final messages = context.messages;
     final asyncVms = ref.watch(agentPendingWakeRowVmsProvider);
+    final ongoingAsync = ref.watch(ongoingWakeRecordsProvider);
 
-    final adapted = asyncVms.whenData(
+    // `unwrapPrevious()` surfaces the most recent value during a
+    // refresh / delete so `whenData` doesn't drop the page back to a
+    // spinner while the new fetch is in flight.
+    final adapted = asyncVms.unwrapPrevious().whenData(
       (vms) => _AdaptedRows.from(vms, messages),
     );
+    final rowsAsync = adapted.whenData((a) => a.rows);
 
-    return AgentListingShell(
-      rowsAsync: adapted.whenData((a) => a.rows),
-      filterAxes: _buildFilterAxes(adapted, messages),
-      groupAxes: _buildGroupAxes(messages, adapted),
-      sortAxes: _buildSortAxes(messages),
-      searchPlaceholder: messages.agentPendingWakesSearchPlaceholder,
-      emptyMessage: messages.agentPendingWakesEmptyFiltered,
-      axisMatcher: (axisId, selected, row) =>
-          _matchRow(adapted, row, axisId, selected),
+    final ongoing = ongoingAsync.value ?? const <OngoingWakeRecord>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (ongoing.isNotEmpty) _RunningInstancesBlock(records: ongoing),
+        Expanded(
+          child: AgentListingShell(
+            rowsAsync: rowsAsync,
+            filterAxes: _buildFilterAxes(adapted, messages),
+            groupAxes: _buildGroupAxes(messages, adapted),
+            sortAxes: _buildSortAxes(messages),
+            searchPlaceholder: messages.agentPendingWakesSearchPlaceholder,
+            emptyMessage: messages.agentPendingWakesEmptyFiltered,
+            axisMatcher: (axisId, selected, row) =>
+                _matchRow(adapted, row, axisId, selected),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Currently-running wakes pinned above the scheduled list. Each row's
+/// elapsed pill is driven by [wakeCountdownTickerProvider] so all rows
+/// share a single page-scoped 1Hz tick.
+class _RunningInstancesBlock extends ConsumerWidget {
+  const _RunningInstancesBlock({required this.records});
+
+  final List<OngoingWakeRecord> records;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final accent = tokens.colors.alert.success.defaultColor;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step6,
+        vertical: tokens.spacing.step3,
+      ),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        border: Border(
+          bottom: BorderSide(color: tokens.colors.decorative.level01),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                messages.agentPendingWakesRunningHeading(records.length),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: tokens.colors.text.mediumEmphasis,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          for (final record in records)
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spacing.step1),
+              child: _RunningInstanceRow(record: record),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RunningInstanceRow extends ConsumerWidget {
+  const _RunningInstanceRow({required this.record});
+
+  final OngoingWakeRecord record;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final accent = tokens.colors.alert.success.defaultColor;
+    final elapsedLabel = ref.watch(
+      wakeCountdownTickerProvider.select((async) {
+        final now = async.value;
+        if (now == null) return '…';
+        return formatWakeElapsed(now.difference(record.startedAt));
+      }),
+    );
+
+    return InkWell(
+      onTap: () => beamToNamed(agentInstanceRoute(record.agentId)),
+      borderRadius: BorderRadius.circular(tokens.radii.xs),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: tokens.spacing.step1,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                record.title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: tokens.colors.text.highEmphasis,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step3,
+                vertical: tokens.spacing.step1,
+              ),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(tokens.radii.xs),
+              ),
+              child: Text(
+                elapsedLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: accent,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -109,7 +254,7 @@ AgentListRowData _vmToRow(PendingWakeVm vm, AppLocalizations messages) {
       type: vm.type,
       agentId: vm.agentId,
     ),
-    onTap: () => beamToNamed('/settings/agents/instances/${vm.agentId}'),
+    onTap: () => beamToNamed(agentInstanceRoute(vm.agentId)),
     sortAt: vm.dueAt,
     // Include the localized kind/type labels so users can search for
     // "Task Agent" or "Pending" as they appear in the row pills, not

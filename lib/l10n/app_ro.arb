@@ -328,11 +328,12 @@
   "agentPendingWakesFilterSectionType": "Tip",
   "agentPendingWakesGroupByType": "Tip",
   "agentPendingWakesPendingLabel": "În așteptare",
+  "agentPendingWakesRunningHeading": "{count, plural, =1{În execuție} other{În execuție ({count})}}",
   "agentPendingWakesScheduledLabel": "Programată",
   "agentPendingWakesSearchPlaceholder": "Caută treziri…",
   "agentPendingWakesSortDueLatest": "Programate ultimele",
   "agentPendingWakesSortDueSoonest": "Programate primele",
-  "agentPendingWakesTitle": "Treziri în așteptare",
+  "agentPendingWakesTitle": "Cicluri de trezire",
   "agentReportErrorLoading": "Eroare la încărcarea raportului: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

@@ -3,57 +3,63 @@ import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dar
 
 void main() {
   group('formatWakeCountdown', () {
-    test('returns 0s when due in the past', () {
+    test('returns 00:00 when due in the past', () {
       final now = DateTime(2026, 3, 31, 9);
       final due = now.subtract(const Duration(seconds: 5));
-      expect(formatWakeCountdown(due, now), '0s');
+      expect(formatWakeCountdown(due, now), '00:00');
     });
 
-    test('returns 0s when due exactly now', () {
+    test('returns 00:00 when due exactly now', () {
       final now = DateTime(2026, 3, 31, 9);
-      expect(formatWakeCountdown(now, now), '0s');
+      expect(formatWakeCountdown(now, now), '00:00');
     });
 
-    test('formats sub-minute countdowns as Ns', () {
+    test('drops the hour cell below 60 minutes', () {
       final now = DateTime(2026, 3, 31, 9);
       expect(
         formatWakeCountdown(now.add(const Duration(seconds: 12)), now),
-        '12s',
+        '00:12',
       );
     });
 
-    test('formats sub-hour countdowns as Nm Ns', () {
+    test('zero-pads sub-hour countdowns as MM:SS', () {
       final now = DateTime(2026, 3, 31, 9);
       expect(
         formatWakeCountdown(
           now.add(const Duration(minutes: 2, seconds: 5)),
           now,
         ),
-        '2m 5s',
+        '02:05',
       );
     });
 
-    test('formats hour countdowns as Nh Nm Ns', () {
+    test('adds the hour cell once over 60 minutes', () {
       final now = DateTime(2026, 3, 31, 9);
       expect(
         formatWakeCountdown(
           now.add(const Duration(hours: 1, minutes: 30, seconds: 7)),
           now,
         ),
-        '1h 30m 7s',
+        '01:30:07',
       );
     });
 
-    test('keeps the minute slot when hours present and minutes are zero', () {
-      // Without this guard "1h 0s" would be ambiguous; the formatter
-      // emits the `0m` so the cell stays h-m-s aligned.
+    test('keeps the minute slot zero-padded when hours present', () {
       final now = DateTime(2026, 3, 31, 9);
       expect(
         formatWakeCountdown(
           now.add(const Duration(hours: 1, seconds: 9)),
           now,
         ),
-        '1h 0m 9s',
+        '01:00:09',
+      );
+    });
+
+    test('clamps to 99:59:59 when over 100 hours away', () {
+      final now = DateTime(2026, 3, 31, 9);
+      expect(
+        formatWakeCountdown(now.add(const Duration(hours: 200)), now),
+        '99:59:59',
       );
     });
   });

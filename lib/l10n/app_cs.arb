@@ -222,11 +222,12 @@
   "agentPendingWakesFilterSectionType": "Typ",
   "agentPendingWakesGroupByType": "Typ",
   "agentPendingWakesPendingLabel": "Čekající",
+  "agentPendingWakesRunningHeading": "{count, plural, =1{Právě běží} other{Právě běží ({count})}}",
   "agentPendingWakesScheduledLabel": "Naplánované",
   "agentPendingWakesSearchPlaceholder": "Hledat probuzení…",
   "agentPendingWakesSortDueLatest": "Spustí se nejpozději",
   "agentPendingWakesSortDueSoonest": "Spustí se nejdříve",
-  "agentPendingWakesTitle": "Čekající probuzení",
+  "agentPendingWakesTitle": "Cykly probouzení",
   "agentReportErrorLoading": "Nepodařilo se načíst report: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

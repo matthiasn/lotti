@@ -43,12 +43,14 @@ void main() {
   Widget buildSubject(
     List<PendingWakeRecord> records, {
     MockAgentService? agentService,
+    List<OngoingWakeRecord> ongoing = const [],
   }) {
     return makeTestableWidgetWithScaffold(
       const SidebarWakeQueue(),
       theme: DesignSystemTheme.dark(),
       overrides: [
         pendingWakeRecordsProvider.overrideWith((ref) async => records),
+        ongoingWakeRecordsProvider.overrideWith((ref) async => ongoing),
         if (agentService != null)
           agentServiceProvider.overrideWith((ref) => agentService),
       ],
@@ -85,10 +87,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('0'), findsOneWidget);
-      expect(
-        find.text('${element.messages.sidebarWakesOpenList} →'),
-        findsOneWidget,
-      );
+      // The trailing link icon in the header is the path to the full
+      // Wake Cycles page; it stays visible even before the queue
+      // resolves.
+      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
 
       completer.complete(const []);
       await tester.pumpAndSettle();
@@ -96,7 +98,7 @@ void main() {
   );
 
   testWidgets(
-    'renders an empty header and "Open list" link when no wakes are pending '
+    'renders an empty header and link icon when no wakes are pending '
     '— matches the design handoff "no layout shift when empty, just hide '
     'rows, keep header"',
     (tester) async {
@@ -109,16 +111,14 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('0'), findsOneWidget);
-      expect(
-        find.text('${element.messages.sidebarWakesOpenList} →'),
-        findsOneWidget,
-      );
-      // No row InkWell, but the "Open list" link still has its own InkWell.
+      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+      // Just the header InkWell — the per-row trailing link was
+      // removed in favour of the right-aligned header icon.
       expect(find.byType(InkWell), findsOneWidget);
     },
   );
 
-  testWidgets('renders header count, two upcoming rows, and +N more link', (
+  testWidgets('renders header count, in-window rows, and +N more link', (
     tester,
   ) async {
     await withClock(Clock.fixed(fixedNow), () async {
@@ -165,9 +165,11 @@ void main() {
       find.text(messages.sidebarWakesHeader.toUpperCase()),
       findsOneWidget,
     );
-    expect(find.text('5'), findsOneWidget);
-
-    // Only the first two wakes are rendered as rows.
+    // Only wakes within the 1h lookahead window count toward the
+    // header badge — Kit / Max / Tom (9h+ out) are intentionally
+    // invisible from the sidebar entirely, so the badge reads the
+    // imminent count (2), not the queue total (5).
+    expect(find.text('2'), findsOneWidget);
     expect(find.text('Laura'), findsOneWidget);
     expect(find.text('Iris'), findsOneWidget);
     expect(find.text('Kit'), findsNothing);
@@ -176,10 +178,9 @@ void main() {
     expect(find.text('00:28'), findsOneWidget);
     expect(find.text('00:50'), findsOneWidget);
 
-    // +N more affordance shows the rollover count, not the total.
-    // The trailing arrow is appended in the widget (not in the ARB),
-    // so we assert against the rendered composition.
-    expect(find.text('${messages.sidebarWakesMore(3)} →'), findsOneWidget);
+    // The header link icon is the only path into the full Wake Cycles
+    // page — there is no per-row trailing "+N more" link any more.
+    expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
   });
 
   testWidgets('shows "now" when the next wake is due', (tester) async {
@@ -200,22 +201,12 @@ void main() {
     expect(find.text(element.messages.sidebarWakesNow), findsOneWidget);
   });
 
-  testWidgets('formats ETAs over an hour as "Xh MMm"', (tester) async {
-    await withClock(Clock.fixed(fixedNow), () async {
-      await tester.pumpWidget(
-        buildSubject([
-          makeWake(
-            agentId: 'a-1',
-            displayName: 'Laura',
-            eta: const Duration(hours: 2, minutes: 7),
-          ),
-        ]),
-      );
-      await tester.pump();
-    });
-
-    expect(find.text('2h 07m'), findsOneWidget);
-  });
+  // The previous "ETAs over an hour render as Xh MMm" test no longer
+  // applies — the sidebar now filters scheduled wakes to a 1-hour
+  // lookahead window, so multi-hour ETAs collapse into the trailing
+  // "+N more →" link rather than rendering inline. The mm:ss formatter
+  // for the in-window range is exercised by the "renders header count"
+  // test above.
 
   testWidgets('tapping a row navigates to the agent instance route', (
     tester,
@@ -242,32 +233,21 @@ void main() {
     expect(captured, '/settings/agents/instances/agent-xyz');
   });
 
-  testWidgets('tapping +N more navigates to the pending wakes list', (
-    tester,
-  ) async {
-    String? captured;
-    SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
+  testWidgets(
+    'tapping the header link icon navigates to the Wake Cycles page',
+    (tester) async {
+      String? captured;
+      SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
 
-    await withClock(Clock.fixed(fixedNow), () async {
-      await tester.pumpWidget(
-        buildSubject([
-          for (var i = 0; i < 5; i++)
-            makeWake(
-              agentId: 'agent-$i',
-              displayName: 'Agent $i',
-              eta: Duration(seconds: 30 + i),
-            ),
-        ]),
-      );
+      await tester.pumpWidget(buildSubject(const []));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.open_in_new_rounded));
       await tester.pump();
-    });
 
-    final element = tester.element(find.byType(SidebarWakeQueue));
-    await tester.tap(find.text('${element.messages.sidebarWakesMore(3)} →'));
-    await tester.pump();
-
-    expect(captured, kSidebarWakeQueueListRoute);
-  });
+      expect(captured, kSidebarWakeQueueListRoute);
+    },
+  );
 
   testWidgets(
     'tapping the trailing × on a pending wake calls cancelPendingWake on '
@@ -316,10 +296,13 @@ void main() {
         await tester.pumpWidget(
           buildSubject(
             [
+              // Within the 1h lookahead so the row renders inline and
+              // the cancel × is reachable. Out-of-window wakes are
+              // collapsed under "+N more" and have no per-row affordance.
               makeWake(
                 agentId: 'agent-scheduled',
                 displayName: 'Kit',
-                eta: const Duration(hours: 4),
+                eta: const Duration(minutes: 30),
                 type: PendingWakeType.scheduled,
               ),
             ],
@@ -441,7 +424,7 @@ void main() {
   );
 
   testWidgets(
-    'tapping the Open list link routes through the production NavService '
+    'tapping the header link icon routes through the production NavService '
     'when no test override is registered',
     (tester) async {
       SidebarWakeQueueTestHooks.navigatorOverride = null;
@@ -469,10 +452,7 @@ void main() {
       await tester.pumpWidget(buildSubject(const []));
       await tester.pumpAndSettle();
 
-      final element = tester.element(find.byType(SidebarWakeQueue));
-      await tester.tap(
-        find.text('${element.messages.sidebarWakesOpenList} →'),
-      );
+      await tester.tap(find.byIcon(Icons.open_in_new_rounded));
       await tester.pump();
 
       verify(() => mockNav.setIndex(6)).called(1);
@@ -628,48 +608,66 @@ void main() {
   );
 
   testWidgets(
-    '_AgentAvatar renders "?" when the display name is empty / whitespace',
+    'ongoing-wake row shows the linked task title and live elapsed pill',
     (tester) async {
+      final startedAt = fixedNow.subtract(const Duration(seconds: 12));
       await withClock(Clock.fixed(fixedNow), () async {
         await tester.pumpWidget(
-          buildSubject([
-            makeWake(
-              agentId: 'a-blank',
-              displayName: '   ',
-              eta: const Duration(seconds: 30),
-            ),
-          ]),
+          buildSubject(
+            const [],
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Refine sidebar',
+                startedAt: startedAt,
+              ),
+            ],
+          ),
         );
         await tester.pump();
       });
 
-      // Falls back to '?' since the trimmed name is empty.
-      expect(find.text('?'), findsOneWidget);
+      // Header includes the running wake in the count.
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('Refine sidebar'), findsOneWidget);
+      expect(find.text('00:12'), findsOneWidget);
     },
   );
 
   testWidgets(
-    '_AgentAvatar uses runes.first so emoji-prefixed display names render '
-    'the full Unicode codepoint instead of half a UTF-16 surrogate pair',
+    "tapping an ongoing wake routes to that agent's instance page",
     (tester) async {
-      // 🤖 is U+1F916, encoded as two UTF-16 code units in Dart strings.
+      String? captured;
+      SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
+
       await withClock(Clock.fixed(fixedNow), () async {
         await tester.pumpWidget(
-          buildSubject([
-            makeWake(
-              agentId: 'a-emoji',
-              displayName: '🤖 Bot',
-              eta: const Duration(seconds: 30),
-            ),
-          ]),
+          buildSubject(
+            const [],
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Live wake',
+                startedAt: fixedNow,
+              ),
+            ],
+          ),
         );
         await tester.pump();
       });
 
-      // The avatar tile renders the full robot emoji glyph (single rune).
-      expect(find.text('🤖'), findsOneWidget);
+      await tester.tap(find.text('Live wake'));
+      await tester.pump();
+
+      expect(captured, '/settings/agents/instances/agent-running');
     },
   );
+
+  // The leading agent-letter avatar was removed from the sidebar wake
+  // row by the design refresh — the row now reads as just template
+  // name + ETA + cancel ×. The avatar-specific behaviour tests
+  // (`?` fallback, emoji-rune handling) are intentionally gone with
+  // it; they verified a widget that no longer exists.
 }
 
 /// Captures `beamToNamed` calls without spinning up a real Beamer

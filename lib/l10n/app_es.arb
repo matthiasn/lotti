@@ -328,11 +328,12 @@
   "agentPendingWakesFilterSectionType": "Tipo",
   "agentPendingWakesGroupByType": "Tipo",
   "agentPendingWakesPendingLabel": "Pendiente",
+  "agentPendingWakesRunningHeading": "{count, plural, =1{En ejecución} other{En ejecución ({count})}}",
   "agentPendingWakesScheduledLabel": "Programado",
   "agentPendingWakesSearchPlaceholder": "Buscar despertares…",
   "agentPendingWakesSortDueLatest": "Vence más tarde",
   "agentPendingWakesSortDueSoonest": "Vence antes",
-  "agentPendingWakesTitle": "Despertares pendientes",
+  "agentPendingWakesTitle": "Ciclos de despertar",
   "agentReportErrorLoading": "Error al cargar el informe: {error}",
   "@agentReportErrorLoading": {
     "placeholders": {

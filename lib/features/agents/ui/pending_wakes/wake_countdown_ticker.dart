@@ -30,22 +30,37 @@ final StreamProvider<DateTime> wakeCountdownTickerProvider =
       return controller.stream;
     });
 
-/// Format `dueAt - now` as a compact countdown — `1h 30m 7s`,
-/// `2m 5s`, or `5s` (digits are not zero-padded). The minute slot is
-/// forced when hours are present so the cell stays h-m-s aligned
-/// (e.g. `1h 0m 9s`). Returns `'0s'` when overdue. Same shape the
-/// legacy `_PendingWakeCard` rendered.
-String formatWakeCountdown(DateTime dueAt, DateTime now) {
-  final remaining = dueAt.difference(now);
-  if (remaining <= Duration.zero) return '0s';
+/// Format `dueAt - now` as a zero-padded countdown. Below one hour the
+/// hour cell is dropped and the result reads `MM:SS`; once we cross
+/// the hour line the hour cell is added back as `HH:MM:SS`. The
+/// minute and second cells stay two-digit zero-padded so the visible
+/// width stays constant from one tick to the next within a band —
+/// combined with `FontFeature.tabularFigures()` at the call site, the
+/// label doesn't "breathe" as the seconds digit changes glyph width.
+/// Returns `'00:00'` when overdue. Hours are clamped to two digits
+/// (anything ≥ 100h shows as `99:59:59`); the wake throttle window
+/// is much smaller than that in practice.
+String formatWakeCountdown(DateTime dueAt, DateTime now) =>
+    formatWakeElapsed(dueAt.difference(now));
 
-  final totalSeconds = remaining.inSeconds;
-  final hours = totalSeconds ~/ 3600;
-  final minutes = (totalSeconds % 3600) ~/ 60;
-  final seconds = totalSeconds % 60;
-  final parts = <String>[];
-  if (hours > 0) parts.add('${hours}h');
-  if (minutes > 0 || hours > 0) parts.add('${minutes}m');
-  parts.add('${seconds}s');
-  return parts.join(' ');
+/// Wall-clock duration formatted as `MM:SS` (or `HH:MM:SS` once the
+/// duration crosses one hour), shaped identically to
+/// [formatWakeCountdown] so the running-elapsed pill on the Wake
+/// Cycles page reads symmetrically with the imminent-wake countdown.
+/// Returns `'00:00'` for non-positive durations.
+String formatWakeElapsed(Duration d) {
+  if (d <= Duration.zero) return '00:00';
+
+  final totalSeconds = d.inSeconds;
+  final clamped = totalSeconds > 99 * 3600 + 59 * 60 + 59
+      ? 99 * 3600 + 59 * 60 + 59
+      : totalSeconds;
+  final hours = clamped ~/ 3600;
+  final minutes = (clamped % 3600) ~/ 60;
+  final seconds = clamped % 60;
+  final mm = minutes.toString().padLeft(2, '0');
+  final ss = seconds.toString().padLeft(2, '0');
+  if (hours == 0) return '$mm:$ss';
+  final hh = hours.toString().padLeft(2, '0');
+  return '$hh:$mm:$ss';
 }

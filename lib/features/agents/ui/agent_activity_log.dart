@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/report_content_parser.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -282,14 +283,18 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
   Widget build(BuildContext context) {
     final report = widget.report;
     final timestamp = formatAgentDateTime(report.createdAt);
+    final ai = context.designTokens.colors.aiCard;
 
     return Card(
       margin: const EdgeInsets.symmetric(
         horizontal: AppTheme.cardPaddingHalf,
         vertical: AppTheme.spacingXSmall,
       ),
+      color: ai.row,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
+        side: BorderSide(color: ai.rowBorder),
       ),
       child: InkWell(
         onTap: () => setState(() => _expanded = !_expanded),
@@ -383,13 +388,17 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
     final toolName = message.metadata.toolName;
     final contentId = message.contentEntryId;
     final isExpandable = contentId != null;
+    final ai = context.designTokens.colors.aiCard;
 
     return Card(
       margin: const EdgeInsets.symmetric(
         horizontal: AppTheme.cardPaddingHalf,
       ),
+      color: ai.row,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.spacingSmall),
+        side: BorderSide(color: ai.rowBorder),
       ),
       child: InkWell(
         onTap: isExpandable

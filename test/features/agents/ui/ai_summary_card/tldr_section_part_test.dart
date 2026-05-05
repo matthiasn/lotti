@@ -93,10 +93,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // The narrow branch stacks the wake / read-more controls in a
-        // Wrap run below the title block. Three Wraps are now in the
-        // tree: the narrow-layout one + the two in the proposals
-        // section header (outer spaceBetween + inner title row).
-        expect(find.byType(Wrap), findsNWidgets(3));
+        // Wrap run below the title block. Two Wraps are now in the
+        // tree: the narrow-layout one + the proposals section's inner
+        // title-row Wrap. The proposals header itself is a Row so the
+        // confirm-all button can pin to the right edge of the card.
+        expect(find.byType(Wrap), findsNWidgets(2));
         expect(find.text('AI summary'), findsOneWidget);
         expect(find.text('Test Agent'), findsOneWidget);
         // The refresh affordance lives inside the narrow-layout Wrap
@@ -114,8 +115,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // In the wide layout the TLDR header uses a Row, so the only
-        // Wraps are the two in the proposals section header.
-        expect(find.byType(Wrap), findsNWidgets(2));
+        // Wrap left in the tree is the proposals section's title-row
+        // Wrap (the proposals header itself is a Row now).
+        expect(find.byType(Wrap), findsOneWidget);
         expect(find.text('AI summary'), findsOneWidget);
         expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
       },

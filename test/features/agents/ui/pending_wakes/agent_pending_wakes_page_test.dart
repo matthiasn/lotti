@@ -56,6 +56,7 @@ void main() {
     required List<PendingWakeRecord> records,
     Map<String, String?> subjectTitles = const {},
     AgentService? agentService,
+    List<OngoingWakeRecord> ongoing = const [],
   }) async {
     await tester.binding.setSurfaceSize(const Size(1600, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -65,6 +66,7 @@ void main() {
         mediaQueryData: const MediaQueryData(size: Size(1600, 900)),
         overrides: [
           pendingWakeRecordsProvider.overrideWith((ref) async => records),
+          ongoingWakeRecordsProvider.overrideWith((ref) async => ongoing),
           pendingWakeTargetTitleProvider.overrideWith(
             (ref, String? entryId) async => subjectTitles[entryId],
           ),
@@ -103,7 +105,7 @@ void main() {
         findsAtLeast(1),
       );
       // Countdown lands in the trailing slot via the page-scoped ticker.
-      expect(find.text('2m 5s'), findsOneWidget);
+      expect(find.text('02:05'), findsOneWidget);
     });
   });
 
@@ -517,4 +519,77 @@ void main() {
       });
     },
   );
+
+  group('Running instances block', () {
+    testWidgets('renders the heading + a row per running wake', (tester) async {
+      final now = DateTime(2026, 5, 5, 21);
+      final ongoing = [
+        OngoingWakeRecord(
+          agentId: 'agent-running-1',
+          title: 'Improve Agent UI/UX',
+          startedAt: now.subtract(const Duration(seconds: 35)),
+        ),
+        OngoingWakeRecord(
+          agentId: 'agent-running-2',
+          title: 'Sync inbox',
+          startedAt: now.subtract(const Duration(minutes: 2, seconds: 8)),
+        ),
+      ];
+      await withClock(Clock(() => now), () async {
+        await pumpPage(tester, records: const [], ongoing: ongoing);
+      });
+
+      final element = tester.element(find.byType(AgentPendingWakesPage));
+      expect(
+        find.text(element.messages.agentPendingWakesRunningHeading(2)),
+        findsOneWidget,
+      );
+      expect(find.text('Improve Agent UI/UX'), findsOneWidget);
+      expect(find.text('Sync inbox'), findsOneWidget);
+      // Elapsed pills render in MM:SS once below the hour.
+      expect(find.text('00:35'), findsOneWidget);
+      expect(find.text('02:08'), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping a running instance row beams to its instance detail page',
+      (tester) async {
+        final now = DateTime(2026, 5, 5, 21);
+        String? captured;
+        beamToNamedOverride = (uri) => captured = uri;
+
+        await withClock(Clock(() => now), () async {
+          await pumpPage(
+            tester,
+            records: const [],
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-tap',
+                title: 'In flight',
+                startedAt: now,
+              ),
+            ],
+          );
+        });
+
+        await tester.tap(find.text('In flight'));
+        await tester.pump();
+
+        expect(captured, '/settings/agents/instances/agent-tap');
+      },
+    );
+
+    testWidgets('block is hidden when no wakes are running', (tester) async {
+      final now = DateTime(2026, 5, 5, 21);
+      await withClock(Clock(() => now), () async {
+        await pumpPage(tester, records: const []);
+      });
+
+      final element = tester.element(find.byType(AgentPendingWakesPage));
+      expect(
+        find.text(element.messages.agentPendingWakesRunningHeading(0)),
+        findsNothing,
+      );
+    });
+  });
 }

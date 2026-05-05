@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 
 import '../../../../test_helper.dart';
 import '../../test_data/entity_factories.dart';
+import '../../test_data/template_factories.dart';
 import 'test_bench.dart';
 
 void main() {
@@ -46,6 +47,42 @@ void main() {
       expect(find.text('Assign Agent'), findsOneWidget);
       expect(find.text('AI summary'), findsNothing);
     });
+  });
+
+  group('AiSummaryCard – subtitle', () {
+    testWidgets(
+      'uses the template displayName for the subtitle when available',
+      (tester) async {
+        final bench = AgentTestBench(
+          template: makeTestTemplate(displayName: 'Task Laura'),
+          report: makeTestReport(tldr: 'Tldr line.'),
+        );
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        // The bold "AI summary" stays unchanged…
+        expect(find.text('AI summary'), findsOneWidget);
+        // …and the subtitle below is the template name, not the
+        // generic agent kind label.
+        expect(find.text('Task Laura'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'falls back to the agent display name when no template is assigned',
+      (tester) async {
+        final bench = AgentTestBench(
+          report: makeTestReport(tldr: 'Tldr line.'),
+        );
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        // `makeTestIdentity()` defaults to "Test Agent" — the subtitle
+        // path should fall through to that when the template provider
+        // resolves to null.
+        expect(find.text('Test Agent'), findsOneWidget);
+      },
+    );
   });
 
   group('AiSummaryCard – TLDR', () {

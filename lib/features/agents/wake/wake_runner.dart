@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:collection';
+
+import 'package:clock/clock.dart';
 
 /// Single-flight execution engine for agent wake runs.
 ///
@@ -8,6 +11,9 @@ import 'dart:async';
 /// [waitForCompletion] and re-try.
 class WakeRunner {
   final _activeLocks = <String, Completer<void>>{};
+  final _activeStartedAt = <String, DateTime>{};
+  late final UnmodifiableMapView<String, DateTime> _activeStartedAtView =
+      UnmodifiableMapView(_activeStartedAt);
   final _runningController = StreamController<Set<String>>.broadcast();
 
   /// Stream that emits the current set of active agent IDs whenever it changes.
@@ -23,6 +29,7 @@ class WakeRunner {
   Future<bool> tryAcquire(String agentId) async {
     if (_activeLocks.containsKey(agentId)) return false;
     _activeLocks[agentId] = Completer<void>();
+    _activeStartedAt[agentId] = clock.now();
     _runningController.add(activeAgentIds);
     return true;
   }
@@ -33,6 +40,7 @@ class WakeRunner {
   /// to prevent the lock from leaking.
   void release(String agentId) {
     _activeLocks.remove(agentId)?.complete();
+    _activeStartedAt.remove(agentId);
     _runningController.add(activeAgentIds);
   }
 
@@ -49,6 +57,17 @@ class WakeRunner {
 
   /// Snapshot of the IDs of all agents that are currently running.
   Set<String> get activeAgentIds => Set.unmodifiable(_activeLocks.keys.toSet());
+
+  /// When did the currently-active wake for [agentId] start? Returns
+  /// `null` when [agentId] is not running. The wall-clock used here is
+  /// `clock.now()`, so tests that override `clock` see deterministic
+  /// values.
+  DateTime? startedAt(String agentId) => _activeStartedAt[agentId];
+
+  /// Live read-only view of agent IDs to their wake start timestamps.
+  /// Reflects subsequent acquire/release calls without allocating —
+  /// callers that need a frozen snapshot should copy the result.
+  Map<String, DateTime> get activeStartedAtById => _activeStartedAtView;
 
   /// Close the running-state stream controller.
   ///
