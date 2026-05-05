@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -622,7 +623,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Laura Soul'), findsOneWidget);
-      expect(find.byIcon(Icons.psychology_rounded), findsOneWidget);
+      // Souls list now renders the shared `SoulAvatar` initial-tile
+      // instead of the legacy psychology icon.
+      expect(find.byType(SoulAvatar), findsOneWidget);
     });
 
     testWidgets('shows empty state on Souls tab when no souls', (
@@ -636,10 +639,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(context.messages.agentSoulEmptyList),
+        find.text(context.messages.agentSoulsEmptyFiltered),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.psychology_outlined), findsOneWidget);
     });
 
     testWidgets('shows FAB on Souls tab for creating souls', (tester) async {
@@ -769,10 +771,8 @@ void main() {
       await tester.tap(find.text(context.messages.agentSoulsTitle));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text(context.messages.agentSoulVersionLabel(5)),
-        findsOneWidget,
-      );
+      // The shared row renders the active version as a mono `vN` cell.
+      expect(find.text('v5'), findsOneWidget);
     });
 
     testWidgets('tapping back chevron calls NavService.beamBack', (
@@ -882,7 +882,7 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(
-            find.text(context.messages.agentSoulEmptyList),
+            find.text(context.messages.agentSoulsEmptyFiltered),
             findsOneWidget,
           );
           // Templates empty-state must now be offstage.
@@ -1029,7 +1029,7 @@ void main() {
         await tester.pumpAndSettle();
 
         ctx = tester.element(find.byType(AgentSettingsPage));
-        expect(find.text(ctx.messages.agentSoulEmptyList), findsOneWidget);
+        expect(find.text(ctx.messages.agentSoulsEmptyFiltered), findsOneWidget);
       },
     );
   });

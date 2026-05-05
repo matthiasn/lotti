@@ -850,6 +850,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSoulSettingsTab => 'Nastavení';
 
   @override
+  String get agentSoulsEmptyFiltered => 'Žádné duše neodpovídají tvým filtrům.';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Hledat duše…';
+
+  @override
   String get agentSoulsTitle => 'Duše';
 
   @override

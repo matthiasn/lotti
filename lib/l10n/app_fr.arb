@@ -421,7 +421,9 @@
     }
   },
   "agentSoulSelectTitle": "Sélectionner une âme",
+  "agentSoulsEmptyFiltered": "Aucune âme ne correspond à tes filtres.",
   "agentSoulSettingsTab": "Paramètres",
+  "agentSoulsSearchPlaceholder": "Rechercher des âmes…",
   "agentSoulsTitle": "Âmes",
   "agentSoulToneBoundsLabel": "Limites de ton",
   "agentSoulVersionHistoryTitle": "Historique des versions",

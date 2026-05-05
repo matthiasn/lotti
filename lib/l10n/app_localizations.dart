@@ -1542,6 +1542,18 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get agentSoulSettingsTab;
 
+  /// No description provided for @agentSoulsEmptyFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'No souls match your filters.'**
+  String get agentSoulsEmptyFiltered;
+
+  /// No description provided for @agentSoulsSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search souls…'**
+  String get agentSoulsSearchPlaceholder;
+
   /// No description provided for @agentSoulsTitle.
   ///
   /// In en, this message translates to:

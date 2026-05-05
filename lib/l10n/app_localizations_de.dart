@@ -858,6 +858,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentSoulSettingsTab => 'Einstellungen';
 
   @override
+  String get agentSoulsEmptyFiltered =>
+      'Keine Seelen passen zu deinen Filtern.';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Seelen suchen…';
+
+  @override
   String get agentSoulsTitle => 'Seelen';
 
   @override

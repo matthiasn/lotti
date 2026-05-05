@@ -861,6 +861,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentSoulSettingsTab => 'Paramètres';
 
   @override
+  String get agentSoulsEmptyFiltered =>
+      'Aucune âme ne correspond à tes filtres.';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Rechercher des âmes…';
+
+  @override
   String get agentSoulsTitle => 'Âmes';
 
   @override

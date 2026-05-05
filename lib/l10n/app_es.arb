@@ -421,7 +421,9 @@
     }
   },
   "agentSoulSelectTitle": "Seleccionar alma",
+  "agentSoulsEmptyFiltered": "Ningún alma coincide con tus filtros.",
   "agentSoulSettingsTab": "Configuración",
+  "agentSoulsSearchPlaceholder": "Buscar almas…",
   "agentSoulsTitle": "Almas",
   "agentSoulToneBoundsLabel": "Límites de tono",
   "agentSoulVersionHistoryTitle": "Historial de versiones",

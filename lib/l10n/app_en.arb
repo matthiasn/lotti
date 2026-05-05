@@ -450,7 +450,9 @@
     }
   },
   "agentSoulSelectTitle": "Select Soul",
+  "agentSoulsEmptyFiltered": "No souls match your filters.",
   "agentSoulSettingsTab": "Settings",
+  "agentSoulsSearchPlaceholder": "Search souls…",
   "agentSoulsTitle": "Souls",
   "agentSoulToneBoundsLabel": "Tone Bounds",
   "agentSoulVersionHistoryTitle": "Version History",

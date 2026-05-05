@@ -861,6 +861,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulSettingsTab => 'Setări';
 
   @override
+  String get agentSoulsEmptyFiltered =>
+      'Niciun suflet nu se potrivește cu filtrele dvs.';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Caută suflete…';
+
+  @override
   String get agentSoulsTitle => 'Suflete';
 
   @override

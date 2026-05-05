@@ -858,6 +858,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentSoulSettingsTab => 'Configuración';
 
   @override
+  String get agentSoulsEmptyFiltered => 'Ningún alma coincide con tus filtros.';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Buscar almas…';
+
+  @override
   String get agentSoulsTitle => 'Almas';
 
   @override

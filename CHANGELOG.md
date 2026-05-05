@@ -28,6 +28,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fixed slot — values right-aligned inside it — so the LEDs and
   labels never reflow as the outbox / inbox depths roll over between
   digit counts.
+- Re-skinned Settings → Agents → Souls onto the shared listing shell.
+  The legacy ModernBaseCard / ListTile column is replaced by the same
+  toolbar / row / search primitives Instances and Templates now use:
+  search input, Sort by Name (default) / Recent / Oldest, and a hue-
+  tinted `SoulAvatar` initial-tile leading. Each row shows the soul
+  name and the active version as a mono `vN` cell. Tap target (deep-
+  link to the soul detail) and the create-soul FAB are unchanged.
+  Internal: new `agentSoulRowVmsProvider` joins
+  `allSoulDocumentsProvider` + `activeSoulVersionProvider` into
+  `SoulVm`s the page maps into the shared `AgentListRowData`; the old
+  inline `_SoulsTab` / `_SoulListTile` widgets are removed.
 - Re-skinned Settings → Agents → Templates onto the shared listing
   shell. The legacy ListTile + ModernBaseCard list is replaced by the
   same toolbar / group / row primitives the Instances tab now uses:

@@ -276,7 +276,9 @@
     }
   },
   "agentSoulSelectTitle": "Vybrat duši",
+  "agentSoulsEmptyFiltered": "Žádné duše neodpovídají tvým filtrům.",
   "agentSoulSettingsTab": "Nastavení",
+  "agentSoulsSearchPlaceholder": "Hledat duše…",
   "agentSoulsTitle": "Duše",
   "agentSoulToneBoundsLabel": "Hranice tónu",
   "agentSoulVersionHistoryTitle": "Historie verzí",

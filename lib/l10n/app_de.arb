@@ -421,7 +421,9 @@
     }
   },
   "agentSoulSelectTitle": "Seele auswählen",
+  "agentSoulsEmptyFiltered": "Keine Seelen passen zu deinen Filtern.",
   "agentSoulSettingsTab": "Einstellungen",
+  "agentSoulsSearchPlaceholder": "Seelen suchen…",
   "agentSoulsTitle": "Seelen",
   "agentSoulToneBoundsLabel": "Tonfall-Grenzen",
   "agentSoulVersionHistoryTitle": "Versionsverlauf",

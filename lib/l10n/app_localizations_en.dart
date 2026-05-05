@@ -846,6 +846,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSoulSettingsTab => 'Settings';
 
   @override
+  String get agentSoulsEmptyFiltered => 'No souls match your filters.';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Search souls…';
+
+  @override
   String get agentSoulsTitle => 'Souls';
 
   @override

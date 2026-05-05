@@ -421,7 +421,9 @@
     }
   },
   "agentSoulSelectTitle": "Selectează un suflet",
+  "agentSoulsEmptyFiltered": "Niciun suflet nu se potrivește cu filtrele dvs.",
   "agentSoulSettingsTab": "Setări",
+  "agentSoulsSearchPlaceholder": "Caută suflete…",
   "agentSoulsTitle": "Suflete",
   "agentSoulToneBoundsLabel": "Limite de ton",
   "agentSoulVersionHistoryTitle": "Istoric versiuni",
