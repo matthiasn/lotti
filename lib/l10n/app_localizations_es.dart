@@ -1303,7 +1303,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiAssistantThinking => 'Pensando...';
 
   @override
-  String get aiAssistantTitle => 'Asistente de IA';
+  String get aiAssistantTitle => 'Generar…';
 
   @override
   String get aiAssistantTranscribeAudio => 'Transcribir audio';

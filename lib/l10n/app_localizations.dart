@@ -2319,7 +2319,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiAssistantTitle.
   ///
   /// In en, this message translates to:
-  /// **'AI Assistant'**
+  /// **'Generate…'**
   String get aiAssistantTitle;
 
   /// No description provided for @aiAssistantTranscribeAudio.

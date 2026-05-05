@@ -1294,7 +1294,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiAssistantThinking => 'Přemýšlím...';
 
   @override
-  String get aiAssistantTitle => 'AI asistent';
+  String get aiAssistantTitle => 'Generovat…';
 
   @override
   String get aiAssistantTranscribeAudio => 'Přepsat zvuk';

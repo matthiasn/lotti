@@ -834,7 +834,7 @@
   "aiAssistantAnalyzeImage": "Analyze image",
   "aiAssistantSummarizeTask": "Summarize task",
   "aiAssistantThinking": "Thinking...",
-  "aiAssistantTitle": "AI Assistant",
+  "aiAssistantTitle": "Generate…",
   "aiAssistantTranscribeAudio": "Transcribe audio",
   "aiBatchToggleTooltip": "Switch to standard recording",
   "aiCardEmptyProposals": "No open proposals · agent will surface new changes here",
