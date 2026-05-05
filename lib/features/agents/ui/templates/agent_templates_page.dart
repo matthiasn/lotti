@@ -134,7 +134,13 @@ List<AgentListGroupAxis> _buildGroupAxes(
       label: messages.agentTemplatesGroupNone,
       buildGroups: (rows) => rows.isEmpty
           ? const []
-          : [AgentListGroup(id: 'all', label: 'All', items: rows)],
+          : [
+              AgentListGroup(
+                id: 'all',
+                label: messages.agentTemplatesGroupNone,
+                items: rows,
+              ),
+            ],
     ),
     AgentListGroupAxis(
       id: _groupByKind,

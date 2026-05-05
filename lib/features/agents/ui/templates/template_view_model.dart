@@ -47,29 +47,36 @@ class TemplateVm {
 }
 
 /// All non-deleted templates joined with their active version + the
-/// pending-review set. One [Future.wait] per fetch keeps the per-template
-/// version lookups parallel.
-final FutureProvider<List<TemplateVm>> agentTemplateRowVmsProvider =
-    FutureProvider.autoDispose<List<TemplateVm>>((ref) async {
-      final templatesRaw = await ref.watch(agentTemplatesProvider.future);
-      // `templatesPendingReviewProvider` is best-effort decoration —
-      // treat loading / error / not-overridden as "nothing pending"
-      // rather than failing the whole listing. Mirrors the legacy
-      // `_TemplateListTile`'s `.value?.contains(...) ?? false`.
-      final pending =
-          ref.watch(templatesPendingReviewProvider).value ?? const <String>{};
+/// pending-review set.
+///
+/// Per-template version lookups are watched synchronously via `.value`
+/// rather than awaited, so the list renders as soon as the templates
+/// themselves are loaded. Each version pill then appears reactively
+/// when its provider resolves, and a single slow / failing lookup
+/// can't block or fail the whole listing.
+final Provider<AsyncValue<List<TemplateVm>>> agentTemplateRowVmsProvider =
+    Provider.autoDispose<AsyncValue<List<TemplateVm>>>((ref) {
+      final templatesAsync = ref.watch(agentTemplatesProvider);
+      return templatesAsync.whenData((templatesRaw) {
+        // `templatesPendingReviewProvider` is best-effort decoration —
+        // treat loading / error / not-overridden as "nothing pending"
+        // rather than failing the whole listing. Mirrors the legacy
+        // `_TemplateListTile`'s `.value?.contains(...) ?? false`.
+        final pending =
+            ref.watch(templatesPendingReviewProvider).value ?? const <String>{};
 
-      final templates = templatesRaw.whereType<AgentTemplateEntity>().toList();
-      final versions = await Future.wait(
-        templates.map(
-          (t) => ref.watch(activeTemplateVersionProvider(t.id).future),
-        ),
-      );
-
-      return [
-        for (var i = 0; i < templates.length; i++)
-          _toVm(templates[i], versions[i], pending),
-      ];
+        final templates = templatesRaw
+            .whereType<AgentTemplateEntity>()
+            .toList();
+        return [
+          for (final t in templates)
+            _toVm(
+              t,
+              ref.watch(activeTemplateVersionProvider(t.id)).value,
+              pending,
+            ),
+        ];
+      });
     });
 
 TemplateVm _toVm(
