@@ -679,7 +679,6 @@ void main() {
           ),
           currentSavedTaskFilterIdProvider.overrideWith((ref) => activeId),
           tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
-          liveTasksFilterProvider.overrideWith((ref) => const TasksFilter()),
         ],
       );
     }

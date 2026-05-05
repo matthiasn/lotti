@@ -195,26 +195,4 @@ void main() {
       },
     );
   });
-
-  group('liveTasksFilterProvider', () {
-    test('builds a TasksFilter snapshot from the live page state', () async {
-      final fake = FakeJournalPageController(
-        const JournalPageState(
-          selectedTaskStatuses: {'BLOCKED', 'ON_HOLD'},
-          selectedPriorities: {'P0'},
-          showCreationDate: true,
-        ),
-      );
-      final container = _buildContainer(fakeController: fake);
-      addTearDown(container.dispose);
-
-      final live = container.read(liveTasksFilterProvider);
-
-      expect(live.selectedTaskStatuses, {'BLOCKED', 'ON_HOLD'});
-      expect(live.selectedPriorities, {'P0'});
-      expect(live.showCreationDate, isTrue);
-      expect(live.showDueDate, isTrue); // default
-      expect(live.agentAssignmentFilter, AgentAssignmentFilter.all);
-    });
-  });
 }

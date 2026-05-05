@@ -5,6 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.993]
+### Fixed
+- Task filter modal's Save button now applies the current modal draft,
+  persists it to the saved-filters sidebar, and closes the modal — one
+  action instead of three. Previously Save read from
+  `liveTasksFilterProvider` (the last applied state), so any edits made
+  in the modal before tapping Save were silently dropped from the
+  persisted filter, and the modal stayed open afterwards. The
+  design-system filter modal's `onSavePressed` callback now receives
+  the committed name AND the current draft state, so any consumer can
+  derive a payload from what's actually visible to the user. Glass-
+  effect background for the sticky action bar is intentionally
+  deferred until the Figma design is finalized.
+
+### Changed
+- Saved-filter "Saved / Updated / Deleted" confirmation toasts now
+  render via the shared design-system toast (`context.showToast`) —
+  same rounded pill, palette, and queue behavior the label-detail
+  page uses when a label is created — instead of an ad-hoc themed
+  [SnackBar]. The leading glyph is the standard tone-coloured
+  `check_circle_rounded` from `DesignSystemToast`.
+
 ### Changed
 - Re-skinned Settings → Agents → Pending Wakes onto the shared listing
   shell. The legacy stacked `_PendingWakeCard` column is replaced by

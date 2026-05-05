@@ -18,6 +18,7 @@ import 'package:lotti/features/tasks/ui/saved_filters/saved_task_filter_toast.da
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 
 /// Shows the task filter modal using the design system filter sheet.
 ///
@@ -84,26 +85,45 @@ Future<void> showTaskFilterModal(
     initialSaveName: initialSavedName,
     onSavePressed: !showTasks
         ? null
-        : (rawName) async {
-            // The modal stays open after save (only the popup closes); the
-            // user can still tap Apply to commit the draft state.
-            final liveFilter = container.read(liveTasksFilterProvider);
+        : (name, draftState) async {
+            // Save = apply + save + close (closing is owned by the modal
+            // layer). The persisted filter is built from the draft so
+            // in-modal edits are captured even when the user taps Save
+            // before Apply.
+            final filter = _draftStateToTasksFilter(
+              draftState,
+              controllerState,
+            );
             final notifier = container.read(
               savedTaskFiltersControllerProvider.notifier,
             );
-            if (initialSavedId != null && rawName == initialSavedName) {
-              await notifier.updateFilter(initialSavedId, liveFilter);
-              if (context.mounted) {
-                showSavedTaskFilterUpdatedToast(context, name: rawName);
+            try {
+              if (initialSavedId != null && name == initialSavedName) {
+                await notifier.updateFilter(initialSavedId, filter);
+                if (context.mounted) {
+                  showSavedTaskFilterUpdatedToast(context, name: name);
+                }
+              } else {
+                final created = await notifier.create(
+                  name: name,
+                  filter: filter,
+                );
+                if (context.mounted) {
+                  showSavedTaskFilterSavedToast(context, name: created.name);
+                }
               }
-            } else {
-              final created = await notifier.create(
-                name: rawName,
-                filter: liveFilter,
-              );
-              if (context.mounted) {
-                showSavedTaskFilterSavedToast(context, name: created.name);
+            } catch (error, stackTrace) {
+              if (getIt.isRegistered<LoggingService>()) {
+                getIt<LoggingService>().captureException(
+                  error,
+                  domain: 'TaskFilterModal',
+                  subDomain: 'saveFilter',
+                  stackTrace: stackTrace,
+                );
               }
+              // Rethrow so the modal layer keeps the modal open and the
+              // user can retry.
+              rethrow;
             }
           },
     onApplied: (sheetState) {
@@ -229,37 +249,60 @@ Future<List<ProjectWithCategory>> _fetchProjectsForFilter({
 }
 
 /// Applies the filter sheet state back to the controller in a single batch.
+///
+/// Selection sets are forwarded as nullable so absent sections leave their
+/// underlying state unchanged — [TasksFilter]'s `Set<String>` defaults to
+/// empty, which would otherwise read as "clear" in the apply path.
 Future<void> _applyFilterState(
   DesignSystemTaskFilterState sheetState, {
   required JournalPageController controller,
   required JournalPageState controllerState,
 }) async {
-  // Extract priorities (multi-select): map every selected display id to its
-  // internal priority string, dropping any that don't map (including the
-  // legacy `allPriorityId` sentinel).
-  final internalPriorities = <String>{
-    for (final displayId in sheetState.selectedPriorityIds)
-      ?TasksFilterPriorityIds.toInternalId(displayId),
-  };
-
-  // Extract toggles
-  final toggleMap = {
-    for (final toggle in sheetState.toggles) toggle.id: toggle.value,
-  };
-
+  final filter = _draftStateToTasksFilter(sheetState, controllerState);
   await controller.applyBatchFilterUpdate(
     statuses: sheetState.statusField?.selectedIds,
     categoryIds: sheetState.categoryField?.selectedIds,
     labelIds: sheetState.labelField?.selectedIds,
     projectIds: sheetState.projectField?.selectedIds,
-    priorities: internalPriorities,
+    priorities: filter.selectedPriorities,
+    sortOption: filter.sortOption,
+    agentAssignmentFilter: filter.agentAssignmentFilter,
+    searchMode: sheetState.hasSearchMode
+        ? TasksFilterSearchModeIds.toMode(sheetState.selectedSearchModeId)
+        : null,
+    showCreationDate: filter.showCreationDate,
+    showDueDate: filter.showDueDate,
+  );
+}
+
+/// Pure conversion from the modal's draft state to a [TasksFilter] payload
+/// suitable for persistence and the apply path's per-field math.
+///
+/// Selection sets fall back to `const {}` because [TasksFilter] is absolute
+/// (a saved filter with an empty status set means "no status constraint").
+/// Display toggles fall back to [controllerState] so toggles the sheet
+/// doesn't expose don't reset to the [TasksFilter] default.
+TasksFilter _draftStateToTasksFilter(
+  DesignSystemTaskFilterState sheetState,
+  JournalPageState controllerState,
+) {
+  final internalPriorities = <String>{
+    for (final displayId in sheetState.selectedPriorityIds)
+      ?TasksFilterPriorityIds.toInternalId(displayId),
+  };
+  final toggleMap = {
+    for (final toggle in sheetState.toggles) toggle.id: toggle.value,
+  };
+  return TasksFilter(
+    selectedTaskStatuses: sheetState.statusField?.selectedIds ?? const {},
+    selectedCategoryIds: sheetState.categoryField?.selectedIds ?? const {},
+    selectedLabelIds: sheetState.labelField?.selectedIds ?? const {},
+    selectedProjectIds: sheetState.projectField?.selectedIds ?? const {},
+    selectedPriorities: internalPriorities,
     sortOption: TasksFilterSortIds.toSortOption(sheetState.selectedSortId),
     agentAssignmentFilter: TasksFilterAgentIds.toFilter(
       sheetState.selectedAgentFilterId,
     ),
-    searchMode: sheetState.hasSearchMode
-        ? TasksFilterSearchModeIds.toMode(sheetState.selectedSearchModeId)
-        : null,
     showCreationDate:
         toggleMap[TasksFilterToggleIds.showCreationDate] ??
         controllerState.showCreationDate,

@@ -118,7 +118,7 @@ abstract class _$LinkedTasksController extends $Notifier<LinkedTasksState> {
 
 /// Provider that resolves outgoing entry links to Task entities.
 ///
-/// This is used by LinkedToSection to get resolved Task objects
+/// This is used by LinkedTasksWidget to get resolved Task objects
 /// instead of EntryLinks, avoiding the need to watch individual
 /// entryControllerProviders in the widget tree.
 ///
@@ -129,7 +129,7 @@ final outgoingLinkedTasksProvider = OutgoingLinkedTasksFamily._();
 
 /// Provider that resolves outgoing entry links to Task entities.
 ///
-/// This is used by LinkedToSection to get resolved Task objects
+/// This is used by LinkedTasksWidget to get resolved Task objects
 /// instead of EntryLinks, avoiding the need to watch individual
 /// entryControllerProviders in the widget tree.
 ///
@@ -145,7 +145,7 @@ final class OutgoingLinkedTasksProvider
     with $Provider<List<JournalEntity>> {
   /// Provider that resolves outgoing entry links to Task entities.
   ///
-  /// This is used by LinkedToSection to get resolved Task objects
+  /// This is used by LinkedTasksWidget to get resolved Task objects
   /// instead of EntryLinks, avoiding the need to watch individual
   /// entryControllerProviders in the widget tree.
   ///
@@ -207,7 +207,7 @@ String _$outgoingLinkedTasksHash() =>
 
 /// Provider that resolves outgoing entry links to Task entities.
 ///
-/// This is used by LinkedToSection to get resolved Task objects
+/// This is used by LinkedTasksWidget to get resolved Task objects
 /// instead of EntryLinks, avoiding the need to watch individual
 /// entryControllerProviders in the widget tree.
 ///
@@ -226,7 +226,7 @@ final class OutgoingLinkedTasksFamily extends $Family
 
   /// Provider that resolves outgoing entry links to Task entities.
   ///
-  /// This is used by LinkedToSection to get resolved Task objects
+  /// This is used by LinkedTasksWidget to get resolved Task objects
   /// instead of EntryLinks, avoiding the need to watch individual
   /// entryControllerProviders in the widget tree.
   ///
