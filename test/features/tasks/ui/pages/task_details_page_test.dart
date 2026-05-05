@@ -9,6 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -18,7 +19,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -152,13 +152,12 @@ void main() {
 
       // test task title is displayed once (inside the new desktop header).
       expect(find.text(testTask.data.title), findsOneWidget);
-      expect(
-        find.byType(DesignSystemBottomNavigationFabPadding),
-        findsOneWidget,
-      );
 
-      // Background matches sidebar / Figma background/01 and FAB location
-      // is anchored to end-float to align with the task list FAB.
+      // The legacy FAB has been replaced by the sticky TaskActionBar
+      // pinned at the bottom of the page.
+      expect(find.byType(TaskActionBar), findsOneWidget);
+
+      // Background matches sidebar / Figma background/01.
       final scaffold = tester.widget<Scaffold>(
         find
             .descendant(
@@ -172,10 +171,9 @@ void main() {
         scaffold.backgroundColor,
         context.designTokens.colors.background.level01,
       );
-      expect(
-        scaffold.floatingActionButtonLocation,
-        FloatingActionButtonLocation.endFloat,
-      );
+      // Scaffold no longer hosts a FAB; the action bar sits in the body
+      // Stack so it stacks correctly with the AI overlay above it.
+      expect(scaffold.floatingActionButton, isNull);
     });
   });
 

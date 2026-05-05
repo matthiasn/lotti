@@ -6641,6 +6641,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncStepMeasurables => 'Medibles';
 
   @override
+  String get taskActionBarMoreActions => 'Más acciones';
+
+  @override
+  String get taskActionBarStopTracking => 'Detener seguimiento';
+
+  @override
+  String get taskActionBarTrackTime => 'Registrar tiempo';
+
+  @override
   String get taskAgentCancelTimerTooltip => 'Cancelar';
 
   @override

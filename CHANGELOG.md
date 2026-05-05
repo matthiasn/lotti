@@ -54,6 +54,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.993]
 ### Changed
+- Task details page now has a sticky action bar pinned to the bottom in
+  place of the floating action button. A primary "Track time" pill
+  toggles into a live elapsed-time readout while a timer is running on
+  the open task — tapping it then stops the timer — and five round
+  affordances cover the most-frequent inline actions: add checklist,
+  import image, record audio, more actions (opens the previous menu for
+  long-tail items), and capture screenshot. On narrow phone viewports
+  the trailing icons reflow onto a second run instead of overflowing
+  the right edge.
 - Task filter modal action bar now uses the new "Apply filter" glass
   footer: a full-width frosted-glass strip flush to the bottom of the
   modal, with a hairline divider on top and right-aligned Clear all,

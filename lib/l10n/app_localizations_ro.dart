@@ -6598,6 +6598,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncStepMeasurables => 'Măsurabile';
 
   @override
+  String get taskActionBarMoreActions => 'Mai multe acțiuni';
+
+  @override
+  String get taskActionBarStopTracking => 'Oprește cronometrul';
+
+  @override
+  String get taskActionBarTrackTime => 'Înregistrează timpul';
+
+  @override
   String get taskAgentCancelTimerTooltip => 'Anulează';
 
   @override

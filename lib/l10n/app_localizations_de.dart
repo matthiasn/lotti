@@ -6544,6 +6544,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncStepMeasurables => 'Messgrößen';
 
   @override
+  String get taskActionBarMoreActions => 'Weitere Aktionen';
+
+  @override
+  String get taskActionBarStopTracking => 'Zeiterfassung beenden';
+
+  @override
+  String get taskActionBarTrackTime => 'Zeit erfassen';
+
+  @override
   String get taskAgentCancelTimerTooltip => 'Abbrechen';
 
   @override

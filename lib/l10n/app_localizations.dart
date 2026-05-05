@@ -11269,6 +11269,24 @@ abstract class AppLocalizations {
   /// **'Measurables'**
   String get syncStepMeasurables;
 
+  /// No description provided for @taskActionBarMoreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get taskActionBarMoreActions;
+
+  /// No description provided for @taskActionBarStopTracking.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop time tracking'**
+  String get taskActionBarStopTracking;
+
+  /// No description provided for @taskActionBarTrackTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Track time'**
+  String get taskActionBarTrackTime;
+
   /// No description provided for @taskAgentCancelTimerTooltip.
   ///
   /// In en, this message translates to:

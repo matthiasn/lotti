@@ -172,6 +172,17 @@ Checklist content is modeled separately through checklist entities and linked ch
 - linked entries with timer-aware highlighting
 - reverse linked-from entries
 - AI-running animation overlay
+- `TaskActionBar` — a sticky frosted-glass bar hosted in the page's
+  `Scaffold.bottomNavigationBar` slot, replacing the floating action
+  button. It exposes the most-frequent inline actions directly: a
+  "Track time" pill that toggles into a live elapsed-time readout when
+  a timer is running on this task, plus round affordances for
+  add-checklist, import-image, audio recording, "more actions" (opens
+  `CreateEntryModal` for the long-tail items), and capture-screenshot.
+  The button row is a `Wrap`, so on narrow phone viewports the trailing
+  icons reflow onto a second run instead of overflowing the right edge.
+  The page sets `Scaffold.extendBody: true` so body content paints
+  behind the bar — that's what the `BackdropFilter` blurs.
 
 ```mermaid
 flowchart TD
@@ -183,6 +194,9 @@ flowchart TD
   Form --> Linked["LinkedTasksWidget"]
   Form --> Checklists["ChecklistsWidget"]
   Load --> Focus["HighlightScrollMixin + TaskFocusController"]
+  Load --> ActionBar["TaskActionBar (sticky bottom)"]
+  ActionBar --> TimeService["getIt<TimeService>().getStream()"]
+  TimeService --> ActionBar
   Open --> Drop["Desktop drag-and-drop media import"]
   Drop --> ImageAnalysis["Optional automatic image analysis trigger"]
 ```

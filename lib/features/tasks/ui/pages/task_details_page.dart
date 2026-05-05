@@ -9,17 +9,18 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
@@ -120,60 +121,26 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       },
       child: Scaffold(
         backgroundColor: context.designTokens.colors.background.level01,
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: FloatingAddActionButton(
-          linkedFromId: task.meta.id,
-          categoryId: task.meta.categoryId,
-        ),
-        body: Stack(
-          children: [
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                TaskSliverAppBar(taskId: widget.taskId),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 15,
-                      right: 15,
-                      top: 10,
-                    ),
-                    child: TaskForm(taskId: widget.taskId),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 8,
-                      bottom: 200,
-                      left: 10,
-                      right: 10,
-                    ),
-                    child:
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            LinkedEntriesWithTimer(
-                              item: task,
-                              entryKeyBuilder: _getEntryKey,
-                              highlightedEntryId: highlightedEntryId,
-                              hideTaskEntries: true,
-                            ),
-                            LinkedFromEntriesWidget(
-                              task,
-                              hideTaskEntries: true,
-                            ),
-                          ],
-                        ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 100),
-                        ),
-                  ),
-                ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: AiRunningAnimationWrapperCard(
+        // extendBody so the BackdropFilter inside [TaskActionBar]'s
+        // glass strip has body content underneath to actually blur. The
+        // body's bottom inset is reserved automatically for the
+        // bottomNavigationBar slot, so we don't need a magic-number
+        // bottom padding on the slivers.
+        extendBody: true,
+        bottomNavigationBar: Padding(
+          // Lift the bar above the mobile bottom-navigation pill
+          // (occupiedHeight is 0 on desktop where the sidebar replaces
+          // the nav bar) and leave step3 of breathing room so the two
+          // glass surfaces don't sit flush against each other.
+          padding: EdgeInsets.only(
+            bottom:
+                DesignSystemBottomNavigationBar.occupiedHeight(context) +
+                context.designTokens.spacing.step3,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AiRunningAnimationWrapperCard(
                 entryId: widget.taskId,
                 height: 50,
                 isInteractive: true,
@@ -183,6 +150,50 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                   AiResponseType.promptGeneration,
                   AiResponseType.imageGeneration,
                 },
+              ),
+              TaskActionBar(task: task),
+            ],
+          ),
+        ),
+        body: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            TaskSliverAppBar(taskId: widget.taskId),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: 15,
+                  right: 15,
+                  top: 10,
+                ),
+                child: TaskForm(taskId: widget.taskId),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  left: 10,
+                  right: 10,
+                ),
+                child:
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        LinkedEntriesWithTimer(
+                          item: task,
+                          entryKeyBuilder: _getEntryKey,
+                          highlightedEntryId: highlightedEntryId,
+                          hideTaskEntries: true,
+                        ),
+                        LinkedFromEntriesWidget(
+                          task,
+                          hideTaskEntries: true,
+                        ),
+                      ],
+                    ).animate().fadeIn(
+                      duration: const Duration(milliseconds: 100),
+                    ),
               ),
             ),
           ],
