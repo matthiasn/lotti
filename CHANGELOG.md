@@ -5,6 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.993]
+### Changed
+- Task filter modal action bar now uses the new "Apply filter" glass
+  footer: a full-width frosted-glass strip flush to the bottom of the
+  modal, with a hairline divider on top and right-aligned Clear all,
+  Save, and Apply filter buttons. The last filter section gains
+  comfortable breathing room above the footer; long localized labels
+  still fit because the buttons can grow past their default width.
+
 ### Fixed
 - Task filter modal's Save button now applies the current modal draft,
   persists it to the saved-filters sidebar, and closes the modal — one
@@ -14,9 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   persisted filter, and the modal stayed open afterwards. The
   design-system filter modal's `onSavePressed` callback now receives
   the committed name AND the current draft state, so any consumer can
-  derive a payload from what's actually visible to the user. Glass-
-  effect background for the sticky action bar is intentionally
-  deferred until the Figma design is finalized.
+  derive a payload from what's actually visible to the user.
 
 ### Changed
 - Saved-filter "Saved / Updated / Deleted" confirmation toasts now
