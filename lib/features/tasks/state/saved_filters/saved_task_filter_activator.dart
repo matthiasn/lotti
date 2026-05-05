@@ -116,11 +116,3 @@ bool tasksFilterHasUnsavedClauses(Ref ref) {
   final matchedId = ref.watch(currentSavedTaskFilterIdProvider);
   return matchedId == null;
 }
-
-/// Snapshot of the live tasks filter shape — used by the modal save flow to
-/// build a new [SavedTaskFilter] payload.
-@riverpod
-TasksFilter liveTasksFilter(Ref ref) {
-  final pageState = ref.watch(journalPageControllerProvider(true));
-  return _liveFilterFor(pageState);
-}

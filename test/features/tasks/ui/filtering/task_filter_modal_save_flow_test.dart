@@ -100,9 +100,13 @@ void main() {
     required _RecordingSavedFiltersController recorder,
     String? activeId,
     bool hasUnsavedClauses = true,
-    TasksFilter live = const TasksFilter(),
+    JournalPageState? pageState,
   }) {
-    fakeController = FakeJournalPageController(mockState);
+    // The modal builds its draft from the controller state via
+    // `buildTasksFilterSheetState`, then the Save handler converts that
+    // draft to a `TasksFilter` directly — so tests configure the starting
+    // shape via [pageState], not via a `liveTasksFilterProvider` override.
+    fakeController = FakeJournalPageController(pageState ?? mockState);
 
     return WidgetTestBench(
       child: ProviderScope(
@@ -116,7 +120,6 @@ void main() {
           tasksFilterHasUnsavedClausesProvider.overrideWith(
             (ref) => hasUnsavedClauses,
           ),
-          liveTasksFilterProvider.overrideWith((ref) => live),
         ],
         child: Scaffold(
           body: Builder(
@@ -157,14 +160,19 @@ void main() {
 
   group('save flow', () {
     testWidgets(
-      'creates a new saved filter when no active id is set',
+      'creates a new saved filter when no active id is set, captures the '
+      'modal draft, and closes the modal',
       (tester) async {
         final recorder = _RecordingSavedFiltersController(const []);
         await tester.pumpWidget(
           buildSubject(
             recorder: recorder,
-            live: const TasksFilter(
-              selectedTaskStatuses: {'IN_PROGRESS'},
+            pageState: const JournalPageState(
+              taskStatuses: ['OPEN', 'IN PROGRESS'],
+              selectedTaskStatuses: {'IN PROGRESS'},
+              selectedCategoryIds: {},
+              selectedLabelIds: {},
+              selectedPriorities: {},
             ),
           ),
         );
@@ -174,11 +182,20 @@ void main() {
 
         expect(recorder.creates, hasLength(1));
         expect(recorder.creates.single.name, 'My filter');
+        // The captured filter mirrors the controller state the draft was
+        // seeded from — proving the save flow now sources from the modal
+        // draft rather than `liveTasksFilterProvider`.
         expect(
           recorder.creates.single.filter.selectedTaskStatuses,
-          {'IN_PROGRESS'},
+          {'IN PROGRESS'},
         );
         expect(recorder.updates, isEmpty);
+
+        // Modal closes after Save (apply + save + close).
+        expect(
+          find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+          findsNothing,
+        );
       },
     );
 
@@ -198,8 +215,12 @@ void main() {
           buildSubject(
             recorder: recorder,
             activeId: 'sv-1',
-            live: const TasksFilter(
+            pageState: const JournalPageState(
+              taskStatuses: ['OPEN', 'IN PROGRESS', 'BLOCKED'],
               selectedTaskStatuses: {'BLOCKED'},
+              selectedCategoryIds: {},
+              selectedLabelIds: {},
+              selectedPriorities: {},
             ),
           ),
         );
@@ -237,9 +258,6 @@ void main() {
           buildSubject(
             recorder: recorder,
             activeId: 'sv-1', // no matching entry in seed
-            live: const TasksFilter(
-              selectedTaskStatuses: {'OPEN'},
-            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -268,8 +286,12 @@ void main() {
           buildSubject(
             recorder: recorder,
             activeId: 'sv-1',
-            live: const TasksFilter(
+            pageState: const JournalPageState(
+              taskStatuses: ['OPEN', 'IN PROGRESS', 'BLOCKED'],
               selectedTaskStatuses: {'BLOCKED'},
+              selectedCategoryIds: {},
+              selectedLabelIds: {},
+              selectedPriorities: {},
             ),
           ),
         );
@@ -287,6 +309,73 @@ void main() {
         expect(recorder.creates, hasLength(1));
         expect(recorder.creates.single.name, 'Different');
         expect(recorder.updates, isEmpty);
+      },
+    );
+
+    testWidgets(
+      'captures in-modal priority edits in the saved filter — regression '
+      'guard for the bug where Save persisted the previously applied '
+      'filter instead of the current modal draft',
+      (tester) async {
+        // Controller starts with no priority selected; user toggles P1 on
+        // inside the modal *without* tapping Apply, then taps Save.
+        // Pre-fix: the saved filter would carry no priorities (read from
+        // liveTasksFilterProvider, which still reflects the controller's
+        // pre-edit state). Post-fix: the saved filter contains 'P1',
+        // sourced from the modal's draft state.
+        //
+        // Priority chips are inline pills inside the sheet (unlike status
+        // / category / label / project, which are drill-down fields), so
+        // they're the cleanest section to mutate from a widget test.
+        final recorder = _RecordingSavedFiltersController(const []);
+        await tester.pumpWidget(
+          buildSubject(recorder: recorder),
+        );
+        await tester.pumpAndSettle();
+
+        // Open the modal.
+        await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+        await tester.pumpAndSettle();
+
+        // Tap the P1 priority chip — this toggles 'p1' (display id) into
+        // the modal's draft state. The bug fix sets up Save to map this
+        // back to the internal 'P1' priority and persist it.
+        final p1Chip = find.byKey(
+          const ValueKey('design-system-task-filter-priority-p1'),
+        );
+        await tester.ensureVisible(p1Chip);
+        await tester.pumpAndSettle();
+        await tester.tap(p1Chip);
+        await tester.pumpAndSettle();
+
+        // Open the Save popup, type a name, commit.
+        await tester.tap(
+          find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+        );
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
+          'Edited',
+        );
+        await tester.pump();
+        await tester.tap(
+          find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
+        );
+        await tester.pumpAndSettle();
+
+        expect(recorder.creates, hasLength(1));
+        expect(recorder.creates.single.name, 'Edited');
+        // P1 was toggled in-modal — the captured filter must include it.
+        expect(
+          recorder.creates.single.filter.selectedPriorities,
+          {'P1'},
+        );
+        expect(recorder.updates, isEmpty);
+        // Modal closes after Save.
+        expect(
+          find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
+          findsNothing,
+        );
       },
     );
   });

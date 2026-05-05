@@ -123,9 +123,6 @@ void main() {
             ),
             currentSavedTaskFilterIdProvider.overrideWith((ref) => null),
             tasksFilterHasUnsavedClausesProvider.overrideWith((ref) => false),
-            liveTasksFilterProvider.overrideWith(
-              (ref) => const TasksFilter(),
-            ),
           ],
           child: const Scaffold(
             body: TaskFilterIcon(),

@@ -86,21 +86,27 @@ void main() {
     expect(find.text('Filter deleted'), findsOneWidget);
   });
 
-  testWidgets('renders the success check icon inside the SnackBar', (
-    tester,
-  ) async {
-    await _pumpHarness(
-      tester,
-      (context) => showSavedTaskFilterSavedToast(context, name: 'A'),
-    );
+  testWidgets(
+    'renders the success check icon (design-system toast leading glyph)',
+    (tester) async {
+      await _pumpHarness(
+        tester,
+        (context) => showSavedTaskFilterSavedToast(context, name: 'A'),
+      );
 
-    await tester.tap(find.text('fire'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('fire'));
+      await tester.pumpAndSettle();
 
-    final inSnackBar = find.descendant(
-      of: find.byType(SnackBar),
-      matching: find.byIcon(Icons.check_rounded),
-    );
-    expect(inSnackBar, findsOneWidget);
-  });
+      // The design-system toast paints a tone-coloured leading icon —
+      // `check_circle_rounded` for success — inside its SnackBar host.
+      // Asserting on this confirms the toast is going through the
+      // shared `context.showToast` path (label-page parity) rather
+      // than the legacy ad-hoc SnackBar this helper used to build.
+      final inSnackBar = find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.byIcon(Icons.check_circle_rounded),
+      );
+      expect(inSnackBar, findsOneWidget);
+    },
+  );
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -11,6 +13,16 @@ typedef DesignSystemFilterFieldHandler =
       DesignSystemTaskFilterSection section,
     );
 
+/// Save handler for the filter modal. Receives the trimmed name the user
+/// committed in the Save popup along with the modal's current draft state,
+/// so the consumer can persist the in-modal edits — not the previously
+/// applied filter — to the saved-filter sidebar.
+///
+/// May return a [Future]; the modal layer awaits it so persistence failures
+/// keep the modal open instead of silently dismissing.
+typedef DesignSystemFilterSaveHandler =
+    FutureOr<void> Function(String name, DesignSystemTaskFilterState state);
+
 /// Shows the design system task filter modal using Wolt modal sheet.
 ///
 /// On mobile the modal appears as a bottom sheet; on desktop as a centered
@@ -21,16 +33,20 @@ typedef DesignSystemFilterFieldHandler =
 /// the scrollable content and the sticky action bar via a [ValueNotifier].
 ///
 /// When [onSavePressed] is supplied, an additional Save affordance is rendered
-/// next to Apply. Tapping it opens an inline name popup; the entered name is
-/// passed to [onSavePressed]. The button is disabled when [canSave] is false
-/// (typically because the filter has no clauses to save).
+/// next to Apply. Committing the inline name popup applies the current draft
+/// state via [onApplied], awaits [onSavePressed] with the committed name and
+/// that same draft, and closes the modal on success — so Save is "apply +
+/// save + close" in one action and the saved filter always reflects what's
+/// currently visible in the modal. If [onSavePressed] throws, the modal
+/// stays open so the user can retry. The button is disabled when [canSave]
+/// is false (typically because the filter has no clauses to save).
 Future<void> showDesignSystemFilterModal({
   required BuildContext context,
   required DesignSystemTaskFilterState initialState,
   required ValueChanged<DesignSystemTaskFilterState> onApplied,
   DesignSystemFilterFieldHandler? onFieldPressed,
   Widget Function(Widget)? modalDecorator,
-  ValueChanged<String>? onSavePressed,
+  DesignSystemFilterSaveHandler? onSavePressed,
   bool canSave = false,
   String? initialSaveName,
 }) async {
@@ -55,7 +71,24 @@ Future<void> showDesignSystemFilterModal({
                 Navigator.of(ctx).pop();
               },
               onClearAllPressed: (next) => stateNotifier.value = next,
-              onSavePressed: onSavePressed,
+              // Save = apply + save + close. The action bar still hands us
+              // just the committed name; the modal layer captures the
+              // current draft state, applies it, awaits persistence, and
+              // only pops on success — a thrown handler keeps the modal
+              // open so the user can retry.
+              onSavePressed: onSavePressed == null
+                  ? null
+                  : (name) {
+                      unawaited(
+                        _handleSavePressed(
+                          ctx,
+                          name: name,
+                          stateNotifier: stateNotifier,
+                          onApplied: onApplied,
+                          onSavePressed: onSavePressed,
+                        ),
+                      );
+                    },
               canSave: canSave,
               initialSaveName: initialSaveName,
             );
@@ -96,4 +129,28 @@ Future<void> showDesignSystemFilterModal({
   } finally {
     stateNotifier.dispose();
   }
+}
+
+/// Drives the Save flow off-thread: applies the draft, awaits the consumer's
+/// persistence handler, and pops the modal only when persistence succeeds.
+/// On failure the modal is left open so the user can retry; the error is
+/// rethrown by [onSavePressed] callers when they want telemetry.
+Future<void> _handleSavePressed(
+  BuildContext context, {
+  required String name,
+  required ValueNotifier<DesignSystemTaskFilterState> stateNotifier,
+  required ValueChanged<DesignSystemTaskFilterState> onApplied,
+  required DesignSystemFilterSaveHandler onSavePressed,
+}) async {
+  final draft = stateNotifier.value;
+  onApplied(draft);
+  try {
+    await onSavePressed(name, draft);
+  } catch (_) {
+    // Persistence failed — leave the modal open. The consumer is
+    // responsible for surfacing the error (logging, toast, etc.).
+    return;
+  }
+  if (!context.mounted) return;
+  Navigator.of(context).pop();
 }

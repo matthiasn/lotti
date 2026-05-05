@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Shows a transient confirmation that the named filter was saved.
+///
+/// Renders via the shared design-system toast (`context.showToast`) — same
+/// rounded pill, palette, and queue behavior used by the label-detail
+/// page when a label is created — instead of the ad-hoc themed
+/// [SnackBar] this helper used previously.
 void showSavedTaskFilterSavedToast(
   BuildContext context, {
   required String name,
 }) {
-  _showToast(
-    context,
-    context.messages.tasksSavedFilterToastSaved(name),
+  context.showToast(
+    tone: DesignSystemToastTone.success,
+    title: context.messages.tasksSavedFilterToastSaved(name),
   );
 }
 
@@ -18,52 +24,16 @@ void showSavedTaskFilterUpdatedToast(
   BuildContext context, {
   required String name,
 }) {
-  _showToast(
-    context,
-    context.messages.tasksSavedFilterToastUpdated(name),
+  context.showToast(
+    tone: DesignSystemToastTone.success,
+    title: context.messages.tasksSavedFilterToastUpdated(name),
   );
 }
 
 /// Shows a transient confirmation that a saved filter was deleted.
 void showSavedTaskFilterDeletedToast(BuildContext context) {
-  _showToast(context, context.messages.tasksSavedFilterToastDeleted);
-}
-
-void _showToast(BuildContext context, String message) {
-  final tokens = context.designTokens;
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  if (messenger == null) return;
-  messenger
-    ..clearSnackBars()
-    ..showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: tokens.colors.background.level02,
-        content: Row(
-          children: [
-            Icon(
-              Icons.check_rounded,
-              size: 16,
-              color: tokens.colors.interactive.enabled,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                message,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            ),
-          ],
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-          side: BorderSide(
-            color: tokens.colors.interactive.enabled.withValues(alpha: 0.32),
-          ),
-        ),
-        duration: const Duration(milliseconds: 2000),
-      ),
-    );
+  context.showToast(
+    tone: DesignSystemToastTone.success,
+    title: context.messages.tasksSavedFilterToastDeleted,
+  );
 }
