@@ -397,13 +397,15 @@ void main() {
         ),
       );
 
-      // The high-priority item should appear first
+      // Polling is FIFO by createdAt — the older v5 row comes first,
+      // and the newly inserted v6 row's high priority is round-tripped
+      // through the new column.
       final allItems = await db.oldestOutboxItems(10);
       expect(allItems, hasLength(2));
-      expect(allItems.first.subject, 'v6-high');
-      expect(allItems.first.priority, OutboxPriority.high.index);
-      expect(allItems.last.subject, 'v5-subject');
-      expect(allItems.last.priority, OutboxPriority.low.index);
+      expect(allItems.first.subject, 'v5-subject');
+      expect(allItems.first.priority, OutboxPriority.low.index);
+      expect(allItems.last.subject, 'v6-high');
+      expect(allItems.last.priority, OutboxPriority.high.index);
 
       await db.close();
     });
