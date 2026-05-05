@@ -78,9 +78,12 @@ abstract class PortalDBus {
 }
 
 class _RealPortalDBus implements PortalDBus {
-  _RealPortalDBus() : _client = DBusClient.session();
+  _RealPortalDBus();
 
-  final DBusClient _client;
+  // Lazy so just constructing the portal does not connect to the
+  // session bus. Tests and Linux environments without a session bus
+  // can build the type without throwing.
+  late final DBusClient _client = DBusClient.session();
 
   @override
   Future<DBusMethodSuccessResponse> callMethod({

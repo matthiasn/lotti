@@ -34,9 +34,12 @@ abstract class GeoClueDBus {
 }
 
 class _RealGeoClueDBus implements GeoClueDBus {
-  _RealGeoClueDBus() : _client = DBusClient.system();
+  _RealGeoClueDBus();
 
-  final DBusClient _client;
+  // Lazy so just constructing the client does not connect to the
+  // system bus. Tests and Linux environments without a system bus
+  // can build the type without throwing.
+  late final DBusClient _client = DBusClient.system();
 
   @override
   Future<DBusMethodSuccessResponse> callMethod({
