@@ -2490,6 +2490,11 @@
   "syncStepHabits": "Zvyky",
   "syncStepLabels": "Štítky",
   "syncStepMeasurables": "Měřitelné hodnoty",
+  "taskActionBarAudioRecordingActive": "Probíhá nahrávání zvuku",
+  "taskActionBarMoreActions": "Další akce",
+  "taskActionBarOpenRunningTimer": "Otevřít aktivní časovač",
+  "taskActionBarStopTracking": "Zastavit sledování času",
+  "taskActionBarTrackTime": "Sledovat čas",
   "taskAgentChipLabel": "Agent",
   "taskAgentCountdownTooltip": "Příští automatické spuštění za {countdown}",
   "@taskAgentCountdownTooltip": {

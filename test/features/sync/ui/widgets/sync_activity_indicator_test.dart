@@ -269,26 +269,80 @@ void main() {
       );
     });
 
+    AnimatedContainer outerContainer(WidgetTester tester) {
+      return tester
+          .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+          .firstWhere(
+            (c) =>
+                c.padding ==
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          );
+    }
+
+    testWidgets('idle background is transparent', (tester) async {
+      await pumpIndicator(tester, outbox: 1);
+
+      expect(
+        (outerContainer(tester).decoration! as BoxDecoration).color,
+        Colors.transparent,
+      );
+    });
+
     testWidgets(
-      'idle background is transparent — sanity check that the hover wash '
-      'is opt-in (the `_hovered = true` path is exercised in manual smoke '
-      'tests; FocusableActionDetector hover hooks do not fire reliably '
-      'under flutter_test pointer simulation, so we do not assert on the '
-      'hovered state here)',
+      'hover toggle paints the hover wash and clears it back to '
+      'transparent — covers the `onShowHoverHighlight` callback',
       (tester) async {
         await pumpIndicator(tester, outbox: 1);
 
-        final container = tester
-            .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
-            .firstWhere(
-              (c) =>
-                  c.padding ==
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            );
+        // Pull the hover callback off the FocusableActionDetector
+        // widget directly. The flutter_test mouse pointer simulation
+        // is flaky with FocusableActionDetector's MouseRegion under
+        // some host configurations (the underlying Flutter issue is
+        // tracked separately); calling the callback the same way the
+        // detector would on a real `onEnter` exercises the production
+        // `setState(() => _hovered = …)` path and the
+        // AnimatedContainer's hover-wash branch.
+        final detector = tester.widget<FocusableActionDetector>(
+          find.byType(FocusableActionDetector),
+        );
+        detector.onShowHoverHighlight!(true);
+        await tester.pump();
+
         expect(
-          (container.decoration! as BoxDecoration).color,
+          (outerContainer(tester).decoration! as BoxDecoration).color,
+          equals(const Color(0x0AFFFFFF)),
+          reason: 'hovered state paints `_hoverWash` (4 % white)',
+        );
+
+        detector.onShowHoverHighlight!(false);
+        await tester.pump();
+
+        expect(
+          (outerContainer(tester).decoration! as BoxDecoration).color,
           Colors.transparent,
         );
+      },
+    );
+
+    testWidgets(
+      'invoking ActivateIntent on a descendant context forwards to the '
+      'navigator override — covers the keyboard-activation action',
+      (tester) async {
+        final navigated = <String>[];
+        SyncActivityIndicatorTestHooks.navigatorOverride = navigated.add;
+
+        await pumpIndicator(tester, outbox: 1);
+
+        // The Actions widget that registers ActivateIntent is built
+        // *inside* the FocusableActionDetector — `Actions.invoke` only
+        // sees it from a descendant context. The inner GestureDetector
+        // is a descendant, so its element gives us a context that
+        // resolves the action map.
+        final descendantContext = tester.element(find.byType(GestureDetector));
+        Actions.invoke(descendantContext, const ActivateIntent());
+        await tester.pump();
+
+        expect(navigated, [kSyncOutboxRoute]);
       },
     );
   });

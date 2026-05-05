@@ -6557,6 +6557,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncStepMeasurables => 'Měřitelné hodnoty';
 
   @override
+  String get taskActionBarAudioRecordingActive => 'Probíhá nahrávání zvuku';
+
+  @override
+  String get taskActionBarMoreActions => 'Další akce';
+
+  @override
+  String get taskActionBarOpenRunningTimer => 'Otevřít aktivní časovač';
+
+  @override
+  String get taskActionBarStopTracking => 'Zastavit sledování času';
+
+  @override
+  String get taskActionBarTrackTime => 'Sledovat čas';
+
+  @override
   String get taskAgentCancelTimerTooltip => 'Cancel';
 
   @override

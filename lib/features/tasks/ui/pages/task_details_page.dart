@@ -9,13 +9,13 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
-import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
@@ -120,72 +120,89 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       },
       child: Scaffold(
         backgroundColor: context.designTokens.colors.background.level01,
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        floatingActionButton: FloatingAddActionButton(
-          linkedFromId: task.meta.id,
-          categoryId: task.meta.categoryId,
-        ),
-        body: Stack(
+        // extendBody so the BackdropFilter inside [TaskActionBar]'s
+        // glass strip has body content underneath to actually blur. The
+        // body's bottom inset is reserved automatically for the
+        // bottomNavigationBar slot, so we don't need a magic-number
+        // bottom padding on the slivers.
+        extendBody: true,
+        // The mobile shell hides its bottom nav bar whenever the
+        // current beamer route is `/tasks/<uuid>` (see
+        // _AppScreenState._isMobileImmersiveRoute), so the action bar
+        // sits flush with the home indicator. TaskActionBar handles its
+        // own bottom safe-inset padding.
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                TaskSliverAppBar(taskId: widget.taskId),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 15,
-                      right: 15,
-                      top: 10,
-                    ),
-                    child: TaskForm(taskId: widget.taskId),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 8,
-                      bottom: 200,
-                      left: 10,
-                      right: 10,
-                    ),
-                    child:
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            LinkedEntriesWithTimer(
-                              item: task,
-                              entryKeyBuilder: _getEntryKey,
-                              highlightedEntryId: highlightedEntryId,
-                              hideTaskEntries: true,
-                            ),
-                            LinkedFromEntriesWidget(
-                              task,
-                              hideTaskEntries: true,
-                            ),
-                          ],
-                        ).animate().fadeIn(
-                          duration: const Duration(milliseconds: 100),
-                        ),
-                  ),
-                ),
-              ],
+            AiRunningAnimationWrapperCard(
+              entryId: widget.taskId,
+              height: 50,
+              isInteractive: true,
+              responseTypes: const {
+                AiResponseType.imageAnalysis,
+                AiResponseType.audioTranscription,
+                AiResponseType.promptGeneration,
+                AiResponseType.imageGeneration,
+              },
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: AiRunningAnimationWrapperCard(
-                entryId: widget.taskId,
-                height: 50,
-                isInteractive: true,
-                responseTypes: const {
-                  AiResponseType.imageAnalysis,
-                  AiResponseType.audioTranscription,
-                  AiResponseType.promptGeneration,
-                  AiResponseType.imageGeneration,
-                },
-              ),
-            ),
+            TaskActionBar(task: task),
           ],
+        ),
+        // Builder so MediaQuery.paddingOf reads the Scaffold-modified
+        // value: with extendBody: true, Scaffold adds the
+        // bottomNavigationBar slot height (action bar + AI overlay when
+        // running) to padding.bottom on the body's MediaQuery. The
+        // trailing SliverPadding consumes that inset so the last entry
+        // can scroll fully above the bar instead of being hidden behind.
+        body: Builder(
+          builder: (context) => CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              TaskSliverAppBar(taskId: widget.taskId),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: 15,
+                    right: 15,
+                    top: 10,
+                  ),
+                  child: TaskForm(taskId: widget.taskId),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    top: 8,
+                    left: 10,
+                    right: 10,
+                  ),
+                  child:
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: <Widget>[
+                          LinkedEntriesWithTimer(
+                            item: task,
+                            entryKeyBuilder: _getEntryKey,
+                            highlightedEntryId: highlightedEntryId,
+                            hideTaskEntries: true,
+                          ),
+                          LinkedFromEntriesWidget(
+                            task,
+                            hideTaskEntries: true,
+                          ),
+                        ],
+                      ).animate().fadeIn(
+                        duration: const Duration(milliseconds: 100),
+                      ),
+                ),
+              ),
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.paddingOf(context).bottom,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

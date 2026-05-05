@@ -6641,6 +6641,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncStepMeasurables => 'Medibles';
 
   @override
+  String get taskActionBarAudioRecordingActive => 'Grabación de audio en curso';
+
+  @override
+  String get taskActionBarMoreActions => 'Más acciones';
+
+  @override
+  String get taskActionBarOpenRunningTimer => 'Abrir cronómetro en curso';
+
+  @override
+  String get taskActionBarStopTracking => 'Detener registro de tiempo';
+
+  @override
+  String get taskActionBarTrackTime => 'Registrar tiempo';
+
+  @override
   String get taskAgentCancelTimerTooltip => 'Cancelar';
 
   @override

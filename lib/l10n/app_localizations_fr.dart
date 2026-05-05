@@ -6653,6 +6653,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncStepMeasurables => 'Mesurables';
 
   @override
+  String get taskActionBarAudioRecordingActive =>
+      'Enregistrement audio en cours';
+
+  @override
+  String get taskActionBarMoreActions => 'Plus d\'actions';
+
+  @override
+  String get taskActionBarOpenRunningTimer => 'Ouvrir le minuteur en cours';
+
+  @override
+  String get taskActionBarStopTracking => 'Arrêter le suivi';
+
+  @override
+  String get taskActionBarTrackTime => 'Suivre le temps';
+
+  @override
   String get taskAgentCancelTimerTooltip => 'Annuler';
 
   @override
