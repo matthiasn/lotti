@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
@@ -75,7 +74,6 @@ class TaskCompactAppBar extends ConsumerWidget {
 
   List<Widget> _buildActions(BuildContext context) {
     return [
-      UnifiedAiPopUpMenu(journalEntity: task, linkedFromId: null),
       IconButton(
         icon: Icon(
           Icons.more_horiz,

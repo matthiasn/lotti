@@ -1304,7 +1304,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiAssistantThinking => 'Denke nach...';
 
   @override
-  String get aiAssistantTitle => 'KI-Assistent';
+  String get aiAssistantTitle => 'Generieren…';
 
   @override
   String get aiAssistantTranscribeAudio => 'Audio transkribieren';

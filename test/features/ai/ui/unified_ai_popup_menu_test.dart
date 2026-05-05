@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,16 +13,17 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/widgets/modal/modern_modal_prompt_item.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
@@ -229,6 +231,7 @@ void main() {
         ...overrides,
       ],
       child: MaterialApp(
+        theme: resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -407,7 +410,7 @@ void main() {
       expect(find.text('Image Analysis Skill'), findsOneWidget);
       expect(find.text('Skill-based transcription'), findsOneWidget);
       expect(find.text('Skill-based image analysis'), findsOneWidget);
-      expect(find.byType(ModernModalPromptItem), findsNWidgets(2));
+      expect(find.byType(DesignSystemListItem), findsNWidgets(2));
     });
 
     testWidgets('shows section header when skills are present', (
@@ -433,7 +436,7 @@ void main() {
       // Assert - section header should be present
       expect(find.text('Skills'), findsOneWidget);
       expect(
-        find.byType(ModernModalPromptItem),
+        find.byType(DesignSystemListItem),
         findsNWidgets(testSkills.length),
       );
     });
@@ -456,9 +459,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Assert
-      expect(find.byType(ModernModalPromptItem), findsNothing);
-      expect(find.byType(Column), findsOneWidget);
+      // Assert - empty skills renders only a placeholder SizedBox
+      expect(find.byType(DesignSystemListItem), findsNothing);
+      expect(find.text('Skills'), findsNothing);
     });
 
     testWidgets('calls onSkillSelected when skill item is tapped', (
@@ -530,7 +533,7 @@ void main() {
 
       // Assert
       expect(find.text('No Description Skill'), findsOneWidget);
-      expect(find.byType(ModernModalPromptItem), findsOneWidget);
+      expect(find.byType(DesignSystemListItem), findsOneWidget);
     });
 
     testWidgets('truncates long descriptions correctly', (tester) async {
@@ -568,22 +571,120 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      final promptItem = tester.widget<ModernModalPromptItem>(
-        find.byType(ModernModalPromptItem),
+      final listItem = tester.widget<DesignSystemListItem>(
+        find.byType(DesignSystemListItem),
       );
-      expect(promptItem.description, isNotEmpty);
+      expect(listItem.subtitle, isNotEmpty);
+      expect(listItem.subtitleMaxLines, 3);
 
-      // Find the description Text widget within the ModernModalPromptItem
+      // Find the description Text widget within the DesignSystemListItem
       final descriptionTextFinder = find.descendant(
-        of: find.byType(ModernModalPromptItem),
+        of: find.byType(DesignSystemListItem),
         matching: find.text(longDescriptionSkill.description!),
       );
       expect(descriptionTextFinder, findsOneWidget);
 
       final descriptionText = tester.widget<Text>(descriptionTextFinder);
-      expect(descriptionText.maxLines, 4);
+      expect(descriptionText.maxLines, 3);
       expect(descriptionText.overflow, TextOverflow.ellipsis);
     });
+  });
+
+  group('UnifiedAiSkillsList hover dividers', () {
+    testWidgets(
+      'hovering a row turns the divider above it transparent so the hovered '
+      'row is never visually bisected',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiSkillsList(
+              journalEntity: testAudioEntity,
+              onSkillSelected: (_) async {},
+            ),
+            overrides: [
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value(testSkills)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Two dividers between three rows; both opaque before hover.
+        final dividersBefore = tester.widgetList<Divider>(find.byType(Divider));
+        expect(dividersBefore, hasLength(2));
+        for (final d in dividersBefore) {
+          expect(d.color, isNot(Colors.transparent));
+        }
+
+        // Hover the middle skill: both adjacent dividers should go transparent.
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await gesture.moveTo(
+          tester.getCenter(find.text(testSkills[1].name)),
+        );
+        await tester.pumpAndSettle();
+
+        final dividersAfter = tester
+            .widgetList<Divider>(find.byType(Divider))
+            .toList();
+        expect(dividersAfter[0].color, Colors.transparent);
+        expect(dividersAfter[1].color, Colors.transparent);
+
+        // Move pointer away — dividers return to default color.
+        await gesture.moveTo(const Offset(-100, -100));
+        await tester.pumpAndSettle();
+
+        final dividersFinal = tester
+            .widgetList<Divider>(find.byType(Divider))
+            .toList();
+        expect(dividersFinal[0].color, isNot(Colors.transparent));
+        expect(dividersFinal[1].color, isNot(Colors.transparent));
+      },
+    );
+
+    testWidgets(
+      'tapping a row invokes onSkillSelected with the hovered skill',
+      (tester) async {
+        AiConfigSkill? selected;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiSkillsList(
+              journalEntity: testAudioEntity,
+              onSkillSelected: (skill) async {
+                selected = skill;
+              },
+            ),
+            overrides: [
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value(testSkills)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Hover, then tap — exercises both the hover-enter callback and
+        // the onTap path on the same row.
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await gesture.moveTo(
+          tester.getCenter(find.text(testSkills[2].name)),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(testSkills[2].name));
+        await tester.pumpAndSettle();
+
+        expect(selected?.id, testSkills[2].id);
+      },
+    );
   });
 
   group('UnifiedAiModal Tests', () {

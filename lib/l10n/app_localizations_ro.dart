@@ -1308,7 +1308,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiAssistantThinking => 'Se gândește...';
 
   @override
-  String get aiAssistantTitle => 'Asistent AI';
+  String get aiAssistantTitle => 'Generează…';
 
   @override
   String get aiAssistantTranscribeAudio => 'Transcrie audio';

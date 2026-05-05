@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -217,7 +219,7 @@ class UnifiedAiModal {
 }
 
 /// List of available AI skills for the current entity.
-class UnifiedAiSkillsList extends ConsumerWidget {
+class UnifiedAiSkillsList extends ConsumerStatefulWidget {
   const UnifiedAiSkillsList({
     required this.journalEntity,
     required this.onSkillSelected,
@@ -232,32 +234,84 @@ class UnifiedAiSkillsList extends ConsumerWidget {
   final Future<void> Function(AiConfigSkill skill) onSkillSelected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UnifiedAiSkillsList> createState() =>
+      _UnifiedAiSkillsListState();
+}
+
+class _UnifiedAiSkillsListState extends ConsumerState<UnifiedAiSkillsList> {
+  String? _hoveredSkillId;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    // React to provider changes via ref.listen so the build method stays
+    // pure: drop hover state when the hovered skill is no longer in the
+    // refreshed list (e.g., flag toggle removes a skill while hovered).
+    ref.listen(availableSkillsForEntityProvider(widget.journalEntity.id), (
+      previous,
+      next,
+    ) {
+      final skills = next.value ?? const <AiConfigSkill>[];
+      if (_hoveredSkillId != null &&
+          !skills.any((skill) => skill.id == _hoveredSkillId) &&
+          mounted) {
+        setState(() => _hoveredSkillId = null);
+      }
+    });
+
     final skills =
-        ref.watch(availableSkillsForEntityProvider(journalEntity.id)).value ??
+        ref
+            .watch(availableSkillsForEntityProvider(widget.journalEntity.id))
+            .value ??
         [];
+
+    if (skills.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (skills.isNotEmpty) ...[
-          _SectionHeader(title: context.messages.skillsSectionTitle),
-          ...skills.map(
-            (skill) => ModernModalPromptItem(
-              title: skill.name,
-              description: skill.description ?? '',
-              icon: skill.skillType.toResponseType.icon,
-              onTap: () => onSkillSelected(skill),
+        _SectionHeader(title: context.messages.skillsSectionTitle),
+        for (final (index, skill) in skills.indexed)
+          DesignSystemListItem(
+            key: ValueKey(skill.id),
+            title: skill.name,
+            subtitle: skill.description ?? '',
+            subtitleMaxLines: 3,
+            leading: Icon(
+              skill.skillType.toResponseType.icon,
+              size: 20,
+              color: tokens.colors.interactive.enabled,
             ),
+            showDivider: index < skills.length - 1,
+            dividerColor:
+                index < skills.length - 1 &&
+                    (_hoveredSkillId == skill.id ||
+                        _hoveredSkillId == skills[index + 1].id)
+                ? Colors.transparent
+                : null,
+            onTap: () => widget.onSkillSelected(skill),
+            onHoverChanged: (hovered) {
+              setState(() {
+                if (hovered) {
+                  _hoveredSkillId = skill.id;
+                } else if (_hoveredSkillId == skill.id) {
+                  _hoveredSkillId = null;
+                }
+              });
+            },
           ),
-        ],
-        const SizedBox(height: 24),
+        SizedBox(height: tokens.spacing.step5),
       ],
     );
   }
 }
 
-/// Subtle section header for the AI popup menu.
+/// Subtle section header for the AI popup menu, aligned with the design
+/// system caption typography.
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title});
 
@@ -265,15 +319,20 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Padding(
-      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step4,
+        tokens.spacing.step5,
+        tokens.spacing.step2,
+      ),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Theme.of(context).colorScheme.outline,
-            letterSpacing: 1.2,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.lowEmphasis,
           ),
         ),
       ),

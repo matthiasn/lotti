@@ -78,9 +78,14 @@ abstract class PortalDBus {
 }
 
 class _RealPortalDBus implements PortalDBus {
-  _RealPortalDBus() : _client = DBusClient.session();
+  _RealPortalDBus();
 
-  final DBusClient _client;
+  // Nullable + lazy so just constructing the portal does not connect to
+  // the session bus. close() must NOT trigger initialization, hence the
+  // null-check below — otherwise teardown would fail on systems without
+  // a session bus.
+  DBusClient? _client;
+  DBusClient get _dbusClient => _client ??= DBusClient.session();
 
   @override
   Future<DBusMethodSuccessResponse> callMethod({
@@ -91,7 +96,7 @@ class _RealPortalDBus implements PortalDBus {
     required Iterable<DBusValue> values,
     DBusSignature? replySignature,
   }) {
-    return _client.callMethod(
+    return _dbusClient.callMethod(
       destination: destination,
       path: path,
       interface: interface,
@@ -109,7 +114,7 @@ class _RealPortalDBus implements PortalDBus {
     DBusObjectPath? path,
   }) {
     return DBusSignalStream(
-      _client,
+      _dbusClient,
       sender: sender,
       interface: interface,
       name: name,
@@ -118,7 +123,13 @@ class _RealPortalDBus implements PortalDBus {
   }
 
   @override
-  Future<void> close() => _client.close();
+  Future<void> close() async {
+    final client = _client;
+    if (client != null) {
+      await client.close();
+      _client = null;
+    }
+  }
 }
 
 /// Single-shot location reader backed by `org.freedesktop.portal.Location`.

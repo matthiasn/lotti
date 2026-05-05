@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
@@ -81,12 +80,6 @@ class TaskExpandableAppBar extends ConsumerWidget {
 
   List<Widget> _buildGlassActions(BuildContext context) {
     return [
-      UnifiedAiPopUpMenu(
-        journalEntity: task,
-        linkedFromId: null,
-        iconColor: Colors.white,
-      ),
-      const SizedBox(width: 8),
       GlassActionButton(
         onTap: () => ExtendedHeaderModal.show(
           context: context,
