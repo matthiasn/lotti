@@ -98,13 +98,18 @@ class _TemplateSelectionPageState extends State<_TemplateSelectionPage> {
   String? _hoveredId;
 
   @override
+  void didUpdateWidget(covariant _TemplateSelectionPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_hoveredId != null &&
+        !widget.templates.any((t) => t.id == _hoveredId)) {
+      _hoveredId = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final templates = widget.templates;
-
-    if (_hoveredId != null && !templates.any((t) => t.id == _hoveredId)) {
-      _hoveredId = null;
-    }
 
     return SingleChildScrollView(
       child: Column(
@@ -194,15 +199,28 @@ class _ProfileList extends StatefulWidget {
 class _ProfileListState extends State<_ProfileList> {
   String? _hoveredId;
 
+  List<AiConfigInferenceProfile> _filteredProfiles(List<AiConfig> configs) {
+    final profiles = configs.whereType<AiConfigInferenceProfile>().toList();
+    return isDesktop
+        ? profiles
+        : profiles.where((p) => !p.desktopOnly).toList();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProfileList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.configs, oldWidget.configs) && _hoveredId != null) {
+      final filtered = _filteredProfiles(widget.configs);
+      if (!filtered.any((p) => p.id == _hoveredId)) {
+        _hoveredId = null;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final profiles = widget.configs
-        .whereType<AiConfigInferenceProfile>()
-        .toList();
-    final filtered = isDesktop
-        ? profiles
-        : profiles.where((p) => !p.desktopOnly).toList();
+    final filtered = _filteredProfiles(widget.configs);
 
     if (filtered.isEmpty) {
       return Center(
@@ -213,10 +231,6 @@ class _ProfileListState extends State<_ProfileList> {
           ),
         ),
       );
-    }
-
-    if (_hoveredId != null && !filtered.any((p) => p.id == _hoveredId)) {
-      _hoveredId = null;
     }
 
     return SingleChildScrollView(

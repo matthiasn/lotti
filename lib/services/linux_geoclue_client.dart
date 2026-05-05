@@ -36,10 +36,12 @@ abstract class GeoClueDBus {
 class _RealGeoClueDBus implements GeoClueDBus {
   _RealGeoClueDBus();
 
-  // Lazy so just constructing the client does not connect to the
-  // system bus. Tests and Linux environments without a system bus
-  // can build the type without throwing.
-  late final DBusClient _client = DBusClient.system();
+  // Nullable + lazy so just constructing the client does not connect to
+  // the system bus. close() must NOT trigger initialization, hence the
+  // null-check below — otherwise teardown would fail on systems without
+  // a system bus.
+  DBusClient? _client;
+  DBusClient get _dbusClient => _client ??= DBusClient.system();
 
   @override
   Future<DBusMethodSuccessResponse> callMethod({
@@ -50,7 +52,7 @@ class _RealGeoClueDBus implements GeoClueDBus {
     required Iterable<DBusValue> values,
     DBusSignature? replySignature,
   }) {
-    return _client.callMethod(
+    return _dbusClient.callMethod(
       destination: destination,
       path: path,
       interface: interface,
@@ -68,7 +70,7 @@ class _RealGeoClueDBus implements GeoClueDBus {
     DBusObjectPath? path,
   }) {
     return DBusSignalStream(
-      _client,
+      _dbusClient,
       sender: sender,
       interface: interface,
       name: name,
@@ -77,7 +79,13 @@ class _RealGeoClueDBus implements GeoClueDBus {
   }
 
   @override
-  Future<void> close() => _client.close();
+  Future<void> close() async {
+    final client = _client;
+    if (client != null) {
+      await client.close();
+      _client = null;
+    }
+  }
 }
 
 /// Direct GeoClue client used for unsandboxed Linux runs (`flutter run`,

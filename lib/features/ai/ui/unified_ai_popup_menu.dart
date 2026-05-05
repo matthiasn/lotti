@@ -244,6 +244,22 @@ class _UnifiedAiSkillsListState extends ConsumerState<UnifiedAiSkillsList> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+
+    // React to provider changes via ref.listen so the build method stays
+    // pure: drop hover state when the hovered skill is no longer in the
+    // refreshed list (e.g., flag toggle removes a skill while hovered).
+    ref.listen(availableSkillsForEntityProvider(widget.journalEntity.id), (
+      previous,
+      next,
+    ) {
+      final skills = next.value ?? const <AiConfigSkill>[];
+      if (_hoveredSkillId != null &&
+          !skills.any((skill) => skill.id == _hoveredSkillId) &&
+          mounted) {
+        setState(() => _hoveredSkillId = null);
+      }
+    });
+
     final skills =
         ref
             .watch(availableSkillsForEntityProvider(widget.journalEntity.id))
@@ -252,12 +268,6 @@ class _UnifiedAiSkillsListState extends ConsumerState<UnifiedAiSkillsList> {
 
     if (skills.isEmpty) {
       return const SizedBox.shrink();
-    }
-
-    // Drop hover state if the hovered skill is no longer in the list.
-    if (_hoveredSkillId != null &&
-        !skills.any((skill) => skill.id == _hoveredSkillId)) {
-      _hoveredSkillId = null;
     }
 
     return Column(
