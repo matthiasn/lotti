@@ -22,12 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of blanking to a spinner, and a new "Running now" block at
   the top of the page surfaces the currently-executing wake instances
   with a live elapsed pill. The desktop sidebar Wake Queue gains an
-  Ongoing block (live duration since wake start), filters its
-  inline scheduled rows to the next hour (the rest collapse under the
-  trailing "+N more →" link), drops the per-row letter avatar, uses
-  smaller mono font with ellipsis for long titles, prefers the agent
-  template name as the row label, and the WAKES header is now an
-  open-in-new link straight to the full Wake Cycles page.
+  Ongoing block (live duration since wake start), only shows scheduled
+  wakes due within the next hour (anything farther out is hidden from
+  the sidebar entirely), drops the per-row letter avatar, uses smaller
+  mono font with ellipsis for long titles, prefers the linked task /
+  project title as the row label, and the WAKES header itself is now
+  an open-in-new link straight to the full Wake Cycles page.
 
 ## [0.9.994]
 ### Changed

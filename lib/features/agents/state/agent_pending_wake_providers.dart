@@ -129,12 +129,10 @@ final StreamProvider<Set<String>> _runningAgentIdsStreamProvider =
 final FutureProvider<List<OngoingWakeRecord>> ongoingWakeRecordsProvider =
     FutureProvider.autoDispose<List<OngoingWakeRecord>>((ref) async {
       final runner = ref.watch(wakeRunnerProvider);
-      ref.listen<AsyncValue<Set<String>>>(_runningAgentIdsStreamProvider, (
-        prev,
-        next,
-      ) {
-        if (next.hasValue) ref.invalidateSelf();
-      });
+      // Watching the stream provider re-runs this Future automatically
+      // whenever the WakeRunner's running set changes — no manual
+      // `invalidateSelf` needed.
+      ref.watch(_runningAgentIdsStreamProvider);
 
       final startedById = runner.activeStartedAtById;
       if (startedById.isEmpty) return const <OngoingWakeRecord>[];
@@ -169,7 +167,10 @@ Future<OngoingWakeRecord> _resolveOngoingRecord(
     final slots = stateEntity?.mapOrNull(agentState: (s) => s.slots);
     final subjectId = slots?.activeTaskId ?? slots?.activeProjectId;
     if (subjectId != null && subjectId.isNotEmpty) {
-      title = (await ref.watch(
+      // `ref.read(...).future` rather than `ref.watch(...)` — `watch`
+      // would attempt to register a dependency after an `await`, which
+      // Riverpod doesn't support inside async provider bodies.
+      title = (await ref.read(
         pendingWakeTargetTitleProvider(subjectId).future,
       ))?.trim();
     }
@@ -179,9 +180,15 @@ Future<OngoingWakeRecord> _resolveOngoingRecord(
   }
 
   if (title == null || title.isEmpty) {
-    final identity = await service.getAgent(agentId);
-    if (identity is AgentIdentityEntity) {
-      title = identity.displayName.trim();
+    try {
+      final identity = await service.getAgent(agentId);
+      if (identity is AgentIdentityEntity) {
+        title = identity.displayName.trim();
+      }
+    } catch (_) {
+      // Display-name lookup is also best-effort; falls through to
+      // `agentId` below so a single bad lookup can't fail the whole
+      // running-wakes provider via `Future.wait`.
     }
   }
 

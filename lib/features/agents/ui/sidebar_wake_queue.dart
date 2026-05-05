@@ -364,8 +364,8 @@ class _CancelWakeButton extends StatelessWidget {
     final tooltip = context.messages.sidebarWakesCancelTooltip;
     if (cancelling) {
       return SizedBox(
-        width: 24,
-        height: 24,
+        width: 28,
+        height: 28,
         child: Center(
           child: SizedBox(
             width: 12,
@@ -384,12 +384,15 @@ class _CancelWakeButton extends StatelessWidget {
       child: Tooltip(
         message: tooltip,
         excludeFromSemantics: true,
+        // The visible × stays small (12 px) so the row reads as a
+        // tight cluster, but the InkResponse keeps a 28 px hit target
+        // for touch accessibility.
         child: InkResponse(
           onTap: onPressed,
-          radius: 12,
+          radius: 14,
           child: SizedBox(
-            width: 24,
-            height: 24,
+            width: 28,
+            height: 28,
             child: Icon(
               Icons.close_rounded,
               size: 12,
