@@ -3072,6 +3072,7 @@
   "syncStepHabits": "Habits",
   "syncStepLabels": "Labels",
   "syncStepMeasurables": "Measurables",
+  "taskActionBarAudioRecordingActive": "Audio recording in progress",
   "taskActionBarMoreActions": "More actions",
   "taskActionBarOpenRunningTimer": "Open running timer",
   "taskActionBarStopTracking": "Stop time tracking",

@@ -188,8 +188,12 @@ Checklist content is modeled separately through checklist entities and linked ch
     duration text uses `numericBadgeFontFeatures` (tabular figures,
     slashed zero, cv02/03/04) so digits don't shift width as they tick.
 
-  The button row is a `Wrap`, so on narrow phone viewports the trailing
-  icons reflow onto a second run instead of overflowing the right edge.
+  The button row is a single `Row` wrapped in a `LayoutBuilder`. When
+  the available width can't fit all five children on one line,
+  affordances are dropped in priority order: image first, then
+  checklist (both stay reachable via the "..." menu). The thresholds
+  are exposed as `TaskActionBar.minWidthForImageButton` and
+  `TaskActionBar.minWidthForChecklistButton`.
   The page sets `Scaffold.extendBody: true` so body content paints
   behind the bar — that's what the `BackdropFilter` blurs. The mobile
   shell hides its bottom nav pill whenever the active beamer route is

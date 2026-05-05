@@ -6544,6 +6544,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncStepMeasurables => 'Messgrößen';
 
   @override
+  String get taskActionBarAudioRecordingActive => 'Audioaufnahme läuft';
+
+  @override
   String get taskActionBarMoreActions => 'Weitere Aktionen';
 
   @override

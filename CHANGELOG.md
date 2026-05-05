@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.996]
+### Changed
+- Task details page now has a sticky action bar pinned to the bottom in
+  place of the floating action button. A primary "Track time" pill
+  starts a new timer when idle. While a timer is running on the open
+  task the pill morphs into a live elapsed-time readout with an inset
+  stop circle on the leading edge — tapping the pill body navigates to
+  the running timer entry (matching the desktop sidebar's timer card),
+  and only the inset stop circle stops the timer. The duration uses
+  the same tabular-figures / slashed-zero / cv02–04 font features as
+  the sidebar timer; under one hour it's compacted to `mm:ss` and only
+  expands to `hh:mm:ss` once a session crosses the hour mark. Four
+  round affordances cover the remaining frequent inline actions:
+  record audio (immediately after the pill — turns red with a white
+  glyph while a recording for the open task is active), add checklist,
+  import image, and more actions (opens the previous menu for
+  long-tail items, including capture-screenshot on desktop platforms
+  that support it). Capture-screenshot is no longer a top-level
+  affordance. On narrow viewports the row stays on a single line by
+  dropping affordances in priority order: image first, then checklist;
+  both remain reachable via the more menu. On mobile the bar takes
+  over the bottom edge entirely: the app shell's bottom navigation
+  pill is hidden whenever the active beamer route is `/tasks/<uuid>`,
+  letting the action bar dock flush against the home indicator.
+
 ## [0.9.995]
 ### Changed
 - Agent UI/UX refinements across the AI summary card, sidebar Wake
@@ -54,24 +79,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.993]
 ### Changed
-- Task details page now has a sticky action bar pinned to the bottom in
-  place of the floating action button. A primary "Track time" pill
-  starts a new timer when idle. While a timer is running on the open
-  task the pill morphs into a live elapsed-time readout with an inset
-  stop circle on the leading edge — tapping the pill body navigates to
-  the running timer entry (matching the desktop sidebar's timer card),
-  and only the inset stop circle stops the timer. The duration uses the
-  same tabular-figures / slashed-zero / cv02–04 font features as the
-  sidebar timer so digits don't shift width as they tick. Four round
-  affordances cover the remaining frequent inline actions: add
-  checklist, import image, record audio, and more actions (opens the
-  previous menu for long-tail items, including capture-screenshot on
-  desktop platforms that support it). On narrow phone viewports the
-  trailing icons reflow onto a second run instead of overflowing the
-  right edge. On mobile, the bar takes over the bottom edge entirely:
-  the app shell's bottom navigation pill is hidden while the task
-  details page is open so the action bar can dock flush against the
-  home indicator.
 - Task filter modal action bar now uses the new "Apply filter" glass
   footer: a full-width frosted-glass strip flush to the bottom of the
   modal, with a hairline divider on top and right-aligned Clear all,

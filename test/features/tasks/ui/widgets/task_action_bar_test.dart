@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
@@ -65,6 +68,37 @@ class _FakeTimeService implements TimeService {
 }
 
 class _MockEntryCreationService extends Mock implements EntryCreationService {}
+
+/// Stand-in for the audio recorder controller so the action bar can
+/// observe a recorder state without booting the real recorder
+/// repository (which depends on platform plugins).
+class _StubAudioRecorderController extends AudioRecorderController {
+  _StubAudioRecorderController(this._initial);
+  final AudioRecorderState _initial;
+
+  @override
+  AudioRecorderState build() => _initial;
+}
+
+AudioRecorderState _idleRecorderState() => AudioRecorderState(
+  status: AudioRecorderStatus.stopped,
+  progress: Duration.zero,
+  vu: -20,
+  dBFS: -160,
+  showIndicator: false,
+  modalVisible: false,
+);
+
+AudioRecorderState _recordingRecorderState({required String linkedId}) =>
+    AudioRecorderState(
+      status: AudioRecorderStatus.recording,
+      progress: const Duration(seconds: 5),
+      vu: -10,
+      dBFS: -100,
+      showIndicator: true,
+      modalVisible: false,
+      linkedId: linkedId,
+    );
 
 /// Fallback shell so mocktail's `any<BuildContext>()` matcher has a
 /// valid prototype value for null safety. The instance is never
@@ -153,7 +187,10 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  Future<void> pumpBar(WidgetTester tester) async {
+  Future<void> pumpBar(
+    WidgetTester tester, {
+    AudioRecorderState? recorderState,
+  }) async {
     await tester.pumpWidget(
       makeTestableWidget(
         Material(
@@ -161,6 +198,11 @@ void main() {
         ),
         overrides: [
           entryCreationServiceProvider.overrideWithValue(mockCreationService),
+          audioRecorderControllerProvider.overrideWith(
+            () => _StubAudioRecorderController(
+              recorderState ?? _idleRecorderState(),
+            ),
+          ),
         ],
       ),
     );
@@ -210,12 +252,29 @@ void main() {
         ..emit(_runningTimerEntry(id: 'timer-1', elapsed: elapsed));
       await _settleStream(tester);
 
-      // formatDuration normalises the leading hour digit, so 1m30s →
-      // "00:01:30" (the helper prepends a 0 when position 1 is a colon).
-      expect(find.text('00:01:30'), findsOneWidget);
+      // Under one hour the pill drops the hour field for compactness:
+      // 1m30s → "01:30".
+      expect(find.text('01:30'), findsOneWidget);
       expect(find.byKey(TaskActionBar.trackTimeStopKey), findsOneWidget);
       expect(find.byIcon(Icons.timer_outlined), findsNothing);
       expect(find.text('Track time'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'at one hour or more the pill falls back to hh:mm:ss',
+    (tester) async {
+      await pumpBar(tester);
+
+      const elapsed = Duration(hours: 1, minutes: 2, seconds: 3);
+      fakeTimeService
+        ..linkedFrom = testTask
+        ..emit(_runningTimerEntry(id: 'timer-1', elapsed: elapsed));
+      await _settleStream(tester);
+
+      // Shared formatDuration prepends a leading zero when the hour is
+      // a single digit, so 1h02m03s → "01:02:03".
+      expect(find.text('01:02:03'), findsOneWidget);
     },
   );
 
@@ -234,7 +293,7 @@ void main() {
         );
       await _settleStream(tester);
 
-      final durationText = tester.widget<Text>(find.text('00:00:05'));
+      final durationText = tester.widget<Text>(find.text('00:05'));
       final features =
           durationText.style?.fontFeatures ?? const <FontFeature>[];
       expect(features, contains(const FontFeature.tabularFigures()));
@@ -294,7 +353,7 @@ void main() {
       // The duration text is the visible centre of the pill body, well
       // away from the inset stop circle on the leading edge — so a
       // direct tap on it can only hit the navigate handler.
-      await tester.tap(find.text('00:00:05'));
+      await tester.tap(find.text('00:05'));
       await tester.pump();
 
       expect(navigatedPath, '/tasks/${testTask.meta.id}');
@@ -376,6 +435,67 @@ void main() {
     ).called(1);
   });
 
+  /// Reads the round audio button's background color directly off the
+  /// inner Container so we can compare against the design tokens'
+  /// alert/error red and the default surface-hover color.
+  Color audioButtonFill(WidgetTester tester) {
+    final container = tester.widget<Container>(
+      find.descendant(
+        of: find.byKey(TaskActionBar.audioKey),
+        matching: find.byWidgetPredicate(
+          (w) => w is Container && w.decoration is BoxDecoration,
+        ),
+      ),
+    );
+    return (container.decoration! as BoxDecoration).color!;
+  }
+
+  testWidgets(
+    'audio button turns red while recording is active for THIS task',
+    (tester) async {
+      await pumpBar(
+        tester,
+        recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
+      );
+
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.audioKey))
+          .designTokens;
+      expect(audioButtonFill(tester), tokens.colors.alert.error.defaultColor);
+    },
+  );
+
+  testWidgets(
+    'audio button stays neutral while recording is active for ANOTHER task',
+    (tester) async {
+      await pumpBar(
+        tester,
+        recorderState: _recordingRecorderState(linkedId: 'some-other-task-id'),
+      );
+
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.audioKey))
+          .designTokens;
+      expect(audioButtonFill(tester), tokens.colors.surface.hover);
+      expect(
+        audioButtonFill(tester),
+        isNot(tokens.colors.alert.error.defaultColor),
+      );
+    },
+  );
+
+  testWidgets(
+    'audio button stays neutral when recorder is idle',
+    (tester) async {
+      await pumpBar(tester);
+
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.audioKey))
+          .designTokens;
+      expect(audioButtonFill(tester), tokens.colors.surface.hover);
+    },
+  );
+
   testWidgets('more tap opens the create-entry modal with task ids', (
     tester,
   ) async {
@@ -452,36 +572,88 @@ void main() {
     },
   );
 
+  /// Asserts that every key in [keys] is on the same horizontal row
+  /// (vertical centres aligned within 1 px) and stays within the
+  /// viewport's horizontal bounds.
+  void expectSingleRowWithin(WidgetTester tester, List<Key> keys) {
+    final centres = keys
+        .map((k) => tester.getRect(find.byKey(k)).center.dy)
+        .toList();
+    for (final dy in centres.skip(1)) {
+      expect(
+        (dy - centres.first).abs(),
+        lessThan(1),
+        reason: 'Children must stay on a single row',
+      );
+    }
+    final viewportRight =
+        tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    for (final key in keys) {
+      expect(
+        tester.getRect(find.byKey(key)).right,
+        lessThanOrEqualTo(viewportRight),
+        reason: '$key extends past the ${viewportRight}px right edge',
+      );
+    }
+  }
+
   testWidgets(
-    'on a 360-wide phone every action stays within the viewport — '
-    'Wrap reflows narrow rows instead of overflowing',
+    'when inner width is below the checklist threshold, both image and '
+    'checklist are hidden so the remaining three affordances fit on a row',
     (tester) async {
+      // Outer 360 → inner ~328, which is below
+      // [TaskActionBar.minWidthForChecklistButton] (340).
       await tester.binding.setSurfaceSize(const Size(360, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await pumpBar(tester);
 
-      final viewportRight =
-          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      expect(find.byKey(TaskActionBar.imageKey), findsNothing);
+      expect(find.byKey(TaskActionBar.checklistKey), findsNothing);
 
-      for (final key in [
+      expectSingleRowWithin(tester, const [
         TaskActionBar.trackTimeKey,
-        TaskActionBar.checklistKey,
-        TaskActionBar.imageKey,
         TaskActionBar.audioKey,
         TaskActionBar.moreKey,
-      ]) {
-        final finder = find.byKey(key);
-        expect(finder, findsOneWidget, reason: '$key should be rendered');
-        final rect = tester.getRect(finder);
-        expect(
-          rect.right,
-          lessThanOrEqualTo(viewportRight),
-          reason:
-              "$key sits at ${rect.right}px which is past the phone's "
-              '${viewportRight}px right edge — Wrap did not reflow',
-        );
-      }
+      ]);
+    },
+  );
+
+  testWidgets(
+    'when inner width is between the checklist and image thresholds, only '
+    'image is hidden — checklist stays on the row',
+    (tester) async {
+      // Outer 420 → inner ~388, which is at-or-above
+      // [TaskActionBar.minWidthForChecklistButton] (340) and below
+      // [TaskActionBar.minWidthForImageButton] (400).
+      await tester.binding.setSurfaceSize(const Size(420, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpBar(tester);
+
+      expect(find.byKey(TaskActionBar.imageKey), findsNothing);
+      expect(find.byKey(TaskActionBar.checklistKey), findsOneWidget);
+
+      expectSingleRowWithin(tester, const [
+        TaskActionBar.trackTimeKey,
+        TaskActionBar.audioKey,
+        TaskActionBar.checklistKey,
+        TaskActionBar.moreKey,
+      ]);
+    },
+  );
+
+  testWidgets(
+    'on a wide viewport (>= minWidthForImageButton) every affordance is '
+    'rendered',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpBar(tester);
+
+      expect(find.byKey(TaskActionBar.imageKey), findsOneWidget);
+      expect(find.byKey(TaskActionBar.checklistKey), findsOneWidget);
     },
   );
 }

@@ -11269,6 +11269,12 @@ abstract class AppLocalizations {
   /// **'Measurables'**
   String get syncStepMeasurables;
 
+  /// No description provided for @taskActionBarAudioRecordingActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio recording in progress'**
+  String get taskActionBarAudioRecordingActive;
+
   /// No description provided for @taskActionBarMoreActions.
   ///
   /// In en, this message translates to:

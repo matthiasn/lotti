@@ -2760,6 +2760,7 @@
   "syncStepHabits": "Gewohnheiten",
   "syncStepLabels": "Labels",
   "syncStepMeasurables": "Messgrößen",
+  "taskActionBarAudioRecordingActive": "Audioaufnahme läuft",
   "taskActionBarMoreActions": "Weitere Aktionen",
   "taskActionBarOpenRunningTimer": "Laufenden Timer öffnen",
   "taskActionBarStopTracking": "Zeiterfassung beenden",

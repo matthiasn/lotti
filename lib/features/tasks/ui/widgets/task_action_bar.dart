@@ -7,6 +7,8 @@ import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart'
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
@@ -78,6 +80,19 @@ class TaskActionBar extends ConsumerStatefulWidget {
   /// Icon glyph size inside both the pill and round buttons.
   @visibleForTesting
   static const double iconSize = 20;
+
+  /// Minimum [LayoutBuilder] inner width at which the checklist
+  /// affordance is included. Checklist is dropped second (after image)
+  /// when the row would otherwise overflow.
+  @visibleForTesting
+  static const double minWidthForChecklistButton = 340;
+
+  /// Minimum [LayoutBuilder] inner width at which the image affordance
+  /// is included. Image is dropped first (before checklist) when the
+  /// row would otherwise overflow. Both stay reachable via the "..."
+  /// (more) menu.
+  @visibleForTesting
+  static const double minWidthForImageButton = 400;
 
   @override
   ConsumerState<TaskActionBar> createState() => _TaskActionBarState();
@@ -174,6 +189,32 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
         );
   }
 
+  /// Pill-specific elapsed-time formatter.
+  ///
+  /// Under one hour we drop the leading hours field and render `mm:ss`
+  /// (e.g. `01:30`) so the pill stays compact for the dominant short-
+  /// session case. At one hour and beyond we fall back to the shared
+  /// `hh:mm:ss` format used elsewhere (sidebar timer, journal entries).
+  String _formatPillDuration(Duration elapsed) {
+    if (elapsed >= const Duration(hours: 1)) {
+      return formatDuration(elapsed);
+    }
+    final minutes = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  /// True when an audio recording session is currently active (recording
+  /// or paused) and is linked to *this* task — same task-scoping rule as
+  /// the timer pill.
+  bool _isRecordingAudioForThisTask(AudioRecorderState recorderState) {
+    final status = recorderState.status;
+    final isActive =
+        status == AudioRecorderStatus.recording ||
+        status == AudioRecorderStatus.paused;
+    return isActive && recorderState.linkedId == widget.task.meta.id;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -182,10 +223,14 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
 
     final isTracking = _isTrackingThisTask;
     final elapsedLabel = isTracking
-        ? formatDuration(
+        ? _formatPillDuration(
             _running!.meta.dateTo.difference(_running!.meta.dateFrom),
           )
         : messages.taskActionBarTrackTime;
+
+    final isRecordingAudio = _isRecordingAudioForThisTask(
+      ref.watch(audioRecorderControllerProvider),
+    );
 
     // Edge-to-edge glass strip (hairline + blur + gradient). The host
     // page must use `Scaffold.extendBody: true` so body content paints
@@ -205,52 +250,77 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
           spacing.step5,
           spacing.step4 + safeBottomInset,
         ),
-        // Wrap so the trailing icons reflow onto a second run on narrow
-        // viewports instead of overflowing the right edge. Using a real
-        // Wrap means we don't need to predict text widths or maintain
-        // parallel "compact" metric tiers.
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: spacing.step4,
-          runSpacing: spacing.step3,
-          children: [
-            _TrackTimePill(
-              key: TaskActionBar.trackTimeKey,
-              isTracking: isTracking,
-              label: elapsedLabel,
-              idleSemanticLabel: messages.taskActionBarTrackTime,
-              navigateSemanticLabel: messages.taskActionBarOpenRunningTimer,
-              stopSemanticLabel: messages.taskActionBarStopTracking,
-              onStartTimer: _onStartTimer,
-              onNavigateToRunningEntry: _onNavigateToRunningEntry,
-              onStop: _onStopTimer,
-            ),
-            _RoundActionButton(
-              key: TaskActionBar.checklistKey,
-              icon: Icons.checklist_rounded,
-              semanticLabel: messages.addActionAddChecklist,
-              onPressed: _onChecklistPressed,
-            ),
-            _RoundActionButton(
-              key: TaskActionBar.imageKey,
-              icon: Icons.image_rounded,
-              semanticLabel: messages.addActionImportImage,
-              onPressed: _onImagePressed,
-            ),
-            _RoundActionButton(
-              key: TaskActionBar.audioKey,
-              icon: Icons.mic_rounded,
-              semanticLabel: messages.addActionAddAudioRecording,
-              onPressed: _onAudioPressed,
-            ),
-            _RoundActionButton(
-              key: TaskActionBar.moreKey,
-              icon: Icons.more_horiz_rounded,
-              semanticLabel: messages.taskActionBarMoreActions,
-              onPressed: _onMorePressed,
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Affordances are dropped in priority order so the row
+            // always fits on a single line. Image goes first, then
+            // checklist; both stay reachable via the "..." (more) menu.
+            //
+            // Thresholds are based on the worst-case rendered widths of
+            // the inner content: the idle pill ("Track time" label,
+            // ~150 px including icon and padding), 48 px round buttons,
+            // and step4 (12 px) gaps. Adding each extra button costs
+            // ~60 px, so 5 items need ≈ 400 px and 4 items need ≈ 340.
+            final showImage =
+                constraints.maxWidth >= TaskActionBar.minWidthForImageButton;
+            final showChecklist =
+                constraints.maxWidth >=
+                TaskActionBar.minWidthForChecklistButton;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _TrackTimePill(
+                  key: TaskActionBar.trackTimeKey,
+                  isTracking: isTracking,
+                  label: elapsedLabel,
+                  idleSemanticLabel: messages.taskActionBarTrackTime,
+                  navigateSemanticLabel: messages.taskActionBarOpenRunningTimer,
+                  stopSemanticLabel: messages.taskActionBarStopTracking,
+                  onStartTimer: _onStartTimer,
+                  onNavigateToRunningEntry: _onNavigateToRunningEntry,
+                  onStop: _onStopTimer,
+                ),
+                SizedBox(width: spacing.step4),
+                _RoundActionButton(
+                  key: TaskActionBar.audioKey,
+                  icon: Icons.mic_rounded,
+                  semanticLabel: isRecordingAudio
+                      ? messages.taskActionBarAudioRecordingActive
+                      : messages.addActionAddAudioRecording,
+                  onPressed: _onAudioPressed,
+                  backgroundColor: isRecordingAudio
+                      ? tokens.colors.alert.error.defaultColor
+                      : null,
+                  iconColor: isRecordingAudio ? Colors.white : null,
+                ),
+                if (showChecklist) ...[
+                  SizedBox(width: spacing.step4),
+                  _RoundActionButton(
+                    key: TaskActionBar.checklistKey,
+                    icon: Icons.checklist_rounded,
+                    semanticLabel: messages.addActionAddChecklist,
+                    onPressed: _onChecklistPressed,
+                  ),
+                ],
+                if (showImage) ...[
+                  SizedBox(width: spacing.step4),
+                  _RoundActionButton(
+                    key: TaskActionBar.imageKey,
+                    icon: Icons.image_rounded,
+                    semanticLabel: messages.addActionImportImage,
+                    onPressed: _onImagePressed,
+                  ),
+                ],
+                SizedBox(width: spacing.step4),
+                _RoundActionButton(
+                  key: TaskActionBar.moreKey,
+                  icon: Icons.more_horiz_rounded,
+                  semanticLabel: messages.taskActionBarMoreActions,
+                  onPressed: _onMorePressed,
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -404,18 +474,25 @@ class _PillStopButton extends StatelessWidget {
 }
 
 /// Circular icon-only action button — the round affordances after the
-/// Track time pill.
+/// Track time pill. [backgroundColor] / [iconColor] are optional
+/// overrides; when null, the default surface-hover + high-emphasis
+/// colors are used. The audio button passes the alert-error fill while
+/// a recording session for the open task is active.
 class _RoundActionButton extends StatelessWidget {
   const _RoundActionButton({
     required this.icon,
     required this.semanticLabel,
     required this.onPressed,
+    this.backgroundColor,
+    this.iconColor,
     super.key,
   });
 
   final IconData icon;
   final String semanticLabel;
   final VoidCallback onPressed;
+  final Color? backgroundColor;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -434,13 +511,13 @@ class _RoundActionButton extends StatelessWidget {
             width: TaskActionBar.buttonSize,
             height: TaskActionBar.buttonSize,
             decoration: BoxDecoration(
-              color: tokens.colors.surface.hover,
+              color: backgroundColor ?? tokens.colors.surface.hover,
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               size: TaskActionBar.iconSize,
-              color: tokens.colors.text.highEmphasis,
+              color: iconColor ?? tokens.colors.text.highEmphasis,
             ),
           ),
         ),

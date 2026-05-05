@@ -6641,6 +6641,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncStepMeasurables => 'Medibles';
 
   @override
+  String get taskActionBarAudioRecordingActive => 'Grabación de audio en curso';
+
+  @override
   String get taskActionBarMoreActions => 'Más acciones';
 
   @override

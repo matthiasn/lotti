@@ -2,11 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/speech/state/recorder_controller.dart';
+import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
@@ -26,6 +29,29 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
+
+/// Stand-in audio recorder controller so widget tests pumping the task
+/// details page (which now hosts [TaskActionBar], which watches
+/// [audioRecorderControllerProvider]) don't try to boot the real
+/// recorder repository — that depends on platform plugins not present
+/// in the test runtime.
+class _StubAudioRecorderController extends AudioRecorderController {
+  @override
+  AudioRecorderState build() => AudioRecorderState(
+    status: AudioRecorderStatus.stopped,
+    progress: Duration.zero,
+    vu: -20,
+    dBFS: -160,
+    showIndicator: false,
+    modalVisible: false,
+  );
+}
+
+List<Override> _taskDetailsPageOverrides() => [
+  audioRecorderControllerProvider.overrideWith(
+    _StubAudioRecorderController.new,
+  ),
+];
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -134,6 +160,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           TaskDetailsPage(taskId: testTask.id),
+          overrides: _taskDetailsPageOverrides(),
         ),
       );
 
@@ -277,6 +304,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           TaskDetailsPage(taskId: testTask.id),
+          overrides: _taskDetailsPageOverrides(),
         ),
       );
 
@@ -316,7 +344,9 @@ void main() {
 
     testWidgets('pre-existing intent handled on page build', (tester) async {
       // Create a container and publish intent before building the page
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: _taskDetailsPageOverrides(),
+      );
 
       container
           .read(taskFocusControllerProvider(id: testTask.id).notifier)
