@@ -48,6 +48,7 @@ class AgentTestBench {
     bool isRunning = false,
     AgentStateEntity? state,
     bool enableAgents = true,
+    AgentTemplateEntity? template,
     MockChangeSetConfirmationService? confirmationService,
     MockUpdateNotifications? updateNotifications,
     MockTaskAgentService? taskAgentService,
@@ -57,6 +58,7 @@ class AgentTestBench {
        _isRunning = isRunning,
        _state = state,
        _enableAgents = enableAgents,
+       _template = template,
        _confirmationService = confirmationService,
        _updateNotifications = updateNotifications,
        _taskAgentService = taskAgentService,
@@ -69,6 +71,7 @@ class AgentTestBench {
   final bool _isRunning;
   final AgentStateEntity? _state;
   final bool _enableAgents;
+  final AgentTemplateEntity? _template;
   final MockChangeSetConfirmationService? _confirmationService;
   final MockUpdateNotifications? _updateNotifications;
   final MockTaskAgentService? _taskAgentService;
@@ -84,7 +87,9 @@ class AgentTestBench {
         ),
         taskAgentProvider.overrideWith((ref, id) async => identity),
         agentReportProvider.overrideWith((ref, agentId) async => _report),
-        templateForAgentProvider.overrideWith((ref, agentId) async => null),
+        templateForAgentProvider.overrideWith(
+          (ref, agentId) async => _template,
+        ),
         agentIsRunningProvider.overrideWith(
           (ref, agentId) => Stream.value(_isRunning),
         ),

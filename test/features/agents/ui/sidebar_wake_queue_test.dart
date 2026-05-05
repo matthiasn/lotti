@@ -43,12 +43,14 @@ void main() {
   Widget buildSubject(
     List<PendingWakeRecord> records, {
     MockAgentService? agentService,
+    List<OngoingWakeRecord> ongoing = const [],
   }) {
     return makeTestableWidgetWithScaffold(
       const SidebarWakeQueue(),
       theme: DesignSystemTheme.dark(),
       overrides: [
         pendingWakeRecordsProvider.overrideWith((ref) async => records),
+        ongoingWakeRecordsProvider.overrideWith((ref) async => ongoing),
         if (agentService != null)
           agentServiceProvider.overrideWith((ref) => agentService),
       ],
@@ -602,6 +604,62 @@ void main() {
 
       // No additional invocation after the in-flight call settles.
       verifyNever(() => agentService.clearScheduledWake(any()));
+    },
+  );
+
+  testWidgets(
+    'ongoing-wake row shows the linked task title and live elapsed pill',
+    (tester) async {
+      final startedAt = fixedNow.subtract(const Duration(seconds: 12));
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            const [],
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Refine sidebar',
+                startedAt: startedAt,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+      });
+
+      // Header includes the running wake in the count.
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('Refine sidebar'), findsOneWidget);
+      expect(find.text('00:12'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    "tapping an ongoing wake routes to that agent's instance page",
+    (tester) async {
+      String? captured;
+      SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            const [],
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Live wake',
+                startedAt: fixedNow,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+      });
+
+      await tester.tap(find.text('Live wake'));
+      await tester.pump();
+
+      expect(captured, '/settings/agents/instances/agent-running');
     },
   );
 

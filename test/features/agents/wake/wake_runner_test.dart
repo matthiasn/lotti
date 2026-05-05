@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -271,6 +272,49 @@ void main() {
 
           expect(emissions1, hasLength(1));
           expect(emissions2, hasLength(1));
+        });
+      });
+    });
+
+    group('startedAt / activeStartedAtById', () {
+      test('startedAt returns null for an agent that is not running', () {
+        expect(runner.startedAt('agent-cold'), isNull);
+      });
+
+      test(
+        'startedAt records clock.now() at acquire and clears on release',
+        () {
+          final fixed = DateTime(2026, 5, 5, 21);
+          withClock(Clock.fixed(fixed), () {
+            fakeAsync((async) {
+              runner.tryAcquire('agent-1');
+              async.flushMicrotasks();
+              expect(runner.startedAt('agent-1'), fixed);
+
+              runner.release('agent-1');
+              expect(runner.startedAt('agent-1'), isNull);
+            });
+          });
+        },
+      );
+
+      test('activeStartedAtById exposes a live read-only view', () {
+        final fixed = DateTime(2026, 5, 5, 21);
+        withClock(Clock.fixed(fixed), () {
+          fakeAsync((async) {
+            final view = runner.activeStartedAtById;
+            expect(view, isEmpty);
+
+            runner.tryAcquire('agent-1');
+            async.flushMicrotasks();
+            // Same view instance reflects the new entry.
+            expect(view, equals({'agent-1': fixed}));
+
+            expect(
+              () => view['hacked'] = fixed,
+              throwsA(isA<UnsupportedError>()),
+            );
+          });
         });
       });
     });
