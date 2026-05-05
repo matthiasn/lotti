@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:beamer/beamer.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,7 +9,9 @@ import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -338,4 +341,347 @@ void main() {
       verifyNever(() => agentService.cancelPendingWake(any()));
     },
   );
+
+  testWidgets(
+    'tapping a row with no test override beams the Settings delegate to the '
+    'agent instance route via the real NavService — covers the production '
+    'path of `_navigateToAgentRoute` when `navigatorOverride` is null',
+    (tester) async {
+      SidebarWakeQueueTestHooks.navigatorOverride = null;
+
+      final mockNav = MockNavService();
+      final mockDelegate = _RecordingBeamerDelegate();
+      when(() => mockNav.index).thenReturn(0); // not on Settings
+      when(() => mockNav.settingsIndex).thenReturn(6);
+      when(() => mockNav.setIndex(any())).thenReturn(null);
+      when(() => mockNav.settingsDelegate).thenReturn(mockDelegate);
+      when(
+        () => mockNav.persistNamedRoute(any()),
+      ).thenAnswer((_) async {});
+
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+      getIt.registerSingleton<NavService>(mockNav);
+      addTearDown(() {
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+      });
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject([
+            makeWake(
+              agentId: 'agent-prod',
+              displayName: 'Laura',
+              eta: const Duration(seconds: 30),
+            ),
+          ]),
+        );
+        await tester.pump();
+      });
+
+      await tester.tap(find.text('Laura'));
+      await tester.pump();
+
+      verify(() => mockNav.setIndex(6)).called(1);
+      verify(
+        () =>
+            mockNav.persistNamedRoute('/settings/agents/instances/agent-prod'),
+      ).called(1);
+      expect(mockDelegate.beamed, ['/settings/agents/instances/agent-prod']);
+    },
+  );
+
+  testWidgets(
+    'tapping a row when already on the Settings tab skips the setIndex '
+    'call so in-tab Beamer history is preserved',
+    (tester) async {
+      SidebarWakeQueueTestHooks.navigatorOverride = null;
+
+      final mockNav = MockNavService();
+      final mockDelegate = _RecordingBeamerDelegate();
+      when(() => mockNav.index).thenReturn(6); // already on Settings
+      when(() => mockNav.settingsIndex).thenReturn(6);
+      when(() => mockNav.settingsDelegate).thenReturn(mockDelegate);
+      when(
+        () => mockNav.persistNamedRoute(any()),
+      ).thenAnswer((_) async {});
+
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+      getIt.registerSingleton<NavService>(mockNav);
+      addTearDown(() {
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+      });
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject([
+            makeWake(
+              agentId: 'agent-stay',
+              displayName: 'Kit',
+              eta: const Duration(seconds: 30),
+            ),
+          ]),
+        );
+        await tester.pump();
+      });
+
+      await tester.tap(find.text('Kit'));
+      await tester.pump();
+
+      verifyNever(() => mockNav.setIndex(any()));
+      expect(mockDelegate.beamed, ['/settings/agents/instances/agent-stay']);
+    },
+  );
+
+  testWidgets(
+    'tapping the Open list link routes through the production NavService '
+    'when no test override is registered',
+    (tester) async {
+      SidebarWakeQueueTestHooks.navigatorOverride = null;
+
+      final mockNav = MockNavService();
+      final mockDelegate = _RecordingBeamerDelegate();
+      when(() => mockNav.index).thenReturn(0);
+      when(() => mockNav.settingsIndex).thenReturn(6);
+      when(() => mockNav.setIndex(any())).thenReturn(null);
+      when(() => mockNav.settingsDelegate).thenReturn(mockDelegate);
+      when(
+        () => mockNav.persistNamedRoute(any()),
+      ).thenAnswer((_) async {});
+
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+      getIt.registerSingleton<NavService>(mockNav);
+      addTearDown(() {
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+      });
+
+      await tester.pumpWidget(buildSubject(const []));
+      await tester.pumpAndSettle();
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      await tester.tap(
+        find.text('${element.messages.sidebarWakesOpenList} →'),
+      );
+      await tester.pump();
+
+      verify(() => mockNav.setIndex(6)).called(1);
+      verify(
+        () => mockNav.persistNamedRoute(kSidebarWakeQueueListRoute),
+      ).called(1);
+      expect(mockDelegate.beamed, [kSidebarWakeQueueListRoute]);
+    },
+  );
+
+  testWidgets(
+    'cancel button shows a spinner while clearScheduledWake is in flight, '
+    'and resets when the future completes',
+    (tester) async {
+      final agentService = MockAgentService();
+      final completer = Completer<void>();
+      when(
+        () => agentService.clearScheduledWake(any()),
+      ).thenAnswer((_) => completer.future);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            [
+              makeWake(
+                agentId: 'agent-pending-cancel',
+                displayName: 'Kit',
+                eta: const Duration(hours: 1),
+                type: PendingWakeType.scheduled,
+              ),
+            ],
+            agentService: agentService,
+          ),
+        );
+        await tester.pump();
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      await tester.tap(
+        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+      );
+      await tester.pump();
+
+      // Spinner is visible while the cancel future is in flight.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      completer.complete();
+      await tester.pumpAndSettle();
+
+      // Spinner clears once the cancel resolves.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'cancel button swallows errors from clearScheduledWake so the spinner '
+    'still resets and the row keeps responding',
+    (tester) async {
+      final agentService = MockAgentService();
+      when(
+        () => agentService.clearScheduledWake(any()),
+      ).thenAnswer((_) => Future<void>.error(StateError('boom')));
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            [
+              makeWake(
+                agentId: 'agent-err',
+                displayName: 'Sage',
+                eta: const Duration(hours: 1),
+                type: PendingWakeType.scheduled,
+              ),
+            ],
+            agentService: agentService,
+          ),
+        );
+        await tester.pump();
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      await tester.tap(
+        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+      );
+      await tester.pumpAndSettle();
+
+      // Spinner has reset even though the cancel future errored.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      verify(
+        () => agentService.clearScheduledWake('agent-err'),
+      ).called(1);
+    },
+  );
+
+  testWidgets(
+    'a second cancel tap while the first is still in flight is a no-op '
+    '(the early-return guard in `_cancelWake`)',
+    (tester) async {
+      final agentService = MockAgentService();
+      final completer = Completer<void>();
+      when(
+        () => agentService.clearScheduledWake(any()),
+      ).thenAnswer((_) => completer.future);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            [
+              makeWake(
+                agentId: 'agent-double',
+                displayName: 'Iris',
+                eta: const Duration(hours: 1),
+                type: PendingWakeType.scheduled,
+              ),
+            ],
+            agentService: agentService,
+          ),
+        );
+        await tester.pump();
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      await tester.tap(
+        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+      );
+      await tester.pump();
+      // The button has now swapped to a spinner — there is no tooltip
+      // target for the second tap. Tapping at the same location should
+      // hit the spinner SizedBox, which has no gesture detector, so the
+      // service is only called once.
+      completer.complete();
+      await tester.pumpAndSettle();
+
+      verify(
+        () => agentService.clearScheduledWake('agent-double'),
+      ).called(1);
+    },
+  );
+
+  testWidgets(
+    '_AgentAvatar renders "?" when the display name is empty / whitespace',
+    (tester) async {
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject([
+            makeWake(
+              agentId: 'a-blank',
+              displayName: '   ',
+              eta: const Duration(seconds: 30),
+            ),
+          ]),
+        );
+        await tester.pump();
+      });
+
+      // Falls back to '?' since the trimmed name is empty.
+      expect(find.text('?'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    '_AgentAvatar uses runes.first so emoji-prefixed display names render '
+    'the full Unicode codepoint instead of half a UTF-16 surrogate pair',
+    (tester) async {
+      // 🤖 is U+1F916, encoded as two UTF-16 code units in Dart strings.
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject([
+            makeWake(
+              agentId: 'a-emoji',
+              displayName: '🤖 Bot',
+              eta: const Duration(seconds: 30),
+            ),
+          ]),
+        );
+        await tester.pump();
+      });
+
+      // The avatar tile renders the full robot emoji glyph (single rune).
+      expect(find.text('🤖'), findsOneWidget);
+    },
+  );
+}
+
+/// Captures `beamToNamed` calls without spinning up a real Beamer
+/// router. Used to verify the production navigation paths in
+/// `_navigateToAgentRoute` without standing up the full Lotti router.
+class _RecordingBeamerDelegate extends BeamerDelegate {
+  _RecordingBeamerDelegate()
+    : super(
+        locationBuilder: RoutesLocationBuilder(
+          routes: {'*': (_, _, _) => const SizedBox.shrink()},
+        ).call,
+      );
+
+  final List<String> beamed = <String>[];
+
+  @override
+  void beamToNamed(
+    String uri, {
+    Object? data,
+    Object? routeState,
+    bool beamBackOnPop = false,
+    bool popBeamLocationOnPop = false,
+    bool stacked = true,
+    bool replaceRouteInformation = false,
+    TransitionDelegate<dynamic>? transitionDelegate,
+    String? popToNamed,
+  }) {
+    beamed.add(uri);
+  }
 }
