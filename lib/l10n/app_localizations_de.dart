@@ -609,13 +609,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentPendingWakesDueAtLabel => 'Fällig um';
 
   @override
+  String get agentPendingWakesEmptyFiltered =>
+      'Keine Weckvorgänge passen zu deinen Filtern.';
+
+  @override
   String get agentPendingWakesEmptyList => 'Keine ausstehenden Weckvorgänge';
+
+  @override
+  String get agentPendingWakesFilterSectionType => 'Typ';
+
+  @override
+  String get agentPendingWakesGroupByType => 'Typ';
 
   @override
   String get agentPendingWakesPendingLabel => 'Ausstehend';
 
   @override
   String get agentPendingWakesScheduledLabel => 'Geplant';
+
+  @override
+  String get agentPendingWakesSearchPlaceholder => 'Weckvorgänge suchen…';
+
+  @override
+  String get agentPendingWakesSortDueLatest => 'Fällig zuletzt';
+
+  @override
+  String get agentPendingWakesSortDueSoonest => 'Fällig zuerst';
 
   @override
   String get agentPendingWakesTitle => 'Ausstehende Weckvorgänge';
@@ -855,7 +874,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentSoulSelectTitle => 'Seele auswählen';
 
   @override
+  String get agentSoulsEmptyFiltered =>
+      'Keine Seelen passen zu deinen Filtern.';
+
+  @override
   String get agentSoulSettingsTab => 'Einstellungen';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Seelen suchen…';
 
   @override
   String get agentSoulsTitle => 'Seelen';

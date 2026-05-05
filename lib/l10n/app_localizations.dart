@@ -1116,11 +1116,29 @@ abstract class AppLocalizations {
   /// **'Due at'**
   String get agentPendingWakesDueAtLabel;
 
+  /// No description provided for @agentPendingWakesEmptyFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'No wakes match your filters.'**
+  String get agentPendingWakesEmptyFiltered;
+
   /// No description provided for @agentPendingWakesEmptyList.
   ///
   /// In en, this message translates to:
   /// **'No pending wakes'**
   String get agentPendingWakesEmptyList;
+
+  /// No description provided for @agentPendingWakesFilterSectionType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get agentPendingWakesFilterSectionType;
+
+  /// No description provided for @agentPendingWakesGroupByType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get agentPendingWakesGroupByType;
 
   /// No description provided for @agentPendingWakesPendingLabel.
   ///
@@ -1133,6 +1151,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scheduled'**
   String get agentPendingWakesScheduledLabel;
+
+  /// No description provided for @agentPendingWakesSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search wakes…'**
+  String get agentPendingWakesSearchPlaceholder;
+
+  /// No description provided for @agentPendingWakesSortDueLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'Due latest'**
+  String get agentPendingWakesSortDueLatest;
+
+  /// No description provided for @agentPendingWakesSortDueSoonest.
+  ///
+  /// In en, this message translates to:
+  /// **'Due soonest'**
+  String get agentPendingWakesSortDueSoonest;
 
   /// No description provided for @agentPendingWakesTitle.
   ///
@@ -1536,11 +1572,23 @@ abstract class AppLocalizations {
   /// **'Select Soul'**
   String get agentSoulSelectTitle;
 
+  /// No description provided for @agentSoulsEmptyFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'No souls match your filters.'**
+  String get agentSoulsEmptyFiltered;
+
   /// No description provided for @agentSoulSettingsTab.
   ///
   /// In en, this message translates to:
   /// **'Settings'**
   String get agentSoulSettingsTab;
+
+  /// No description provided for @agentSoulsSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search souls…'**
+  String get agentSoulsSearchPlaceholder;
 
   /// No description provided for @agentSoulsTitle.
   ///

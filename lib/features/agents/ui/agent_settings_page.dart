@@ -1,13 +1,10 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
-import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
-import 'package:lotti/features/agents/ui/agent_pending_wakes_list.dart';
+import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
+import 'package:lotti/features/agents/ui/souls/agent_souls_page.dart';
 import 'package:lotti/features/agents/ui/templates/agent_templates_page.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -17,7 +14,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Tabs available on [AgentSettingsPage]. Exposed as a public enum
@@ -397,132 +393,9 @@ class _AgentSettingsTabBody extends ConsumerWidget {
         TokenStatsTab(),
         AgentTemplatesPage(),
         AgentInstancesList(),
-        _SoulsTab(),
-        AgentPendingWakesList(),
+        AgentSoulsPage(),
+        AgentPendingWakesPage(),
       ],
-    );
-  }
-}
-
-/// Inline souls list for the Souls tab.
-class _SoulsTab extends ConsumerWidget {
-  const _SoulsTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final soulsAsync = ref.watch(allSoulDocumentsProvider);
-
-    return soulsAsync.when(
-      data: (souls) => _buildSoulsList(context, souls),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(
-            context.messages.commonError,
-            style: context.textTheme.bodyMedium?.copyWith(
-              color: context.colorScheme.error,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSoulsList(
-    BuildContext context,
-    List<AgentDomainEntity> souls,
-  ) {
-    if (souls.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.psychology_outlined,
-              size: 64,
-              color: Theme.of(context).disabledColor,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              context.messages.agentSoulEmptyList,
-              style: context.textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).disabledColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
-    }
-
-    final sorted = souls.whereType<SoulDocumentEntity>().toList()
-      ..sort(
-        (a, b) =>
-            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
-      );
-
-    return ListView.builder(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        16,
-        16,
-        math.max(16, DesignSystemBottomNavigationBar.occupiedHeight(context)),
-      ),
-      itemCount: sorted.length,
-      itemBuilder: (context, index) {
-        final soul = sorted[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: _SoulListTile(soul: soul),
-        );
-      },
-    );
-  }
-}
-
-class _SoulListTile extends ConsumerWidget {
-  const _SoulListTile({required this.soul});
-
-  final SoulDocumentEntity soul;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final activeVersionAsync = ref.watch(
-      activeSoulVersionProvider(soul.id),
-    );
-    final versionNumber = activeVersionAsync.value?.mapOrNull(
-      soulDocumentVersion: (v) => v.version,
-    );
-
-    return ModernBaseCard(
-      onTap: () => beamToNamed('/settings/agents/souls/${soul.id}'),
-      padding: EdgeInsets.zero,
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(
-          Icons.psychology_rounded,
-          size: 32,
-          color: context.colorScheme.primary,
-        ),
-        title: Text(
-          soul.displayName,
-          style: context.textTheme.titleMedium,
-        ),
-        subtitle: versionNumber != null
-            ? Text(
-                context.messages.agentSoulVersionLabel(versionNumber),
-                style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
-                ),
-              )
-            : null,
-        trailing: Icon(
-          Icons.chevron_right,
-          color: context.colorScheme.onSurfaceVariant,
-        ),
-      ),
     );
   }
 }

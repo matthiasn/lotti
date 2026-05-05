@@ -602,13 +602,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentPendingWakesDueAtLabel => 'Due at';
 
   @override
+  String get agentPendingWakesEmptyFiltered => 'No wakes match your filters.';
+
+  @override
   String get agentPendingWakesEmptyList => 'No pending wakes';
+
+  @override
+  String get agentPendingWakesFilterSectionType => 'Type';
+
+  @override
+  String get agentPendingWakesGroupByType => 'Type';
 
   @override
   String get agentPendingWakesPendingLabel => 'Pending';
 
   @override
   String get agentPendingWakesScheduledLabel => 'Scheduled';
+
+  @override
+  String get agentPendingWakesSearchPlaceholder => 'Search wakes…';
+
+  @override
+  String get agentPendingWakesSortDueLatest => 'Due latest';
+
+  @override
+  String get agentPendingWakesSortDueSoonest => 'Due soonest';
 
   @override
   String get agentPendingWakesTitle => 'Pending Wakes';
@@ -843,7 +861,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSoulSelectTitle => 'Select Soul';
 
   @override
+  String get agentSoulsEmptyFiltered => 'No souls match your filters.';
+
+  @override
   String get agentSoulSettingsTab => 'Settings';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Search souls…';
 
   @override
   String get agentSoulsTitle => 'Souls';

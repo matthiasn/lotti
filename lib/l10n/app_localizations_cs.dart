@@ -606,13 +606,32 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentPendingWakesDueAtLabel => 'Spustí se';
 
   @override
+  String get agentPendingWakesEmptyFiltered =>
+      'Žádná probuzení neodpovídají tvým filtrům.';
+
+  @override
   String get agentPendingWakesEmptyList => 'Žádná čekající probuzení';
+
+  @override
+  String get agentPendingWakesFilterSectionType => 'Typ';
+
+  @override
+  String get agentPendingWakesGroupByType => 'Typ';
 
   @override
   String get agentPendingWakesPendingLabel => 'Čekající';
 
   @override
   String get agentPendingWakesScheduledLabel => 'Naplánované';
+
+  @override
+  String get agentPendingWakesSearchPlaceholder => 'Hledat probuzení…';
+
+  @override
+  String get agentPendingWakesSortDueLatest => 'Spustí se nejpozději';
+
+  @override
+  String get agentPendingWakesSortDueSoonest => 'Spustí se nejdříve';
 
   @override
   String get agentPendingWakesTitle => 'Čekající probuzení';
@@ -847,7 +866,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSoulSelectTitle => 'Vybrat duši';
 
   @override
+  String get agentSoulsEmptyFiltered => 'Žádné duše neodpovídají tvým filtrům.';
+
+  @override
   String get agentSoulSettingsTab => 'Nastavení';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Hledat duše…';
 
   @override
   String get agentSoulsTitle => 'Duše';

@@ -1,3 +1,6 @@
+@TestOn('linux')
+library;
+
 import 'dart:async';
 
 import 'package:dbus/dbus.dart';

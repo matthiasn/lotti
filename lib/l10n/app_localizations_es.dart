@@ -610,13 +610,32 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentPendingWakesDueAtLabel => 'Vence a las';
 
   @override
+  String get agentPendingWakesEmptyFiltered =>
+      'Ningún despertar coincide con tus filtros.';
+
+  @override
   String get agentPendingWakesEmptyList => 'No hay despertares pendientes';
+
+  @override
+  String get agentPendingWakesFilterSectionType => 'Tipo';
+
+  @override
+  String get agentPendingWakesGroupByType => 'Tipo';
 
   @override
   String get agentPendingWakesPendingLabel => 'Pendiente';
 
   @override
   String get agentPendingWakesScheduledLabel => 'Programado';
+
+  @override
+  String get agentPendingWakesSearchPlaceholder => 'Buscar despertares…';
+
+  @override
+  String get agentPendingWakesSortDueLatest => 'Vence más tarde';
+
+  @override
+  String get agentPendingWakesSortDueSoonest => 'Vence antes';
 
   @override
   String get agentPendingWakesTitle => 'Despertares pendientes';
@@ -855,7 +874,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentSoulSelectTitle => 'Seleccionar alma';
 
   @override
+  String get agentSoulsEmptyFiltered => 'Ningún alma coincide con tus filtros.';
+
+  @override
   String get agentSoulSettingsTab => 'Configuración';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Buscar almas…';
 
   @override
   String get agentSoulsTitle => 'Almas';
