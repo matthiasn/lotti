@@ -305,14 +305,14 @@ void main() {
       expect(results.last.createdAt, DateTime(2024, 4, 2));
     });
 
-    test('oldestOutboxItems uses the queue index', () async {
+    test('oldestOutboxItems avoids a full table scan', () async {
       final plan = await db!
           .customSelect(
             '''
         EXPLAIN QUERY PLAN
         SELECT * FROM outbox
         WHERE status = ?1
-        ORDER BY priority ASC, created_at ASC
+        ORDER BY created_at ASC
         LIMIT 1
         ''',
             variables: [Variable<int>(OutboxStatus.pending.index)],
@@ -320,7 +320,7 @@ void main() {
           .get();
 
       final details = plan.map((row) => row.read<String>('detail')).join(' ');
-      expect(details, contains('idx_outbox_status_priority_created_at'));
+      expect(details, isNot(contains('SCAN outbox')));
     });
 
     test('claimNextOutboxItem claims oldest eligible item', () async {
@@ -452,8 +452,8 @@ void main() {
       });
 
       test(
-        'claims up to maxSize consecutive text rows in priority/createdAt '
-        'order and transitions each to sending',
+        'claims up to maxSize consecutive text rows in createdAt order '
+        'and transitions each to sending',
         () async {
           final database = db!;
           for (var i = 0; i < 5; i++) {
@@ -558,7 +558,7 @@ void main() {
       );
 
       test(
-        'bundles freely across priority tiers in (priority, createdAt) order',
+        'bundles in createdAt order regardless of priority tier',
         () async {
           final database = db!;
           await database.addOutboxItem(
@@ -3673,7 +3673,7 @@ void main() {
     );
   });
 
-  group('Outbox Priority Ordering - ', () {
+  group('Outbox Polling Ordering - ', () {
     late SyncDatabase database;
 
     setUp(() async {
@@ -3685,7 +3685,7 @@ void main() {
     });
 
     test(
-      'oldestOutboxItems returns high-priority before low even if low is older',
+      'oldestOutboxItems returns items in createdAt order regardless of priority',
       () async {
         // Insert low-priority item first (older)
         await database.addOutboxItem(
@@ -3725,48 +3725,47 @@ void main() {
 
         final items = await database.oldestOutboxItems(10);
         expect(items, hasLength(3));
-        expect(items[0].subject, 'high-new');
-        expect(items[0].priority, OutboxPriority.high.index);
+        expect(items[0].subject, 'low-old');
         expect(items[1].subject, 'normal-mid');
-        expect(items[1].priority, OutboxPriority.normal.index);
-        expect(items[2].subject, 'low-old');
-        expect(items[2].priority, OutboxPriority.low.index);
+        expect(items[2].subject, 'high-new');
       },
     );
 
-    test('claimNextOutboxItem claims highest-priority item first', () async {
-      // Insert low-priority item first (older)
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('low-old'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 10)),
-          updatedAt: Value(DateTime(2024, 1, 1, 10)),
-          priority: Value(OutboxPriority.low.index),
-        ),
-      );
+    test(
+      'claimNextOutboxItem claims oldest item first regardless of priority',
+      () async {
+        // Insert low-priority item first (older)
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('low-old'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1, 10)),
+            updatedAt: Value(DateTime(2024, 1, 1, 10)),
+            priority: Value(OutboxPriority.low.index),
+          ),
+        );
 
-      // Insert high-priority item second (newer)
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('high-new'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 12)),
-          updatedAt: Value(DateTime(2024, 1, 1, 12)),
-          priority: Value(OutboxPriority.high.index),
-        ),
-      );
+        // Insert high-priority item second (newer)
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('high-new'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1, 12)),
+            updatedAt: Value(DateTime(2024, 1, 1, 12)),
+            priority: Value(OutboxPriority.high.index),
+          ),
+        );
 
-      final claimed = await database.claimNextOutboxItem(
-        now: DateTime(2024, 1, 1, 13),
-      );
+        final claimed = await database.claimNextOutboxItem(
+          now: DateTime(2024, 1, 1, 13),
+        );
 
-      expect(claimed, isNotNull);
-      expect(claimed!.subject, 'high-new');
-      expect(claimed.priority, OutboxPriority.high.index);
-    });
+        expect(claimed, isNotNull);
+        expect(claimed!.subject, 'low-old');
+      },
+    );
 
     test('within same priority, oldest item is processed first', () async {
       await database.addOutboxItem(

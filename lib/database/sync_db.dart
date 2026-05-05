@@ -531,8 +531,8 @@ class SyncDatabase extends _$SyncDatabase {
     return (select(outbox)
           ..where((t) => t.status.equals(OutboxStatus.pending.index))
           ..orderBy([
-            (t) => OrderingTerm(expression: t.priority),
             (t) => OrderingTerm(expression: t.createdAt),
+            (t) => OrderingTerm(expression: t.id),
           ])
           ..limit(limit))
         .get();
@@ -555,8 +555,8 @@ class SyncDatabase extends _$SyncDatabase {
                           t.updatedAt.isSmallerThanValue(reclaimWindow)),
                 )
                 ..orderBy([
-                  (t) => OrderingTerm(expression: t.priority),
                   (t) => OrderingTerm(expression: t.createdAt),
+                  (t) => OrderingTerm(expression: t.id),
                 ])
                 ..limit(1))
               .getSingleOrNull();
@@ -601,9 +601,9 @@ class SyncDatabase extends _$SyncDatabase {
     });
   }
 
-  /// Atomically claim a batch of consecutive outbox rows in priority/createdAt
-  /// order, transitioning each from `pending` (or an expired `sending` lease)
-  /// to `sending` under one transaction.
+  /// Atomically claim a batch of consecutive outbox rows in createdAt order,
+  /// transitioning each from `pending` (or an expired `sending` lease) to
+  /// `sending` under one transaction.
   ///
   /// Boundary rule for `OutboxProcessor` bundling:
   ///  - If the head row has `filePath != null` (media attachment), the
@@ -617,7 +617,7 @@ class SyncDatabase extends _$SyncDatabase {
   /// If a CAS race causes any per-row update to fail mid-batch, the walk
   /// stops there. The returned list is always a contiguous prefix of the
   /// query order — never a non-contiguous gap, which would otherwise
-  /// violate `(priority, createdAt)` send ordering.
+  /// violate `createdAt` send ordering.
   Future<List<OutboxItem>> claimNextOutboxBatch({
     required int maxSize,
     Duration leaseDuration = const Duration(minutes: 1),
@@ -633,23 +633,20 @@ class SyncDatabase extends _$SyncDatabase {
       // predicate prevented the planner from matching either of the
       // existing outbox indices and forced a SCAN (218 ms in the
       // super-slow log). Each branch is now a clean equality on
-      // `status` so the planner picks the partial
-      // `idx_outbox_actionable_priority_created_at` (pending + sending,
-      // ordered by `(priority, created_at)`) and walks it index-only.
-      // The merge in Dart is bounded by `2 × maxSize` rows; trivial.
-      // `id` is the third sort key so the merged batch matches the
-      // contiguous-prefix ordering contract `OutboxRepository.
-      // claimNextBatch` and `OutboxProcessor._processBundle` rely on:
-      // when (priority, createdAt) tie, picking a stable order keeps
-      // the first `filePath != null` boundary deterministic across
-      // repeated calls.
+      // `status`. The merge in Dart is bounded by `2 × maxSize` rows;
+      // trivial. `id` is the secondary sort key so the merged batch
+      // matches the contiguous-prefix ordering contract that
+      // `OutboxRepository.claimNextBatch` and
+      // `OutboxProcessor._processBundle` rely on: when `createdAt`
+      // ties, picking a stable order keeps the first
+      // `filePath != null` boundary deterministic across repeated
+      // calls.
       final pendingRows =
           await (select(outbox)
                 ..where(
                   (t) => t.status.equals(OutboxStatus.pending.index),
                 )
                 ..orderBy([
-                  (t) => OrderingTerm(expression: t.priority),
                   (t) => OrderingTerm(expression: t.createdAt),
                   (t) => OrderingTerm(expression: t.id),
                 ])
@@ -663,7 +660,6 @@ class SyncDatabase extends _$SyncDatabase {
                       t.updatedAt.isSmallerThanValue(reclaimWindow),
                 )
                 ..orderBy([
-                  (t) => OrderingTerm(expression: t.priority),
                   (t) => OrderingTerm(expression: t.createdAt),
                   (t) => OrderingTerm(expression: t.id),
                 ])
@@ -671,8 +667,6 @@ class SyncDatabase extends _$SyncDatabase {
               .get();
       final candidates = <OutboxItem>[...pendingRows, ...expiredSendingRows]
         ..sort((a, b) {
-          final p = a.priority.compareTo(b.priority);
-          if (p != 0) return p;
           final created = a.createdAt.compareTo(b.createdAt);
           if (created != 0) return created;
           return a.id.compareTo(b.id);
