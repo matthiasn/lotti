@@ -2,9 +2,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/hourly_wake_activity.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
+import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -119,15 +121,14 @@ final StreamProvider<Set<String>> _runningAgentIdsStreamProvider =
       return runner.runningAgentIds;
     });
 
-/// Stream of currently-running wakes with their start timestamps and a
-/// human-readable title. Emits initially with whatever is already
-/// running, then on every WakeRunner state change. Templates and
-/// identities are resolved lazily so a slow lookup doesn't block the
-/// "running" indicator from updating.
+/// Currently-running wakes with their start timestamps and a
+/// human-readable title. Re-emits whenever the WakeRunner's running
+/// set changes. Per-agent title lookups (state → subject → journal
+/// title, then agent display-name as fallback) run in parallel via
+/// `Future.wait`.
 final FutureProvider<List<OngoingWakeRecord>> ongoingWakeRecordsProvider =
     FutureProvider.autoDispose<List<OngoingWakeRecord>>((ref) async {
       final runner = ref.watch(wakeRunnerProvider);
-      // Re-emit when the runner's running set changes.
       ref.listen<AsyncValue<Set<String>>>(_runningAgentIdsStreamProvider, (
         prev,
         next,
@@ -140,48 +141,56 @@ final FutureProvider<List<OngoingWakeRecord>> ongoingWakeRecordsProvider =
 
       final service = ref.watch(agentServiceProvider);
       final repository = ref.watch(agentRepositoryProvider);
-      final results = <OngoingWakeRecord>[];
-      for (final entry in startedById.entries) {
-        final agentId = entry.key;
-        final startedAt = entry.value;
 
-        String? title;
-        // Prefer the linked task/project title — that's what the user
-        // identifies the wake by ("Improve Agent UI/UX…"), not the
-        // agent persona behind it.
-        try {
-          final stateEntity = await repository.getAgentState(agentId);
-          final slots = stateEntity?.mapOrNull(agentState: (s) => s.slots);
-          final subjectId = slots?.activeTaskId ?? slots?.activeProjectId;
-          if (subjectId != null && subjectId.isNotEmpty) {
-            title = await ref.watch(
-              pendingWakeTargetTitleProvider(subjectId).future,
-            );
-            title = title?.trim();
-          }
-        } catch (_) {
-          // Subject lookup is best-effort.
-        }
-
-        if (title == null || title.isEmpty) {
-          final identity = await service.getAgent(agentId);
-          if (identity is AgentIdentityEntity) {
-            title = identity.displayName.trim();
-          }
-        }
-
-        results.add(
-          OngoingWakeRecord(
-            agentId: agentId,
-            title: title != null && title.isNotEmpty ? title : agentId,
-            startedAt: startedAt,
-          ),
-        );
-      }
-
+      final futures = startedById.entries.map(
+        (entry) => _resolveOngoingRecord(
+          ref,
+          service,
+          repository,
+          entry.key,
+          entry.value,
+        ),
+      );
+      final results = await Future.wait(futures);
       results.sort((a, b) => a.startedAt.compareTo(b.startedAt));
       return results;
     });
+
+Future<OngoingWakeRecord> _resolveOngoingRecord(
+  Ref ref,
+  AgentService service,
+  AgentRepository repository,
+  String agentId,
+  DateTime startedAt,
+) async {
+  String? title;
+  try {
+    final stateEntity = await repository.getAgentState(agentId);
+    final slots = stateEntity?.mapOrNull(agentState: (s) => s.slots);
+    final subjectId = slots?.activeTaskId ?? slots?.activeProjectId;
+    if (subjectId != null && subjectId.isNotEmpty) {
+      title = (await ref.watch(
+        pendingWakeTargetTitleProvider(subjectId).future,
+      ))?.trim();
+    }
+  } catch (_) {
+    // Subject lookup is best-effort — fall through to the agent
+    // display-name below.
+  }
+
+  if (title == null || title.isEmpty) {
+    final identity = await service.getAgent(agentId);
+    if (identity is AgentIdentityEntity) {
+      title = identity.displayName.trim();
+    }
+  }
+
+  return OngoingWakeRecord(
+    agentId: agentId,
+    title: title != null && title.isNotEmpty ? title : agentId,
+    startedAt: startedAt,
+  );
+}
 
 final hourlyWakeActivityProvider = FutureProvider<List<HourlyWakeActivity>>((
   ref,

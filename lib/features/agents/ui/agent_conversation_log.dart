@@ -228,8 +228,8 @@ class _ThreadReportCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         side: BorderSide(color: ai.rowBorder),
       ),
-      // Tinted with the AI accent so the inline report card reads as
-      // "this thread produced a report" rather than just another row.
+      // Tinted with the AI accent so this card reads as a per-thread
+      // report rather than just another conversation row.
       color: Color.alphaBlend(ai.accent.withValues(alpha: 0.10), ai.row),
       elevation: 0,
       child: ExpansionTile(

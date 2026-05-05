@@ -290,9 +290,6 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
         horizontal: AppTheme.cardPaddingHalf,
         vertical: AppTheme.spacingXSmall,
       ),
-      // Sit the card on the AI panel's row token so the dark
-      // teal-navy backdrop reads as a unified surface instead of a
-      // pile of default Material black tiles.
       color: ai.row,
       elevation: 0,
       shape: RoundedRectangleBorder(

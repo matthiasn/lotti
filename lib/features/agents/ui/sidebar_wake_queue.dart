@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -80,10 +81,8 @@ class SidebarWakeQueue extends ConsumerWidget {
         ),
       ),
       child: Padding(
-        // Tighter horizontal padding than the rest of the sidebar so the
-        // wake row body gets all the available width back — the design
-        // ask is that the title cell breathes and the ETA chip never
-        // feels cramped against the cancel-x.
+        // Tighter horizontal padding than the rest of the sidebar so
+        // the title cell can breathe past the avatar/cancel cluster.
         padding: EdgeInsets.fromLTRB(
           tokens.spacing.step1,
           tokens.spacing.step3,
@@ -173,60 +172,17 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Compact ongoing-wake row: template name on the left, live wall-clock
-/// duration on the right. Tapping the title opens the agent's
-/// instance detail page so the user can drop straight into the
-/// in-flight conversation.
-class _OngoingWakeRow extends ConsumerStatefulWidget {
+/// Live wall-clock duration since wake start, paired with the linked
+/// task / project title. Driven by the page-scoped 1Hz
+/// [wakeCountdownTickerProvider] — one timer feeds every row across
+/// the app, so the sidebar's ongoing block doesn't allocate its own.
+class _OngoingWakeRow extends ConsumerWidget {
   const _OngoingWakeRow({required this.record});
 
   final OngoingWakeRecord record;
 
   @override
-  ConsumerState<_OngoingWakeRow> createState() => _OngoingWakeRowState();
-}
-
-class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
-  Timer? _timer;
-  late Duration _elapsed;
-
-  @override
-  void initState() {
-    super.initState();
-    _elapsed = clock.now().difference(widget.record.startedAt);
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() {
-        _elapsed = clock.now().difference(widget.record.startedAt);
-      });
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant _OngoingWakeRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.record.startedAt != widget.record.startedAt) {
-      _elapsed = clock.now().difference(widget.record.startedAt);
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _handleTap() {
-    _navigateToAgentRoute(
-      '/settings/agents/instances/${widget.record.agentId}',
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final accent = tokens.colors.alert.success.defaultColor;
     final titleStyle = AppFonts.inconsolata(
@@ -240,8 +196,15 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
       color: accent,
     ).copyWith(fontFeatures: numericBadgeFontFeatures);
 
+    final elapsed = ref.watch(
+      wakeCountdownTickerProvider.select((async) {
+        final now = async.value ?? clock.now();
+        return formatWakeElapsed(now.difference(record.startedAt));
+      }),
+    );
+
     return InkWell(
-      onTap: _handleTap,
+      onTap: () => _navigateToAgentRoute(agentInstanceRoute(record.agentId)),
       borderRadius: BorderRadius.circular(tokens.radii.xs),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -250,7 +213,6 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
         ),
         child: Row(
           children: [
-            // Pulsing-green dot to read as "this is alive right now".
             Container(
               width: 6,
               height: 6,
@@ -262,14 +224,14 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
             SizedBox(width: tokens.spacing.step2),
             Expanded(
               child: Text(
-                widget.record.title,
+                record.title,
                 style: titleStyle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             SizedBox(width: tokens.spacing.step2),
-            Text(_formatElapsed(_elapsed), style: durationStyle),
+            Text(elapsed, style: durationStyle),
           ],
         ),
       ),
@@ -287,57 +249,7 @@ class _WakeRow extends ConsumerStatefulWidget {
 }
 
 class _WakeRowState extends ConsumerState<_WakeRow> {
-  Timer? _timer;
-  late int _remainingSeconds;
   bool _cancelling = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _remainingSeconds = _remainingFromDueAt(widget.record.dueAt);
-    _scheduleTick();
-  }
-
-  @override
-  void didUpdateWidget(covariant _WakeRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.record.dueAt != widget.record.dueAt) {
-      _remainingSeconds = _remainingFromDueAt(widget.record.dueAt);
-      _scheduleTick();
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _scheduleTick() {
-    _timer?.cancel();
-    if (_remainingSeconds <= 0) return;
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      final remaining = _remainingFromDueAt(widget.record.dueAt);
-      setState(() {
-        _remainingSeconds = remaining;
-        if (_remainingSeconds <= 0) timer.cancel();
-      });
-    });
-  }
-
-  int _remainingFromDueAt(DateTime dueAt) {
-    final remaining = dueAt.difference(clock.now());
-    return remaining <= Duration.zero ? 0 : remaining.inSeconds;
-  }
-
-  void _handleTap() {
-    final agentId = widget.record.agent.agentId;
-    _navigateToAgentRoute('/settings/agents/instances/$agentId');
-  }
 
   Future<void> _cancelWake() async {
     if (_cancelling) return;
@@ -362,10 +274,6 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final record = widget.record;
-    // Prefer the linked task / project title — what the user
-    // identifies the wake by — over the agent's display name. Falls
-    // back to the agent display name when the agent has no linked
-    // subject (e.g. an improver agent).
     final subjectId =
         record.state.slots.activeTaskId ?? record.state.slots.activeProjectId;
     final subjectTitle = ref
@@ -376,8 +284,15 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
         ? subjectTitle
         : record.agent.displayName;
 
-    final eta = _formatEta(context, _remainingSeconds);
-    final imminent = _remainingSeconds < 5 * 60;
+    final remainingSeconds = ref.watch(
+      wakeCountdownTickerProvider.select((async) {
+        final now = async.value ?? clock.now();
+        final diff = record.dueAt.difference(now);
+        return diff <= Duration.zero ? 0 : diff.inSeconds;
+      }),
+    );
+    final eta = _formatEta(context, remainingSeconds);
+    final imminent = remainingSeconds < 5 * 60;
     final etaColor = imminent
         ? tokens.colors.alert.warning.defaultColor
         : tokens.colors.text.lowEmphasis;
@@ -400,7 +315,9 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
             button: true,
             label: '$title · $eta',
             child: InkWell(
-              onTap: _handleTap,
+              onTap: () => _navigateToAgentRoute(
+                agentInstanceRoute(record.agent.agentId),
+              ),
               borderRadius: BorderRadius.circular(tokens.radii.xs),
               child: Padding(
                 padding: EdgeInsets.symmetric(
@@ -485,12 +402,17 @@ class _CancelWakeButton extends StatelessWidget {
   }
 }
 
+/// Settings sub-route for a single agent's instance detail page.
+String agentInstanceRoute(String agentId) =>
+    '/settings/agents/instances/$agentId';
+
 void _openWakesList() => _navigateToAgentRoute(kSidebarWakeQueueListRoute);
 
-/// Navigate the user from anywhere in the app to a Settings sub-route
-/// without breaking back history. See the comment kept on
-/// `_navigateToAgentRoute` history for why we don't just call
-/// `tapIndex` — Beamer back-history matters here.
+/// Navigate from anywhere to a Settings sub-route while preserving the
+/// in-tab Beamer history: switch to the Settings tab via `setIndex`
+/// (not `tapIndex`, which re-roots the delegate when re-entering the
+/// same tab), beam the Settings delegate, and persist the route so
+/// reload returns the user to the same page.
 void _navigateToAgentRoute(String route) {
   final override = SidebarWakeQueueTestHooks.navigatorOverride;
   if (override != null) {
@@ -515,20 +437,5 @@ String _formatEta(BuildContext context, int seconds) {
   }
   final h = seconds ~/ 3600;
   final m = (seconds % 3600) ~/ 60;
-  return '${h}h ${m.toString().padLeft(2, '0')}m';
-}
-
-/// Render a wall-clock duration since wake start. Mirrors the
-/// pending-wake countdown shape so the two read symmetrically: under
-/// an hour it's `mm:ss`, otherwise `Xh Ym`.
-String _formatElapsed(Duration elapsed) {
-  final totalSeconds = elapsed.inSeconds < 0 ? 0 : elapsed.inSeconds;
-  if (totalSeconds < 60 * 60) {
-    final m = totalSeconds ~/ 60;
-    final s = totalSeconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-  final h = totalSeconds ~/ 3600;
-  final m = (totalSeconds % 3600) ~/ 60;
   return '${h}h ${m.toString().padLeft(2, '0')}m';
 }

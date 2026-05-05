@@ -10,6 +10,8 @@ import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart'
     show monoMetaStyle;
 import 'package:lotti/features/agents/ui/pending_wakes/pending_wake_view_model.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
+import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart'
+    show agentInstanceRoute;
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -36,35 +38,13 @@ class AgentPendingWakesPage extends ConsumerWidget {
     final asyncVms = ref.watch(agentPendingWakeRowVmsProvider);
     final ongoingAsync = ref.watch(ongoingWakeRecordsProvider);
 
-    // Build the adapted state directly from `valueOrNull` so the
-    // previous result survives a refresh. Going through `whenData`
-    // here would emit a fresh `AsyncLoading` with no preserved value,
-    // which makes the shell drop back to a spinner on every delete /
-    // refresh — that's the flicker we're avoiding.
-    final vms = asyncVms.value;
-    final adaptedData = vms == null ? null : _AdaptedRows.from(vms, messages);
-    final AsyncValue<_AdaptedRows> adapted;
-    if (adaptedData != null) {
-      adapted = AsyncValue.data(adaptedData);
-    } else if (asyncVms.hasError) {
-      adapted = AsyncValue.error(
-        asyncVms.error!,
-        asyncVms.stackTrace ?? StackTrace.current,
-      );
-    } else {
-      adapted = const AsyncValue.loading();
-    }
-    final AsyncValue<List<AgentListRowData>> rowsAsync;
-    if (adaptedData != null) {
-      rowsAsync = AsyncValue.data(adaptedData.rows);
-    } else if (asyncVms.hasError) {
-      rowsAsync = AsyncValue.error(
-        asyncVms.error!,
-        asyncVms.stackTrace ?? StackTrace.current,
-      );
-    } else {
-      rowsAsync = const AsyncValue.loading();
-    }
+    // `unwrapPrevious()` surfaces the most recent value during a
+    // refresh / delete so `whenData` doesn't drop the page back to a
+    // spinner while the new fetch is in flight.
+    final adapted = asyncVms.unwrapPrevious().whenData(
+      (vms) => _AdaptedRows.from(vms, messages),
+    );
+    final rowsAsync = adapted.whenData((a) => a.rows);
 
     final ongoing = ongoingAsync.value ?? const <OngoingWakeRecord>[];
 
@@ -89,11 +69,9 @@ class AgentPendingWakesPage extends ConsumerWidget {
   }
 }
 
-/// Surfaces the currently-running wake instances above the scheduled
-/// list so the user can see at-a-glance which agents are executing
-/// right now and how long they've been at it. The duration is driven
-/// by [wakeCountdownTickerProvider] so all rows share a single
-/// page-scoped 1Hz tick.
+/// Currently-running wakes pinned above the scheduled list. Each row's
+/// elapsed pill is driven by [wakeCountdownTickerProvider] so all rows
+/// share a single page-scoped 1Hz tick.
 class _RunningInstancesBlock extends ConsumerWidget {
   const _RunningInstancesBlock({required this.records});
 
@@ -162,20 +140,16 @@ class _RunningInstanceRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final accent = tokens.colors.alert.success.defaultColor;
-    // `select` keeps each running row independent of every other row's
-    // tick — the row only rebuilds when its own visible duration
-    // string would change.
     final elapsedLabel = ref.watch(
       wakeCountdownTickerProvider.select((async) {
         final now = async.value;
         if (now == null) return '…';
-        final duration = now.difference(record.startedAt);
-        return _formatRunningElapsed(duration);
+        return formatWakeElapsed(now.difference(record.startedAt));
       }),
     );
 
     return InkWell(
-      onTap: () => beamToNamed('/settings/agents/instances/${record.agentId}'),
+      onTap: () => beamToNamed(agentInstanceRoute(record.agentId)),
       borderRadius: BorderRadius.circular(tokens.radii.xs),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -220,26 +194,6 @@ class _RunningInstanceRow extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// Format `now - startedAt` for the running-instance pill on the Wake
-/// Cycles page. Mirrors the `formatWakeCountdown` shape so the two
-/// metrics read symmetrically across the page: under an hour the
-/// label is `MM:SS`, otherwise `HH:MM:SS`. Tabular figures at the
-/// call site keeps each segment width-stable as digits change.
-String _formatRunningElapsed(Duration elapsed) {
-  final totalSeconds = elapsed.inSeconds < 0 ? 0 : elapsed.inSeconds;
-  final clamped = totalSeconds > 99 * 3600 + 59 * 60 + 59
-      ? 99 * 3600 + 59 * 60 + 59
-      : totalSeconds;
-  final hours = clamped ~/ 3600;
-  final minutes = (clamped % 3600) ~/ 60;
-  final seconds = clamped % 60;
-  final mm = minutes.toString().padLeft(2, '0');
-  final ss = seconds.toString().padLeft(2, '0');
-  if (hours == 0) return '$mm:$ss';
-  final hh = hours.toString().padLeft(2, '0');
-  return '$hh:$mm:$ss';
 }
 
 /// Adapter output: row list + per-id hint with the typed wake fields so
@@ -300,7 +254,7 @@ AgentListRowData _vmToRow(PendingWakeVm vm, AppLocalizations messages) {
       type: vm.type,
       agentId: vm.agentId,
     ),
-    onTap: () => beamToNamed('/settings/agents/instances/${vm.agentId}'),
+    onTap: () => beamToNamed(agentInstanceRoute(vm.agentId)),
     sortAt: vm.dueAt,
     // Include the localized kind/type labels so users can search for
     // "Task Agent" or "Pending" as they appear in the row pills, not

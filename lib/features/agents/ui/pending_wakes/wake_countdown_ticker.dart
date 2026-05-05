@@ -40,11 +40,18 @@ final StreamProvider<DateTime> wakeCountdownTickerProvider =
 /// Returns `'00:00'` when overdue. Hours are clamped to two digits
 /// (anything ≥ 100h shows as `99:59:59`); the wake throttle window
 /// is much smaller than that in practice.
-String formatWakeCountdown(DateTime dueAt, DateTime now) {
-  final remaining = dueAt.difference(now);
-  if (remaining <= Duration.zero) return '00:00';
+String formatWakeCountdown(DateTime dueAt, DateTime now) =>
+    formatWakeElapsed(dueAt.difference(now));
 
-  final totalSeconds = remaining.inSeconds;
+/// Wall-clock duration formatted as `MM:SS` (or `HH:MM:SS` once the
+/// duration crosses one hour), shaped identically to
+/// [formatWakeCountdown] so the running-elapsed pill on the Wake
+/// Cycles page reads symmetrically with the imminent-wake countdown.
+/// Returns `'00:00'` for non-positive durations.
+String formatWakeElapsed(Duration d) {
+  if (d <= Duration.zero) return '00:00';
+
+  final totalSeconds = d.inSeconds;
   final clamped = totalSeconds > 99 * 3600 + 59 * 60 + 59
       ? 99 * 3600 + 59 * 60 + 59
       : totalSeconds;

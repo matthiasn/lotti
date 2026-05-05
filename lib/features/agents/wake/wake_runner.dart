@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:clock/clock.dart';
 
@@ -11,6 +12,8 @@ import 'package:clock/clock.dart';
 class WakeRunner {
   final _activeLocks = <String, Completer<void>>{};
   final _activeStartedAt = <String, DateTime>{};
+  late final UnmodifiableMapView<String, DateTime> _activeStartedAtView =
+      UnmodifiableMapView(_activeStartedAt);
   final _runningController = StreamController<Set<String>>.broadcast();
 
   /// Stream that emits the current set of active agent IDs whenever it changes.
@@ -61,11 +64,10 @@ class WakeRunner {
   /// values.
   DateTime? startedAt(String agentId) => _activeStartedAt[agentId];
 
-  /// Snapshot map of currently-running agent IDs to their wake start
-  /// timestamps. Useful for renderers that show "ongoing for HH:MM:SS"
-  /// without each row scheduling its own bookkeeping.
-  Map<String, DateTime> get activeStartedAtById =>
-      Map.unmodifiable(_activeStartedAt);
+  /// Live read-only view of agent IDs to their wake start timestamps.
+  /// Reflects subsequent acquire/release calls without allocating —
+  /// callers that need a frozen snapshot should copy the result.
+  Map<String, DateTime> get activeStartedAtById => _activeStartedAtView;
 
   /// Close the running-state stream controller.
   ///

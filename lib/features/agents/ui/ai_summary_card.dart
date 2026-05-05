@@ -183,11 +183,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final additionalReport = _resolveAdditionalReport(report);
 
     final isRunning = ref.watch(agentIsRunningProvider(agentId)).value ?? false;
-    // Prefer the template's display name (e.g. "Task Laura") over the
-    // generic agent kind label ("Task Agent") so the subtitle reads as
-    // the named persona the user picked. Falls back to the agent's
-    // own displayName until the template async resolves or if the
-    // agent has none assigned.
+    // Prefer the template displayName (e.g. "Task Laura") over the
+    // generic agent kind label so the subtitle reads as the named
+    // persona the user picked.
     final templateAsync = ref.watch(templateForAgentProvider(agentId));
     final templateEntity = templateAsync.value;
     final templateName = templateEntity is AgentTemplateEntity
@@ -233,10 +231,6 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         color: ai.background,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: ai.border),
-        // Just enough glow to lift the card off the page background;
-        // the previous (alpha 0.10, blur 24) bled noticeably outside
-        // the card outline. The border colour now drives the halo so
-        // it reads as a soft tinted edge rather than a wash.
         boxShadow: [
           BoxShadow(
             color: ai.accent.withValues(alpha: 0.10),
