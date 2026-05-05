@@ -325,30 +325,49 @@ void main() {
     );
 
     testWidgets(
-      'a route change after the bridge is unmounted is a no-op — covers '
-      'the post-frame `if (!mounted) return;` guard inside the deferred '
-      'callback',
+      'when a build-phase route change schedules a deferred callback and '
+      'the bridge unmounts before the next frame, the post-frame '
+      '`if (!mounted) return;` guard short-circuits the work without '
+      'mutating Riverpod state',
       (tester) async {
         final harness = await _pumpBridge(tester);
 
-        // Replace the bridge with an empty widget so its State is
-        // disposed before the next frame fires.
+        // 1) Trigger a route change from inside a build pass. The
+        // listener fires synchronously and (because we are in
+        // `persistentCallbacks`) defers a post-frame callback that
+        // would otherwise run `_runRouteSync` on the next frame.
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Material(
+              child: Column(
+                children: [
+                  SettingsTreeUrlSync(beamToReplacementNamed: harness.spy.call),
+                  Builder(
+                    builder: (_) {
+                      harness.nav.desktopSelectedSettingsRoute.value = _route(
+                        '/settings/sync',
+                      );
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // 2) Replace the bridge with an empty widget *before* the
+        // post-frame callback gets a chance to fire. The bridge's
+        // State is disposed, so when the deferred callback runs on
+        // the next frame the `mounted` check trips.
         await tester.pumpWidget(
           makeTestableWidgetNoScroll(const SizedBox.shrink()),
         );
-
-        // Mutate after unmount — the listener was already removed in
-        // `dispose`, so this is naturally a no-op. We still assert no
-        // exceptions surface (the deferred callback path is what we
-        // care about; the listener detach belt-and-suspenders covers
-        // the unmount race).
-        harness.nav.desktopSelectedSettingsRoute.value = _route(
-          '/settings/sync',
-        );
-        await tester.pump();
+        // Drain the pending post-frame callback.
         await tester.pump();
 
-        // No spy beams should have been emitted post-unmount.
+        // The deferred sync should have been short-circuited by the
+        // mounted-guard, so no beams were emitted.
         expect(harness.spy.uris, isEmpty);
       },
     );

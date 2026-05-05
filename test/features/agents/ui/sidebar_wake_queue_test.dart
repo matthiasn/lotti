@@ -599,16 +599,31 @@ void main() {
         find.byTooltip(element.messages.sidebarWakesCancelTooltip),
       );
       await tester.pump();
-      // The button has now swapped to a spinner — there is no tooltip
-      // target for the second tap. Tapping at the same location should
-      // hit the spinner SizedBox, which has no gesture detector, so the
-      // service is only called once.
-      completer.complete();
-      await tester.pumpAndSettle();
 
+      // Spinner is now showing; the tooltip target is gone because
+      // `_CancelWakeButton` has swapped its contents.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Issue a real second tap on the spinner's centre. The spinner
+      // SizedBox has no gesture detector, so the cancel service must
+      // not be invoked a second time. This actually exercises the
+      // early-return path that protects `_cancelWake` if the button
+      // ever regains hit-testability mid-flight (regression guard).
+      await tester.tapAt(
+        tester.getCenter(find.byType(CircularProgressIndicator)),
+      );
+      await tester.pump();
+
+      // Still in flight — service called exactly once so far.
       verify(
         () => agentService.clearScheduledWake('agent-double'),
       ).called(1);
+
+      completer.complete();
+      await tester.pumpAndSettle();
+
+      // No additional invocation after the in-flight call settles.
+      verifyNever(() => agentService.clearScheduledWake(any()));
     },
   );
 
