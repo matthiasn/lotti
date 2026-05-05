@@ -301,6 +301,7 @@ void main() {
               counter: 3,
               deleted: false,
               unresolvable: true,
+              payloadType: SyncSequencePayloadType.journalEntity,
             ),
           ),
         ).called(1);
