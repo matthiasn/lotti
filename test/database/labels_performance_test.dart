@@ -209,9 +209,13 @@ void main() {
       await db.updateJournalEntity(updated);
       stopwatch.stop();
 
+      // Threshold has enough headroom for CI runner contention (observed
+      // ~500ms on a shared GitHub Actions runner) while still catching an
+      // O(n²) regression — even a few hundred labels would dwarf 1s if the
+      // diff path collapsed back to a full rewrite.
       expect(
         stopwatch.elapsedMilliseconds,
-        lessThan(200),
+        lessThan(1000),
         reason: 'Diff-based reconciliation should be fast',
       );
 

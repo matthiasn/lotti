@@ -25,7 +25,7 @@ class AgentSoulsPage extends ConsumerWidget {
     final asyncVms = ref.watch(agentSoulRowVmsProvider);
 
     final rowsAsync = asyncVms.whenData(
-      (vms) => [for (final vm in vms) _vmToRow(vm, messages)],
+      (vms) => [for (final vm in vms) _vmToRow(vm)],
     );
 
     return AgentListingShell(
@@ -46,7 +46,7 @@ bool _noAxisMatch(
   AgentListRowData row,
 ) => true;
 
-AgentListRowData _vmToRow(SoulVm vm, AppLocalizations messages) {
+AgentListRowData _vmToRow(SoulVm vm) {
   return AgentListRowData(
     id: vm.id,
     title: vm.displayName,
@@ -68,9 +68,17 @@ List<AgentListGroupAxis> _buildGroupAxes(AppLocalizations messages) {
     AgentListGroupAxis(
       id: _groupNone,
       label: messages.agentTemplatesGroupNone,
+      // Reuse the axis label so the visible group header is the
+      // localized "All" rather than a literal.
       buildGroups: (rows) => rows.isEmpty
           ? const []
-          : [AgentListGroup(id: 'all', label: 'All', items: rows)],
+          : [
+              AgentListGroup(
+                id: 'all',
+                label: messages.agentTemplatesGroupNone,
+                items: rows,
+              ),
+            ],
     ),
   ];
 }

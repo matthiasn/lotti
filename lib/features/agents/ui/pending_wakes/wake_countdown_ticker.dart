@@ -30,8 +30,10 @@ final StreamProvider<DateTime> wakeCountdownTickerProvider =
       return controller.stream;
     });
 
-/// Format `dueAt - now` as a compact countdown — `1h 02m 05s`,
-/// `2m 5s`, or `5s`. Returns `'0s'` when overdue. Same shape the
+/// Format `dueAt - now` as a compact countdown — `1h 30m 7s`,
+/// `2m 5s`, or `5s` (digits are not zero-padded). The minute slot is
+/// forced when hours are present so the cell stays h-m-s aligned
+/// (e.g. `1h 0m 9s`). Returns `'0s'` when overdue. Same shape the
 /// legacy `_PendingWakeCard` rendered.
 String formatWakeCountdown(DateTime dueAt, DateTime now) {
   final remaining = dueAt.difference(now);

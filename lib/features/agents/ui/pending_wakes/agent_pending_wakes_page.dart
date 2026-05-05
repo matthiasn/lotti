@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_listing_shell.dart';
+import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart'
+    show monoMetaStyle;
 import 'package:lotti/features/agents/ui/pending_wakes/pending_wake_view_model.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/wake_countdown_ticker.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -109,8 +111,14 @@ AgentListRowData _vmToRow(PendingWakeVm vm, AppLocalizations messages) {
     ),
     onTap: () => beamToNamed('/settings/agents/instances/${vm.agentId}'),
     sortAt: vm.dueAt,
-    searchKey: '${vm.title} ${vm.subtitle ?? ''} ${vm.agentId} ${vm.kind}'
-        .toLowerCase(),
+    // Include the localized kind/type labels so users can search for
+    // "Task Agent" or "Pending" as they appear in the row pills, not
+    // just the raw enum / `AgentKinds` constants.
+    searchKey:
+        '${vm.title} ${vm.subtitle ?? ''} ${vm.agentId} ${vm.kind} '
+                '${pendingWakeKindLabel(messages, vm.kind)} '
+                '${pendingWakeTypeLabel(messages, vm.type)}'
+            .toLowerCase(),
   );
 }
 
@@ -204,10 +212,13 @@ class _PendingWakeTrailingState extends ConsumerState<_PendingWakeTrailing> {
             ),
             child: Text(
               countdown,
-              style: tokens.typography.styles.others.caption.copyWith(
-                fontFamily: 'Inconsolata',
+              // Build on the shared mono cell so the countdown chip
+              // matches the row's other mono cells (id, time). Override
+              // colour + tabular figures so digits don't jiggle as they
+              // tick. A proper mono token in the design system would
+              // remove the local font family override; tracked separately.
+              style: monoMetaStyle(tokens, colors).copyWith(
                 color: colors.text.highEmphasis,
-                letterSpacing: 0,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -285,9 +296,17 @@ List<AgentListGroupAxis> _buildGroupAxes(
     AgentListGroupAxis(
       id: _groupNone,
       label: messages.agentTemplatesGroupNone,
+      // Group header is shown above the rows; reuse the axis label so
+      // the visible string is the localized "All" rather than a literal.
       buildGroups: (rows) => rows.isEmpty
           ? const []
-          : [AgentListGroup(id: 'all', label: 'All', items: rows)],
+          : [
+              AgentListGroup(
+                id: 'all',
+                label: messages.agentTemplatesGroupNone,
+                items: rows,
+              ),
+            ],
     ),
     AgentListGroupAxis(
       id: _groupByType,
