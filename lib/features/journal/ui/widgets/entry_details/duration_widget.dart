@@ -208,7 +208,10 @@ class FormattedTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = monoTabularStyle(fontSize: fontSizeMedium, color: labelColor);
+    final style = tabularFigureStyle(
+      fontSize: fontSizeMedium,
+      color: labelColor,
+    );
     final text = formatDuration(entryDuration(displayed));
     return Text(text, style: style);
   }

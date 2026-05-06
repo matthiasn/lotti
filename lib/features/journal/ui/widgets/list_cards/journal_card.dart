@@ -123,7 +123,7 @@ class ModernJournalCard extends StatelessWidget {
                 children: [
                   Text(
                     _formatDate(),
-                    style: monoTabularStyle(
+                    style: tabularFigureStyle(
                       fontSize: fontSizeMedium,
                       color: context.colorScheme.outline,
                     ),

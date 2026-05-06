@@ -21,7 +21,7 @@ class EntryTextWidget extends StatelessWidget {
         text,
         maxLines: maxLines,
         softWrap: true,
-        style: monoTabularStyle(
+        style: tabularFigureStyle(
           fontSize: fontSizeMedium,
           fontWeight: FontWeight.w300,
         ),

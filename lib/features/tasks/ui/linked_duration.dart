@@ -27,7 +27,7 @@ class LinkedDuration extends ConsumerWidget {
     final progress = state.progress;
     final estimate = state.estimate;
 
-    final durationStyle = monoTabularStyle(
+    final durationStyle = tabularFigureStyle(
       fontSize: fontSizeSmall,
       color: (progress > estimate)
           ? context.colorScheme.error
