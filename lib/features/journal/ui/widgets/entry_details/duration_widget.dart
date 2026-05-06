@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
@@ -208,10 +209,11 @@ class FormattedTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = tabularFigureStyle(
-      fontSize: fontSizeMedium,
-      color: labelColor,
-    );
+    final style = context.designTokens.typography.styles.body.bodySmall
+        .copyWith(
+          color: labelColor,
+          fontFeatures: numericBadgeFontFeatures,
+        );
     final text = formatDuration(entryDuration(displayed));
     return Text(text, style: style);
   }

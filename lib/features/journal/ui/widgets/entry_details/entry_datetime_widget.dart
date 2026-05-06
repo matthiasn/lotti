@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -28,17 +29,11 @@ class EntryDatetimeWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final base = context.textTheme.titleSmall;
-    final style = base != null
-        ? base.copyWith(
-            color: context.colorScheme.outline,
-            fontSize: AppTheme.statusIndicatorFontSize,
-            fontFeatures: numericBadgeFontFeatures,
-          )
-        : tabularFigureStyle(
-            fontSize: AppTheme.statusIndicatorFontSize,
-            color: context.colorScheme.outline,
-          );
+    final style = context.designTokens.typography.styles.others.caption
+        .copyWith(
+          color: context.colorScheme.outline,
+          fontFeatures: numericBadgeFontFeatures,
+        );
 
     return GestureDetector(
       onTap: () =>

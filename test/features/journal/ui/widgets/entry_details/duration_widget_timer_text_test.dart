@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -24,6 +26,7 @@ void main() {
     Future<double> pumpAndMeasure(Duration d) async {
       await tester.pumpWidget(
         MaterialApp(
+          theme: resolveTestTheme(),
           home: Scaffold(
             body: Center(
               child: FormattedTime(
