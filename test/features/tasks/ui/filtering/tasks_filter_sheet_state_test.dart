@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' show AnyUtils, Glados, any;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -13,6 +14,18 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('TasksFilterSortIds', () {
+    Glados(any.choose(TaskSortOption.values)).test(
+      'round-trips every TaskSortOption',
+      (option) {
+        expect(
+          TasksFilterSortIds.toSortOption(
+            TasksFilterSortIds.fromSortOption(option),
+          ),
+          option,
+        );
+      },
+    );
+
     test('maps TaskSortOption to string IDs', () {
       expect(
         TasksFilterSortIds.fromSortOption(TaskSortOption.byDueDate),
@@ -49,6 +62,16 @@ void main() {
   });
 
   group('TasksFilterAgentIds', () {
+    Glados(any.choose(AgentAssignmentFilter.values)).test(
+      'round-trips every AgentAssignmentFilter',
+      (filter) {
+        expect(
+          TasksFilterAgentIds.toFilter(TasksFilterAgentIds.fromFilter(filter)),
+          filter,
+        );
+      },
+    );
+
     test('maps AgentAssignmentFilter to string IDs', () {
       expect(TasksFilterAgentIds.fromFilter(AgentAssignmentFilter.all), 'all');
       expect(
@@ -82,6 +105,18 @@ void main() {
   });
 
   group('TasksFilterSearchModeIds', () {
+    Glados(any.choose(SearchMode.values)).test(
+      'round-trips every SearchMode',
+      (mode) {
+        expect(
+          TasksFilterSearchModeIds.toMode(
+            TasksFilterSearchModeIds.fromMode(mode),
+          ),
+          mode,
+        );
+      },
+    );
+
     test('maps SearchMode to string IDs', () {
       expect(
         TasksFilterSearchModeIds.fromMode(SearchMode.fullText),
@@ -110,6 +145,18 @@ void main() {
   });
 
   group('TasksFilterPriorityIds', () {
+    Glados(any.choose(['P0', 'P1', 'P2', 'P3'])).test(
+      'round-trips every valid priority ID',
+      (internalId) {
+        expect(
+          TasksFilterPriorityIds.toInternalId(
+            TasksFilterPriorityIds.toDisplayId(internalId)!,
+          ),
+          internalId,
+        );
+      },
+    );
+
     test('maps internal priority to display ID', () {
       // Internal ids are the short codes stored in the `task_priority`
       // column (`P0`..`P3`), not the legacy `CRITICAL`/`HIGH`/`MEDIUM`/`LOW`

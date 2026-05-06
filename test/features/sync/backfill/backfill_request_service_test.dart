@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -25,6 +26,126 @@ class MockSyncDatabase extends Mock implements SyncDatabase {}
 class _MockQueuePipelineCoordinator extends Mock
     implements QueuePipelineCoordinator {}
 
+class _GeneratedBackfillCandidate {
+  const _GeneratedBackfillCandidate({
+    required this.useAliceHost,
+    required this.alreadyQueued,
+  });
+
+  final bool useAliceHost;
+  final bool alreadyQueued;
+
+  String hostId({
+    required String aliceHostId,
+    required String bobHostId,
+  }) {
+    return useAliceHost ? aliceHostId : bobHostId;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedBackfillCandidate('
+        'useAliceHost: $useAliceHost, '
+        'alreadyQueued: $alreadyQueued'
+        ')';
+  }
+}
+
+class _BackfillSelectionScenario {
+  const _BackfillSelectionScenario({
+    required this.maxBatchSize,
+    required this.candidates,
+  });
+
+  final int maxBatchSize;
+  final List<_GeneratedBackfillCandidate> candidates;
+
+  List<SyncSequenceLogItem> missingItems({
+    required String aliceHostId,
+    required String bobHostId,
+  }) {
+    return [
+      for (var index = 0; index < candidates.length; index++)
+        _createMissingLogItem(
+          candidates[index].hostId(
+            aliceHostId: aliceHostId,
+            bobHostId: bobHostId,
+          ),
+          index + 1,
+        ),
+    ];
+  }
+
+  Set<({String hostId, int counter})> queuedEntries({
+    required String aliceHostId,
+    required String bobHostId,
+  }) {
+    return {
+      for (var index = 0; index < candidates.length; index++)
+        if (candidates[index].alreadyQueued)
+          (
+            hostId: candidates[index].hostId(
+              aliceHostId: aliceHostId,
+              bobHostId: bobHostId,
+            ),
+            counter: index + 1,
+          ),
+    };
+  }
+
+  List<({String hostId, int counter})> expectedRequested({
+    required String aliceHostId,
+    required String bobHostId,
+  }) {
+    return [
+      for (var index = 0; index < candidates.length; index++)
+        if (!candidates[index].alreadyQueued)
+          (
+            hostId: candidates[index].hostId(
+              aliceHostId: aliceHostId,
+              bobHostId: bobHostId,
+            ),
+            counter: index + 1,
+          ),
+    ].take(maxBatchSize).toList();
+  }
+
+  @override
+  String toString() {
+    return '_BackfillSelectionScenario('
+        'maxBatchSize: $maxBatchSize, '
+        'candidates: $candidates'
+        ')';
+  }
+}
+
+extension _AnyBackfillSelectionScenario on glados.Any {
+  glados.Generator<_GeneratedBackfillCandidate>
+  get generatedBackfillCandidate => glados.CombinableAny(this).combine2(
+    glados.BoolAny(this).bool,
+    glados.BoolAny(this).bool,
+    (bool useAliceHost, bool alreadyQueued) => _GeneratedBackfillCandidate(
+      useAliceHost: useAliceHost,
+      alreadyQueued: alreadyQueued,
+    ),
+  );
+
+  glados.Generator<_BackfillSelectionScenario> get backfillSelectionScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(1, 7),
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(1, 15, generatedBackfillCandidate),
+        (
+          int maxBatchSize,
+          List<_GeneratedBackfillCandidate> candidates,
+        ) => _BackfillSelectionScenario(
+          maxBatchSize: maxBatchSize,
+          candidates: candidates,
+        ),
+      );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -36,6 +157,7 @@ void main() {
 
   const myHostId = 'my-host-uuid';
   const aliceHostId = 'alice-host-uuid';
+  const bobHostId = 'bob-host-uuid';
 
   setUpAll(() {
     registerFallbackValue(
@@ -383,6 +505,95 @@ void main() {
         service.dispose();
       });
     });
+
+    glados.Glados(
+      _AnyBackfillSelectionScenario(glados.any).backfillSelectionScenario,
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'manual full backfill requests the generated first unqueued batch',
+      (scenario) async {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          maxBatchSize: scenario.maxBatchSize,
+        );
+
+        final missingItems = scenario.missingItems(
+          aliceHostId: aliceHostId,
+          bobHostId: bobHostId,
+        );
+        final expected = scenario.expectedRequested(
+          aliceHostId: aliceHostId,
+          bobHostId: bobHostId,
+        );
+        final enqueuedRequests = <SyncBackfillRequest>[];
+        final markedRequested = <List<({String hostId, int counter})>>[];
+
+        when(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((invocation) async {
+          final limit = invocation.namedArguments[#limit] as int;
+          final offset = invocation.namedArguments[#offset] as int;
+          return missingItems.skip(offset).take(limit).toList();
+        });
+        when(() => mockSyncDatabase.getPendingBackfillEntries()).thenAnswer(
+          (_) async => scenario.queuedEntries(
+            aliceHostId: aliceHostId,
+            bobHostId: bobHostId,
+          ),
+        );
+        when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+          invocation,
+        ) async {
+          enqueuedRequests.add(
+            invocation.positionalArguments.single as SyncBackfillRequest,
+          );
+        });
+        when(() => mockSequenceService.markAsRequested(any())).thenAnswer((
+          invocation,
+        ) async {
+          markedRequested.add(
+            (invocation.positionalArguments.single
+                    as List<({String hostId, int counter})>)
+                .toList(),
+          );
+        });
+
+        try {
+          final processed = await service.processFullBackfill();
+
+          expect(processed, expected.length);
+          if (expected.isEmpty) {
+            expect(enqueuedRequests, isEmpty);
+            expect(markedRequested, isEmpty);
+          } else {
+            expect(enqueuedRequests, hasLength(1));
+            expect(enqueuedRequests.single.requesterId, myHostId);
+            expect(
+              enqueuedRequests.single.entries
+                  .map(
+                    (entry) => (
+                      hostId: entry.hostId,
+                      counter: entry.counter,
+                    ),
+                  )
+                  .toList(),
+              expected,
+            );
+            expect(markedRequested, [expected]);
+          }
+        } finally {
+          service.dispose();
+        }
+      },
+    );
 
     test('nudge sends backfill requests immediately', () {
       fakeAsync((async) {

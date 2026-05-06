@@ -2,6 +2,7 @@
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -14,6 +15,854 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+enum _GeneratedCounterState {
+  absent,
+  received,
+  missing,
+  requested,
+  backfilled,
+  deleted,
+  unresolvable,
+}
+
+class _SequenceGapScenario {
+  const _SequenceGapScenario({
+    required this.observedCounter,
+    required this.counterStates,
+  });
+
+  final int observedCounter;
+  final List<_GeneratedCounterState> counterStates;
+
+  int? lastResolvedPrefix() {
+    if (!counterStates.any((state) => state.isStored)) return null;
+
+    var prefix = 0;
+    for (final state in counterStates) {
+      if (!state.isResolvedWatermark) break;
+      prefix++;
+    }
+    return prefix;
+  }
+
+  List<({String hostId, int counter})> expectedGaps(String hostId) {
+    final baseline = lastResolvedPrefix() ?? 0;
+    return [
+      for (var counter = baseline + 1; counter < observedCounter; counter++)
+        if (!stateAt(counter).isResolvedWatermark)
+          (hostId: hostId, counter: counter),
+    ];
+  }
+
+  bool insertsNewMissingCounter(int counter) {
+    final baseline = lastResolvedPrefix() ?? 0;
+    return counter > baseline &&
+        counter < observedCounter &&
+        stateAt(counter) == _GeneratedCounterState.absent;
+  }
+
+  _GeneratedCounterState stateAt(int counter) {
+    final index = counter - 1;
+    if (index < 0 || index >= counterStates.length) {
+      return _GeneratedCounterState.absent;
+    }
+    return counterStates[index];
+  }
+
+  SyncSequenceStatus expectedObservedStatus() {
+    final current = stateAt(observedCounter);
+    return switch (current) {
+      _GeneratedCounterState.received => SyncSequenceStatus.received,
+      _GeneratedCounterState.backfilled => SyncSequenceStatus.backfilled,
+      _GeneratedCounterState.requested => SyncSequenceStatus.backfilled,
+      _ => SyncSequenceStatus.received,
+    };
+  }
+
+  SyncSequenceStatus? expectedStatusAfterReceive(int counter) {
+    if (counter == observedCounter) return expectedObservedStatus();
+    if (insertsNewMissingCounter(counter)) return SyncSequenceStatus.missing;
+
+    final current = stateAt(counter);
+    if (current == _GeneratedCounterState.absent) return null;
+    return current.syncStatus;
+  }
+
+  int expectedLastResolvedPrefixAfterReceive() {
+    var prefix = 0;
+    final maxCounter = observedCounter > counterStates.length
+        ? observedCounter
+        : counterStates.length;
+    for (var counter = 1; counter <= maxCounter; counter++) {
+      final status = expectedStatusAfterReceive(counter);
+      if (status == null || !status.isResolvedWatermark) break;
+      prefix++;
+    }
+    return prefix;
+  }
+
+  @override
+  String toString() {
+    return '_SequenceGapScenario('
+        'observedCounter: $observedCounter, '
+        'counterStates: $counterStates'
+        ')';
+  }
+}
+
+class _CoveredClockGapScenario {
+  const _CoveredClockGapScenario({
+    required this.observedCounter,
+    required this.coveredFlags,
+  });
+
+  final int observedCounter;
+  final List<bool> coveredFlags;
+
+  Set<int> get coveredCounters => {
+    for (var i = 0; i < coveredFlags.length; i++)
+      if (coveredFlags[i]) i + 1,
+  };
+
+  int get coveredResolvedPrefix {
+    final covered = coveredCounters;
+    var prefix = 0;
+    while (covered.contains(prefix + 1)) {
+      prefix++;
+    }
+    return prefix;
+  }
+
+  List<({String hostId, int counter})> expectedGaps(String hostId) {
+    return [
+      for (
+        var counter = coveredResolvedPrefix + 1;
+        counter < observedCounter;
+        counter++
+      )
+        if (!coveredCounters.contains(counter))
+          (hostId: hostId, counter: counter),
+    ];
+  }
+
+  bool insertsNewMissingCounter(int counter) {
+    return counter > coveredResolvedPrefix &&
+        counter < observedCounter &&
+        !coveredCounters.contains(counter);
+  }
+
+  SyncSequenceStatus? expectedStatusAfterReceive(int counter) {
+    if (counter == observedCounter) return SyncSequenceStatus.received;
+    if (coveredCounters.contains(counter)) return SyncSequenceStatus.received;
+    if (insertsNewMissingCounter(counter)) return SyncSequenceStatus.missing;
+    return null;
+  }
+
+  int expectedLastResolvedPrefixAfterReceive() {
+    var prefix = 0;
+    final coveredMax = coveredCounters.isEmpty
+        ? 0
+        : coveredCounters.reduce((a, b) => a > b ? a : b);
+    final maxCounter = observedCounter > coveredMax
+        ? observedCounter
+        : coveredMax;
+    for (var counter = 1; counter <= maxCounter; counter++) {
+      final status = expectedStatusAfterReceive(counter);
+      if (status == null || !status.isResolvedWatermark) break;
+      prefix++;
+    }
+    return prefix;
+  }
+
+  @override
+  String toString() {
+    return '_CoveredClockGapScenario('
+        'observedCounter: $observedCounter, '
+        'coveredFlags: $coveredFlags'
+        ')';
+  }
+}
+
+class _GeneratedHostClock {
+  const _GeneratedHostClock({
+    required this.included,
+    required this.knownOnline,
+    required this.resolvedPrefix,
+    required this.observedCounter,
+  });
+
+  final bool included;
+  final bool knownOnline;
+  final int resolvedPrefix;
+  final int observedCounter;
+
+  @override
+  String toString() {
+    return '_GeneratedHostClock('
+        'included: $included, '
+        'knownOnline: $knownOnline, '
+        'resolvedPrefix: $resolvedPrefix, '
+        'observedCounter: $observedCounter'
+        ')';
+  }
+}
+
+class _MultiHostGapScenario {
+  const _MultiHostGapScenario({
+    required this.originatorResolvedPrefix,
+    required this.originatorObservedCounter,
+    required this.bob,
+    required this.charlie,
+    required this.ownHost,
+  });
+
+  final int originatorResolvedPrefix;
+  final int originatorObservedCounter;
+  final _GeneratedHostClock bob;
+  final _GeneratedHostClock charlie;
+  final _GeneratedHostClock ownHost;
+
+  Map<String, int> vectorClock({
+    required String myHostId,
+    required String aliceHostId,
+    required String bobHostId,
+    required String charlieHostId,
+  }) {
+    return {
+      aliceHostId: originatorObservedCounter,
+      if (bob.included) bobHostId: bob.observedCounter,
+      if (charlie.included) charlieHostId: charlie.observedCounter,
+      if (ownHost.included) myHostId: ownHost.observedCounter,
+    };
+  }
+
+  List<({String hostId, int counter})> expectedGaps({
+    required String aliceHostId,
+    required String bobHostId,
+    required String charlieHostId,
+  }) {
+    return [
+      ..._expectedHostGaps(
+        hostId: aliceHostId,
+        resolvedPrefix: originatorResolvedPrefix,
+        observedCounter: originatorObservedCounter,
+        shouldDetectGaps: true,
+      ),
+      if (bob.included)
+        ..._expectedHostGaps(
+          hostId: bobHostId,
+          resolvedPrefix: bob.resolvedPrefix,
+          observedCounter: bob.observedCounter,
+          shouldDetectGaps: bob.knownOnline,
+        ),
+      if (charlie.included)
+        ..._expectedHostGaps(
+          hostId: charlieHostId,
+          resolvedPrefix: charlie.resolvedPrefix,
+          observedCounter: charlie.observedCounter,
+          shouldDetectGaps: charlie.knownOnline,
+        ),
+    ];
+  }
+
+  bool get insertsNewMissing =>
+      originatorObservedCounter > originatorResolvedPrefix + 1 ||
+      (bob.included &&
+          bob.knownOnline &&
+          bob.observedCounter > bob.resolvedPrefix + 1) ||
+      (charlie.included &&
+          charlie.knownOnline &&
+          charlie.observedCounter > charlie.resolvedPrefix + 1);
+
+  int? expectedResolvedPrefixAfterReceive({
+    required String hostId,
+    required String aliceHostId,
+    required String bobHostId,
+    required String charlieHostId,
+    required String myHostId,
+  }) {
+    if (hostId == aliceHostId) {
+      return _expectedPrefixAfterObserved(
+        resolvedPrefix: originatorResolvedPrefix,
+        observedCounter: originatorObservedCounter,
+        observedRecorded: true,
+      );
+    }
+    if (hostId == bobHostId) {
+      return _expectedPrefixAfterObserved(
+        resolvedPrefix: bob.resolvedPrefix,
+        observedCounter: bob.observedCounter,
+        observedRecorded: bob.included,
+      );
+    }
+    if (hostId == charlieHostId) {
+      return _expectedPrefixAfterObserved(
+        resolvedPrefix: charlie.resolvedPrefix,
+        observedCounter: charlie.observedCounter,
+        observedRecorded: charlie.included,
+      );
+    }
+    if (hostId == myHostId) {
+      return _expectedPrefixAfterObserved(
+        resolvedPrefix: ownHost.resolvedPrefix,
+        observedCounter: ownHost.observedCounter,
+        observedRecorded: false,
+      );
+    }
+    throw ArgumentError.value(hostId, 'hostId');
+  }
+
+  @override
+  String toString() {
+    return '_MultiHostGapScenario('
+        'originatorResolvedPrefix: $originatorResolvedPrefix, '
+        'originatorObservedCounter: $originatorObservedCounter, '
+        'bob: $bob, '
+        'charlie: $charlie, '
+        'ownHost: $ownHost'
+        ')';
+  }
+}
+
+enum _BackfillResponseKind { deleted, unresolvable, hint }
+
+class _BackfillResponseStateScenario {
+  const _BackfillResponseStateScenario({
+    required this.existingState,
+    required this.responseKind,
+    required this.existingPayloadType,
+    required this.responsePayloadType,
+  });
+
+  static const existingEntryId = 'existing-response-entry';
+  static const hintEntryId = 'hint-response-entry';
+
+  final _GeneratedCounterState existingState;
+  final _BackfillResponseKind responseKind;
+  final SyncSequencePayloadType existingPayloadType;
+  final SyncSequencePayloadType responsePayloadType;
+
+  bool get hasExistingEntry => existingState.isStored;
+
+  SyncSequenceStatus? get expectedStatus {
+    return switch (responseKind) {
+      _BackfillResponseKind.deleted => switch (existingState) {
+        _GeneratedCounterState.absent => null,
+        _GeneratedCounterState.received => SyncSequenceStatus.received,
+        _GeneratedCounterState.backfilled => SyncSequenceStatus.backfilled,
+        _ => SyncSequenceStatus.deleted,
+      },
+      _BackfillResponseKind.unresolvable => switch (existingState) {
+        _GeneratedCounterState.absent => SyncSequenceStatus.unresolvable,
+        _GeneratedCounterState.received => SyncSequenceStatus.received,
+        _GeneratedCounterState.backfilled => SyncSequenceStatus.backfilled,
+        _GeneratedCounterState.deleted => SyncSequenceStatus.deleted,
+        _ => SyncSequenceStatus.unresolvable,
+      },
+      _BackfillResponseKind.hint => switch (existingState) {
+        _GeneratedCounterState.absent => SyncSequenceStatus.requested,
+        _GeneratedCounterState.received => SyncSequenceStatus.received,
+        _GeneratedCounterState.backfilled => SyncSequenceStatus.backfilled,
+        _GeneratedCounterState.deleted => SyncSequenceStatus.deleted,
+        _GeneratedCounterState.unresolvable => SyncSequenceStatus.requested,
+        _ => existingState.syncStatus,
+      },
+    };
+  }
+
+  String? get expectedEntryId {
+    return switch (responseKind) {
+      _BackfillResponseKind.deleted =>
+        hasExistingEntry ? existingEntryId : null,
+      _BackfillResponseKind.unresolvable => switch (existingState) {
+        _GeneratedCounterState.absent => null,
+        _GeneratedCounterState.received => existingEntryId,
+        _GeneratedCounterState.backfilled => existingEntryId,
+        _GeneratedCounterState.deleted => existingEntryId,
+        _ => null,
+      },
+      _BackfillResponseKind.hint => switch (existingState) {
+        _GeneratedCounterState.absent => hintEntryId,
+        _GeneratedCounterState.received => existingEntryId,
+        _GeneratedCounterState.backfilled => existingEntryId,
+        _GeneratedCounterState.deleted => existingEntryId,
+        _ => hintEntryId,
+      },
+    };
+  }
+
+  SyncSequencePayloadType? get expectedPayloadType {
+    if (expectedStatus == null) {
+      return null;
+    }
+
+    return switch (responseKind) {
+      _BackfillResponseKind.deleted => existingPayloadType,
+      _BackfillResponseKind.unresolvable => switch (existingState) {
+        _GeneratedCounterState.received ||
+        _GeneratedCounterState.backfilled ||
+        _GeneratedCounterState.deleted => existingPayloadType,
+        _ => responsePayloadType,
+      },
+      _BackfillResponseKind.hint => switch (existingState) {
+        _GeneratedCounterState.received ||
+        _GeneratedCounterState.backfilled ||
+        _GeneratedCounterState.deleted => existingPayloadType,
+        _ => responsePayloadType,
+      },
+    };
+  }
+
+  @override
+  String toString() {
+    return '_BackfillResponseStateScenario('
+        'existingState: $existingState, '
+        'responseKind: $responseKind, '
+        'existingPayloadType: $existingPayloadType, '
+        'responsePayloadType: $responsePayloadType'
+        ')';
+  }
+}
+
+class _StatefulSequenceEvent {
+  const _StatefulSequenceEvent({
+    required this.observedCounter,
+    required this.coveredFlags,
+    required this.requestMissingAfter,
+  });
+
+  final int observedCounter;
+  final List<bool> coveredFlags;
+  final bool requestMissingAfter;
+
+  Set<int> get coveredCounters => {
+    for (var i = 0; i < coveredFlags.length; i++)
+      if (coveredFlags[i]) i + 1,
+  };
+
+  int get maxCounter {
+    final maxCovered = coveredCounters.isEmpty
+        ? 0
+        : coveredCounters.reduce((a, b) => a > b ? a : b);
+    return observedCounter > maxCovered ? observedCounter : maxCovered;
+  }
+
+  @override
+  String toString() {
+    return '_StatefulSequenceEvent('
+        'observedCounter: $observedCounter, '
+        'coveredFlags: $coveredFlags, '
+        'requestMissingAfter: $requestMissingAfter'
+        ')';
+  }
+}
+
+class _StatefulSequenceScenario {
+  const _StatefulSequenceScenario({
+    required this.deferMissingCallback,
+    required this.events,
+  });
+
+  final bool deferMissingCallback;
+  final List<_StatefulSequenceEvent> events;
+
+  @override
+  String toString() {
+    return '_StatefulSequenceScenario('
+        'deferMissingCallback: $deferMissingCallback, '
+        'events: $events'
+        ')';
+  }
+}
+
+class _StatefulSequenceApplyResult {
+  const _StatefulSequenceApplyResult({
+    required this.gaps,
+    required this.insertedNewMissing,
+    required this.requestedAfter,
+  });
+
+  final List<({String hostId, int counter})> gaps;
+  final bool insertedNewMissing;
+  final List<({String hostId, int counter})> requestedAfter;
+}
+
+class _StatefulSequenceModel {
+  _StatefulSequenceModel({required this.hostId});
+
+  final String hostId;
+  final Map<int, SyncSequenceStatus> _statuses = {};
+
+  _StatefulSequenceApplyResult apply(_StatefulSequenceEvent event) {
+    for (final counter in event.coveredCounters) {
+      if (counter == event.observedCounter) continue;
+      final existing = _statuses[counter];
+      if (existing == null ||
+          existing == SyncSequenceStatus.missing ||
+          existing == SyncSequenceStatus.requested) {
+        _statuses[counter] = SyncSequenceStatus.received;
+      }
+    }
+
+    final baseline = lastResolvedPrefix() ?? 0;
+    final gapCandidates = _expectedHostGaps(
+      hostId: hostId,
+      resolvedPrefix: baseline,
+      observedCounter: event.observedCounter,
+      shouldDetectGaps: true,
+    );
+    final gaps = <({String hostId, int counter})>[];
+    var insertedNewMissing = false;
+    for (final gap in gapCandidates) {
+      final existingStatus = _statuses[gap.counter];
+      if (existingStatus == null) {
+        gaps.add(gap);
+        _statuses[gap.counter] = SyncSequenceStatus.missing;
+        insertedNewMissing = true;
+      } else if (!existingStatus.isResolvedWatermark) {
+        gaps.add(gap);
+      }
+    }
+
+    final observedStatus = _statuses[event.observedCounter];
+    if (observedStatus == SyncSequenceStatus.requested) {
+      _statuses[event.observedCounter] = SyncSequenceStatus.backfilled;
+    } else if (observedStatus != SyncSequenceStatus.received &&
+        observedStatus != SyncSequenceStatus.backfilled) {
+      _statuses[event.observedCounter] = SyncSequenceStatus.received;
+    }
+
+    final requestedAfter = <({String hostId, int counter})>[];
+    if (event.requestMissingAfter) {
+      for (final entry in _statuses.entries) {
+        if (entry.value == SyncSequenceStatus.missing) {
+          requestedAfter.add((hostId: hostId, counter: entry.key));
+        }
+      }
+      for (final requested in requestedAfter) {
+        _statuses[requested.counter] = SyncSequenceStatus.requested;
+      }
+    }
+
+    return _StatefulSequenceApplyResult(
+      gaps: gaps,
+      insertedNewMissing: insertedNewMissing,
+      requestedAfter: requestedAfter,
+    );
+  }
+
+  SyncSequenceStatus? statusAt(int counter) => _statuses[counter];
+
+  int? lastResolvedPrefix() {
+    if (_statuses.isEmpty) return null;
+
+    var prefix = 0;
+    while (_statuses[prefix + 1]?.isResolvedWatermark ?? false) {
+      prefix++;
+    }
+    return prefix;
+  }
+
+  int get maxCounter =>
+      _statuses.keys.fold(0, (max, key) => key > max ? key : max);
+}
+
+extension _GeneratedCounterStateX on _GeneratedCounterState {
+  bool get isStored => this != _GeneratedCounterState.absent;
+
+  bool get isResolvedWatermark =>
+      this == _GeneratedCounterState.received ||
+      this == _GeneratedCounterState.backfilled ||
+      this == _GeneratedCounterState.deleted ||
+      this == _GeneratedCounterState.unresolvable;
+
+  SyncSequenceStatus get syncStatus {
+    return switch (this) {
+      _GeneratedCounterState.received => SyncSequenceStatus.received,
+      _GeneratedCounterState.missing => SyncSequenceStatus.missing,
+      _GeneratedCounterState.requested => SyncSequenceStatus.requested,
+      _GeneratedCounterState.backfilled => SyncSequenceStatus.backfilled,
+      _GeneratedCounterState.deleted => SyncSequenceStatus.deleted,
+      _GeneratedCounterState.unresolvable => SyncSequenceStatus.unresolvable,
+      _GeneratedCounterState.absent => throw StateError(
+        'Absent generated counters do not have a sync status',
+      ),
+    };
+  }
+}
+
+extension _SyncSequenceStatusX on SyncSequenceStatus {
+  bool get isResolvedWatermark =>
+      this == SyncSequenceStatus.received ||
+      this == SyncSequenceStatus.backfilled ||
+      this == SyncSequenceStatus.deleted ||
+      this == SyncSequenceStatus.unresolvable;
+}
+
+extension _AnySequenceGapScenario on glados.Any {
+  glados.Generator<_GeneratedCounterState> get generatedCounterState =>
+      glados.AnyUtils(this).choose(_GeneratedCounterState.values);
+
+  glados.Generator<_BackfillResponseKind> get backfillResponseKind =>
+      glados.AnyUtils(this).choose(_BackfillResponseKind.values);
+
+  glados.Generator<SyncSequencePayloadType> get generatedPayloadType =>
+      glados.AnyUtils(this).choose(SyncSequencePayloadType.values);
+
+  glados.Generator<_BackfillResponseStateScenario>
+  get backfillResponseStateScenario => glados.CombinableAny(this).combine4(
+    generatedCounterState,
+    backfillResponseKind,
+    generatedPayloadType,
+    generatedPayloadType,
+    (
+      _GeneratedCounterState existingState,
+      _BackfillResponseKind responseKind,
+      SyncSequencePayloadType existingPayloadType,
+      SyncSequencePayloadType responsePayloadType,
+    ) => _BackfillResponseStateScenario(
+      existingState: existingState,
+      responseKind: responseKind,
+      existingPayloadType: existingPayloadType,
+      responsePayloadType: responsePayloadType,
+    ),
+  );
+
+  glados.Generator<_SequenceGapScenario> get sequenceGapScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(1, 13),
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(8, 9, generatedCounterState),
+        (int observedCounter, List<_GeneratedCounterState> counterStates) =>
+            _SequenceGapScenario(
+              observedCounter: observedCounter,
+              counterStates: counterStates,
+            ),
+      );
+
+  glados.Generator<_CoveredClockGapScenario> get coveredClockGapScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(1, 13),
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(8, 9, glados.BoolAny(this).bool),
+        (int observedCounter, List<bool> coveredFlags) =>
+            _CoveredClockGapScenario(
+              observedCounter: observedCounter,
+              coveredFlags: coveredFlags,
+            ),
+      );
+
+  glados.Generator<_GeneratedHostClock> get generatedHostClock =>
+      glados.CombinableAny(this).combine4(
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(0, 7),
+        glados.IntAnys(this).intInRange(1, 13),
+        (
+          bool included,
+          bool knownOnline,
+          int resolvedPrefix,
+          int observedCounter,
+        ) => _GeneratedHostClock(
+          included: included,
+          knownOnline: knownOnline,
+          resolvedPrefix: resolvedPrefix,
+          observedCounter: observedCounter,
+        ),
+      );
+
+  glados.Generator<_MultiHostGapScenario> get multiHostGapScenario =>
+      glados.CombinableAny(this).combine5(
+        glados.IntAnys(this).intInRange(0, 7),
+        glados.IntAnys(this).intInRange(1, 13),
+        generatedHostClock,
+        generatedHostClock,
+        generatedHostClock,
+        (
+          int originatorResolvedPrefix,
+          int originatorObservedCounter,
+          _GeneratedHostClock bob,
+          _GeneratedHostClock charlie,
+          _GeneratedHostClock ownHost,
+        ) => _MultiHostGapScenario(
+          originatorResolvedPrefix: originatorResolvedPrefix,
+          originatorObservedCounter: originatorObservedCounter,
+          bob: bob,
+          charlie: charlie,
+          ownHost: ownHost,
+        ),
+      );
+
+  glados.Generator<_StatefulSequenceEvent> get statefulSequenceEvent =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(1, 17),
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(12, 13, glados.BoolAny(this).bool),
+        glados.BoolAny(this).bool,
+        (
+          int observedCounter,
+          List<bool> coveredFlags,
+          bool requestMissingAfter,
+        ) => _StatefulSequenceEvent(
+          observedCounter: observedCounter,
+          coveredFlags: coveredFlags,
+          requestMissingAfter: requestMissingAfter,
+        ),
+      );
+
+  glados.Generator<_StatefulSequenceScenario> get statefulSequenceScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.BoolAny(this).bool,
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(1, 7, statefulSequenceEvent),
+        (bool deferMissingCallback, List<_StatefulSequenceEvent> events) =>
+            _StatefulSequenceScenario(
+              deferMissingCallback: deferMissingCallback,
+              events: events,
+            ),
+      );
+}
+
+List<({String hostId, int counter})> _expectedHostGaps({
+  required String hostId,
+  required int resolvedPrefix,
+  required int observedCounter,
+  required bool shouldDetectGaps,
+}) {
+  if (!shouldDetectGaps || observedCounter <= resolvedPrefix + 1) {
+    return const [];
+  }
+  return [
+    for (var counter = resolvedPrefix + 1; counter < observedCounter; counter++)
+      (hostId: hostId, counter: counter),
+  ];
+}
+
+int? _expectedPrefixAfterObserved({
+  required int resolvedPrefix,
+  required int observedCounter,
+  required bool observedRecorded,
+}) {
+  if (!observedRecorded) return resolvedPrefix == 0 ? null : resolvedPrefix;
+  return observedCounter == resolvedPrefix + 1
+      ? resolvedPrefix + 1
+      : resolvedPrefix;
+}
+
+Future<void> _seedGeneratedSequenceScenario({
+  required SyncDatabase database,
+  required String hostId,
+  required _SequenceGapScenario scenario,
+}) async {
+  final seedDate = DateTime(2024, 3, 15, 10);
+  for (var index = 0; index < scenario.counterStates.length; index++) {
+    final state = scenario.counterStates[index];
+    if (!state.isStored) continue;
+
+    final counter = index + 1;
+    await database.recordSequenceEntry(
+      SyncSequenceLogCompanion(
+        hostId: Value(hostId),
+        counter: Value(counter),
+        entryId: Value('seeded-$counter'),
+        originatingHostId: Value(hostId),
+        status: Value(state.syncStatus.index),
+        createdAt: Value(seedDate),
+        updatedAt: Value(seedDate),
+      ),
+    );
+  }
+}
+
+Future<void> _seedResolvedPrefix({
+  required SyncDatabase database,
+  required String hostId,
+  required int resolvedPrefix,
+}) async {
+  final seedDate = DateTime(2024, 3, 15, 10);
+  for (var counter = 1; counter <= resolvedPrefix; counter++) {
+    await database.recordSequenceEntry(
+      SyncSequenceLogCompanion(
+        hostId: Value(hostId),
+        counter: Value(counter),
+        entryId: Value('seeded-$hostId-$counter'),
+        originatingHostId: Value(hostId),
+        status: Value(SyncSequenceStatus.received.index),
+        createdAt: Value(seedDate),
+        updatedAt: Value(seedDate),
+      ),
+    );
+  }
+}
+
+class _RealSequenceLogTestBench {
+  _RealSequenceLogTestBench._({
+    required this.database,
+    required this.service,
+  });
+
+  factory _RealSequenceLogTestBench.create({required String myHostId}) {
+    final database = SyncDatabase(
+      inMemoryDatabase: true,
+      background: false,
+    );
+    final vcService = MockVectorClockService();
+    final logging = MockLoggingService();
+    final bench = _RealSequenceLogTestBench._(
+      database: database,
+      service: SyncSequenceLogService(
+        syncDatabase: database,
+        vectorClockService: vcService,
+        loggingService: logging,
+      ),
+    );
+    bench.service.onMissingEntriesDetected = () {
+      bench.missingCallbackCount++;
+    };
+
+    when(vcService.getHost).thenAnswer((_) async => myHostId);
+    when(
+      () => logging.captureEvent(
+        any<String>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => logging.captureException(
+        any<Object>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+
+    return bench;
+  }
+
+  final SyncDatabase database;
+  final SyncSequenceLogService service;
+  int missingCallbackCount = 0;
+
+  Future<void> close() => database.close();
+}
+
+Future<void> _expectObservedCounter({
+  required SyncDatabase database,
+  required String hostId,
+  required int counter,
+  required String entryId,
+}) async {
+  final entry = await database.getEntryByHostAndCounter(hostId, counter);
+  expect(entry, isNotNull);
+  expect(entry?.entryId, entryId);
+  expect(entry?.status, SyncSequenceStatus.received.index);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -309,6 +1158,13 @@ void main() {
       when(
         () => mockDb.getCountersForHostInRange(aliceHostId, 3, 4),
       ).thenAnswer((_) async => {3});
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.missing,
+        ),
+      );
       // Counter 5 doesn't exist
       when(
         () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
@@ -328,6 +1184,434 @@ void main() {
       verify(() => mockDb.batchInsertSequenceEntries(any())).called(1);
       verify(() => mockDb.recordSequenceEntry(any())).called(1);
     });
+
+    test(
+      'does not report resolved counters from a stale cached watermark',
+      () async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+
+        try {
+          await _seedResolvedPrefix(
+            database: bench.database,
+            hostId: aliceHostId,
+            resolvedPrefix: 10,
+          );
+
+          final firstGaps = await bench.service.recordReceivedEntry(
+            entryId: 'stale-cache-entry-12',
+            vectorClock: const VectorClock({aliceHostId: 12}),
+            originatingHostId: aliceHostId,
+          );
+          expect(firstGaps, [(hostId: aliceHostId, counter: 11)]);
+          expect(bench.missingCallbackCount, 1);
+
+          final backfillGaps = await bench.service.recordReceivedEntry(
+            entryId: 'stale-cache-entry-11',
+            vectorClock: const VectorClock({aliceHostId: 11}),
+            originatingHostId: aliceHostId,
+          );
+          expect(backfillGaps, isEmpty);
+
+          final afterResolvedGaps = await bench.service.recordReceivedEntry(
+            entryId: 'stale-cache-entry-13',
+            vectorClock: const VectorClock({aliceHostId: 13}),
+            originatingHostId: aliceHostId,
+          );
+
+          expect(afterResolvedGaps, isEmpty);
+          expect(bench.missingCallbackCount, 1);
+          expect(
+            await bench.database.getLastCounterForHost(aliceHostId),
+            13,
+          );
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
+    glados.Glados(
+      _AnySequenceGapScenario(glados.any).sequenceGapScenario,
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'matches the single-host gap model for generated sequence states',
+      (scenario) async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+
+        try {
+          await _seedGeneratedSequenceScenario(
+            database: bench.database,
+            hostId: aliceHostId,
+            scenario: scenario,
+          );
+
+          final entryId = 'generated-entry-${scenario.observedCounter}';
+          final expectedGaps = scenario.expectedGaps(aliceHostId);
+          final expectedNewMissingCount = expectedGaps
+              .where((gap) => scenario.insertsNewMissingCounter(gap.counter))
+              .length;
+
+          final gaps = await bench.service.recordReceivedEntry(
+            entryId: entryId,
+            vectorClock: VectorClock({
+              aliceHostId: scenario.observedCounter,
+            }),
+            originatingHostId: aliceHostId,
+          );
+
+          expect(gaps, expectedGaps);
+          expect(
+            bench.missingCallbackCount,
+            expectedNewMissingCount > 0 ? 1 : 0,
+          );
+
+          for (final gap in expectedGaps) {
+            final entry = await bench.database.getEntryByHostAndCounter(
+              aliceHostId,
+              gap.counter,
+            );
+            expect(entry, isNotNull);
+            expect(
+              entry?.status,
+              scenario.expectedStatusAfterReceive(gap.counter)?.index,
+            );
+          }
+
+          final observed = await bench.database.getEntryByHostAndCounter(
+            aliceHostId,
+            scenario.observedCounter,
+          );
+          expect(observed, isNotNull);
+          expect(observed?.entryId, entryId);
+          expect(
+            observed?.status,
+            scenario.expectedObservedStatus().index,
+          );
+
+          expect(
+            await bench.database.getLastCounterForHost(aliceHostId),
+            scenario.expectedLastResolvedPrefixAfterReceive(),
+          );
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
+    glados.Glados(
+      _AnySequenceGapScenario(glados.any).coveredClockGapScenario,
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'uses covered vector clocks before deciding generated gaps',
+      (scenario) async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+
+        try {
+          final entryId = 'covered-entry-${scenario.observedCounter}';
+          final expectedGaps = scenario.expectedGaps(aliceHostId);
+          final expectedNewMissingCount = expectedGaps
+              .where((gap) => scenario.insertsNewMissingCounter(gap.counter))
+              .length;
+
+          final gaps = await bench.service.recordReceivedEntry(
+            entryId: entryId,
+            vectorClock: VectorClock({
+              aliceHostId: scenario.observedCounter,
+            }),
+            originatingHostId: aliceHostId,
+            coveredVectorClocks: [
+              for (final counter in scenario.coveredCounters)
+                VectorClock({aliceHostId: counter}),
+            ],
+          );
+
+          expect(gaps, expectedGaps);
+          expect(
+            bench.missingCallbackCount,
+            expectedNewMissingCount > 0 ? 1 : 0,
+          );
+
+          final maxCoveredCounter = scenario.coveredCounters.isEmpty
+              ? 0
+              : scenario.coveredCounters.reduce((a, b) => a > b ? a : b);
+          final maxCounter = scenario.observedCounter > maxCoveredCounter
+              ? scenario.observedCounter
+              : maxCoveredCounter;
+          for (var counter = 1; counter <= maxCounter; counter++) {
+            final expectedStatus = scenario.expectedStatusAfterReceive(
+              counter,
+            );
+            final entry = await bench.database.getEntryByHostAndCounter(
+              aliceHostId,
+              counter,
+            );
+            if (expectedStatus == null) {
+              expect(entry, isNull);
+            } else {
+              expect(entry, isNotNull);
+              expect(entry?.status, expectedStatus.index);
+            }
+          }
+
+          final observed = await bench.database.getEntryByHostAndCounter(
+            aliceHostId,
+            scenario.observedCounter,
+          );
+          expect(observed, isNotNull);
+          expect(observed?.entryId, entryId);
+          expect(observed?.status, SyncSequenceStatus.received.index);
+
+          expect(
+            await bench.database.getLastCounterForHost(aliceHostId),
+            scenario.expectedLastResolvedPrefixAfterReceive(),
+          );
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
+    glados.Glados(
+      _AnySequenceGapScenario(glados.any).multiHostGapScenario,
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'matches the multi-host gap model for generated vector clocks',
+      (scenario) async {
+        const charlieHostId = 'charlie-host-uuid';
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+        final seenAt = DateTime(2024, 3, 15, 11);
+
+        try {
+          await _seedResolvedPrefix(
+            database: bench.database,
+            hostId: aliceHostId,
+            resolvedPrefix: scenario.originatorResolvedPrefix,
+          );
+          await _seedResolvedPrefix(
+            database: bench.database,
+            hostId: bobHostId,
+            resolvedPrefix: scenario.bob.resolvedPrefix,
+          );
+          await _seedResolvedPrefix(
+            database: bench.database,
+            hostId: charlieHostId,
+            resolvedPrefix: scenario.charlie.resolvedPrefix,
+          );
+          await _seedResolvedPrefix(
+            database: bench.database,
+            hostId: myHostId,
+            resolvedPrefix: scenario.ownHost.resolvedPrefix,
+          );
+
+          if (scenario.bob.knownOnline) {
+            await bench.database.updateHostActivity(bobHostId, seenAt);
+          }
+          if (scenario.charlie.knownOnline) {
+            await bench.database.updateHostActivity(charlieHostId, seenAt);
+          }
+
+          final entryId =
+              'multi-host-entry-${scenario.originatorObservedCounter}';
+          final expectedGaps = scenario.expectedGaps(
+            aliceHostId: aliceHostId,
+            bobHostId: bobHostId,
+            charlieHostId: charlieHostId,
+          );
+
+          final gaps = await bench.service.recordReceivedEntry(
+            entryId: entryId,
+            vectorClock: VectorClock(
+              scenario.vectorClock(
+                myHostId: myHostId,
+                aliceHostId: aliceHostId,
+                bobHostId: bobHostId,
+                charlieHostId: charlieHostId,
+              ),
+            ),
+            originatingHostId: aliceHostId,
+          );
+
+          expect(gaps, expectedGaps);
+          expect(
+            bench.missingCallbackCount,
+            scenario.insertsNewMissing ? 1 : 0,
+          );
+
+          for (final gap in expectedGaps) {
+            final entry = await bench.database.getEntryByHostAndCounter(
+              gap.hostId,
+              gap.counter,
+            );
+            expect(entry, isNotNull);
+            expect(entry?.status, SyncSequenceStatus.missing.index);
+          }
+
+          await _expectObservedCounter(
+            database: bench.database,
+            hostId: aliceHostId,
+            counter: scenario.originatorObservedCounter,
+            entryId: entryId,
+          );
+          if (scenario.bob.included) {
+            await _expectObservedCounter(
+              database: bench.database,
+              hostId: bobHostId,
+              counter: scenario.bob.observedCounter,
+              entryId: entryId,
+            );
+          }
+          if (scenario.charlie.included) {
+            await _expectObservedCounter(
+              database: bench.database,
+              hostId: charlieHostId,
+              counter: scenario.charlie.observedCounter,
+              entryId: entryId,
+            );
+          }
+
+          final ownObserved = await bench.database.getEntryByHostAndCounter(
+            myHostId,
+            scenario.ownHost.observedCounter,
+          );
+          if (scenario.ownHost.included &&
+              scenario.ownHost.observedCounter >
+                  scenario.ownHost.resolvedPrefix) {
+            expect(ownObserved, isNull);
+          } else if (scenario.ownHost.included) {
+            expect(ownObserved, isNotNull);
+            expect(ownObserved?.entryId, isNot(entryId));
+          }
+
+          for (final (:hostId, :expectedPrefix) in [
+            (
+              hostId: aliceHostId,
+              expectedPrefix: scenario.expectedResolvedPrefixAfterReceive(
+                hostId: aliceHostId,
+                aliceHostId: aliceHostId,
+                bobHostId: bobHostId,
+                charlieHostId: charlieHostId,
+                myHostId: myHostId,
+              ),
+            ),
+            (
+              hostId: bobHostId,
+              expectedPrefix: scenario.expectedResolvedPrefixAfterReceive(
+                hostId: bobHostId,
+                aliceHostId: aliceHostId,
+                bobHostId: bobHostId,
+                charlieHostId: charlieHostId,
+                myHostId: myHostId,
+              ),
+            ),
+            (
+              hostId: charlieHostId,
+              expectedPrefix: scenario.expectedResolvedPrefixAfterReceive(
+                hostId: charlieHostId,
+                aliceHostId: aliceHostId,
+                bobHostId: bobHostId,
+                charlieHostId: charlieHostId,
+                myHostId: myHostId,
+              ),
+            ),
+            (
+              hostId: myHostId,
+              expectedPrefix: scenario.expectedResolvedPrefixAfterReceive(
+                hostId: myHostId,
+                aliceHostId: aliceHostId,
+                bobHostId: bobHostId,
+                charlieHostId: charlieHostId,
+                myHostId: myHostId,
+              ),
+            ),
+          ]) {
+            expect(
+              await bench.database.getLastCounterForHost(hostId),
+              expectedPrefix,
+              reason: 'watermark mismatch for $hostId in $scenario',
+            );
+          }
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
+    glados.Glados(
+      _AnySequenceGapScenario(glados.any).statefulSequenceScenario,
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'matches the generated multi-event sequence model',
+      (scenario) async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+        final model = _StatefulSequenceModel(hostId: aliceHostId);
+        var expectedCallbackCount = 0;
+
+        Future<void> applyEvents() async {
+          for (var index = 0; index < scenario.events.length; index++) {
+            final event = scenario.events[index];
+            final expected = model.apply(event);
+            if (expected.insertedNewMissing) {
+              expectedCallbackCount++;
+            }
+
+            final gaps = await bench.service.recordReceivedEntry(
+              entryId: 'stateful-entry-$index-${event.observedCounter}',
+              vectorClock: VectorClock({aliceHostId: event.observedCounter}),
+              originatingHostId: aliceHostId,
+              coveredVectorClocks: [
+                for (final counter in event.coveredCounters)
+                  VectorClock({aliceHostId: counter}),
+              ],
+            );
+
+            expect(gaps, expected.gaps);
+            if (scenario.deferMissingCallback) {
+              expect(bench.missingCallbackCount, 0);
+            } else {
+              expect(bench.missingCallbackCount, expectedCallbackCount);
+            }
+
+            if (expected.requestedAfter.isNotEmpty) {
+              await bench.service.markAsRequested(expected.requestedAfter);
+            }
+          }
+        }
+
+        try {
+          if (scenario.deferMissingCallback) {
+            await bench.service.runWithDeferredMissingEntries(applyEvents);
+            expect(
+              bench.missingCallbackCount,
+              expectedCallbackCount > 0 ? 1 : 0,
+            );
+          } else {
+            await applyEvents();
+            expect(bench.missingCallbackCount, expectedCallbackCount);
+          }
+
+          for (var counter = 1; counter <= model.maxCounter; counter++) {
+            final expectedStatus = model.statusAt(counter);
+            final entry = await bench.database.getEntryByHostAndCounter(
+              aliceHostId,
+              counter,
+            );
+            if (expectedStatus == null) {
+              expect(entry, isNull);
+            } else {
+              expect(entry, isNotNull);
+              expect(entry?.status, expectedStatus.index);
+            }
+          }
+
+          expect(
+            await bench.database.getLastCounterForHost(aliceHostId),
+            model.lastResolvedPrefix(),
+          );
+        } finally {
+          await bench.close();
+        }
+      },
+    );
 
     test('marks previously missing entry as received', () async {
       // Entry was marked missing before, now it arrives via normal sync
@@ -1405,6 +2689,9 @@ void main() {
   group('handleBackfillResponse', () {
     test('marks entry as deleted when deleted=true', () async {
       when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer((_) async => null);
+      when(
         () => mockDb.updateSequenceStatus(
           any(),
           any(),
@@ -1686,6 +2973,63 @@ void main() {
       expect(captured.status.value, SyncSequenceStatus.requested.index);
       expect(captured.entryId.value, 'valid-hint-entry');
     });
+
+    glados.Glados(
+      _AnySequenceGapScenario(glados.any).backfillResponseStateScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'matches generated backfill response state and payload transitions',
+      (scenario) async {
+        final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
+        const counter = 3;
+
+        try {
+          if (scenario.hasExistingEntry) {
+            await bench.database.recordSequenceEntry(
+              SyncSequenceLogCompanion(
+                hostId: const Value(aliceHostId),
+                counter: const Value(counter),
+                entryId: const Value(
+                  _BackfillResponseStateScenario.existingEntryId,
+                ),
+                payloadType: Value(scenario.existingPayloadType.index),
+                status: Value(scenario.existingState.syncStatus.index),
+                createdAt: Value(DateTime(2024, 3, 15, 10)),
+                updatedAt: Value(DateTime(2024, 3, 15, 10)),
+              ),
+            );
+          }
+
+          await bench.service.handleBackfillResponse(
+            hostId: aliceHostId,
+            counter: counter,
+            deleted: scenario.responseKind == _BackfillResponseKind.deleted,
+            unresolvable:
+                scenario.responseKind == _BackfillResponseKind.unresolvable,
+            entryId: scenario.responseKind == _BackfillResponseKind.hint
+                ? _BackfillResponseStateScenario.hintEntryId
+                : null,
+            payloadType: scenario.responsePayloadType,
+          );
+
+          final entry = await bench.database.getEntryByHostAndCounter(
+            aliceHostId,
+            counter,
+          );
+          final expectedStatus = scenario.expectedStatus;
+          if (expectedStatus == null) {
+            expect(entry, isNull);
+          } else {
+            expect(entry, isNotNull);
+            expect(entry?.status, expectedStatus.index);
+            expect(entry?.entryId, scenario.expectedEntryId);
+            expect(entry?.payloadType, scenario.expectedPayloadType?.index);
+          }
+        } finally {
+          await bench.close();
+        }
+      },
+    );
   });
 
   group('markAsRequested', () {

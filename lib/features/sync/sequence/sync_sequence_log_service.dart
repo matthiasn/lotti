@@ -102,6 +102,12 @@ class _GapEntriesView extends ListBase<({String hostId, int counter})> {
   }
 }
 
+bool _isResolvedSequenceStatusIndex(int status) =>
+    status == SyncSequenceStatus.received.index ||
+    status == SyncSequenceStatus.backfilled.index ||
+    status == SyncSequenceStatus.deleted.index ||
+    status == SyncSequenceStatus.unresolvable.index;
+
 /// Service for managing the sync sequence log, which tracks received entries
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.
 class SyncSequenceLogService {
@@ -490,6 +496,7 @@ class SyncSequenceLogService {
       // be no gap". Treat that as watermark 0 so the first observed counter can
       // materialize the missing prefix instead of silently skipping it.
       final gapBaseline = shouldDetectGaps ? (lastSeen ?? 0) : null;
+      var smallGapRangeResolvedBeforeObserved = false;
 
       if (gapBaseline != null && counter > gapBaseline + 1) {
         // Gap detected! Mark missing counters for this host.
@@ -575,16 +582,10 @@ class SyncSequenceLogService {
           // the incoming `(hostId, counter)` row is still upserted; skipping
           // it would itself block the watermark from ever advancing.
         } else {
-          // Small gap (≤ SyncTuning.maxGapSize). Report the full VC-implied
-          // range via `gaps` so the caller's `apply.*.gapsDetected` log is
-          // consistent with the historical contract; the per-counter log
-          // below still only fires for actually-missing counters, and the
-          // batch insert only contains new rows.
-          gaps.addRange(
-            hostId: hostId,
-            startCounter: startCounter,
-            endCounter: counter - 1,
-          );
+          // Small gap (≤ SyncTuning.maxGapSize). The cached watermark is a
+          // conservative lower bound, so it can lag behind already-resolved
+          // out-of-order counters. Only return counters that are absent or
+          // still unresolved; otherwise callers log stale false gaps.
           final existingCounters = await _syncDatabase
               .getCountersForHostInRange(
                 hostId,
@@ -592,10 +593,13 @@ class SyncSequenceLogService {
                 counter - 1,
               );
           final missingEntries = <SyncSequenceLogCompanion>[];
+          var unresolvedGapDetected = false;
           for (var i = startCounter; i < counter; i++) {
             // Keep the small-gap path explicit because the per-counter logging
             // is still useful when debugging ordinary out-of-order delivery.
             if (!existingCounters.contains(i)) {
+              unresolvedGapDetected = true;
+              gaps.addRange(hostId: hostId, startCounter: i, endCounter: i);
               missingEntries.add(
                 SyncSequenceLogCompanion(
                   hostId: Value(hostId),
@@ -612,8 +616,19 @@ class SyncSequenceLogService {
                 'gapDetected hostId=$hostId counter=$i (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
                 subDomain: 'sequence.gapDetected',
               );
+            } else {
+              final existing = await _syncDatabase.getEntryByHostAndCounter(
+                hostId,
+                i,
+              );
+              if (existing == null ||
+                  !_isResolvedSequenceStatusIndex(existing.status)) {
+                unresolvedGapDetected = true;
+                gaps.addRange(hostId: hostId, startCounter: i, endCounter: i);
+              }
             }
           }
+          smallGapRangeResolvedBeforeObserved = !unresolvedGapDetected;
           if (missingEntries.isNotEmpty) {
             await _syncDatabase.batchInsertSequenceEntries(missingEntries);
           }
@@ -734,6 +749,17 @@ class SyncSequenceLogService {
       // mobile slow-query log under load. The advance is a strict
       // forward-only update that never over-reports the prefix.
       _advanceLastCounterCache(hostId, counter);
+      if (smallGapRangeResolvedBeforeObserved &&
+          _lastCounterCache.containsKey(hostId)) {
+        // The small-gap scan proved every counter between the cached
+        // watermark and the observed counter already resolves the sequence.
+        // After upserting [counter], the cache can safely catch up instead of
+        // re-scanning the same stale range on each subsequent event.
+        final cachedCounter = _lastCounterCache[hostId] ?? 0;
+        if (counter > cachedCounter) {
+          _lastCounterCache[hostId] = counter;
+        }
+      }
     }
 
     // Only log the gap summary when we actually recorded new missing rows.
@@ -1058,6 +1084,22 @@ class SyncSequenceLogService {
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
   }) async {
     if (deleted) {
+      final existing = await _syncDatabase.getEntryByHostAndCounter(
+        hostId,
+        counter,
+      );
+      if (existing != null &&
+          (existing.status == SyncSequenceStatus.received.index ||
+              existing.status == SyncSequenceStatus.backfilled.index)) {
+        _trace(
+          'handleBackfillResponse: deleted ignored for '
+          'hostId=$hostId counter=$counter — existing status='
+          '${SyncSequenceStatus.values[existing.status]}',
+          subDomain: 'sequence.backfillResponse',
+        );
+        return;
+      }
+
       // Mark as deleted - the entry was purged and cannot be backfilled
       await _syncDatabase.updateSequenceStatus(
         hostId,

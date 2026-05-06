@@ -1,5 +1,44 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'dart:math' as math;
+
+import 'package:glados/glados.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
+
+final _baseDate = DateTime(2024, 1, 15);
+const int _minutesPerDay = 24 * 60;
+
+extension _AnyTimeRange on Any {
+  Generator<TimeRange> get timeRange => combine2(
+    intInRange(0, _minutesPerDay),
+    intInRange(0, _minutesPerDay),
+    (int a, int b) {
+      final startMinute = math.min(a, b);
+      final endMinute = math.max(a, b);
+      return TimeRange(
+        start: _baseDate.add(Duration(minutes: startMinute)),
+        end: _baseDate.add(Duration(minutes: endMinute)),
+      );
+    },
+  );
+
+  Generator<List<TimeRange>> get timeRanges =>
+      listWithLengthInRange(0, 12, timeRange);
+}
+
+int _minuteOffset(DateTime value) => value.difference(_baseDate).inMinutes;
+
+Duration _minuteGridUnionDuration(List<TimeRange> ranges) {
+  final coveredMinutes = <int>{};
+  for (final range in ranges) {
+    for (
+      var minute = _minuteOffset(range.start);
+      minute < _minuteOffset(range.end);
+      minute++
+    ) {
+      coveredMinutes.add(minute);
+    }
+  }
+  return Duration(minutes: coveredMinutes.length);
+}
 
 void main() {
   group('TimeRange', () {
@@ -466,5 +505,58 @@ void main() {
         const Duration(hours: 2, minutes: 30),
       );
     });
+  });
+
+  group('property tests', () {
+    Glados(any.timeRanges).test(
+      'mergeOverlappingRanges produces a canonical idempotent form',
+      (ranges) {
+        final merged = mergeOverlappingRanges(ranges);
+
+        expect(mergeOverlappingRanges(merged), merged);
+
+        for (var i = 1; i < merged.length; i++) {
+          final previous = merged[i - 1];
+          final current = merged[i];
+          expect(
+            previous.start.isAfter(current.start),
+            isFalse,
+            reason: 'merged ranges must be sorted by start',
+          );
+          expect(
+            previous.end.isBefore(current.start),
+            isTrue,
+            reason: 'merged ranges must not overlap or touch',
+          );
+        }
+      },
+    );
+
+    Glados(any.timeRanges).testWithRandom(
+      'mergeOverlappingRanges is independent of input order',
+      (ranges, random) {
+        final shuffled = [...ranges]..shuffle(random);
+
+        expect(
+          mergeOverlappingRanges(shuffled),
+          mergeOverlappingRanges(ranges),
+        );
+      },
+    );
+
+    Glados(any.timeRanges).test(
+      'calculateUnionDuration matches a minute-grid oracle',
+      (ranges) {
+        final simpleSum = ranges.fold(
+          Duration.zero,
+          (total, range) => total + range.duration,
+        );
+
+        final union = calculateUnionDuration(ranges);
+
+        expect(union, _minuteGridUnionDuration(ranges));
+        expect(union <= simpleSum, isTrue);
+      },
+    );
   });
 }

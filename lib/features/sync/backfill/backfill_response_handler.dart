@@ -503,10 +503,13 @@ class BackfillResponseHandler {
     }
 
     if (logEntry == null || logEntry.entryId == null) {
+      final payloadType = logEntry == null
+          ? null
+          : SyncSequencePayloadType.values.elementAt(logEntry.payloadType);
       _trace(
         'directLookup miss hostId=$hostId counter=$counter '
         'exists=${logEntry != null} entryId=${logEntry?.entryId} '
-        'status=${logEntry?.status}',
+        'status=${logEntry?.status} payloadType=$payloadType',
         subDomain: 'backfill.directLookup',
       );
 
@@ -519,10 +522,14 @@ class BackfillResponseHandler {
         // skips the covering lookup entirely.
         _trace(
           'own-host miss → unresolvable (no covering attempted) '
-          'hostId=$hostId counter=$counter',
+          'hostId=$hostId counter=$counter payloadType=$payloadType',
           subDomain: 'backfill.unresolvable',
         );
-        await _sendUnresolvableResponse(hostId: hostId, counter: counter);
+        await _sendUnresolvableResponse(
+          hostId: hostId,
+          counter: counter,
+          payloadType: payloadType,
+        );
         return true;
       }
 
