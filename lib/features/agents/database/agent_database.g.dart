@@ -3198,7 +3198,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   Selectable<AggregateWakeRunMetricsByTemplateIdResult>
   aggregateWakeRunMetricsByTemplateId(String? templateId) {
     return customSelect(
-      'SELECT COUNT(CASE WHEN status = \'completed\' THEN 1 END) AS success_count, COUNT(CASE WHEN status = \'failed\' THEN 1 END) AS failure_count, CAST(SUM(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL AND(julianday(completed_at) - julianday(started_at))* 86400000 > 0 THEN(julianday(completed_at) - julianday(started_at))* 86400000 ELSE 0 END) AS INT) AS duration_sum_ms, COUNT(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL AND(julianday(completed_at) - julianday(started_at))* 86400000 > 0 THEN 1 END) AS duration_count, MIN(created_at) AS first_wake_at, MAX(created_at) AS last_wake_at FROM wake_run_log WHERE template_id = ?1',
+      'SELECT COUNT(CASE WHEN status = \'completed\' THEN 1 END) AS success_count, COUNT(CASE WHEN status = \'failed\' THEN 1 END) AS failure_count, CAST(SUM(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL AND completed_at - started_at > 0 THEN(completed_at - started_at)* 1000 ELSE 0 END) AS INT) AS duration_sum_ms, COUNT(CASE WHEN started_at IS NOT NULL AND completed_at IS NOT NULL AND completed_at - started_at > 0 THEN 1 END) AS duration_count, MIN(created_at) AS first_wake_at, MAX(created_at) AS last_wake_at FROM wake_run_log WHERE template_id = ?1',
       variables: [Variable<String>(templateId)],
       readsFrom: {wakeRunLog},
     ).map(

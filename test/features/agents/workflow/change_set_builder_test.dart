@@ -3,6 +3,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -105,6 +106,163 @@ extension _AnyGeneratedFollowUpScenario on glados.Any {
           flags: flags,
         ),
       );
+}
+
+enum _GeneratedChecklistBatchElementShape {
+  newTitle,
+  existingTitle,
+  duplicateTitle,
+  emptyTitle,
+  nonMap,
+}
+
+class _GeneratedChecklistBatchElement {
+  const _GeneratedChecklistBatchElement({
+    required this.shape,
+    required this.seed,
+  });
+
+  final _GeneratedChecklistBatchElementShape shape;
+  final int seed;
+
+  Object value(int index) => switch (shape) {
+    _GeneratedChecklistBatchElementShape.newTitle => {
+      'title': 'Generated item $seed',
+      if (seed.isEven) 'isChecked': true,
+    },
+    _GeneratedChecklistBatchElementShape.existingTitle => {
+      'title': seed.isEven ? '  Existing item  ' : 'existing ITEM',
+    },
+    _GeneratedChecklistBatchElementShape.duplicateTitle => {
+      'title': 'Generated duplicate',
+      'note': 'same fingerprint',
+    },
+    _GeneratedChecklistBatchElementShape.emptyTitle => {
+      'title': index.isEven ? '' : '   ',
+    },
+    _GeneratedChecklistBatchElementShape.nonMap => 'not-a-map-$seed',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedChecklistBatchElement('
+        'shape: $shape, seed: $seed)';
+  }
+}
+
+class _GeneratedChecklistBatchScenario {
+  const _GeneratedChecklistBatchScenario({
+    required this.elements,
+  });
+
+  final List<_GeneratedChecklistBatchElement> elements;
+
+  static const existingTitles = {'existing item'};
+
+  List<Object> get values => [
+    for (var index = 0; index < elements.length; index++)
+      elements[index].value(index),
+  ];
+
+  _ExpectedChecklistBatch expected() {
+    final seenTitles = {...existingTitles};
+    final seenFingerprints = <String>{};
+    final kept = <Map<String, dynamic>>[];
+    var skipped = 0;
+    var redundant = 0;
+
+    for (final value in values) {
+      if (value is! Map<String, dynamic>) {
+        skipped++;
+        continue;
+      }
+
+      final title = value['title'];
+      if (title is String) {
+        final normalized = title.trim().toLowerCase();
+        if (normalized.isNotEmpty && seenTitles.contains(normalized)) {
+          redundant++;
+          continue;
+        }
+      }
+
+      final fingerprint = ChangeItem.fingerprintFromParts(
+        TaskAgentToolNames.addChecklistItem,
+        value,
+      );
+      if (!seenFingerprints.add(fingerprint)) {
+        redundant++;
+        continue;
+      }
+
+      kept.add(value);
+      if (title is String) {
+        final normalized = title.trim().toLowerCase();
+        if (normalized.isNotEmpty) {
+          seenTitles.add(normalized);
+        }
+      }
+    }
+
+    return _ExpectedChecklistBatch(
+      added: kept.length,
+      skipped: skipped,
+      redundant: redundant,
+      kept: kept,
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedChecklistBatchScenario(values: $values)';
+  }
+}
+
+class _ExpectedChecklistBatch {
+  const _ExpectedChecklistBatch({
+    required this.added,
+    required this.skipped,
+    required this.redundant,
+    required this.kept,
+  });
+
+  final int added;
+  final int skipped;
+  final int redundant;
+  final List<Map<String, dynamic>> kept;
+}
+
+extension _AnyGeneratedChecklistBatchScenario on glados.Any {
+  glados.Generator<_GeneratedChecklistBatchElementShape>
+  get checklistBatchElementShape =>
+      glados.AnyUtils(this).choose(_GeneratedChecklistBatchElementShape.values);
+
+  glados.Generator<_GeneratedChecklistBatchElement> get checklistBatchElement =>
+      glados.CombinableAny(this).combine2(
+        checklistBatchElementShape,
+        glados.IntAnys(this).intInRange(0, 1000),
+        (
+          _GeneratedChecklistBatchElementShape shape,
+          int seed,
+        ) => _GeneratedChecklistBatchElement(
+          shape: shape,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedChecklistBatchScenario>
+  get checklistBatchScenario => glados.CombinableAny(this).combine2(
+    glados.ListAnys(
+      this,
+    ).listWithLengthInRange(0, 12, checklistBatchElement),
+    glados.AnyUtils(this).choose([false, true]),
+    (
+      List<_GeneratedChecklistBatchElement> elements,
+      bool reverse,
+    ) => _GeneratedChecklistBatchScenario(
+      elements: reverse ? elements.reversed.toList() : elements,
+    ),
+  );
 }
 
 void main() {
@@ -1345,6 +1503,49 @@ void main() {
           result.items.last.toolName,
           'update_task_estimate',
         );
+      },
+    );
+
+    glados.Glados(
+      glados.any.checklistBatchScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'matches generated add-checklist batch dedupe semantics',
+      (scenario) async {
+        final generatedBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          existingChecklistTitlesResolver: () async =>
+              _GeneratedChecklistBatchScenario.existingTitles,
+        );
+        final expected = scenario.expected();
+
+        final result = await generatedBuilder.addBatchItem(
+          toolName: TaskAgentToolNames.addMultipleChecklistItems,
+          args: {'items': scenario.values},
+          summaryPrefix: 'Checklist',
+        );
+
+        expect(result.added, expected.added, reason: '$scenario');
+        expect(result.skipped, expected.skipped, reason: '$scenario');
+        expect(result.redundant, expected.redundant, reason: '$scenario');
+        expect(generatedBuilder.items, hasLength(expected.added));
+
+        for (var index = 0; index < expected.kept.length; index++) {
+          final item = generatedBuilder.items[index];
+          final args = expected.kept[index];
+          expect(item.toolName, TaskAgentToolNames.addChecklistItem);
+          expect(item.args, args, reason: '$scenario');
+
+          final title = args['title'];
+          if (title is String && title.isNotEmpty) {
+            expect(item.humanSummary, 'Add: "$title"', reason: '$scenario');
+          } else {
+            expect(item.humanSummary, 'Checklist item', reason: '$scenario');
+          }
+        }
       },
     );
   });

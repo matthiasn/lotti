@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,6 +16,7 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -25,6 +27,82 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
+
+enum _GeneratedPromptStreamPartKind { text, whitespace, empty }
+
+class _GeneratedPromptStreamPart {
+  const _GeneratedPromptStreamPart({
+    required this.kind,
+    required this.seed,
+  });
+
+  final _GeneratedPromptStreamPartKind kind;
+  final int seed;
+
+  String get content => switch (kind) {
+    _GeneratedPromptStreamPartKind.text => 'chunk-$seed ',
+    _GeneratedPromptStreamPartKind.whitespace => seed.isEven ? ' ' : '\n\t',
+    _GeneratedPromptStreamPartKind.empty => '',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedPromptStreamPart(kind: $kind, seed: $seed)';
+  }
+}
+
+class _GeneratedPromptStreamScenario {
+  const _GeneratedPromptStreamScenario({
+    required this.parts,
+    required this.includeLinkedTask,
+  });
+
+  final List<_GeneratedPromptStreamPart> parts;
+  final bool includeLinkedTask;
+
+  String get rawResponse => parts.map((part) => part.content).join();
+
+  String get expectedResponse => rawResponse.trim();
+
+  bool get shouldPersist => expectedResponse.isNotEmpty;
+
+  @override
+  String toString() {
+    return '_GeneratedPromptStreamScenario('
+        'includeLinkedTask: $includeLinkedTask, parts: $parts)';
+  }
+}
+
+extension _AnyGeneratedPromptStreamScenario on glados.Any {
+  glados.Generator<_GeneratedPromptStreamPartKind> get promptStreamPartKind =>
+      glados.AnyUtils(this).choose(_GeneratedPromptStreamPartKind.values);
+
+  glados.Generator<_GeneratedPromptStreamPart> get promptStreamPart =>
+      glados.CombinableAny(this).combine2(
+        promptStreamPartKind,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedPromptStreamPartKind kind,
+          int seed,
+        ) => _GeneratedPromptStreamPart(
+          kind: kind,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedPromptStreamScenario> get promptStreamScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(this).listWithLengthInRange(0, 8, promptStreamPart),
+        glados.AnyUtils(this).choose([false, true]),
+        (
+          List<_GeneratedPromptStreamPart> parts,
+          bool includeLinkedTask,
+        ) => _GeneratedPromptStreamScenario(
+          parts: parts,
+          includeLinkedTask: includeLinkedTask,
+        ),
+      );
+}
 
 void main() {
   late MockCloudInferenceRepository mockCloudRepo;
@@ -1656,6 +1734,185 @@ void main() {
           ),
         );
       });
+
+      glados.Glados(
+        glados.any.promptStreamScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'matches generated prompt stream persistence and status semantics',
+        (scenario) async {
+          final localCloudRepo = MockCloudInferenceRepository();
+          final localAiInputRepo = MockAiInputRepository();
+          final localJournalRepo = MockJournalRepository();
+          final localLoggingService = MockLoggingService();
+          final localPromptBuilderHelper = MockPromptBuilderHelper();
+          final localTaskSummaryResolver = MockTaskSummaryResolver();
+          final localContainer = ProviderContainer();
+
+          void stubLocalLoggingException() {
+            when(
+              () => localLoggingService.captureException(
+                any<dynamic>(),
+                domain: any<String>(named: 'domain'),
+                subDomain: any<String>(named: 'subDomain'),
+                stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              ),
+            ).thenReturn(null);
+          }
+
+          void stubLocalLoggingEvent() {
+            when(
+              () => localLoggingService.captureEvent(
+                any<String>(),
+                domain: any<String>(named: 'domain'),
+                subDomain: any<String>(named: 'subDomain'),
+              ),
+            ).thenReturn(null);
+          }
+
+          try {
+            late final Ref localRef;
+            final refProvider = Provider<void>((ref) {
+              localRef = ref;
+            });
+            localContainer.read(refProvider);
+
+            final localRunner = SkillInferenceRunner(
+              ref: localRef,
+              cloudRepository: localCloudRepo,
+              aiInputRepository: localAiInputRepo,
+              journalRepository: localJournalRepo,
+              loggingService: localLoggingService,
+              promptBuilderHelper: localPromptBuilderHelper,
+              taskSummaryResolver: localTaskSummaryResolver,
+            );
+
+            final entry = makeTextEntry(
+              id: 'generated-prompt-entry',
+              markdown: 'Generate a useful implementation prompt.',
+              plainText: 'Generate a useful implementation prompt.',
+              categoryId: 'cat-generated',
+            );
+            final linkedTaskId = scenario.includeLinkedTask
+                ? 'generated-linked-task'
+                : null;
+
+            when(
+              () => localAiInputRepo.getEntity('generated-prompt-entry'),
+            ).thenAnswer((_) async => entry);
+            if (linkedTaskId != null) {
+              when(
+                () => localAiInputRepo.buildTaskDetailsJson(id: linkedTaskId),
+              ).thenAnswer((_) async => '{"id": "$linkedTaskId"}');
+              when(
+                () => localAiInputRepo.buildLinkedTasksJson(linkedTaskId),
+              ).thenAnswer((_) async => '{"linked": []}');
+            }
+            when(
+              () => localCloudRepo.generate(
+                any(),
+                model: any(named: 'model'),
+                temperature: any(named: 'temperature'),
+                baseUrl: any(named: 'baseUrl'),
+                apiKey: any(named: 'apiKey'),
+                provider: any(named: 'provider'),
+                systemMessage: any(named: 'systemMessage'),
+              ),
+            ).thenAnswer(
+              (_) => Stream.fromIterable(
+                scenario.parts.map((part) => makeStreamChunk(part.content)),
+              ),
+            );
+
+            if (scenario.shouldPersist) {
+              when(
+                () => localAiInputRepo.createAiResponseEntry(
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: any(named: 'linkedId'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).thenAnswer((_) async => null);
+              stubLocalLoggingEvent();
+            } else {
+              stubLocalLoggingException();
+            }
+
+            await localRunner.runPromptGeneration(
+              entryId: 'generated-prompt-entry',
+              automationResult: makePromptGenerationResult(),
+              linkedTaskId: linkedTaskId,
+            );
+
+            final status = localContainer.read(
+              inferenceStatusControllerProvider(
+                id: 'generated-prompt-entry',
+                aiResponseType: AiResponseType.promptGeneration,
+              ),
+            );
+            expect(
+              status,
+              scenario.shouldPersist
+                  ? InferenceStatus.idle
+                  : InferenceStatus.error,
+              reason: '$scenario',
+            );
+            if (linkedTaskId != null) {
+              expect(
+                localContainer.read(
+                  inferenceStatusControllerProvider(
+                    id: linkedTaskId,
+                    aiResponseType: AiResponseType.promptGeneration,
+                  ),
+                ),
+                status,
+                reason: '$scenario',
+              );
+            }
+
+            if (!scenario.shouldPersist) {
+              verifyNever(
+                () => localAiInputRepo.createAiResponseEntry(
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: any(named: 'linkedId'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              );
+              verify(
+                () => localLoggingService.captureException(
+                  any<dynamic>(),
+                  domain: 'SkillInferenceRunner',
+                  subDomain: 'runPromptGeneration',
+                  stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                ),
+              ).called(1);
+              return;
+            }
+
+            final captured = verify(
+              () => localAiInputRepo.createAiResponseEntry(
+                data: captureAny(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: captureAny(named: 'linkedId'),
+                categoryId: captureAny(named: 'categoryId'),
+              ),
+            ).captured;
+            final data = captured[0] as AiResponseData;
+            expect(
+              data.response,
+              scenario.expectedResponse,
+              reason: '$scenario',
+            );
+            expect(data.type, AiResponseType.promptGeneration);
+            expect(data.skillId, testPromptGenSkill.id);
+            expect(captured[1], 'generated-prompt-entry');
+            expect(captured[2], 'cat-generated');
+          } finally {
+            localContainer.dispose();
+          }
+        },
+      );
 
       test('logs exception on failure', () async {
         when(

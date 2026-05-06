@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -148,6 +149,153 @@ extension _AnyGeneratedDispatchGuardScenario on glados.Any {
         ) => _GeneratedDispatchGuardScenario(
           tool: tool,
           shapeSeed: shapeSeed,
+        ),
+      );
+}
+
+enum _GeneratedValidDispatchTool {
+  setTaskTitle,
+  updateTaskEstimate,
+  updateTaskDueDate,
+  updateTaskPriority,
+  setTaskLanguage,
+  setTaskStatus,
+}
+
+class _GeneratedValidDispatchScenario {
+  const _GeneratedValidDispatchScenario({
+    required this.tool,
+    required this.seed,
+    required this.useStringNumber,
+    required this.padString,
+  });
+
+  final _GeneratedValidDispatchTool tool;
+  final int seed;
+  final bool useStringNumber;
+  final bool padString;
+
+  String get toolName => switch (tool) {
+    _GeneratedValidDispatchTool.setTaskTitle => TaskAgentToolNames.setTaskTitle,
+    _GeneratedValidDispatchTool.updateTaskEstimate =>
+      TaskAgentToolNames.updateTaskEstimate,
+    _GeneratedValidDispatchTool.updateTaskDueDate =>
+      TaskAgentToolNames.updateTaskDueDate,
+    _GeneratedValidDispatchTool.updateTaskPriority =>
+      TaskAgentToolNames.updateTaskPriority,
+    _GeneratedValidDispatchTool.setTaskLanguage =>
+      TaskAgentToolNames.setTaskLanguage,
+    _GeneratedValidDispatchTool.setTaskStatus =>
+      TaskAgentToolNames.setTaskStatus,
+  };
+
+  int get expectedMinutes => seed % 1439 + 1;
+
+  String get expectedDueDate {
+    final day = (seed % 28 + 1).toString().padLeft(2, '0');
+    return '2026-08-$day';
+  }
+
+  TaskPriority get expectedPriority => switch (seed % 3) {
+    0 => TaskPriority.p0Urgent,
+    1 => TaskPriority.p1High,
+    _ => TaskPriority.p3Low,
+  };
+
+  String get expectedLanguage => switch (seed % 5) {
+    0 => 'en',
+    1 => 'de',
+    2 => 'fr',
+    3 => 'es',
+    _ => 'ro',
+  };
+
+  String get expectedStatus => switch (seed % 4) {
+    0 => 'IN PROGRESS',
+    1 => 'GROOMED',
+    2 => 'BLOCKED',
+    _ => 'ON HOLD',
+  };
+
+  String get statusReason => 'Generated status reason $seed';
+
+  String _maybePadded(String value) => padString ? '  $value  ' : value;
+
+  Map<String, dynamic> get args => switch (tool) {
+    _GeneratedValidDispatchTool.setTaskTitle => {
+      'title': _maybePadded('Generated title $seed'),
+    },
+    _GeneratedValidDispatchTool.updateTaskEstimate => {
+      'minutes': useStringNumber ? '$expectedMinutes' : expectedMinutes,
+    },
+    _GeneratedValidDispatchTool.updateTaskDueDate => {
+      'dueDate': expectedDueDate,
+    },
+    _GeneratedValidDispatchTool.updateTaskPriority => {
+      'priority': _maybePadded(expectedPriority.short.toLowerCase()),
+    },
+    _GeneratedValidDispatchTool.setTaskLanguage => {
+      'languageCode': _maybePadded(expectedLanguage.toUpperCase()),
+    },
+    _GeneratedValidDispatchTool.setTaskStatus => {
+      'status': _maybePadded(expectedStatus.toLowerCase()),
+      if (expectedStatus == 'BLOCKED' || expectedStatus == 'ON HOLD')
+        'reason': _maybePadded(statusReason),
+    },
+  };
+
+  void expectMutation(Task updatedTask) {
+    switch (tool) {
+      case _GeneratedValidDispatchTool.setTaskTitle:
+        expect(updatedTask.data.title, 'Generated title $seed');
+      case _GeneratedValidDispatchTool.updateTaskEstimate:
+        expect(updatedTask.data.estimate, Duration(minutes: expectedMinutes));
+      case _GeneratedValidDispatchTool.updateTaskDueDate:
+        expect(updatedTask.data.due, DateTime.parse(expectedDueDate));
+      case _GeneratedValidDispatchTool.updateTaskPriority:
+        expect(updatedTask.data.priority, expectedPriority);
+      case _GeneratedValidDispatchTool.setTaskLanguage:
+        expect(updatedTask.data.languageCode, expectedLanguage);
+        expect(updatedTask.data.languageSource, ChangeSource.agent);
+      case _GeneratedValidDispatchTool.setTaskStatus:
+        expect(updatedTask.data.status.toDbString, expectedStatus);
+        expect(updatedTask.data.statusHistory, hasLength(1));
+        if (expectedStatus == 'BLOCKED') {
+          expect((updatedTask.data.status as TaskBlocked).reason, statusReason);
+        }
+        if (expectedStatus == 'ON HOLD') {
+          expect((updatedTask.data.status as TaskOnHold).reason, statusReason);
+        }
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedValidDispatchScenario('
+        'toolName: $toolName, args: $args)';
+  }
+}
+
+extension _AnyGeneratedValidDispatchScenario on glados.Any {
+  glados.Generator<_GeneratedValidDispatchTool> get validDispatchTool =>
+      glados.AnyUtils(this).choose(_GeneratedValidDispatchTool.values);
+
+  glados.Generator<_GeneratedValidDispatchScenario> get validDispatchScenario =>
+      glados.CombinableAny(this).combine4(
+        validDispatchTool,
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.AnyUtils(this).choose([false, true]),
+        glados.AnyUtils(this).choose([false, true]),
+        (
+          _GeneratedValidDispatchTool tool,
+          int seed,
+          bool useStringNumber,
+          bool padString,
+        ) => _GeneratedValidDispatchScenario(
+          tool: tool,
+          seed: seed,
+          useStringNumber: useStringNumber,
+          padString: padString,
         ),
       );
 }
@@ -515,6 +663,51 @@ void main() {
 
         expect(result.success, isTrue);
       });
+
+      glados.Glados(
+        glados.any.validDispatchScenario,
+        glados.ExploreConfig(numRuns: 160),
+      ).test(
+        'applies generated valid scalar task mutations',
+        (scenario) async {
+          final localJournalDb = MockJournalDb();
+          final localJournalRepository = MockJournalRepository();
+          final localDispatcher = TaskToolDispatcher(
+            journalDb: localJournalDb,
+            journalRepository: localJournalRepository,
+            checklistRepository: MockChecklistRepository(),
+            labelsRepository: MockLabelsRepository(),
+            persistenceLogic: MockPersistenceLogic(),
+            timeService: MockTimeService(),
+          );
+
+          when(
+            () => localJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => _makeTestTask(taskId));
+          when(
+            () => localJournalRepository.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          final result = await localDispatcher.dispatch(
+            scenario.toolName,
+            scenario.args,
+            taskId,
+          );
+
+          expect(result.success, isTrue, reason: '$scenario');
+          expect(result.mutatedEntityId, taskId, reason: '$scenario');
+
+          final captured =
+              verify(
+                    () => localJournalRepository.updateJournalEntity(
+                      captureAny(),
+                    ),
+                  ).captured.single
+                  as Task;
+          expect(captured.id, taskId, reason: '$scenario');
+          scenario.expectMutation(captured);
+        },
+      );
     });
 
     group('dispatch — handlers requiring getIt', () {
