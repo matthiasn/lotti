@@ -153,6 +153,12 @@ Future<void> _stubNavService(
   );
   when(() => navService.tapIndex(any())).thenReturn(null);
   when(() => navService.isDesktopMode).thenReturn(false);
+  // SidebarTimerSection reads this notifier to decide whether to hide
+  // when the running task matches the open task. Empty selection in
+  // these tests so the sidebar timer surfaces normally.
+  when(
+    () => navService.desktopSelectedTaskId,
+  ).thenReturn(ValueNotifier<String?>(null));
 }
 
 Future<void> _pumpAppScreen(

@@ -385,9 +385,13 @@ class _TrackTimePill extends StatelessWidget {
           onTap: isTracking ? onNavigateToRunningEntry : onStartTimer,
           child: Container(
             height: TaskActionBar.buttonSize,
-            padding: EdgeInsets.symmetric(
-              horizontal: isTracking ? spacing.step2 : spacing.step5,
-            ),
+            // While tracking, the leading edge holds the inset stop
+            // circle. step3 keeps it visually balanced inside the pill;
+            // step2 (the prior value) crowded the circle against the
+            // edge. The trailing edge keeps step2 because the digits
+            // already get extra breathing room from the inner Padding
+            // (right: step3) below.
+            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
             decoration: BoxDecoration(
               color: fillColor,
               borderRadius: pillRadius,
@@ -417,9 +421,7 @@ class _TrackTimePill extends StatelessWidget {
                       // (open 4/6/9), matching the sidebar timer pill so
                       // the elapsed digits don't shift width as they
                       // tick.
-                      fontFeatures: isTracking
-                          ? numericBadgeFontFeatures
-                          : null,
+                      fontFeatures: numericBadgeFontFeatures,
                     ),
                   ),
                 ),

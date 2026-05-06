@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/misc/timer_navigation.dart';
@@ -16,33 +17,92 @@ import 'package:lotti/widgets/misc/timer_navigation.dart';
 ///
 /// Tapping anywhere on the body navigates to the running task (or the
 /// timer's journal entry, if not linked to a task). Tapping the stop
-/// button stops the timer. The panel collapses to [SizedBox.shrink] when
-/// no timer is running, so it consumes no space in the idle state.
+/// button stops the timer.
+///
+/// The card is hidden in two situations, each producing a smooth
+/// fade-and-collapse transition rather than a hard pop:
+///
+/// * No timer is running. There is nothing to show.
+/// * The running timer is linked to the same task that is currently
+///   open in the desktop task-details pane (tracked via
+///   [NavService.desktopSelectedTaskId]). The task page already shows a
+///   running indicator in its sticky action bar, so duplicating the
+///   title in the sidebar is just noise.
 class SidebarTimerSection extends ConsumerWidget {
   const SidebarTimerSection({super.key});
+
+  /// Duration used for both the fade and the surrounding collapse.
+  /// Short enough to feel responsive, long enough to read as a
+  /// transition rather than a flicker.
+  @visibleForTesting
+  static const Duration animationDuration = Duration(milliseconds: 220);
+
+  /// Stable key used by the hidden state. Sharing one key across all
+  /// hidden variants keeps [AnimatedSwitcher] from running an extra
+  /// transition when we toggle between "no timer" and
+  /// "timer hidden because the task is open".
+  static const Key _hiddenKey = ValueKey('sidebar-timer-hidden');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timeService = getIt<TimeService>();
+    final selectedTaskId = getIt<NavService>().desktopSelectedTaskId;
 
     return StreamBuilder<JournalEntity?>(
       stream: timeService.getStream(),
       builder: (context, snapshot) {
         final current = snapshot.data;
-        if (current == null) {
-          return const SizedBox.shrink();
-        }
-        return _SidebarTimerCard(
-          current: current,
-          linkedFrom: timeService.linkedFrom,
-          onStop: () => unawaited(timeService.stop()),
-          onTapBody: () => navigateToTimerTarget(
-            ref: ref,
-            current: current,
-            linkedFrom: timeService.linkedFrom,
-          ),
+        return ValueListenableBuilder<String?>(
+          valueListenable: selectedTaskId,
+          builder: (context, openTaskId, _) {
+            final child = _resolveChild(
+              ref: ref,
+              timeService: timeService,
+              current: current,
+              openTaskId: openTaskId,
+            );
+            return AnimatedSize(
+              duration: animationDuration,
+              curve: Curves.easeInOut,
+              alignment: Alignment.bottomCenter,
+              child: AnimatedSwitcher(
+                duration: animationDuration,
+                switchInCurve: Curves.easeIn,
+                switchOutCurve: Curves.easeOut,
+                child: child,
+              ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _resolveChild({
+    required WidgetRef ref,
+    required TimeService timeService,
+    required JournalEntity? current,
+    required String? openTaskId,
+  }) {
+    if (current == null) {
+      return const SizedBox.shrink(key: _hiddenKey);
+    }
+    final linkedFrom = timeService.linkedFrom;
+    if (linkedFrom is Task &&
+        openTaskId != null &&
+        linkedFrom.meta.id == openTaskId) {
+      return const SizedBox.shrink(key: _hiddenKey);
+    }
+    return _SidebarTimerCard(
+      key: ValueKey('sidebar-timer-${current.meta.id}'),
+      current: current,
+      linkedFrom: linkedFrom,
+      onStop: () => unawaited(timeService.stop()),
+      onTapBody: () => navigateToTimerTarget(
+        ref: ref,
+        current: current,
+        linkedFrom: linkedFrom,
+      ),
     );
   }
 }
@@ -53,6 +113,7 @@ class _SidebarTimerCard extends StatelessWidget {
     required this.linkedFrom,
     required this.onStop,
     required this.onTapBody,
+    super.key,
   });
 
   final JournalEntity current;

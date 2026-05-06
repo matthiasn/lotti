@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.997]
+### Changed
+- Sidebar running-timer card now hides itself when the timer's parent
+  task is the same task currently open in the desktop task-details
+  pane. The detail page's sticky action bar already shows a running
+  indicator, so duplicating the title in the sidebar was just noise.
+  The card returns the moment a different task (or none) is selected.
+- The show/hide flip runs through a combined `AnimatedSwitcher` +
+  `AnimatedSize` (~220 ms, `Curves.easeInOut`) so the card fades and
+  the surrounding sidebar collapses smoothly instead of popping.
+- Sticky action bar's running "Track time" pill gets a touch more
+  breathing room on the leading edge: the inset stop circle now sits
+  8 px from the pill border (was 4 px) so it no longer crowds the
+  edge while the elapsed digits tick.
+
 ## [0.9.996]
 ### Changed
 - Audio recording player restyled to match the green Figma audio card.
