@@ -211,7 +211,24 @@ class TaskPriorityHandler {
       );
 
       try {
-        await journalRepository.updateJournalEntity(updatedTask);
+        final success = await journalRepository.updateJournalEntity(
+          updatedTask,
+        );
+
+        if (!success) {
+          const message =
+              'Failed to update priority: repository returned false.';
+          developer.log(message, name: 'TaskPriorityHandler');
+          _sendResponse(call.id, message, manager);
+          return TaskPriorityResult(
+            success: false,
+            message: message,
+            requestedPriority: priority,
+            reason: reason,
+            confidence: confidence,
+            error: message,
+          );
+        }
 
         // Update local state
         task = updatedTask;

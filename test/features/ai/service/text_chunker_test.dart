@@ -86,6 +86,44 @@ class _GeneratedLongSentence {
   }
 }
 
+class _GeneratedLongToken {
+  const _GeneratedLongToken({
+    required this.length,
+    required this.character,
+    required this.leadingWhitespace,
+    required this.trailingWhitespace,
+  });
+
+  final int length;
+  final String character;
+  final String leadingWhitespace;
+  final String trailingWhitespace;
+
+  String get token => character * length;
+  String get text => '$leadingWhitespace$token$trailingWhitespace';
+
+  List<String> get expectedChunks {
+    const maxCharsPerSegment = kChunkTargetTokens * 4;
+    const stride = maxCharsPerSegment - (kChunkOverlapTokens * 4);
+    final chunks = <String>[];
+    for (var start = 0; start < token.length; start += stride) {
+      final end = (start + maxCharsPerSegment).clamp(0, token.length);
+      chunks.add(token.substring(start, end));
+      if (end == token.length) break;
+    }
+    return chunks;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedLongToken('
+        'length: $length, '
+        'character: $character, '
+        'leadingWhitespace: ${leadingWhitespace.replaceAll('\n', r'\n')}, '
+        'trailingWhitespace: ${trailingWhitespace.replaceAll('\n', r'\n')})';
+  }
+}
+
 extension _AnyTextChunkerScenarios on Any {
   Generator<_GeneratedChunkText> get chunkText => combine4(
     listWithLengthInRange(0, 90, intInRange(1, 24)),
@@ -115,6 +153,24 @@ extension _AnyTextChunkerScenarios on Any {
       String trailingWhitespace,
     ) => _GeneratedLongSentence(
       wordCount: wordCount,
+      leadingWhitespace: leadingWhitespace,
+      trailingWhitespace: trailingWhitespace,
+    ),
+  );
+
+  Generator<_GeneratedLongToken> get longToken => combine4(
+    intInRange(kChunkTargetTokens * 4, kChunkTargetTokens * 16),
+    choose(['a', 'Z', '7', '_']),
+    choose(['', ' ', '\n']),
+    choose(['', ' ', '\n']),
+    (
+      int length,
+      String character,
+      String leadingWhitespace,
+      String trailingWhitespace,
+    ) => _GeneratedLongToken(
+      length: length,
+      character: character,
       leadingWhitespace: leadingWhitespace,
       trailingWhitespace: trailingWhitespace,
     ),
@@ -564,6 +620,27 @@ void main() {
                   'for $scenario',
             );
           }
+        },
+      );
+
+      Glados(any.longToken, ExploreConfig(numRuns: 120)).test(
+        'splits generated long whitespace-free tokens on the modeled character stride',
+        (scenario) {
+          final chunks = TextChunker.chunk(scenario.text);
+
+          expect(chunks, scenario.expectedChunks, reason: '$scenario');
+          _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
+          for (final chunk in chunks) {
+            expect(chunk, chunk.trim(), reason: '$scenario');
+            expect(chunk, isNotEmpty, reason: '$scenario');
+            expect(
+              chunk.length,
+              lessThanOrEqualTo(kChunkTargetTokens * 4),
+              reason: '$scenario',
+            );
+          }
+          expect(chunks.first, startsWith(scenario.character));
+          expect(chunks.last, endsWith(scenario.character));
         },
       );
     });

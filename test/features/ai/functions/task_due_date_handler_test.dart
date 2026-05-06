@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -11,6 +12,149 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 
 class MockConversationManager extends Mock implements ConversationManager {}
+
+enum _GeneratedCurrentDueDateKind { none, same, different }
+
+enum _GeneratedDueDateRequestShape {
+  dateOnly,
+  missing,
+  empty,
+  partial,
+  fullIso,
+}
+
+class _GeneratedDueDateToolCallScenario {
+  const _GeneratedDueDateToolCallScenario({
+    required this.currentKind,
+    required this.requestShape,
+    required this.year,
+    required this.month,
+    required this.day,
+    required this.repositorySucceeds,
+    required this.seed,
+  });
+
+  final _GeneratedCurrentDueDateKind currentKind;
+  final _GeneratedDueDateRequestShape requestShape;
+  final int year;
+  final int month;
+  final int day;
+  final bool repositorySucceeds;
+  final int seed;
+
+  String get dateOnly {
+    return '$year-${month.toString().padLeft(2, '0')}-'
+        '${day.toString().padLeft(2, '0')}';
+  }
+
+  String? get rawDueDate {
+    return switch (requestShape) {
+      _GeneratedDueDateRequestShape.dateOnly => dateOnly,
+      _GeneratedDueDateRequestShape.missing => null,
+      _GeneratedDueDateRequestShape.empty => '',
+      _GeneratedDueDateRequestShape.partial =>
+        '$year-${month.toString().padLeft(2, '0')}',
+      _GeneratedDueDateRequestShape.fullIso => '${dateOnly}T10:30:00',
+    };
+  }
+
+  DateTime? get parsedDate {
+    if (requestShape != _GeneratedDueDateRequestShape.dateOnly) {
+      return null;
+    }
+    if (month < 1 || month > 12) return null;
+    if (day < 1 || day > _daysInMonth(year, month)) return null;
+    return DateTime(year, month, day);
+  }
+
+  DateTime? get currentDue {
+    final date = parsedDate;
+    if (date == null || currentKind == _GeneratedCurrentDueDateKind.none) {
+      return null;
+    }
+    if (currentKind == _GeneratedCurrentDueDateKind.same) {
+      return date;
+    }
+    return date.add(const Duration(days: 1));
+  }
+
+  bool get isMissingOrEmpty =>
+      requestShape == _GeneratedDueDateRequestShape.missing ||
+      requestShape == _GeneratedDueDateRequestShape.empty;
+
+  bool get isInvalid => parsedDate == null;
+
+  bool get isNoOp =>
+      parsedDate != null &&
+      currentDue != null &&
+      currentDue!.year == parsedDate!.year &&
+      currentDue!.month == parsedDate!.month &&
+      currentDue!.day == parsedDate!.day;
+
+  bool get shouldAttemptWrite => !isInvalid && !isNoOp;
+
+  bool get shouldWrite => shouldAttemptWrite && repositorySucceeds;
+
+  Map<String, Object?> get arguments => {
+    if (requestShape != _GeneratedDueDateRequestShape.missing)
+      'dueDate': rawDueDate,
+    'reason': 'Generated reason $seed',
+    'confidence': seed.isEven ? 'high' : 'medium',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedDueDateToolCallScenario('
+        'currentKind: $currentKind, '
+        'requestShape: $requestShape, '
+        'dateOnly: $dateOnly, '
+        'repositorySucceeds: $repositorySucceeds, '
+        'seed: $seed)';
+  }
+}
+
+extension _AnyTaskDueDateHandlerScenario on glados.Any {
+  glados.Generator<_GeneratedCurrentDueDateKind> get currentDueDateKind =>
+      glados.AnyUtils(this).choose(_GeneratedCurrentDueDateKind.values);
+
+  glados.Generator<_GeneratedDueDateRequestShape> get dueDateRequestShape =>
+      glados.AnyUtils(this).choose(_GeneratedDueDateRequestShape.values);
+
+  glados.Generator<_GeneratedDueDateToolCallScenario>
+  get dueDateToolCallScenario => glados.CombinableAny(this).combine7(
+    currentDueDateKind,
+    dueDateRequestShape,
+    glados.IntAnys(this).intInRange(2023, 2027),
+    glados.IntAnys(this).intInRange(0, 15),
+    glados.IntAnys(this).intInRange(0, 36),
+    glados.BoolAny(this).bool,
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      _GeneratedCurrentDueDateKind currentKind,
+      _GeneratedDueDateRequestShape requestShape,
+      int year,
+      int month,
+      int day,
+      bool repositorySucceeds,
+      int seed,
+    ) => _GeneratedDueDateToolCallScenario(
+      currentKind: currentKind,
+      requestShape: requestShape,
+      year: year,
+      month: month,
+      day: day,
+      repositorySucceeds: repositorySucceeds,
+      seed: seed,
+    ),
+  );
+}
+
+int _daysInMonth(int year, int month) {
+  final firstOfNextMonth = month == 12
+      ? DateTime(year + 1)
+      : DateTime(year, month + 1);
+  return firstOfNextMonth.subtract(const Duration(days: 1)).day;
+}
 
 void main() {
   late MockJournalRepository mockJournalRepo;
@@ -92,6 +236,19 @@ void main() {
           'reason': ?reason,
           'confidence': ?confidence,
         }),
+      ),
+    );
+  }
+
+  ChatCompletionMessageToolCall createDueDateToolCallFromArgs(
+    Map<String, Object?> args,
+  ) {
+    return ChatCompletionMessageToolCall(
+      id: 'call_due_date_generated',
+      type: ChatCompletionMessageToolCallType.function,
+      function: ChatCompletionMessageFunctionCall(
+        name: 'update_task_due_date',
+        arguments: jsonEncode(args),
       ),
     );
   }
@@ -486,6 +643,88 @@ void main() {
         },
       );
     });
+
+    glados.Glados(
+      glados.any.dueDateToolCallScenario,
+      glados.ExploreConfig(numRuns: 220),
+    ).test(
+      'matches generated due-date validation, no-op, and repository semantics',
+      (scenario) async {
+        final repo = MockJournalRepository();
+        when(
+          () => repo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => scenario.repositorySucceeds);
+
+        final initialTask = createTask(due: scenario.currentDue);
+        Task? callbackTask;
+        final handler = TaskDueDateHandler(
+          task: initialTask,
+          journalRepository: repo,
+          onTaskUpdated: (updatedTask) => callbackTask = updatedTask,
+        );
+
+        final result = await handler.processToolCall(
+          createDueDateToolCallFromArgs(scenario.arguments),
+        );
+
+        if (scenario.isInvalid) {
+          expect(result.success, isFalse, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.requestedDate, isNull, reason: '$scenario');
+          expect(
+            result.error,
+            scenario.isMissingOrEmpty
+                ? contains('date string is required')
+                : contains('YYYY-MM-DD'),
+            reason: '$scenario',
+          );
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          verifyNever(() => repo.updateJournalEntity(any()));
+          return;
+        }
+
+        expect(result.requestedDate, scenario.parsedDate);
+        expect(result.reason, 'Generated reason ${scenario.seed}');
+        expect(result.confidence, scenario.seed.isEven ? 'high' : 'medium');
+
+        if (scenario.isNoOp) {
+          expect(result.success, isTrue, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.wasNoOp, isTrue, reason: '$scenario');
+          expect(result.updatedTask, isNull, reason: '$scenario');
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          verifyNever(() => repo.updateJournalEntity(any()));
+          return;
+        }
+
+        expect(scenario.shouldAttemptWrite, isTrue, reason: '$scenario');
+        final captured =
+            verify(
+                  () => repo.updateJournalEntity(captureAny()),
+                ).captured.single
+                as Task;
+        expect(captured.data.due, scenario.parsedDate, reason: '$scenario');
+
+        if (!scenario.repositorySucceeds) {
+          expect(result.success, isFalse, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.error, contains('repository returned false'));
+          expect(result.updatedTask, isNull, reason: '$scenario');
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          return;
+        }
+
+        expect(result.success, isTrue, reason: '$scenario');
+        expect(result.didWrite, isTrue, reason: '$scenario');
+        expect(result.wasNoOp, isFalse, reason: '$scenario');
+        expect(result.updatedTask, captured, reason: '$scenario');
+        expect(handler.task, captured, reason: '$scenario');
+        expect(callbackTask, captured, reason: '$scenario');
+      },
+    );
 
     group('TaskDueDateResult', () {
       test('wasSkipped returns true for non-error failures', () {

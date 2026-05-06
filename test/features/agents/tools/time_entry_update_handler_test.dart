@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -8,6 +9,205 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+
+enum _GeneratedSummaryShape {
+  absent,
+  valid,
+  paddedValid,
+  empty,
+  tooLong,
+  nonString,
+}
+
+enum _GeneratedTimeArgShape {
+  absent,
+  valid,
+  paddedValid,
+  empty,
+  invalidType,
+  timezone,
+  invalidLocal,
+}
+
+class _GeneratedTimeEntryUpdateScenario {
+  const _GeneratedTimeEntryUpdateScenario({
+    required this.summaryShape,
+    required this.startShape,
+    required this.endShape,
+    required this.flags,
+    required this.startOffsetSeed,
+    required this.endOffsetSeed,
+    required this.seed,
+  });
+
+  final _GeneratedSummaryShape summaryShape;
+  final _GeneratedTimeArgShape startShape;
+  final _GeneratedTimeArgShape endShape;
+  final int flags;
+  final int startOffsetSeed;
+  final int endOffsetSeed;
+  final int seed;
+
+  static final existingStart = DateTime(2026, 4, 15, 13);
+  static final existingEnd = DateTime(2026, 4, 15, 14);
+
+  bool get isLinked => flags.isOdd;
+  bool get isActiveTimer => flags & 2 != 0;
+  bool get persistenceSucceeds => flags & 4 != 0;
+
+  int get startOffsetMinutes => (startOffsetSeed % 361) - 180;
+  int get endOffsetMinutes => (endOffsetSeed % 361) - 180;
+
+  DateTime get generatedStart =>
+      existingStart.add(Duration(minutes: startOffsetMinutes));
+
+  DateTime get generatedEnd =>
+      existingEnd.add(Duration(minutes: endOffsetMinutes));
+
+  Object? get rawSummary => switch (summaryShape) {
+    _GeneratedSummaryShape.absent => null,
+    _GeneratedSummaryShape.valid => 'Generated summary $seed',
+    _GeneratedSummaryShape.paddedValid => '  Generated summary $seed  ',
+    _GeneratedSummaryShape.empty => '   ',
+    _GeneratedSummaryShape.tooLong => 'x' * 501,
+    _GeneratedSummaryShape.nonString => seed,
+  };
+
+  Object? rawTime(_GeneratedTimeArgShape shape, DateTime value) {
+    final text = _formatLocal(value);
+    return switch (shape) {
+      _GeneratedTimeArgShape.absent => null,
+      _GeneratedTimeArgShape.valid => text,
+      _GeneratedTimeArgShape.paddedValid => ' $text ',
+      _GeneratedTimeArgShape.empty => '',
+      _GeneratedTimeArgShape.invalidType => seed,
+      _GeneratedTimeArgShape.timezone => '${text}Z',
+      _GeneratedTimeArgShape.invalidLocal => '2026-00-01T00:00:00',
+    };
+  }
+
+  Map<String, dynamic> get args => {
+    'entryId': 'entry-001',
+    if (summaryShape != _GeneratedSummaryShape.absent) 'summary': rawSummary,
+    if (startShape != _GeneratedTimeArgShape.absent)
+      'startTime': rawTime(startShape, generatedStart),
+    if (endShape != _GeneratedTimeArgShape.absent)
+      'endTime': rawTime(endShape, generatedEnd),
+  };
+
+  bool get hasNoChanges =>
+      summaryShape == _GeneratedSummaryShape.absent &&
+      startShape == _GeneratedTimeArgShape.absent &&
+      endShape == _GeneratedTimeArgShape.absent;
+
+  bool get hasInvalidSummary => switch (summaryShape) {
+    _GeneratedSummaryShape.empty ||
+    _GeneratedSummaryShape.tooLong ||
+    _GeneratedSummaryShape.nonString => true,
+    _ => false,
+  };
+
+  bool hasInvalidTime(_GeneratedTimeArgShape shape) {
+    return switch (shape) {
+      _GeneratedTimeArgShape.empty ||
+      _GeneratedTimeArgShape.invalidType ||
+      _GeneratedTimeArgShape.timezone ||
+      _GeneratedTimeArgShape.invalidLocal => true,
+      _ => false,
+    };
+  }
+
+  DateTime? parsedTime(_GeneratedTimeArgShape shape, DateTime value) {
+    return switch (shape) {
+      _GeneratedTimeArgShape.valid ||
+      _GeneratedTimeArgShape.paddedValid => value,
+      _ => null,
+    };
+  }
+
+  DateTime? get parsedStart => parsedTime(startShape, generatedStart);
+  DateTime? get parsedEnd => parsedTime(endShape, generatedEnd);
+
+  DateTime get resolvedStart => parsedStart ?? existingStart;
+  DateTime get resolvedEnd => parsedEnd ?? existingEnd;
+
+  bool get hasInvalidRange => !resolvedEnd.isAfter(resolvedStart);
+
+  bool get shouldAttemptWrite =>
+      !hasNoChanges &&
+      !hasInvalidSummary &&
+      !hasInvalidTime(startShape) &&
+      !hasInvalidTime(endShape) &&
+      isLinked &&
+      !isActiveTimer &&
+      !hasInvalidRange;
+
+  bool get shouldSucceed => shouldAttemptWrite && persistenceSucceeds;
+
+  EntryText? get expectedEntryText {
+    final summary = rawSummary;
+    if (summary is! String) return null;
+    return EntryText(plainText: '${summary.trim()} [generated]');
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedTimeEntryUpdateScenario('
+        'summaryShape: $summaryShape, '
+        'startShape: $startShape, '
+        'endShape: $endShape, '
+        'isLinked: $isLinked, '
+        'isActiveTimer: $isActiveTimer, '
+        'persistenceSucceeds: $persistenceSucceeds, '
+        'resolvedStart: $resolvedStart, '
+        'resolvedEnd: $resolvedEnd)';
+  }
+}
+
+extension _AnyTimeEntryUpdateScenario on glados.Any {
+  glados.Generator<_GeneratedSummaryShape> get generatedSummaryShape =>
+      glados.AnyUtils(this).choose(_GeneratedSummaryShape.values);
+
+  glados.Generator<_GeneratedTimeArgShape> get generatedTimeArgShape =>
+      glados.AnyUtils(this).choose(_GeneratedTimeArgShape.values);
+
+  glados.Generator<_GeneratedTimeEntryUpdateScenario>
+  get timeEntryUpdateScenario => glados.CombinableAny(this).combine7(
+    generatedSummaryShape,
+    generatedTimeArgShape,
+    generatedTimeArgShape,
+    glados.IntAnys(this).intInRange(0, 7),
+    glados.IntAnys(this).intInRange(0, 10000),
+    glados.IntAnys(this).intInRange(0, 10000),
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      _GeneratedSummaryShape summaryShape,
+      _GeneratedTimeArgShape startShape,
+      _GeneratedTimeArgShape endShape,
+      int flags,
+      int startOffsetSeed,
+      int endOffsetSeed,
+      int seed,
+    ) => _GeneratedTimeEntryUpdateScenario(
+      summaryShape: summaryShape,
+      startShape: startShape,
+      endShape: endShape,
+      flags: flags,
+      startOffsetSeed: startOffsetSeed,
+      endOffsetSeed: endOffsetSeed,
+      seed: seed,
+    ),
+  );
+}
+
+String _formatLocal(DateTime value) {
+  return '${_fourDigits(value.year)}-${_twoDigits(value.month)}-'
+      '${_twoDigits(value.day)}T${_twoDigits(value.hour)}:'
+      '${_twoDigits(value.minute)}:${_twoDigits(value.second)}';
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
+String _fourDigits(int value) => value.toString().padLeft(4, '0');
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -304,6 +504,102 @@ void main() {
 
           expect(result.success, isFalse);
           expect(result.errorMessage, 'endTime is not after startTime');
+        },
+      );
+
+      glados.Glados(
+        glados.any.timeEntryUpdateScenario,
+        glados.ExploreConfig(numRuns: 240),
+      ).test(
+        'matches generated validation, linkage, range, and persistence semantics',
+        (scenario) async {
+          final localPersistenceLogic = MockPersistenceLogic();
+          final localJournalDb = MockJournalDb();
+          final localTimeService = MockTimeService();
+          final localDomainLogger = MockDomainLogger();
+          final localHandler = TimeEntryUpdateHandler(
+            persistenceLogic: localPersistenceLogic,
+            journalDb: localJournalDb,
+            timeService: localTimeService,
+            domainLogger: localDomainLogger,
+          );
+
+          final entry = makeEntry(
+            dateFrom: _GeneratedTimeEntryUpdateScenario.existingStart,
+            dateTo: _GeneratedTimeEntryUpdateScenario.existingEnd,
+          );
+          final otherEntry = makeEntry(id: 'other-entry');
+
+          when(
+            () => localJournalDb.journalEntityById(entryId),
+          ).thenAnswer((_) async => entry);
+          when(
+            () => localJournalDb.getLinkedEntities(sourceTaskId),
+          ).thenAnswer(
+            (_) async => scenario.isLinked ? [entry] : [otherEntry],
+          );
+          when(
+            localTimeService.getCurrent,
+          ).thenReturn(scenario.isActiveTimer ? entry : null);
+          when(
+            () => localPersistenceLogic.updateJournalEntry(
+              journalEntityId: any(named: 'journalEntityId'),
+              entryText: any(named: 'entryText'),
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+            ),
+          ).thenAnswer((_) async => scenario.persistenceSucceeds);
+          when(
+            () => localDomainLogger.log(
+              any(),
+              any(),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).thenReturn(null);
+
+          final result = await localHandler.handle(
+            sourceTaskId,
+            scenario.args,
+          );
+
+          if (!scenario.shouldAttemptWrite) {
+            expect(result.success, isFalse, reason: '$scenario');
+            expect(result.errorMessage, isNotNull, reason: '$scenario');
+            verifyNever(
+              () => localPersistenceLogic.updateJournalEntry(
+                journalEntityId: any(named: 'journalEntityId'),
+                entryText: any(named: 'entryText'),
+                dateFrom: any(named: 'dateFrom'),
+                dateTo: any(named: 'dateTo'),
+              ),
+            );
+            return;
+          }
+
+          expect(result.success, scenario.shouldSucceed, reason: '$scenario');
+          verify(
+            () => localPersistenceLogic.updateJournalEntry(
+              journalEntityId: entryId,
+              entryText: scenario.expectedEntryText,
+              dateFrom: scenario.parsedStart,
+              dateTo: scenario.parsedEnd,
+            ),
+          ).called(1);
+
+          if (scenario.shouldSucceed) {
+            expect(result.mutatedEntityId, entryId, reason: '$scenario');
+            expect(
+              result.output,
+              contains('Updated time entry'),
+              reason: '$scenario',
+            );
+          } else {
+            expect(
+              result.errorMessage,
+              'updateJournalEntry returned false',
+              reason: '$scenario',
+            );
+          }
         },
       );
     });

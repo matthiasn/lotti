@@ -109,8 +109,11 @@ class ChangeProposalFilter {
         }
       case TaskAgentToolNames.updateTaskPriority:
         final priority = args['priority'];
-        if (priority is String && snapshot.priority == priority) {
-          return 'Skipped: priority is already $priority.';
+        if (priority is String) {
+          final normalized = priority.trim().toUpperCase();
+          if (snapshot.priority == normalized) {
+            return 'Skipped: priority is already $normalized.';
+          }
         }
       case TaskAgentToolNames.updateTaskDueDate:
         final dueDate = args['dueDate'];
@@ -119,13 +122,19 @@ class ChangeProposalFilter {
         }
       case TaskAgentToolNames.setTaskStatus:
         final status = args['status'];
-        if (status is String && snapshot.status == status) {
-          return 'Skipped: status is already $status.';
+        if (status is String) {
+          final normalized = status.trim().toUpperCase();
+          if (snapshot.status == normalized) {
+            return 'Skipped: status is already $normalized.';
+          }
         }
       case TaskAgentToolNames.setTaskTitle:
         final title = args['title'];
-        if (title is String && snapshot.title == title) {
-          return 'Skipped: title is already "$title".';
+        if (title is String) {
+          final trimmed = title.trim();
+          if (snapshot.title == trimmed) {
+            return 'Skipped: title is already "$trimmed".';
+          }
         }
       case TaskAgentToolNames.setTaskLanguage:
         final languageCode = args['languageCode'];

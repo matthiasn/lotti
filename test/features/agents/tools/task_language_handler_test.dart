@@ -1,12 +1,124 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+
+enum _GeneratedCurrentLanguageKind { none, agent, user }
+
+enum _GeneratedLanguageRequestShape {
+  empty,
+  whitespace,
+  supported,
+  supportedUppercase,
+  supportedPadded,
+  unsupported,
+  unsupportedPadded,
+}
+
+class _GeneratedTaskLanguageScenario {
+  const _GeneratedTaskLanguageScenario({
+    required this.currentKind,
+    required this.currentLanguage,
+    required this.requestLanguage,
+    required this.requestShape,
+  });
+
+  final _GeneratedCurrentLanguageKind currentKind;
+  final SupportedLanguage currentLanguage;
+  final SupportedLanguage requestLanguage;
+  final _GeneratedLanguageRequestShape requestShape;
+
+  String? get currentCode => currentKind == _GeneratedCurrentLanguageKind.none
+      ? null
+      : currentLanguage.code;
+
+  ChangeSource? get currentSource {
+    return switch (currentKind) {
+      _GeneratedCurrentLanguageKind.none => null,
+      _GeneratedCurrentLanguageKind.agent => ChangeSource.agent,
+      _GeneratedCurrentLanguageKind.user => ChangeSource.user,
+    };
+  }
+
+  String get requestCode {
+    return switch (requestShape) {
+      _GeneratedLanguageRequestShape.empty => '',
+      _GeneratedLanguageRequestShape.whitespace => ' \n\t ',
+      _GeneratedLanguageRequestShape.supported => requestLanguage.code,
+      _GeneratedLanguageRequestShape.supportedUppercase =>
+        requestLanguage.code.toUpperCase(),
+      _GeneratedLanguageRequestShape.supportedPadded =>
+        '  ${requestLanguage.code.toUpperCase()}  ',
+      _GeneratedLanguageRequestShape.unsupported => 'zz',
+      _GeneratedLanguageRequestShape.unsupportedPadded => '  zz  ',
+    };
+  }
+
+  String get normalizedRequest => requestCode.trim().toLowerCase();
+
+  bool get isEmptyRequest => normalizedRequest.isEmpty;
+
+  bool get isUnsupported =>
+      !isEmptyRequest && SupportedLanguage.fromCode(normalizedRequest) == null;
+
+  bool get isNoOp =>
+      !isEmptyRequest && !isUnsupported && currentCode == normalizedRequest;
+
+  bool get userBlocksWrite =>
+      !isEmptyRequest &&
+      !isUnsupported &&
+      !isNoOp &&
+      currentKind == _GeneratedCurrentLanguageKind.user;
+
+  bool get shouldWrite =>
+      !isEmptyRequest && !isUnsupported && !isNoOp && !userBlocksWrite;
+
+  @override
+  String toString() {
+    return '_GeneratedTaskLanguageScenario('
+        'currentKind: $currentKind, '
+        'currentLanguage: ${currentLanguage.code}, '
+        'requestLanguage: ${requestLanguage.code}, '
+        'requestShape: $requestShape)';
+  }
+}
+
+extension _AnyTaskLanguageHandlerScenario on glados.Any {
+  glados.Generator<_GeneratedCurrentLanguageKind> get currentLanguageKind =>
+      glados.AnyUtils(this).choose(_GeneratedCurrentLanguageKind.values);
+
+  glados.Generator<SupportedLanguage> get supportedLanguage =>
+      glados.AnyUtils(this).choose(SupportedLanguage.values);
+
+  glados.Generator<_GeneratedLanguageRequestShape> get languageRequestShape =>
+      glados.AnyUtils(this).choose(_GeneratedLanguageRequestShape.values);
+
+  glados.Generator<_GeneratedTaskLanguageScenario> get taskLanguageScenario =>
+      glados.CombinableAny(this).combine4(
+        currentLanguageKind,
+        supportedLanguage,
+        supportedLanguage,
+        languageRequestShape,
+        (
+          _GeneratedCurrentLanguageKind currentKind,
+          SupportedLanguage currentLanguage,
+          SupportedLanguage requestLanguage,
+          _GeneratedLanguageRequestShape requestShape,
+        ) => _GeneratedTaskLanguageScenario(
+          currentKind: currentKind,
+          currentLanguage: currentLanguage,
+          requestLanguage: requestLanguage,
+          requestShape: requestShape,
+        ),
+      );
+}
 
 void main() {
   late MockJournalRepository mockJournalRepo;
@@ -277,6 +389,84 @@ void main() {
 
         expect(handler.task.data.languageCode, isNull);
       });
+
+      glados.Glados(
+        glados.any.taskLanguageScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'matches generated language validation, no-op, and write semantics',
+        (scenario) async {
+          final repo = MockJournalRepository();
+          when(
+            () => repo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          final initialTask = task.copyWith(
+            data: scenario.currentKind == _GeneratedCurrentLanguageKind.none
+                ? task.data.copyWith(languageCode: null)
+                : task.data.copyWith(
+                    languageCode: scenario.currentCode,
+                    languageSource: scenario.currentSource!,
+                  ),
+          );
+          final handler = TaskLanguageHandler(
+            task: initialTask,
+            journalRepository: repo,
+          );
+
+          final result = await handler.handle(scenario.requestCode);
+
+          if (scenario.isEmptyRequest || scenario.isUnsupported) {
+            expect(result.success, isFalse, reason: '$scenario');
+            expect(result.didWrite, isFalse, reason: '$scenario');
+            expect(result.updatedTask, isNull, reason: '$scenario');
+            expect(
+              result.error,
+              scenario.isEmptyRequest
+                  ? contains('empty')
+                  : contains('Unsupported'),
+              reason: '$scenario',
+            );
+            expect(handler.task, initialTask, reason: '$scenario');
+            verifyNever(() => repo.updateJournalEntity(any()));
+            return;
+          }
+
+          expect(result.success, isTrue, reason: '$scenario');
+          expect(result.error, isNull, reason: '$scenario');
+
+          if (scenario.isNoOp || scenario.userBlocksWrite) {
+            expect(result.didWrite, isFalse, reason: '$scenario');
+            expect(result.wasNoOp, isTrue, reason: '$scenario');
+            expect(result.updatedTask, initialTask, reason: '$scenario');
+            expect(handler.task, initialTask, reason: '$scenario');
+            verifyNever(() => repo.updateJournalEntity(any()));
+            return;
+          }
+
+          expect(scenario.shouldWrite, isTrue, reason: '$scenario');
+          expect(result.didWrite, isTrue, reason: '$scenario');
+          expect(result.wasNoOp, isFalse, reason: '$scenario');
+          expect(
+            result.updatedTask!.data.languageCode,
+            scenario.normalizedRequest,
+            reason: '$scenario',
+          );
+          expect(
+            result.updatedTask!.data.languageSource,
+            ChangeSource.agent,
+            reason: '$scenario',
+          );
+          expect(handler.task, result.updatedTask, reason: '$scenario');
+
+          final captured =
+              verify(
+                    () => repo.updateJournalEntity(captureAny()),
+                  ).captured.single
+                  as Task;
+          expect(captured, result.updatedTask, reason: '$scenario');
+        },
+      );
     });
 
     group('fromHandlerResult conversion', () {

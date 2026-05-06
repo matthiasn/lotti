@@ -44,7 +44,9 @@ class ToolCallAccumulator {
   void _addCompleteToolCall(
     ChatCompletionStreamMessageToolCallChunk toolCallChunk,
   ) {
-    final toolCallId = 'tool_${_counter++}';
+    final explicitId = toolCallChunk.id;
+    final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
+    final toolCallId = hasExplicitId ? explicitId : _nextSyntheticToolCallId();
     _toolCalls[toolCallId] = _AccumulatedToolCall(
       id: toolCallId,
       index: toolCallChunk.index ?? 0,
@@ -79,7 +81,9 @@ class ToolCallAccumulator {
       _appendToToolCall(explicitId, toolCallChunk);
     } else if (hasExplicitId || toolCallChunk.function?.name != null) {
       // This is a new tool call
-      final toolCallId = hasExplicitId ? explicitId : 'tool_${_counter++}';
+      final toolCallId = hasExplicitId
+          ? explicitId
+          : _nextSyntheticToolCallId();
       _startNewToolCall(toolCallId, toolCallChunk);
     } else if (toolCallChunk.index != null) {
       // Try to find by index if no ID
@@ -199,6 +203,14 @@ class ToolCallAccumulator {
 
   /// Get the number of accumulated tool calls.
   int get count => _toolCalls.length;
+
+  String _nextSyntheticToolCallId() {
+    String id;
+    do {
+      id = 'tool_${_counter++}';
+    } while (_toolCalls.containsKey(id));
+    return id;
+  }
 }
 
 /// Internal data class representing an accumulated tool call.

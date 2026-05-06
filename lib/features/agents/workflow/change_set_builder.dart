@@ -798,7 +798,9 @@ class ChangeSetBuilder {
 
   /// Adds a `create_follow_up_task` item with a deterministic placeholder ID
   /// and returns the placeholder so callers can reference it in subsequent
-  /// `migrate_checklist_items` calls.
+  /// `migrate_checklist_items` calls. Follow-up args are stored in canonical
+  /// form so formatting-only repeats use the same fingerprint and are queued
+  /// only once per wake.
   Future<String> addFollowUpTask({
     required Map<String, dynamic> args,
     required String humanSummary,
@@ -819,10 +821,33 @@ class ChangeSetBuilder {
       '$canonTitle|$canonDueDate|$canonPriority',
     );
 
-    final enrichedArgs = {
-      ...args,
-      '_placeholderTaskId': placeholderId,
-    };
+    final enrichedArgs = Map<String, dynamic>.from(args);
+    if (title is String) {
+      enrichedArgs['title'] = canonTitle;
+    }
+    if (dueDate is String) {
+      if (canonDueDate.isEmpty) {
+        enrichedArgs.remove('dueDate');
+      } else {
+        enrichedArgs['dueDate'] = canonDueDate;
+      }
+    }
+    if (priority is String) {
+      if (canonPriority.isEmpty) {
+        enrichedArgs.remove('priority');
+      } else {
+        enrichedArgs['priority'] = canonPriority;
+      }
+    }
+    enrichedArgs['_placeholderTaskId'] = placeholderId;
+
+    final fingerprint = ChangeItem.fingerprintFromParts(
+      TaskAgentToolNames.createFollowUpTask,
+      enrichedArgs,
+    );
+    if (_items.any((item) => ChangeItem.fingerprint(item) == fingerprint)) {
+      return placeholderId;
+    }
 
     _items.add(
       ChangeItem(

@@ -53,9 +53,57 @@ class _GeneratedToolCallStream {
   }
 }
 
+class _GeneratedCompleteToolCallBatch {
+  const _GeneratedCompleteToolCallBatch({
+    required this.values,
+  });
+
+  final List<int> values;
+
+  int get callCount => values.length;
+
+  String idFor(int callIndex) => 'complete_call_$callIndex';
+
+  String nameFor(int callIndex) => 'complete_func_$callIndex';
+
+  String argumentsFor(int callIndex) => '{"value":${values[callIndex]}}';
+
+  ChatCompletionStreamResponseDelta get delta {
+    return ChatCompletionStreamResponseDelta(
+      toolCalls: [
+        for (var callIndex = 0; callIndex < values.length; callIndex++)
+          ChatCompletionStreamMessageToolCallChunk(
+            index: 0,
+            id: idFor(callIndex),
+            type: ChatCompletionStreamMessageToolCallChunkType.function,
+            function: ChatCompletionStreamMessageFunctionCall(
+              name: nameFor(callIndex),
+              arguments: argumentsFor(callIndex),
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  String toString() => '_GeneratedCompleteToolCallBatch(values: $values)';
+}
+
 extension _AnyToolCallAccumulatorScenarios on Any {
   Generator<List<int>> get toolCallArgumentPartValues =>
       listWithLengthInRange(1, 6, intInRange(0, 10000));
+
+  Generator<_GeneratedCompleteToolCallBatch> get completeToolCallBatch =>
+      combine2(
+        listWithLengthInRange(2, 5, intInRange(0, 10000)),
+        choose([false, true]),
+        (
+          List<int> values,
+          bool reverseCallOrder,
+        ) => _GeneratedCompleteToolCallBatch(
+          values: reverseCallOrder ? values.reversed.toList() : values,
+        ),
+      );
 
   Generator<_GeneratedToolCallStream> get toolCallStream => combine2(
     listWithLengthInRange(1, 5, toolCallArgumentPartValues),
@@ -592,6 +640,30 @@ void main() {
               toolCall.function.arguments,
               scenario.expectedArgumentsFor(callIndex),
               reason: 'Empty continuation IDs should not split $scenario',
+            );
+          }
+        },
+      );
+
+      Glados(any.completeToolCallBatch).test(
+        'preserves explicit IDs for generated complete tool-call batches',
+        (scenario) {
+          final generatedAccumulator = ToolCallAccumulator()
+            ..processChunk(scenario.delta);
+
+          expect(generatedAccumulator.count, scenario.callCount);
+          final toolCalls = generatedAccumulator.toToolCalls();
+          expect(toolCalls, hasLength(scenario.callCount));
+
+          for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
+            expect(toolCalls[callIndex].id, scenario.idFor(callIndex));
+            expect(
+              toolCalls[callIndex].function.name,
+              scenario.nameFor(callIndex),
+            );
+            expect(
+              toolCalls[callIndex].function.arguments,
+              scenario.argumentsFor(callIndex),
             );
           }
         },

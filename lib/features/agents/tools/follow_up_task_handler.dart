@@ -42,6 +42,7 @@ class FollowUpTaskHandler {
 
   static const _uuid = Uuid();
   static const _sub = 'FollowUpTaskHandler';
+  static final _dateOnly = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
 
   /// Creates a follow-up task and links it to the source task.
   ///
@@ -207,11 +208,23 @@ class FollowUpTaskHandler {
   }
 
   static DateTime? _parseDueDate(Object? value) {
-    if (value is String && value.isNotEmpty) {
-      return DateTime.tryParse(value);
-    }
-    return null;
+    if (value is! String || value.isEmpty) return null;
+
+    final match = _dateOnly.firstMatch(value);
+    if (match == null) return null;
+
+    final year = int.parse(match.group(1)!);
+    final month = int.parse(match.group(2)!);
+    final day = int.parse(match.group(3)!);
+
+    if (month < 1 || month > 12) return null;
+    if (day < 1 || day > _daysInMonth(year, month)) return null;
+
+    return DateTime(year, month, day);
   }
+
+  static int _daysInMonth(int year, int month) =>
+      DateTime(year, month + 1, 0).day;
 
   /// Inherits the project from [sourceTaskId] by linking [newTaskId] to the
   /// same project via [ProjectRepository.inheritProjectFromTask]. Failures are

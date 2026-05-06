@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -11,6 +12,132 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 
 class MockConversationManager extends Mock implements ConversationManager {}
+
+enum _GeneratedCurrentEstimateKind { none, zero, same, different }
+
+enum _GeneratedEstimateRequestShape {
+  intValue,
+  doubleValue,
+  numericString,
+  missing,
+  zero,
+  negative,
+  tooHigh,
+  nonNumericString,
+}
+
+class _GeneratedEstimateToolCallScenario {
+  const _GeneratedEstimateToolCallScenario({
+    required this.currentKind,
+    required this.requestShape,
+    required this.value,
+    required this.repositorySucceeds,
+    required this.seed,
+  });
+
+  final _GeneratedCurrentEstimateKind currentKind;
+  final _GeneratedEstimateRequestShape requestShape;
+  final int value;
+  final bool repositorySucceeds;
+  final int seed;
+
+  int get validMinutes => (value % maxEstimateMinutes) + 1;
+
+  Object? get rawMinutes {
+    return switch (requestShape) {
+      _GeneratedEstimateRequestShape.intValue => validMinutes,
+      _GeneratedEstimateRequestShape.doubleValue => validMinutes + 0.25,
+      _GeneratedEstimateRequestShape.numericString => '$validMinutes',
+      _GeneratedEstimateRequestShape.missing => null,
+      _GeneratedEstimateRequestShape.zero => 0,
+      _GeneratedEstimateRequestShape.negative => -validMinutes,
+      _GeneratedEstimateRequestShape.tooHigh =>
+        maxEstimateMinutes + validMinutes,
+      _GeneratedEstimateRequestShape.nonNumericString => 'two hours $seed',
+    };
+  }
+
+  int? get parsedMinutes => switch (requestShape) {
+    _GeneratedEstimateRequestShape.intValue => validMinutes,
+    _GeneratedEstimateRequestShape.doubleValue => validMinutes,
+    _GeneratedEstimateRequestShape.numericString => validMinutes,
+    _ => null,
+  };
+
+  Duration? get currentEstimate {
+    final parsed = parsedMinutes;
+    return switch (currentKind) {
+      _GeneratedCurrentEstimateKind.none => null,
+      _GeneratedCurrentEstimateKind.zero => Duration.zero,
+      _GeneratedCurrentEstimateKind.same when parsed != null => Duration(
+        minutes: parsed,
+      ),
+      _GeneratedCurrentEstimateKind.same => null,
+      _GeneratedCurrentEstimateKind.different when parsed != null => Duration(
+        minutes: parsed == maxEstimateMinutes ? parsed - 1 : parsed + 1,
+      ),
+      _GeneratedCurrentEstimateKind.different => const Duration(minutes: 17),
+    };
+  }
+
+  bool get isInvalid => parsedMinutes == null;
+
+  bool get isNoOp =>
+      parsedMinutes != null &&
+      currentEstimate != null &&
+      currentEstimate!.inMinutes == parsedMinutes;
+
+  bool get shouldAttemptWrite => !isInvalid && !isNoOp;
+
+  bool get shouldWrite => shouldAttemptWrite && repositorySucceeds;
+
+  Map<String, Object?> get arguments => {
+    if (requestShape != _GeneratedEstimateRequestShape.missing)
+      'minutes': rawMinutes,
+    'reason': 'Generated reason $seed',
+    'confidence': seed.isEven ? 'high' : 'medium',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedEstimateToolCallScenario('
+        'currentKind: $currentKind, '
+        'requestShape: $requestShape, '
+        'value: $value, '
+        'repositorySucceeds: $repositorySucceeds, '
+        'seed: $seed)';
+  }
+}
+
+extension _AnyTaskEstimateHandlerScenario on glados.Any {
+  glados.Generator<_GeneratedCurrentEstimateKind> get currentEstimateKind =>
+      glados.AnyUtils(this).choose(_GeneratedCurrentEstimateKind.values);
+
+  glados.Generator<_GeneratedEstimateRequestShape> get estimateRequestShape =>
+      glados.AnyUtils(this).choose(_GeneratedEstimateRequestShape.values);
+
+  glados.Generator<_GeneratedEstimateToolCallScenario>
+  get estimateToolCallScenario => glados.CombinableAny(this).combine5(
+    currentEstimateKind,
+    estimateRequestShape,
+    glados.IntAnys(this).intInRange(0, 10000),
+    glados.BoolAny(this).bool,
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      _GeneratedCurrentEstimateKind currentKind,
+      _GeneratedEstimateRequestShape requestShape,
+      int value,
+      bool repositorySucceeds,
+      int seed,
+    ) => _GeneratedEstimateToolCallScenario(
+      currentKind: currentKind,
+      requestShape: requestShape,
+      value: value,
+      repositorySucceeds: repositorySucceeds,
+      seed: seed,
+    ),
+  );
+}
 
 void main() {
   late MockJournalRepository mockJournalRepo;
@@ -92,6 +219,19 @@ void main() {
           'reason': ?reason,
           'confidence': ?confidence,
         }),
+      ),
+    );
+  }
+
+  ChatCompletionMessageToolCall createEstimateToolCallFromArgs(
+    Map<String, Object?> args,
+  ) {
+    return ChatCompletionMessageToolCall(
+      id: 'call_estimate_generated',
+      type: ChatCompletionMessageToolCallType.function,
+      function: ChatCompletionMessageFunctionCall(
+        name: 'update_task_estimate',
+        arguments: jsonEncode(args),
       ),
     );
   }
@@ -491,6 +631,94 @@ void main() {
         },
       );
     });
+
+    glados.Glados(
+      glados.any.estimateToolCallScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'matches generated estimate validation, no-op, and repository semantics',
+      (scenario) async {
+        final repo = MockJournalRepository();
+        when(
+          () => repo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => scenario.repositorySucceeds);
+
+        final initialTask = createTask(estimate: scenario.currentEstimate);
+        Task? callbackTask;
+        final handler = TaskEstimateHandler(
+          task: initialTask,
+          journalRepository: repo,
+          onTaskUpdated: (updatedTask) => callbackTask = updatedTask,
+        );
+
+        final result = await handler.processToolCall(
+          createEstimateToolCallFromArgs(scenario.arguments),
+        );
+
+        if (scenario.isInvalid) {
+          expect(result.success, isFalse, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(
+            result.requestedMinutes,
+            scenario.rawMinutes is int ? scenario.rawMinutes : null,
+            reason: '$scenario',
+          );
+          expect(
+            result.error,
+            contains('positive integer'),
+            reason: '$scenario',
+          );
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          verifyNever(() => repo.updateJournalEntity(any()));
+          return;
+        }
+
+        expect(result.requestedMinutes, scenario.parsedMinutes);
+        expect(result.reason, 'Generated reason ${scenario.seed}');
+        expect(result.confidence, scenario.seed.isEven ? 'high' : 'medium');
+
+        if (scenario.isNoOp) {
+          expect(result.success, isTrue, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.wasNoOp, isTrue, reason: '$scenario');
+          expect(result.updatedTask, isNull, reason: '$scenario');
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          verifyNever(() => repo.updateJournalEntity(any()));
+          return;
+        }
+
+        expect(scenario.shouldAttemptWrite, isTrue, reason: '$scenario');
+        final captured =
+            verify(
+                  () => repo.updateJournalEntity(captureAny()),
+                ).captured.single
+                as Task;
+        expect(
+          captured.data.estimate,
+          Duration(minutes: scenario.parsedMinutes!),
+          reason: '$scenario',
+        );
+
+        if (!scenario.repositorySucceeds) {
+          expect(result.success, isFalse, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.error, contains('repository returned false'));
+          expect(result.updatedTask, isNull, reason: '$scenario');
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          return;
+        }
+
+        expect(result.success, isTrue, reason: '$scenario');
+        expect(result.didWrite, isTrue, reason: '$scenario');
+        expect(result.wasNoOp, isFalse, reason: '$scenario');
+        expect(result.updatedTask, captured, reason: '$scenario');
+        expect(handler.task, captured, reason: '$scenario');
+        expect(callbackTask, captured, reason: '$scenario');
+      },
+    );
 
     group('TaskEstimateResult', () {
       test('wasSkipped returns true for non-error failures', () {

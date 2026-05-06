@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -8,6 +9,160 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+
+enum _GeneratedStatusSpelling {
+  exact,
+  lowercase,
+  lowercaseWithWhitespace,
+}
+
+enum _GeneratedReasonShape {
+  nullReason,
+  empty,
+  whitespace,
+  padded,
+  plain,
+}
+
+enum _GeneratedInvalidStatusKind { terminal, unknown }
+
+class _GeneratedAllowedStatusScenario {
+  const _GeneratedAllowedStatusScenario({
+    required this.currentStatus,
+    required this.targetStatus,
+    required this.spelling,
+    required this.reasonShape,
+  });
+
+  final String currentStatus;
+  final String targetStatus;
+  final _GeneratedStatusSpelling spelling;
+  final _GeneratedReasonShape reasonShape;
+
+  String get requestStatus {
+    return switch (spelling) {
+      _GeneratedStatusSpelling.exact => targetStatus,
+      _GeneratedStatusSpelling.lowercase => targetStatus.toLowerCase(),
+      _GeneratedStatusSpelling.lowercaseWithWhitespace =>
+        '  ${targetStatus.toLowerCase()}  ',
+    };
+  }
+
+  String? get reason {
+    return switch (reasonShape) {
+      _GeneratedReasonShape.nullReason => null,
+      _GeneratedReasonShape.empty => '',
+      _GeneratedReasonShape.whitespace => '   ',
+      _GeneratedReasonShape.padded => '  Generated reason  ',
+      _GeneratedReasonShape.plain => 'Generated reason',
+    };
+  }
+
+  bool get requiresReason =>
+      targetStatus == 'BLOCKED' || targetStatus == 'ON HOLD';
+
+  bool get hasValidReason => reason != null && reason!.trim().isNotEmpty;
+
+  bool get shouldWrite =>
+      (!requiresReason || hasValidReason) && currentStatus != targetStatus;
+
+  bool get shouldNoOp =>
+      (!requiresReason || hasValidReason) && currentStatus == targetStatus;
+
+  @override
+  String toString() {
+    return '_GeneratedAllowedStatusScenario('
+        'currentStatus: $currentStatus, '
+        'targetStatus: $targetStatus, '
+        'spelling: $spelling, '
+        'reasonShape: $reasonShape)';
+  }
+}
+
+class _GeneratedInvalidStatusScenario {
+  const _GeneratedInvalidStatusScenario({
+    required this.kind,
+    required this.spelling,
+    required this.seed,
+  });
+
+  final _GeneratedInvalidStatusKind kind;
+  final _GeneratedStatusSpelling spelling;
+  final int seed;
+
+  String get normalizedStatus {
+    return switch (kind) {
+      _GeneratedInvalidStatusKind.terminal => seed.isEven ? 'DONE' : 'REJECTED',
+      _GeneratedInvalidStatusKind.unknown => 'UNKNOWN STATUS $seed',
+    };
+  }
+
+  String get requestStatus {
+    return switch (spelling) {
+      _GeneratedStatusSpelling.exact => normalizedStatus,
+      _GeneratedStatusSpelling.lowercase => normalizedStatus.toLowerCase(),
+      _GeneratedStatusSpelling.lowercaseWithWhitespace =>
+        '  ${normalizedStatus.toLowerCase()}  ',
+    };
+  }
+
+  bool get isTerminal => kind == _GeneratedInvalidStatusKind.terminal;
+
+  @override
+  String toString() {
+    return '_GeneratedInvalidStatusScenario('
+        'kind: $kind, spelling: $spelling, seed: $seed)';
+  }
+}
+
+extension _AnyTaskStatusHandlerScenario on glados.Any {
+  glados.Generator<String> get allowedStatus =>
+      glados.AnyUtils(this).choose(TaskStatusHandler.allowedStatuses.toList());
+
+  glados.Generator<_GeneratedStatusSpelling> get statusSpelling =>
+      glados.AnyUtils(this).choose(_GeneratedStatusSpelling.values);
+
+  glados.Generator<_GeneratedReasonShape> get reasonShape =>
+      glados.AnyUtils(this).choose(_GeneratedReasonShape.values);
+
+  glados.Generator<_GeneratedInvalidStatusKind> get invalidStatusKind =>
+      glados.AnyUtils(this).choose(_GeneratedInvalidStatusKind.values);
+
+  glados.Generator<_GeneratedAllowedStatusScenario> get allowedStatusScenario =>
+      glados.CombinableAny(this).combine4(
+        allowedStatus,
+        allowedStatus,
+        statusSpelling,
+        reasonShape,
+        (
+          String currentStatus,
+          String targetStatus,
+          _GeneratedStatusSpelling spelling,
+          _GeneratedReasonShape reasonShape,
+        ) => _GeneratedAllowedStatusScenario(
+          currentStatus: currentStatus,
+          targetStatus: targetStatus,
+          spelling: spelling,
+          reasonShape: reasonShape,
+        ),
+      );
+
+  glados.Generator<_GeneratedInvalidStatusScenario> get invalidStatusScenario =>
+      glados.CombinableAny(this).combine3(
+        invalidStatusKind,
+        statusSpelling,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedInvalidStatusKind kind,
+          _GeneratedStatusSpelling spelling,
+          int seed,
+        ) => _GeneratedInvalidStatusScenario(
+          kind: kind,
+          spelling: spelling,
+          seed: seed,
+        ),
+      );
+}
 
 void main() {
   late MockJournalRepository mockJournalRepo;
@@ -33,6 +188,49 @@ void main() {
     );
     registerFallbackValue(task as JournalEntity);
   });
+
+  TaskStatus statusFor(String status) {
+    final now = DateTime(2024, 3, 15);
+    return switch (status) {
+      'IN PROGRESS' => TaskStatus.inProgress(
+        id: 'status-in-progress',
+        createdAt: now,
+        utcOffset: 60,
+      ),
+      'GROOMED' => TaskStatus.groomed(
+        id: 'status-groomed',
+        createdAt: now,
+        utcOffset: 60,
+      ),
+      'BLOCKED' => TaskStatus.blocked(
+        id: 'status-blocked',
+        createdAt: now,
+        utcOffset: 60,
+        reason: 'Existing blocker',
+      ),
+      'ON HOLD' => TaskStatus.onHold(
+        id: 'status-on-hold',
+        createdAt: now,
+        utcOffset: 60,
+        reason: 'Existing hold',
+      ),
+      _ => TaskStatus.open(
+        id: 'status-open',
+        createdAt: now,
+        utcOffset: 60,
+      ),
+    };
+  }
+
+  Task taskWithStatus(String status) {
+    final taskStatus = statusFor(status);
+    return task.copyWith(
+      data: task.data.copyWith(
+        status: taskStatus,
+        statusHistory: [taskStatus],
+      ),
+    );
+  }
 
   group('TaskStatusHandler', () {
     group('handle', () {
@@ -381,6 +579,109 @@ void main() {
 
         expect(handler.task.data.status.toDbString, 'OPEN');
       });
+
+      glados.Glados(
+        glados.any.allowedStatusScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'matches generated allowed-status transition semantics',
+        (scenario) async {
+          final repo = MockJournalRepository();
+          when(
+            () => repo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          final initialTask = taskWithStatus(scenario.currentStatus);
+          final handler = TaskStatusHandler(
+            task: initialTask,
+            journalRepository: repo,
+          );
+
+          final result = await handler.handle(
+            scenario.requestStatus,
+            reason: scenario.reason,
+          );
+
+          if (scenario.requiresReason && !scenario.hasValidReason) {
+            expect(result.success, isFalse, reason: '$scenario');
+            expect(result.didWrite, isFalse, reason: '$scenario');
+            expect(result.error, contains('requires a reason'));
+            expect(handler.task, initialTask);
+            verifyNever(() => repo.updateJournalEntity(any()));
+            return;
+          }
+
+          expect(result.success, isTrue, reason: '$scenario');
+          expect(result.error, isNull, reason: '$scenario');
+
+          if (scenario.shouldNoOp) {
+            expect(result.didWrite, isFalse, reason: '$scenario');
+            expect(result.wasNoOp, isTrue, reason: '$scenario');
+            expect(result.updatedTask, initialTask, reason: '$scenario');
+            verifyNever(() => repo.updateJournalEntity(any()));
+            return;
+          }
+
+          expect(scenario.shouldWrite, isTrue, reason: '$scenario');
+          expect(result.didWrite, isTrue, reason: '$scenario');
+          expect(result.wasNoOp, isFalse, reason: '$scenario');
+          expect(
+            result.updatedTask!.data.status.toDbString,
+            scenario.targetStatus,
+            reason: '$scenario',
+          );
+          expect(
+            result.updatedTask!.data.statusHistory.map((s) => s.toDbString),
+            [scenario.currentStatus, scenario.targetStatus],
+            reason: '$scenario',
+          );
+          expect(handler.task, result.updatedTask, reason: '$scenario');
+
+          if (scenario.requiresReason) {
+            final status = result.updatedTask!.data.status;
+            final actualReason = switch (status) {
+              TaskBlocked(:final reason) => reason,
+              TaskOnHold(:final reason) => reason,
+              _ => throw StateError('Expected reason status for $scenario'),
+            };
+            expect(actualReason, scenario.reason!.trim(), reason: '$scenario');
+          }
+
+          final captured =
+              verify(
+                    () => repo.updateJournalEntity(captureAny()),
+                  ).captured.single
+                  as Task;
+          expect(captured, result.updatedTask, reason: '$scenario');
+        },
+      );
+
+      glados.Glados(
+        glados.any.invalidStatusScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'rejects generated terminal and unknown statuses without writes',
+        (scenario) async {
+          final repo = MockJournalRepository();
+          final handler = TaskStatusHandler(
+            task: task,
+            journalRepository: repo,
+          );
+
+          final result = await handler.handle(scenario.requestStatus);
+
+          expect(result.success, isFalse, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.updatedTask, isNull, reason: '$scenario');
+          expect(handler.task, task, reason: '$scenario');
+          expect(
+            result.error,
+            scenario.isTerminal ? contains('user-only') : contains('Unknown'),
+            reason: '$scenario',
+          );
+          verifyNever(() => repo.updateJournalEntity(any()));
+        },
+      );
     });
 
     group('fromHandlerResult conversion', () {
