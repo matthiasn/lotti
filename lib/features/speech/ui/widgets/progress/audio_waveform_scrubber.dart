@@ -2,7 +2,16 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
+
+/// Target bar width and spacing for the rendered waveform. Shared with the
+/// bucket-count estimator in `_WaveformArea` (`audio_player.dart`) so the
+/// number of amplitude buckets requested matches the geometry the painter
+/// actually draws — otherwise the painter has to compress spacing below
+/// target to fit excess buckets.
+const double kAudioWaveformTargetBarWidth = 4;
+const double kAudioWaveformTargetBarSpacing = 3;
 
 /// Displays a tappable/dragable waveform visualization mirroring the progress
 /// bar semantics.
@@ -32,8 +41,6 @@ class AudioWaveformScrubber extends StatefulWidget {
 
 class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
   static const Duration _seekThrottleDelay = Duration(milliseconds: 60);
-  static const double _targetBarWidth = 1.5;
-  static const double _targetBarSpacing = 1.5;
 
   Timer? _throttleTimer;
   DateTime? _lastSeekInvocation;
@@ -50,7 +57,8 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = resolveAudioProgressColors(theme);
+    final tokens = theme.extension<DsTokens>();
+    final colors = resolveAudioProgressColors(theme, tokens: tokens);
     final height = (widget.compact ? 40 : 48).toDouble();
 
     final progressRatio = _hasTotal
@@ -79,8 +87,8 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
             bufferedColor: colors.buffered,
             trackColor: colors.track,
             glowColor: colors.glow,
-            targetBarWidth: _targetBarWidth,
-            targetSpacing: _targetBarSpacing,
+            targetBarWidth: kAudioWaveformTargetBarWidth,
+            targetSpacing: kAudioWaveformTargetBarSpacing,
             compact: widget.compact,
           ),
         ),

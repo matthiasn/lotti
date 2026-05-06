@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.996]
 ### Changed
+- Audio recording player restyled to match the green Figma audio card.
+  The play/pause control is now a soft circular pill drawn on the
+  design-system surface token with the high-emphasis text color for
+  the glyph; the previous gradient + drop shadow + animated progress
+  ring are gone. The waveform's played bars use
+  `tokens.colors.interactive.enabled` (the brand teal `#2BA184` in
+  light mode, `#5ED4B7` in dark mode), with a thin teal scrubber line
+  drawn at the playhead and bars widened to 4 px with 3 px spacing
+  for parity with the Figma reference. The fallback progress bar
+  (used while the waveform is still resolving) follows the same
+  tokens, with the unplayed track now reading from
+  `tokens.colors.decorative.level02` instead of an alpha overlay on
+  `onSurfaceVariant`. The play/pause button drops a step in size (40
+  px compact / 48 px standard) so it no longer dominates the card.
 - Task details page now has a sticky action bar pinned to the bottom in
   place of the floating action button. A primary "Track time" pill
   starts a new timer when idle. While a timer is running on the open
