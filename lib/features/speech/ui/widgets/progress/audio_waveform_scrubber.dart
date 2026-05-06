@@ -5,6 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 
+/// Target bar width and spacing for the rendered waveform. Shared with the
+/// bucket-count estimator in `_WaveformArea` (`audio_player.dart`) so the
+/// number of amplitude buckets requested matches the geometry the painter
+/// actually draws — otherwise the painter has to compress spacing below
+/// target to fit excess buckets.
+const double kAudioWaveformTargetBarWidth = 4;
+const double kAudioWaveformTargetBarSpacing = 3;
+
 /// Displays a tappable/dragable waveform visualization mirroring the progress
 /// bar semantics.
 class AudioWaveformScrubber extends StatefulWidget {
@@ -33,8 +41,6 @@ class AudioWaveformScrubber extends StatefulWidget {
 
 class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
   static const Duration _seekThrottleDelay = Duration(milliseconds: 60);
-  static const double _targetBarWidth = 4;
-  static const double _targetBarSpacing = 3;
 
   Timer? _throttleTimer;
   DateTime? _lastSeekInvocation;
@@ -81,8 +87,8 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
             bufferedColor: colors.buffered,
             trackColor: colors.track,
             glowColor: colors.glow,
-            targetBarWidth: _targetBarWidth,
-            targetSpacing: _targetBarSpacing,
+            targetBarWidth: kAudioWaveformTargetBarWidth,
+            targetSpacing: kAudioWaveformTargetBarSpacing,
             compact: widget.compact,
           ),
         ),

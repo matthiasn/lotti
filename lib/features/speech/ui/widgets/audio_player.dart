@@ -199,8 +199,6 @@ class _WaveformArea extends ConsumerWidget {
   final bool isCompact;
   final ValueChanged<Duration> onSeek;
 
-  static const double _targetBarWidth = 3.6;
-  static const double _targetBarSpacing = 2.2;
   static const int _minBars = 24;
   static const int _maxBars = 320;
 
@@ -211,7 +209,9 @@ class _WaveformArea extends ConsumerWidget {
         final width = constraints.hasBoundedWidth
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final estimated = width / (_targetBarWidth + _targetBarSpacing);
+        final estimated =
+            width /
+            (kAudioWaveformTargetBarWidth + kAudioWaveformTargetBarSpacing);
         int bucketCount;
         if (estimated.isFinite && estimated > 0) {
           bucketCount = estimated.floor();
