@@ -1,11 +1,389 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/change_set.dart';
 
 import '../test_utils.dart';
+
+enum _GeneratedChangeAgentSlot { target, other }
+
+enum _GeneratedChangeTaskSlot { target, other }
+
+enum _GeneratedChangeTemplateSlot { target, other }
+
+final _generatedChangeBase = DateTime(2026, 5, 15, 12);
+final _generatedChangeSince = DateTime(2026, 5, 15, 12);
+
+const String _generatedChangeTargetAgentId = 'generated-change-agent-target';
+const String _generatedChangeOtherAgentId = 'generated-change-agent-other';
+const String _generatedChangeTargetTaskId = 'generated-change-task-target';
+const String _generatedChangeOtherTaskId = 'generated-change-task-other';
+const String _generatedChangeTargetTemplateId =
+    'generated-change-template-target';
+const String _generatedChangeOtherTemplateId =
+    'generated-change-template-other';
+
+class _GeneratedChangeSetSpec {
+  const _GeneratedChangeSetSpec({
+    required this.agentSlot,
+    required this.taskSlot,
+    required this.status,
+    required this.deleted,
+    required this.createdMinuteOffset,
+    required this.seed,
+  });
+
+  final _GeneratedChangeAgentSlot agentSlot;
+  final _GeneratedChangeTaskSlot taskSlot;
+  final ChangeSetStatus status;
+  final bool deleted;
+  final int createdMinuteOffset;
+  final int seed;
+
+  String idAt(int index) => 'generated-change-set-$index-$seed';
+
+  String get agentId => switch (agentSlot) {
+    _GeneratedChangeAgentSlot.target => _generatedChangeTargetAgentId,
+    _GeneratedChangeAgentSlot.other => _generatedChangeOtherAgentId,
+  };
+
+  String get taskId => switch (taskSlot) {
+    _GeneratedChangeTaskSlot.target => _generatedChangeTargetTaskId,
+    _GeneratedChangeTaskSlot.other => _generatedChangeOtherTaskId,
+  };
+
+  bool get isPendingLike {
+    return status == ChangeSetStatus.pending ||
+        status == ChangeSetStatus.partiallyResolved;
+  }
+
+  DateTime createdAt(int index) {
+    return _generatedChangeBase.add(
+      Duration(minutes: createdMinuteOffset, seconds: index),
+    );
+  }
+
+  DateTime? deletedAt(int index) {
+    return deleted ? createdAt(index).add(const Duration(minutes: 1)) : null;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedChangeSetSpec('
+        'agentSlot: $agentSlot, taskSlot: $taskSlot, status: $status, '
+        'deleted: $deleted, createdMinuteOffset: $createdMinuteOffset, '
+        'seed: $seed)';
+  }
+}
+
+class _GeneratedChangeDecisionSpec {
+  const _GeneratedChangeDecisionSpec({
+    required this.agentSlot,
+    required this.taskSlot,
+    required this.verdict,
+    required this.deleted,
+    required this.createdMinuteOffset,
+    required this.seed,
+  });
+
+  final _GeneratedChangeAgentSlot agentSlot;
+  final _GeneratedChangeTaskSlot taskSlot;
+  final ChangeDecisionVerdict verdict;
+  final bool deleted;
+  final int createdMinuteOffset;
+  final int seed;
+
+  String idAt(int index) => 'generated-change-decision-$index-$seed';
+
+  String get agentId => switch (agentSlot) {
+    _GeneratedChangeAgentSlot.target => _generatedChangeTargetAgentId,
+    _GeneratedChangeAgentSlot.other => _generatedChangeOtherAgentId,
+  };
+
+  String get taskId => switch (taskSlot) {
+    _GeneratedChangeTaskSlot.target => _generatedChangeTargetTaskId,
+    _GeneratedChangeTaskSlot.other => _generatedChangeOtherTaskId,
+  };
+
+  DateTime createdAt(int index) {
+    return _generatedChangeBase.add(
+      Duration(minutes: createdMinuteOffset, seconds: index),
+    );
+  }
+
+  DateTime? deletedAt(int index) {
+    return deleted ? createdAt(index).add(const Duration(minutes: 1)) : null;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedChangeDecisionSpec('
+        'agentSlot: $agentSlot, taskSlot: $taskSlot, verdict: $verdict, '
+        'deleted: $deleted, createdMinuteOffset: $createdMinuteOffset, '
+        'seed: $seed)';
+  }
+}
+
+class _GeneratedChangeTemplateAssignmentSpec {
+  const _GeneratedChangeTemplateAssignmentSpec({
+    required this.templateSlot,
+    required this.agentSlot,
+    required this.deleted,
+    required this.createdMinuteOffset,
+  });
+
+  final _GeneratedChangeTemplateSlot templateSlot;
+  final _GeneratedChangeAgentSlot agentSlot;
+  final bool deleted;
+  final int createdMinuteOffset;
+
+  String get id =>
+      'generated-change-assignment-${templateSlot.name}-${agentSlot.name}';
+
+  String get templateId => switch (templateSlot) {
+    _GeneratedChangeTemplateSlot.target => _generatedChangeTargetTemplateId,
+    _GeneratedChangeTemplateSlot.other => _generatedChangeOtherTemplateId,
+  };
+
+  String get agentId => switch (agentSlot) {
+    _GeneratedChangeAgentSlot.target => _generatedChangeTargetAgentId,
+    _GeneratedChangeAgentSlot.other => _generatedChangeOtherAgentId,
+  };
+
+  DateTime get createdAt {
+    return _generatedChangeBase.add(
+      Duration(minutes: createdMinuteOffset),
+    );
+  }
+
+  DateTime? get deletedAt {
+    return deleted ? createdAt.add(const Duration(minutes: 1)) : null;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedChangeTemplateAssignmentSpec('
+        'templateSlot: $templateSlot, agentSlot: $agentSlot, '
+        'deleted: $deleted, createdMinuteOffset: $createdMinuteOffset)';
+  }
+}
+
+class _GeneratedChangeQueryScenario {
+  const _GeneratedChangeQueryScenario({
+    required this.changeSets,
+    required this.decisions,
+    required this.assignments,
+    required this.pendingLimit,
+    required this.decisionLimit,
+    required this.templateDecisionLimit,
+  });
+
+  final List<_GeneratedChangeSetSpec> changeSets;
+  final List<_GeneratedChangeDecisionSpec> decisions;
+  final List<_GeneratedChangeTemplateAssignmentSpec> assignments;
+  final int pendingLimit;
+  final int decisionLimit;
+  final int templateDecisionLimit;
+
+  Iterable<_GeneratedChangeAgentSlot> get _targetTemplateAgentSlots {
+    final finalAssignmentsByNaturalKey =
+        <String, _GeneratedChangeTemplateAssignmentSpec>{};
+    for (final assignment in assignments) {
+      final key =
+          '${assignment.templateSlot.name}:${assignment.agentSlot.name}';
+      finalAssignmentsByNaturalKey[key] = assignment;
+    }
+
+    return finalAssignmentsByNaturalKey.values
+        .where(
+          (assignment) =>
+              assignment.templateSlot == _GeneratedChangeTemplateSlot.target &&
+              !assignment.deleted,
+        )
+        .map((assignment) => assignment.agentSlot);
+  }
+
+  List<int> _sortedChangeSetIndexes(Iterable<int> indexes) {
+    return indexes.toList()..sort(
+      (a, b) => changeSets[b]
+          .createdAt(b)
+          .compareTo(
+            changeSets[a].createdAt(a),
+          ),
+    );
+  }
+
+  List<int> _sortedDecisionIndexes(Iterable<int> indexes) {
+    return indexes.toList()..sort(
+      (a, b) => decisions[b]
+          .createdAt(b)
+          .compareTo(
+            decisions[a].createdAt(a),
+          ),
+    );
+  }
+
+  List<String> expectedPendingIds({required int limit}) {
+    return _sortedChangeSetIndexes(
+      Iterable<int>.generate(changeSets.length).where(
+        (index) =>
+            changeSets[index].agentSlot == _GeneratedChangeAgentSlot.target &&
+            changeSets[index].taskSlot == _GeneratedChangeTaskSlot.target &&
+            changeSets[index].isPendingLike &&
+            !changeSets[index].deleted,
+      ),
+    ).take(limit).map((index) => changeSets[index].idAt(index)).toList();
+  }
+
+  List<String> expectedRecentDecisionIds({required int limit}) {
+    return _sortedDecisionIndexes(
+      Iterable<int>.generate(decisions.length).where(
+        (index) =>
+            decisions[index].agentSlot == _GeneratedChangeAgentSlot.target &&
+            decisions[index].taskSlot == _GeneratedChangeTaskSlot.target &&
+            !decisions[index].deleted,
+      ),
+    ).take(limit).map((index) => decisions[index].idAt(index)).toList();
+  }
+
+  List<String> expectedTemplateDecisionIds({required int limit}) {
+    final activeAgentSlots = _targetTemplateAgentSlots.toSet();
+    return _sortedDecisionIndexes(
+      Iterable<int>.generate(decisions.length).where(
+        (index) =>
+            activeAgentSlots.contains(decisions[index].agentSlot) &&
+            !decisions[index].deleted &&
+            !decisions[index].createdAt(index).isBefore(_generatedChangeSince),
+      ),
+    ).take(limit).map((index) => decisions[index].idAt(index)).toList();
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedChangeQueryScenario('
+        'pendingLimit: $pendingLimit, decisionLimit: $decisionLimit, '
+        'templateDecisionLimit: $templateDecisionLimit, '
+        'changeSets: $changeSets, decisions: $decisions, '
+        'assignments: $assignments)';
+  }
+}
+
+extension _AnyGeneratedChangeQueryScenario on glados.Any {
+  glados.Generator<_GeneratedChangeAgentSlot> get changeAgentSlot =>
+      glados.AnyUtils(this).choose(_GeneratedChangeAgentSlot.values);
+
+  glados.Generator<_GeneratedChangeTaskSlot> get changeTaskSlot =>
+      glados.AnyUtils(this).choose(_GeneratedChangeTaskSlot.values);
+
+  glados.Generator<_GeneratedChangeTemplateSlot> get changeTemplateSlot =>
+      glados.AnyUtils(this).choose(_GeneratedChangeTemplateSlot.values);
+
+  glados.Generator<ChangeSetStatus> get changeSetStatus =>
+      glados.AnyUtils(this).choose(ChangeSetStatus.values);
+
+  glados.Generator<ChangeDecisionVerdict> get changeDecisionVerdict =>
+      glados.AnyUtils(this).choose(ChangeDecisionVerdict.values);
+
+  glados.Generator<_GeneratedChangeSetSpec> get changeSetSpec =>
+      glados.CombinableAny(this).combine6(
+        changeAgentSlot,
+        changeTaskSlot,
+        changeSetStatus,
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(-4, 4),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedChangeAgentSlot agentSlot,
+          _GeneratedChangeTaskSlot taskSlot,
+          ChangeSetStatus status,
+          bool deleted,
+          int createdMinuteOffset,
+          int seed,
+        ) => _GeneratedChangeSetSpec(
+          agentSlot: agentSlot,
+          taskSlot: taskSlot,
+          status: status,
+          deleted: deleted,
+          createdMinuteOffset: createdMinuteOffset,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedChangeDecisionSpec> get changeDecisionSpec =>
+      glados.CombinableAny(this).combine6(
+        changeAgentSlot,
+        changeTaskSlot,
+        changeDecisionVerdict,
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(-4, 4),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedChangeAgentSlot agentSlot,
+          _GeneratedChangeTaskSlot taskSlot,
+          ChangeDecisionVerdict verdict,
+          bool deleted,
+          int createdMinuteOffset,
+          int seed,
+        ) => _GeneratedChangeDecisionSpec(
+          agentSlot: agentSlot,
+          taskSlot: taskSlot,
+          verdict: verdict,
+          deleted: deleted,
+          createdMinuteOffset: createdMinuteOffset,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedChangeTemplateAssignmentSpec>
+  get changeTemplateAssignmentSpec => glados.CombinableAny(this).combine4(
+    changeTemplateSlot,
+    changeAgentSlot,
+    glados.AnyUtils(this).choose([false, true]),
+    glados.IntAnys(this).intInRange(-4, 4),
+    (
+      _GeneratedChangeTemplateSlot templateSlot,
+      _GeneratedChangeAgentSlot agentSlot,
+      bool deleted,
+      int createdMinuteOffset,
+    ) => _GeneratedChangeTemplateAssignmentSpec(
+      templateSlot: templateSlot,
+      agentSlot: agentSlot,
+      deleted: deleted,
+      createdMinuteOffset: createdMinuteOffset,
+    ),
+  );
+
+  glados.Generator<_GeneratedChangeQueryScenario> get changeQueryScenario =>
+      glados.CombinableAny(this).combine6(
+        glados.ListAnys(this).listWithLengthInRange(0, 8, changeSetSpec),
+        glados.ListAnys(this).listWithLengthInRange(0, 8, changeDecisionSpec),
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(0, 6, changeTemplateAssignmentSpec),
+        glados.IntAnys(this).intInRange(1, 4),
+        glados.IntAnys(this).intInRange(1, 4),
+        glados.IntAnys(this).intInRange(1, 4),
+        (
+          List<_GeneratedChangeSetSpec> changeSets,
+          List<_GeneratedChangeDecisionSpec> decisions,
+          List<_GeneratedChangeTemplateAssignmentSpec> assignments,
+          int pendingLimit,
+          int decisionLimit,
+          int templateDecisionLimit,
+        ) => _GeneratedChangeQueryScenario(
+          changeSets: changeSets,
+          decisions: decisions,
+          assignments: assignments,
+          pendingLimit: pendingLimit,
+          decisionLimit: decisionLimit,
+          templateDecisionLimit: templateDecisionLimit,
+        ),
+      );
+}
 
 void main() {
   late AgentDatabase db;
@@ -397,6 +775,105 @@ void main() {
       expect(results, isEmpty);
     });
   });
+
+  glados.Glados(
+    glados.any.changeQueryScenario,
+    glados.ExploreConfig(numRuns: 80),
+  ).test(
+    'matches generated change-set and decision query semantics',
+    (scenario) async {
+      final localDb = AgentDatabase(inMemoryDatabase: true, background: false);
+      final localRepo = AgentRepository(localDb);
+
+      try {
+        for (final assignment in scenario.assignments) {
+          await localRepo.upsertLink(
+            model.AgentLink.templateAssignment(
+              id: assignment.id,
+              fromId: assignment.templateId,
+              toId: assignment.agentId,
+              createdAt: assignment.createdAt,
+              updatedAt: assignment.createdAt,
+              vectorClock: null,
+              deletedAt: assignment.deletedAt,
+            ),
+          );
+        }
+
+        for (var index = 0; index < scenario.changeSets.length; index++) {
+          final spec = scenario.changeSets[index];
+          await localRepo.upsertEntity(
+            makeTestChangeSet(
+              id: spec.idAt(index),
+              agentId: spec.agentId,
+              taskId: spec.taskId,
+              threadId: 'generated-thread-$index',
+              runKey: 'generated-run-$index',
+              status: spec.status,
+              createdAt: spec.createdAt(index),
+            ).copyWith(
+              deletedAt: spec.deletedAt(index),
+            ),
+          );
+        }
+
+        for (var index = 0; index < scenario.decisions.length; index++) {
+          final spec = scenario.decisions[index];
+          await localRepo.upsertEntity(
+            makeTestChangeDecision(
+              id: spec.idAt(index),
+              agentId: spec.agentId,
+              changeSetId: 'generated-change-set-ref-$index',
+              itemIndex: index,
+              toolName: 'generated_tool',
+              verdict: spec.verdict,
+              taskId: spec.taskId,
+              createdAt: spec.createdAt(index),
+            ).copyWith(
+              deletedAt: spec.deletedAt(index),
+            ),
+          );
+        }
+
+        final pending = await localRepo.getPendingChangeSets(
+          _generatedChangeTargetAgentId,
+          taskId: _generatedChangeTargetTaskId,
+          limit: scenario.pendingLimit,
+        );
+        expect(
+          pending.map((changeSet) => changeSet.id).toList(),
+          scenario.expectedPendingIds(limit: scenario.pendingLimit),
+          reason: '$scenario',
+        );
+
+        final recentDecisions = await localRepo.getRecentDecisions(
+          _generatedChangeTargetAgentId,
+          taskId: _generatedChangeTargetTaskId,
+          limit: scenario.decisionLimit,
+        );
+        expect(
+          recentDecisions.map((decision) => decision.id).toList(),
+          scenario.expectedRecentDecisionIds(limit: scenario.decisionLimit),
+          reason: '$scenario',
+        );
+
+        final templateDecisions = await localRepo.getRecentDecisionsForTemplate(
+          _generatedChangeTargetTemplateId,
+          since: _generatedChangeSince,
+          limit: scenario.templateDecisionLimit,
+        );
+        expect(
+          templateDecisions.map((decision) => decision.id).toList(),
+          scenario.expectedTemplateDecisionIds(
+            limit: scenario.templateDecisionLimit,
+          ),
+          reason: '$scenario',
+        );
+      } finally {
+        await localDb.close();
+      }
+    },
+  );
 
   // ── ChangeItem serialization ──────────────────────────────────────────────
 
