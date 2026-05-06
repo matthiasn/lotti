@@ -222,6 +222,42 @@ flowchart TD
 
 This page is not just "show task fields." It is the task workspace where task metadata, linked content, time tracking, and AI-adjacent affordances meet.
 
+### Sidebar timer coordination
+
+`SidebarTimerSection` (desktop, `aboveSettings` slot — see `lib/widgets/README.md` for the visual contract) and `TaskActionBar`'s running pill both render the same live `TimeService` session. To avoid duplicating the task title on screen, the sidebar card hides itself when the action bar is already showing the indicator — but only when the action bar is actually visible.
+
+The hide condition is the conjunction of:
+
+- the running timer's `linkedFrom` is a `Task`,
+- `linkedFrom.meta.id == NavService.desktopSelectedTaskId`, and
+- `NavService.currentPath` starts with `/tasks/` (i.e. user is on a task-detail route).
+
+The route check matters because `desktopSelectedTaskId` is sticky across tab switches: it's only mutated by `tasks_location.dart` (via `NavService.resetDesktopTaskDetail` / `pushDesktopTaskDetail` / `popDesktopTaskDetail`). Without the path guard, switching from a task to e.g. Habits would leave the sidebar card hidden even though the action bar is no longer on screen.
+
+Reactivity sources composed inside the card:
+
+- `TimeService.getStream()` — running entity + duration. Seeded with `TimeService.getCurrent()` as `initialData` so an already-running session renders on first frame instead of flashing through a hidden state.
+- `NavService.desktopSelectedTaskId` (`ValueListenableBuilder`) — selection changes inside the tasks pane.
+- `NavService.getIndexStream()` (`StreamBuilder`) — top-level tab/route changes; `currentPath` is read synchronously when the stream emits.
+
+The show/hide flip runs through an `AnimatedSwitcher` + `AnimatedSize` (`SidebarTimerSection.animationDuration` ≈ 220 ms, `Curves.easeInOut`) so the card fades and the surrounding sidebar collapses smoothly instead of popping.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Hidden
+    Hidden --> Visible: TimeService emits a running entity\nand hide-condition is false
+    Visible --> Hidden: TimeService emits null (timer stopped)
+    Visible --> Hidden: linkedFrom.task.id == openTaskId\nAND currentPath startsWith /tasks/
+    Hidden --> Visible: openTaskId changes (different task selected)
+    Hidden --> Visible: currentPath leaves /tasks/<uuid>\n(tab switch / nav away)
+    note right of Hidden
+      AnimatedSwitcher fades the
+      outgoing card; AnimatedSize
+      collapses the surrounding column
+      (~220 ms, Curves.easeInOut).
+    end note
+```
+
 Inside `TaskForm`, the composition is also fairly opinionated:
 
 - `DesktopTaskHeaderConnector` for the interactive header: inline multi-line title edit, priority badge, project reference (with a "No project" placeholder when none is linked), work-category chip (or "unassigned" placeholder), due-date chip (or "No due date" placeholder), estimate chip (with progress bar when set), assigned label chips (or "Add Label" placeholder), and status dropdown. Extended actions (share, speech modal, etc.) are owned by the pinned app bar's `more_vert` button, not the header itself. The connector watches `entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal pickers (`TaskStatusModalContent`, `showDueDatePicker`, `showEstimatePicker`, `CategorySelectionModalContent`, `ProjectSelectionModalContent`, `LabelSelectionModalUtils`) plus `EntryController.save / updateTaskStatus / updateTaskPriority / updateCategoryId`

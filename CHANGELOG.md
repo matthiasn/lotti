@@ -6,14 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.997]
 ### Changed
-- Sidebar running-timer card now hides itself when the timer's parent
-  task is the same task currently open in the desktop task-details
-  pane. The detail page's sticky action bar already shows a running
-  indicator, so duplicating the title in the sidebar was just noise.
-  The card returns the moment a different task (or none) is selected.
-- The show/hide flip runs through a combined `AnimatedSwitcher` +
-  `AnimatedSize` (~220 ms, `Curves.easeInOut`) so the card fades and
-  the surrounding sidebar collapses smoothly instead of popping.
+- Sidebar running-timer card now hides itself only when the timer's
+  parent task is the same task currently open in the desktop task-
+  details pane *and* the user is actually on a `/tasks/<uuid>` route.
+  The detail page's sticky action bar already shows a running
+  indicator, so duplicating the title in the sidebar would be noise —
+  but the card still surfaces on every other tab (Habits, Settings,
+  …) because `desktopSelectedTaskId` is sticky across tab switches and
+  the action bar isn't visible there. The show/hide flip runs through
+  a combined `AnimatedSwitcher` + `AnimatedSize` (~220 ms,
+  `Curves.easeInOut`) so the card fades and the surrounding sidebar
+  collapses smoothly instead of popping. The stream is seeded with
+  `TimeService.getCurrent()` so a session already running is rendered
+  on first frame instead of flashing through a hidden state.
 - Sticky action bar's running "Track time" pill gets a touch more
   breathing room on the leading edge: the inset stop circle now sits
   8 px from the pill border (was 4 px) so it no longer crowds the

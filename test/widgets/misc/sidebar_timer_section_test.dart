@@ -53,17 +53,34 @@ void main() {
   late _FakeTimeService timeService;
   late MockNavService navService;
   late ValueNotifier<String?> desktopSelectedTaskId;
+  late StreamController<int> indexStreamController;
+
+  /// Push a new currentPath into the stubbed [NavService] and emit on
+  /// the index stream so subscribed widgets re-evaluate.
+  void setCurrentPath(String path) {
+    when(() => navService.currentPath).thenReturn(path);
+    indexStreamController.add(0);
+  }
 
   setUp(() async {
     timeService = _FakeTimeService();
     navService = MockNavService();
     desktopSelectedTaskId = ValueNotifier<String?>(null);
+    indexStreamController = StreamController<int>.broadcast();
     // Mocktail records every call by default; nav routes are inspected
     // via `verify(...).captured` in the assertion phase.
     when(() => navService.beamToNamed(any())).thenAnswer((_) {});
     when(
       () => navService.desktopSelectedTaskId,
     ).thenReturn(desktopSelectedTaskId);
+    when(
+      () => navService.getIndexStream(),
+    ).thenAnswer((_) => indexStreamController.stream);
+    // Default to a task-detail route so the existing tests, which
+    // expect the sidebar to render the running card, hit the
+    // common-path branch. Tests exercising tab-switch behavior
+    // override this via [setCurrentPath].
+    when(() => navService.currentPath).thenReturn('/tasks/some-task');
 
     await setUpTestGetIt(
       additionalSetup: () {
@@ -77,6 +94,7 @@ void main() {
   tearDown(() async {
     timeService.disposeController();
     desktopSelectedTaskId.dispose();
+    await indexStreamController.close();
     await tearDownTestGetIt();
   });
 
@@ -313,6 +331,39 @@ void main() {
       await tester.pump(SidebarTimerSection.animationDuration);
 
       expect(find.text('Tracked'), findsOneWidget);
+      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'stays visible when on a non-task route, even if selected task matches',
+    (tester) async {
+      // Sticky state: user opened a task, started a timer, then
+      // switched tabs. desktopSelectedTaskId is still pointing at the
+      // task, but the user is now on /habits, so the sticky action bar
+      // is no longer visible — the sidebar must keep showing the
+      // running indicator.
+      final task = makeTask('task-sticky', title: 'Sticky');
+      final timer = makeTimerEntry('timer-sticky');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const SidebarTimerSection()),
+      );
+
+      timeService.emit(timer, linkedFrom: task);
+      desktopSelectedTaskId.value = 'task-sticky';
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+      // Sanity: while on the task route, the card is hidden.
+      expect(find.text('Sticky'), findsNothing);
+
+      // User switches to the Habits tab — currentPath is no longer a
+      // task-detail route. The card must come back.
+      setCurrentPath('/habits');
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+
+      expect(find.text('Sticky'), findsOneWidget);
       expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
     },
   );

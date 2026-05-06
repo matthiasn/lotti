@@ -385,12 +385,6 @@ class _TrackTimePill extends StatelessWidget {
           onTap: isTracking ? onNavigateToRunningEntry : onStartTimer,
           child: Container(
             height: TaskActionBar.buttonSize,
-            // While tracking, the leading edge holds the inset stop
-            // circle. step3 keeps it visually balanced inside the pill;
-            // step2 (the prior value) crowded the circle against the
-            // edge. The trailing edge keeps step2 because the digits
-            // already get extra breathing room from the inner Padding
-            // (right: step3) below.
             padding: EdgeInsets.symmetric(horizontal: spacing.step5),
             decoration: BoxDecoration(
               color: fillColor,

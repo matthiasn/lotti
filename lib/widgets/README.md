@@ -193,8 +193,6 @@ Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever a t
 - Layout: title row (briefcase icon + task title) over a body row with timer icon, monospaced HH:MM:SS, and a circular stop button.
 - Typography: Inter with `numericBadgeFontFeatures` (tabular figures, slashed zero, `cv02`/`cv03`/`cv04` open digits) so 4/6/9 stay legible at small sizes and digits do not breathe.
 - Interactions: tapping the body navigates to the running task (or the timer's journal entry, if not task-linked); tapping the stop button calls `TimeService.stop()`.
-- Visibility: hides when the running timer's parent task matches `NavService.desktopSelectedTaskId` — the open task already shows its own running indicator in the sticky action bar, so duplicating the title in the sidebar would just be noise. Surfaces again the moment a different task (or none) is selected.
-- Transitions: the show/hide flip runs through an `AnimatedSwitcher` + `AnimatedSize` (`SidebarTimerSection.animationDuration` ≈ 220 ms, `Curves.easeInOut`) so the card fades and the surrounding sidebar collapses smoothly instead of popping.
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 
 ### TimeRecordingIndicator
