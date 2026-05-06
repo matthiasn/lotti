@@ -81,7 +81,6 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
             bufferedColor: colors.buffered,
             trackColor: colors.track,
             glowColor: colors.glow,
-            scrubberColor: colors.progress,
             targetBarWidth: _targetBarWidth,
             targetSpacing: _targetBarSpacing,
             compact: widget.compact,
@@ -196,7 +195,6 @@ class _WaveformPainter extends CustomPainter {
     required this.bufferedColor,
     required this.trackColor,
     required this.glowColor,
-    required this.scrubberColor,
     required this.targetBarWidth,
     required this.targetSpacing,
     required this.compact,
@@ -209,7 +207,6 @@ class _WaveformPainter extends CustomPainter {
   final Color bufferedColor;
   final Color trackColor;
   final Color glowColor;
-  final Color scrubberColor;
   final double targetBarWidth;
   final double targetSpacing;
   final bool compact;
@@ -282,21 +279,6 @@ class _WaveformPainter extends CustomPainter {
       canvas.drawRRect(rect, paint);
       x += barWidth + spacing;
     }
-
-    // Hide the playhead line at the exact start/end so it doesn't sit flush
-    // against the waveform edge.
-    if (progressRatio > 0 && progressRatio < 1) {
-      final scrubberX = (size.width * progressRatio).clamp(0.0, size.width);
-      final scrubberPaint = Paint()
-        ..color = scrubberColor
-        ..strokeWidth = compact ? 1.5 : 2
-        ..strokeCap = StrokeCap.round;
-      canvas.drawLine(
-        Offset(scrubberX, size.height * 0.05),
-        Offset(scrubberX, size.height * 0.95),
-        scrubberPaint,
-      );
-    }
   }
 
   @override
@@ -308,7 +290,6 @@ class _WaveformPainter extends CustomPainter {
         oldDelegate.bufferedColor != bufferedColor ||
         oldDelegate.trackColor != trackColor ||
         oldDelegate.glowColor != glowColor ||
-        oldDelegate.scrubberColor != scrubberColor ||
         oldDelegate.targetBarWidth != targetBarWidth ||
         oldDelegate.targetSpacing != targetSpacing ||
         oldDelegate.compact != compact;

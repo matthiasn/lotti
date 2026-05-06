@@ -19,9 +19,6 @@ const List<double> _speedSequence = <double>[
   2,
 ];
 
-const double _compactControlSpacing = 14;
-const double _standardControlSpacing = 20;
-
 /// Minimal audio player card embedding play controls, progress, and speed toggle.
 class AudioPlayerWidget extends ConsumerWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
@@ -125,29 +122,30 @@ class _PlayerBody extends StatelessWidget {
     final timeColor =
         tokens?.colors.text.mediumEmphasis ??
         theme.colorScheme.onSurfaceVariant;
-    final timeStyle = tabularFigureStyle(
-      fontSize: fontSizeMedium,
+    final captionStyle = tokens?.typography.styles.others.caption;
+    final timeStyle = (captionStyle ?? const TextStyle(fontSize: 12)).copyWith(
       color: timeColor,
+      fontFeatures: numericBadgeFontFeatures,
     );
 
-    return Row(
+    final controlSpacing = tokens?.spacing.step2 ?? 4.0;
+    final timeRowLeftInset = (isCompact ? 40 : 48).toDouble() + controlSpacing;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _PlayButton(
-          isPlaying: isPlaying,
-          status: state.status,
-          isActive: isActive,
-          isCompact: isCompact,
-          onPressed: handleTap,
-        ),
-        SizedBox(
-          width: isCompact ? _compactControlSpacing : _standardControlSpacing,
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              _WaveformArea(
+        Row(
+          children: <Widget>[
+            _PlayButton(
+              isPlaying: isPlaying,
+              status: state.status,
+              isActive: isActive,
+              isCompact: isCompact,
+              onPressed: handleTap,
+            ),
+            SizedBox(width: controlSpacing),
+            Expanded(
+              child: _WaveformArea(
                 journalAudio: journalAudio,
                 progress: progress,
                 buffered: buffered,
@@ -156,21 +154,24 @@ class _PlayerBody extends StatelessWidget {
                 isCompact: isCompact,
                 onSeek: controller.seek,
               ),
-              Row(
-                children: <Widget>[
-                  Text(formatAudioDuration(progress), style: timeStyle),
-                  Expanded(
-                    child: Align(
-                      child: _SpeedButton(
-                        controller: controller,
-                        currentSpeed: state.speed,
-                        isActive: isActive,
-                      ),
-                    ),
+            ),
+          ],
+        ),
+        Padding(
+          padding: EdgeInsets.only(left: timeRowLeftInset),
+          child: Row(
+            children: <Widget>[
+              Text(formatAudioDuration(progress), style: timeStyle),
+              Expanded(
+                child: Align(
+                  child: _SpeedButton(
+                    controller: controller,
+                    currentSpeed: state.speed,
+                    isActive: isActive,
                   ),
-                  Text(formatAudioDuration(totalDuration), style: timeStyle),
-                ],
+                ),
               ),
+              Text(formatAudioDuration(totalDuration), style: timeStyle),
             ],
           ),
         ),
@@ -342,9 +343,21 @@ class _SpeedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = theme.extension<DsTokens>();
     final label = _speedLabel(currentSpeed);
     final nextSpeed = _nextSpeed(currentSpeed);
+
+    final captionStyle = tokens?.typography.styles.others.caption;
+    final speedTextColor = currentSpeed != 1
+        ? scheme.error
+        : (tokens?.colors.text.mediumEmphasis ?? scheme.onSurfaceVariant);
+    final speedTextStyle = (captionStyle ?? const TextStyle(fontSize: 12))
+        .copyWith(
+          color: speedTextColor,
+          fontFeatures: numericBadgeFontFeatures,
+        );
 
     final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -357,13 +370,7 @@ class _SpeedButton extends StatelessWidget {
         ),
         color: scheme.surfaceTint.withValues(alpha: 0.05),
       ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: currentSpeed != 1 ? scheme.error : scheme.onSurfaceVariant,
-        ),
-      ),
+      child: Text(label, style: speedTextStyle),
     );
 
     if (!isActive) {

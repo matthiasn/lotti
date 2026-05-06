@@ -121,6 +121,7 @@
 ## Implementation discipline
 
 - **Design-system tokens are mandatory.** For colors, spacing, radii, typography, elevation, and other visual styling values, always use the exported design-system tokens or existing design-system abstractions first.
+- **Spacings and font styles MUST come from the Design System.** Never hardcode spacing values (raw numbers in `EdgeInsets`/`SizedBox`/local `const double` constants) or font styles (raw `fontSize`/`fontWeight`/`TextStyle` constructors). Use `tokens.spacing.stepN` (or `cardPadding`/`cardItemSpacing`/`sectionGap`) and `tokens.typography.styles.{display,heading,subtitle,body,others}.<name>`. If no suitable token exists, stop and ask before introducing one.
 - **Do not invent ad hoc visual values by default.** Before adding a hard-coded color, spacing value, radius, opacity, or a one-off semantic alias for a visual token, first check the design-system token export and existing design-system components/palettes.
 - **Ask before introducing new visual tokens or hard-coded values.** If no suitable design-system token exists, stop and ask for permission before creating an ad hoc fallback, local palette entry, or other non-token visual value.
 - **Prefer fixing the token source over patching the widget.** If a Figma export flattened or obscured a semantic token name, prefer tracing it back to the exported token set or improving the import/export path instead of hard-coding a widget-level substitute.
