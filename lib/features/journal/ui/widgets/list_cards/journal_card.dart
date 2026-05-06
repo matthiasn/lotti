@@ -7,6 +7,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_color_icon.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.dart';
@@ -123,10 +124,11 @@ class ModernJournalCard extends StatelessWidget {
                 children: [
                   Text(
                     _formatDate(),
-                    style: tabularFigureStyle(
-                      fontSize: fontSizeMedium,
-                      color: context.colorScheme.outline,
-                    ),
+                    style: context.designTokens.typography.styles.others.caption
+                        .copyWith(
+                          color: context.colorScheme.outline,
+                          fontFeatures: numericBadgeFontFeatures,
+                        ),
                   ),
                   if (_shouldShowCategoryIcon()) ...[
                     const SizedBox(width: 8),
