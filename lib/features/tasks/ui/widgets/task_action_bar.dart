@@ -385,9 +385,7 @@ class _TrackTimePill extends StatelessWidget {
           onTap: isTracking ? onNavigateToRunningEntry : onStartTimer,
           child: Container(
             height: TaskActionBar.buttonSize,
-            padding: EdgeInsets.symmetric(
-              horizontal: isTracking ? spacing.step2 : spacing.step5,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
             decoration: BoxDecoration(
               color: fillColor,
               borderRadius: pillRadius,
@@ -417,9 +415,7 @@ class _TrackTimePill extends StatelessWidget {
                       // (open 4/6/9), matching the sidebar timer pill so
                       // the elapsed digits don't shift width as they
                       // tick.
-                      fontFeatures: isTracking
-                          ? numericBadgeFontFeatures
-                          : null,
+                      fontFeatures: numericBadgeFontFeatures,
                     ),
                   ),
                 ),

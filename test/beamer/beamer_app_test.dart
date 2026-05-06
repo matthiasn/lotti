@@ -131,7 +131,14 @@ Future<void> _stubNavService(
   final journalDelegate = await _createEmptyDelegate('/journal');
   final settingsDelegate = await _createEmptyDelegate('/settings');
 
-  when(() => navService.getIndexStream()).thenAnswer((_) => indexStream);
+  // Real NavService.getIndexStream returns a broadcast stream (multiple
+  // listeners — e.g. AppScreen + SidebarTimerSection — subscribe). Wrap
+  // the test-supplied stream so single-subscription inputs like
+  // Stream.value still satisfy multi-listener consumers.
+  final broadcastIndex = indexStream.isBroadcast
+      ? indexStream
+      : indexStream.asBroadcastStream();
+  when(() => navService.getIndexStream()).thenAnswer((_) => broadcastIndex);
   when(() => navService.tasksDelegate).thenReturn(tasksDelegate);
   when(() => navService.projectsDelegate).thenReturn(projectsDelegate);
   when(() => navService.calendarDelegate).thenReturn(calendarDelegate);
@@ -153,6 +160,13 @@ Future<void> _stubNavService(
   );
   when(() => navService.tapIndex(any())).thenReturn(null);
   when(() => navService.isDesktopMode).thenReturn(false);
+  // SidebarTimerSection reads these to decide whether to hide when the
+  // running task matches the open task. Empty selection + a non-task
+  // root path in these tests so the sidebar timer surfaces normally.
+  when(
+    () => navService.desktopSelectedTaskId,
+  ).thenReturn(ValueNotifier<String?>(null));
+  when(() => navService.currentPath).thenReturn('/');
 }
 
 Future<void> _pumpAppScreen(
@@ -238,6 +252,9 @@ Future<void> _pumpAppScreen(
 Future<void> _registerAppScreenGetIt(MockNavService navService) async {
   final mockTimeService = MockTimeService();
   when(mockTimeService.getStream).thenAnswer(_emptyTimeStream);
+  // SidebarTimerSection seeds its StreamBuilder with getCurrent() so it
+  // doesn't flicker on first frame when a timer is already running.
+  when(mockTimeService.getCurrent).thenReturn(null);
 
   await setUpTestGetIt(
     additionalSetup: () {

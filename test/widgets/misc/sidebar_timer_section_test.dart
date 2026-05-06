@@ -52,13 +52,35 @@ void main() {
 
   late _FakeTimeService timeService;
   late MockNavService navService;
+  late ValueNotifier<String?> desktopSelectedTaskId;
+  late StreamController<int> indexStreamController;
+
+  /// Push a new currentPath into the stubbed [NavService] and emit on
+  /// the index stream so subscribed widgets re-evaluate.
+  void setCurrentPath(String path) {
+    when(() => navService.currentPath).thenReturn(path);
+    indexStreamController.add(0);
+  }
 
   setUp(() async {
     timeService = _FakeTimeService();
     navService = MockNavService();
+    desktopSelectedTaskId = ValueNotifier<String?>(null);
+    indexStreamController = StreamController<int>.broadcast();
     // Mocktail records every call by default; nav routes are inspected
     // via `verify(...).captured` in the assertion phase.
     when(() => navService.beamToNamed(any())).thenAnswer((_) {});
+    when(
+      () => navService.desktopSelectedTaskId,
+    ).thenReturn(desktopSelectedTaskId);
+    when(
+      () => navService.getIndexStream(),
+    ).thenAnswer((_) => indexStreamController.stream);
+    // Default to a task-detail route so the existing tests, which
+    // expect the sidebar to render the running card, hit the
+    // common-path branch. Tests exercising tab-switch behavior
+    // override this via [setCurrentPath].
+    when(() => navService.currentPath).thenReturn('/tasks/some-task');
 
     await setUpTestGetIt(
       additionalSetup: () {
@@ -71,6 +93,8 @@ void main() {
 
   tearDown(() async {
     timeService.disposeController();
+    desktopSelectedTaskId.dispose();
+    await indexStreamController.close();
     await tearDownTestGetIt();
   });
 
@@ -126,6 +150,7 @@ void main() {
 
     timeService.emit(null);
     await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
 
     expect(find.byType(InkWell), findsNothing);
     expect(find.byIcon(Icons.timer_outlined), findsNothing);
@@ -147,6 +172,7 @@ void main() {
 
     timeService.emit(timer, linkedFrom: task);
     await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
 
     expect(find.text('Payment confirmation'), findsOneWidget);
     expect(find.text('01:23:45'), findsOneWidget);
@@ -169,6 +195,7 @@ void main() {
 
     timeService.emit(timer, linkedFrom: task);
     await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
 
     final timeWidget = tester.widget<Text>(find.text('00:04:09'));
     final features = timeWidget.style?.fontFeatures ?? const <FontFeature>[];
@@ -198,10 +225,11 @@ void main() {
 
     timeService.emit(timer, linkedFrom: task);
     await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
 
     // Tap on the title text to ensure body taps (not the stop button) navigate
     await tester.tap(find.text('Implement sidebar timer'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(lastBeamedPath(), equals('/tasks/task-3'));
     final intent = container.read(taskFocusControllerProvider(id: 'task-3'));
@@ -222,8 +250,12 @@ void main() {
 
     timeService.emit(timer, linkedFrom: task);
     await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
 
     await tester.tap(find.byIcon(Icons.stop_rounded));
+    // Two pumps for the broadcast stream + rebuild, then settle the
+    // fade-out so the outgoing card is removed from the tree.
+    await tester.pump();
     await tester.pumpAndSettle();
 
     expect(timeService.stopCalls, equals(1));
@@ -244,10 +276,119 @@ void main() {
 
     timeService.emit(timer, linkedFrom: task);
     await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
 
     // Falls back to plainText when title is empty
     expect(find.text('task plain text'), findsOneWidget);
   });
+
+  testWidgets(
+    'hides the card when the running task is open in the details pane',
+    (tester) async {
+      final task = makeTask('task-open', title: 'Refine sidebar visibility');
+      final timer = makeTimerEntry(
+        'timer-open',
+        elapsed: const Duration(minutes: 12),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const SidebarTimerSection()),
+      );
+
+      timeService.emit(timer, linkedFrom: task);
+      await tester.pump();
+      expect(find.text('Refine sidebar visibility'), findsOneWidget);
+
+      desktopSelectedTaskId.value = 'task-open';
+      // Pump past the fade+collapse animation.
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+
+      expect(find.text('Refine sidebar visibility'), findsNothing);
+      expect(find.byIcon(Icons.timer_outlined), findsNothing);
+      expect(find.byIcon(Icons.stop_rounded), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'reappears when navigating away from the running task',
+    (tester) async {
+      final task = makeTask('task-here', title: 'Tracked');
+      final timer = makeTimerEntry('timer-here');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const SidebarTimerSection()),
+      );
+
+      timeService.emit(timer, linkedFrom: task);
+      desktopSelectedTaskId.value = 'task-here';
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+      expect(find.text('Tracked'), findsNothing);
+
+      desktopSelectedTaskId.value = 'some-other-task';
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+
+      expect(find.text('Tracked'), findsOneWidget);
+      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'stays visible when on a non-task route, even if selected task matches',
+    (tester) async {
+      // Sticky state: user opened a task, started a timer, then
+      // switched tabs. desktopSelectedTaskId is still pointing at the
+      // task, but the user is now on /habits, so the sticky action bar
+      // is no longer visible — the sidebar must keep showing the
+      // running indicator.
+      final task = makeTask('task-sticky', title: 'Sticky');
+      final timer = makeTimerEntry('timer-sticky');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const SidebarTimerSection()),
+      );
+
+      timeService.emit(timer, linkedFrom: task);
+      desktopSelectedTaskId.value = 'task-sticky';
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+      // Sanity: while on the task route, the card is hidden.
+      expect(find.text('Sticky'), findsNothing);
+
+      // User switches to the Habits tab — currentPath is no longer a
+      // task-detail route. The card must come back.
+      setCurrentPath('/habits');
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+
+      expect(find.text('Sticky'), findsOneWidget);
+      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'stays visible when the running timer is not linked to a task',
+    (tester) async {
+      // A bare journal-entry timer (no Task linkedFrom) should never be
+      // hidden by the open-task check, even if a task happens to be
+      // selected in the details pane.
+      final linked = makeTimerEntry('linked-loose');
+      final timer = makeTimerEntry('timer-loose');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const SidebarTimerSection()),
+      );
+
+      timeService.emit(timer, linkedFrom: linked);
+      desktopSelectedTaskId.value = 'unrelated-task';
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+
+      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+    },
+  );
 
   testWidgets('non-task linkedFrom navigates to journal entry', (tester) async {
     final linked = makeTimerEntry('linked-6');
@@ -259,9 +400,10 @@ void main() {
 
     timeService.emit(timer, linkedFrom: linked);
     await tester.pump();
+    await tester.pump(SidebarTimerSection.animationDuration);
 
     await tester.tap(find.byIcon(Icons.timer_outlined));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(lastBeamedPath(), equals('/journal/linked-6'));
   });

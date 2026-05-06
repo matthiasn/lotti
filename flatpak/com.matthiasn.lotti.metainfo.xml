@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.997" date="2026-05-06">
+      <description>
+          <p>Sidebar running-timer card now hides itself only when the timer's parent task is the same task currently open in the desktop task-details pane and the user is actually on a /tasks/&lt;uuid&gt; route. The detail page's sticky action bar already shows a running indicator, so duplicating the title in the sidebar would be noise — but the card still surfaces on every other tab (Habits, Settings, …) because the selected-task notifier is sticky across tab switches and the action bar isn't visible there. The show/hide flip runs through a combined AnimatedSwitcher + AnimatedSize (~220 ms, easeInOut) so the card fades and the surrounding sidebar collapses smoothly instead of popping. The stream is seeded with the current running entity so a session already running is rendered on first frame instead of flashing through a hidden state.</p>
+          <p>Sticky action bar's running "Track time" pill gets a touch more breathing room on the leading edge: the inset stop circle now sits 8 px from the pill border (was 4 px) so it no longer crowds the edge while the elapsed digits tick.</p>
+      </description>
+    </release>
     <release version="0.9.996" date="2026-05-06">
       <description>
           <p>Audio recording player restyled to match the green Figma audio card. The play/pause control is now a soft circular pill drawn on the design-system surface token with the high-emphasis text color for the glyph; the previous gradient + drop shadow + animated progress ring are gone. The waveform's played bars use the brand teal interactive token (#2BA184 in light mode, #5ED4B7 in dark mode), with a thin teal scrubber line drawn at the playhead and bars widened to 4 px with 3 px spacing for parity with the Figma reference. The fallback progress bar (used while the waveform is still resolving) follows the same tokens, with the unplayed track now reading from the decorative level02 token instead of an alpha overlay on onSurfaceVariant. The play/pause button drops a step in size (40 px compact / 48 px standard) so it no longer dominates the card.</p>
