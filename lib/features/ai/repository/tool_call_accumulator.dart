@@ -73,7 +73,11 @@ class ToolCallAccumulator {
     final explicitId = toolCallChunk.id;
     final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
 
-    if (hasExplicitId || toolCallChunk.function?.name != null) {
+    if (hasExplicitId && _toolCalls.containsKey(explicitId)) {
+      // Continuation chunk that repeats the same explicit ID — append rather
+      // than overwriting the accumulated state.
+      _appendToToolCall(explicitId, toolCallChunk);
+    } else if (hasExplicitId || toolCallChunk.function?.name != null) {
       // This is a new tool call
       final toolCallId = hasExplicitId ? explicitId : 'tool_${_counter++}';
       _startNewToolCall(toolCallId, toolCallChunk);

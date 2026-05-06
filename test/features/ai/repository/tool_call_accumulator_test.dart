@@ -448,6 +448,61 @@ void main() {
         expect(accumulator.count, 0);
       });
 
+      test('appends continuation chunks that repeat the explicit ID', () {
+        const chunk1 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+              id: 'call_repeat',
+              type: ChatCompletionStreamMessageToolCallChunkType.function,
+              function: ChatCompletionStreamMessageFunctionCall(
+                name: 'repeat_func',
+                arguments: '{"a": ',
+              ),
+            ),
+          ],
+        );
+
+        // Some providers repeat the same non-empty id on continuation chunks
+        // and only ship more arguments. The accumulator must append rather
+        // than reset the entry.
+        const chunk2 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+              id: 'call_repeat',
+              function: ChatCompletionStreamMessageFunctionCall(
+                arguments: '1, "b": ',
+              ),
+            ),
+          ],
+        );
+
+        const chunk3 = ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: 0,
+              id: 'call_repeat',
+              function: ChatCompletionStreamMessageFunctionCall(
+                arguments: '2}',
+              ),
+            ),
+          ],
+        );
+
+        accumulator
+          ..processChunk(chunk1)
+          ..processChunk(chunk2)
+          ..processChunk(chunk3);
+
+        expect(accumulator.count, 1);
+        final toolCalls = accumulator.toToolCalls();
+        expect(toolCalls, hasLength(1));
+        expect(toolCalls.first.id, 'call_repeat');
+        expect(toolCalls.first.function.name, 'repeat_func');
+        expect(toolCalls.first.function.arguments, '{"a": 1, "b": 2}');
+      });
+
       test('preserves function name when continuing with only arguments', () {
         // Start a tool call with name and partial arguments
         const chunk1 = ChatCompletionStreamResponseDelta(

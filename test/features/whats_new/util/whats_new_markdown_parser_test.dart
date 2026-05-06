@@ -20,6 +20,9 @@ enum _GeneratedImagePathKind {
   httpAbsolute,
   httpsAbsolute,
   uppercaseHttpAbsolute,
+  dataUri,
+  fileUri,
+  protocolRelative,
 }
 
 class _GeneratedImagePath {
@@ -42,6 +45,10 @@ class _GeneratedImagePath {
         'https://cdn.example.com/generated-$seed.png',
       _GeneratedImagePathKind.uppercaseHttpAbsolute =>
         'HTTPS://cdn.example.com/generated-$seed.png',
+      _GeneratedImagePathKind.dataUri => 'data:image/png;base64,AAAA$seed',
+      _GeneratedImagePathKind.fileUri => 'file:///tmp/generated-$seed.png',
+      _GeneratedImagePathKind.protocolRelative =>
+        '//cdn.example.com/generated-$seed.png',
     };
   }
 
@@ -52,7 +59,10 @@ class _GeneratedImagePath {
     return switch (kind) {
       _GeneratedImagePathKind.httpAbsolute ||
       _GeneratedImagePathKind.httpsAbsolute ||
-      _GeneratedImagePathKind.uppercaseHttpAbsolute => rawPath,
+      _GeneratedImagePathKind.uppercaseHttpAbsolute ||
+      _GeneratedImagePathKind.dataUri ||
+      _GeneratedImagePathKind.fileUri ||
+      _GeneratedImagePathKind.protocolRelative => rawPath,
       _ => '$baseUrl/$folder/$rawPath',
     };
   }
@@ -215,6 +225,55 @@ Just a header with no sections.
         contains(
           '![Feature Image]($baseUrl/${release.folder}/images/feature.png)',
         ),
+      );
+    });
+
+    test('preserves non-HTTP absolute URIs and protocol-relative URLs', () {
+      const markdown = '''
+# Update
+
+![Inline data](data:image/png;base64,iVBORw0KGgo=)
+
+---
+
+## File
+
+![Local file](file:///tmp/local.png)
+
+---
+
+## Protocol relative
+
+![CDN](//cdn.example.com/image.png)
+
+---
+
+## Mailto
+
+![Mail](mailto:hello@example.com)
+''';
+
+      final content = WhatsNewMarkdownParser.parse(
+        markdown: markdown,
+        release: release,
+        baseUrl: baseUrl,
+      );
+
+      expect(
+        content.headerMarkdown,
+        contains('![Inline data](data:image/png;base64,iVBORw0KGgo=)'),
+      );
+      expect(
+        content.sections[0],
+        contains('![Local file](file:///tmp/local.png)'),
+      );
+      expect(
+        content.sections[1],
+        contains('![CDN](//cdn.example.com/image.png)'),
+      );
+      expect(
+        content.sections[2],
+        contains('![Mail](mailto:hello@example.com)'),
       );
     });
 

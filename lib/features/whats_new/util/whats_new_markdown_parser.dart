@@ -58,15 +58,19 @@ class WhatsNewMarkdownParser {
   /// Resolves relative image URLs in markdown to absolute URLs.
   ///
   /// Matches markdown image syntax `![alt](path)` where path is not an
-  /// absolute HTTP(S) URL and replaces it with the full release asset URL.
+  /// absolute URI (any scheme, e.g. `http:`, `https:`, `data:`, `file:`) and
+  /// not protocol-relative (`//host/...`), then replaces it with the full
+  /// release asset URL.
   static String _resolveImageUrls(
     String markdown,
     String baseUrl,
     String folder,
   ) {
-    // Pattern: ![alt text](relative/path.png) where path is not http(s)://.
+    // Pattern: ![alt text](relative/path.png). The negative lookahead rejects
+    // any RFC 3986 scheme prefix (`scheme:`) and protocol-relative `//` paths
+    // so absolute URIs like `data:`, `file:`, or `//cdn/...` are preserved.
     final imagePattern = RegExp(
-      r'!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)',
+      r'!\[([^\]]*)\]\((?!(?:[a-z][a-z0-9+.-]*:|\/\/))([^)]+)\)',
       caseSensitive: false,
     );
 
