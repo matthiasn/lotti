@@ -1,9 +1,7 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
@@ -104,12 +102,6 @@ class _PlayerBody extends StatelessWidget {
         : state.totalDuration;
     final progress = isActive ? state.progress : Duration.zero;
     final buffered = isActive ? state.buffered : Duration.zero;
-    final progressRatio = totalDuration.inMilliseconds > 0
-        ? (progress.inMilliseconds / totalDuration.inMilliseconds).clamp(
-            0.0,
-            1.0,
-          )
-        : 0.0;
     final isPlaying = isActive && state.status == AudioPlayerStatus.playing;
 
     void handleTap() {
@@ -128,9 +120,14 @@ class _PlayerBody extends StatelessWidget {
       controller.play();
     }
 
+    final theme = Theme.of(context);
+    final tokens = theme.extension<DsTokens>();
+    final timeColor =
+        tokens?.colors.text.mediumEmphasis ??
+        theme.colorScheme.onSurfaceVariant;
     final timeStyle = tabularFigureStyle(
       fontSize: fontSizeMedium,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
+      color: timeColor,
     );
 
     return Row(
@@ -140,7 +137,6 @@ class _PlayerBody extends StatelessWidget {
           status: state.status,
           isActive: isActive,
           isCompact: isCompact,
-          progressRatio: progressRatio,
           onPressed: handleTap,
         ),
         SizedBox(
@@ -264,14 +260,15 @@ class _WaveformArea extends ConsumerWidget {
   }
 }
 
-/// Circular primary play/pause button with progress ring animation.
+/// Soft circular play/pause control matching the Figma audio card spec:
+/// neutral surface token fill with a high-emphasis text glyph, no progress
+/// ring or gradient.
 class _PlayButton extends StatelessWidget {
   const _PlayButton({
     required this.isPlaying,
     required this.status,
     required this.isActive,
     required this.isCompact,
-    required this.progressRatio,
     required this.onPressed,
   });
 
@@ -279,61 +276,35 @@ class _PlayButton extends StatelessWidget {
   final AudioPlayerStatus status;
   final bool isActive;
   final bool isCompact;
-  final double progressRatio;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = theme.extension<DsTokens>();
     final scheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final diameter = (isCompact ? 46 : 56).toDouble();
-    final innerDiameter = diameter - (isCompact ? 12 : 14).toDouble();
+    final diameter = (isCompact ? 40 : 48).toDouble();
     final isLoading = status == AudioPlayerStatus.initializing && isActive;
+
+    final iconColor = tokens?.colors.text.highEmphasis ?? scheme.onSurface;
+    final surfaceColor =
+        tokens?.colors.surface.enabled ??
+        scheme.onSurface.withValues(alpha: 0.06);
 
     final icon = isLoading
         ? SizedBox(
-            width: isCompact ? 18 : 22,
-            height: isCompact ? 18 : 22,
+            width: isCompact ? 16 : 20,
+            height: isCompact ? 16 : 20,
             child: CircularProgressIndicator(
-              strokeWidth: 2.2,
-              valueColor: AlwaysStoppedAnimation<Color>(scheme.onPrimary),
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(iconColor),
             ),
           )
         : Icon(
             isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-            size: isCompact ? 22 : 26,
-            color: scheme.onPrimary,
+            size: isCompact ? 20 : 24,
+            color: iconColor,
           );
-
-    final button = AnimatedContainer(
-      duration: const Duration(milliseconds: AppTheme.animationDuration),
-      curve: AppTheme.animationCurve,
-      width: innerDiameter,
-      height: innerDiameter,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: isPlaying
-              ? <Color>[
-                  scheme.error.withValues(alpha: 0.75),
-                  scheme.error,
-                ]
-              : <Color>[
-                  scheme.primary.withValues(alpha: 0.8),
-                  scheme.primary,
-                ],
-        ),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.2),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Center(child: icon),
-    );
 
     return Semantics(
       button: true,
@@ -342,34 +313,14 @@ class _PlayButton extends StatelessWidget {
       child: SizedBox(
         width: diameter,
         height: diameter,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: progressRatio),
-          duration: const Duration(milliseconds: 340),
-          curve: Curves.easeOutCubic,
-          builder: (BuildContext context, double value, Widget? child) {
-            return CustomPaint(
-              painter: _PlayButtonRingPainter(
-                progress: isActive ? value : 0,
-                color: scheme.primary,
-                backgroundColor: scheme.surfaceContainerHighest.withValues(
-                  alpha: 0.28,
-                ),
-                glowColor: isDark
-                    ? Colors.transparent
-                    : scheme.primary.withValues(alpha: 0.28),
-              ),
-              child: child,
-            );
-          },
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(innerDiameter / 2),
-              splashColor: scheme.primary.withValues(alpha: 0.2),
-              highlightColor: scheme.primary.withValues(alpha: 0.1),
-              onTap: onPressed,
-              child: Center(child: button),
-            ),
+        child: Material(
+          key: const Key('audio_player_play_button_surface'),
+          color: surfaceColor,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed,
+            child: Center(child: icon),
           ),
         ),
       ),
@@ -450,64 +401,4 @@ String _speedLabel(double speed) {
     return '${speed.toInt()}x';
   }
   return '${speed}x';
-}
-
-class _PlayButtonRingPainter extends CustomPainter {
-  const _PlayButtonRingPainter({
-    required this.progress,
-    required this.color,
-    required this.backgroundColor,
-    required this.glowColor,
-  });
-
-  final double progress;
-  final Color color;
-  final Color backgroundColor;
-  final Color glowColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const strokeWidth = 4.5;
-    final center = size.center(Offset.zero);
-    final radius = size.width / 2 - strokeWidth / 2;
-
-    final trackPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..color = backgroundColor;
-    canvas.drawCircle(center, radius, trackPaint);
-
-    if (progress <= 0) {
-      return;
-    }
-
-    final sweep = (progress.clamp(0.0, 1.0)) * 2 * math.pi;
-    final arcRect = Rect.fromCircle(center: center, radius: radius);
-
-    final glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..color = glowColor
-      ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 5);
-    canvas.drawArc(arcRect, -math.pi / 2, sweep, false, glowPaint);
-
-    final progressPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..shader = LinearGradient(
-        colors: <Color>[
-          Color.lerp(color, Colors.white, 0.25)!,
-          color,
-        ],
-      ).createShader(arcRect);
-    canvas.drawArc(arcRect, -math.pi / 2, sweep, false, progressPaint);
-  }
-
-  @override
-  bool shouldRepaint(_PlayButtonRingPainter oldDelegate) {
-    return progress != oldDelegate.progress || color != oldDelegate.color;
-  }
 }

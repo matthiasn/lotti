@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 
 class MockAudioPlayerController extends AudioPlayerController {
   MockAudioPlayerController(this._state);
@@ -155,6 +157,7 @@ void main() {
     required JournalAudio journalAudio,
     required AudioPlayerState state,
     double width = 420,
+    Brightness brightness = Brightness.light,
   }) async {
     controller = MockAudioPlayerController(state);
 
@@ -164,6 +167,9 @@ void main() {
           audioPlayerControllerProvider.overrideWith(() => controller),
         ],
         child: MaterialApp(
+          theme: resolveTestTheme(
+            ThemeData(useMaterial3: true, brightness: brightness),
+          ),
           home: Scaffold(
             body: Center(
               child: SizedBox(
@@ -642,5 +648,112 @@ void main() {
     // When not active, progress and buffered should be zero
     expect(progressBar.progress, Duration.zero);
     expect(progressBar.buffered, Duration.zero);
+  });
+
+  group('Figma restyle', () {
+    const playButtonSurfaceKey = Key('audio_player_play_button_surface');
+
+    testWidgets(
+      'play button surface uses interactive surface token in light theme',
+      (WidgetTester tester) async {
+        final journalAudio = buildJournalAudio();
+        final state = buildState(
+          status: AudioPlayerStatus.paused,
+          totalDuration: journalAudio.data.duration,
+          progress: const Duration(seconds: 5),
+          pausedAt: const Duration(seconds: 5),
+          speed: 1,
+          showTranscriptsList: false,
+          audioNote: journalAudio,
+        );
+
+        await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+        final material = tester.widget<Material>(
+          find.byKey(playButtonSurfaceKey),
+        );
+        expect(material.shape, isA<CircleBorder>());
+        expect(material.color, dsTokensLight.colors.surface.enabled);
+      },
+    );
+
+    testWidgets(
+      'play button surface adapts to dark token in dark theme',
+      (WidgetTester tester) async {
+        final journalAudio = buildJournalAudio();
+        final state = buildState(
+          status: AudioPlayerStatus.paused,
+          totalDuration: journalAudio.data.duration,
+          progress: const Duration(seconds: 5),
+          pausedAt: const Duration(seconds: 5),
+          speed: 1,
+          showTranscriptsList: false,
+          audioNote: journalAudio,
+        );
+
+        await pumpPlayer(
+          tester,
+          journalAudio: journalAudio,
+          state: state,
+          brightness: Brightness.dark,
+        );
+
+        final material = tester.widget<Material>(
+          find.byKey(playButtonSurfaceKey),
+        );
+        expect(material.color, dsTokensDark.colors.surface.enabled);
+      },
+    );
+
+    test('progress color resolves to interactive token in light theme', () {
+      final colors = resolveAudioProgressColors(
+        ThemeData(useMaterial3: true).copyWith(
+          extensions: const [dsTokensLight],
+        ),
+      );
+
+      expect(colors.progress, dsTokensLight.colors.interactive.enabled);
+    });
+
+    test('progress track uses decorative token instead of variant overlay', () {
+      final colors = resolveAudioProgressColors(
+        ThemeData(useMaterial3: true).copyWith(
+          extensions: const [dsTokensDark],
+        ),
+      );
+
+      expect(colors.track, dsTokensDark.colors.decorative.level02);
+      expect(colors.progress, dsTokensDark.colors.interactive.enabled);
+    });
+
+    test(
+      'progress colors fall back to ColorScheme.primary when tokens absent',
+      () {
+        final theme = ThemeData(useMaterial3: true);
+        final colors = resolveAudioProgressColors(theme);
+        expect(colors.progress, theme.colorScheme.primary);
+      },
+    );
+
+    testWidgets('play button has no progress ring around it', (
+      WidgetTester tester,
+    ) async {
+      final journalAudio = buildJournalAudio();
+      final state = buildState(
+        status: AudioPlayerStatus.playing,
+        totalDuration: journalAudio.data.duration,
+        progress: const Duration(seconds: 90),
+        pausedAt: Duration.zero,
+        speed: 1,
+        showTranscriptsList: false,
+        audioNote: journalAudio,
+      );
+
+      await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+      // The Figma redesign drops the animated ring painter that previously
+      // wrapped the play button.
+      expect(find.byType(TweenAnimationBuilder<double>), findsNothing);
+    });
   });
 }

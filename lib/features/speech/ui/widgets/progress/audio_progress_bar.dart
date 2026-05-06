@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Formats a [Duration] into `hh:mm:ss` or `mm:ss` for audio playback UI.
 String formatAudioDuration(Duration duration) {
@@ -33,15 +34,21 @@ class AudioProgressColors {
   final Color glow;
 }
 
-AudioProgressColors resolveAudioProgressColors(ThemeData theme) {
-  final scheme = theme.colorScheme;
+AudioProgressColors resolveAudioProgressColors(
+  ThemeData theme, {
+  DsTokens? tokens,
+}) {
   final isDark = theme.brightness == Brightness.dark;
+  final activeTokens = tokens ?? theme.extension<DsTokens>();
 
-  final progressBase = scheme.primary;
+  final progressBase =
+      activeTokens?.colors.interactive.enabled ?? theme.colorScheme.primary;
 
-  final track = scheme.onSurfaceVariant.withValues(
-    alpha: isDark ? 0.32 : 0.24,
-  );
+  final track = activeTokens != null
+      ? activeTokens.colors.decorative.level02
+      : theme.colorScheme.onSurfaceVariant.withValues(
+          alpha: isDark ? 0.32 : 0.24,
+        );
 
   final buffered = progressBase.withValues(
     alpha: isDark ? 0.22 : 0.18,
@@ -50,7 +57,7 @@ AudioProgressColors resolveAudioProgressColors(ThemeData theme) {
   final glow = isDark
       ? Colors.transparent
       : progressBase.withValues(alpha: 0.3);
-  final thumb = _resolveThumbColor(scheme, isDark);
+  final thumb = _resolveThumbColor(progressBase, isDark: isDark);
 
   return AudioProgressColors(
     track: track,
@@ -61,18 +68,18 @@ AudioProgressColors resolveAudioProgressColors(ThemeData theme) {
   );
 }
 
-Color _resolveThumbColor(ColorScheme scheme, bool isDark) {
-  final base = scheme.primary;
+Color _resolveThumbColor(Color base, {required bool isDark}) {
   if (base.a == 0) {
     return base;
   }
 
-  final luminance = base.computeLuminance();
   if (isDark) {
-    return Color.lerp(base, Colors.white, 0.45)!;
+    return Color.lerp(base, Colors.white, 0.2)!;
   }
 
-  if (luminance > 0.75) {
+  // Very-bright primaries (e.g. yellow) need to be darkened so the thumb
+  // remains visible against the filled progress instead of disappearing.
+  if (base.computeLuminance() > 0.75) {
     return Color.lerp(base, Colors.black, 0.2)!;
   }
 
@@ -116,6 +123,7 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = theme.extension<DsTokens>();
     final trackHeight = widget.compact ? 6.0 : 8.0;
     final thumbRadius = widget.compact ? 6.0 : 7.5;
 
@@ -135,7 +143,7 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
                   .clamp(0.0, 1.0)
             : 0.0;
 
-        final colors = resolveAudioProgressColors(theme);
+        final colors = resolveAudioProgressColors(theme, tokens: tokens);
 
         final Widget bar = SizedBox(
           width: double.infinity,

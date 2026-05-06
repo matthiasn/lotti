@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 
 /// Displays a tappable/dragable waveform visualization mirroring the progress
@@ -32,8 +33,8 @@ class AudioWaveformScrubber extends StatefulWidget {
 
 class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
   static const Duration _seekThrottleDelay = Duration(milliseconds: 60);
-  static const double _targetBarWidth = 1.5;
-  static const double _targetBarSpacing = 1.5;
+  static const double _targetBarWidth = 4;
+  static const double _targetBarSpacing = 3;
 
   Timer? _throttleTimer;
   DateTime? _lastSeekInvocation;
@@ -50,7 +51,8 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = resolveAudioProgressColors(theme);
+    final tokens = theme.extension<DsTokens>();
+    final colors = resolveAudioProgressColors(theme, tokens: tokens);
     final height = (widget.compact ? 40 : 48).toDouble();
 
     final progressRatio = _hasTotal
@@ -79,6 +81,7 @@ class _AudioWaveformScrubberState extends State<AudioWaveformScrubber> {
             bufferedColor: colors.buffered,
             trackColor: colors.track,
             glowColor: colors.glow,
+            scrubberColor: colors.progress,
             targetBarWidth: _targetBarWidth,
             targetSpacing: _targetBarSpacing,
             compact: widget.compact,
@@ -193,6 +196,7 @@ class _WaveformPainter extends CustomPainter {
     required this.bufferedColor,
     required this.trackColor,
     required this.glowColor,
+    required this.scrubberColor,
     required this.targetBarWidth,
     required this.targetSpacing,
     required this.compact,
@@ -205,6 +209,7 @@ class _WaveformPainter extends CustomPainter {
   final Color bufferedColor;
   final Color trackColor;
   final Color glowColor;
+  final Color scrubberColor;
   final double targetBarWidth;
   final double targetSpacing;
   final bool compact;
@@ -277,6 +282,21 @@ class _WaveformPainter extends CustomPainter {
       canvas.drawRRect(rect, paint);
       x += barWidth + spacing;
     }
+
+    // Hide the playhead line at the exact start/end so it doesn't sit flush
+    // against the waveform edge.
+    if (progressRatio > 0 && progressRatio < 1) {
+      final scrubberX = (size.width * progressRatio).clamp(0.0, size.width);
+      final scrubberPaint = Paint()
+        ..color = scrubberColor
+        ..strokeWidth = compact ? 1.5 : 2
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(
+        Offset(scrubberX, size.height * 0.05),
+        Offset(scrubberX, size.height * 0.95),
+        scrubberPaint,
+      );
+    }
   }
 
   @override
@@ -288,6 +308,7 @@ class _WaveformPainter extends CustomPainter {
         oldDelegate.bufferedColor != bufferedColor ||
         oldDelegate.trackColor != trackColor ||
         oldDelegate.glowColor != glowColor ||
+        oldDelegate.scrubberColor != scrubberColor ||
         oldDelegate.targetBarWidth != targetBarWidth ||
         oldDelegate.targetSpacing != targetSpacing ||
         oldDelegate.compact != compact;

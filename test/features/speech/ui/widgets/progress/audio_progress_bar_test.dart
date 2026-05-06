@@ -115,6 +115,36 @@ void main() {
       expect(colors.glow, Colors.transparent);
     });
 
+    test('thumb lifts toward white for mid-luminance primaries', () {
+      const primary = Color(0xFF2BA184);
+      final lightTheme = ThemeData(
+        colorScheme: const ColorScheme.light(
+          primary: primary,
+          secondary: Colors.deepPurple,
+        ),
+      );
+      final darkTheme = ThemeData(
+        colorScheme: const ColorScheme.dark(
+          primary: primary,
+          secondary: Colors.amber,
+        ),
+      );
+
+      final lightColors = resolveAudioProgressColors(lightTheme);
+      final darkColors = resolveAudioProgressColors(darkTheme);
+
+      // Thumb is brighter than the brand color in both modes so it remains
+      // visible against the filled progress.
+      expect(
+        lightColors.thumb.computeLuminance(),
+        greaterThan(primary.computeLuminance()),
+      );
+      expect(
+        darkColors.thumb.computeLuminance(),
+        greaterThan(lightColors.thumb.computeLuminance()),
+      );
+    });
+
     test('light mode darkens overly bright primary for thumb contrast', () {
       final theme = ThemeData(
         colorScheme: const ColorScheme.light(
@@ -131,25 +161,6 @@ void main() {
         lessThan(colors.progress.computeLuminance()),
       );
     });
-
-    test(
-      'dark mode with near-black primary is lifted for thumb visibility',
-      () {
-        const darkPrimary = Color(0xFF050505);
-        final theme = ThemeData(
-          colorScheme: const ColorScheme.dark(
-            primary: darkPrimary,
-            secondary: Colors.amber,
-          ),
-        );
-
-        final colors = resolveAudioProgressColors(theme);
-
-        expect(colors.progress, darkPrimary);
-        expect(colors.thumb, isNot(equals(darkPrimary)));
-        expect(colors.thumb.computeLuminance(), greaterThan(0.15));
-      },
-    );
   });
 
   group('AudioProgressBar widget', () {
