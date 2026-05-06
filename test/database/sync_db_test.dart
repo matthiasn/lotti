@@ -75,6 +75,254 @@ class _OutboxClaimScenario {
   final List<_OutboxClaimRowSpec> rows;
 }
 
+enum _GeneratedSequenceLifecycleOperation {
+  resetKnown,
+  resetAll,
+  retireExhausted,
+  retireAgedOut,
+}
+
+enum _GeneratedSequenceLifecycleStatus {
+  absent,
+  received,
+  missing,
+  requested,
+  backfilled,
+  deleted,
+  unresolvable,
+}
+
+enum _GeneratedRequestTimestamp { absent, fresh, atCutoff, old }
+
+enum _GeneratedUpdatedTimestamp { fresh, atCutoff, old }
+
+class _SequenceLifecycleRowSpec {
+  const _SequenceLifecycleRowSpec({
+    required this.status,
+    required this.payloadType,
+    required this.hasEntryId,
+    required this.requestCount,
+    required this.lastRequestedAt,
+    required this.updatedAt,
+  });
+
+  final _GeneratedSequenceLifecycleStatus status;
+  final SyncSequencePayloadType payloadType;
+  final bool hasEntryId;
+  final int requestCount;
+  final _GeneratedRequestTimestamp lastRequestedAt;
+  final _GeneratedUpdatedTimestamp updatedAt;
+
+  bool get isStored => status != _GeneratedSequenceLifecycleStatus.absent;
+
+  bool get isMissingOrRequested =>
+      status == _GeneratedSequenceLifecycleStatus.missing ||
+      status == _GeneratedSequenceLifecycleStatus.requested;
+
+  bool get isResolvedWatermark =>
+      status == _GeneratedSequenceLifecycleStatus.received ||
+      status == _GeneratedSequenceLifecycleStatus.backfilled ||
+      status == _GeneratedSequenceLifecycleStatus.deleted ||
+      status == _GeneratedSequenceLifecycleStatus.unresolvable;
+
+  SyncSequenceStatus get syncStatus {
+    return switch (status) {
+      _GeneratedSequenceLifecycleStatus.received => SyncSequenceStatus.received,
+      _GeneratedSequenceLifecycleStatus.missing => SyncSequenceStatus.missing,
+      _GeneratedSequenceLifecycleStatus.requested =>
+        SyncSequenceStatus.requested,
+      _GeneratedSequenceLifecycleStatus.backfilled =>
+        SyncSequenceStatus.backfilled,
+      _GeneratedSequenceLifecycleStatus.deleted => SyncSequenceStatus.deleted,
+      _GeneratedSequenceLifecycleStatus.unresolvable =>
+        SyncSequenceStatus.unresolvable,
+      _GeneratedSequenceLifecycleStatus.absent => throw StateError(
+        'Absent lifecycle rows do not have a sync status',
+      ),
+    };
+  }
+
+  String? entryId(int counter) =>
+      isStored && hasEntryId ? 'generated-lifecycle-entry-$counter' : null;
+
+  DateTime createdAt(DateTime now) => now.subtract(const Duration(days: 30));
+
+  DateTime updatedAtValue(DateTime now) {
+    return switch (updatedAt) {
+      _GeneratedUpdatedTimestamp.fresh => now.subtract(
+        const Duration(days: 1),
+      ),
+      _GeneratedUpdatedTimestamp.atCutoff => now.subtract(
+        _SequenceLifecycleScenario.amnestyWindow,
+      ),
+      _GeneratedUpdatedTimestamp.old => now.subtract(
+        const Duration(days: 10),
+      ),
+    };
+  }
+
+  DateTime? lastRequestedAtValue(DateTime now) {
+    return switch (lastRequestedAt) {
+      _GeneratedRequestTimestamp.absent => null,
+      _GeneratedRequestTimestamp.fresh => now.subtract(
+        const Duration(minutes: 1),
+      ),
+      _GeneratedRequestTimestamp.atCutoff => now.subtract(
+        _SequenceLifecycleScenario.grace,
+      ),
+      _GeneratedRequestTimestamp.old => now.subtract(
+        const Duration(minutes: 10),
+      ),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_SequenceLifecycleRowSpec('
+        'status: $status, '
+        'payloadType: $payloadType, '
+        'hasEntryId: $hasEntryId, '
+        'requestCount: $requestCount, '
+        'lastRequestedAt: $lastRequestedAt, '
+        'updatedAt: $updatedAt'
+        ')';
+  }
+}
+
+class _SequenceLifecycleExpectedRow {
+  const _SequenceLifecycleExpectedRow({
+    required this.status,
+    required this.entryId,
+    required this.requestCount,
+    required this.lastRequestedCleared,
+    required this.payloadType,
+  });
+
+  final SyncSequenceStatus? status;
+  final String? entryId;
+  final int? requestCount;
+  final bool lastRequestedCleared;
+  final SyncSequencePayloadType? payloadType;
+}
+
+class _SequenceLifecycleScenario {
+  const _SequenceLifecycleScenario({
+    required this.operation,
+    required this.rows,
+  });
+
+  static final now = DateTime(2026, 5, 6, 12);
+  static const hostId = 'generated-lifecycle-host';
+  static const maxRequestCount = 5;
+  static const grace = Duration(minutes: 5);
+  static const amnestyWindow = Duration(days: 7);
+
+  final _GeneratedSequenceLifecycleOperation operation;
+  final List<_SequenceLifecycleRowSpec> rows;
+
+  int get expectedAffectedCount {
+    return [
+      for (var index = 0; index < rows.length; index++)
+        if (_changesRow(rows[index], index + 1)) rows[index],
+    ].length;
+  }
+
+  _SequenceLifecycleExpectedRow expectedRow(int counter) {
+    final row = rows[counter - 1];
+    if (!row.isStored) {
+      return const _SequenceLifecycleExpectedRow(
+        status: null,
+        entryId: null,
+        requestCount: null,
+        lastRequestedCleared: false,
+        payloadType: null,
+      );
+    }
+
+    final changes = _changesRow(row, counter);
+    final status = changes
+        ? switch (operation) {
+            _GeneratedSequenceLifecycleOperation.resetKnown ||
+            _GeneratedSequenceLifecycleOperation.resetAll =>
+              SyncSequenceStatus.missing,
+            _GeneratedSequenceLifecycleOperation.retireExhausted ||
+            _GeneratedSequenceLifecycleOperation.retireAgedOut =>
+              SyncSequenceStatus.unresolvable,
+          }
+        : row.syncStatus;
+
+    return _SequenceLifecycleExpectedRow(
+      status: status,
+      entryId: row.entryId(counter),
+      requestCount:
+          changes &&
+              (operation == _GeneratedSequenceLifecycleOperation.resetKnown ||
+                  operation == _GeneratedSequenceLifecycleOperation.resetAll)
+          ? 0
+          : row.requestCount,
+      lastRequestedCleared:
+          changes &&
+          (operation == _GeneratedSequenceLifecycleOperation.resetKnown ||
+              operation == _GeneratedSequenceLifecycleOperation.resetAll),
+      payloadType: row.payloadType,
+    );
+  }
+
+  int? get expectedWatermark {
+    if (!rows.any((row) => row.isStored)) return null;
+
+    var prefix = 0;
+    for (var counter = 1; counter <= rows.length; counter++) {
+      final expected = expectedRow(counter);
+      if (expected.status == null || !expected.status!.isResolvedWatermark) {
+        break;
+      }
+      prefix++;
+    }
+    return prefix;
+  }
+
+  bool _changesRow(_SequenceLifecycleRowSpec row, int counter) {
+    if (!row.isStored) return false;
+
+    return switch (operation) {
+      _GeneratedSequenceLifecycleOperation.resetKnown =>
+        row.status == _GeneratedSequenceLifecycleStatus.unresolvable &&
+            row.entryId(counter) != null,
+      _GeneratedSequenceLifecycleOperation.resetAll =>
+        row.status == _GeneratedSequenceLifecycleStatus.unresolvable,
+      _GeneratedSequenceLifecycleOperation.retireExhausted =>
+        row.isMissingOrRequested &&
+            row.requestCount >= maxRequestCount &&
+            row.lastRequestedAtValue(now) != null &&
+            row
+                .lastRequestedAtValue(
+                  now,
+                )!
+                .isBefore(now.subtract(grace)),
+      _GeneratedSequenceLifecycleOperation.retireAgedOut =>
+        row.isMissingOrRequested &&
+            row.updatedAtValue(now).isBefore(now.subtract(amnestyWindow)),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_SequenceLifecycleScenario('
+        'operation: $operation, '
+        'rows: $rows'
+        ')';
+  }
+}
+
+extension _SyncSequenceStatusModelX on SyncSequenceStatus {
+  bool get isResolvedWatermark =>
+      this == SyncSequenceStatus.received ||
+      this == SyncSequenceStatus.backfilled ||
+      this == SyncSequenceStatus.deleted ||
+      this == SyncSequenceStatus.unresolvable;
+}
+
 class _OutboxClaimModelRow {
   const _OutboxClaimModelRow({
     required this.id,
@@ -100,6 +348,23 @@ extension _AnyOutboxClaimScenario on Any {
   Generator<_GeneratedOutboxStatus> get generatedOutboxStatus =>
       choose(_GeneratedOutboxStatus.values);
 
+  Generator<SyncSequencePayloadType> get generatedPayloadType =>
+      choose(SyncSequencePayloadType.values);
+
+  Generator<_GeneratedSequenceLifecycleOperation>
+  get generatedSequenceLifecycleOperation =>
+      choose(_GeneratedSequenceLifecycleOperation.values);
+
+  Generator<_GeneratedSequenceLifecycleStatus>
+  get generatedSequenceLifecycleStatus =>
+      choose(_GeneratedSequenceLifecycleStatus.values);
+
+  Generator<_GeneratedRequestTimestamp> get generatedRequestTimestamp =>
+      choose(_GeneratedRequestTimestamp.values);
+
+  Generator<_GeneratedUpdatedTimestamp> get generatedUpdatedTimestamp =>
+      choose(_GeneratedUpdatedTimestamp.values);
+
   Generator<_OutboxClaimRowSpec> get outboxClaimRowSpec => combine3(
     intInRange(0, 6),
     any.bool,
@@ -120,6 +385,43 @@ extension _AnyOutboxClaimScenario on Any {
       rows: rows,
     ),
   );
+
+  Generator<_SequenceLifecycleRowSpec> get sequenceLifecycleRowSpec => combine6(
+    generatedSequenceLifecycleStatus,
+    generatedPayloadType,
+    any.bool,
+    intInRange(0, 8),
+    generatedRequestTimestamp,
+    generatedUpdatedTimestamp,
+    (
+      _GeneratedSequenceLifecycleStatus status,
+      SyncSequencePayloadType payloadType,
+      bool hasEntryId,
+      int requestCount,
+      _GeneratedRequestTimestamp lastRequestedAt,
+      _GeneratedUpdatedTimestamp updatedAt,
+    ) => _SequenceLifecycleRowSpec(
+      status: status,
+      payloadType: payloadType,
+      hasEntryId: hasEntryId,
+      requestCount: requestCount,
+      lastRequestedAt: lastRequestedAt,
+      updatedAt: updatedAt,
+    ),
+  );
+
+  Generator<_SequenceLifecycleScenario> get sequenceLifecycleScenario =>
+      combine2(
+        generatedSequenceLifecycleOperation,
+        listWithLengthInRange(0, 14, sequenceLifecycleRowSpec),
+        (
+          _GeneratedSequenceLifecycleOperation operation,
+          List<_SequenceLifecycleRowSpec> rows,
+        ) => _SequenceLifecycleScenario(
+          operation: operation,
+          rows: rows,
+        ),
+      );
 }
 
 List<_OutboxClaimModelRow> _expectedClaimedRows({
@@ -4912,6 +5214,100 @@ void main() {
             SyncSequenceStatus.unresolvable.index,
             reason: 'row $counter should have been retired',
           );
+        }
+      },
+    );
+  });
+
+  group('generated sequence lifecycle operations', () {
+    Glados(any.sequenceLifecycleScenario, ExploreConfig(numRuns: 180)).test(
+      'match the generated reset and retirement model',
+      (scenario) async {
+        final database = SyncDatabase(inMemoryDatabase: true);
+        try {
+          for (var index = 0; index < scenario.rows.length; index++) {
+            final counter = index + 1;
+            final row = scenario.rows[index];
+            if (!row.isStored) continue;
+
+            final entryId = row.entryId(counter);
+            final lastRequestedAt = row.lastRequestedAtValue(
+              _SequenceLifecycleScenario.now,
+            );
+            await database.recordSequenceEntry(
+              SyncSequenceLogCompanion(
+                hostId: const Value(_SequenceLifecycleScenario.hostId),
+                counter: Value(counter),
+                entryId: entryId == null
+                    ? const Value.absent()
+                    : Value(entryId),
+                payloadType: Value(row.payloadType.index),
+                status: Value(row.syncStatus.index),
+                createdAt: Value(
+                  row.createdAt(_SequenceLifecycleScenario.now),
+                ),
+                updatedAt: Value(
+                  row.updatedAtValue(_SequenceLifecycleScenario.now),
+                ),
+                requestCount: Value(row.requestCount),
+                lastRequestedAt: lastRequestedAt == null
+                    ? const Value.absent()
+                    : Value(lastRequestedAt),
+              ),
+            );
+          }
+
+          final affected = switch (scenario.operation) {
+            _GeneratedSequenceLifecycleOperation.resetKnown =>
+              await database.resetUnresolvableWithKnownPayload(),
+            _GeneratedSequenceLifecycleOperation.resetAll =>
+              await database.resetAllUnresolvableEntries(),
+            _GeneratedSequenceLifecycleOperation.retireExhausted =>
+              await database.retireExhaustedRequestedEntries(
+                maxRequestCount: _SequenceLifecycleScenario.maxRequestCount,
+                grace: _SequenceLifecycleScenario.grace,
+                now: _SequenceLifecycleScenario.now,
+                pageSize: 3,
+              ),
+            _GeneratedSequenceLifecycleOperation.retireAgedOut =>
+              await database.retireAgedOutRequestedEntries(
+                amnestyWindow: _SequenceLifecycleScenario.amnestyWindow,
+                now: _SequenceLifecycleScenario.now,
+                pageSize: 3,
+              ),
+          };
+
+          expect(affected, scenario.expectedAffectedCount);
+
+          for (var counter = 1; counter <= scenario.rows.length; counter++) {
+            final entry = await database.getEntryByHostAndCounter(
+              _SequenceLifecycleScenario.hostId,
+              counter,
+            );
+            final expected = scenario.expectedRow(counter);
+            if (expected.status == null) {
+              expect(entry, isNull, reason: 'counter $counter');
+              continue;
+            }
+
+            expect(entry, isNotNull, reason: 'counter $counter');
+            expect(entry!.status, expected.status!.index);
+            expect(entry.entryId, expected.entryId);
+            expect(entry.payloadType, expected.payloadType!.index);
+            expect(entry.requestCount, expected.requestCount);
+            if (expected.lastRequestedCleared) {
+              expect(entry.lastRequestedAt, isNull);
+            }
+          }
+
+          expect(
+            await database.getLastCounterForHost(
+              _SequenceLifecycleScenario.hostId,
+            ),
+            scenario.expectedWatermark,
+          );
+        } finally {
+          await database.close();
         }
       },
     );
