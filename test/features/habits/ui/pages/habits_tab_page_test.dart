@@ -11,7 +11,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -58,8 +57,6 @@ void main() {
 
   group('HabitsTabPage Widget Tests - ', () {
     setUp(() {
-      VisibilityDetectorController.instance.updateInterval = Duration.zero;
-
       mockJournalDb = mockJournalDbWithHabits([
         habitFlossing,
         habitFlossingDueLater,

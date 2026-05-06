@@ -32,7 +32,6 @@ void main() {
       expect(state.showTimeSpan, false);
       expect(state.searchString, isEmpty);
       expect(state.selectedCategoryIds, isEmpty);
-      expect(state.isVisible, true);
     });
 
     test('copyWith preserves unmodified fields', () {

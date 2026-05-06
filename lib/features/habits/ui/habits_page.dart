@@ -15,7 +15,6 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 class HabitsTabPage extends ConsumerStatefulWidget {
   const HabitsTabPage({super.key});
@@ -83,95 +82,91 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         pendingLater.isNotEmpty &&
         (displayFilter == HabitDisplayFilter.pendingLater || showAll);
 
-    return VisibilityDetector(
-      key: const Key('habits_page'),
-      onVisibilityChanged: controller.updateVisibility,
-      child: Scaffold(
-        body: SafeArea(
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: <Widget>[
-              SliverTitleBar(context.messages.settingsHabitsTitle),
-              const HabitsSliverAppBar(),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Column(
-                    children: [
-                      if (state.showTimeSpan)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 5),
-                            child: TimeSpanSegmentedControl(
-                              timeSpanDays: timeSpanDays,
-                              onValueChanged: controller.setTimeSpan,
-                            ),
+    return Scaffold(
+      body: SafeArea(
+        child: CustomScrollView(
+          controller: _scrollController,
+          slivers: <Widget>[
+            SliverTitleBar(context.messages.settingsHabitsTitle),
+            const HabitsSliverAppBar(),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                child: Column(
+                  children: [
+                    if (state.showTimeSpan)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          child: TimeSpanSegmentedControl(
+                            timeSpanDays: timeSpanDays,
+                            onValueChanged: controller.setTimeSpan,
                           ),
                         ),
-                      if (state.showSearch) const HabitsSearchWidget(),
-                      const SizedBox(height: 20),
-                      if (showAll)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 15),
-                          child: Text(
-                            context.messages.habitsOpenHeader,
-                            style: chartTitleStyle,
-                          ),
+                      ),
+                    if (state.showSearch) const HabitsSearchWidget(),
+                    const SizedBox(height: 20),
+                    if (showAll)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 15),
+                        child: Text(
+                          context.messages.habitsOpenHeader,
+                          style: chartTitleStyle,
                         ),
-                      if (showOpenNow)
-                        ...openNow.map((habitDefinition) {
-                          return HabitCompletionCard(
-                            key: Key(habitDefinition.id),
-                            habitId: habitDefinition.id,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                            showGaps: showGaps,
-                          );
-                        }),
-                      if (showAll)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 20, bottom: 15),
-                          child: Text(
-                            context.messages.habitsPendingLaterHeader,
-                            style: chartTitleStyle,
-                          ),
+                      ),
+                    if (showOpenNow)
+                      ...openNow.map((habitDefinition) {
+                        return HabitCompletionCard(
+                          key: Key(habitDefinition.id),
+                          habitId: habitDefinition.id,
+                          rangeStart: rangeStart,
+                          rangeEnd: rangeEnd,
+                          showGaps: showGaps,
+                        );
+                      }),
+                    if (showAll)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20, bottom: 15),
+                        child: Text(
+                          context.messages.habitsPendingLaterHeader,
+                          style: chartTitleStyle,
                         ),
-                      if (showPendingLater)
-                        ...pendingLater.map((habitDefinition) {
-                          return HabitCompletionCard(
-                            key: Key(habitDefinition.id),
-                            habitId: habitDefinition.id,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                            showGaps: showGaps,
-                          );
-                        }),
-                      if (showAll)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 20, bottom: 15),
-                          child: Text(
-                            context.messages.habitsCompletedHeader,
-                            style: chartTitleStyle,
-                          ),
+                      ),
+                    if (showPendingLater)
+                      ...pendingLater.map((habitDefinition) {
+                        return HabitCompletionCard(
+                          key: Key(habitDefinition.id),
+                          habitId: habitDefinition.id,
+                          rangeStart: rangeStart,
+                          rangeEnd: rangeEnd,
+                          showGaps: showGaps,
+                        );
+                      }),
+                    if (showAll)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20, bottom: 15),
+                        child: Text(
+                          context.messages.habitsCompletedHeader,
+                          style: chartTitleStyle,
                         ),
-                      if (showCompleted)
-                        ...completed.map((habitDefinition) {
-                          return HabitCompletionCard(
-                            key: Key(habitDefinition.id),
-                            habitId: habitDefinition.id,
-                            rangeStart: rangeStart,
-                            rangeEnd: rangeEnd,
-                            showGaps: showGaps,
-                          );
-                        }),
-                      const SizedBox(height: 20),
-                      const HabitStreaksCounter(),
-                    ],
-                  ),
+                      ),
+                    if (showCompleted)
+                      ...completed.map((habitDefinition) {
+                        return HabitCompletionCard(
+                          key: Key(habitDefinition.id),
+                          habitId: habitDefinition.id,
+                          rangeStart: rangeStart,
+                          rangeEnd: rangeEnd,
+                          showGaps: showGaps,
+                        );
+                      }),
+                    const SizedBox(height: 20),
+                    const HabitStreaksCounter(),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

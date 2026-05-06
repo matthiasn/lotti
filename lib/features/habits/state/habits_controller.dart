@@ -7,11 +7,12 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 part 'habits_controller.g.dart';
 
@@ -21,10 +22,17 @@ part 'habits_controller.g.dart';
 class HabitsController extends _$HabitsController {
   StreamSubscription<List<HabitDefinition>>? _definitionsSubscription;
   StreamSubscription<Set<String>>? _updateSubscription;
+  StreamSubscription<int>? _navIndexSubscription;
 
   List<HabitDefinition> _habitDefinitions = [];
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<JournalEntity> _habitCompletions = [];
+
+  /// Tracks whether the habits tab was the active top-level tab on the
+  /// previous nav-index emission. Used to detect the off→on edge that
+  /// triggers a recompute (the substitute for the old VisibilityDetector
+  /// signal).
+  bool _wasHabitsActive = false;
 
   late HabitsRepository _repository;
 
@@ -42,10 +50,17 @@ class HabitsController extends _$HabitsController {
   void _cleanup() {
     _definitionsSubscription?.cancel();
     _updateSubscription?.cancel();
+    _navIndexSubscription?.cancel();
     EasyDebounce.cancel('clearInfoYmd');
   }
 
   Future<void> _init() async {
+    final navService = getIt<NavService>();
+    _wasHabitsActive = navService.index == navService.habitsIndex;
+    _navIndexSubscription = navService.getIndexStream().listen(
+      _handleNavIndex,
+    );
+
     _definitionsSubscription = _repository.watchHabitDefinitions().listen((
       habitDefinitions,
     ) {
@@ -244,7 +259,6 @@ class HabitsController extends _$HabitsController {
       allByDay: allByDay,
       shortStreakCount: shortStreakCount,
       longStreakCount: longStreakCount,
-      isVisible: state.isVisible,
     );
 
     state = nextState.copyWith(
@@ -252,19 +266,22 @@ class HabitsController extends _$HabitsController {
     );
   }
 
-  /// Updates visibility state based on widget visibility.
-  void updateVisibility(VisibilityInfo visibilityInfo) {
-    // Guard against callback after disposal
+  /// Recomputes habit success when the habits tab transitions from
+  /// inactive to active. Replaces the previous VisibilityDetector-driven
+  /// signal — same intent ("time may have passed while we were
+  /// off-screen, refresh the due/later split"), driven by the
+  /// authoritative nav-index stream instead of paint-phase intersection.
+  void _handleNavIndex(int newIndex) {
     if (!ref.mounted) return;
 
-    final isVisible = visibilityInfo.visibleBounds.size.width > 0;
-    final wasNotVisible = !state.isVisible;
+    final navService = getIt<NavService>();
+    final isHabitsActive = newIndex == navService.habitsIndex;
+    final wasActive = _wasHabitsActive;
+    _wasHabitsActive = isHabitsActive;
 
-    if (wasNotVisible && isVisible) {
+    if (isHabitsActive && !wasActive) {
       _determineHabitSuccessByDays();
     }
-
-    state = state.copyWith(isVisible: isVisible);
   }
 
   /// Sets the time span for habit history display.

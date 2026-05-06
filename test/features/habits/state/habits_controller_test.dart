@@ -8,7 +8,9 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,9 +20,14 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockHabitsRepository mockRepository;
+  late MockNavService mockNavService;
   late StreamController<List<HabitDefinition>> definitionsController;
   late StreamController<Set<String>> updateController;
+  late StreamController<int> navIndexController;
   late ProviderContainer container;
+
+  const habitsTabIndex = 3;
+  const otherTabIndex = 0;
 
   // Use fixed dates for deterministic tests
   final lastWeek = DateTime(2025, 12, 23);
@@ -97,8 +104,10 @@ void main() {
 
   setUp(() {
     mockRepository = MockHabitsRepository();
+    mockNavService = MockNavService();
     definitionsController = StreamController.broadcast();
     updateController = StreamController.broadcast();
+    navIndexController = StreamController<int>.broadcast();
 
     when(
       mockRepository.watchHabitDefinitions,
@@ -114,6 +123,17 @@ void main() {
       () => mockRepository.updateStream,
     ).thenAnswer((_) => updateController.stream);
 
+    when(() => mockNavService.habitsIndex).thenReturn(habitsTabIndex);
+    when(() => mockNavService.index).thenReturn(habitsTabIndex);
+    when(
+      mockNavService.getIndexStream,
+    ).thenAnswer((_) => navIndexController.stream);
+
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
+    getIt.registerSingleton<NavService>(mockNavService);
+
     container = ProviderContainer(
       overrides: [
         habitsRepositoryProvider.overrideWithValue(mockRepository),
@@ -124,7 +144,11 @@ void main() {
   tearDown(() async {
     await definitionsController.close();
     await updateController.close();
+    await navIndexController.close();
     container.dispose();
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
   });
 
   group('HabitsController', () {
@@ -634,6 +658,74 @@ void main() {
       expect(
         state.openNow.map((h) => h.id),
         contains('habit-1'),
+      );
+    });
+  });
+
+  group('nav-index visibility trigger', () {
+    test(
+      'recomputes when tab transitions from inactive to active',
+      () async {
+        // Init container so the controller subscribes to the streams.
+        container.read(habitsControllerProvider);
+        await pumpEventQueue();
+
+        // Now that subscriptions are live, emit definitions.
+        definitionsController.add([testHabit1]);
+        await pumpEventQueue();
+
+        // Simulate user switching away.
+        navIndexController.add(otherTabIndex);
+        await pumpEventQueue();
+
+        final stateWhileAway = container.read(habitsControllerProvider);
+        // Sanity check: definitions made it into the cache before we
+        // measure the visibility-trigger effect.
+        expect(stateWhileAway.openNow.map((h) => h.id), ['habit-1']);
+
+        // Switching back to habits should re-run the aggregation, even
+        // though completions and definitions did not change. Observable
+        // signal: state copyWith produces a new instance.
+        navIndexController.add(habitsTabIndex);
+        await pumpEventQueue();
+
+        final stateOnReturn = container.read(habitsControllerProvider);
+
+        expect(identical(stateWhileAway, stateOnReturn), isFalse);
+        expect(stateOnReturn.openNow.map((h) => h.id), ['habit-1']);
+      },
+    );
+
+    test('does not recompute on inactive transitions or on→on', () async {
+      container.read(habitsControllerProvider);
+      await pumpEventQueue();
+      definitionsController.add([testHabit1]);
+      await pumpEventQueue();
+
+      final baseline = container.read(habitsControllerProvider);
+
+      // habits → habits should be a no-op (already active).
+      navIndexController.add(habitsTabIndex);
+      await pumpEventQueue();
+      expect(
+        identical(baseline, container.read(habitsControllerProvider)),
+        isTrue,
+      );
+
+      // habits → other should not trigger a recompute.
+      navIndexController.add(otherTabIndex);
+      await pumpEventQueue();
+      expect(
+        identical(baseline, container.read(habitsControllerProvider)),
+        isTrue,
+      );
+
+      // other → other should not trigger a recompute either.
+      navIndexController.add(otherTabIndex);
+      await pumpEventQueue();
+      expect(
+        identical(baseline, container.read(habitsControllerProvider)),
+        isTrue,
       );
     });
   });
