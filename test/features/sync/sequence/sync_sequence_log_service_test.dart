@@ -331,6 +331,8 @@ class _BackfillResponseStateScenario {
   const _BackfillResponseStateScenario({
     required this.existingState,
     required this.responseKind,
+    required this.existingPayloadType,
+    required this.responsePayloadType,
   });
 
   static const existingEntryId = 'existing-response-entry';
@@ -338,6 +340,8 @@ class _BackfillResponseStateScenario {
 
   final _GeneratedCounterState existingState;
   final _BackfillResponseKind responseKind;
+  final SyncSequencePayloadType existingPayloadType;
+  final SyncSequencePayloadType responsePayloadType;
 
   bool get hasExistingEntry => existingState.isStored;
 
@@ -388,11 +392,35 @@ class _BackfillResponseStateScenario {
     };
   }
 
+  SyncSequencePayloadType? get expectedPayloadType {
+    if (expectedStatus == null) {
+      return null;
+    }
+
+    return switch (responseKind) {
+      _BackfillResponseKind.deleted => existingPayloadType,
+      _BackfillResponseKind.unresolvable => switch (existingState) {
+        _GeneratedCounterState.received ||
+        _GeneratedCounterState.backfilled ||
+        _GeneratedCounterState.deleted => existingPayloadType,
+        _ => responsePayloadType,
+      },
+      _BackfillResponseKind.hint => switch (existingState) {
+        _GeneratedCounterState.received ||
+        _GeneratedCounterState.backfilled ||
+        _GeneratedCounterState.deleted => existingPayloadType,
+        _ => responsePayloadType,
+      },
+    };
+  }
+
   @override
   String toString() {
     return '_BackfillResponseStateScenario('
         'existingState: $existingState, '
-        'responseKind: $responseKind'
+        'responseKind: $responseKind, '
+        'existingPayloadType: $existingPayloadType, '
+        'responsePayloadType: $responsePayloadType'
         ')';
   }
 }
@@ -579,16 +607,25 @@ extension _AnySequenceGapScenario on glados.Any {
   glados.Generator<_BackfillResponseKind> get backfillResponseKind =>
       glados.AnyUtils(this).choose(_BackfillResponseKind.values);
 
+  glados.Generator<SyncSequencePayloadType> get generatedPayloadType =>
+      glados.AnyUtils(this).choose(SyncSequencePayloadType.values);
+
   glados.Generator<_BackfillResponseStateScenario>
-  get backfillResponseStateScenario => glados.CombinableAny(this).combine2(
+  get backfillResponseStateScenario => glados.CombinableAny(this).combine4(
     generatedCounterState,
     backfillResponseKind,
+    generatedPayloadType,
+    generatedPayloadType,
     (
       _GeneratedCounterState existingState,
       _BackfillResponseKind responseKind,
+      SyncSequencePayloadType existingPayloadType,
+      SyncSequencePayloadType responsePayloadType,
     ) => _BackfillResponseStateScenario(
       existingState: existingState,
       responseKind: responseKind,
+      existingPayloadType: existingPayloadType,
+      responsePayloadType: responsePayloadType,
     ),
   );
 
@@ -2939,9 +2976,9 @@ void main() {
 
     glados.Glados(
       _AnySequenceGapScenario(glados.any).backfillResponseStateScenario,
-      glados.ExploreConfig(numRuns: 60),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
-      'matches generated backfill response state transitions',
+      'matches generated backfill response state and payload transitions',
       (scenario) async {
         final bench = _RealSequenceLogTestBench.create(myHostId: myHostId);
         const counter = 3;
@@ -2955,7 +2992,7 @@ void main() {
                 entryId: const Value(
                   _BackfillResponseStateScenario.existingEntryId,
                 ),
-                payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+                payloadType: Value(scenario.existingPayloadType.index),
                 status: Value(scenario.existingState.syncStatus.index),
                 createdAt: Value(DateTime(2024, 3, 15, 10)),
                 updatedAt: Value(DateTime(2024, 3, 15, 10)),
@@ -2972,6 +3009,7 @@ void main() {
             entryId: scenario.responseKind == _BackfillResponseKind.hint
                 ? _BackfillResponseStateScenario.hintEntryId
                 : null,
+            payloadType: scenario.responsePayloadType,
           );
 
           final entry = await bench.database.getEntryByHostAndCounter(
@@ -2985,6 +3023,7 @@ void main() {
             expect(entry, isNotNull);
             expect(entry?.status, expectedStatus.index);
             expect(entry?.entryId, scenario.expectedEntryId);
+            expect(entry?.payloadType, scenario.expectedPayloadType?.index);
           }
         } finally {
           await bench.close();
