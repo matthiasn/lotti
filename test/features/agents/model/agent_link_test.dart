@@ -1,8 +1,87 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+
+final _generatedAgentLinkBase = DateTime(2026, 5, 21, 10);
+
+class _GeneratedAgentLinkSelectionSpec {
+  const _GeneratedAgentLinkSelectionSpec({
+    required this.createdMinuteOffset,
+    required this.idSeed,
+  });
+
+  final int createdMinuteOffset;
+  final int idSeed;
+
+  String idAt(int index) => 'generated-link-$idSeed-$index';
+
+  DateTime get createdAt =>
+      _generatedAgentLinkBase.add(Duration(minutes: createdMinuteOffset));
+
+  AgentLink toLink(int index) => AgentLink.agentTask(
+    id: idAt(index),
+    fromId: 'generated-agent-$index',
+    toId: 'generated-task',
+    createdAt: createdAt,
+    updatedAt: createdAt,
+    vectorClock: null,
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedAgentLinkSelectionSpec('
+        'createdMinuteOffset: $createdMinuteOffset, idSeed: $idSeed)';
+  }
+}
+
+class _GeneratedAgentLinkSelectionScenario {
+  const _GeneratedAgentLinkSelectionScenario({required this.links});
+
+  final List<_GeneratedAgentLinkSelectionSpec> links;
+
+  List<AgentLink> get agentLinks =>
+      links.indexed.map((entry) => entry.$2.toLink(entry.$1)).toList();
+
+  List<String> get expectedOrderedIds {
+    final indexed = links.indexed.toList()
+      ..sort((a, b) {
+        final byCreatedAt = b.$2.createdAt.compareTo(a.$2.createdAt);
+        if (byCreatedAt != 0) return byCreatedAt;
+        return b.$2.idAt(b.$1).compareTo(a.$2.idAt(a.$1));
+      });
+    return indexed.map((entry) => entry.$2.idAt(entry.$1)).toList();
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedAgentLinkSelectionScenario(links: $links)';
+  }
+}
+
+extension _AnyGeneratedAgentLinkSelectionScenario on glados.Any {
+  glados.Generator<_GeneratedAgentLinkSelectionSpec> get agentLinkSpec =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(-5, 5),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          int createdMinuteOffset,
+          int idSeed,
+        ) => _GeneratedAgentLinkSelectionSpec(
+          createdMinuteOffset: createdMinuteOffset,
+          idSeed: idSeed,
+        ),
+      );
+
+  glados.Generator<_GeneratedAgentLinkSelectionScenario>
+  get agentLinkSelectionScenario => glados.ListAnys(this)
+      .listWithLengthInRange(0, 12, agentLinkSpec)
+      .map(
+        (links) => _GeneratedAgentLinkSelectionScenario(links: links),
+      );
+}
 
 void main() {
   final createdAt = DateTime(2026, 2, 20);
@@ -421,6 +500,30 @@ void main() {
         );
       },
     );
+
+    glados.Glados(
+      glados.any.agentLinkSelectionScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated primary ordering semantics', (scenario) {
+      final links = scenario.agentLinks;
+      final ordered = links.orderedPrimaryFirst();
+
+      expect(
+        ordered.map((link) => link.id).toList(),
+        scenario.expectedOrderedIds,
+        reason: '$scenario',
+      );
+
+      if (links.isEmpty) {
+        expect(links.selectPrimary, throwsA(isA<StateError>()));
+      } else {
+        expect(
+          links.selectPrimary().id,
+          scenario.expectedOrderedIds.first,
+          reason: '$scenario',
+        );
+      }
+    });
   });
 
   group('AgentLinkSoftDelete extension', () {

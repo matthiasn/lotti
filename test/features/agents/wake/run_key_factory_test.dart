@@ -2,12 +2,81 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 
 final _fixedTime = DateTime(2024, 3, 15, 10, 30);
 
 /// Helper to compute SHA-256 the same way RunKeyFactory does internally.
 String _sha256(String input) => sha256.convert(utf8.encode(input)).toString();
+
+enum _GeneratedRunKeyTokenSlot { first, second, third, fourth }
+
+enum _GeneratedRunKeyRefSlot { task, project, journal, label }
+
+String _generatedRunKeyToken(_GeneratedRunKeyTokenSlot slot) =>
+    'generated-token-${slot.name}';
+
+String _generatedRunKeyRef(_GeneratedRunKeyRefSlot slot) =>
+    'generated-ref-${slot.name}';
+
+class _GeneratedRunKeyCanonicalizationScenario {
+  const _GeneratedRunKeyCanonicalizationScenario({
+    required this.tokens,
+    required this.refs,
+    required this.seed,
+  });
+
+  final List<_GeneratedRunKeyTokenSlot> tokens;
+  final List<_GeneratedRunKeyRefSlot> refs;
+  final int seed;
+
+  Set<String> get tokenSet => tokens.map(_generatedRunKeyToken).toSet();
+
+  List<String> get targetRefs => refs.map(_generatedRunKeyRef).toList();
+
+  Map<String, dynamic> get argsInOriginalOrder => {
+    'title': 'Generated title $seed',
+    'count': seed,
+    'enabled': seed.isEven,
+  };
+
+  Map<String, dynamic> get argsInDifferentOrder => {
+    'enabled': seed.isEven,
+    'count': seed,
+    'title': 'Generated title $seed',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedRunKeyCanonicalizationScenario('
+        'tokens: $tokens, refs: $refs, seed: $seed)';
+  }
+}
+
+extension _AnyGeneratedRunKeyScenario on glados.Any {
+  glados.Generator<_GeneratedRunKeyTokenSlot> get runKeyTokenSlot =>
+      glados.AnyUtils(this).choose(_GeneratedRunKeyTokenSlot.values);
+
+  glados.Generator<_GeneratedRunKeyRefSlot> get runKeyRefSlot =>
+      glados.AnyUtils(this).choose(_GeneratedRunKeyRefSlot.values);
+
+  glados.Generator<_GeneratedRunKeyCanonicalizationScenario>
+  get runKeyCanonicalizationScenario => glados.CombinableAny(this).combine3(
+    glados.ListAnys(this).listWithLengthInRange(0, 8, runKeyTokenSlot),
+    glados.ListAnys(this).listWithLengthInRange(0, 8, runKeyRefSlot),
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      List<_GeneratedRunKeyTokenSlot> tokens,
+      List<_GeneratedRunKeyRefSlot> refs,
+      int seed,
+    ) => _GeneratedRunKeyCanonicalizationScenario(
+      tokens: tokens,
+      refs: refs,
+      seed: seed,
+    ),
+  );
+}
 
 void main() {
   group('RunKeyFactory', () {
@@ -367,6 +436,61 @@ void main() {
           reason: 'JSON key order must not affect the stable ID',
         );
       });
+    });
+
+    glados.Glados(
+      glados.any.runKeyCanonicalizationScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated canonicalization invariants', (scenario) {
+      final timestamp = _fixedTime.add(Duration(seconds: scenario.seed));
+      final subscriptionKey = RunKeyFactory.forSubscription(
+        agentId: 'agent-${scenario.seed}',
+        subscriptionId: 'subscription-${scenario.seed}',
+        batchTokens: scenario.tokenSet,
+        wakeCounter: scenario.seed,
+        timestamp: timestamp,
+      );
+      final subscriptionKeyFromReorderedTokens = RunKeyFactory.forSubscription(
+        agentId: 'agent-${scenario.seed}',
+        subscriptionId: 'subscription-${scenario.seed}',
+        batchTokens: scenario.tokenSet.toList().reversed.toSet(),
+        wakeCounter: scenario.seed,
+        timestamp: timestamp,
+      );
+
+      expect(
+        subscriptionKeyFromReorderedTokens,
+        subscriptionKey,
+        reason: '$scenario',
+      );
+      expect(subscriptionKey, hasLength(64), reason: '$scenario');
+      expect(subscriptionKey, matches(RegExp(r'^[a-f0-9]{64}$')));
+
+      final stableActionId = RunKeyFactory.actionStableId(
+        toolName: 'generated_tool',
+        args: scenario.argsInOriginalOrder,
+        targetRefs: scenario.targetRefs,
+      );
+      final stableActionIdFromReorderedInputs = RunKeyFactory.actionStableId(
+        toolName: 'generated_tool',
+        args: scenario.argsInDifferentOrder,
+        targetRefs: scenario.targetRefs.reversed.toList(),
+      );
+
+      expect(
+        stableActionIdFromReorderedInputs,
+        stableActionId,
+        reason: '$scenario',
+      );
+      expect(stableActionId, hasLength(64), reason: '$scenario');
+      expect(
+        RunKeyFactory.operationId(
+          runKey: subscriptionKey,
+          actionStableId: stableActionId,
+        ),
+        hasLength(64),
+        reason: '$scenario',
+      );
     });
   });
 }

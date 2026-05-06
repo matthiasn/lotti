@@ -1,5 +1,114 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/inference_usage.dart';
+
+class _GeneratedInferenceUsageSpec {
+  const _GeneratedInferenceUsageSpec({
+    required this.inputTokens,
+    required this.outputTokens,
+    required this.thoughtsTokens,
+    required this.cachedInputTokens,
+  });
+
+  final int? inputTokens;
+  final int? outputTokens;
+  final int? thoughtsTokens;
+  final int? cachedInputTokens;
+
+  InferenceUsage get usage => InferenceUsage(
+    inputTokens: inputTokens,
+    outputTokens: outputTokens,
+    thoughtsTokens: thoughtsTokens,
+    cachedInputTokens: cachedInputTokens,
+  );
+
+  bool get hasData =>
+      inputTokens != null ||
+      outputTokens != null ||
+      thoughtsTokens != null ||
+      cachedInputTokens != null;
+
+  int get totalTokens => (inputTokens ?? 0) + (outputTokens ?? 0);
+
+  @override
+  String toString() {
+    return '_GeneratedInferenceUsageSpec('
+        'inputTokens: $inputTokens, outputTokens: $outputTokens, '
+        'thoughtsTokens: $thoughtsTokens, '
+        'cachedInputTokens: $cachedInputTokens)';
+  }
+}
+
+class _GeneratedInferenceUsageMergeScenario {
+  const _GeneratedInferenceUsageMergeScenario({
+    required this.left,
+    required this.right,
+  });
+
+  final _GeneratedInferenceUsageSpec left;
+  final _GeneratedInferenceUsageSpec right;
+
+  InferenceUsage get expectedMerged => InferenceUsage(
+    inputTokens: _addNullable(left.inputTokens, right.inputTokens),
+    outputTokens: _addNullable(left.outputTokens, right.outputTokens),
+    thoughtsTokens: _addNullable(left.thoughtsTokens, right.thoughtsTokens),
+    cachedInputTokens: _addNullable(
+      left.cachedInputTokens,
+      right.cachedInputTokens,
+    ),
+  );
+
+  int? _addNullable(int? a, int? b) {
+    if (a == null && b == null) return null;
+    return (a ?? 0) + (b ?? 0);
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedInferenceUsageMergeScenario('
+        'left: $left, right: $right)';
+  }
+}
+
+extension _AnyGeneratedInferenceUsage on glados.Any {
+  glados.Generator<int?> get optionalTokenCount =>
+      glados.AnyUtils(this).choose<int?>([
+        null,
+        ...List.generate(8, (index) => index * 37),
+      ]);
+
+  glados.Generator<_GeneratedInferenceUsageSpec> get inferenceUsageSpec =>
+      glados.CombinableAny(this).combine4(
+        optionalTokenCount,
+        optionalTokenCount,
+        optionalTokenCount,
+        optionalTokenCount,
+        (
+          int? inputTokens,
+          int? outputTokens,
+          int? thoughtsTokens,
+          int? cachedInputTokens,
+        ) => _GeneratedInferenceUsageSpec(
+          inputTokens: inputTokens,
+          outputTokens: outputTokens,
+          thoughtsTokens: thoughtsTokens,
+          cachedInputTokens: cachedInputTokens,
+        ),
+      );
+
+  glados.Generator<_GeneratedInferenceUsageMergeScenario>
+  get inferenceUsageMergeScenario => glados.CombinableAny(this).combine2(
+    inferenceUsageSpec,
+    inferenceUsageSpec,
+    (
+      _GeneratedInferenceUsageSpec left,
+      _GeneratedInferenceUsageSpec right,
+    ) => _GeneratedInferenceUsageMergeScenario(
+      left: left,
+      right: right,
+    ),
+  );
+}
 
 void main() {
   group('InferenceUsage', () {
@@ -147,6 +256,31 @@ void main() {
         expect(merged.outputTokens, 50);
         expect(merged.thoughtsTokens, isNull);
         expect(merged.cachedInputTokens, isNull);
+      });
+
+      glados.Glados(
+        glados.any.inferenceUsageMergeScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('matches generated merge and total semantics', (scenario) {
+        final left = scenario.left.usage;
+        final right = scenario.right.usage;
+        final merged = left.merge(right);
+
+        expect(merged, scenario.expectedMerged, reason: '$scenario');
+        expect(right.merge(left), scenario.expectedMerged, reason: '$scenario');
+        expect(
+          left.totalTokens,
+          scenario.left.totalTokens,
+          reason: '$scenario',
+        );
+        expect(
+          right.totalTokens,
+          scenario.right.totalTokens,
+          reason: '$scenario',
+        );
+        expect(left.hasData, scenario.left.hasData, reason: '$scenario');
+        expect(right.hasData, scenario.right.hasData, reason: '$scenario');
+        expect(InferenceUsage.fromJson(merged.toJson()), merged);
       });
     });
 

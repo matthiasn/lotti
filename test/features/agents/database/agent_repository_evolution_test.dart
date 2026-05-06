@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -7,6 +8,526 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 
 import '../test_utils.dart';
+
+enum _GeneratedEvolutionTemplateSlot { target, other, missing }
+
+enum _GeneratedEvolutionAssignableTemplateSlot { target, other }
+
+enum _GeneratedEvolutionAgentSlot { first, second, other }
+
+const _generatedEvolutionTargetTemplateId =
+    'generated-evolution-template-target';
+const _generatedEvolutionOtherTemplateId = 'generated-evolution-template-other';
+const _generatedEvolutionMissingTemplateId =
+    'generated-evolution-template-missing';
+
+final _generatedEvolutionBase = DateTime(2026, 5, 16, 12);
+final _generatedEvolutionSince = DateTime(2026, 5, 16, 12);
+
+String _generatedEvolutionTemplateId(
+  _GeneratedEvolutionTemplateSlot slot,
+) => switch (slot) {
+  _GeneratedEvolutionTemplateSlot.target => _generatedEvolutionTargetTemplateId,
+  _GeneratedEvolutionTemplateSlot.other => _generatedEvolutionOtherTemplateId,
+  _GeneratedEvolutionTemplateSlot.missing =>
+    _generatedEvolutionMissingTemplateId,
+};
+
+String _generatedEvolutionAssignableTemplateId(
+  _GeneratedEvolutionAssignableTemplateSlot slot,
+) => switch (slot) {
+  _GeneratedEvolutionAssignableTemplateSlot.target =>
+    _generatedEvolutionTargetTemplateId,
+  _GeneratedEvolutionAssignableTemplateSlot.other =>
+    _generatedEvolutionOtherTemplateId,
+};
+
+String _generatedEvolutionAgentId(_GeneratedEvolutionAgentSlot slot) =>
+    'generated-evolution-agent-${slot.name}';
+
+class _GeneratedEvolutionTemplateSpec {
+  const _GeneratedEvolutionTemplateSpec({
+    required this.slot,
+    required this.deleted,
+    required this.updatedMinuteOffset,
+    required this.seed,
+  });
+
+  final _GeneratedEvolutionAssignableTemplateSlot slot;
+  final bool deleted;
+  final int updatedMinuteOffset;
+  final int seed;
+
+  String get id => _generatedEvolutionAssignableTemplateId(slot);
+
+  String get displayName => 'Generated evolution template ${slot.name} $seed';
+
+  DateTime get createdAt => _generatedEvolutionBase;
+
+  DateTime get updatedAt =>
+      _generatedEvolutionBase.add(Duration(minutes: updatedMinuteOffset));
+
+  DateTime? get deletedAt =>
+      deleted ? updatedAt.add(const Duration(minutes: 1)) : null;
+
+  @override
+  String toString() {
+    return '_GeneratedEvolutionTemplateSpec('
+        'slot: $slot, deleted: $deleted, '
+        'updatedMinuteOffset: $updatedMinuteOffset, seed: $seed)';
+  }
+}
+
+class _GeneratedEvolutionSessionSpec {
+  const _GeneratedEvolutionSessionSpec({
+    required this.slot,
+    required this.status,
+    required this.deleted,
+    required this.createdMinuteOffset,
+    required this.updatedMinuteOffset,
+    required this.seed,
+  });
+
+  final _GeneratedEvolutionTemplateSlot slot;
+  final EvolutionSessionStatus status;
+  final bool deleted;
+  final int createdMinuteOffset;
+  final int updatedMinuteOffset;
+  final int seed;
+
+  String idAt(int index) => 'generated-evolution-session-$index-$seed';
+
+  String get templateId => _generatedEvolutionTemplateId(slot);
+
+  DateTime createdAt(int index) => _generatedEvolutionBase.add(
+    Duration(minutes: createdMinuteOffset, seconds: index),
+  );
+
+  DateTime updatedAt(int index) => _generatedEvolutionBase.add(
+    Duration(minutes: updatedMinuteOffset, seconds: index),
+  );
+
+  DateTime? deletedAt(int index) =>
+      deleted ? updatedAt(index).add(const Duration(minutes: 1)) : null;
+
+  @override
+  String toString() {
+    return '_GeneratedEvolutionSessionSpec('
+        'slot: $slot, status: $status, deleted: $deleted, '
+        'createdMinuteOffset: $createdMinuteOffset, '
+        'updatedMinuteOffset: $updatedMinuteOffset, seed: $seed)';
+  }
+}
+
+class _GeneratedEvolutionNoteSpec {
+  const _GeneratedEvolutionNoteSpec({
+    required this.slot,
+    required this.kind,
+    required this.deleted,
+    required this.createdMinuteOffset,
+    required this.seed,
+  });
+
+  final _GeneratedEvolutionTemplateSlot slot;
+  final EvolutionNoteKind kind;
+  final bool deleted;
+  final int createdMinuteOffset;
+  final int seed;
+
+  String idAt(int index) => 'generated-evolution-note-$index-$seed';
+
+  String sessionIdAt(int index) => 'generated-evolution-note-session-$index';
+
+  String get templateId => _generatedEvolutionTemplateId(slot);
+
+  String contentAt(int index) => 'Generated evolution note $index seed $seed';
+
+  DateTime createdAt(int index) => _generatedEvolutionBase.add(
+    Duration(minutes: createdMinuteOffset, seconds: index),
+  );
+
+  DateTime? deletedAt(int index) =>
+      deleted ? createdAt(index).add(const Duration(minutes: 1)) : null;
+
+  @override
+  String toString() {
+    return '_GeneratedEvolutionNoteSpec('
+        'slot: $slot, kind: $kind, deleted: $deleted, '
+        'createdMinuteOffset: $createdMinuteOffset, seed: $seed)';
+  }
+}
+
+class _GeneratedEvolutionAssignmentSpec {
+  const _GeneratedEvolutionAssignmentSpec({
+    required this.templateSlot,
+    required this.agentSlot,
+    required this.deleted,
+    required this.createdMinuteOffset,
+  });
+
+  final _GeneratedEvolutionAssignableTemplateSlot templateSlot;
+  final _GeneratedEvolutionAgentSlot agentSlot;
+  final bool deleted;
+  final int createdMinuteOffset;
+
+  String get id =>
+      'generated-evolution-assignment-${templateSlot.name}-${agentSlot.name}';
+
+  String get fromId => _generatedEvolutionAssignableTemplateId(templateSlot);
+
+  String get toId => _generatedEvolutionAgentId(agentSlot);
+
+  DateTime get createdAt =>
+      _generatedEvolutionBase.add(Duration(minutes: createdMinuteOffset));
+
+  DateTime? get deletedAt =>
+      deleted ? createdAt.add(const Duration(minutes: 1)) : null;
+
+  @override
+  String toString() {
+    return '_GeneratedEvolutionAssignmentSpec('
+        'templateSlot: $templateSlot, agentSlot: $agentSlot, '
+        'deleted: $deleted, createdMinuteOffset: $createdMinuteOffset)';
+  }
+}
+
+class _GeneratedEvolutionChangedEntitySpec {
+  const _GeneratedEvolutionChangedEntitySpec({
+    required this.agentSlot,
+    required this.deleted,
+    required this.updatedMinuteOffset,
+    required this.seed,
+  });
+
+  final _GeneratedEvolutionAgentSlot agentSlot;
+  final bool deleted;
+  final int updatedMinuteOffset;
+  final int seed;
+
+  String idAt(int index) => 'generated-evolution-changed-$index-$seed';
+
+  String get agentId => _generatedEvolutionAgentId(agentSlot);
+
+  DateTime updatedAt(int index) => _generatedEvolutionBase.add(
+    Duration(minutes: updatedMinuteOffset, seconds: index),
+  );
+
+  DateTime? deletedAt(int index) =>
+      deleted ? updatedAt(index).add(const Duration(minutes: 1)) : null;
+
+  @override
+  String toString() {
+    return '_GeneratedEvolutionChangedEntitySpec('
+        'agentSlot: $agentSlot, deleted: $deleted, '
+        'updatedMinuteOffset: $updatedMinuteOffset, seed: $seed)';
+  }
+}
+
+class _GeneratedEvolutionQueryScenario {
+  const _GeneratedEvolutionQueryScenario({
+    required this.templates,
+    required this.sessions,
+    required this.notes,
+    required this.assignments,
+    required this.changedEntities,
+    required this.sessionLimit,
+    required this.noteLimit,
+  });
+
+  final List<_GeneratedEvolutionTemplateSpec> templates;
+  final List<_GeneratedEvolutionSessionSpec> sessions;
+  final List<_GeneratedEvolutionNoteSpec> notes;
+  final List<_GeneratedEvolutionAssignmentSpec> assignments;
+  final List<_GeneratedEvolutionChangedEntitySpec> changedEntities;
+  final int sessionLimit;
+  final int noteLimit;
+
+  List<String> expectedTemplateSessionIds() {
+    final indexed =
+        sessions.indexed
+            .where(
+              (entry) =>
+                  entry.$2.slot == _GeneratedEvolutionTemplateSlot.target &&
+                  !entry.$2.deleted,
+            )
+            .toList()
+          ..sort(
+            (a, b) => b.$2.createdAt(b.$1).compareTo(a.$2.createdAt(a.$1)),
+          );
+    return indexed
+        .take(sessionLimit)
+        .map((entry) => entry.$2.idAt(entry.$1))
+        .toList();
+  }
+
+  List<String> expectedAllSessionIds() {
+    final activeTemplates = _activeTemplateSlots();
+    final indexed =
+        sessions.indexed.where((entry) {
+          final slot = _assignableSlotFor(entry.$2.slot);
+          return !entry.$2.deleted &&
+              slot != null &&
+              activeTemplates.contains(slot);
+        }).toList()..sort(
+          (a, b) => b.$2.updatedAt(b.$1).compareTo(a.$2.updatedAt(a.$1)),
+        );
+    return indexed.map((entry) => entry.$2.idAt(entry.$1)).toList();
+  }
+
+  List<String> expectedNoteIds() {
+    final indexed =
+        notes.indexed
+            .where(
+              (entry) =>
+                  entry.$2.slot == _GeneratedEvolutionTemplateSlot.target &&
+                  !entry.$2.deleted,
+            )
+            .toList()
+          ..sort(
+            (a, b) => b.$2.createdAt(b.$1).compareTo(a.$2.createdAt(a.$1)),
+          );
+    return indexed
+        .take(noteLimit)
+        .map((entry) => entry.$2.idAt(entry.$1))
+        .toList();
+  }
+
+  int get expectedChangedCount {
+    final targetAssignedAgents = _activeTargetAssignmentAgentSlots();
+    return changedEntities.indexed
+        .where(
+          (entry) =>
+              !entry.$2.deleted &&
+              targetAssignedAgents.contains(entry.$2.agentSlot) &&
+              entry.$2.updatedAt(entry.$1).isAfter(_generatedEvolutionSince),
+        )
+        .length;
+  }
+
+  Set<_GeneratedEvolutionAssignableTemplateSlot> _activeTemplateSlots() {
+    final bySlot =
+        <
+          _GeneratedEvolutionAssignableTemplateSlot,
+          _GeneratedEvolutionTemplateSpec
+        >{};
+    for (final template in templates) {
+      bySlot[template.slot] = template;
+    }
+    return bySlot.entries
+        .where((entry) => !entry.value.deleted)
+        .map((entry) => entry.key)
+        .toSet();
+  }
+
+  Set<_GeneratedEvolutionAgentSlot> _activeTargetAssignmentAgentSlots() {
+    final byNaturalKey =
+        <
+          (
+            _GeneratedEvolutionAssignableTemplateSlot,
+            _GeneratedEvolutionAgentSlot,
+          ),
+          _GeneratedEvolutionAssignmentSpec
+        >{};
+    for (final assignment in assignments) {
+      byNaturalKey[(assignment.templateSlot, assignment.agentSlot)] =
+          assignment;
+    }
+    return byNaturalKey.values
+        .where(
+          (assignment) =>
+              assignment.templateSlot ==
+                  _GeneratedEvolutionAssignableTemplateSlot.target &&
+              !assignment.deleted,
+        )
+        .map((assignment) => assignment.agentSlot)
+        .toSet();
+  }
+
+  _GeneratedEvolutionAssignableTemplateSlot? _assignableSlotFor(
+    _GeneratedEvolutionTemplateSlot slot,
+  ) => switch (slot) {
+    _GeneratedEvolutionTemplateSlot.target =>
+      _GeneratedEvolutionAssignableTemplateSlot.target,
+    _GeneratedEvolutionTemplateSlot.other =>
+      _GeneratedEvolutionAssignableTemplateSlot.other,
+    _GeneratedEvolutionTemplateSlot.missing => null,
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedEvolutionQueryScenario('
+        'templates: $templates, sessions: $sessions, notes: $notes, '
+        'assignments: $assignments, changedEntities: $changedEntities, '
+        'sessionLimit: $sessionLimit, noteLimit: $noteLimit)';
+  }
+}
+
+extension _AnyGeneratedEvolutionQueryScenario on glados.Any {
+  glados.Generator<_GeneratedEvolutionAssignableTemplateSlot>
+  get evolutionAssignableTemplateSlot => glados.AnyUtils(this).choose(
+    _GeneratedEvolutionAssignableTemplateSlot.values,
+  );
+
+  glados.Generator<_GeneratedEvolutionTemplateSlot> get evolutionTemplateSlot =>
+      glados.AnyUtils(this).choose(_GeneratedEvolutionTemplateSlot.values);
+
+  glados.Generator<_GeneratedEvolutionAgentSlot> get evolutionAgentSlot =>
+      glados.AnyUtils(this).choose(_GeneratedEvolutionAgentSlot.values);
+
+  glados.Generator<EvolutionSessionStatus> get evolutionSessionStatus =>
+      glados.AnyUtils(this).choose(EvolutionSessionStatus.values);
+
+  glados.Generator<EvolutionNoteKind> get evolutionNoteKind =>
+      glados.AnyUtils(this).choose(EvolutionNoteKind.values);
+
+  glados.Generator<_GeneratedEvolutionTemplateSpec> get evolutionTemplateSpec =>
+      glados.CombinableAny(this).combine4(
+        evolutionAssignableTemplateSlot,
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(-3, 3),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedEvolutionAssignableTemplateSlot slot,
+          bool deleted,
+          int updatedMinuteOffset,
+          int seed,
+        ) => _GeneratedEvolutionTemplateSpec(
+          slot: slot,
+          deleted: deleted,
+          updatedMinuteOffset: updatedMinuteOffset,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedEvolutionSessionSpec> get evolutionSessionSpec =>
+      glados.CombinableAny(this).combine6(
+        evolutionTemplateSlot,
+        evolutionSessionStatus,
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(-5, 5),
+        glados.IntAnys(this).intInRange(-5, 5),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedEvolutionTemplateSlot slot,
+          EvolutionSessionStatus status,
+          bool deleted,
+          int createdMinuteOffset,
+          int updatedMinuteOffset,
+          int seed,
+        ) => _GeneratedEvolutionSessionSpec(
+          slot: slot,
+          status: status,
+          deleted: deleted,
+          createdMinuteOffset: createdMinuteOffset,
+          updatedMinuteOffset: updatedMinuteOffset,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedEvolutionNoteSpec> get evolutionNoteSpec =>
+      glados.CombinableAny(this).combine5(
+        evolutionTemplateSlot,
+        evolutionNoteKind,
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(-5, 5),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedEvolutionTemplateSlot slot,
+          EvolutionNoteKind kind,
+          bool deleted,
+          int createdMinuteOffset,
+          int seed,
+        ) => _GeneratedEvolutionNoteSpec(
+          slot: slot,
+          kind: kind,
+          deleted: deleted,
+          createdMinuteOffset: createdMinuteOffset,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedEvolutionAssignmentSpec>
+  get evolutionAssignmentSpec => glados.CombinableAny(this).combine4(
+    evolutionAssignableTemplateSlot,
+    evolutionAgentSlot,
+    glados.AnyUtils(this).choose([false, true]),
+    glados.IntAnys(this).intInRange(-5, 5),
+    (
+      _GeneratedEvolutionAssignableTemplateSlot templateSlot,
+      _GeneratedEvolutionAgentSlot agentSlot,
+      bool deleted,
+      int createdMinuteOffset,
+    ) => _GeneratedEvolutionAssignmentSpec(
+      templateSlot: templateSlot,
+      agentSlot: agentSlot,
+      deleted: deleted,
+      createdMinuteOffset: createdMinuteOffset,
+    ),
+  );
+
+  glados.Generator<_GeneratedEvolutionChangedEntitySpec>
+  get evolutionChangedEntitySpec => glados.CombinableAny(this).combine4(
+    evolutionAgentSlot,
+    glados.AnyUtils(this).choose([false, true]),
+    glados.IntAnys(this).intInRange(-5, 5),
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      _GeneratedEvolutionAgentSlot agentSlot,
+      bool deleted,
+      int updatedMinuteOffset,
+      int seed,
+    ) => _GeneratedEvolutionChangedEntitySpec(
+      agentSlot: agentSlot,
+      deleted: deleted,
+      updatedMinuteOffset: updatedMinuteOffset,
+      seed: seed,
+    ),
+  );
+
+  glados.Generator<_GeneratedEvolutionQueryScenario>
+  get evolutionQueryScenario => glados.CombinableAny(this).combine7(
+    glados.ListAnys(this).listWithLengthInRange(
+      0,
+      5,
+      evolutionTemplateSpec,
+    ),
+    glados.ListAnys(this).listWithLengthInRange(
+      0,
+      8,
+      evolutionSessionSpec,
+    ),
+    glados.ListAnys(this).listWithLengthInRange(0, 8, evolutionNoteSpec),
+    glados.ListAnys(this).listWithLengthInRange(
+      0,
+      8,
+      evolutionAssignmentSpec,
+    ),
+    glados.ListAnys(this).listWithLengthInRange(
+      0,
+      8,
+      evolutionChangedEntitySpec,
+    ),
+    glados.IntAnys(this).intInRange(1, 4),
+    glados.IntAnys(this).intInRange(1, 4),
+    (
+      List<_GeneratedEvolutionTemplateSpec> templates,
+      List<_GeneratedEvolutionSessionSpec> sessions,
+      List<_GeneratedEvolutionNoteSpec> notes,
+      List<_GeneratedEvolutionAssignmentSpec> assignments,
+      List<_GeneratedEvolutionChangedEntitySpec> changedEntities,
+      int sessionLimit,
+      int noteLimit,
+    ) => _GeneratedEvolutionQueryScenario(
+      templates: templates,
+      sessions: sessions,
+      notes: notes,
+      assignments: assignments,
+      changedEntities: changedEntities,
+      sessionLimit: sessionLimit,
+      noteLimit: noteLimit,
+    ),
+  );
+}
 
 void main() {
   late AgentDatabase db;
@@ -812,6 +1333,129 @@ void main() {
         expect(count, 0);
       });
     });
+
+    glados.Glados(glados.any.evolutionQueryScenario).test(
+      'matches generated evolution template query semantics',
+      (scenario) async {
+        final localDb = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        final localRepo = AgentRepository(localDb);
+
+        try {
+          for (final template in scenario.templates) {
+            await localRepo.upsertEntity(
+              makeTestTemplate(
+                id: template.id,
+                agentId: template.id,
+                displayName: template.displayName,
+                createdAt: template.createdAt,
+                updatedAt: template.updatedAt,
+              ).copyWith(deletedAt: template.deletedAt),
+            );
+          }
+
+          for (final (index, session) in scenario.sessions.indexed) {
+            await localRepo.upsertEntity(
+              makeTestEvolutionSession(
+                id: session.idAt(index),
+                agentId: session.templateId,
+                templateId: session.templateId,
+                sessionNumber: index + 1,
+                status: session.status,
+                createdAt: session.createdAt(index),
+                updatedAt: session.updatedAt(index),
+              ).copyWith(deletedAt: session.deletedAt(index)),
+            );
+          }
+
+          for (final (index, note) in scenario.notes.indexed) {
+            await localRepo.upsertEntity(
+              makeTestEvolutionNote(
+                id: note.idAt(index),
+                agentId: note.templateId,
+                sessionId: note.sessionIdAt(index),
+                kind: note.kind,
+                createdAt: note.createdAt(index),
+                content: note.contentAt(index),
+              ).copyWith(deletedAt: note.deletedAt(index)),
+            );
+          }
+
+          for (final assignment in scenario.assignments) {
+            await localRepo.upsertLink(
+              model.AgentLink.templateAssignment(
+                id: assignment.id,
+                fromId: assignment.fromId,
+                toId: assignment.toId,
+                createdAt: assignment.createdAt,
+                updatedAt: assignment.createdAt,
+                vectorClock: null,
+                deletedAt: assignment.deletedAt,
+              ),
+            );
+          }
+
+          for (final (index, changed) in scenario.changedEntities.indexed) {
+            await localRepo.upsertEntity(
+              makeTestReport(
+                id: changed.idAt(index),
+                agentId: changed.agentId,
+                createdAt: changed.updatedAt(index),
+                content: 'Generated changed entity $index seed ${changed.seed}',
+              ).copyWith(deletedAt: changed.deletedAt(index)),
+            );
+          }
+
+          final templateSessions = await localRepo.getEvolutionSessions(
+            _generatedEvolutionTargetTemplateId,
+            limit: scenario.sessionLimit,
+          );
+          expect(
+            templateSessions.map((session) => session.id).toList(),
+            scenario.expectedTemplateSessionIds(),
+            reason: '$scenario',
+          );
+
+          final allSessions = await localRepo.getAllEvolutionSessions();
+          expect(
+            allSessions.map((session) => session.id).toList(),
+            scenario.expectedAllSessionIds(),
+            reason: '$scenario',
+          );
+
+          final notes = await localRepo.getEvolutionNotes(
+            _generatedEvolutionTargetTemplateId,
+            limit: scenario.noteLimit,
+          );
+          expect(
+            notes.map((note) => note.id).toList(),
+            scenario.expectedNoteIds(),
+            reason: '$scenario',
+          );
+
+          expect(
+            await localRepo.countChangedSinceForTemplate(
+              _generatedEvolutionTargetTemplateId,
+              null,
+            ),
+            0,
+            reason: '$scenario',
+          );
+          expect(
+            await localRepo.countChangedSinceForTemplate(
+              _generatedEvolutionTargetTemplateId,
+              _generatedEvolutionSince,
+            ),
+            scenario.expectedChangedCount,
+            reason: '$scenario',
+          );
+        } finally {
+          await localDb.close();
+        }
+      },
+    );
   });
 
   // ── Wake run rating ────────────────────────────────────────────────────────
