@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -8,6 +9,103 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+class _GeneratedFollowUpScenario {
+  const _GeneratedFollowUpScenario({
+    required this.titleSeed,
+    required this.dueSeed,
+    required this.prioritySeed,
+    required this.flags,
+  });
+
+  static const _titles = [
+    'Write migration plan',
+    'Audit retry behavior',
+    'Draft release notes',
+    'Review analytics query',
+  ];
+
+  final int titleSeed;
+  final int dueSeed;
+  final int prioritySeed;
+  final int flags;
+
+  String get title => _titles[titleSeed % _titles.length];
+  String get dueDate =>
+      '2026-06-${(dueSeed % 28 + 1).toString().padLeft(2, '0')}';
+  String get priority => 'P${prioritySeed % 4}';
+
+  bool get includeDueDate => flags & 1 != 0;
+  bool get includePriority => flags & 2 != 0;
+  bool get firstTitlePadded => flags & 4 != 0;
+  bool get secondTitlePadded => flags & 8 != 0;
+  bool get firstDueDatePadded => flags & 16 != 0;
+  bool get secondDueDatePadded => flags & 32 != 0;
+  bool get firstPriorityLowercase => flags & 64 != 0;
+  bool get secondPriorityLowercase => flags & 128 != 0;
+
+  Map<String, dynamic> get firstArgs => _args(
+    titlePadded: firstTitlePadded,
+    dueDatePadded: firstDueDatePadded,
+    priorityLowercase: firstPriorityLowercase,
+  );
+
+  Map<String, dynamic> get secondArgs => _args(
+    titlePadded: secondTitlePadded,
+    dueDatePadded: secondDueDatePadded,
+    priorityLowercase: secondPriorityLowercase,
+  );
+
+  Map<String, dynamic> _args({
+    required bool titlePadded,
+    required bool dueDatePadded,
+    required bool priorityLowercase,
+  }) {
+    final rawPriority = priorityLowercase ? priority.toLowerCase() : priority;
+    return {
+      'title': titlePadded ? '  $title  ' : title,
+      if (includeDueDate) 'dueDate': dueDatePadded ? '  $dueDate  ' : dueDate,
+      if (includePriority)
+        'priority': priorityLowercase ? '  $rawPriority  ' : rawPriority,
+    };
+  }
+
+  String expectedPlaceholder(String taskId) {
+    return ChangeSetBuilder.deterministicPlaceholder(
+      taskId,
+      '$title|${includeDueDate ? dueDate : ''}|'
+      '${includePriority ? priority : ''}',
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedFollowUpScenario('
+        'firstArgs: $firstArgs, '
+        'secondArgs: $secondArgs)';
+  }
+}
+
+extension _AnyGeneratedFollowUpScenario on glados.Any {
+  glados.Generator<_GeneratedFollowUpScenario> get followUpScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 1000),
+        glados.IntAnys(this).intInRange(0, 1000),
+        glados.IntAnys(this).intInRange(0, 1000),
+        glados.IntAnys(this).intInRange(0, 255),
+        (
+          int titleSeed,
+          int dueSeed,
+          int prioritySeed,
+          int flags,
+        ) => _GeneratedFollowUpScenario(
+          titleSeed: titleSeed,
+          dueSeed: dueSeed,
+          prioritySeed: prioritySeed,
+          flags: flags,
+        ),
+      );
+}
 
 void main() {
   late ChangeSetBuilder builder;
@@ -1966,6 +2064,53 @@ void main() {
         );
 
         expect(builder.followUpPlaceholderId, placeholder);
+      },
+    );
+
+    glados.Glados(
+      glados.any.followUpScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'dedupes generated canonical follow-up proposals',
+      (scenario) async {
+        final generatedBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+        );
+
+        final firstPlaceholder = await generatedBuilder.addFollowUpTask(
+          args: scenario.firstArgs,
+          humanSummary: 'Create generated follow-up',
+        );
+        final secondPlaceholder = await generatedBuilder.addFollowUpTask(
+          args: scenario.secondArgs,
+          humanSummary: 'Create generated follow-up again',
+        );
+
+        expect(
+          firstPlaceholder,
+          scenario.expectedPlaceholder(generatedBuilder.taskId),
+        );
+        expect(secondPlaceholder, firstPlaceholder, reason: '$scenario');
+        expect(generatedBuilder.items, hasLength(1), reason: '$scenario');
+        expect(generatedBuilder.followUpPlaceholderId, firstPlaceholder);
+
+        final args = generatedBuilder.items.single.args;
+        expect(args['title'], scenario.title, reason: '$scenario');
+        if (scenario.includeDueDate) {
+          expect(args['dueDate'], scenario.dueDate, reason: '$scenario');
+        } else {
+          expect(args.containsKey('dueDate'), isFalse, reason: '$scenario');
+        }
+        if (scenario.includePriority) {
+          expect(args['priority'], scenario.priority, reason: '$scenario');
+        } else {
+          expect(args.containsKey('priority'), isFalse, reason: '$scenario');
+        }
+        expect(args['_placeholderTaskId'], firstPlaceholder);
+        expect(generatedBuilder.items.single.groupId, firstPlaceholder);
       },
     );
   });

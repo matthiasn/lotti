@@ -1,16 +1,184 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+enum _GeneratedCascadeItemKind { matchingMigration, otherMigration, otherTool }
+
+class _GeneratedCascadeSibling {
+  const _GeneratedCascadeSibling({
+    required this.kind,
+    required this.status,
+    required this.seed,
+  });
+
+  final _GeneratedCascadeItemKind kind;
+  final ChangeItemStatus status;
+  final int seed;
+
+  bool get shouldCascade =>
+      kind == _GeneratedCascadeItemKind.matchingMigration &&
+      status == ChangeItemStatus.pending;
+
+  ChangeItem item(String placeholderId) {
+    return switch (kind) {
+      _GeneratedCascadeItemKind.matchingMigration => ChangeItem(
+        toolName: TaskAgentToolNames.migrateChecklistItem,
+        args: {
+          'id': 'item-$seed',
+          'title': 'Generated item $seed',
+          'targetTaskId': placeholderId,
+        },
+        humanSummary: 'Migrate generated item $seed',
+        status: status,
+      ),
+      _GeneratedCascadeItemKind.otherMigration => ChangeItem(
+        toolName: TaskAgentToolNames.migrateChecklistItem,
+        args: {
+          'id': 'item-$seed',
+          'title': 'Generated item $seed',
+          'targetTaskId': 'other-placeholder-$seed',
+        },
+        humanSummary: 'Migrate generated item $seed elsewhere',
+        status: status,
+      ),
+      _GeneratedCascadeItemKind.otherTool => ChangeItem(
+        toolName: TaskAgentToolNames.updateTaskEstimate,
+        args: {'minutes': 15 + seed % 240},
+        humanSummary: 'Set estimate for generated item $seed',
+        status: status,
+      ),
+    };
+  }
+
+  ChangeItemStatus expectedStatus({required bool createRejected}) {
+    if (createRejected && shouldCascade) {
+      return ChangeItemStatus.rejected;
+    }
+    return status;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedCascadeSibling('
+        'kind: $kind, status: $status, seed: $seed)';
+  }
+}
+
+class _GeneratedCascadeScenario {
+  const _GeneratedCascadeScenario({
+    required this.createStatus,
+    required this.siblings,
+  });
+
+  static const placeholderId = 'generated-placeholder';
+
+  final ChangeItemStatus createStatus;
+  final List<_GeneratedCascadeSibling> siblings;
+
+  bool get shouldApply => createStatus == ChangeItemStatus.pending;
+
+  List<ChangeItem> get items => [
+    ChangeItem(
+      toolName: TaskAgentToolNames.createFollowUpTask,
+      args: const {
+        'title': 'Generated split task',
+        '_placeholderTaskId': placeholderId,
+      },
+      humanSummary: 'Create generated split task',
+      status: createStatus,
+    ),
+    for (final sibling in siblings) sibling.item(placeholderId),
+  ];
+
+  List<ChangeItemStatus> get expectedStatuses {
+    if (!shouldApply) {
+      return items.map((item) => item.status).toList(growable: false);
+    }
+    return [
+      ChangeItemStatus.rejected,
+      for (final sibling in siblings)
+        sibling.expectedStatus(createRejected: true),
+    ];
+  }
+
+  int get expectedDecisionCount {
+    if (!shouldApply) return 0;
+    return 1 + siblings.where((sibling) => sibling.shouldCascade).length;
+  }
+
+  ChangeSetStatus? get expectedSetStatus {
+    if (!shouldApply) return null;
+    final statuses = expectedStatuses;
+    final anyResolved = statuses.any(
+      (status) => status != ChangeItemStatus.pending,
+    );
+    if (!anyResolved) return ChangeSetStatus.pending;
+
+    final allResolved = statuses.every(
+      (status) => status != ChangeItemStatus.pending,
+    );
+    return allResolved
+        ? ChangeSetStatus.resolved
+        : ChangeSetStatus.partiallyResolved;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedCascadeScenario('
+        'createStatus: $createStatus, siblings: $siblings)';
+  }
+}
+
+extension _AnyGeneratedCascadeScenario on glados.Any {
+  glados.Generator<ChangeItemStatus> get changeItemStatus =>
+      glados.AnyUtils(this).choose(ChangeItemStatus.values);
+
+  glados.Generator<_GeneratedCascadeItemKind> get cascadeItemKind =>
+      glados.AnyUtils(this).choose(_GeneratedCascadeItemKind.values);
+
+  glados.Generator<_GeneratedCascadeSibling> get cascadeSibling =>
+      glados.CombinableAny(this).combine3(
+        cascadeItemKind,
+        changeItemStatus,
+        glados.IntAnys(this).intInRange(0, 1000),
+        (
+          _GeneratedCascadeItemKind kind,
+          ChangeItemStatus status,
+          int seed,
+        ) => _GeneratedCascadeSibling(
+          kind: kind,
+          status: status,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedCascadeScenario> get cascadeScenario =>
+      glados.CombinableAny(this).combine2(
+        changeItemStatus,
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(0, 7, cascadeSibling),
+        (
+          ChangeItemStatus createStatus,
+          List<_GeneratedCascadeSibling> siblings,
+        ) => _GeneratedCascadeScenario(
+          createStatus: createStatus,
+          siblings: siblings,
+        ),
+      );
+}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -1319,6 +1487,94 @@ void main() {
             expect(lastCS.items[0].status, ChangeItemStatus.rejected);
             expect(lastCS.items[1].status, ChangeItemStatus.pending);
             expect(lastCS.items[2].status, ChangeItemStatus.pending);
+          });
+        },
+      );
+
+      glados.Glados(
+        glados.any.cascadeScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'matches generated cascade rejection semantics',
+        (scenario) async {
+          final localSyncService = MockAgentSyncService();
+          final localRepository = MockAgentRepository();
+          final localToolDispatcher = MockTaskToolDispatcher();
+          final localLabelsRepository = MockLabelsRepository();
+          final localService = ChangeSetConfirmationService(
+            syncService: localSyncService,
+            toolDispatcher: localToolDispatcher.dispatch,
+            labelsRepository: localLabelsRepository,
+          );
+          final upserts = <AgentDomainEntity>[];
+          var persisted = makeTestChangeSet(items: scenario.items);
+
+          when(() => localSyncService.repository).thenReturn(localRepository);
+          when(
+            () => localRepository.getEntity(persisted.id),
+          ).thenAnswer((_) async => persisted);
+          when(
+            () => localSyncService.upsertEntity(any()),
+          ).thenAnswer((invocation) async {
+            final entity =
+                invocation.positionalArguments.first as AgentDomainEntity;
+            upserts.add(entity);
+            if (entity is ChangeSetEntity) {
+              persisted = entity;
+            }
+          });
+
+          await withClock(testClock, () async {
+            final applied = await localService.rejectItem(
+              persisted,
+              0,
+              reason: 'generated rejection',
+            );
+
+            expect(applied, scenario.shouldApply, reason: '$scenario');
+            expect(
+              persisted.items.map((item) => item.status),
+              scenario.expectedStatuses,
+              reason: '$scenario',
+            );
+
+            final decisions = upserts.whereType<ChangeDecisionEntity>();
+            expect(
+              decisions.length,
+              scenario.expectedDecisionCount,
+              reason: '$scenario',
+            );
+            for (final decision in decisions) {
+              expect(decision.verdict, ChangeDecisionVerdict.rejected);
+              expect(decision.rejectionReason, 'generated rejection');
+            }
+
+            if (scenario.shouldApply) {
+              expect(
+                persisted.status,
+                scenario.expectedSetStatus,
+                reason: '$scenario',
+              );
+              expect(
+                persisted.resolvedAt,
+                scenario.expectedSetStatus == ChangeSetStatus.resolved
+                    ? testClock.now()
+                    : null,
+                reason: '$scenario',
+              );
+            } else {
+              expect(upserts, isEmpty, reason: '$scenario');
+            }
+
+            verifyNever(
+              () => localToolDispatcher.dispatch(any(), any(), any()),
+            );
+            verifyNever(
+              () => localLabelsRepository.suppressLabelOnTask(
+                taskId: any(named: 'taskId'),
+                labelId: any(named: 'labelId'),
+              ),
+            );
           });
         },
       );

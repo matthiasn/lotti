@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
@@ -15,6 +16,129 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+enum _GeneratedMigrationTargetShape { missing, hallucinated, explicit }
+
+class _GeneratedSplitSequenceScenario {
+  const _GeneratedSplitSequenceScenario({
+    required this.titleSeed,
+    required this.itemCount,
+    required this.flags,
+    required this.targetShape,
+  });
+
+  static const _titles = [
+    'Write rollout plan',
+    'Prepare QA checklist',
+    'Draft launch notes',
+    'Review metrics',
+  ];
+
+  final int titleSeed;
+  final int itemCount;
+  final int flags;
+  final _GeneratedMigrationTargetShape targetShape;
+
+  String get title => _titles[titleSeed % _titles.length];
+  bool get createBeforeMigration => flags & 1 == 0;
+  bool get duplicateCreate => flags & 2 != 0;
+  bool get paddedDuplicateTitle => flags & 4 != 0;
+
+  Map<String, dynamic> get createArgs => {'title': title};
+
+  Map<String, dynamic> get duplicateCreateArgs => {
+    'title': paddedDuplicateTitle ? '  $title  ' : title,
+  };
+
+  String get rawTargetId => 'llm-target-${titleSeed % 17}';
+
+  Map<String, dynamic> get migrateArgs {
+    return {
+      if (targetShape != _GeneratedMigrationTargetShape.missing)
+        'targetTaskId': rawTargetId,
+      'items': [
+        for (var index = 0; index < itemCount; index++)
+          {'id': 'item-$index', 'title': 'Item $index'},
+      ],
+    };
+  }
+
+  String expectedPlaceholder(String taskId) {
+    return ChangeSetBuilder.deterministicPlaceholder(taskId, '$title||');
+  }
+
+  List<ChatCompletionMessageToolCall> toolCalls() {
+    final create = _toolCall(
+      id: 'call-create',
+      name: TaskAgentToolNames.createFollowUpTask,
+      args: createArgs,
+    );
+    final duplicate = _toolCall(
+      id: 'call-create-duplicate',
+      name: TaskAgentToolNames.createFollowUpTask,
+      args: duplicateCreateArgs,
+    );
+    final migrate = _toolCall(
+      id: 'call-migrate',
+      name: TaskAgentToolNames.migrateChecklistItems,
+      args: migrateArgs,
+    );
+
+    if (createBeforeMigration) {
+      return [create, if (duplicateCreate) duplicate, migrate];
+    }
+    return [migrate, create, if (duplicateCreate) duplicate];
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedSplitSequenceScenario('
+        'title: $title, '
+        'itemCount: $itemCount, '
+        'createBeforeMigration: $createBeforeMigration, '
+        'duplicateCreate: $duplicateCreate, '
+        'targetShape: $targetShape)';
+  }
+}
+
+extension _AnyGeneratedSplitSequenceScenario on glados.Any {
+  glados.Generator<_GeneratedMigrationTargetShape> get migrationTargetShape =>
+      glados.AnyUtils(this).choose(_GeneratedMigrationTargetShape.values);
+
+  glados.Generator<_GeneratedSplitSequenceScenario> get splitSequenceScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 1000),
+        glados.IntAnys(this).intInRange(1, 4),
+        glados.IntAnys(this).intInRange(0, 7),
+        migrationTargetShape,
+        (
+          int titleSeed,
+          int itemCount,
+          int flags,
+          _GeneratedMigrationTargetShape targetShape,
+        ) => _GeneratedSplitSequenceScenario(
+          titleSeed: titleSeed,
+          itemCount: itemCount,
+          flags: flags,
+          targetShape: targetShape,
+        ),
+      );
+}
+
+ChatCompletionMessageToolCall _toolCall({
+  required String id,
+  required String name,
+  required Map<String, dynamic> args,
+}) {
+  return ChatCompletionMessageToolCall(
+    id: id,
+    type: ChatCompletionMessageToolCallType.function,
+    function: ChatCompletionMessageFunctionCall(
+      name: name,
+      arguments: jsonEncode(args),
+    ),
+  );
+}
 
 /// Creates a [TaskAgentStrategy] with an attached [ChangeSetBuilder] and
 /// optional [ResolveTaskMetadata] for metadata-redundancy tests.
@@ -2949,6 +3073,106 @@ void main() {
             realPlaceholder,
           );
           expect(migrateItems.first.groupId, realPlaceholder);
+        },
+      );
+
+      glados.Glados(
+        glados.any.splitSequenceScenario,
+        glados.ExploreConfig(numRuns: 160),
+      ).test(
+        'matches generated follow-up and migration sequencing semantics',
+        (scenario) async {
+          final localExecutor = MockAgentToolExecutor();
+          final localSyncService = MockAgentSyncService();
+          final localManager = MockConversationManager();
+          final localBuilder = ChangeSetBuilder(
+            agentId: agentId,
+            taskId: taskId,
+            threadId: threadId,
+            runKey: runKey,
+          );
+          final localStrategy = TaskAgentStrategy(
+            executor: localExecutor,
+            syncService: localSyncService,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            taskId: taskId,
+            resolveCategoryId: (_) async => 'cat-001',
+            readVectorClock: (_) async => null,
+            executeToolHandler: (toolName, args, manager) async =>
+                const ToolExecutionResult(
+                  success: true,
+                  output: 'Tool executed successfully',
+                  mutatedEntityId: taskId,
+                ),
+            changeSetBuilder: localBuilder,
+          );
+          when(
+            () => localSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await localStrategy.processToolCalls(
+            toolCalls: scenario.toolCalls(),
+            manager: localManager,
+          );
+
+          verifyNever(
+            () => localExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          );
+
+          final placeholder = scenario.expectedPlaceholder(taskId);
+          final createItems = localBuilder.items.where(
+            (item) => item.toolName == TaskAgentToolNames.createFollowUpTask,
+          );
+          expect(createItems, hasLength(1), reason: '$scenario');
+          expect(
+            createItems.single.args,
+            containsPair('_placeholderTaskId', placeholder),
+            reason: '$scenario',
+          );
+          expect(createItems.single.args['title'], scenario.title);
+
+          final migrateItems = localBuilder.items
+              .where(
+                (item) =>
+                    item.toolName == TaskAgentToolNames.migrateChecklistItem,
+              )
+              .toList(growable: false);
+          expect(
+            migrateItems,
+            hasLength(scenario.itemCount),
+            reason: '$scenario',
+          );
+
+          final expectedTarget = scenario.createBeforeMigration
+              ? placeholder
+              : scenario.targetShape == _GeneratedMigrationTargetShape.missing
+              ? null
+              : scenario.rawTargetId;
+          for (final item in migrateItems) {
+            expect(item.groupId, expectedTarget, reason: '$scenario');
+            if (expectedTarget == null) {
+              expect(
+                item.args.containsKey('targetTaskId'),
+                isFalse,
+                reason: '$scenario',
+              );
+            } else {
+              expect(
+                item.args['targetTaskId'],
+                expectedTarget,
+                reason: '$scenario',
+              );
+            }
+          }
         },
       );
     });

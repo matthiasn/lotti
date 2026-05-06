@@ -1,15 +1,201 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+
+enum _GeneratedLabelPayloadShape {
+  structured,
+  legacyList,
+  legacyString,
+  neither,
+}
+
+enum _GeneratedHandlerLabelIdShape {
+  valid,
+  padded,
+  empty,
+  missing,
+}
+
+enum _GeneratedHandlerConfidenceShape {
+  veryHigh,
+  high,
+  medium,
+  low,
+  unknown,
+  missing,
+}
+
+class _GeneratedHandlerLabelItem {
+  const _GeneratedHandlerLabelItem({
+    required this.idShape,
+    required this.confidenceShape,
+    required this.value,
+  });
+
+  final _GeneratedHandlerLabelIdShape idShape;
+  final _GeneratedHandlerConfidenceShape confidenceShape;
+  final int value;
+
+  String get id => 'label-$value';
+
+  Object get structuredRaw {
+    final raw = <String, dynamic>{};
+    switch (idShape) {
+      case _GeneratedHandlerLabelIdShape.valid:
+        raw['id'] = id;
+      case _GeneratedHandlerLabelIdShape.padded:
+        raw['id'] = '  $id  ';
+      case _GeneratedHandlerLabelIdShape.empty:
+        raw['id'] = '   ';
+      case _GeneratedHandlerLabelIdShape.missing:
+        break;
+    }
+
+    switch (confidenceShape) {
+      case _GeneratedHandlerConfidenceShape.veryHigh:
+        raw['confidence'] = 'very_high';
+      case _GeneratedHandlerConfidenceShape.high:
+        raw['confidence'] = 'high';
+      case _GeneratedHandlerConfidenceShape.medium:
+        raw['confidence'] = 'medium';
+      case _GeneratedHandlerConfidenceShape.low:
+        raw['confidence'] = 'low';
+      case _GeneratedHandlerConfidenceShape.unknown:
+        raw['confidence'] = 'unexpected';
+      case _GeneratedHandlerConfidenceShape.missing:
+        break;
+    }
+
+    return raw;
+  }
+
+  String get legacyRaw => switch (idShape) {
+    _GeneratedHandlerLabelIdShape.valid => id,
+    _GeneratedHandlerLabelIdShape.padded => '  $id  ',
+    _GeneratedHandlerLabelIdShape.empty => '   ',
+    _GeneratedHandlerLabelIdShape.missing => '',
+  };
+}
+
+class _GeneratedTaskLabelHandlerScenario {
+  const _GeneratedTaskLabelHandlerScenario({
+    required this.payloadShape,
+    required this.items,
+    required this.existingCount,
+    required this.assignedCountSeed,
+  });
+
+  final _GeneratedLabelPayloadShape payloadShape;
+  final List<_GeneratedHandlerLabelItem> items;
+  final int existingCount;
+  final int assignedCountSeed;
+
+  Map<String, dynamic> get args => switch (payloadShape) {
+    _GeneratedLabelPayloadShape.structured => {
+      'labels': items.map((item) => item.structuredRaw).toList(),
+      'labelIds': ['legacy-ignored'],
+    },
+    _GeneratedLabelPayloadShape.legacyList => {
+      'labelIds': items.map((item) => item.legacyRaw).toList(),
+    },
+    _GeneratedLabelPayloadShape.legacyString => {
+      'labelIds': items.map((item) => item.legacyRaw).join(', '),
+    },
+    _GeneratedLabelPayloadShape.neither => {'unrelated': 'value'},
+  };
+
+  List<String> get existingIds => List.generate(
+    existingCount,
+    (index) => 'existing-$index',
+  );
+
+  bool get hasMaxExistingLabels => existingCount >= 3;
+
+  LabelCallParseResult get parseResult => parseLabelCallArgs(jsonEncode(args));
+
+  bool get shouldCallProcessor =>
+      !hasMaxExistingLabels && parseResult.selectedIds.isNotEmpty;
+
+  List<String> get assignedByProcessor {
+    final selected = parseResult.selectedIds;
+    if (selected.isEmpty) return const [];
+    final count = assignedCountSeed % (selected.length + 1);
+    return selected.take(count).toList(growable: false);
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedTaskLabelHandlerScenario('
+        'payloadShape: $payloadShape, '
+        'itemCount: ${items.length}, '
+        'existingCount: $existingCount, '
+        'selectedIds: ${parseResult.selectedIds}, '
+        'assignedByProcessor: $assignedByProcessor)';
+  }
+}
+
+extension _AnyTaskLabelHandlerScenario on glados.Any {
+  glados.Generator<_GeneratedLabelPayloadShape> get labelPayloadShape =>
+      glados.AnyUtils(this).choose(_GeneratedLabelPayloadShape.values);
+
+  glados.Generator<_GeneratedHandlerLabelIdShape> get handlerLabelIdShape =>
+      glados.AnyUtils(this).choose(_GeneratedHandlerLabelIdShape.values);
+
+  glados.Generator<_GeneratedHandlerConfidenceShape>
+  get handlerConfidenceShape =>
+      glados.AnyUtils(this).choose(_GeneratedHandlerConfidenceShape.values);
+
+  glados.Generator<_GeneratedHandlerLabelItem> get handlerLabelItem =>
+      glados.CombinableAny(this).combine3(
+        handlerLabelIdShape,
+        handlerConfidenceShape,
+        glados.IntAnys(this).intInRange(0, 1000),
+        (
+          _GeneratedHandlerLabelIdShape idShape,
+          _GeneratedHandlerConfidenceShape confidenceShape,
+          int value,
+        ) => _GeneratedHandlerLabelItem(
+          idShape: idShape,
+          confidenceShape: confidenceShape,
+          value: value,
+        ),
+      );
+
+  glados.Generator<List<_GeneratedHandlerLabelItem>> get handlerLabelItems =>
+      glados.ListAnys(
+        this,
+      ).listWithLengthInRange(0, 8, handlerLabelItem);
+
+  glados.Generator<_GeneratedTaskLabelHandlerScenario>
+  get taskLabelHandlerScenario => glados.CombinableAny(this).combine4(
+    labelPayloadShape,
+    handlerLabelItems,
+    glados.IntAnys(this).intInRange(0, 4),
+    glados.IntAnys(this).intInRange(0, 1000),
+    (
+      _GeneratedLabelPayloadShape payloadShape,
+      List<_GeneratedHandlerLabelItem> items,
+      int existingCount,
+      int assignedCountSeed,
+    ) => _GeneratedTaskLabelHandlerScenario(
+      payloadShape: payloadShape,
+      items: items,
+      existingCount: existingCount,
+      assignedCountSeed: assignedCountSeed,
+    ),
+  );
+}
 
 void main() {
   late MockLabelAssignmentProcessor mockProcessor;
@@ -415,6 +601,98 @@ void main() {
         expect(result.didWrite, isFalse);
         expect(result.wasNoOp, isTrue);
       });
+
+      glados.Glados(
+        glados.any.taskLabelHandlerScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'matches generated parsing, max-label, and processor handoff semantics',
+        (scenario) async {
+          final localProcessor = MockLabelAssignmentProcessor();
+          final taskWithExisting = task.copyWith(
+            meta: task.meta.copyWith(labelIds: scenario.existingIds),
+          );
+          final handler = TaskLabelHandler(
+            task: taskWithExisting,
+            processor: localProcessor,
+          );
+
+          when(
+            () => localProcessor.processAssignment(
+              taskId: any(named: 'taskId'),
+              proposedIds: any(named: 'proposedIds'),
+              existingIds: any(named: 'existingIds'),
+              categoryId: any(named: 'categoryId'),
+              droppedLow: any(named: 'droppedLow'),
+              legacyUsed: any(named: 'legacyUsed'),
+              confidenceBreakdown: any(named: 'confidenceBreakdown'),
+              totalCandidates: any(named: 'totalCandidates'),
+            ),
+          ).thenAnswer(
+            (_) async => LabelAssignmentResult(
+              assigned: scenario.assignedByProcessor,
+              invalid: const [],
+              skipped: const [],
+            ),
+          );
+
+          final result = await handler.handle(scenario.args);
+
+          if (!scenario.shouldCallProcessor) {
+            expect(result.success, isTrue, reason: '$scenario');
+            expect(result.didWrite, isFalse, reason: '$scenario');
+            expect(result.wasNoOp, isTrue, reason: '$scenario');
+            verifyNever(
+              () => localProcessor.processAssignment(
+                taskId: any(named: 'taskId'),
+                proposedIds: any(named: 'proposedIds'),
+                existingIds: any(named: 'existingIds'),
+              ),
+            );
+            return;
+          }
+
+          final parseResult = scenario.parseResult;
+          final captured = verify(
+            () => localProcessor.processAssignment(
+              taskId: task.meta.id,
+              proposedIds: captureAny(named: 'proposedIds'),
+              existingIds: captureAny(named: 'existingIds'),
+              categoryId: 'cat-1',
+              droppedLow: captureAny(named: 'droppedLow'),
+              legacyUsed: captureAny(named: 'legacyUsed'),
+              confidenceBreakdown: captureAny(
+                named: 'confidenceBreakdown',
+              ),
+              totalCandidates: captureAny(named: 'totalCandidates'),
+            ),
+          ).captured;
+
+          expect(captured[0], parseResult.selectedIds, reason: '$scenario');
+          expect(captured[1], scenario.existingIds, reason: '$scenario');
+          expect(captured[2], parseResult.droppedLow, reason: '$scenario');
+          expect(captured[3], parseResult.legacyUsed, reason: '$scenario');
+          expect(
+            captured[4],
+            parseResult.confidenceBreakdown,
+            reason: '$scenario',
+          );
+          expect(captured[5], parseResult.totalCandidates, reason: '$scenario');
+
+          expect(result.success, isTrue, reason: '$scenario');
+          expect(result.assigned, scenario.assignedByProcessor);
+          expect(
+            result.didWrite,
+            scenario.assignedByProcessor.isNotEmpty,
+            reason: '$scenario',
+          );
+
+          final parsedMessage =
+              jsonDecode(result.message) as Map<String, dynamic>;
+          final request = parsedMessage['request'] as Map<String, dynamic>;
+          expect(request['labelIds'], parseResult.selectedIds);
+        },
+      );
     });
 
     group('fromHandlerResult conversion', () {

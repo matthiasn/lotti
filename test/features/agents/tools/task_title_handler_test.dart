@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
@@ -6,6 +7,79 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+
+enum _GeneratedTitleRequestShape {
+  empty,
+  whitespace,
+  same,
+  samePadded,
+  different,
+  differentPadded,
+}
+
+class _GeneratedTaskTitleScenario {
+  const _GeneratedTaskTitleScenario({
+    required this.currentSeed,
+    required this.requestSeed,
+    required this.shape,
+  });
+
+  final int currentSeed;
+  final int requestSeed;
+  final _GeneratedTitleRequestShape shape;
+
+  String get currentTitle => 'Generated title $currentSeed';
+
+  String get differentTitle => 'Generated replacement $requestSeed';
+
+  String get requestTitle {
+    return switch (shape) {
+      _GeneratedTitleRequestShape.empty => '',
+      _GeneratedTitleRequestShape.whitespace => ' \n\t ',
+      _GeneratedTitleRequestShape.same => currentTitle,
+      _GeneratedTitleRequestShape.samePadded => '  $currentTitle  ',
+      _GeneratedTitleRequestShape.different => differentTitle,
+      _GeneratedTitleRequestShape.differentPadded => '\n $differentTitle \t',
+    };
+  }
+
+  String get trimmedRequest => requestTitle.trim();
+
+  bool get isInvalid => trimmedRequest.isEmpty;
+
+  bool get isNoOp => !isInvalid && trimmedRequest == currentTitle;
+
+  bool get shouldWrite => !isInvalid && !isNoOp;
+
+  @override
+  String toString() {
+    return '_GeneratedTaskTitleScenario('
+        'currentSeed: $currentSeed, '
+        'requestSeed: $requestSeed, '
+        'shape: $shape)';
+  }
+}
+
+extension _AnyTaskTitleHandlerScenario on glados.Any {
+  glados.Generator<_GeneratedTitleRequestShape> get titleRequestShape =>
+      glados.AnyUtils(this).choose(_GeneratedTitleRequestShape.values);
+
+  glados.Generator<_GeneratedTaskTitleScenario> get taskTitleScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        titleRequestShape,
+        (
+          int currentSeed,
+          int requestSeed,
+          _GeneratedTitleRequestShape shape,
+        ) => _GeneratedTaskTitleScenario(
+          currentSeed: currentSeed,
+          requestSeed: requestSeed,
+          shape: shape,
+        ),
+      );
+}
 
 void main() {
   late MockJournalRepository mockJournalRepo;
@@ -234,6 +308,75 @@ void main() {
 
         expect(callbackInvoked, isFalse);
       });
+
+      glados.Glados(
+        glados.any.taskTitleScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'matches generated title validation, no-op, and write semantics',
+        (scenario) async {
+          final repo = MockJournalRepository();
+          when(
+            () => repo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          final initialTask = task.copyWith(
+            data: task.data.copyWith(title: scenario.currentTitle),
+          );
+          Task? callbackTask;
+          final handler = TaskTitleHandler(
+            task: initialTask,
+            journalRepository: repo,
+            onTaskUpdated: (updatedTask) => callbackTask = updatedTask,
+          );
+
+          final result = await handler.handle(scenario.requestTitle);
+
+          if (scenario.isInvalid) {
+            expect(result.success, isFalse, reason: '$scenario');
+            expect(result.didWrite, isFalse, reason: '$scenario');
+            expect(result.error, contains('empty'), reason: '$scenario');
+            expect(result.requestedTitle, isNull, reason: '$scenario');
+            expect(result.updatedTask, isNull, reason: '$scenario');
+            expect(handler.task, initialTask, reason: '$scenario');
+            expect(callbackTask, isNull, reason: '$scenario');
+            verifyNever(() => repo.updateJournalEntity(any()));
+            return;
+          }
+
+          expect(result.success, isTrue, reason: '$scenario');
+          expect(result.error, isNull, reason: '$scenario');
+          expect(result.requestedTitle, scenario.trimmedRequest);
+
+          if (scenario.isNoOp) {
+            expect(result.didWrite, isFalse, reason: '$scenario');
+            expect(result.wasNoOp, isTrue, reason: '$scenario');
+            expect(result.updatedTask, initialTask, reason: '$scenario');
+            expect(handler.task, initialTask, reason: '$scenario');
+            expect(callbackTask, isNull, reason: '$scenario');
+            verifyNever(() => repo.updateJournalEntity(any()));
+            return;
+          }
+
+          expect(scenario.shouldWrite, isTrue, reason: '$scenario');
+          expect(result.didWrite, isTrue, reason: '$scenario');
+          expect(result.wasNoOp, isFalse, reason: '$scenario');
+          expect(
+            result.updatedTask!.data.title,
+            scenario.trimmedRequest,
+            reason: '$scenario',
+          );
+          expect(handler.task, result.updatedTask, reason: '$scenario');
+          expect(callbackTask, result.updatedTask, reason: '$scenario');
+
+          final captured =
+              verify(
+                    () => repo.updateJournalEntity(captureAny()),
+                  ).captured.single
+                  as Task;
+          expect(captured, result.updatedTask, reason: '$scenario');
+        },
+      );
     });
 
     group('fromHandlerResult conversion', () {

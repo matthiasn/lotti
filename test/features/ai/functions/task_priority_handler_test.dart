@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
@@ -11,6 +12,102 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../mocks/mocks.dart';
 
 class MockConversationManager extends Mock implements ConversationManager {}
+
+enum _GeneratedPriorityRequestShape {
+  exact,
+  lowercase,
+  padded,
+  invalidString,
+  missing,
+  nonString,
+}
+
+class _GeneratedPriorityToolCallScenario {
+  const _GeneratedPriorityToolCallScenario({
+    required this.currentPriority,
+    required this.requestPriority,
+    required this.requestShape,
+    required this.repositorySucceeds,
+    required this.seed,
+  });
+
+  final TaskPriority currentPriority;
+  final TaskPriority requestPriority;
+  final _GeneratedPriorityRequestShape requestShape;
+  final bool repositorySucceeds;
+  final int seed;
+
+  Object? get rawPriority {
+    return switch (requestShape) {
+      _GeneratedPriorityRequestShape.exact => requestPriority.short,
+      _GeneratedPriorityRequestShape.lowercase =>
+        requestPriority.short.toLowerCase(),
+      _GeneratedPriorityRequestShape.padded => '  ${requestPriority.short}  ',
+      _GeneratedPriorityRequestShape.invalidString => 'P${4 + (seed % 5)}',
+      _GeneratedPriorityRequestShape.missing => null,
+      _GeneratedPriorityRequestShape.nonString => seed,
+    };
+  }
+
+  TaskPriority? get parsedPriority {
+    return TaskPriorityHandler.parsePriority(rawPriority);
+  }
+
+  bool get isInvalid => parsedPriority == null;
+
+  bool get isNoOp => !isInvalid && parsedPriority == currentPriority;
+
+  bool get shouldAttemptWrite => !isInvalid && !isNoOp;
+
+  bool get shouldWrite => shouldAttemptWrite && repositorySucceeds;
+
+  Map<String, Object?> get arguments => {
+    if (requestShape != _GeneratedPriorityRequestShape.missing)
+      'priority': rawPriority,
+    'reason': 'Generated reason $seed',
+    'confidence': seed.isEven ? 'high' : 'medium',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedPriorityToolCallScenario('
+        'currentPriority: ${currentPriority.short}, '
+        'requestPriority: ${requestPriority.short}, '
+        'requestShape: $requestShape, '
+        'repositorySucceeds: $repositorySucceeds, '
+        'seed: $seed)';
+  }
+}
+
+extension _AnyTaskPriorityHandlerScenario on glados.Any {
+  glados.Generator<TaskPriority> get taskPriority =>
+      glados.AnyUtils(this).choose(TaskPriority.values);
+
+  glados.Generator<_GeneratedPriorityRequestShape> get priorityRequestShape =>
+      glados.AnyUtils(this).choose(_GeneratedPriorityRequestShape.values);
+
+  glados.Generator<_GeneratedPriorityToolCallScenario>
+  get priorityToolCallScenario => glados.CombinableAny(this).combine5(
+    taskPriority,
+    taskPriority,
+    priorityRequestShape,
+    glados.BoolAny(this).bool,
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      TaskPriority currentPriority,
+      TaskPriority requestPriority,
+      _GeneratedPriorityRequestShape requestShape,
+      bool repositorySucceeds,
+      int seed,
+    ) => _GeneratedPriorityToolCallScenario(
+      currentPriority: currentPriority,
+      requestPriority: requestPriority,
+      requestShape: requestShape,
+      repositorySucceeds: repositorySucceeds,
+      seed: seed,
+    ),
+  );
+}
 
 void main() {
   late MockJournalRepository mockJournalRepo;
@@ -92,6 +189,19 @@ void main() {
           'reason': ?reason,
           'confidence': ?confidence,
         }),
+      ),
+    );
+  }
+
+  ChatCompletionMessageToolCall createPriorityToolCallFromArgs(
+    Map<String, Object?> args,
+  ) {
+    return ChatCompletionMessageToolCall(
+      id: 'call_priority_generated',
+      type: ChatCompletionMessageToolCallType.function,
+      function: ChatCompletionMessageFunctionCall(
+        name: 'update_task_priority',
+        arguments: jsonEncode(args),
       ),
     );
   }
@@ -671,6 +781,86 @@ void main() {
         },
       );
     });
+
+    glados.Glados(
+      glados.any.priorityToolCallScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'matches generated priority parsing, no-op, and repository semantics',
+      (scenario) async {
+        final repo = MockJournalRepository();
+        when(
+          () => repo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => scenario.repositorySucceeds);
+
+        final initialTask = createTask(priority: scenario.currentPriority);
+        Task? callbackTask;
+        final handler = TaskPriorityHandler(
+          task: initialTask,
+          journalRepository: repo,
+          onTaskUpdated: (updatedTask) => callbackTask = updatedTask,
+        );
+
+        final result = await handler.processToolCall(
+          createPriorityToolCallFromArgs(scenario.arguments),
+        );
+
+        if (scenario.isInvalid) {
+          expect(result.success, isFalse, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.requestedPriority, isNull, reason: '$scenario');
+          expect(result.error, contains('must be P0'), reason: '$scenario');
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          verifyNever(() => repo.updateJournalEntity(any()));
+          return;
+        }
+
+        expect(result.requestedPriority, scenario.parsedPriority);
+        expect(result.reason, 'Generated reason ${scenario.seed}');
+        expect(result.confidence, scenario.seed.isEven ? 'high' : 'medium');
+
+        if (scenario.isNoOp) {
+          expect(result.success, isTrue, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.wasNoOp, isTrue, reason: '$scenario');
+          expect(result.updatedTask, initialTask, reason: '$scenario');
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          verifyNever(() => repo.updateJournalEntity(any()));
+          return;
+        }
+
+        expect(scenario.shouldAttemptWrite, isTrue, reason: '$scenario');
+        final captured =
+            verify(
+                  () => repo.updateJournalEntity(captureAny()),
+                ).captured.single
+                as Task;
+        expect(
+          captured.data.priority,
+          scenario.parsedPriority,
+          reason: '$scenario',
+        );
+
+        if (!scenario.repositorySucceeds) {
+          expect(result.success, isFalse, reason: '$scenario');
+          expect(result.didWrite, isFalse, reason: '$scenario');
+          expect(result.error, contains('repository returned false'));
+          expect(result.updatedTask, isNull, reason: '$scenario');
+          expect(handler.task, initialTask, reason: '$scenario');
+          expect(callbackTask, isNull, reason: '$scenario');
+          return;
+        }
+
+        expect(result.success, isTrue, reason: '$scenario');
+        expect(result.didWrite, isTrue, reason: '$scenario');
+        expect(result.wasNoOp, isFalse, reason: '$scenario');
+        expect(result.updatedTask, captured, reason: '$scenario');
+        expect(handler.task, captured, reason: '$scenario');
+        expect(callbackTask, captured, reason: '$scenario');
+      },
+    );
 
     group('TaskPriorityResult', () {
       test('wasSkipped returns true for non-error failures', () {

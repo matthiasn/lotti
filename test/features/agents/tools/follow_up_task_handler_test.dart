@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -14,6 +15,112 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+
+enum _GeneratedFollowUpDueDateShape {
+  absent,
+  dateOnly,
+  empty,
+  fullDateTime,
+  timezoneDateTime,
+  monthZero,
+  monthThirteen,
+  dayZero,
+  dayAfterMonth,
+  nonString,
+}
+
+class _GeneratedFollowUpDueDateScenario {
+  const _GeneratedFollowUpDueDateScenario({
+    required this.shape,
+    required this.year,
+    required this.month,
+    required this.daySeed,
+    required this.seed,
+  });
+
+  final _GeneratedFollowUpDueDateShape shape;
+  final int year;
+  final int month;
+  final int daySeed;
+  final int seed;
+
+  int get day => (daySeed % _daysInMonth(year, month)) + 1;
+
+  String get _validDate =>
+      '${_fourDigits(year)}-${_twoDigits(month)}-${_twoDigits(day)}';
+
+  Object? get rawDueDate => switch (shape) {
+    _GeneratedFollowUpDueDateShape.absent => null,
+    _GeneratedFollowUpDueDateShape.dateOnly => _validDate,
+    _GeneratedFollowUpDueDateShape.empty => '',
+    _GeneratedFollowUpDueDateShape.fullDateTime => '${_validDate}T09:30:00',
+    _GeneratedFollowUpDueDateShape.timezoneDateTime =>
+      '${_validDate}T09:30:00Z',
+    _GeneratedFollowUpDueDateShape.monthZero =>
+      '${_fourDigits(year)}-00-${_twoDigits(day)}',
+    _GeneratedFollowUpDueDateShape.monthThirteen =>
+      '${_fourDigits(year)}-13-${_twoDigits(day)}',
+    _GeneratedFollowUpDueDateShape.dayZero =>
+      '${_fourDigits(year)}-${_twoDigits(month)}-00',
+    _GeneratedFollowUpDueDateShape.dayAfterMonth =>
+      '${_fourDigits(year)}-${_twoDigits(month)}-'
+          '${_twoDigits(_daysInMonth(year, month) + 1)}',
+    _GeneratedFollowUpDueDateShape.nonString => seed,
+  };
+
+  Map<String, dynamic> get args => {
+    'title': 'Generated follow-up $seed',
+    if (shape != _GeneratedFollowUpDueDateShape.absent) 'dueDate': rawDueDate,
+  };
+
+  DateTime? get expectedDueDate => switch (shape) {
+    _GeneratedFollowUpDueDateShape.absent => null,
+    _GeneratedFollowUpDueDateShape.dateOnly => DateTime(year, month, day),
+    _ => null,
+  };
+
+  bool get isInvalid =>
+      shape != _GeneratedFollowUpDueDateShape.absent && expectedDueDate == null;
+
+  @override
+  String toString() {
+    return '_GeneratedFollowUpDueDateScenario('
+        'shape: $shape, '
+        'rawDueDate: $rawDueDate, '
+        'expectedDueDate: $expectedDueDate)';
+  }
+}
+
+extension _AnyFollowUpDueDateScenario on glados.Any {
+  glados.Generator<_GeneratedFollowUpDueDateShape> get followUpDueDateShape =>
+      glados.AnyUtils(this).choose(_GeneratedFollowUpDueDateShape.values);
+
+  glados.Generator<_GeneratedFollowUpDueDateScenario>
+  get followUpDueDateScenario => glados.CombinableAny(this).combine5(
+    followUpDueDateShape,
+    glados.IntAnys(this).intInRange(2020, 2030),
+    glados.IntAnys(this).intInRange(1, 12),
+    glados.IntAnys(this).intInRange(0, 400),
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      _GeneratedFollowUpDueDateShape shape,
+      int year,
+      int month,
+      int daySeed,
+      int seed,
+    ) => _GeneratedFollowUpDueDateScenario(
+      shape: shape,
+      year: year,
+      month: month,
+      daySeed: daySeed,
+      seed: seed,
+    ),
+  );
+}
+
+int _daysInMonth(int year, int month) => DateTime(year, month + 1, 0).day;
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
+String _fourDigits(int value) => value.toString().padLeft(4, '0');
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -235,6 +342,92 @@ void main() {
         expect(result.output, contains('not found or not a Task'));
         expect(result.errorMessage, 'Source task lookup failed');
       });
+
+      glados.Glados(
+        glados.any.followUpDueDateScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'matches generated due-date validation and creation semantics',
+        (scenario) async {
+          final localPersistenceLogic = MockPersistenceLogic();
+          final localJournalDb = MockJournalDb();
+          final localDomainLogger = MockDomainLogger();
+          final localHandler = FollowUpTaskHandler(
+            persistenceLogic: localPersistenceLogic,
+            journalDb: localJournalDb,
+            domainLogger: localDomainLogger,
+          );
+          final sourceTask = makeSourceTask();
+          final newTask = makeNewTask('generated-follow-up-${scenario.seed}');
+
+          when(
+            () => localJournalDb.journalEntityById(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => localJournalDb.journalEntityById(sourceTaskId),
+          ).thenAnswer((_) async => sourceTask);
+
+          when(
+            () => localPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => newTask);
+
+          when(
+            () => localPersistenceLogic.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => localDomainLogger.log(
+              any(),
+              any(),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).thenReturn(null);
+
+          await withClock(Clock.fixed(testDate), () async {
+            final result = await localHandler.handle(
+              sourceTaskId,
+              scenario.args,
+            );
+
+            if (scenario.isInvalid) {
+              expect(result.success, isFalse, reason: '$scenario');
+              expect(result.errorMessage, 'Invalid dueDate');
+              verifyNever(
+                () => localPersistenceLogic.createTaskEntry(
+                  data: any(named: 'data'),
+                  entryText: any(named: 'entryText'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              );
+              return;
+            }
+
+            expect(result.success, isTrue, reason: '$scenario');
+            expect(result.mutatedEntityId, newTask.meta.id);
+
+            final captured =
+                verify(
+                      () => localPersistenceLogic.createTaskEntry(
+                        data: captureAny(named: 'data'),
+                        entryText: any(named: 'entryText'),
+                        categoryId: any(named: 'categoryId'),
+                      ),
+                    ).captured.single
+                    as TaskData;
+            expect(
+              captured.due,
+              scenario.expectedDueDate,
+              reason: '$scenario',
+            );
+          });
+        },
+      );
     });
 
     group('task creation', () {

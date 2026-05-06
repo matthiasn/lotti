@@ -195,8 +195,14 @@ class TaskDueDateHandler {
       // Validate date-only format (YYYY-MM-DD) to prevent time/timezone issues
       final isDateOnly = _dateOnlyPattern.hasMatch(dueDateStr);
       final parsed = DateTime.tryParse(dueDateStr);
+      final isValidCalendarDate =
+          isDateOnly &&
+          parsed != null &&
+          parsed.year == int.parse(dueDateStr.substring(0, 4)) &&
+          parsed.month == int.parse(dueDateStr.substring(5, 7)) &&
+          parsed.day == int.parse(dueDateStr.substring(8, 10));
 
-      if (!isDateOnly || parsed == null) {
+      if (!isDateOnly || parsed == null || !isValidCalendarDate) {
         final message =
             'Invalid due date format. Use YYYY-MM-DD (e.g., '
             '2024-01-19). Received: $dueDateStr';
@@ -239,7 +245,24 @@ class TaskDueDateHandler {
       );
 
       try {
-        await journalRepository.updateJournalEntity(updatedTask);
+        final success = await journalRepository.updateJournalEntity(
+          updatedTask,
+        );
+
+        if (!success) {
+          const message =
+              'Failed to update due date: repository returned false.';
+          developer.log(message, name: 'TaskDueDateHandler');
+          _sendResponse(call.id, message, manager);
+          return TaskDueDateResult(
+            success: false,
+            message: message,
+            requestedDate: dueDate,
+            reason: reason,
+            confidence: confidence,
+            error: message,
+          );
+        }
 
         // Update local state
         task = updatedTask;

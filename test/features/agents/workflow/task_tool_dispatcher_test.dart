@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -10,6 +12,145 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+
+enum _GeneratedDispatchGuardTool {
+  setTaskTitle,
+  updateTaskDueDate,
+  updateTaskPriority,
+  assignTaskLabels,
+  addMultipleChecklistItems,
+  updateChecklistItems,
+  setTaskLanguage,
+  setTaskStatus,
+}
+
+enum _GeneratedInvalidArgShape {
+  missing,
+  nullValue,
+  number,
+  boolean,
+  map,
+  emptyString,
+  plainString,
+  emptyList,
+}
+
+class _GeneratedDispatchGuardScenario {
+  const _GeneratedDispatchGuardScenario({
+    required this.tool,
+    required this.shapeSeed,
+  });
+
+  final _GeneratedDispatchGuardTool tool;
+  final int shapeSeed;
+
+  String get toolName => switch (tool) {
+    _GeneratedDispatchGuardTool.setTaskTitle => TaskAgentToolNames.setTaskTitle,
+    _GeneratedDispatchGuardTool.updateTaskDueDate =>
+      TaskAgentToolNames.updateTaskDueDate,
+    _GeneratedDispatchGuardTool.updateTaskPriority =>
+      TaskAgentToolNames.updateTaskPriority,
+    _GeneratedDispatchGuardTool.assignTaskLabels =>
+      TaskAgentToolNames.assignTaskLabels,
+    _GeneratedDispatchGuardTool.addMultipleChecklistItems =>
+      TaskAgentToolNames.addMultipleChecklistItems,
+    _GeneratedDispatchGuardTool.updateChecklistItems =>
+      TaskAgentToolNames.updateChecklistItems,
+    _GeneratedDispatchGuardTool.setTaskLanguage =>
+      TaskAgentToolNames.setTaskLanguage,
+    _GeneratedDispatchGuardTool.setTaskStatus =>
+      TaskAgentToolNames.setTaskStatus,
+  };
+
+  String get argKey => switch (tool) {
+    _GeneratedDispatchGuardTool.setTaskTitle => 'title',
+    _GeneratedDispatchGuardTool.updateTaskDueDate => 'dueDate',
+    _GeneratedDispatchGuardTool.updateTaskPriority => 'priority',
+    _GeneratedDispatchGuardTool.assignTaskLabels => 'labels',
+    _GeneratedDispatchGuardTool.addMultipleChecklistItems => 'items',
+    _GeneratedDispatchGuardTool.updateChecklistItems => 'items',
+    _GeneratedDispatchGuardTool.setTaskLanguage => 'languageCode',
+    _GeneratedDispatchGuardTool.setTaskStatus => 'status',
+  };
+
+  String get expectedErrorFragment => 'Type validation failed';
+
+  _GeneratedInvalidArgShape get invalidShape {
+    final shapes = switch (tool) {
+      _GeneratedDispatchGuardTool.updateTaskDueDate ||
+      _GeneratedDispatchGuardTool.updateTaskPriority => const [
+        _GeneratedInvalidArgShape.missing,
+        _GeneratedInvalidArgShape.nullValue,
+        _GeneratedInvalidArgShape.number,
+        _GeneratedInvalidArgShape.boolean,
+        _GeneratedInvalidArgShape.map,
+        _GeneratedInvalidArgShape.emptyString,
+      ],
+      _GeneratedDispatchGuardTool.assignTaskLabels ||
+      _GeneratedDispatchGuardTool.addMultipleChecklistItems ||
+      _GeneratedDispatchGuardTool.updateChecklistItems => const [
+        _GeneratedInvalidArgShape.missing,
+        _GeneratedInvalidArgShape.nullValue,
+        _GeneratedInvalidArgShape.number,
+        _GeneratedInvalidArgShape.boolean,
+        _GeneratedInvalidArgShape.map,
+        _GeneratedInvalidArgShape.plainString,
+        _GeneratedInvalidArgShape.emptyList,
+      ],
+      _ => const [
+        _GeneratedInvalidArgShape.missing,
+        _GeneratedInvalidArgShape.nullValue,
+        _GeneratedInvalidArgShape.number,
+        _GeneratedInvalidArgShape.boolean,
+        _GeneratedInvalidArgShape.map,
+        _GeneratedInvalidArgShape.emptyList,
+      ],
+    };
+    return shapes[shapeSeed % shapes.length];
+  }
+
+  Map<String, dynamic> get args {
+    if (invalidShape == _GeneratedInvalidArgShape.missing) {
+      return const {};
+    }
+    return {argKey: invalidValue};
+  }
+
+  Object? get invalidValue => switch (invalidShape) {
+    _GeneratedInvalidArgShape.missing => null,
+    _GeneratedInvalidArgShape.nullValue => null,
+    _GeneratedInvalidArgShape.number => 42,
+    _GeneratedInvalidArgShape.boolean => true,
+    _GeneratedInvalidArgShape.map => const {'unexpected': 'value'},
+    _GeneratedInvalidArgShape.emptyString => '',
+    _GeneratedInvalidArgShape.plainString => 'not-a-list',
+    _GeneratedInvalidArgShape.emptyList => const <dynamic>[],
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedDispatchGuardScenario('
+        'toolName: $toolName, args: $args)';
+  }
+}
+
+extension _AnyGeneratedDispatchGuardScenario on glados.Any {
+  glados.Generator<_GeneratedDispatchGuardTool> get dispatchGuardTool =>
+      glados.AnyUtils(this).choose(_GeneratedDispatchGuardTool.values);
+
+  glados.Generator<_GeneratedDispatchGuardScenario> get dispatchGuardScenario =>
+      glados.CombinableAny(this).combine2(
+        dispatchGuardTool,
+        glados.IntAnys(this).intInRange(0, 1000),
+        (
+          _GeneratedDispatchGuardTool tool,
+          int shapeSeed,
+        ) => _GeneratedDispatchGuardScenario(
+          tool: tool,
+          shapeSeed: shapeSeed,
+        ),
+      );
+}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -218,6 +359,43 @@ void main() {
         expect(result.success, isFalse);
         expect(result.output, contains('"items" must be a non-empty array'));
       });
+
+      glados.Glados(
+        glados.any.dispatchGuardScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'rejects generated invalid top-level argument shapes before delegation',
+        (scenario) async {
+          final localJournalDb = MockJournalDb();
+          final localDispatcher = TaskToolDispatcher(
+            journalDb: localJournalDb,
+            journalRepository: MockJournalRepository(),
+            checklistRepository: MockChecklistRepository(),
+            labelsRepository: MockLabelsRepository(),
+            persistenceLogic: MockPersistenceLogic(),
+            timeService: MockTimeService(),
+          );
+
+          when(
+            () => localJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => _makeTestTask(taskId));
+
+          final result = await localDispatcher.dispatch(
+            scenario.toolName,
+            scenario.args,
+            taskId,
+          );
+
+          expect(result.success, isFalse, reason: '$scenario');
+          expect(result.output, contains('"${scenario.argKey}"'));
+          expect(
+            result.errorMessage,
+            contains(scenario.expectedErrorFragment),
+            reason: '$scenario',
+          );
+          expect(result.mutatedEntityId, isNull, reason: '$scenario');
+        },
+      );
     });
 
     group('dispatch — handler delegation', () {

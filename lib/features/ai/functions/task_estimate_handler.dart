@@ -237,7 +237,24 @@ class TaskEstimateHandler {
       );
 
       try {
-        await journalRepository.updateJournalEntity(updatedTask);
+        final success = await journalRepository.updateJournalEntity(
+          updatedTask,
+        );
+
+        if (!success) {
+          const message =
+              'Failed to update estimate: repository returned false.';
+          developer.log(message, name: 'TaskEstimateHandler');
+          _sendResponse(call.id, message, manager);
+          return TaskEstimateResult(
+            success: false,
+            message: message,
+            requestedMinutes: minutes,
+            reason: reason,
+            confidence: confidence,
+            error: message,
+          );
+        }
 
         // Update local state
         task = updatedTask;

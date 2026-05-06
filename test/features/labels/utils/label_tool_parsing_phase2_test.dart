@@ -37,6 +37,16 @@ enum _GeneratedConfidenceShape {
   missing,
 }
 
+enum _GeneratedLegacyPayloadShape { list, string }
+
+enum _GeneratedLegacyIdShape {
+  valid,
+  padded,
+  empty,
+  number,
+  nullValue,
+}
+
 class _GeneratedLabelCandidate {
   const _GeneratedLabelCandidate({
     required this.shape,
@@ -149,6 +159,80 @@ class _GeneratedLabelCandidate {
   }
 }
 
+class _GeneratedLegacyLabelCandidate {
+  const _GeneratedLegacyLabelCandidate({
+    required this.shape,
+    required this.value,
+  });
+
+  final _GeneratedLegacyIdShape shape;
+  final int value;
+
+  String get id => 'legacy_$value';
+
+  Object? get listRaw => switch (shape) {
+    _GeneratedLegacyIdShape.valid => id,
+    _GeneratedLegacyIdShape.padded => '  $id  ',
+    _GeneratedLegacyIdShape.empty => '   ',
+    _GeneratedLegacyIdShape.number => value,
+    _GeneratedLegacyIdShape.nullValue => null,
+  };
+
+  String get stringRaw => switch (shape) {
+    _GeneratedLegacyIdShape.valid => id,
+    _GeneratedLegacyIdShape.padded => '  $id  ',
+    _GeneratedLegacyIdShape.empty => '   ',
+    _GeneratedLegacyIdShape.number => value.toString(),
+    _GeneratedLegacyIdShape.nullValue => '',
+  };
+}
+
+class _GeneratedLegacyLabelPayload {
+  const _GeneratedLegacyLabelPayload({
+    required this.shape,
+    required this.items,
+  });
+
+  final _GeneratedLegacyPayloadShape shape;
+  final List<_GeneratedLegacyLabelCandidate> items;
+
+  String get json {
+    final labelIds = switch (shape) {
+      _GeneratedLegacyPayloadShape.list =>
+        items.map((item) => item.listRaw).toList(),
+      _GeneratedLegacyPayloadShape.string =>
+        items.map((item) => item.stringRaw).join(', '),
+    };
+    return jsonEncode({'labelIds': labelIds});
+  }
+
+  List<String> get allIds {
+    return switch (shape) {
+      _GeneratedLegacyPayloadShape.list =>
+        items
+            .map((item) => item.listRaw.toString().trim())
+            .where((id) => id.isNotEmpty)
+            .toList(),
+      _GeneratedLegacyPayloadShape.string =>
+        items
+            .map((item) => item.stringRaw)
+            .join(', ')
+            .split(RegExp(r'\s*,\s*'))
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toList(),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedLegacyLabelPayload('
+        'shape: $shape, '
+        'itemCount: ${items.length}, '
+        'allIds: $allIds)';
+  }
+}
+
 class _ExpectedLabelParseResult {
   const _ExpectedLabelParseResult({
     required this.selectedIds,
@@ -171,6 +255,12 @@ extension _AnyLabelToolParsingScenarios on Any {
   Generator<_GeneratedConfidenceShape> get labelConfidenceShape =>
       choose(_GeneratedConfidenceShape.values);
 
+  Generator<_GeneratedLegacyPayloadShape> get legacyPayloadShape =>
+      choose(_GeneratedLegacyPayloadShape.values);
+
+  Generator<_GeneratedLegacyIdShape> get legacyIdShape =>
+      choose(_GeneratedLegacyIdShape.values);
+
   Generator<_GeneratedLabelCandidate> get labelCandidate => combine4(
     labelCandidateShape,
     labelIdShape,
@@ -191,6 +281,31 @@ extension _AnyLabelToolParsingScenarios on Any {
 
   Generator<List<_GeneratedLabelCandidate>> get labelCandidates =>
       listWithLengthInRange(0, 14, labelCandidate);
+
+  Generator<_GeneratedLegacyLabelCandidate> get legacyLabelCandidate =>
+      combine2(
+        legacyIdShape,
+        intInRange(0, 1000),
+        (
+          _GeneratedLegacyIdShape shape,
+          int value,
+        ) => _GeneratedLegacyLabelCandidate(
+          shape: shape,
+          value: value,
+        ),
+      );
+
+  Generator<_GeneratedLegacyLabelPayload> get legacyLabelPayload => combine2(
+    legacyPayloadShape,
+    listWithLengthInRange(0, 10, legacyLabelCandidate),
+    (
+      _GeneratedLegacyPayloadShape shape,
+      List<_GeneratedLegacyLabelCandidate> items,
+    ) => _GeneratedLegacyLabelPayload(
+      shape: shape,
+      items: items,
+    ),
+  );
 }
 
 _ExpectedLabelParseResult _modelStructuredLabels(
@@ -362,6 +477,24 @@ void main() {
         expect(result.legacyUsed, isFalse);
         expect(result.confidenceBreakdown, expected.confidenceBreakdown);
         expect(result.totalCandidates, candidates.length);
+      },
+    );
+
+    Glados(any.legacyLabelPayload, ExploreConfig(numRuns: 120)).test(
+      'matches the generated legacy labelIds selection model',
+      (payload) {
+        final result = parseLabelCallArgs(payload.json);
+
+        expect(result.selectedIds, payload.allIds.take(3).toList());
+        expect(result.droppedLow, 0);
+        expect(result.legacyUsed, isTrue);
+        expect(result.confidenceBreakdown, {
+          'very_high': 0,
+          'high': 0,
+          'medium': payload.allIds.length,
+          'low': 0,
+        });
+        expect(result.totalCandidates, payload.allIds.length);
       },
     );
   });
