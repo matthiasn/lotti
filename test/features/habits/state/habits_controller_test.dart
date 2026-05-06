@@ -15,6 +15,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -102,7 +103,7 @@ void main() {
     );
   }
 
-  setUp(() {
+  setUp(() async {
     mockRepository = MockHabitsRepository();
     mockNavService = MockNavService();
     definitionsController = StreamController.broadcast();
@@ -129,10 +130,11 @@ void main() {
       mockNavService.getIndexStream,
     ).thenAnswer((_) => navIndexController.stream);
 
-    if (getIt.isRegistered<NavService>()) {
-      getIt.unregister<NavService>();
-    }
-    getIt.registerSingleton<NavService>(mockNavService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<NavService>(mockNavService);
+      },
+    );
 
     container = ProviderContainer(
       overrides: [
@@ -146,9 +148,7 @@ void main() {
     await updateController.close();
     await navIndexController.close();
     container.dispose();
-    if (getIt.isRegistered<NavService>()) {
-      getIt.unregister<NavService>();
-    }
+    await tearDownTestGetIt();
   });
 
   group('HabitsController', () {

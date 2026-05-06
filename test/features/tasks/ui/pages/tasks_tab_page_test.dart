@@ -25,7 +25,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fallbacks.dart';
@@ -46,12 +45,8 @@ void main() {
   late MockPersistenceLogic mockPersistenceLogic;
   late List<JournalEntity> tasks;
   late PagingController<int, JournalEntity> pagingController;
-  late Duration previousVisibilityUpdateInterval;
 
   setUp(() async {
-    previousVisibilityUpdateInterval =
-        VisibilityDetectorController.instance.updateInterval;
-    VisibilityDetectorController.instance.updateInterval = Duration.zero;
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockNavService = MockNavService();
     mockTimeService = MockTimeService();
@@ -151,8 +146,6 @@ void main() {
   });
 
   tearDown(() async {
-    VisibilityDetectorController.instance.updateInterval =
-        previousVisibilityUpdateInterval;
     pagingController.dispose();
     await tearDownTestGetIt();
   });

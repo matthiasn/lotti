@@ -30,11 +30,13 @@ class HabitsController extends _$HabitsController {
 
   /// Tracks whether the habits tab was the active top-level tab on the
   /// previous nav-index emission. Used to detect the off→on edge that
-  /// triggers a recompute (the substitute for the old VisibilityDetector
-  /// signal).
+  /// triggers a recompute — `showHabit()` depends on `DateTime.now()`,
+  /// so re-entering the tab is the cue to refresh the due/later split
+  /// without keeping a background ticker alive.
   bool _wasHabitsActive = false;
 
   late HabitsRepository _repository;
+  late final NavService _navService = getIt<NavService>();
 
   @override
   HabitsState build() {
@@ -55,9 +57,8 @@ class HabitsController extends _$HabitsController {
   }
 
   Future<void> _init() async {
-    final navService = getIt<NavService>();
-    _wasHabitsActive = navService.index == navService.habitsIndex;
-    _navIndexSubscription = navService.getIndexStream().listen(
+    _wasHabitsActive = _navService.index == _navService.habitsIndex;
+    _navIndexSubscription = _navService.getIndexStream().listen(
       _handleNavIndex,
     );
 
@@ -266,16 +267,13 @@ class HabitsController extends _$HabitsController {
     );
   }
 
-  /// Recomputes habit success when the habits tab transitions from
-  /// inactive to active. Replaces the previous VisibilityDetector-driven
-  /// signal — same intent ("time may have passed while we were
-  /// off-screen, refresh the due/later split"), driven by the
-  /// authoritative nav-index stream instead of paint-phase intersection.
+  /// Recomputes habit success on the inactive→active edge of the habits
+  /// tab — time may have passed while the tab was off-screen, so the
+  /// due/later split needs refreshing.
   void _handleNavIndex(int newIndex) {
     if (!ref.mounted) return;
 
-    final navService = getIt<NavService>();
-    final isHabitsActive = newIndex == navService.habitsIndex;
+    final isHabitsActive = newIndex == _navService.habitsIndex;
     final wasActive = _wasHabitsActive;
     _wasHabitsActive = isHabitsActive;
 

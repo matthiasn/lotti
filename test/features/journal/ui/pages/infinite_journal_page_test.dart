@@ -17,13 +17,13 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
@@ -48,7 +48,6 @@ void main() {
       ensureMpvInitialized();
 
       registerFallbackValue(FakeMeasurementData());
-      VisibilityDetectorController.instance.updateInterval = Duration.zero;
       // Avoid GoogleFonts attempting network fetches during tests
       GoogleFonts.config.allowRuntimeFetching = false;
     });
@@ -66,6 +65,17 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
 
       final mockTimeService = MockTimeService();
+      final mockNavService = MockNavService();
+      // The journal page controller subscribes to the nav-index stream
+      // to drain deferred refreshes when the tab becomes active. Stub
+      // the stream to a no-op broadcast and pin the index getters so
+      // build() resolves without throwing.
+      when(() => mockNavService.tasksIndex).thenReturn(0);
+      when(() => mockNavService.journalIndex).thenReturn(5);
+      when(() => mockNavService.index).thenReturn(5);
+      when(
+        mockNavService.getIndexStream,
+      ).thenAnswer((_) => const Stream<int>.empty());
 
       when(() => mockJournalDb.watchConfigFlag(privateFlag)).thenAnswer(
         (_) => Stream<bool>.fromIterable([true]),
@@ -119,6 +129,7 @@ void main() {
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb)
+        ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<Fts5Db>(MockFts5Db());
 
@@ -294,7 +305,6 @@ void main() {
       // weight task is neither starred nor private (icons invisible)
       expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
       expect(find.byIcon(MdiIcons.security).hitTestable(), findsNothing);
-      await tester.pump(VisibilityDetectorController.instance.updateInterval);
     });
 
     testWidgets(
