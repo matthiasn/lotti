@@ -400,6 +400,10 @@ const habitTitleStyle = TextStyle(
 );
 
 // Utility style for monospaced, tabular-digit text with adjustable size.
+// Reserved for code-style surfaces (JSON payloads, log readouts). For
+// timer / date / count labels in the UI prefer [tabularFigureStyle],
+// which keeps the regular UI font and stabilises digits via
+// [numericBadgeFontFeatures].
 TextStyle monoTabularStyle({
   required double fontSize,
   Color? color,
@@ -411,6 +415,22 @@ TextStyle monoTabularStyle({
     fontWeight: fontWeight,
     color: color,
     fontFeatures: const [FontFeature.tabularFigures()],
+  );
+}
+
+// Tabular-digit text in the regular UI font (Inter). Use for timers,
+// dates, counts, and any digit-heavy label where stable digit columns
+// matter but a true monospace font would look out of place.
+TextStyle tabularFigureStyle({
+  required double fontSize,
+  Color? color,
+  FontWeight fontWeight = FontWeight.w500,
+}) {
+  return TextStyle(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    fontFeatures: numericBadgeFontFeatures,
   );
 }
 

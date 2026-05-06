@@ -80,7 +80,7 @@ class AudioRecordingIndicator extends ConsumerWidget {
                     padding: AudioRecordingIndicatorConstants.textPadding,
                     child: Text(
                       formatDuration(state.progress),
-                      style: monoTabularStyle(
+                      style: tabularFigureStyle(
                         fontSize: fontSizeMedium,
                         color: context.colorScheme.onError,
                       ),

@@ -73,7 +73,7 @@ class TimeRecordingIndicator extends ConsumerWidget {
                           padding: AudioRecordingIndicatorConstants.textPadding,
                           child: Text(
                             durationString,
-                            style: monoTabularStyle(
+                            style: tabularFigureStyle(
                               fontSize: fontSizeMedium,
                             ),
                           ),

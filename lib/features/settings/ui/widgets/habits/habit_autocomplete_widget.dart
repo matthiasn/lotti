@@ -320,7 +320,7 @@ class RuleInfoWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       info,
-      style: monoTabularStyle(
+      style: tabularFigureStyle(
         fontSize: fontSizeMedium,
         fontWeight: FontWeight.normal,
       ),
@@ -342,7 +342,7 @@ class RuleListInfoWidget extends StatelessWidget {
       quarterTurns: 3,
       child: Text(
         info,
-        style: monoTabularStyle(
+        style: tabularFigureStyle(
           fontSize: fontSizeLarge,
           fontWeight: FontWeight.w300,
         ),

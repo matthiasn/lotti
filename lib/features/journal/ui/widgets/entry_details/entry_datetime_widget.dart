@@ -30,11 +30,12 @@ class EntryDatetimeWidget extends ConsumerWidget {
 
     final base = context.textTheme.titleSmall;
     final style = base != null
-        ? base.withTabularFigures.copyWith(
+        ? base.copyWith(
             color: context.colorScheme.outline,
             fontSize: AppTheme.statusIndicatorFontSize,
+            fontFeatures: numericBadgeFontFeatures,
           )
-        : monoTabularStyle(
+        : tabularFigureStyle(
             fontSize: AppTheme.statusIndicatorFontSize,
             color: context.colorScheme.outline,
           );

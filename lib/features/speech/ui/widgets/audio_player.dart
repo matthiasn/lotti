@@ -128,7 +128,7 @@ class _PlayerBody extends StatelessWidget {
       controller.play();
     }
 
-    final timeStyle = monoTabularStyle(
+    final timeStyle = tabularFigureStyle(
       fontSize: fontSizeMedium,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
