@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
@@ -7,6 +8,148 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
+
+enum _GeneratedProviderResolutionShape {
+  cloudWithKey,
+  localWithoutKey,
+  missingModel,
+  missingProvider,
+  cloudWithoutKey,
+}
+
+class _GeneratedProfileSlotScenario {
+  const _GeneratedProfileSlotScenario({
+    required this.thinkingShape,
+    required this.optionalMask,
+    required this.resolvableOptionalMask,
+  });
+
+  final _GeneratedProviderResolutionShape thinkingShape;
+  final int optionalMask;
+  final int resolvableOptionalMask;
+
+  bool get thinkingResolves =>
+      thinkingShape == _GeneratedProviderResolutionShape.cloudWithKey ||
+      thinkingShape == _GeneratedProviderResolutionShape.localWithoutKey;
+
+  bool get hasHighEnd => optionalMask & 1 != 0;
+  bool get hasVision => optionalMask & 2 != 0;
+  bool get hasTranscription => optionalMask & 4 != 0;
+  bool get hasImageGeneration => optionalMask & 8 != 0;
+
+  bool get highEndResolves => hasHighEnd && resolvableOptionalMask & 1 != 0;
+  bool get visionResolves => hasVision && resolvableOptionalMask & 2 != 0;
+  bool get transcriptionResolves =>
+      hasTranscription && resolvableOptionalMask & 4 != 0;
+  bool get imageGenerationResolves =>
+      hasImageGeneration && resolvableOptionalMask & 8 != 0;
+
+  AiConfigInferenceProfile profile() {
+    return testInferenceProfile(
+      id: 'generated-profile',
+      thinkingModelId: 'generated-thinking',
+      thinkingHighEndModelId: hasHighEnd ? 'generated-high-end' : null,
+      imageRecognitionModelId: hasVision ? 'generated-vision' : null,
+      transcriptionModelId: hasTranscription ? 'generated-transcription' : null,
+      imageGenerationModelId: hasImageGeneration
+          ? 'generated-image-generation'
+          : null,
+      skillAssignments: const [
+        SkillAssignment(skillId: 'generated-skill', automate: true),
+      ],
+    );
+  }
+
+  List<AiConfig> models() {
+    final models = <AiConfig>[];
+    if (thinkingShape != _GeneratedProviderResolutionShape.missingModel) {
+      models.add(
+        testAiModel(
+          id: 'model-thinking',
+          providerModelId: 'generated-thinking',
+          inferenceProviderId: 'provider-thinking',
+        ),
+      );
+    }
+    if (highEndResolves) {
+      models.add(_model('model-high-end', 'generated-high-end'));
+    }
+    if (visionResolves) {
+      models.add(_model('model-vision', 'generated-vision'));
+    }
+    if (transcriptionResolves) {
+      models.add(_model('model-transcription', 'generated-transcription'));
+    }
+    if (imageGenerationResolves) {
+      models.add(
+        _model('model-image-generation', 'generated-image-generation'),
+      );
+    }
+    return models;
+  }
+
+  AiConfigModel _model(String id, String providerModelId) {
+    return testAiModel(
+      id: id,
+      providerModelId: providerModelId,
+      inferenceProviderId: 'provider-$id',
+    );
+  }
+
+  AiConfig? configById(String id) {
+    if (id == 'generated-profile') return profile();
+    if (id == 'provider-thinking') {
+      return switch (thinkingShape) {
+        _GeneratedProviderResolutionShape.cloudWithKey => testInferenceProvider(
+          id: id,
+          apiKey: 'key',
+        ),
+        _GeneratedProviderResolutionShape.localWithoutKey =>
+          testLocalInferenceProvider(id: id),
+        _GeneratedProviderResolutionShape.cloudWithoutKey =>
+          testInferenceProvider(id: id, apiKey: ''),
+        _GeneratedProviderResolutionShape.missingProvider => null,
+        _GeneratedProviderResolutionShape.missingModel => throw StateError(
+          'Provider should not be resolved without model',
+        ),
+      };
+    }
+    if (id.startsWith('provider-model-')) {
+      return testInferenceProvider(id: id, apiKey: 'key');
+    }
+    return null;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedProfileSlotScenario('
+        'thinkingShape: $thinkingShape, '
+        'optionalMask: $optionalMask, '
+        'resolvableOptionalMask: $resolvableOptionalMask)';
+  }
+}
+
+extension _AnyGeneratedProfileSlotScenario on glados.Any {
+  glados.Generator<_GeneratedProviderResolutionShape>
+  get providerResolutionShape =>
+      glados.AnyUtils(this).choose(_GeneratedProviderResolutionShape.values);
+
+  glados.Generator<_GeneratedProfileSlotScenario> get profileSlotScenario =>
+      glados.CombinableAny(this).combine3(
+        providerResolutionShape,
+        glados.IntAnys(this).intInRange(0, 15),
+        glados.IntAnys(this).intInRange(0, 15),
+        (
+          _GeneratedProviderResolutionShape thinkingShape,
+          int optionalMask,
+          int resolvableOptionalMask,
+        ) => _GeneratedProfileSlotScenario(
+          thinkingShape: thinkingShape,
+          optionalMask: optionalMask,
+          resolvableOptionalMask: resolvableOptionalMask,
+        ),
+      );
+}
 
 void main() {
   late MockAiConfigRepository mockAiConfig;
@@ -405,5 +548,59 @@ void main() {
       expect(result!.skillAssignments, hasLength(1));
       expect(result.skillAssignments[0].automate, isTrue);
     });
+
+    glados.Glados(
+      glados.any.profileSlotScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'matches generated profile slot resolution semantics',
+      (scenario) async {
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => scenario.models());
+        when(
+          () => mockAiConfig.getConfigById(any()),
+        ).thenAnswer((invocation) async {
+          final id = invocation.positionalArguments.single as String;
+          return scenario.configById(id);
+        });
+
+        final result = await resolver.resolveByProfileId('generated-profile');
+
+        if (!scenario.thinkingResolves) {
+          expect(result, isNull, reason: '$scenario');
+          return;
+        }
+
+        expect(result, isNotNull, reason: '$scenario');
+        expect(result!.thinkingModelId, 'generated-thinking');
+        expect(result.thinkingProvider.id, 'provider-thinking');
+        expect(result.skillAssignments, hasLength(1));
+        expect(result.skillAssignments.single.skillId, 'generated-skill');
+
+        expect(
+          result.thinkingHighEndModelId,
+          scenario.highEndResolves ? 'generated-high-end' : isNull,
+          reason: '$scenario',
+        );
+        expect(
+          result.imageRecognitionModelId,
+          scenario.visionResolves ? 'generated-vision' : isNull,
+          reason: '$scenario',
+        );
+        expect(
+          result.transcriptionModelId,
+          scenario.transcriptionResolves ? 'generated-transcription' : isNull,
+          reason: '$scenario',
+        );
+        expect(
+          result.imageGenerationModelId,
+          scenario.imageGenerationResolves
+              ? 'generated-image-generation'
+              : isNull,
+          reason: '$scenario',
+        );
+      },
+    );
   });
 }

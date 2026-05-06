@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -13,6 +14,145 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+
+enum _GeneratedEmbeddingEntityShape {
+  missing,
+  unsupported,
+  tooShort,
+  journalEntry,
+  task,
+}
+
+enum _GeneratedStoredCategoryShape { none, same, different }
+
+class _GeneratedEmbeddingScenario {
+  const _GeneratedEmbeddingScenario({
+    required this.entityShape,
+    required this.storedCategoryShape,
+    required this.hashMatches,
+    required this.useLabelResolver,
+    required this.seed,
+  });
+
+  final _GeneratedEmbeddingEntityShape entityShape;
+  final _GeneratedStoredCategoryShape storedCategoryShape;
+  final bool hashMatches;
+  final bool useLabelResolver;
+  final int seed;
+
+  String get entityId => 'generated-entity-$seed';
+
+  String? get categoryId => seed.isEven ? 'cat-generated' : null;
+
+  String get storedCategoryId => switch (storedCategoryShape) {
+    _GeneratedStoredCategoryShape.same => categoryId ?? '',
+    _GeneratedStoredCategoryShape.different =>
+      categoryId == null ? 'cat-previous' : 'cat-other',
+    _GeneratedStoredCategoryShape.none => '',
+  };
+
+  bool get hasStoredCategory =>
+      storedCategoryShape != _GeneratedStoredCategoryShape.none;
+
+  bool get categoryChanged =>
+      hasStoredCategory && storedCategoryId != (categoryId ?? '');
+
+  bool get isTask => entityShape == _GeneratedEmbeddingEntityShape.task;
+
+  bool get shouldEmbedEntity =>
+      entityShape == _GeneratedEmbeddingEntityShape.journalEntry ||
+      entityShape == _GeneratedEmbeddingEntityShape.task;
+
+  String get journalText =>
+      'Generated journal text $seed with enough detail for embedding.';
+
+  String get taskTitle =>
+      'Generated task title $seed with enough semantic detail';
+
+  String get taskBody =>
+      'Generated task body $seed with implementation context.';
+
+  String? get expectedText => switch (entityShape) {
+    _GeneratedEmbeddingEntityShape.journalEntry => journalText,
+    _GeneratedEmbeddingEntityShape.task =>
+      useLabelResolver
+          ? '$taskTitle\nLabels: backend, security\n$taskBody'
+          : '$taskTitle\n$taskBody',
+    _ => null,
+  };
+
+  JournalEntity? entity() {
+    return switch (entityShape) {
+      _GeneratedEmbeddingEntityShape.missing => null,
+      _GeneratedEmbeddingEntityShape.unsupported => JournalImage(
+        meta: _meta(id: entityId, categoryId: categoryId),
+        data: ImageData(
+          imageId: 'image-$seed',
+          imageFile: 'image-$seed.jpg',
+          imageDirectory: '/images',
+          capturedAt: _fixedDate,
+        ),
+      ),
+      _GeneratedEmbeddingEntityShape.tooShort => JournalEntry(
+        meta: _meta(id: entityId, categoryId: categoryId),
+        entryText: const EntryText(plainText: 'short'),
+      ),
+      _GeneratedEmbeddingEntityShape.journalEntry => JournalEntry(
+        meta: _meta(id: entityId, categoryId: categoryId),
+        entryText: EntryText(plainText: '  $journalText  '),
+      ),
+      _GeneratedEmbeddingEntityShape.task => Task(
+        meta: _meta(
+          id: entityId,
+          categoryId: categoryId,
+          labelIds: const ['label-1', 'label-2'],
+        ),
+        data: _taskData(taskTitle),
+        entryText: EntryText(plainText: taskBody),
+      ),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedEmbeddingScenario('
+        'entityShape: $entityShape, '
+        'storedCategoryShape: $storedCategoryShape, '
+        'hashMatches: $hashMatches, '
+        'useLabelResolver: $useLabelResolver, '
+        'seed: $seed)';
+  }
+}
+
+extension _AnyGeneratedEmbeddingScenario on glados.Any {
+  glados.Generator<_GeneratedEmbeddingEntityShape> get embeddingEntityShape =>
+      glados.AnyUtils(this).choose(_GeneratedEmbeddingEntityShape.values);
+
+  glados.Generator<_GeneratedStoredCategoryShape> get storedCategoryShape =>
+      glados.AnyUtils(this).choose(_GeneratedStoredCategoryShape.values);
+
+  glados.Generator<_GeneratedEmbeddingScenario> get embeddingScenario =>
+      glados.CombinableAny(this).combine5(
+        embeddingEntityShape,
+        storedCategoryShape,
+        glados.AnyUtils(this).choose([false, true]),
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedEmbeddingEntityShape entityShape,
+          _GeneratedStoredCategoryShape storedCategoryShape,
+          bool hashMatches,
+          bool useLabelResolver,
+          int seed,
+        ) => _GeneratedEmbeddingScenario(
+          entityShape: entityShape,
+          storedCategoryShape: storedCategoryShape,
+          hashMatches: hashMatches,
+          useLabelResolver: useLabelResolver,
+          seed: seed,
+        ),
+      );
+}
 
 // ---------------------------------------------------------------------------
 // Test data helpers
@@ -356,6 +496,150 @@ void main() {
         ),
       ).called(1);
     });
+
+    glados.Glados(
+      glados.any.embeddingScenario,
+      glados.ExploreConfig(numRuns: 140),
+    ).test(
+      'matches generated entity embedding pipeline semantics',
+      (scenario) async {
+        final localJournalDb = MockJournalDb();
+        final localEmbeddingStore = MockEmbeddingStore();
+        final localEmbeddingRepo = MockOllamaEmbeddingRepository();
+        final entity = scenario.entity();
+        final expectedText = scenario.expectedText;
+
+        when(
+          () => localJournalDb.journalEntityById(scenario.entityId),
+        ).thenAnswer((_) async => entity);
+        when(
+          () => localEmbeddingStore.getContentHash(scenario.entityId),
+        ).thenReturn(
+          expectedText != null && scenario.hashMatches
+              ? _hashOf(expectedText)
+              : 'old-hash',
+        );
+        when(
+          () => localEmbeddingStore.getCategoryId(scenario.entityId),
+        ).thenReturn(
+          scenario.hasStoredCategory ? scenario.storedCategoryId : null,
+        );
+        when(
+          () => localEmbeddingStore.moveEntityToShard(any(), any()),
+        ).thenReturn(null);
+        when(
+          () => localEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
+        ).thenReturn(null);
+        _stubReplaceEntityEmbeddings(localEmbeddingStore);
+        _stubEmbed(localEmbeddingRepo);
+
+        Future<List<String>> labelResolver(List<String> ids) async => [
+          'backend',
+          'security',
+        ];
+
+        final result = await EmbeddingProcessor.processEntity(
+          entityId: scenario.entityId,
+          journalDb: localJournalDb,
+          embeddingStore: localEmbeddingStore,
+          embeddingRepository: localEmbeddingRepo,
+          baseUrl: _baseUrl,
+          labelNameResolver: scenario.useLabelResolver ? labelResolver : null,
+        );
+
+        if (!scenario.shouldEmbedEntity) {
+          expect(result, isFalse, reason: '$scenario');
+          verifyNever(
+            () => localEmbeddingRepo.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+              model: any(named: 'model'),
+            ),
+          );
+          verifyNever(
+            () => localEmbeddingStore.replaceEntityEmbeddings(
+              entityId: any(named: 'entityId'),
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: any(named: 'categoryId'),
+              taskId: any(named: 'taskId'),
+              subtype: any(named: 'subtype'),
+            ),
+          );
+          return;
+        }
+
+        final expectedCategoryId = scenario.categoryId ?? '';
+        if (scenario.hashMatches) {
+          expect(result, scenario.categoryChanged, reason: '$scenario');
+          verifyNever(
+            () => localEmbeddingRepo.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+              model: any(named: 'model'),
+            ),
+          );
+          if (scenario.categoryChanged) {
+            verify(
+              () => localEmbeddingStore.moveEntityToShard(
+                scenario.entityId,
+                expectedCategoryId,
+              ),
+            ).called(1);
+            if (scenario.isTask) {
+              verify(
+                () => localEmbeddingStore.moveRelatedReportEmbeddings(
+                  scenario.entityId,
+                  expectedCategoryId,
+                ),
+              ).called(1);
+            }
+          } else {
+            verifyNever(
+              () => localEmbeddingStore.moveEntityToShard(any(), any()),
+            );
+          }
+          return;
+        }
+
+        expect(result, isTrue, reason: '$scenario');
+        verify(
+          () => localEmbeddingRepo.embed(
+            input: expectedText!,
+            baseUrl: _baseUrl,
+          ),
+        ).called(1);
+        verify(
+          () => localEmbeddingStore.replaceEntityEmbeddings(
+            entityId: scenario.entityId,
+            entityType: scenario.isTask
+                ? kEntityTypeTask
+                : kEntityTypeJournalText,
+            modelId: ollamaEmbedDefaultModel,
+            contentHash: _hashOf(expectedText!),
+            embeddings: any(named: 'embeddings'),
+            categoryId: expectedCategoryId,
+          ),
+        ).called(1);
+        if (scenario.categoryChanged && scenario.isTask) {
+          verify(
+            () => localEmbeddingStore.moveRelatedReportEmbeddings(
+              scenario.entityId,
+              expectedCategoryId,
+            ),
+          ).called(1);
+        } else {
+          verifyNever(
+            () => localEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
+          );
+        }
+        verifyNever(
+          () => localEmbeddingStore.moveEntityToShard(any(), any()),
+        );
+      },
+    );
 
     group('category-change detection', () {
       test('moves entity to new shard when category changed', () async {

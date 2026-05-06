@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/database/agent_repository_exception.dart';
@@ -11,6 +12,400 @@ import 'package:lotti/features/sync/vector_clock.dart';
 
 import '../test_utils.dart';
 import 'agent_repository_test_helpers.dart';
+
+enum _GeneratedIntervalEntityKind { agent, state }
+
+enum _GeneratedWakeTemplateShape { target, other, none }
+
+class _GeneratedIntervalEntitySpec {
+  const _GeneratedIntervalEntitySpec({
+    required this.kind,
+    required this.offsetDays,
+    required this.deleted,
+    required this.seed,
+  });
+
+  final _GeneratedIntervalEntityKind kind;
+  final int offsetDays;
+  final bool deleted;
+  final int seed;
+
+  String get id => 'generated-interval-$seed-$offsetDays-${kind.name}';
+
+  String idAt(int index) => '$id-$index';
+
+  String get agentId => 'generated-agent-$seed';
+
+  DateTime get updatedAt => DateTime(2026, 3).add(Duration(days: offsetDays));
+
+  bool isInside(DateTime start, DateTime end) {
+    return !updatedAt.isBefore(start) && updatedAt.isBefore(end);
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedIntervalEntitySpec('
+        'kind: $kind, offsetDays: $offsetDays, '
+        'deleted: $deleted, seed: $seed)';
+  }
+}
+
+class _GeneratedIntervalQueryScenario {
+  const _GeneratedIntervalQueryScenario({
+    required this.specs,
+    required this.pageSize,
+  });
+
+  final List<_GeneratedIntervalEntitySpec> specs;
+  final int pageSize;
+
+  List<String> expectedIds(DateTime start, DateTime end) {
+    return [
+      for (var index = 0; index < specs.length; index++)
+        if (specs[index].isInside(start, end)) specs[index].idAt(index),
+    ];
+  }
+
+  List<String> expectedDeletedIds(DateTime start, DateTime end) {
+    return [
+      for (var index = 0; index < specs.length; index++)
+        if (specs[index].deleted && specs[index].isInside(start, end))
+          specs[index].idAt(index),
+    ];
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedIntervalQueryScenario('
+        'pageSize: $pageSize, specs: $specs)';
+  }
+}
+
+final _generatedWakeBase = DateTime(2026, 4, 10, 12);
+final _generatedWakeWindowStart = DateTime(2026, 4, 10, 6);
+final _generatedWakeWindowEnd = DateTime(2026, 4, 10, 18);
+
+const _generatedWakeTargetAgentId = 'generated-wake-agent-0';
+const _generatedWakeTargetThreadId = 'generated-wake-thread-0';
+const _generatedWakeTargetTemplateId = 'generated-wake-template-target';
+
+class _GeneratedWakeLifecycleSpec {
+  const _GeneratedWakeLifecycleSpec({
+    required this.status,
+    required this.templateShape,
+    required this.agentSlot,
+    required this.threadSlot,
+    required this.createdHourOffset,
+    required this.durationMinutes,
+    required this.seed,
+  });
+
+  final WakeRunStatus status;
+  final _GeneratedWakeTemplateShape templateShape;
+  final int agentSlot;
+  final int threadSlot;
+  final int createdHourOffset;
+  final int durationMinutes;
+  final int seed;
+
+  String runKeyAt(int index) => 'generated-wake-run-$index-$seed';
+
+  String get agentId => 'generated-wake-agent-$agentSlot';
+
+  String get threadId => 'generated-wake-thread-$threadSlot';
+
+  String get reason => WakeReason.values[seed % WakeReason.values.length].name;
+
+  DateTime createdAt(int index) => _generatedWakeBase.add(
+    Duration(hours: createdHourOffset, seconds: index),
+  );
+
+  DateTime startedAt(int index) => createdAt(index).add(
+    Duration(minutes: seed % 4),
+  );
+
+  Duration get duration => Duration(minutes: durationMinutes);
+
+  DateTime? completedAt(int index) {
+    return switch (status) {
+      WakeRunStatus.completed ||
+      WakeRunStatus.failed => startedAt(index).add(duration),
+      WakeRunStatus.running || WakeRunStatus.abandoned => null,
+    };
+  }
+
+  String? get errorMessage {
+    return status == WakeRunStatus.failed ? 'generated failure $seed' : null;
+  }
+
+  String? get templateId {
+    return switch (templateShape) {
+      _GeneratedWakeTemplateShape.target => _generatedWakeTargetTemplateId,
+      _GeneratedWakeTemplateShape.other => 'generated-wake-template-other',
+      _GeneratedWakeTemplateShape.none => null,
+    };
+  }
+
+  String? get templateVersionId {
+    final id = templateId;
+    return id == null ? null : '$id-version-${seed % 3}';
+  }
+
+  bool get hasResolvedModel => seed.isEven;
+
+  String? get resolvedModelId {
+    return hasResolvedModel ? 'generated-model-${seed % 5}' : null;
+  }
+
+  bool get hasSoulProvenance => seed % 3 == 0;
+
+  String? get soulId {
+    return hasSoulProvenance ? 'generated-soul-${seed % 4}' : null;
+  }
+
+  String? get soulVersionId {
+    return hasSoulProvenance ? 'generated-soul-version-${seed % 6}' : null;
+  }
+
+  bool get hasRating => seed.isEven;
+
+  double get rating => (seed % 11) / 2;
+
+  DateTime ratedAt(int index) => createdAt(index).add(
+    Duration(hours: 3, minutes: seed % 7),
+  );
+
+  bool isInWindow(int index, DateTime since, DateTime until) {
+    final created = createdAt(index);
+    return !created.isBefore(since) && !created.isAfter(until);
+  }
+
+  bool hasPositiveDuration(int index) {
+    final completed = completedAt(index);
+    if (completed == null) return false;
+    return completed.difference(startedAt(index)).inMilliseconds > 0;
+  }
+
+  int positiveDurationMs(int index) {
+    return hasPositiveDuration(index)
+        ? completedAt(index)!.difference(startedAt(index)).inMilliseconds
+        : 0;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedWakeLifecycleSpec('
+        'status: $status, templateShape: $templateShape, '
+        'agentSlot: $agentSlot, threadSlot: $threadSlot, '
+        'createdHourOffset: $createdHourOffset, '
+        'durationMinutes: $durationMinutes, seed: $seed)';
+  }
+}
+
+class _GeneratedWakeLifecycleScenario {
+  const _GeneratedWakeLifecycleScenario({
+    required this.specs,
+    required this.templateLimit,
+  });
+
+  final List<_GeneratedWakeLifecycleSpec> specs;
+  final int templateLimit;
+
+  List<int> _sortedIndexes(Iterable<int> indexes) {
+    return indexes.toList()
+      ..sort((a, b) => specs[b].createdAt(b).compareTo(specs[a].createdAt(a)));
+  }
+
+  Iterable<int> get _targetTemplateIndexes sync* {
+    for (var index = 0; index < specs.length; index++) {
+      if (specs[index].templateId == _generatedWakeTargetTemplateId) {
+        yield index;
+      }
+    }
+  }
+
+  List<String> expectedTemplateRunKeys({required int limit}) {
+    return _sortedIndexes(
+      _targetTemplateIndexes,
+    ).take(limit).map((index) => specs[index].runKeyAt(index)).toList();
+  }
+
+  List<String> expectedTargetTemplateWindowRunKeys(
+    DateTime since,
+    DateTime until,
+  ) {
+    return _sortedIndexes(
+      _targetTemplateIndexes.where(
+        (index) => specs[index].isInWindow(index, since, until),
+      ),
+    ).map((index) => specs[index].runKeyAt(index)).toList();
+  }
+
+  List<String> expectedGlobalWindowRunKeys(DateTime since, DateTime until) {
+    return _sortedIndexes(
+      Iterable<int>.generate(specs.length).where(
+        (index) => specs[index].isInWindow(index, since, until),
+      ),
+    ).map((index) => specs[index].runKeyAt(index)).toList();
+  }
+
+  String? latestRunKeyForThread(String agentId, String threadId) {
+    final indexes = _sortedIndexes(
+      Iterable<int>.generate(specs.length).where(
+        (index) =>
+            specs[index].agentId == agentId &&
+            specs[index].threadId == threadId,
+      ),
+    );
+    return indexes.isEmpty
+        ? null
+        : specs[indexes.first].runKeyAt(indexes.first);
+  }
+
+  int get targetTemplateCount => _targetTemplateIndexes.length;
+
+  int get targetTemplateSuccessCount {
+    return _targetTemplateIndexes
+        .where((index) => specs[index].status == WakeRunStatus.completed)
+        .length;
+  }
+
+  int get targetTemplateFailureCount {
+    return _targetTemplateIndexes
+        .where((index) => specs[index].status == WakeRunStatus.failed)
+        .length;
+  }
+
+  int get targetTemplateDurationCount {
+    return _targetTemplateIndexes
+        .where((index) => specs[index].hasPositiveDuration(index))
+        .length;
+  }
+
+  int? get targetTemplateDurationSumMs {
+    if (targetTemplateCount == 0) return null;
+    return _targetTemplateIndexes.fold<int>(
+      0,
+      (sum, index) => sum + specs[index].positiveDurationMs(index),
+    );
+  }
+
+  DateTime? get firstWakeAt {
+    if (targetTemplateCount == 0) return null;
+    final dates =
+        _targetTemplateIndexes
+            .map((index) => specs[index].createdAt(index))
+            .toList()
+          ..sort();
+    return dates.first;
+  }
+
+  DateTime? get lastWakeAt {
+    if (targetTemplateCount == 0) return null;
+    final dates =
+        _targetTemplateIndexes
+            .map((index) => specs[index].createdAt(index))
+            .toList()
+          ..sort();
+    return dates.last;
+  }
+
+  int get runningCount {
+    return specs.where((spec) => spec.status == WakeRunStatus.running).length;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedWakeLifecycleScenario('
+        'templateLimit: $templateLimit, specs: $specs)';
+  }
+}
+
+extension _AnyGeneratedIntervalQueryScenario on glados.Any {
+  glados.Generator<_GeneratedIntervalEntityKind> get intervalEntityKind =>
+      glados.AnyUtils(this).choose(_GeneratedIntervalEntityKind.values);
+
+  glados.Generator<_GeneratedIntervalEntitySpec> get intervalEntitySpec =>
+      glados.CombinableAny(this).combine4(
+        intervalEntityKind,
+        glados.IntAnys(this).intInRange(-2, 7),
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedIntervalEntityKind kind,
+          int offsetDays,
+          bool deleted,
+          int seed,
+        ) => _GeneratedIntervalEntitySpec(
+          kind: kind,
+          offsetDays: offsetDays,
+          deleted: deleted,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedIntervalQueryScenario> get intervalQueryScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(0, 10, intervalEntitySpec),
+        glados.IntAnys(this).intInRange(1, 4),
+        (
+          List<_GeneratedIntervalEntitySpec> specs,
+          int pageSize,
+        ) => _GeneratedIntervalQueryScenario(
+          specs: specs,
+          pageSize: pageSize,
+        ),
+      );
+
+  glados.Generator<_GeneratedWakeTemplateShape> get wakeTemplateShape =>
+      glados.AnyUtils(this).choose(_GeneratedWakeTemplateShape.values);
+
+  glados.Generator<WakeRunStatus> get wakeRunStatus =>
+      glados.AnyUtils(this).choose(WakeRunStatus.values);
+
+  glados.Generator<_GeneratedWakeLifecycleSpec> get wakeLifecycleSpec =>
+      glados.CombinableAny(this).combine7(
+        wakeRunStatus,
+        wakeTemplateShape,
+        glados.AnyUtils(this).choose([0, 1]),
+        glados.AnyUtils(this).choose([0, 1]),
+        glados.IntAnys(this).intInRange(-8, 8),
+        glados.IntAnys(this).intInRange(-1, 5),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          WakeRunStatus status,
+          _GeneratedWakeTemplateShape templateShape,
+          int agentSlot,
+          int threadSlot,
+          int createdHourOffset,
+          int durationMinutes,
+          int seed,
+        ) => _GeneratedWakeLifecycleSpec(
+          status: status,
+          templateShape: templateShape,
+          agentSlot: agentSlot,
+          threadSlot: threadSlot,
+          createdHourOffset: createdHourOffset,
+          durationMinutes: durationMinutes,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedWakeLifecycleScenario> get wakeLifecycleScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(this).listWithLengthInRange(1, 8, wakeLifecycleSpec),
+        glados.IntAnys(this).intInRange(1, 4),
+        (
+          List<_GeneratedWakeLifecycleSpec> specs,
+          int templateLimit,
+        ) => _GeneratedWakeLifecycleScenario(
+          specs: specs,
+          templateLimit: templateLimit,
+        ),
+      );
+}
 
 void main() {
   late AgentDatabase db;
@@ -1850,6 +2245,238 @@ void main() {
         expect(result.errorMessage, 'pre-existing');
       });
     });
+
+    glados.Glados(
+      glados.any.wakeLifecycleScenario,
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'matches generated wake-run lifecycle query semantics',
+      (scenario) async {
+        final localDb = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        final localRepo = AgentRepository(localDb);
+
+        try {
+          for (var index = 0; index < scenario.specs.length; index++) {
+            final spec = scenario.specs[index];
+            await localRepo.insertWakeRun(
+              entry: WakeRunLogData(
+                runKey: spec.runKeyAt(index),
+                agentId: spec.agentId,
+                reason: spec.reason,
+                threadId: spec.threadId,
+                status: WakeRunStatus.running.name,
+                createdAt: spec.createdAt(index),
+                startedAt: spec.startedAt(index),
+              ),
+            );
+
+            final templateId = spec.templateId;
+            final templateVersionId = spec.templateVersionId;
+            if (templateId != null && templateVersionId != null) {
+              await localRepo.updateWakeRunTemplate(
+                spec.runKeyAt(index),
+                templateId,
+                templateVersionId,
+                resolvedModelId: spec.resolvedModelId,
+                soulId: spec.soulId,
+                soulVersionId: spec.soulVersionId,
+              );
+            }
+
+            await localRepo.updateWakeRunStatus(
+              spec.runKeyAt(index),
+              spec.status.name,
+              completedAt: spec.completedAt(index),
+              errorMessage: spec.errorMessage,
+            );
+
+            if (spec.hasRating) {
+              await localRepo.updateWakeRunRating(
+                spec.runKeyAt(index),
+                rating: spec.rating,
+                ratedAt: spec.ratedAt(index),
+              );
+            }
+
+            final restored = await localRepo.getWakeRun(spec.runKeyAt(index));
+            expect(restored, isNotNull, reason: '$scenario');
+            expect(restored!.agentId, spec.agentId, reason: '$scenario');
+            expect(restored.reason, spec.reason, reason: '$scenario');
+            expect(restored.threadId, spec.threadId, reason: '$scenario');
+            expect(restored.status, spec.status.name, reason: '$scenario');
+            expect(
+              restored.createdAt,
+              spec.createdAt(index),
+              reason: '$scenario',
+            );
+            expect(
+              restored.startedAt,
+              spec.startedAt(index),
+              reason: '$scenario',
+            );
+            expect(
+              restored.completedAt,
+              spec.completedAt(index),
+              reason: '$scenario',
+            );
+            expect(
+              restored.errorMessage,
+              spec.errorMessage,
+              reason: '$scenario',
+            );
+            expect(restored.templateId, spec.templateId, reason: '$scenario');
+            expect(
+              restored.templateVersionId,
+              spec.templateVersionId,
+              reason: '$scenario',
+            );
+            expect(
+              restored.resolvedModelId,
+              spec.templateId == null ? null : spec.resolvedModelId,
+              reason: '$scenario',
+            );
+            expect(
+              restored.soulId,
+              spec.templateId == null ? null : spec.soulId,
+              reason: '$scenario',
+            );
+            expect(
+              restored.soulVersionId,
+              spec.templateId == null ? null : spec.soulVersionId,
+              reason: '$scenario',
+            );
+            expect(
+              restored.userRating,
+              spec.hasRating ? spec.rating : null,
+              reason: '$scenario',
+            );
+            expect(
+              restored.ratedAt,
+              spec.hasRating ? spec.ratedAt(index) : null,
+              reason: '$scenario',
+            );
+          }
+
+          final latestThreadRun = await localRepo.getWakeRunByThreadId(
+            _generatedWakeTargetAgentId,
+            _generatedWakeTargetThreadId,
+          );
+          expect(
+            latestThreadRun?.runKey,
+            scenario.latestRunKeyForThread(
+              _generatedWakeTargetAgentId,
+              _generatedWakeTargetThreadId,
+            ),
+            reason: '$scenario',
+          );
+
+          final templateRuns = await localRepo.getWakeRunsForTemplate(
+            _generatedWakeTargetTemplateId,
+            limit: scenario.templateLimit,
+          );
+          expect(
+            templateRuns.map((run) => run.runKey).toList(),
+            scenario.expectedTemplateRunKeys(limit: scenario.templateLimit),
+            reason: '$scenario',
+          );
+
+          final templateCount = await localRepo.countWakeRunsForTemplate(
+            _generatedWakeTargetTemplateId,
+          );
+          expect(
+            templateCount,
+            scenario.targetTemplateCount,
+            reason: '$scenario',
+          );
+
+          final targetWindowRuns = await localRepo
+              .getWakeRunsForTemplateInWindow(
+                _generatedWakeTargetTemplateId,
+                since: _generatedWakeWindowStart,
+                until: _generatedWakeWindowEnd,
+              );
+          expect(
+            targetWindowRuns.map((run) => run.runKey).toList(),
+            scenario.expectedTargetTemplateWindowRunKeys(
+              _generatedWakeWindowStart,
+              _generatedWakeWindowEnd,
+            ),
+            reason: '$scenario',
+          );
+
+          final globalWindowRuns = await localRepo.getWakeRunsInWindow(
+            since: _generatedWakeWindowStart,
+            until: _generatedWakeWindowEnd,
+          );
+          expect(
+            globalWindowRuns.map((run) => run.runKey).toList(),
+            scenario.expectedGlobalWindowRunKeys(
+              _generatedWakeWindowStart,
+              _generatedWakeWindowEnd,
+            ),
+            reason: '$scenario',
+          );
+
+          final metrics = await localRepo.aggregateWakeRunMetrics(
+            _generatedWakeTargetTemplateId,
+          );
+          expect(
+            metrics.successCount,
+            scenario.targetTemplateSuccessCount,
+            reason: '$scenario',
+          );
+          expect(
+            metrics.failureCount,
+            scenario.targetTemplateFailureCount,
+            reason: '$scenario',
+          );
+          expect(
+            metrics.durationCount,
+            scenario.targetTemplateDurationCount,
+            reason: '$scenario',
+          );
+          expect(
+            metrics.durationSumMs,
+            scenario.targetTemplateDurationSumMs,
+            reason: '$scenario',
+          );
+          expect(
+            metrics.firstWakeAt,
+            scenario.firstWakeAt,
+            reason: '$scenario',
+          );
+          expect(metrics.lastWakeAt, scenario.lastWakeAt, reason: '$scenario');
+
+          final abandoned = await localRepo.abandonOrphanedWakeRuns();
+          expect(abandoned, scenario.runningCount, reason: '$scenario');
+
+          for (var index = 0; index < scenario.specs.length; index++) {
+            final spec = scenario.specs[index];
+            final restored = await localRepo.getWakeRun(spec.runKeyAt(index));
+            expect(restored, isNotNull, reason: '$scenario');
+            if (spec.status == WakeRunStatus.running) {
+              expect(
+                restored!.status,
+                WakeRunStatus.abandoned.name,
+                reason: '$scenario',
+              );
+              expect(
+                restored.errorMessage,
+                contains('orphaned run'),
+                reason: '$scenario',
+              );
+            } else {
+              expect(restored!.status, spec.status.name, reason: '$scenario');
+            }
+          }
+        } finally {
+          await localDb.close();
+        }
+      },
+    );
   });
 
   // ── Saga log ────────────────────────────────────────────────────────────────
@@ -3134,6 +3761,84 @@ void main() {
       expect(allIds, hasLength(5));
     });
 
+    glados.Glados(
+      glados.any.intervalQueryScenario,
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'matches generated entity interval query and pagination semantics',
+      (scenario) async {
+        final localDb = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        final localRepo = AgentRepository(localDb);
+        try {
+          for (var index = 0; index < scenario.specs.length; index++) {
+            final spec = scenario.specs[index];
+            final deletedAt = spec.deleted ? spec.updatedAt : null;
+            final entity = switch (spec.kind) {
+              _GeneratedIntervalEntityKind.agent =>
+                makeAgent(
+                  id: spec.idAt(index),
+                  agentId: spec.agentId,
+                ).copyWith(
+                  updatedAt: spec.updatedAt,
+                  deletedAt: deletedAt,
+                ),
+              _GeneratedIntervalEntityKind.state =>
+                makeAgentState(
+                  id: spec.idAt(index),
+                  agentId: spec.agentId,
+                ).copyWith(
+                  updatedAt: spec.updatedAt,
+                  deletedAt: deletedAt,
+                ),
+            };
+            await localRepo.upsertEntity(entity);
+          }
+
+          final expectedIds = scenario.expectedIds(
+            intervalStart,
+            intervalEnd,
+          );
+          final count = await localRepo.countEntitiesInInterval(
+            start: intervalStart,
+            end: intervalEnd,
+          );
+          expect(count, expectedIds.length, reason: '$scenario');
+
+          final paged = <AgentDomainEntity>[];
+          for (
+            var offset = 0;
+            offset < expectedIds.length + scenario.pageSize;
+            offset += scenario.pageSize
+          ) {
+            paged.addAll(
+              await localRepo.getEntitiesInInterval(
+                start: intervalStart,
+                end: intervalEnd,
+                limit: scenario.pageSize,
+                offset: offset,
+              ),
+            );
+          }
+
+          expect(paged, hasLength(expectedIds.length), reason: '$scenario');
+          expect(paged.map((entity) => entity.id).toSet(), expectedIds.toSet());
+          expect(
+            paged
+                .where((entity) => entity.deletedAt != null)
+                .map((entity) => entity.id)
+                .toSet(),
+            scenario.expectedDeletedIds(intervalStart, intervalEnd).toSet(),
+            reason: '$scenario',
+          );
+        } finally {
+          await localDb.close();
+        }
+      },
+    );
+
     test('getEntitiesInInterval includes soft-deleted entities', () async {
       final entity = makeAgent(
         id: 'ent-deleted',
@@ -3386,6 +4091,29 @@ void main() {
 
       expect(result.firstWakeAt, earliest);
       expect(result.lastWakeAt, latest);
+    });
+
+    test('sums positive run duration in milliseconds', () async {
+      final startedAt = DateTime(2026, 3, 1, 8);
+      final completedAt = startedAt.add(const Duration(minutes: 1));
+      await insertTemplateWakeRun(
+        repo,
+        runKey: 'run-duration',
+        templateId: templateId,
+        status: WakeRunStatus.completed.name,
+        createdAt: startedAt,
+      );
+      await repo.updateWakeRunStatus(
+        'run-duration',
+        WakeRunStatus.completed.name,
+        startedAt: startedAt,
+        completedAt: completedAt,
+      );
+
+      final result = await repo.aggregateWakeRunMetrics(templateId);
+
+      expect(result.durationCount, 1);
+      expect(result.durationSumMs, const Duration(minutes: 1).inMilliseconds);
     });
   });
 
