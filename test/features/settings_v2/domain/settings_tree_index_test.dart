@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show
+        Any,
+        AnyUtils,
+        BoolAny,
+        CombinableAny,
+        ExploreConfig,
+        Generator,
+        Glados,
+        any;
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
@@ -20,6 +30,156 @@ List<SettingsNode> _tree({
   enableMatrix: enableMatrix,
   enableWhatsNew: enableWhatsNew,
 );
+
+enum _GeneratedSettingsUrlSuffix {
+  none,
+  trailingSlash,
+  detailSegment,
+  nestedDetailSegment,
+}
+
+class _GeneratedSettingsFlags {
+  const _GeneratedSettingsFlags({
+    required this.enableAgents,
+    required this.enableHabits,
+    required this.enableDashboards,
+    required this.enableMatrix,
+    required this.enableWhatsNew,
+  });
+
+  final bool enableAgents;
+  final bool enableHabits;
+  final bool enableDashboards;
+  final bool enableMatrix;
+  final bool enableWhatsNew;
+
+  List<SettingsNode> buildTree() {
+    return _tree(
+      enableAgents: enableAgents,
+      enableHabits: enableHabits,
+      enableDashboards: enableDashboards,
+      enableMatrix: enableMatrix,
+      enableWhatsNew: enableWhatsNew,
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedSettingsFlags('
+        'enableAgents: $enableAgents, '
+        'enableHabits: $enableHabits, '
+        'enableDashboards: $enableDashboards, '
+        'enableMatrix: $enableMatrix, '
+        'enableWhatsNew: $enableWhatsNew)';
+  }
+}
+
+class _GeneratedSettingsUrl {
+  const _GeneratedSettingsUrl({
+    required this.entry,
+    required this.suffix,
+    required this.withQuery,
+    required this.withFragment,
+  });
+
+  final MapEntry<String, String> entry;
+  final _GeneratedSettingsUrlSuffix suffix;
+  final bool withQuery;
+  final bool withFragment;
+
+  String get url {
+    final suffixValue = switch (suffix) {
+      _GeneratedSettingsUrlSuffix.none => '',
+      _GeneratedSettingsUrlSuffix.trailingSlash => '/',
+      _GeneratedSettingsUrlSuffix.detailSegment => '/generated-detail',
+      _GeneratedSettingsUrlSuffix.nestedDetailSegment =>
+        '/generated-detail/edit',
+    };
+
+    final query = withQuery ? '?focus=generated' : '';
+    final fragment = withFragment ? '#section' : '';
+    return '${entry.value}$suffixValue$query$fragment';
+  }
+
+  List<String> get expectedPath => _idToPathModel(entry.key);
+
+  @override
+  String toString() {
+    return '_GeneratedSettingsUrl('
+        'entry: ${entry.key} -> ${entry.value}, '
+        'suffix: $suffix, '
+        'withQuery: $withQuery, '
+        'withFragment: $withFragment)';
+  }
+}
+
+extension _AnySettingsTreeIndexScenario on Any {
+  Generator<_GeneratedSettingsFlags> get settingsFlags => combine5(
+    this.bool,
+    this.bool,
+    this.bool,
+    this.bool,
+    this.bool,
+    (
+      bool enableAgents,
+      bool enableHabits,
+      bool enableDashboards,
+      bool enableMatrix,
+      bool enableWhatsNew,
+    ) => _GeneratedSettingsFlags(
+      enableAgents: enableAgents,
+      enableHabits: enableHabits,
+      enableDashboards: enableDashboards,
+      enableMatrix: enableMatrix,
+      enableWhatsNew: enableWhatsNew,
+    ),
+  );
+
+  Generator<_GeneratedSettingsUrlSuffix> get settingsUrlSuffix =>
+      choose(_GeneratedSettingsUrlSuffix.values);
+
+  Generator<_GeneratedSettingsUrl> get settingsUrl => combine4(
+    choose(settingsNodeUrls.entries.toList()),
+    settingsUrlSuffix,
+    this.bool,
+    this.bool,
+    (
+      MapEntry<String, String> entry,
+      _GeneratedSettingsUrlSuffix suffix,
+      bool withQuery,
+      bool withFragment,
+    ) => _GeneratedSettingsUrl(
+      entry: entry,
+      suffix: suffix,
+      withQuery: withQuery,
+      withFragment: withFragment,
+    ),
+  );
+}
+
+List<SettingsNode> _flattenTree(List<SettingsNode> nodes) {
+  final result = <SettingsNode>[];
+  void walk(List<SettingsNode> current) {
+    for (final node in current) {
+      result.add(node);
+      final children = node.children;
+      if (children != null) {
+        walk(children);
+      }
+    }
+  }
+
+  walk(nodes);
+  return result;
+}
+
+List<String> _idToPathModel(String id) {
+  final segments = id.split('/');
+  return [
+    for (var index = 0; index < segments.length; index++)
+      segments.take(index + 1).join('/'),
+  ];
+}
 
 void main() {
   group('pathToBeamUrl', () {
@@ -207,6 +367,22 @@ void main() {
         );
       }
     });
+
+    Glados(any.settingsUrl, ExploreConfig(numRuns: 180)).test(
+      'greedily resolves generated registered URLs with local suffixes',
+      (scenario) {
+        final path = beamUrlToPath(scenario.url);
+
+        expect(
+          path,
+          scenario.expectedPath,
+          reason:
+              'Generated URL should resolve to its registered node path: '
+              '$scenario',
+        );
+        expect(pathToBeamUrl(path), scenario.entry.value);
+      },
+    );
   });
 
   group('SettingsTreeIndex.build', () {
@@ -238,6 +414,37 @@ void main() {
       expect(index.isValidPath(const []), isTrue);
       expect(index.isValidPath(const ['ai']), isFalse);
     });
+
+    Glados(any.settingsFlags, ExploreConfig(numRuns: 80)).test(
+      'matches generated flag-gated tree ancestor invariants',
+      (flags) {
+        final tree = flags.buildTree();
+        final index = SettingsTreeIndex.build(tree);
+        final nodes = _flattenTree(tree);
+        final visibleIds = nodes.map((node) => node.id).toSet();
+
+        for (final node in nodes) {
+          final expectedPath = _idToPathModel(node.id);
+          expect(index.findById(node.id)?.id, node.id, reason: '$flags');
+          expect(index.ancestors(node.id), expectedPath, reason: '$flags');
+          expect(index.isValidPath(expectedPath), isTrue, reason: '$flags');
+
+          if (expectedPath.length > 1) {
+            expect(index.isValidPath([node.id]), isFalse, reason: '$flags');
+          }
+        }
+
+        for (final entry in settingsNodeUrls.entries) {
+          expect(
+            index.isValidPath(_idToPathModel(entry.key)),
+            visibleIds.contains(entry.key),
+            reason:
+                'Registered URL visibility should match tree visibility '
+                'for ${entry.key} under $flags',
+          );
+        }
+      },
+    );
   });
 
   group('SettingsTreeIndex.findById', () {

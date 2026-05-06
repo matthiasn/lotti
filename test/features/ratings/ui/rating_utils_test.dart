@@ -1,5 +1,64 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show Any, CombinableAny, ExploreConfig, Generator, Glados, IntAnys, any;
 import 'package:lotti/features/ratings/ui/rating_utils.dart';
+
+class _GeneratedRatingLookup {
+  const _GeneratedRatingLookup({
+    required this.labelCount,
+    required this.storedValueCount,
+    required this.selectedIndex,
+  });
+
+  final int labelCount;
+  final int storedValueCount;
+  final int selectedIndex;
+
+  List<String> get labels => [
+    for (var index = 0; index < labelCount; index++) 'Label $index',
+  ];
+
+  List<double> get storedValues => [
+    for (var index = 0; index < storedValueCount; index++)
+      _storedValueFor(index),
+  ];
+
+  double get matchingValue => selectedIndex < storedValueCount
+      ? _storedValueFor(selectedIndex)
+      : _fallbackValueFor(selectedIndex);
+
+  String get expectedLabel => labels[selectedIndex];
+
+  double _storedValueFor(int index) => (index + 1) / (labelCount + 2);
+
+  double _fallbackValueFor(int index) {
+    return labelCount == 1 ? 0.5 : index / (labelCount - 1);
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedRatingLookup('
+        'labelCount: $labelCount, '
+        'storedValueCount: $storedValueCount, '
+        'selectedIndex: $selectedIndex)';
+  }
+}
+
+extension _AnyRatingLookup on Any {
+  Generator<_GeneratedRatingLookup> get ratingLookup => combine3(
+    intInRange(1, 9),
+    intInRange(0, 9),
+    intInRange(0, 9),
+    (int labelCount, int storedValueCount, int selectedIndex) {
+      final normalizedStoredCount = storedValueCount.clamp(0, labelCount);
+      return _GeneratedRatingLookup(
+        labelCount: labelCount,
+        storedValueCount: normalizedStoredCount,
+        selectedIndex: selectedIndex % labelCount,
+      );
+    },
+  );
+}
 
 void main() {
   group('findOptionLabel', () {
@@ -147,5 +206,35 @@ void main() {
         );
       });
     });
+
+    Glados(any.ratingLookup, ExploreConfig(numRuns: 160)).test(
+      'matches generated stored-value and fallback option positions',
+      (lookup) {
+        expect(
+          findOptionLabel(
+            lookup.matchingValue,
+            lookup.labels,
+            values: lookup.storedValues,
+          ),
+          lookup.expectedLabel,
+          reason: 'Lookup should match modeled position for $lookup',
+        );
+      },
+    );
+
+    Glados(any.ratingLookup, ExploreConfig(numRuns: 160)).test(
+      'matches generated evenly spaced positions without stored values',
+      (lookup) {
+        final value = lookup.labelCount == 1
+            ? 0.5
+            : lookup.selectedIndex / (lookup.labelCount - 1);
+
+        expect(
+          findOptionLabel(value, lookup.labels),
+          lookup.expectedLabel,
+          reason: 'Fallback lookup should match modeled position for $lookup',
+        );
+      },
+    );
   });
 }

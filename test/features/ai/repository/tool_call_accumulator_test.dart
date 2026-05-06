@@ -1,6 +1,122 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show
+        Any,
+        AnyUtils,
+        CombinableAny,
+        Generator,
+        Glados,
+        IntAnys,
+        ListAnys,
+        any;
 import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+class _GeneratedToolCallStream {
+  const _GeneratedToolCallStream({
+    required this.argumentPartValuesByCall,
+  });
+
+  final List<List<int>> argumentPartValuesByCall;
+
+  int get callCount => argumentPartValuesByCall.length;
+
+  int get maxPartCount => argumentPartValuesByCall.fold<int>(
+    0,
+    (max, values) => values.length > max ? values.length : max,
+  );
+
+  String idFor(int callIndex) => 'call_$callIndex';
+
+  String nameFor(int callIndex) => 'generated_func_$callIndex';
+
+  String argumentPart(int callIndex, int partIndex) {
+    final value = argumentPartValuesByCall[callIndex][partIndex];
+    return 'c${callIndex}_p${partIndex}_v$value;';
+  }
+
+  String expectedArgumentsFor(int callIndex) {
+    return [
+      for (
+        var partIndex = 0;
+        partIndex < argumentPartValuesByCall[callIndex].length;
+        partIndex++
+      )
+        argumentPart(callIndex, partIndex),
+    ].join();
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedToolCallStream('
+        'argumentPartValuesByCall: $argumentPartValuesByCall)';
+  }
+}
+
+extension _AnyToolCallAccumulatorScenarios on Any {
+  Generator<List<int>> get toolCallArgumentPartValues =>
+      listWithLengthInRange(1, 6, intInRange(0, 10000));
+
+  Generator<_GeneratedToolCallStream> get toolCallStream => combine2(
+    listWithLengthInRange(1, 5, toolCallArgumentPartValues),
+    choose([false, true]),
+    (
+      List<List<int>> argumentPartValuesByCall,
+      bool reverseCallOrder,
+    ) => _GeneratedToolCallStream(
+      argumentPartValuesByCall: reverseCallOrder
+          ? argumentPartValuesByCall.reversed.toList()
+          : argumentPartValuesByCall,
+    ),
+  );
+}
+
+void _processGeneratedIndexedStream(
+  ToolCallAccumulator accumulator,
+  _GeneratedToolCallStream scenario, {
+  required bool startWithEmptyIds,
+  required bool continueWithEmptyIds,
+}) {
+  for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
+    accumulator.processChunk(
+      ChatCompletionStreamResponseDelta(
+        toolCalls: [
+          ChatCompletionStreamMessageToolCallChunk(
+            index: callIndex,
+            id: startWithEmptyIds ? '' : scenario.idFor(callIndex),
+            type: ChatCompletionStreamMessageToolCallChunkType.function,
+            function: ChatCompletionStreamMessageFunctionCall(
+              name: scenario.nameFor(callIndex),
+              arguments: scenario.argumentPart(callIndex, 0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  for (var partIndex = 1; partIndex < scenario.maxPartCount; partIndex++) {
+    for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
+      if (partIndex >= scenario.argumentPartValuesByCall[callIndex].length) {
+        continue;
+      }
+
+      accumulator.processChunk(
+        ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: callIndex,
+              id: continueWithEmptyIds ? '' : null,
+              function: ChatCompletionStreamMessageFunctionCall(
+                arguments: scenario.argumentPart(callIndex, partIndex),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+}
 
 void main() {
   group('ToolCallAccumulator', () {
@@ -368,6 +484,63 @@ void main() {
         expect(toolCalls.first.function.name, 'my_function');
         expect(toolCalls.first.function.arguments, '{"a": 1}');
       });
+
+      Glados(any.toolCallStream).test(
+        'accumulates generated parallel indexed tool-call streams',
+        (scenario) {
+          final generatedAccumulator = ToolCallAccumulator();
+          _processGeneratedIndexedStream(
+            generatedAccumulator,
+            scenario,
+            startWithEmptyIds: false,
+            continueWithEmptyIds: false,
+          );
+
+          expect(generatedAccumulator.count, scenario.callCount);
+          final toolCalls = generatedAccumulator.toToolCalls();
+          expect(toolCalls, hasLength(scenario.callCount));
+
+          for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
+            final toolCall = toolCalls.singleWhere(
+              (call) => call.function.name == scenario.nameFor(callIndex),
+            );
+            expect(toolCall.id, scenario.idFor(callIndex));
+            expect(
+              toolCall.function.arguments,
+              scenario.expectedArgumentsFor(callIndex),
+              reason: 'Arguments should be appended by index for $scenario',
+            );
+          }
+        },
+      );
+
+      Glados(any.toolCallStream).test(
+        'treats empty continuation IDs as missing IDs',
+        (scenario) {
+          final generatedAccumulator = ToolCallAccumulator();
+          _processGeneratedIndexedStream(
+            generatedAccumulator,
+            scenario,
+            startWithEmptyIds: true,
+            continueWithEmptyIds: true,
+          );
+
+          final toolCalls = generatedAccumulator.toToolCalls();
+          expect(toolCalls, hasLength(scenario.callCount));
+
+          for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
+            final toolCall = toolCalls.singleWhere(
+              (call) => call.function.name == scenario.nameFor(callIndex),
+            );
+            expect(toolCall.id, startsWith('tool_'));
+            expect(
+              toolCall.function.arguments,
+              scenario.expectedArgumentsFor(callIndex),
+              reason: 'Empty continuation IDs should not split $scenario',
+            );
+          }
+        },
+      );
     });
 
     group('toToolCalls', () {

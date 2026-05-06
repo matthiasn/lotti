@@ -1,5 +1,137 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show
+        Any,
+        AnyUtils,
+        CombinableAny,
+        ExploreConfig,
+        Generator,
+        Glados,
+        IntAnys,
+        ListAnys,
+        any;
 import 'package:lotti/features/ai/service/text_chunker.dart';
+
+class _GeneratedChunkText {
+  const _GeneratedChunkText({
+    required this.wordCounts,
+    required this.separator,
+    required this.leadingWhitespace,
+    required this.trailingWhitespace,
+  });
+
+  final List<int> wordCounts;
+  final String separator;
+  final String leadingWhitespace;
+  final String trailingWhitespace;
+
+  String get text {
+    if (wordCounts.isEmpty) {
+      return '$leadingWhitespace$trailingWhitespace';
+    }
+
+    final sentences = [
+      for (final (sentenceIndex, wordCount) in wordCounts.indexed)
+        _sentence(sentenceIndex, wordCount),
+    ];
+    return '$leadingWhitespace${sentences.join(separator)}$trailingWhitespace';
+  }
+
+  List<String> get markers => [
+    for (final (sentenceIndex, wordCount) in wordCounts.indexed)
+      for (var wordIndex = 0; wordIndex < wordCount; wordIndex++)
+        _marker(sentenceIndex, wordIndex),
+  ];
+
+  @override
+  String toString() {
+    return '_GeneratedChunkText('
+        'wordCounts: $wordCounts, '
+        'separator: ${separator.replaceAll('\n', r'\n')}, '
+        'leadingWhitespace: ${leadingWhitespace.replaceAll('\n', r'\n')}, '
+        'trailingWhitespace: ${trailingWhitespace.replaceAll('\n', r'\n')})';
+  }
+}
+
+class _GeneratedLongSentence {
+  const _GeneratedLongSentence({
+    required this.wordCount,
+    required this.leadingWhitespace,
+    required this.trailingWhitespace,
+  });
+
+  final int wordCount;
+  final String leadingWhitespace;
+  final String trailingWhitespace;
+
+  String get text {
+    final words = [
+      for (var wordIndex = 0; wordIndex < wordCount; wordIndex++)
+        _marker(0, wordIndex),
+    ];
+    return '$leadingWhitespace${words.join(' ')}$trailingWhitespace';
+  }
+
+  List<String> get markers => [
+    for (var wordIndex = 0; wordIndex < wordCount; wordIndex++)
+      _marker(0, wordIndex),
+  ];
+
+  @override
+  String toString() {
+    return '_GeneratedLongSentence('
+        'wordCount: $wordCount, '
+        'leadingWhitespace: ${leadingWhitespace.replaceAll('\n', r'\n')}, '
+        'trailingWhitespace: ${trailingWhitespace.replaceAll('\n', r'\n')})';
+  }
+}
+
+extension _AnyTextChunkerScenarios on Any {
+  Generator<_GeneratedChunkText> get chunkText => combine4(
+    listWithLengthInRange(0, 90, intInRange(1, 24)),
+    choose(['. ', '! ', '? ', '\n\n']),
+    choose(['', ' ', '\n\t']),
+    choose(['', ' ', '\n']),
+    (
+      List<int> wordCounts,
+      String separator,
+      String leadingWhitespace,
+      String trailingWhitespace,
+    ) => _GeneratedChunkText(
+      wordCounts: wordCounts,
+      separator: separator,
+      leadingWhitespace: leadingWhitespace,
+      trailingWhitespace: trailingWhitespace,
+    ),
+  );
+
+  Generator<_GeneratedLongSentence> get longSentence => combine3(
+    intInRange(kChunkTargetWords + 1, 900),
+    choose(['', ' ', '\n']),
+    choose(['', ' ', '\n']),
+    (
+      int wordCount,
+      String leadingWhitespace,
+      String trailingWhitespace,
+    ) => _GeneratedLongSentence(
+      wordCount: wordCount,
+      leadingWhitespace: leadingWhitespace,
+      trailingWhitespace: trailingWhitespace,
+    ),
+  );
+}
+
+String _marker(int sentenceIndex, int wordIndex) =>
+    's${sentenceIndex.toString().padLeft(3, '0')}'
+    'w${wordIndex.toString().padLeft(3, '0')}';
+
+String _sentence(int sentenceIndex, int wordCount) {
+  final words = [
+    for (var wordIndex = 0; wordIndex < wordCount; wordIndex++)
+      _marker(sentenceIndex, wordIndex),
+  ];
+  return '${words.join(' ')}.';
+}
 
 /// Asserts that every chunk's estimated token count is at most [limit].
 void _expectAllChunksWithinTokenLimit(List<String> chunks, int limit) {
@@ -13,6 +145,13 @@ void _expectAllChunksWithinTokenLimit(List<String> chunks, int limit) {
           'which exceeds target of $limit',
     );
   }
+}
+
+List<String> _markersInChunk(String chunk, List<String> markers) {
+  return [
+    for (final marker in markers)
+      if (chunk.contains(marker)) marker,
+  ];
 }
 
 void main() {
@@ -344,6 +483,89 @@ void main() {
         expect(chunks, hasLength(1));
         expect(chunks.first, 'Short text with spaces.');
       });
+
+      Glados(any.chunkText, ExploreConfig(numRuns: 160)).test(
+        'preserves generated marker text while bounding chunk size',
+        (scenario) {
+          final chunks = TextChunker.chunk(scenario.text);
+          final markers = scenario.markers;
+
+          if (markers.isEmpty) {
+            expect(chunks, isEmpty);
+            return;
+          }
+
+          expect(chunks, isNotEmpty);
+          _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
+
+          for (final chunk in chunks) {
+            expect(chunk, chunk.trim());
+            expect(chunk, isNotEmpty);
+          }
+
+          for (final marker in markers) {
+            expect(
+              chunks.any((chunk) => chunk.contains(marker)),
+              isTrue,
+              reason: 'Marker $marker was lost for $scenario',
+            );
+          }
+
+          expect(chunks.first, contains(markers.first));
+          expect(chunks.last, contains(markers.last));
+
+          for (var i = 0; i < chunks.length - 1; i++) {
+            final currentMarkers = _markersInChunk(chunks[i], markers);
+            final nextMarkers = _markersInChunk(chunks[i + 1], markers);
+
+            expect(currentMarkers, isNotEmpty);
+            expect(nextMarkers, isNotEmpty);
+            expect(
+              currentMarkers.toSet().intersection(nextMarkers.toSet()),
+              isNotEmpty,
+              reason: 'Chunks $i and ${i + 1} should overlap for $scenario',
+            );
+            expect(
+              markers.indexOf(nextMarkers.first),
+              lessThanOrEqualTo(markers.indexOf(currentMarkers.last)),
+              reason: 'Chunk order moved forward without overlap for $scenario',
+            );
+          }
+        },
+      );
+
+      Glados(any.longSentence).test(
+        'splits generated long single sentences on the modeled word stride',
+        (scenario) {
+          final chunks = TextChunker.chunk(scenario.text);
+          final markers = scenario.markers;
+          final expectedStarts = <int>[];
+          for (
+            var start = 0;
+            start < markers.length;
+            start += kChunkStrideWords
+          ) {
+            expectedStarts.add(start);
+            final end = (start + kChunkTargetWords).clamp(0, markers.length);
+            if (end == markers.length) break;
+          }
+
+          expect(chunks, hasLength(expectedStarts.length));
+          _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
+
+          for (final (chunkIndex, start) in expectedStarts.indexed) {
+            final end = (start + kChunkTargetWords).clamp(0, markers.length);
+            final expectedMarkers = markers.sublist(start, end);
+            expect(
+              _markersInChunk(chunks[chunkIndex], markers),
+              expectedMarkers,
+              reason:
+                  'Chunk $chunkIndex should match the word-boundary model '
+                  'for $scenario',
+            );
+          }
+        },
+      );
     });
   });
 }

@@ -1,8 +1,161 @@
+import 'dart:math' as math;
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show
+        Any,
+        AnyUtils,
+        CombinableAny,
+        ExploreConfig,
+        Generator,
+        Glados,
+        IntAnys,
+        ListAnys,
+        any;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
+
+enum _GeneratedTimelineSlotKind { actual, planned }
+
+class _GeneratedTimelineSlot {
+  const _GeneratedTimelineSlot({
+    required this.kind,
+    required this.startHour,
+    required this.startMinute,
+    required this.durationMinutes,
+  });
+
+  final _GeneratedTimelineSlotKind kind;
+  final int startHour;
+  final int startMinute;
+  final int durationMinutes;
+
+  @override
+  String toString() {
+    return '_GeneratedTimelineSlot('
+        'kind: $kind, '
+        'startHour: $startHour, '
+        'startMinute: $startMinute, '
+        'durationMinutes: $durationMinutes)';
+  }
+}
+
+class _GeneratedTimelineFoldingScenario {
+  const _GeneratedTimelineFoldingScenario({
+    required this.slots,
+    required this.gapThreshold,
+    required this.bufferHours,
+    required this.expandedMaskSeed,
+  });
+
+  final List<_GeneratedTimelineSlot> slots;
+  final int gapThreshold;
+  final int bufferHours;
+  final int expandedMaskSeed;
+
+  Set<int> expandedRegionsFor(TimelineFoldingState state) {
+    return {
+      for (var index = 0; index < state.compressedRegions.length; index++)
+        if ((expandedMaskSeed & (1 << index)) != 0)
+          state.compressedRegions[index].startHour,
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedTimelineFoldingScenario('
+        'slots: $slots, '
+        'gapThreshold: $gapThreshold, '
+        'bufferHours: $bufferHours, '
+        'expandedMaskSeed: $expandedMaskSeed)';
+  }
+}
+
+extension _AnyTimelineFoldingScenario on Any {
+  Generator<_GeneratedTimelineSlotKind> get timelineSlotKind =>
+      choose(_GeneratedTimelineSlotKind.values);
+
+  Generator<_GeneratedTimelineSlot> get timelineSlot => combine4(
+    timelineSlotKind,
+    intInRange(0, 24),
+    intInRange(0, 60),
+    intInRange(1, 360),
+    (
+      _GeneratedTimelineSlotKind kind,
+      int startHour,
+      int startMinute,
+      int durationMinutes,
+    ) => _GeneratedTimelineSlot(
+      kind: kind,
+      startHour: startHour,
+      startMinute: startMinute,
+      durationMinutes: durationMinutes,
+    ),
+  );
+
+  Generator<_GeneratedTimelineFoldingScenario> get timelineFoldingScenario =>
+      combine4(
+        listWithLengthInRange(0, 12, timelineSlot),
+        intInRange(1, 9),
+        intInRange(0, 4),
+        intInRange(0, 256),
+        (
+          List<_GeneratedTimelineSlot> slots,
+          int gapThreshold,
+          int bufferHours,
+          int expandedMaskSeed,
+        ) => _GeneratedTimelineFoldingScenario(
+          slots: slots,
+          gapThreshold: gapThreshold,
+          bufferHours: bufferHours,
+          expandedMaskSeed: expandedMaskSeed,
+        ),
+      );
+}
+
+Set<int> _occupiedHoursFor(_GeneratedTimelineFoldingScenario scenario) {
+  final occupied = <int>{};
+  final baseDate = DateTime(2026, 1, 15);
+
+  for (final slot in scenario.slots) {
+    final startTime = baseDate.add(
+      Duration(hours: slot.startHour, minutes: slot.startMinute),
+    );
+    final endTime = startTime.add(Duration(minutes: slot.durationMinutes));
+    final crossesMidnight = startTime.day != endTime.day;
+    final rawEndHour = endTime.hour + (endTime.minute > 0 ? 1 : 0);
+    final endHour = crossesMidnight ? 24 : rawEndHour;
+    final bufferedStart = math.max(0, slot.startHour - scenario.bufferHours);
+    final bufferedEnd = math.min(24, endHour + scenario.bufferHours);
+
+    for (var hour = bufferedStart; hour < bufferedEnd; hour++) {
+      occupied.add(hour);
+    }
+  }
+
+  return occupied;
+}
+
+List<({int startHour, int endHour, bool isCompressed})> _allRegions(
+  TimelineFoldingState state,
+) {
+  return [
+    for (final cluster in state.visibleClusters)
+      (
+        startHour: cluster.startHour,
+        endHour: cluster.endHour,
+        isCompressed: false,
+      ),
+    for (final region in state.compressedRegions)
+      (
+        startHour: region.startHour,
+        endHour: region.endHour,
+        isCompressed: true,
+      ),
+  ]..sort((a, b) => a.startHour.compareTo(b.startHour));
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -396,6 +549,87 @@ void main() {
       expect(state.compressedRegions[1].startHour, 20);
       expect(state.compressedRegions[1].endHour, 24);
     });
+
+    Glados(any.timelineFoldingScenario, ExploreConfig(numRuns: 160)).test(
+      'partitions the generated day and keeps occupied hours visible',
+      (scenario) {
+        final plannedSlots = [
+          for (final slot in scenario.slots)
+            if (slot.kind == _GeneratedTimelineSlotKind.planned)
+              createPlannedSlot(
+                hour: slot.startHour,
+                minute: slot.startMinute,
+                durationMinutes: slot.durationMinutes,
+              ),
+        ];
+        final actualSlots = [
+          for (final slot in scenario.slots)
+            if (slot.kind == _GeneratedTimelineSlotKind.actual)
+              createActualSlot(
+                hour: slot.startHour,
+                minute: slot.startMinute,
+                durationMinutes: slot.durationMinutes,
+              ),
+        ];
+
+        final state = calculateFoldingState(
+          plannedSlots: plannedSlots,
+          actualSlots: actualSlots,
+          gapThreshold: scenario.gapThreshold,
+          bufferHours: scenario.bufferHours,
+        );
+        final regions = _allRegions(state);
+
+        expect(regions, isNotEmpty, reason: '$scenario');
+        expect(regions.first.startHour, 0, reason: '$scenario');
+        expect(regions.last.endHour, 24, reason: '$scenario');
+
+        for (var index = 0; index < regions.length; index++) {
+          final region = regions[index];
+          expect(
+            region.startHour,
+            lessThan(region.endHour),
+            reason: '$scenario',
+          );
+          expect(
+            region.startHour,
+            inInclusiveRange(0, 23),
+            reason: '$scenario',
+          );
+          expect(region.endHour, inInclusiveRange(1, 24), reason: '$scenario');
+
+          if (index > 0) {
+            expect(
+              regions[index - 1].endHour,
+              region.startHour,
+              reason:
+                  'Generated regions should cover the day without gaps: '
+                  '$scenario',
+            );
+          }
+        }
+
+        final occupiedHours = _occupiedHoursFor(scenario);
+        for (final hour in occupiedHours) {
+          expect(
+            state.visibleClusters.any(
+              (cluster) => hour >= cluster.startHour && hour < cluster.endHour,
+            ),
+            isTrue,
+            reason: 'Occupied hour $hour must stay visible for $scenario',
+          );
+          expect(
+            isHourInCompressedRegion(
+              hour: hour,
+              foldingState: state,
+              expandedRegions: {},
+            ),
+            isFalse,
+            reason: 'Occupied hour $hour must not be compressed for $scenario',
+          );
+        }
+      },
+    );
   });
 
   group('calculateFoldedTimelineHeight', () {
@@ -536,6 +770,66 @@ void main() {
       // Into second cluster: 2 hours * 40px = 80px
       expect(position, (4 * 40.0) + (8 * 8.0) + (2 * 40.0));
     });
+
+    Glados(any.timelineFoldingScenario, ExploreConfig(numRuns: 120)).test(
+      'is monotonic and ends at the generated folded height',
+      (scenario) {
+        final plannedSlots = [
+          for (final slot in scenario.slots)
+            if (slot.kind == _GeneratedTimelineSlotKind.planned)
+              createPlannedSlot(
+                hour: slot.startHour,
+                minute: slot.startMinute,
+                durationMinutes: slot.durationMinutes,
+              ),
+        ];
+        final actualSlots = [
+          for (final slot in scenario.slots)
+            if (slot.kind == _GeneratedTimelineSlotKind.actual)
+              createActualSlot(
+                hour: slot.startHour,
+                minute: slot.startMinute,
+                durationMinutes: slot.durationMinutes,
+              ),
+        ];
+
+        final state = calculateFoldingState(
+          plannedSlots: plannedSlots,
+          actualSlots: actualSlots,
+          gapThreshold: scenario.gapThreshold,
+          bufferHours: scenario.bufferHours,
+        );
+        final expandedRegions = scenario.expandedRegionsFor(state);
+        final height = calculateFoldedTimelineHeight(
+          foldingState: state,
+          expandedRegions: expandedRegions,
+        );
+        final positions = [
+          for (var hour = 0; hour <= 24; hour++)
+            timeToFoldedPosition(
+              hour: hour,
+              minute: 0,
+              foldingState: state,
+              expandedRegions: expandedRegions,
+            ),
+        ];
+
+        for (var index = 1; index < positions.length; index++) {
+          expect(
+            positions[index],
+            greaterThanOrEqualTo(positions[index - 1]),
+            reason: 'Folded positions must be monotonic for $scenario',
+          );
+        }
+        expect(
+          positions.last,
+          closeTo(height, 0.0001),
+          reason:
+              '24:00 should land on the folded timeline height for '
+              '$scenario',
+        );
+      },
+    );
   });
 
   group('isHourInCompressedRegion', () {

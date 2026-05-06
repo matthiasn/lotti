@@ -2,7 +2,83 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show
+        Any,
+        CombinableAny,
+        ExploreConfig,
+        Generator,
+        Glados,
+        IntAnys,
+        ListAnys,
+        any;
 import 'package:lotti/features/ai/util/pcm_amplitude.dart';
+
+class _GeneratedPcmScenario {
+  const _GeneratedPcmScenario({
+    required this.samples,
+    required this.floorDbfsTenths,
+    required this.trailingByte,
+  });
+
+  final List<int> samples;
+  final int floorDbfsTenths;
+  final int trailingByte;
+
+  double get floorDbfs => floorDbfsTenths / 10;
+
+  Uint8List get pcmBytes {
+    final byteData = ByteData(samples.length * 2);
+    for (final (index, sample) in samples.indexed) {
+      byteData.setInt16(index * 2, sample, Endian.little);
+    }
+    return byteData.buffer.asUint8List();
+  }
+
+  Uint8List get pcmBytesWithTrailingByte {
+    final base = pcmBytes;
+    return Uint8List.fromList([...base, trailingByte]);
+  }
+
+  double get expectedDbfs {
+    if (samples.isEmpty) return floorDbfs;
+
+    final sumSquares = samples.fold<double>(
+      0,
+      (sum, sample) => sum + sample * sample,
+    );
+    final rms = sqrt(sumSquares / samples.length);
+    if (rms == 0) return floorDbfs;
+
+    final dbfs = 20 * log(rms / 32768) / ln10;
+    return dbfs.clamp(floorDbfs, 0);
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedPcmScenario('
+        'samples: $samples, '
+        'floorDbfs: $floorDbfs, '
+        'trailingByte: $trailingByte)';
+  }
+}
+
+extension _AnyPcmAmplitudeScenario on Any {
+  Generator<_GeneratedPcmScenario> get pcmScenario => combine3(
+    listWithLengthInRange(0, 64, intInRange(-32768, 32767)),
+    intInRange(-1200, -1),
+    intInRange(0, 255),
+    (
+      List<int> samples,
+      int floorDbfsTenths,
+      int trailingByte,
+    ) => _GeneratedPcmScenario(
+      samples: samples,
+      floorDbfsTenths: floorDbfsTenths,
+      trailingByte: trailingByte,
+    ),
+  );
+}
 
 void main() {
   group('computeDbfsFromPcm16', () {
@@ -100,5 +176,39 @@ void main() {
       // RMS = 32768, dBFS = 20 * log10(32768 / 32768) = 0
       expect(dbfs, closeTo(0, 0.01));
     });
+
+    Glados(any.pcmScenario, ExploreConfig(numRuns: 200)).test(
+      'matches the generated RMS dBFS model',
+      (scenario) {
+        final dbfs = computeDbfsFromPcm16(
+          scenario.pcmBytes,
+          floorDbfs: scenario.floorDbfs,
+        );
+
+        expect(
+          dbfs,
+          closeTo(scenario.expectedDbfs, 1e-9),
+          reason: 'dBFS should match the RMS model for $scenario',
+        );
+        expect(dbfs, greaterThanOrEqualTo(scenario.floorDbfs));
+        expect(dbfs, lessThanOrEqualTo(0));
+      },
+    );
+
+    Glados(any.pcmScenario, ExploreConfig(numRuns: 200)).test(
+      'ignores generated odd trailing bytes',
+      (scenario) {
+        expect(
+          computeDbfsFromPcm16(
+            scenario.pcmBytesWithTrailingByte,
+            floorDbfs: scenario.floorDbfs,
+          ),
+          computeDbfsFromPcm16(
+            scenario.pcmBytes,
+            floorDbfs: scenario.floorDbfs,
+          ),
+        );
+      },
+    );
   });
 }
