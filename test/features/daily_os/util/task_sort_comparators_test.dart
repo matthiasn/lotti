@@ -1,9 +1,83 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart'
+    show
+        Any,
+        AnyUtils,
+        CombinableAny,
+        ExploreConfig,
+        Generator,
+        Glados,
+        IntAnys,
+        ListAnys,
+        any;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/util/task_sort_comparators.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
+
+class _GeneratedTaskProgressSpec {
+  const _GeneratedTaskProgressSpec({
+    required this.priority,
+    required this.urgency,
+    required this.timeSpentMinutes,
+    required this.titleSeed,
+  });
+
+  final TaskPriority priority;
+  final DueDateUrgency urgency;
+  final int timeSpentMinutes;
+  final int titleSeed;
+
+  String titleFor(int index) {
+    final bucket = switch (titleSeed % 5) {
+      0 => 'Alpha',
+      1 => 'bravo',
+      2 => 'Charlie',
+      3 => 'delta',
+      _ => 'Echo',
+    };
+    return '$bucket ${index.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedTaskProgressSpec('
+        'priority: $priority, '
+        'urgency: $urgency, '
+        'timeSpentMinutes: $timeSpentMinutes, '
+        'titleSeed: $titleSeed)';
+  }
+}
+
+extension _AnyTaskProgressSpecs on Any {
+  Generator<TaskPriority> get taskPriority =>
+      choose(TaskPriority.values.toList());
+
+  Generator<DueDateUrgency> get dueDateUrgency =>
+      choose(DueDateUrgency.values.toList());
+
+  Generator<_GeneratedTaskProgressSpec> get taskProgressSpec => combine4(
+    taskPriority,
+    dueDateUrgency,
+    intInRange(0, 240),
+    intInRange(0, 1000),
+    (
+      TaskPriority priority,
+      DueDateUrgency urgency,
+      int timeSpentMinutes,
+      int titleSeed,
+    ) => _GeneratedTaskProgressSpec(
+      priority: priority,
+      urgency: urgency,
+      timeSpentMinutes: timeSpentMinutes,
+      titleSeed: titleSeed,
+    ),
+  );
+
+  Generator<List<_GeneratedTaskProgressSpec>> get taskProgressSpecs =>
+      listWithLengthInRange(0, 18, taskProgressSpec);
+}
 
 void main() {
   final testDate = DateTime(2026, 1, 15, 12);
@@ -56,6 +130,64 @@ void main() {
             : 5,
       ),
     );
+  }
+
+  List<TaskDayProgress> createGeneratedProgress(
+    List<_GeneratedTaskProgressSpec> specs,
+  ) {
+    return [
+      for (var index = 0; index < specs.length; index++)
+        createProgress(
+          id: 'generated-$index',
+          title: specs[index].titleFor(index),
+          priority: specs[index].priority,
+          timeSpent: Duration(minutes: specs[index].timeSpentMinutes),
+          urgency: specs[index].urgency,
+        ),
+    ];
+  }
+
+  int compareByPriorityUrgencyTitleModel(
+    TaskDayProgress a,
+    TaskDayProgress b,
+  ) {
+    final priorityCompare = a.task.data.priority.rank.compareTo(
+      b.task.data.priority.rank,
+    );
+    if (priorityCompare != 0) return priorityCompare;
+
+    final urgencyCompare = b.dueDateStatus.urgency.index.compareTo(
+      a.dueDateStatus.urgency.index,
+    );
+    if (urgencyCompare != 0) return urgencyCompare;
+
+    return a.task.data.title.compareTo(b.task.data.title);
+  }
+
+  int compareByTimeSpentThenPriorityModel(
+    TaskDayProgress a,
+    TaskDayProgress b,
+  ) {
+    final aHasTime = a.timeSpentOnDay > Duration.zero;
+    final bHasTime = b.timeSpentOnDay > Duration.zero;
+
+    if (aHasTime && bHasTime) {
+      final timeCompare = b.timeSpentOnDay.compareTo(a.timeSpentOnDay);
+      if (timeCompare != 0) return timeCompare;
+      return compareByPriorityUrgencyTitleModel(a, b);
+    }
+
+    if (aHasTime) return -1;
+    if (bHasTime) return 1;
+
+    return compareByPriorityUrgencyTitleModel(a, b);
+  }
+
+  List<String> sortedIds(
+    List<TaskDayProgress> items,
+    int Function(TaskDayProgress a, TaskDayProgress b) compare,
+  ) {
+    return (items.toList()..sort(compare)).map((item) => item.task.id).toList();
   }
 
   group('TaskSortComparators.byPriorityUrgencyTitle', () {
@@ -301,6 +433,21 @@ void main() {
         );
       });
     });
+
+    Glados(any.taskProgressSpecs, ExploreConfig(numRuns: 180)).test(
+      'matches the generated priority, urgency, and title ordering model',
+      (specs) {
+        final items = createGeneratedProgress(specs);
+
+        expect(
+          sortedIds(items, TaskSortComparators.byPriorityUrgencyTitle),
+          sortedIds(items, compareByPriorityUrgencyTitleModel),
+          reason:
+              'Generated specs should match the documented comparator '
+              'model: $specs',
+        );
+      },
+    );
   });
 
   group('TaskSortComparators.byTimeSpentThenPriority', () {
@@ -458,5 +605,20 @@ void main() {
         );
       });
     });
+
+    Glados(any.taskProgressSpecs, ExploreConfig(numRuns: 180)).test(
+      'matches the generated time-spent ordering model',
+      (specs) {
+        final items = createGeneratedProgress(specs);
+
+        expect(
+          sortedIds(items, TaskSortComparators.byTimeSpentThenPriority),
+          sortedIds(items, compareByTimeSpentThenPriorityModel),
+          reason:
+              'Generated specs should match the documented time-spent '
+              'model: $specs',
+        );
+      },
+    );
   });
 }

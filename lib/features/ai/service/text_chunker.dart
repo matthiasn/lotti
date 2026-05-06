@@ -150,6 +150,7 @@ class TextChunker {
         for (var i = 0; i < runes.length; i += kChunkStrideTokens) {
           final end = (i + kChunkTargetTokens).clamp(0, runes.length);
           segments.add(String.fromCharCodes(runes.sublist(i, end)));
+          if (end == runes.length) break;
         }
         return segments;
       }
@@ -162,6 +163,7 @@ class TextChunker {
         for (var i = 0; i < text.length; i += stride) {
           final end = (i + _maxCharsPerSegment).clamp(0, text.length);
           segments.add(text.substring(i, end));
+          if (end == text.length) break;
         }
         return segments;
       }
@@ -173,6 +175,7 @@ class TextChunker {
     for (var i = 0; i < words.length; i += kChunkStrideWords) {
       final end = (i + kChunkTargetWords).clamp(0, words.length);
       segments.add(words.sublist(i, end).join(' '));
+      if (end == words.length) break;
     }
     return segments;
   }

@@ -70,16 +70,16 @@ class ToolCallAccumulator {
       name: 'ToolCallAccumulator',
     );
 
-    // If this chunk has an ID or has function data, it's starting a new tool call
-    var toolCallId = toolCallChunk.id;
+    final explicitId = toolCallChunk.id;
+    final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
 
-    // Generate ID if not provided or if it's an empty string
-    if (toolCallId == null || toolCallId.isEmpty) {
-      toolCallId = 'tool_${_counter++}';
-    }
-
-    if (toolCallChunk.id != null || toolCallChunk.function?.name != null) {
+    if (hasExplicitId && _toolCalls.containsKey(explicitId)) {
+      // Continuation chunk that repeats the same explicit ID — append rather
+      // than overwriting the accumulated state.
+      _appendToToolCall(explicitId, toolCallChunk);
+    } else if (hasExplicitId || toolCallChunk.function?.name != null) {
       // This is a new tool call
+      final toolCallId = hasExplicitId ? explicitId : 'tool_${_counter++}';
       _startNewToolCall(toolCallId, toolCallChunk);
     } else if (toolCallChunk.index != null) {
       // Try to find by index if no ID
