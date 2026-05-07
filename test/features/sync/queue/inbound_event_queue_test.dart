@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
@@ -40,6 +41,248 @@ Event _buildSyncEvent({
     'content': eventContent,
   });
   return event;
+}
+
+enum _GeneratedTerminalAction { commit, skip }
+
+class _GeneratedInboundQueueRow {
+  const _GeneratedInboundQueueRow({
+    required this.timestampBucket,
+    required this.processingBucket,
+    required this.terminalAction,
+  });
+
+  final int timestampBucket;
+  final int processingBucket;
+  final _GeneratedTerminalAction terminalAction;
+
+  int get originTsMs => 1000 + timestampBucket;
+
+  @override
+  String toString() {
+    return '_GeneratedInboundQueueRow('
+        'timestampBucket: $timestampBucket, '
+        'processingBucket: $processingBucket, '
+        'terminalAction: $terminalAction'
+        ')';
+  }
+}
+
+class _GeneratedInboundQueueMarkerScenario {
+  const _GeneratedInboundQueueMarkerScenario({required this.rows});
+
+  final List<_GeneratedInboundQueueRow> rows;
+
+  String eventIdFor(int index) => '\$generated-marker-$index';
+
+  Map<String, _GeneratedTerminalAction> get actionByEventId => {
+    for (var index = 0; index < rows.length; index++)
+      eventIdFor(index): rows[index].terminalAction,
+  };
+
+  List<int> processingOrder() {
+    final indexed =
+        <({int index, _GeneratedInboundQueueRow row})>[
+          for (var index = 0; index < rows.length; index++)
+            (index: index, row: rows[index]),
+        ]..sort((a, b) {
+          final bucketCompare = a.row.processingBucket.compareTo(
+            b.row.processingBucket,
+          );
+          if (bucketCompare != 0) return bucketCompare;
+          return a.index.compareTo(b.index);
+        });
+
+    return [for (final item in indexed) item.index];
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedInboundQueueMarkerScenario(rows: $rows)';
+  }
+}
+
+class _GeneratedResurrectionRow {
+  const _GeneratedResurrectionRow({
+    required this.pathSlot,
+    required this.timestampBucket,
+    required this.withLeadingSlash,
+  });
+
+  final int pathSlot;
+  final int timestampBucket;
+  final bool withLeadingSlash;
+
+  int get originTsMs => 2000 + timestampBucket;
+
+  String get canonicalPath => '/generated/path-$pathSlot.json';
+
+  String get rawPath =>
+      withLeadingSlash ? canonicalPath : canonicalPath.substring(1);
+
+  @override
+  String toString() {
+    return '_GeneratedResurrectionRow('
+        'pathSlot: $pathSlot, '
+        'timestampBucket: $timestampBucket, '
+        'withLeadingSlash: $withLeadingSlash'
+        ')';
+  }
+}
+
+class _GeneratedResurrectionScenario {
+  const _GeneratedResurrectionScenario({
+    required this.targetSlot,
+    required this.rows,
+  });
+
+  final int targetSlot;
+  final List<_GeneratedResurrectionRow> rows;
+
+  String get targetPath => '/generated/path-$targetSlot.json';
+
+  String eventIdFor(int index) => '\$generated-resurrect-$index';
+
+  List<String> expectedResurrectedEventIds() {
+    final indexed =
+        <({int index, _GeneratedResurrectionRow row})>[
+          for (var index = 0; index < rows.length; index++)
+            (index: index, row: rows[index]),
+        ]..sort((a, b) {
+          final tsCompare = a.row.originTsMs.compareTo(b.row.originTsMs);
+          if (tsCompare != 0) return tsCompare;
+          return a.index.compareTo(b.index);
+        });
+
+    return [
+      for (final item in indexed)
+        if (item.row.canonicalPath == targetPath) eventIdFor(item.index),
+    ];
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedResurrectionScenario('
+        'targetSlot: $targetSlot, '
+        'rows: $rows'
+        ')';
+  }
+}
+
+class _ExpectedQueueMarker {
+  int lastAppliedTs = 0;
+  String? lastAppliedEventId;
+  int lastAppliedCommitSeq = 0;
+
+  void process(
+    InboundQueueEntry entry,
+    Iterable<InboundQueueEntry> activeAfter,
+  ) {
+    int? oldestActiveTs;
+    for (final active in activeAfter) {
+      if (oldestActiveTs == null || active.originTs < oldestActiveTs) {
+        oldestActiveTs = active.originTs;
+      }
+    }
+
+    final candidateTs = oldestActiveTs == null
+        ? entry.originTs
+        : entry.originTs < oldestActiveTs
+        ? entry.originTs
+        : oldestActiveTs - 1;
+
+    final shouldAdvance =
+        lastAppliedTs == 0 ||
+        candidateTs > lastAppliedTs ||
+        (candidateTs == entry.originTs &&
+            entry.originTs == lastAppliedTs &&
+            (lastAppliedEventId == null ||
+                entry.eventId.compareTo(lastAppliedEventId!) > 0));
+
+    if (!shouldAdvance) return;
+
+    if (candidateTs == entry.originTs && entry.eventId.startsWith(r'$')) {
+      lastAppliedEventId = entry.eventId;
+    }
+    lastAppliedTs = candidateTs;
+    lastAppliedCommitSeq++;
+  }
+}
+
+extension _AnyInboundQueueScenario on glados.Any {
+  glados.Generator<_GeneratedTerminalAction> get terminalAction =>
+      glados.AnyUtils(this).choose(_GeneratedTerminalAction.values);
+
+  glados.Generator<_GeneratedInboundQueueRow> get inboundQueueRow =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 7),
+        terminalAction,
+        (
+          int timestampBucket,
+          int processingBucket,
+          _GeneratedTerminalAction terminalAction,
+        ) => _GeneratedInboundQueueRow(
+          timestampBucket: timestampBucket,
+          processingBucket: processingBucket,
+          terminalAction: terminalAction,
+        ),
+      );
+
+  glados.Generator<_GeneratedInboundQueueMarkerScenario>
+  get inboundQueueMarkerScenario =>
+      glados.ListAnys(
+            this,
+          )
+          .listWithLengthInRange(1, 8, inboundQueueRow)
+          .map(
+            (rows) => _GeneratedInboundQueueMarkerScenario(rows: rows),
+          );
+
+  glados.Generator<_GeneratedResurrectionRow> get resurrectionRow =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.IntAnys(this).intInRange(0, 8),
+        glados.BoolAny(this).bool,
+        (
+          int pathSlot,
+          int timestampBucket,
+          bool withLeadingSlash,
+        ) => _GeneratedResurrectionRow(
+          pathSlot: pathSlot,
+          timestampBucket: timestampBucket,
+          withLeadingSlash: withLeadingSlash,
+        ),
+      );
+
+  glados.Generator<_GeneratedResurrectionScenario> get resurrectionScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 3),
+        glados.ListAnys(this).listWithLengthInRange(1, 10, resurrectionRow),
+        (int targetSlot, List<_GeneratedResurrectionRow> rows) =>
+            _GeneratedResurrectionScenario(
+              targetSlot: targetSlot,
+              rows: rows,
+            ),
+      );
+}
+
+Future<void> _withFreshInboundQueue(
+  Future<void> Function(SyncDatabase db, InboundQueue queue) body,
+) async {
+  final db = SyncDatabase(inMemoryDatabase: true);
+  final queue = InboundQueue(
+    db: db,
+    logging: MockLoggingService(),
+    leaseDuration: const Duration(seconds: 1),
+  );
+
+  try {
+    await body(db, queue);
+  } finally {
+    await queue.dispose();
+    await db.close();
+  }
 }
 
 void main() {
@@ -294,6 +537,132 @@ void main() {
         expect(marker.lastAppliedEventId, r'$zzz');
         expect(marker.lastAppliedTs, 1000);
         expect(marker.lastAppliedCommitSeq, 2);
+      },
+    );
+  });
+
+  group('generated queue ledger properties', () {
+    glados.Glados(
+      glados.any.inboundQueueMarkerScenario,
+    ).test(
+      'marker clamping matches the model for generated commit/skip order',
+      (scenario) async {
+        await _withFreshInboundQueue((db, queue) async {
+          await queue.enqueueBatch(
+            [
+              for (var index = 0; index < scenario.rows.length; index++)
+                _buildSyncEvent(
+                  eventId: scenario.eventIdFor(index),
+                  roomId: roomA,
+                  originTsMs: scenario.rows[index].originTsMs,
+                ),
+            ],
+            producer: InboundEventProducer.live,
+          );
+
+          final batch = await queue.peekBatchReady(
+            maxBatch: scenario.rows.length,
+          );
+          expect(batch, hasLength(scenario.rows.length));
+
+          final actionByEventId = scenario.actionByEventId;
+          final activeByEventId = {
+            for (final entry in batch) entry.eventId: entry,
+          };
+          final expectedMarker = _ExpectedQueueMarker();
+          var expectedApplied = 0;
+          var expectedAbandoned = 0;
+
+          final processOrder = scenario.processingOrder();
+
+          for (final index in processOrder) {
+            final entry = batch[index];
+            final action = actionByEventId[entry.eventId]!;
+
+            activeByEventId.remove(entry.eventId);
+            expectedMarker.process(entry, activeByEventId.values);
+
+            switch (action) {
+              case _GeneratedTerminalAction.commit:
+                await queue.commitApplied(entry);
+                expectedApplied++;
+              case _GeneratedTerminalAction.skip:
+                await queue.markSkipped(entry, reason: 'generatedSkip');
+                expectedAbandoned++;
+            }
+          }
+
+          final marker = await (db.select(
+            db.queueMarkers,
+          )..where((t) => t.roomId.equals(roomA))).getSingle();
+          expect(marker.lastAppliedTs, expectedMarker.lastAppliedTs);
+          expect(
+            marker.lastAppliedEventId,
+            expectedMarker.lastAppliedEventId,
+          );
+          expect(
+            marker.lastAppliedCommitSeq,
+            expectedMarker.lastAppliedCommitSeq,
+          );
+
+          final stats = await queue.stats();
+          expect(stats.total, 0);
+          expect(stats.applied, expectedApplied);
+          expect(stats.abandoned, expectedAbandoned);
+        });
+      },
+    );
+
+    glados.Glados(
+      glados.any.resurrectionScenario,
+    ).test(
+      'resurrectByPath only reopens generated abandoned rows for that path',
+      (scenario) async {
+        await _withFreshInboundQueue((_, queue) async {
+          await queue.enqueueBatch(
+            [
+              for (var index = 0; index < scenario.rows.length; index++)
+                _buildSyncEvent(
+                  eventId: scenario.eventIdFor(index),
+                  roomId: roomA,
+                  originTsMs: scenario.rows[index].originTsMs,
+                  content: <String, dynamic>{
+                    'msgtype': syncMessageType,
+                    'jsonPath': scenario.rows[index].rawPath,
+                  },
+                ),
+            ],
+            producer: InboundEventProducer.live,
+          );
+
+          final batch = await queue.peekBatchReady(
+            maxBatch: scenario.rows.length,
+          );
+          for (final entry in batch) {
+            await queue.markSkipped(entry, reason: 'pendingAttachmentTimeout');
+          }
+
+          final expectedEventIds = scenario.expectedResurrectedEventIds();
+          final resurrected = await queue.resurrectByPath(scenario.targetPath);
+
+          expect(resurrected, expectedEventIds.length);
+
+          final stats = await queue.stats();
+          expect(stats.total, expectedEventIds.length);
+          expect(stats.readyNow, expectedEventIds.length);
+          expect(
+            stats.abandoned,
+            scenario.rows.length - expectedEventIds.length,
+          );
+
+          final ready = await queue.peekBatchReady(
+            maxBatch: scenario.rows.length,
+          );
+          expect(
+            ready.map((entry) => entry.eventId).toList(),
+            expectedEventIds,
+          );
+        });
       },
     );
   });

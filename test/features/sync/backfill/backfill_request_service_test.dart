@@ -119,6 +119,81 @@ class _BackfillSelectionScenario {
   }
 }
 
+class _AutomaticBackfillSelectionScenario {
+  const _AutomaticBackfillSelectionScenario({
+    required this.maxBatchSize,
+    required this.bypassDebounce,
+    required this.bridgeInFlight,
+    required this.candidates,
+  });
+
+  final int maxBatchSize;
+  final bool bypassDebounce;
+  final bool bridgeInFlight;
+  final List<_GeneratedBackfillCandidate> candidates;
+
+  List<SyncSequenceLogItem> missingItems({
+    required String aliceHostId,
+    required String bobHostId,
+  }) {
+    return [
+      for (var index = 0; index < candidates.length; index++)
+        _createMissingLogItem(
+          candidates[index].hostId(
+            aliceHostId: aliceHostId,
+            bobHostId: bobHostId,
+          ),
+          index + 1,
+        ),
+    ];
+  }
+
+  Set<({String hostId, int counter})> queuedEntries({
+    required String aliceHostId,
+    required String bobHostId,
+  }) {
+    return {
+      for (var index = 0; index < candidates.length; index++)
+        if (candidates[index].alreadyQueued)
+          (
+            hostId: candidates[index].hostId(
+              aliceHostId: aliceHostId,
+              bobHostId: bobHostId,
+            ),
+            counter: index + 1,
+          ),
+    };
+  }
+
+  List<({String hostId, int counter})> expectedRequested({
+    required String aliceHostId,
+    required String bobHostId,
+  }) {
+    if (bridgeInFlight) return const [];
+    return [
+      for (var index = 0; index < candidates.length; index++)
+        if (!candidates[index].alreadyQueued)
+          (
+            hostId: candidates[index].hostId(
+              aliceHostId: aliceHostId,
+              bobHostId: bobHostId,
+            ),
+            counter: index + 1,
+          ),
+    ].take(maxBatchSize).toList();
+  }
+
+  @override
+  String toString() {
+    return '_AutomaticBackfillSelectionScenario('
+        'maxBatchSize: $maxBatchSize, '
+        'bypassDebounce: $bypassDebounce, '
+        'bridgeInFlight: $bridgeInFlight, '
+        'candidates: $candidates'
+        ')';
+  }
+}
+
 extension _AnyBackfillSelectionScenario on glados.Any {
   glados.Generator<_GeneratedBackfillCandidate>
   get generatedBackfillCandidate => glados.CombinableAny(this).combine2(
@@ -144,6 +219,27 @@ extension _AnyBackfillSelectionScenario on glados.Any {
           candidates: candidates,
         ),
       );
+
+  glados.Generator<_AutomaticBackfillSelectionScenario>
+  get automaticBackfillSelectionScenario => glados.CombinableAny(this).combine4(
+    glados.IntAnys(this).intInRange(1, 7),
+    glados.BoolAny(this).bool,
+    glados.BoolAny(this).bool,
+    glados.ListAnys(
+      this,
+    ).listWithLengthInRange(1, 15, generatedBackfillCandidate),
+    (
+      int maxBatchSize,
+      bool bypassDebounce,
+      bool bridgeInFlight,
+      List<_GeneratedBackfillCandidate> candidates,
+    ) => _AutomaticBackfillSelectionScenario(
+      maxBatchSize: maxBatchSize,
+      bypassDebounce: bypassDebounce,
+      bridgeInFlight: bridgeInFlight,
+      candidates: candidates,
+    ),
+  );
 }
 
 void main() {
@@ -592,6 +688,130 @@ void main() {
         } finally {
           service.dispose();
         }
+      },
+    );
+
+    glados.Glados(
+      _AnyBackfillSelectionScenario(
+        glados.any,
+      ).automaticBackfillSelectionScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'automatic backfill requests the generated first unqueued bounded batch',
+      (scenario) {
+        fakeAsync((async) {
+          final coordinator = _MockQueuePipelineCoordinator();
+          when(
+            () => coordinator.isBridgeInFlight,
+          ).thenReturn(scenario.bridgeInFlight);
+
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            queueCoordinator: coordinator,
+            maxBatchSize: scenario.maxBatchSize,
+            missingDebounce: const Duration(minutes: 7),
+          );
+
+          final missingItems = scenario.missingItems(
+            aliceHostId: aliceHostId,
+            bobHostId: bobHostId,
+          );
+          final expected = scenario.expectedRequested(
+            aliceHostId: aliceHostId,
+            bobHostId: bobHostId,
+          );
+          final enqueuedRequests = <SyncBackfillRequest>[];
+          final markedRequested = <List<({String hostId, int counter})>>[];
+          final minAges = <Duration>[];
+
+          when(
+            () => mockSequenceService.getMissingEntriesWithLimits(
+              limit: any(named: 'limit'),
+              maxRequestCount: any(named: 'maxRequestCount'),
+              maxAge: any(named: 'maxAge'),
+              minAge: any(named: 'minAge'),
+              maxPerHost: any(named: 'maxPerHost'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((invocation) async {
+            final limit = invocation.namedArguments[#limit] as int;
+            final offset = invocation.namedArguments[#offset] as int;
+            minAges.add(invocation.namedArguments[#minAge] as Duration);
+            return missingItems.skip(offset).take(limit).toList();
+          });
+          when(() => mockSyncDatabase.getPendingBackfillEntries()).thenAnswer(
+            (_) async => scenario.queuedEntries(
+              aliceHostId: aliceHostId,
+              bobHostId: bobHostId,
+            ),
+          );
+          when(() => mockOutboxService.enqueueMessage(any())).thenAnswer((
+            invocation,
+          ) async {
+            enqueuedRequests.add(
+              invocation.positionalArguments.single as SyncBackfillRequest,
+            );
+          });
+          when(() => mockSequenceService.markAsRequested(any())).thenAnswer((
+            invocation,
+          ) async {
+            markedRequested.add(
+              (invocation.positionalArguments.single
+                      as List<({String hostId, int counter})>)
+                  .toList(),
+            );
+          });
+
+          try {
+            if (scenario.bypassDebounce) {
+              service.nudgeAfterDrain();
+            } else {
+              service.nudge();
+            }
+            async.flushMicrotasks();
+
+            if (scenario.bridgeInFlight || expected.isEmpty) {
+              expect(enqueuedRequests, isEmpty);
+              expect(markedRequested, isEmpty);
+            } else {
+              expect(enqueuedRequests, hasLength(1));
+              expect(enqueuedRequests.single.requesterId, myHostId);
+              expect(
+                enqueuedRequests.single.entries
+                    .map(
+                      (entry) => (
+                        hostId: entry.hostId,
+                        counter: entry.counter,
+                      ),
+                    )
+                    .toList(),
+                expected,
+              );
+              expect(markedRequested, [expected]);
+            }
+
+            if (scenario.bridgeInFlight) {
+              expect(minAges, isEmpty);
+            } else {
+              expect(minAges, isNotEmpty);
+              expect(
+                minAges.toSet(),
+                {
+                  if (scenario.bypassDebounce)
+                    Duration.zero
+                  else
+                    const Duration(minutes: 7),
+                },
+              );
+            }
+          } finally {
+            service.dispose();
+          }
+        });
       },
     );
 
