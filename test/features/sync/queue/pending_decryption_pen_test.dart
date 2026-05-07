@@ -486,12 +486,11 @@ void main() {
         () => room.getEventById(r'$sweep'),
       ).thenAnswer((_) async => decrypted);
 
+      final enqueued = queue.depthChanges.firstWhere(
+        (signal) => signal.total == 1,
+      );
       pen.startSweeping(resolveRoom: () async => room, queue: queue);
-      // Wait long enough for the periodic sweep to fire at least once.
-      for (var i = 0; i < 50; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        if (pen.size == 0) break;
-      }
+      await enqueued.timeout(const Duration(seconds: 2));
       expect(pen.size, 0);
       await pen.stop();
       final stats = await queue.stats();

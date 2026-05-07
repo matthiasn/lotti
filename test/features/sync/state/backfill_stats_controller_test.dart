@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -151,11 +153,9 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final backfill = Completer<int>();
         when(() => mockBackfillService.processFullBackfill()).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 200));
-            return 5;
-          },
+          (_) => backfill.future,
         );
 
         createAndLoad(async);
@@ -168,9 +168,8 @@ void main() {
         var state = container.read(backfillStatsControllerProvider);
         expect(state.isProcessing, isTrue);
 
-        async
-          ..elapse(const Duration(milliseconds: 200))
-          ..flushMicrotasks();
+        backfill.complete(5);
+        async.flushMicrotasks();
 
         state = container.read(backfillStatsControllerProvider);
         expect(state.isProcessing, isFalse);
@@ -204,11 +203,9 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final backfill = Completer<int>();
         when(() => mockBackfillService.processFullBackfill()).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 100));
-            return 5;
-          },
+          (_) => backfill.future,
         );
 
         createAndLoad(async);
@@ -218,9 +215,8 @@ void main() {
         act(async, (c) => c.triggerFullBackfill());
 
         // Complete the first one
-        async
-          ..elapse(const Duration(milliseconds: 100))
-          ..flushMicrotasks();
+        backfill.complete(5);
+        async.flushMicrotasks();
 
         verify(() => mockBackfillService.processFullBackfill()).called(1);
       });
@@ -257,11 +253,9 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final reRequest = Completer<int>();
         when(() => mockBackfillService.processReRequest()).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 200));
-            return 8;
-          },
+          (_) => reRequest.future,
         );
 
         createAndLoad(async);
@@ -274,9 +268,8 @@ void main() {
         var state = container.read(backfillStatsControllerProvider);
         expect(state.isReRequesting, isTrue);
 
-        async
-          ..elapse(const Duration(milliseconds: 200))
-          ..flushMicrotasks();
+        reRequest.complete(8);
+        async.flushMicrotasks();
 
         state = container.read(backfillStatsControllerProvider);
         expect(state.isReRequesting, isFalse);
@@ -310,11 +303,9 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final reRequest = Completer<int>();
         when(() => mockBackfillService.processReRequest()).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 100));
-            return 5;
-          },
+          (_) => reRequest.future,
         );
 
         createAndLoad(async);
@@ -322,9 +313,8 @@ void main() {
         act(async, (c) => c.triggerReRequest());
         act(async, (c) => c.triggerReRequest());
 
-        async
-          ..elapse(const Duration(milliseconds: 100))
-          ..flushMicrotasks();
+        reRequest.complete(5);
+        async.flushMicrotasks();
 
         verify(() => mockBackfillService.processReRequest()).called(1);
       });
@@ -335,11 +325,9 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final backfill = Completer<int>();
         when(() => mockBackfillService.processFullBackfill()).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 100));
-            return 5;
-          },
+          (_) => backfill.future,
         );
 
         createAndLoad(async);
@@ -349,9 +337,8 @@ void main() {
         act(async, (c) => c.triggerReRequest());
 
         // Complete the backfill
-        async
-          ..elapse(const Duration(milliseconds: 100))
-          ..flushMicrotasks();
+        backfill.complete(5);
+        async.flushMicrotasks();
 
         verifyNever(() => mockBackfillService.processReRequest());
       });
@@ -385,11 +372,9 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final reset = Completer<int>();
         when(() => mockSequenceService.resetUnresolvableEntries()).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 200));
-            return 10;
-          },
+          (_) => reset.future,
         );
 
         createAndLoad(async);
@@ -399,9 +384,8 @@ void main() {
         var state = container.read(backfillStatsControllerProvider);
         expect(state.isResetting, isTrue);
 
-        async
-          ..elapse(const Duration(milliseconds: 200))
-          ..flushMicrotasks();
+        reset.complete(10);
+        async.flushMicrotasks();
 
         state = container.read(backfillStatsControllerProvider);
         expect(state.isResetting, isFalse);
@@ -432,11 +416,9 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final reset = Completer<int>();
         when(() => mockSequenceService.resetUnresolvableEntries()).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 100));
-            return 5;
-          },
+          (_) => reset.future,
         );
 
         createAndLoad(async);
@@ -444,9 +426,8 @@ void main() {
         act(async, (c) => c.resetUnresolvable());
         act(async, (c) => c.resetUnresolvable());
 
-        async
-          ..elapse(const Duration(milliseconds: 100))
-          ..flushMicrotasks();
+        reset.complete(5);
+        async.flushMicrotasks();
 
         verify(() => mockSequenceService.resetUnresolvableEntries()).called(1);
       });
@@ -457,11 +438,9 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final backfill = Completer<int>();
         when(() => mockBackfillService.processFullBackfill()).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 100));
-            return 5;
-          },
+          (_) => backfill.future,
         );
 
         createAndLoad(async);
@@ -469,9 +448,8 @@ void main() {
         act(async, (c) => c.triggerFullBackfill());
         act(async, (c) => c.resetUnresolvable());
 
-        async
-          ..elapse(const Duration(milliseconds: 100))
-          ..flushMicrotasks();
+        backfill.complete(5);
+        async.flushMicrotasks();
 
         verifyNever(() => mockSequenceService.resetUnresolvableEntries());
       });
@@ -516,16 +494,12 @@ void main() {
         when(
           () => mockSequenceService.getBackfillStats(),
         ).thenAnswer((_) async => testStats);
+        final retire = Completer<int>();
         when(
           () => mockSequenceService.retireAgedOutRequestedEntries(
             amnestyWindow: any(named: 'amnestyWindow'),
           ),
-        ).thenAnswer(
-          (_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 200));
-            return 3;
-          },
-        );
+        ).thenAnswer((_) => retire.future);
 
         createAndLoad(async);
 
@@ -537,9 +511,8 @@ void main() {
         var state = container.read(backfillStatsControllerProvider);
         expect(state.isRetiringStuck, isTrue);
 
-        async
-          ..elapse(const Duration(milliseconds: 200))
-          ..flushMicrotasks();
+        retire.complete(3);
+        async.flushMicrotasks();
 
         state = container.read(backfillStatsControllerProvider);
         expect(state.isRetiringStuck, isFalse);
@@ -627,11 +600,9 @@ void main() {
           when(
             () => mockSequenceService.getBackfillStats(),
           ).thenAnswer((_) async => testStats);
+          final backfill = Completer<int>();
           when(() => mockBackfillService.processFullBackfill()).thenAnswer(
-            (_) async {
-              await Future<void>.delayed(const Duration(milliseconds: 100));
-              return 2;
-            },
+            (_) => backfill.future,
           );
           when(
             () => mockSequenceService.retireAgedOutRequestedEntries(
@@ -645,9 +616,8 @@ void main() {
           act(async, (c) => c.triggerFullBackfill());
           act(async, (c) => c.retireStuckNow());
 
-          async
-            ..elapse(const Duration(milliseconds: 100))
-            ..flushMicrotasks();
+          backfill.complete(2);
+          async.flushMicrotasks();
 
           verifyNever(
             () => mockSequenceService.retireAgedOutRequestedEntries(

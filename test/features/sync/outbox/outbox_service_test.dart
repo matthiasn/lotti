@@ -2250,44 +2250,57 @@ void main() {
 
     test(
       'sendNext aborts second drain when disposed during settle',
-      () async {
+      () {
         // Regression: with `outboxPostDrainSettle = 1500ms`, the disposal
         // window grows. After awaiting the settle, sendNext must not run a
         // second drain on a disposed service.
-        when(
-          () => journalDb.getConfigFlag(enableMatrixFlag),
-        ).thenAnswer((_) async => true);
-        final gate = createGate();
+        fakeAsync((async) {
+          when(
+            () => journalDb.getConfigFlag(enableMatrixFlag),
+          ).thenAnswer((_) async => true);
+          final gate = createGate();
 
-        var calls = 0;
-        when(() => processor.processQueue()).thenAnswer((_) async {
-          calls++;
-          return OutboxProcessingResult.none;
+          var calls = 0;
+          when(() => processor.processQueue()).thenAnswer((_) async {
+            calls++;
+            return OutboxProcessingResult.none;
+          });
+
+          final svc = TestableOutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: gate,
+            ownsActivityGate: false,
+            postDrainSettle: const Duration(milliseconds: 50),
+          );
+
+          var pendingCompleted = false;
+          final pending = svc.sendNext()
+            ..then((_) {
+              pendingCompleted = true;
+            });
+          async.flushMicrotasks();
+          expect(calls, 1);
+
+          // Dispose mid-settle, before the trailing drain runs.
+          async.elapse(const Duration(milliseconds: 10));
+          unawaited(svc.dispose());
+          async
+            ..elapse(const Duration(milliseconds: 40))
+            ..flushMicrotasks();
+          expect(pendingCompleted, isTrue);
+
+          // First drain ran; trailing drain skipped because of disposal.
+          expect(calls, 1);
+          unawaited(pending);
         });
-
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-          activityGate: gate,
-          ownsActivityGate: false,
-          postDrainSettle: const Duration(milliseconds: 50),
-        );
-
-        final pending = svc.sendNext();
-        // Dispose mid-settle, before the trailing drain runs.
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        await svc.dispose();
-        await pending;
-
-        // First drain ran; trailing drain skipped because of disposal.
-        expect(calls, 1);
       },
     );
 
@@ -2530,9 +2543,10 @@ void main() {
       );
       final gate = createGate();
       // Keep the runner busy so queueSize > 0 when watchdog fires
+      late Completer<void> gateReleased;
       when(
         gate.waitUntilIdle,
-      ).thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 30)));
+      ).thenAnswer((_) => gateReleased.future);
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
@@ -2551,6 +2565,7 @@ void main() {
       ).thenAnswer((_) => const Stream<int>.empty());
 
       fakeAsync((async) {
+        gateReleased = Completer<void>();
         final svc = OutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
@@ -2579,6 +2594,8 @@ void main() {
             subDomain: 'watchdog',
           ),
         );
+        gateReleased.complete();
+        async.flushMicrotasks();
         unawaited(svc.dispose());
         async.flushMicrotasks();
       });
@@ -3066,9 +3083,10 @@ void main() {
 
       // Gate delays long enough so watchdog fires while runner is active
       final gate = createGate();
+      late Completer<void> gateReleased;
       when(
         gate.waitUntilIdle,
-      ).thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 12)));
+      ).thenAnswer((_) => gateReleased.future);
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
@@ -3094,6 +3112,7 @@ void main() {
       ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       fakeAsync((async) {
+        gateReleased = Completer<void>();
         final svc = OutboxService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
@@ -3120,8 +3139,10 @@ void main() {
         async.elapse(const Duration(seconds: 10));
 
         // Let the runner finish and the second drain occur after settle
+        gateReleased.complete();
         async
-          ..elapse(const Duration(seconds: 3))
+          ..flushMicrotasks()
+          ..elapse(Duration.zero)
           ..flushMicrotasks();
 
         // Exactly one runner invocation → two drains
@@ -3169,9 +3190,10 @@ void main() {
 
         // Long wait to keep the queue active till after watchdog
         final gate = createGate();
+        late Completer<void> gateReleased;
         when(
           gate.waitUntilIdle,
-        ).thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 12)));
+        ).thenAnswer((_) => gateReleased.future);
 
         final matrixService = MockMatrixService();
         final client = MockMatrixClient();
@@ -3194,6 +3216,7 @@ void main() {
         ).thenAnswer((_) => const Stream<int>.empty());
 
         fakeAsync((async) {
+          gateReleased = Completer<void>();
           final svc = OutboxService(
             syncDatabase: syncDatabase,
             loggingService: loggingService,
@@ -3223,8 +3246,10 @@ void main() {
           async.elapse(const Duration(seconds: 10));
 
           // Allow runner completion and second drains
+          gateReleased.complete();
           async
-            ..elapse(const Duration(seconds: 3))
+            ..flushMicrotasks()
+            ..elapse(Duration.zero)
             ..flushMicrotasks();
 
           // Upper bound: two drains per runner invocation, at most two runner
@@ -3254,24 +3279,23 @@ void main() {
           () => processor.processQueue(),
         ).thenAnswer((_) async => OutboxProcessingResult.none);
         // Slow fetchPending simulates overlap window with dbNudge
+        late Completer<List<OutboxItem>> fetchPending;
         when(
           () => repository.fetchPending(limit: any(named: 'limit')),
-        ).thenAnswer((_) async {
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-          return [
-            OutboxItem(
-              id: 7,
-              message: '{}',
-              subject: 's',
-              status: OutboxStatus.pending.index,
-              retries: 0,
-              createdAt: DateTime(2024, 3, 15, 10, 30),
-              updatedAt: DateTime(2024, 3, 15, 10, 30),
-              filePath: null,
-              priority: OutboxPriority.low.index,
-            ),
-          ];
-        });
+        ).thenAnswer((_) => fetchPending.future);
+        final pendingItems = [
+          OutboxItem(
+            id: 7,
+            message: '{}',
+            subject: 's',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
+            filePath: null,
+            priority: OutboxPriority.low.index,
+          ),
+        ];
 
         // Gate immediate
         final gate = createGate();
@@ -3295,6 +3319,7 @@ void main() {
         ).thenAnswer((_) => countController.stream);
 
         fakeAsync((async) {
+          fetchPending = Completer<List<OutboxItem>>();
           final svc = OutboxService(
             syncDatabase: syncDatabase,
             loggingService: loggingService,
@@ -3320,9 +3345,8 @@ void main() {
           async.flushMicrotasks();
 
           // Allow drains to complete
-          async
-            ..elapse(const Duration(seconds: 1))
-            ..flushMicrotasks();
+          fetchPending.complete(pendingItems);
+          async.flushMicrotasks();
 
           // Should not explode in duplicate processing; 4 drains is an upper bound here
           verify(() => processor.processQueue()).called(lessThanOrEqualTo(4));

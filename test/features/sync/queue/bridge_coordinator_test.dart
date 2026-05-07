@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
@@ -255,8 +256,14 @@ void main() {
     () async {
       final room = _MockRoom();
       when(() => room.id).thenReturn(roomId);
+      final retried = Completer<void>();
+      var callCount = 0;
       final runner = _RecordingRunner()
         ..override = (Room r, BridgeMarker m) async {
+          callCount++;
+          if (callCount >= 2 && !retried.isCompleted) {
+            retried.complete();
+          }
           throw StateError('bootstrap boom');
         };
       final coordinator = buildCoordinator(
@@ -273,8 +280,7 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
       ).called(1);
-      // Retry timer should have scheduled a second call after 10ms.
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      await retried.future.timeout(const Duration(seconds: 2));
       expect(runner.calls.length, greaterThanOrEqualTo(2));
       await coordinator.stop();
     },
@@ -429,9 +435,13 @@ void main() {
       'eventually fires _bridge again',
       () async {
         var callCount = 0;
+        final retryCompleted = Completer<void>();
         final runner = _RecordingRunner()
           ..override = (Room r, BridgeMarker m) async {
             callCount++;
+            if (callCount > 1 && !retryCompleted.isCompleted) {
+              retryCompleted.complete();
+            }
             return callCount > 1; // first call incomplete, then completes.
           };
         final coordinator = buildCoordinator(
@@ -440,7 +450,7 @@ void main() {
           incompleteRetryDelay: const Duration(milliseconds: 10),
         );
         await coordinator.bridgeNow();
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        await retryCompleted.future.timeout(const Duration(seconds: 2));
         expect(callCount, greaterThanOrEqualTo(2));
         verify(
           () => logging.captureEvent(
@@ -456,6 +466,7 @@ void main() {
       'giving up emits queue.bridge.incomplete.giveUp after '
       'maxIncompleteRetries consecutive incomplete runs',
       () async {
+        final gaveUp = Completer<void>();
         final runner = _RecordingRunner(defaultCompleted: false);
         final coordinator = buildCoordinator(
           resolveRoom: () async => room,
@@ -463,8 +474,17 @@ void main() {
           incompleteRetryDelay: const Duration(milliseconds: 5),
           maxIncompleteRetries: 2,
         );
+        when(
+          () => logging.captureEvent(
+            any<String>(that: contains('queue.bridge.incomplete.giveUp')),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {
+          if (!gaveUp.isCompleted) gaveUp.complete();
+        });
         await coordinator.bridgeNow();
-        await Future<void>.delayed(const Duration(milliseconds: 80));
+        await gaveUp.future.timeout(const Duration(seconds: 2));
         verify(
           () => logging.captureEvent(
             any<String>(that: contains('queue.bridge.incomplete.giveUp')),
@@ -479,18 +499,24 @@ void main() {
     test(
       'stop() cancels a pending incomplete-retry timer so no bridge fires '
       'after shutdown',
-      () async {
-        final runner = _RecordingRunner(defaultCompleted: false);
-        final coordinator = buildCoordinator(
-          resolveRoom: () async => room,
-          runner: runner,
-          incompleteRetryDelay: const Duration(milliseconds: 50),
-        );
-        await coordinator.bridgeNow();
-        final callsAtStop = runner.calls.length;
-        await coordinator.stop();
-        await Future<void>.delayed(const Duration(milliseconds: 120));
-        expect(runner.calls.length, callsAtStop);
+      () {
+        fakeAsync((async) {
+          final runner = _RecordingRunner(defaultCompleted: false);
+          final coordinator = buildCoordinator(
+            resolveRoom: () async => room,
+            runner: runner,
+            incompleteRetryDelay: const Duration(milliseconds: 50),
+          );
+          unawaited(coordinator.bridgeNow());
+          async.flushMicrotasks();
+          final callsAtStop = runner.calls.length;
+          unawaited(coordinator.stop());
+          async
+            ..flushMicrotasks()
+            ..elapse(const Duration(milliseconds: 120))
+            ..flushMicrotasks();
+          expect(runner.calls.length, callsAtStop);
+        });
       },
     );
 
@@ -690,6 +716,7 @@ void main() {
       () async {
         final outcomes = <bool>[false, true];
         var index = 0;
+        final completed = Completer<void>();
         final runner = _RecordingRunner()
           ..override = (Room r, BridgeMarker m) async {
             final result = outcomes[index.clamp(0, outcomes.length - 1)];
@@ -702,15 +729,14 @@ void main() {
           incompleteRetryDelay: const Duration(milliseconds: 10),
         );
         var completions = 0;
-        coordinator.onBridgeCompleted = () => completions++;
+        coordinator.onBridgeCompleted = () {
+          completions++;
+          if (!completed.isCompleted) completed.complete();
+        };
 
         await coordinator.bridgeNow();
 
-        // Drain the retry timer + its bridge pass.
-        for (var i = 0; i < 50; i++) {
-          await Future<void>.delayed(const Duration(milliseconds: 5));
-          if (index >= 2 && completions >= 1) break;
-        }
+        await completed.future.timeout(const Duration(seconds: 2));
         expect(index, 2);
         expect(completions, 1);
 

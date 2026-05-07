@@ -71,6 +71,12 @@ void _testActorInvalidResponseEntrypoint(SendPort readyPort) {
         final eventPort = command['eventPort'] as SendPort?;
         eventPort?.send(123);
         replyTo?.send(<String, Object?>{'ok': true});
+      case 'emitRawThenValidEvent':
+        final eventPort = command['eventPort'] as SendPort?;
+        eventPort
+          ?..send(123)
+          ..send(<String, Object?>{'event': 'afterRaw'});
+        replyTo?.send(<String, Object?>{'ok': true});
       default:
         replyTo?.send(<String, Object?>{'ok': false, 'error': 'bad'});
     }
@@ -162,21 +168,25 @@ void main() {
       host = await SyncActorHost.spawn(
         entrypoint: _testActorInvalidResponseEntrypoint,
       );
+
+      final events = <Map<String, Object?>>[];
+      final validEvent = Completer<Map<String, Object?>>();
+      final sub = host.events.listen((event) {
+        events.add(event);
+        if (!validEvent.isCompleted) {
+          validEvent.complete(event);
+        }
+      });
+
       final eventPortResponse = await host.send(
-        'emitRawEvent',
+        'emitRawThenValidEvent',
         payload: {'eventPort': host.eventSendPort},
       );
       expect(eventPortResponse['ok'], isTrue);
 
-      final events = <Map<String, Object?>>[];
-      final sub = host.events.listen(events.add);
-
-      await host.send(
-        'emitRawEvent',
-        payload: {'eventPort': host.eventSendPort},
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      expect(events, isEmpty);
+      final event = await validEvent.future.timeout(const Duration(seconds: 2));
+      expect(event['event'], 'afterRaw');
+      expect(events, hasLength(1));
       await sub.cancel();
     });
 

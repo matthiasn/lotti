@@ -1,5 +1,6 @@
 // ignore_for_file: cascade_invocations, avoid_redundant_argument_values
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
@@ -971,6 +972,7 @@ void main() {
         );
 
         var callCount = 0;
+        final processing = Completer<List<SyncSequenceLogItem>>();
         when(
           () => mockSequenceService.getMissingEntriesWithLimits(
             limit: any(named: 'limit'),
@@ -982,9 +984,7 @@ void main() {
           ),
         ).thenAnswer((_) async {
           callCount++;
-          // Simulate slow processing (longer than interval)
-          await Future<void>.delayed(const Duration(seconds: 8));
-          return [];
+          return processing.future;
         });
 
         service.start();
@@ -998,8 +998,8 @@ void main() {
         async.elapse(const Duration(seconds: 5));
         async.flushMicrotasks();
 
-        // Complete the first processing at 13s (5s + 8s delay)
-        async.elapse(const Duration(seconds: 3));
+        // Complete the first processing.
+        processing.complete([]);
         async.flushMicrotasks();
 
         // Only one call should have been made despite two timer fires
@@ -1674,6 +1674,7 @@ void main() {
           );
 
           var getRequestedCallCount = 0;
+          final requested = Completer<List<SyncSequenceLogItem>>();
           when(
             () => mockSequenceService.getRequestedEntries(
               limit: 50,
@@ -1681,9 +1682,7 @@ void main() {
             ),
           ).thenAnswer((_) async {
             getRequestedCallCount++;
-            // Simulate slow processing
-            await Future<void>.delayed(const Duration(seconds: 2));
-            return [];
+            return requested.future;
           });
 
           // Start first processReRequest
@@ -1699,7 +1698,7 @@ void main() {
           expect(result, 0);
 
           // Complete the first processing
-          async.elapse(const Duration(seconds: 2));
+          requested.complete([]);
           async.flushMicrotasks();
 
           // Only one call to getRequestedEntries (second was rejected)

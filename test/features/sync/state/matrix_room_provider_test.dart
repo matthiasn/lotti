@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/state/matrix_room_provider.dart';
@@ -103,11 +105,10 @@ void main() {
       ).thenAnswer((_) async => '!room:s');
 
       // Simulate a slow invite
+      final invite = Completer<void>();
       when(
         () => mockMatrixService.inviteToSyncRoom(userId: any(named: 'userId')),
-      ).thenAnswer(
-        (_) async => Future<void>.delayed(const Duration(milliseconds: 50)),
-      );
+      ).thenAnswer((_) => invite.future);
 
       final container = ProviderContainer(
         overrides: [
@@ -124,6 +125,7 @@ void main() {
       // Fire two invites concurrently
       final f1 = controller.inviteToRoom('@user:server');
       final f2 = controller.inviteToRoom('@user:server');
+      invite.complete();
       await Future.wait([f1, f2]);
 
       // Only one should have gone through

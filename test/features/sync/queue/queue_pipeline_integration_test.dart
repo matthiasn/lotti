@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -69,6 +70,31 @@ Event _buildSyncEvent({
   return event;
 }
 
+Future<void> _waitForQueueStats(
+  InboundQueue queue,
+  bool Function(QueueStats stats) matches,
+) async {
+  final completer = Completer<void>();
+
+  Future<void> check() async {
+    if (completer.isCompleted) return;
+    final stats = await queue.stats();
+    if (matches(stats) && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
+  final sub = queue.depthChanges.listen((_) {
+    unawaited(check());
+  });
+  try {
+    await check();
+    await completer.future;
+  } finally {
+    await sub.cancel();
+  }
+}
+
 void main() {
   late SyncDatabase syncDb;
   late JournalDb journalDb;
@@ -106,7 +132,7 @@ void main() {
     logging = MockLoggingService();
     bridge = _MockBridge();
     room = _MockRoom();
-    timelineCtl = StreamController<Event>.broadcast();
+    timelineCtl = StreamController<Event>.broadcast(sync: true);
     syncCtl = CachedStreamController<SyncUpdate>();
     client = _MockClient();
     when(() => client.onSync).thenReturn(syncCtl);
@@ -146,12 +172,18 @@ void main() {
       when(
         () => processor.prepare(event: any(named: 'event')),
       ).thenAnswer((_) async => prepared);
+      final applied = Completer<void>();
       when(
         () => processor.apply(
           prepared: any(named: 'prepared'),
           journalDb: journalDb,
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async {
+        if (!applied.isCompleted) {
+          applied.complete();
+        }
+        return null;
+      });
 
       final coordinator = QueuePipelineCoordinator(
         syncDb: syncDb,
@@ -179,18 +211,8 @@ void main() {
       );
       timelineCtl.add(event);
 
-      // Let the pipeline finish: enqueue → depth signal → worker
-      // wakeup → apply. Pump until the queue empties or the budget
-      // expires so the test stays deterministic on slow machines.
-      // Budget is generous because a real-timer worker on a loaded
-      // CI runner can take multiple seconds to wake + apply; ending
-      // assertions should still race ahead once the queue is empty.
-      final start = DateTime.now();
-      while (DateTime.now().difference(start) < const Duration(seconds: 10)) {
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        final stats = await coordinator.queue.stats();
-        if (stats.total == 0) break;
-      }
+      await applied.future;
+      await coordinator.queue.waitForDrainAtMostTo(0);
 
       verify(() => processor.prepare(event: any(named: 'event'))).called(1);
       verify(
@@ -219,12 +241,20 @@ void main() {
       when(
         () => processor.prepare(event: any(named: 'event')),
       ).thenAnswer((_) async => prepared);
+      final bothApplied = Completer<void>();
+      var applyCount = 0;
       when(
         () => processor.apply(
           prepared: any(named: 'prepared'),
           journalDb: journalDb,
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async {
+        applyCount++;
+        if (applyCount == 2 && !bothApplied.isCompleted) {
+          bothApplied.complete();
+        }
+        return null;
+      });
 
       final coordinator = QueuePipelineCoordinator(
         syncDb: syncDb,
@@ -276,7 +306,6 @@ void main() {
 
       // Step 1: encrypted event arrives — pen holds it, queue stays empty.
       timelineCtl.add(encrypted);
-      await Future<void>.delayed(const Duration(milliseconds: 30));
       final statsAfterHold = await coordinator.queue.stats();
       expect(statsAfterHold.total, 0);
 
@@ -291,12 +320,7 @@ void main() {
       );
       timelineCtl.add(wakeEvent);
 
-      final start = DateTime.now();
-      while (DateTime.now().difference(start) < const Duration(seconds: 10)) {
-        await Future<void>.delayed(const Duration(milliseconds: 30));
-        final stats = await coordinator.queue.stats();
-        if (stats.total == 0) break;
-      }
+      await bothApplied.future;
 
       // Both the wake event and the now-decrypted event applied.
       verify(
@@ -330,12 +354,18 @@ void main() {
         }
         return prepared;
       });
+      final appliedDone = Completer<void>();
       when(
         () => processor.apply(
           prepared: any(named: 'prepared'),
           journalDb: journalDb,
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async {
+        if (!appliedDone.isCompleted) {
+          appliedDone.complete();
+        }
+        return null;
+      });
 
       final attachmentIndex = AttachmentIndex(logging: MockLoggingService());
       addTearDown(attachmentIndex.dispose);
@@ -392,14 +422,12 @@ void main() {
       // here by manually flipping the row to abandoned once we see
       // the first retry attempt, then `attemptsExhausted` mimics
       // the "worker gave up" terminal state. This keeps the test
-      // deterministic and under the 10s budget.
+      // deterministic without sleeping through the retry ladder.
       {
-        final start = DateTime.now();
-        while (DateTime.now().difference(start) < const Duration(seconds: 10)) {
-          await Future<void>.delayed(const Duration(milliseconds: 30));
-          final stats = await coordinator.queue.stats();
-          if (stats.retrying > 0 || stats.abandoned > 0) break;
-        }
+        await _waitForQueueStats(
+          coordinator.queue,
+          (stats) => stats.retrying > 0 || stats.abandoned > 0,
+        );
         // Transition the retrying row straight to abandoned so we can
         // exercise resurrection without sleeping through the full
         // 30s → 10min ladder.
@@ -413,7 +441,7 @@ void main() {
           InboundEventQueueCompanion(
             status: const Value('abandoned'),
             abandonedAt: Value(
-              DateTime.now().millisecondsSinceEpoch,
+              DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
             ),
             lastErrorReason: const Value('maxAttempts(pendingAttachment)'),
           ),
@@ -449,14 +477,11 @@ void main() {
       attachmentIndex.record(attachmentEvent);
 
       // Phase 3 — wait for resurrection + apply + marker advance.
-      {
-        final start = DateTime.now();
-        while (DateTime.now().difference(start) < const Duration(seconds: 10)) {
-          await Future<void>.delayed(const Duration(milliseconds: 30));
-          final stats = await coordinator.queue.stats();
-          if (stats.applied > 0) break;
-        }
-      }
+      await appliedDone.future;
+      await _waitForQueueStats(
+        coordinator.queue,
+        (stats) => stats.applied > 0,
+      );
 
       verify(
         () => processor.apply(
@@ -496,12 +521,18 @@ void main() {
         }
         return prepared;
       });
+      final appliedDone = Completer<void>();
       when(
         () => processor.apply(
           prepared: any(named: 'prepared'),
           journalDb: journalDb,
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async {
+        if (!appliedDone.isCompleted) {
+          appliedDone.complete();
+        }
+        return null;
+      });
 
       final attachmentIndex = AttachmentIndex(logging: MockLoggingService());
       addTearDown(attachmentIndex.dispose);
@@ -561,12 +592,10 @@ void main() {
       // Wait for the row to become retrying; then flip to abandoned
       // (shortcut past the production ladder).
       {
-        final start = DateTime.now();
-        while (DateTime.now().difference(start) < const Duration(seconds: 10)) {
-          await Future<void>.delayed(const Duration(milliseconds: 30));
-          final stats = await coordinator.queue.stats();
-          if (stats.retrying > 0 || stats.abandoned > 0) break;
-        }
+        await _waitForQueueStats(
+          coordinator.queue,
+          (stats) => stats.retrying > 0 || stats.abandoned > 0,
+        );
         final entries = await (syncDb.select(
           syncDb.inboundEventQueue,
         )..where((t) => t.eventId.equals(r'$liveSyncAwaiting'))).get();
@@ -577,7 +606,7 @@ void main() {
           InboundEventQueueCompanion(
             status: const Value('abandoned'),
             abandonedAt: Value(
-              DateTime.now().millisecondsSinceEpoch,
+              DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
             ),
             lastErrorReason: const Value('maxAttempts(pendingAttachment)'),
           ),
@@ -622,14 +651,11 @@ void main() {
       timelineCtl.add(attachmentEvent);
 
       // Phase 3 — wait for resurrection + apply.
-      {
-        final start = DateTime.now();
-        while (DateTime.now().difference(start) < const Duration(seconds: 10)) {
-          await Future<void>.delayed(const Duration(milliseconds: 30));
-          final stats = await coordinator.queue.stats();
-          if (stats.applied > 0) break;
-        }
-      }
+      await appliedDone.future;
+      await _waitForQueueStats(
+        coordinator.queue,
+        (stats) => stats.applied > 0,
+      );
 
       verify(
         () => processor.apply(
