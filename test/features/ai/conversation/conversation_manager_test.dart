@@ -1,7 +1,242 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+enum _GeneratedConversationOperationKind {
+  initializeEmpty,
+  initializeWithSystem,
+  addUser,
+  addAssistantContent,
+  addAssistantEmpty,
+  addAssistantToolCall,
+  addAssistantToolCallWithSignature,
+  addToolResponse,
+  emitThinking,
+  emitError,
+}
+
+enum _GeneratedConversationTextSlot { first, second, third, fourth }
+
+enum _GeneratedConversationToolSlot { first, second, third }
+
+enum _GeneratedConversationRole { system, user, assistant, tool }
+
+String _generatedConversationText(_GeneratedConversationTextSlot slot) =>
+    'generated conversation text ${slot.name}';
+
+String _generatedConversationToolId(_GeneratedConversationToolSlot slot) =>
+    'generated-tool-${slot.name}';
+
+String _generatedConversationSignature(
+  _GeneratedConversationToolSlot slot,
+  int index,
+) => 'generated-signature-${slot.name}-$index';
+
+class _GeneratedConversationOperation {
+  const _GeneratedConversationOperation({
+    required this.kind,
+    required this.textSlot,
+    required this.toolSlot,
+  });
+
+  final _GeneratedConversationOperationKind kind;
+  final _GeneratedConversationTextSlot textSlot;
+  final _GeneratedConversationToolSlot toolSlot;
+
+  String get text => _generatedConversationText(textSlot);
+
+  String get toolId => _generatedConversationToolId(toolSlot);
+
+  @override
+  String toString() {
+    return '_GeneratedConversationOperation('
+        'kind: $kind, textSlot: $textSlot, toolSlot: $toolSlot)';
+  }
+}
+
+class _GeneratedConversationScenario {
+  const _GeneratedConversationScenario({
+    required this.maxTurns,
+    required this.maxHistorySize,
+    required this.operations,
+  });
+
+  final int maxTurns;
+  final int maxHistorySize;
+  final List<_GeneratedConversationOperation> operations;
+
+  @override
+  String toString() {
+    return '_GeneratedConversationScenario('
+        'maxTurns: $maxTurns, maxHistorySize: $maxHistorySize, '
+        'operations: $operations)';
+  }
+}
+
+class _GeneratedConversationModel {
+  _GeneratedConversationModel({
+    required this.maxTurns,
+    required this.maxHistorySize,
+  });
+
+  final int maxTurns;
+  final int maxHistorySize;
+  final List<_GeneratedConversationRole> roles = [];
+  final Map<String, String> signatures = {};
+  int eventCount = 0;
+
+  int get turnCount =>
+      roles.where((role) => role == _GeneratedConversationRole.user).length;
+
+  bool get canContinue => turnCount < maxTurns;
+
+  void apply(_GeneratedConversationOperation operation, int index) {
+    switch (operation.kind) {
+      case _GeneratedConversationOperationKind.initializeEmpty:
+        roles.clear();
+        signatures.clear();
+        eventCount += 1;
+
+      case _GeneratedConversationOperationKind.initializeWithSystem:
+        roles
+          ..clear()
+          ..add(_GeneratedConversationRole.system);
+        signatures.clear();
+        eventCount += 1;
+
+      case _GeneratedConversationOperationKind.addUser:
+        roles.add(_GeneratedConversationRole.user);
+        _trimHistoryIfNeeded();
+        eventCount += 1;
+
+      case _GeneratedConversationOperationKind.addAssistantContent:
+        roles.add(_GeneratedConversationRole.assistant);
+        eventCount += 1;
+
+      case _GeneratedConversationOperationKind.addAssistantEmpty:
+        roles.add(_GeneratedConversationRole.assistant);
+
+      case _GeneratedConversationOperationKind.addAssistantToolCall:
+        roles.add(_GeneratedConversationRole.assistant);
+        eventCount += 1;
+
+      case _GeneratedConversationOperationKind
+          .addAssistantToolCallWithSignature:
+        roles.add(_GeneratedConversationRole.assistant);
+        signatures[operation.toolId] = _generatedConversationSignature(
+          operation.toolSlot,
+          index,
+        );
+        eventCount += 1;
+
+      case _GeneratedConversationOperationKind.addToolResponse:
+        roles.add(_GeneratedConversationRole.tool);
+        eventCount += 1;
+
+      case _GeneratedConversationOperationKind.emitThinking:
+      case _GeneratedConversationOperationKind.emitError:
+        eventCount += 1;
+    }
+  }
+
+  void _trimHistoryIfNeeded() {
+    if (roles.length <= maxHistorySize) return;
+
+    final effectiveMaxSize = maxHistorySize < 2 ? 2 : maxHistorySize;
+    final hasSystem =
+        roles.isNotEmpty && roles.first == _GeneratedConversationRole.system;
+    final totalToKeep = effectiveMaxSize - 1;
+    final messagesToKeepAfterSystem = hasSystem ? totalToKeep - 1 : totalToKeep;
+    final keepAfterSystem = messagesToKeepAfterSystem < 1
+        ? 1
+        : messagesToKeepAfterSystem;
+    final start = hasSystem ? 1 : 0;
+    final end = roles.length - keepAfterSystem;
+
+    if (end > start && end <= roles.length) {
+      roles
+        ..removeRange(start, end)
+        ..insert(start, _GeneratedConversationRole.system);
+    }
+  }
+}
+
+extension _AnyGeneratedConversationScenario on glados.Any {
+  glados.Generator<_GeneratedConversationOperationKind>
+  get conversationOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedConversationOperationKind.values);
+
+  glados.Generator<_GeneratedConversationTextSlot> get conversationTextSlot =>
+      glados.AnyUtils(this).choose(_GeneratedConversationTextSlot.values);
+
+  glados.Generator<_GeneratedConversationToolSlot> get conversationToolSlot =>
+      glados.AnyUtils(this).choose(_GeneratedConversationToolSlot.values);
+
+  glados.Generator<_GeneratedConversationOperation> get conversationOperation =>
+      glados.CombinableAny(this).combine3(
+        conversationOperationKind,
+        conversationTextSlot,
+        conversationToolSlot,
+        (
+          _GeneratedConversationOperationKind kind,
+          _GeneratedConversationTextSlot textSlot,
+          _GeneratedConversationToolSlot toolSlot,
+        ) => _GeneratedConversationOperation(
+          kind: kind,
+          textSlot: textSlot,
+          toolSlot: toolSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedConversationScenario> get conversationScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 8),
+        glados.IntAnys(this).intInRange(1, 10),
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          45,
+          conversationOperation,
+        ),
+        (
+          int maxTurns,
+          int maxHistorySize,
+          List<_GeneratedConversationOperation> operations,
+        ) => _GeneratedConversationScenario(
+          maxTurns: maxTurns,
+          maxHistorySize: maxHistorySize,
+          operations: operations,
+        ),
+      );
+}
+
+ChatCompletionMessageToolCall _generatedToolCall(String toolId) {
+  return ChatCompletionMessageToolCall(
+    id: toolId,
+    type: ChatCompletionMessageToolCallType.function,
+    function: const ChatCompletionMessageFunctionCall(
+      name: 'generated_function',
+      arguments: '{"ok": true}',
+    ),
+  );
+}
+
+List<_GeneratedConversationRole> _conversationRoles(
+  List<ChatCompletionMessage> messages,
+) {
+  return messages.map((message) {
+    return switch (message.role) {
+      ChatCompletionMessageRole.system => _GeneratedConversationRole.system,
+      ChatCompletionMessageRole.user => _GeneratedConversationRole.user,
+      ChatCompletionMessageRole.assistant =>
+        _GeneratedConversationRole.assistant,
+      ChatCompletionMessageRole.tool => _GeneratedConversationRole.tool,
+      ChatCompletionMessageRole.function => _GeneratedConversationRole.tool,
+      ChatCompletionMessageRole.developer => _GeneratedConversationRole.system,
+    };
+  }).toList();
+}
 
 void main() {
   group('ConversationManager', () {
@@ -595,6 +830,96 @@ void main() {
         manager.addAssistantMessage(toolCalls: toolCalls);
 
         expect(manager.thoughtSignatures, isEmpty);
+      });
+    });
+
+    group('Generated lifecycle sequences', () {
+      glados.Glados(
+        glados.any.conversationScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('match generated message, event, and signature semantics', (
+        scenario,
+      ) {
+        fakeAsync((async) {
+          final generatedManager = ConversationManager(
+            conversationId: 'generated-conversation',
+            maxTurns: scenario.maxTurns,
+            maxHistorySize: scenario.maxHistorySize,
+          );
+          final model = _GeneratedConversationModel(
+            maxTurns: scenario.maxTurns,
+            maxHistorySize: scenario.maxHistorySize,
+          );
+          final events = <ConversationEvent>[];
+          generatedManager.events.listen(events.add);
+
+          for (final (index, operation) in scenario.operations.indexed) {
+            switch (operation.kind) {
+              case _GeneratedConversationOperationKind.initializeEmpty:
+                generatedManager.initialize();
+
+              case _GeneratedConversationOperationKind.initializeWithSystem:
+                generatedManager.initialize(systemMessage: operation.text);
+
+              case _GeneratedConversationOperationKind.addUser:
+                generatedManager.addUserMessage(operation.text);
+
+              case _GeneratedConversationOperationKind.addAssistantContent:
+                generatedManager.addAssistantMessage(content: operation.text);
+
+              case _GeneratedConversationOperationKind.addAssistantEmpty:
+                generatedManager.addAssistantMessage();
+
+              case _GeneratedConversationOperationKind.addAssistantToolCall:
+                generatedManager.addAssistantMessage(
+                  toolCalls: [_generatedToolCall(operation.toolId)],
+                );
+
+              case _GeneratedConversationOperationKind
+                  .addAssistantToolCallWithSignature:
+                generatedManager.addAssistantMessage(
+                  toolCalls: [_generatedToolCall(operation.toolId)],
+                  signatures: {
+                    operation.toolId: _generatedConversationSignature(
+                      operation.toolSlot,
+                      index,
+                    ),
+                  },
+                );
+
+              case _GeneratedConversationOperationKind.addToolResponse:
+                generatedManager.addToolResponse(
+                  toolCallId: operation.toolId,
+                  response: operation.text,
+                );
+
+              case _GeneratedConversationOperationKind.emitThinking:
+                generatedManager.emitThinking();
+
+              case _GeneratedConversationOperationKind.emitError:
+                generatedManager.emitError(operation.text);
+            }
+            model.apply(operation, index);
+          }
+
+          async.flushMicrotasks();
+
+          expect(
+            _conversationRoles(generatedManager.messages),
+            model.roles,
+            reason: '$scenario',
+          );
+          expect(
+            generatedManager.thoughtSignatures,
+            model.signatures,
+            reason: '$scenario',
+          );
+          expect(generatedManager.turnCount, model.turnCount);
+          expect(generatedManager.canContinue(), model.canContinue);
+          expect(events.length, model.eventCount, reason: '$scenario');
+
+          generatedManager.dispose();
+        });
       });
     });
 
