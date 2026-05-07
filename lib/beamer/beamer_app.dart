@@ -69,6 +69,21 @@ bool _isRunningInFlatpak() {
           Platform.environment['FLATPAK_ID']!.isNotEmpty);
 }
 
+/// True when the tasks tab is active and the tasks beamer location points
+/// at a `/tasks/<uuid>` task detail. Used by both shells: the mobile shell
+/// hides the bottom nav pill so the page-owned `TaskActionBar` can dock
+/// flush against the home indicator, and the desktop shell hides the
+/// bottom-right floating recording indicator since the action bar already
+/// exposes the same affordance. Pure function of router state, no
+/// widget-lifecycle race.
+bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
+  // Tasks is always the first destination; if any other tab is active
+  // the tasks delegate's current path is irrelevant.
+  if (activeTabIndex != 0) return false;
+  if (location is! TasksLocation) return false;
+  return isUuid(location.state.pathParameters['taskId']);
+}
+
 enum _AppNavigationDestinationKind {
   tasks,
   projects,
@@ -308,43 +323,37 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
-        if (isWide) {
-          return _buildDesktopLayout(
-            context: context,
-            index: index,
-            destinations: destinations,
-            beamerChildren: beamerChildren,
-          );
-        }
-
-        // Listen to the tasks delegate so the mobile shell rebuilds when
-        // its current route changes (push to / pop from task details).
-        // That's how we know whether to hide the bottom nav pill — see
-        // [_isMobileImmersiveRoute].
+        // Listen to the tasks delegate so both shells rebuild when the
+        // tasks route changes (push to / pop from task details). That's how
+        // we know whether to hide:
+        //   - the mobile bottom nav pill; and
+        //   - the desktop bottom-right floating recording indicator, which
+        //     is redundant once the TaskActionBar is on screen.
+        // See [_isTaskDetailRoute].
         return ListenableBuilder(
           listenable: navService.tasksDelegate,
-          builder: (context, _) => _buildMobileLayout(
-            context: context,
-            index: index,
-            destinations: destinations,
-            beamerChildren: beamerChildren,
-          ),
+          builder: (context, _) => isWide
+              ? _buildDesktopLayout(
+                  context: context,
+                  index: index,
+                  destinations: destinations,
+                  beamerChildren: beamerChildren,
+                )
+              : _buildMobileLayout(
+                  context: context,
+                  index: index,
+                  destinations: destinations,
+                  beamerChildren: beamerChildren,
+                ),
         );
       },
     );
   }
 
-  /// True when the active mobile tab's beamer route is one that should
-  /// take over the bottom edge — currently just `/tasks/<uuid>`. Pure
-  /// function of router state, no widget-lifecycle race.
-  bool _isMobileImmersiveRoute(int activeTabIndex) {
-    // Tasks is always the first destination; if any other tab is
-    // active the tasks delegate's current path is irrelevant.
-    if (activeTabIndex != 0) return false;
-    final loc = navService.tasksDelegate.currentBeamLocation;
-    if (loc is! TasksLocation) return false;
-    return isUuid(loc.state.pathParameters['taskId']);
-  }
+  bool _isTaskDetailRoute(int activeTabIndex) => isTaskDetailRoute(
+    navService.tasksDelegate.currentBeamLocation,
+    activeTabIndex,
+  );
 
   Widget _buildDesktopLayout({
     required BuildContext context,
@@ -464,7 +473,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                       ),
                   ],
                 ),
-                if (!_isRunningInFlatpak())
+                // Hidden on `/tasks/<uuid>` — the desktop TaskActionBar
+                // already surfaces the recording control there, so the
+                // floating indicator would be redundant. Stays visible on
+                // the tasks list and on every other top-level destination.
+                if (!_isRunningInFlatpak() && !_isTaskDetailRoute(index))
                   const Positioned(
                     right: AppScreenConstants.navigationAudioIndicatorRight,
                     bottom: AppScreenConstants.navigationTimeIndicatorBottom,
@@ -491,7 +504,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // — so the page-owned bar can dock flush against the home
     // indicator. The enclosing ListenableBuilder ensures we rebuild on
     // every route change.
-    final showBottomNav = !_isMobileImmersiveRoute(index);
+    final showBottomNav = !_isTaskDetailRoute(index);
 
     final designSystemBottomNavigationBar = DesignSystemBottomNavigationBar(
       items: [
