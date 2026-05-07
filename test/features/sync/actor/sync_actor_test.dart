@@ -640,6 +640,11 @@ void main() {
         final mockTimelineRoom = MockRoom();
         final mockTimelineEvent = MockEvent();
         final incomingEvents = <Map<String, Object?>>[];
+        final verificationSeen = Completer<void>();
+        final toDeviceSeen = Completer<void>();
+        final incomingMessageSeen = Completer<void>();
+        final syncUpdatesSeen = Completer<void>();
+        var syncUpdateCount = 0;
 
         when(() => mockTimelineRoom.id).thenReturn('!room:localhost');
         when(() => mockTimelineEvent.type).thenReturn('m.room.message');
@@ -661,7 +666,27 @@ void main() {
         final eventPort = ReceivePort()
           ..listen((dynamic raw) {
             if (raw is Map) {
-              incomingEvents.add(raw.cast<String, Object?>());
+              final event = raw.cast<String, Object?>();
+              incomingEvents.add(event);
+              switch (event['event']) {
+                case 'verificationState':
+                  if (!verificationSeen.isCompleted) {
+                    verificationSeen.complete();
+                  }
+                case 'toDevice':
+                  if (!toDeviceSeen.isCompleted) {
+                    toDeviceSeen.complete();
+                  }
+                case 'incomingMessage':
+                  if (!incomingMessageSeen.isCompleted) {
+                    incomingMessageSeen.complete();
+                  }
+                case 'syncUpdate':
+                  syncUpdateCount++;
+                  if (syncUpdateCount == 3 && !syncUpdatesSeen.isCompleted) {
+                    syncUpdatesSeen.complete();
+                  }
+              }
             }
           });
 
@@ -691,13 +716,19 @@ void main() {
             content: const <String, dynamic>{},
           ),
         );
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await Future.wait<void>([
+          verificationSeen.future,
+          toDeviceSeen.future,
+        ]);
         onSyncController
           ..add(MockSyncUpdate())
           ..add(MockSyncUpdate())
           ..add(MockSyncUpdate());
         timelineController.add(mockTimelineEvent);
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await Future.wait<void>([
+          syncUpdatesSeen.future,
+          incomingMessageSeen.future,
+        ]);
 
         final health = await handler.handleCommand(_cmd('getHealth'));
         final syncCount = health['syncCount'];
@@ -1217,6 +1248,7 @@ void main() {
         final initialKeys = MockDeviceKeysList();
         final updatedKeys = MockDeviceKeysList();
         final incomingEvents = <Map<String, Object?>>[];
+        final keyRefreshLogged = Completer<void>();
         var keysUpdated = false;
 
         when(() => ownDevice.deviceId).thenReturn('DEV');
@@ -1239,7 +1271,15 @@ void main() {
         final eventPort = ReceivePort()
           ..listen((dynamic raw) {
             if (raw is Map) {
-              incomingEvents.add(raw.cast<String, Object?>());
+              final event = raw.cast<String, Object?>();
+              incomingEvents.add(event);
+              if (event['event'] == 'log' &&
+                  '${event['message']}'.contains(
+                    'verification device keys updated for',
+                  ) &&
+                  !keyRefreshLogged.isCompleted) {
+                keyRefreshLogged.complete();
+              }
             }
           });
 
@@ -1273,9 +1313,8 @@ void main() {
         );
 
         final first = await handler.handleCommand(_cmd('startVerification'));
-        await Future<void>.delayed(const Duration(milliseconds: 20));
         final second = await handler.handleCommand(_cmd('startVerification'));
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await keyRefreshLogged.future;
 
         expect(first['ok'], isTrue);
         expect(first['started'], isFalse);
@@ -1300,11 +1339,18 @@ void main() {
       'startVerification emits key-refresh error event on refresh failure',
       () async {
         final incomingEvents = <Map<String, Object?>>[];
+        final refreshErrorSeen = Completer<void>();
 
         final eventPort = ReceivePort()
           ..listen((dynamic raw) {
             if (raw is Map) {
-              incomingEvents.add(raw.cast<String, Object?>());
+              final event = raw.cast<String, Object?>();
+              incomingEvents.add(event);
+              if (event['event'] == 'verificationKeyRefreshError' &&
+                  '${event['error']}'.contains('refresh failed') &&
+                  !refreshErrorSeen.isCompleted) {
+                refreshErrorSeen.complete();
+              }
             }
           });
 
@@ -1329,7 +1375,7 @@ void main() {
           _initPayload(eventPort: eventPort.sendPort),
         );
         final response = await handler.handleCommand(_cmd('startVerification'));
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await refreshErrorSeen.future;
 
         expect(response['ok'], isTrue);
         expect(response['started'], isFalse);

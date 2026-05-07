@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -341,30 +342,27 @@ void main() {
         final b = _buildEntry(eventId: r'$b', roomId: '!r:x', originTsMs: 2);
         final c = _buildEntry(eventId: r'$c', roomId: '!r:x', originTsMs: 3);
 
-        // Each prepare call holds open for 100 ms. Sequential prepare
-        // would take ~300 ms; parallel prepare caps at ~100 ms plus
-        // tiny scheduling overhead.
         final prepared = _MockPreparedSyncEvent();
+        final allStarted = Completer<void>();
+        final release = Completer<void>();
+        var prepareCalls = 0;
         when(() => processor.prepare(event: any(named: 'event'))).thenAnswer((
           _,
         ) async {
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          prepareCalls++;
+          if (prepareCalls == 3) {
+            allStarted.complete();
+          }
+          await release.future;
           return prepared;
         });
 
         final adapter = build();
-        final stopwatch = Stopwatch()..start();
-        await adapter.bindPrepareBatch()([a, b, c], room);
-        stopwatch.stop();
-
-        // 200 ms window leaves plenty of headroom for CI jitter but
-        // still fails decisively if prepare went sequential (≥300 ms).
-        expect(
-          stopwatch.elapsed,
-          lessThan(const Duration(milliseconds: 200)),
-          reason:
-              'prepare ran sequentially (${stopwatch.elapsedMilliseconds}ms)',
-        );
+        final prepareBatch = adapter.bindPrepareBatch()([a, b, c], room);
+        await allStarted.future;
+        expect(prepareCalls, 3);
+        release.complete();
+        await prepareBatch;
         verify(() => processor.prepare(event: any(named: 'event'))).called(3);
       },
     );

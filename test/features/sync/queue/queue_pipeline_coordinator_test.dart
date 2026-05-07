@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -57,9 +58,10 @@ class _MockTimeline extends Mock implements Timeline {}
 /// call and optionally throws, without needing mocktail fallbacks for
 /// every named-argument type (Function, LoggingService, nullable refs).
 class _FakeAttachmentIngestor implements AttachmentIngestor {
-  _FakeAttachmentIngestor({this.shouldThrow = false});
+  _FakeAttachmentIngestor({this.shouldThrow = false, this.firstProcessed});
 
   bool shouldThrow;
+  final Completer<Event>? firstProcessed;
   final List<Map<Symbol, Object?>> processCalls = <Map<Symbol, Object?>>[];
 
   @override
@@ -73,6 +75,9 @@ class _FakeAttachmentIngestor implements AttachmentIngestor {
       #event: event,
       #scheduleDownload: scheduleDownload,
     });
+    if (firstProcessed case final completer? when !completer.isCompleted) {
+      completer.complete(event);
+    }
     if (shouldThrow) {
       throw StateError('ingestor boom');
     }
@@ -121,7 +126,7 @@ void main() {
     bridge = _MockBridge();
     pen = _MockPen();
     seeder = _MockSeeder();
-    timelineCtl = StreamController<Event>.broadcast();
+    timelineCtl = StreamController<Event>.broadcast(sync: true);
     syncCtl = CachedStreamController<SyncUpdate>();
     client = _MockClient();
     when(() => client.onSync).thenReturn(syncCtl);
@@ -1177,42 +1182,46 @@ void main() {
       'when UpdateNotifications emits, the coordinator calls '
       'resurrectByReason(missingBase) so any abandoned row waiting '
       'on its base journal entry becomes drainable again',
-      () async {
-        final updateNotifications = UpdateNotifications();
-        addTearDown(updateNotifications.dispose);
-        when(
-          () => queue.resurrectByReason(any<String>()),
-        ).thenAnswer((_) async => 1);
+      () {
+        fakeAsync((async) {
+          final updateNotifications = UpdateNotifications();
+          addTearDown(updateNotifications.dispose);
+          when(
+            () => queue.resurrectByReason(any<String>()),
+          ).thenAnswer((_) async => 1);
 
-        final coordinator = QueuePipelineCoordinator(
-          syncDb: syncDb,
-          settingsDb: settingsDb,
-          journalDb: journalDb,
-          sessionManager: sessionManager,
-          roomManager: roomManager,
-          eventProcessor: processor,
-          sequenceLogService: sequenceLog,
-          activityGate: null,
-          logging: logging,
-          updateNotifications: updateNotifications,
-          queueOverride: queue,
-          workerOverride: worker,
-          bridgeOverride: bridge,
-          penOverride: pen,
-          seederOverride: seeder,
-        );
-        await coordinator.start();
+          final coordinator = QueuePipelineCoordinator(
+            syncDb: syncDb,
+            settingsDb: settingsDb,
+            journalDb: journalDb,
+            sessionManager: sessionManager,
+            roomManager: roomManager,
+            eventProcessor: processor,
+            sequenceLogService: sequenceLog,
+            activityGate: null,
+            logging: logging,
+            updateNotifications: updateNotifications,
+            queueOverride: queue,
+            workerOverride: worker,
+            bridgeOverride: bridge,
+            penOverride: pen,
+            seederOverride: seeder,
+          );
+          addTearDown(() async => coordinator.stop());
+          var started = false;
+          unawaited(coordinator.start().then((_) => started = true));
+          async.flushMicrotasks();
+          expect(started, isTrue);
 
-        updateNotifications.notify({'some-entry-id'});
-        // notify() batches over 100 ms — wait past that so the
-        // debounced controller actually emits.
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+          updateNotifications.notify({'some-entry-id'});
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
 
-        verify(
-          () => queue.resurrectByReason('missingBase'),
-        ).called(greaterThanOrEqualTo(1));
-
-        await coordinator.stop();
+          verify(
+            () => queue.resurrectByReason('missingBase'),
+          ).called(greaterThanOrEqualTo(1));
+        });
       },
     );
   });
@@ -1263,6 +1272,22 @@ void main() {
       'not strand incoming sync-payload events',
       () async {
         final ingestor = _FakeAttachmentIngestor(shouldThrow: true);
+        final ingestorFailureLogged = Completer<void>();
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(
+              named: 'subDomain',
+              that: contains('attachmentIngestor'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) {
+          if (!ingestorFailureLogged.isCompleted) {
+            ingestorFailureLogged.complete();
+          }
+        });
 
         final coordinator = QueuePipelineCoordinator(
           syncDb: syncDb,
@@ -1284,9 +1309,7 @@ void main() {
         await coordinator.start();
 
         timelineCtl.add(buildEvent(EventTypes.Message));
-        // Allow the fire-and-forget `_processAttachment` microtask plus
-        // the enqueue microtask to land.
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await ingestorFailureLogged.future;
 
         // The enqueue path still fires despite the ingestor throwing.
         verify(() => queue.enqueueLive(any())).called(1);
@@ -1343,7 +1366,6 @@ void main() {
         registry.register(r'$self-echo');
 
         timelineCtl.add(echoed);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
 
         // Neither the queue nor the attachment ingestor should see the
         // event — it's ours and already on disk.
@@ -1383,9 +1405,14 @@ void main() {
         when(() => peer.roomId).thenReturn(roomId);
         when(() => peer.type).thenReturn(EventTypes.Message);
         when(() => peer.status).thenReturn(EventStatus.synced);
+        final enqueued = Completer<void>();
+        when(() => queue.enqueueLive(peer)).thenAnswer((_) async {
+          enqueued.complete();
+          return EnqueueResult.empty;
+        });
 
         timelineCtl.add(peer);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await enqueued.future;
 
         verify(() => queue.enqueueLive(peer)).called(1);
 
@@ -1452,7 +1479,6 @@ void main() {
           ..add(pending)
           ..add(optimistic)
           ..add(errored);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
 
         // None of these should reach the queue — they are
         // SDK-generated fake-sync emissions, not real inbound events.
@@ -1523,48 +1549,54 @@ void main() {
       'when resurrectByReason throws on a journal-db update notify, '
       'the exception is logged under the resurrectByReason subDomain '
       'so a broken queue never silences the missing-base signal',
-      () async {
-        final updateNotifications = UpdateNotifications();
-        addTearDown(updateNotifications.dispose);
-        when(
-          () => queue.resurrectByReason(any<String>()),
-        ).thenThrow(StateError('queue gone'));
+      () {
+        fakeAsync((async) {
+          final updateNotifications = UpdateNotifications();
+          addTearDown(updateNotifications.dispose);
+          when(
+            () => queue.resurrectByReason(any<String>()),
+          ).thenThrow(StateError('queue gone'));
 
-        final coordinator = QueuePipelineCoordinator(
-          syncDb: syncDb,
-          settingsDb: settingsDb,
-          journalDb: journalDb,
-          sessionManager: sessionManager,
-          roomManager: roomManager,
-          eventProcessor: processor,
-          sequenceLogService: sequenceLog,
-          activityGate: null,
-          logging: logging,
-          updateNotifications: updateNotifications,
-          queueOverride: queue,
-          workerOverride: worker,
-          bridgeOverride: bridge,
-          penOverride: pen,
-          seederOverride: seeder,
-        );
-        await coordinator.start();
+          final coordinator = QueuePipelineCoordinator(
+            syncDb: syncDb,
+            settingsDb: settingsDb,
+            journalDb: journalDb,
+            sessionManager: sessionManager,
+            roomManager: roomManager,
+            eventProcessor: processor,
+            sequenceLogService: sequenceLog,
+            activityGate: null,
+            logging: logging,
+            updateNotifications: updateNotifications,
+            queueOverride: queue,
+            workerOverride: worker,
+            bridgeOverride: bridge,
+            penOverride: pen,
+            seederOverride: seeder,
+          );
+          addTearDown(() async => coordinator.stop());
+          var started = false;
+          unawaited(coordinator.start().then((_) => started = true));
+          async.flushMicrotasks();
+          expect(started, isTrue);
 
-        updateNotifications.notify({'some-entry'});
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+          updateNotifications.notify({'some-entry'});
+          async
+            ..elapse(const Duration(milliseconds: 100))
+            ..flushMicrotasks();
 
-        verify(
-          () => logging.captureException(
-            any<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(
-              named: 'subDomain',
-              that: contains('resurrectByReason'),
+          verify(
+            () => logging.captureException(
+              any<Object>(),
+              domain: any<String>(named: 'domain'),
+              subDomain: any<String>(
+                named: 'subDomain',
+                that: contains('resurrectByReason'),
+              ),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
             ),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-          ),
-        ).called(greaterThanOrEqualTo(1));
-
-        await coordinator.stop();
+          ).called(greaterThanOrEqualTo(1));
+        });
       },
     );
   });
@@ -2290,7 +2322,10 @@ void main() {
       () async {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
-        final ingestor = _FakeAttachmentIngestor();
+        final firstProcessed = Completer<Event>();
+        final ingestor = _FakeAttachmentIngestor(
+          firstProcessed: firstProcessed,
+        );
 
         final coordinator = QueuePipelineCoordinator(
           syncDb: syncDb,
@@ -2354,9 +2389,7 @@ void main() {
 
         // The forward walk emitted page [e1] (anchor itself is
         // filtered) → ingestor.process must have fired for that event.
-        // `processAttachment` is `unawaited`, so let the microtask
-        // queue drain first.
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(await firstProcessed.future, same(e1));
         expect(ingestor.processCalls, hasLength(1));
         expect(ingestor.processCalls.single[#event], same(e1));
       },
@@ -2369,7 +2402,10 @@ void main() {
       () async {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
-        final ingestor = _FakeAttachmentIngestor();
+        final firstProcessed = Completer<Event>();
+        final ingestor = _FakeAttachmentIngestor(
+          firstProcessed: firstProcessed,
+        );
 
         final coordinator = QueuePipelineCoordinator(
           syncDb: syncDb,
@@ -2420,7 +2456,7 @@ void main() {
         // No anchor id → backward walk runs.
         final completed = await coordinator.runBootstrapForTest(room: room);
         expect(completed, isTrue);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(await firstProcessed.future, same(e));
         expect(ingestor.processCalls, hasLength(1));
         expect(ingestor.processCalls.single[#event], same(e));
       },

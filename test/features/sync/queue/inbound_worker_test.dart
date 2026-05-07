@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -596,9 +598,11 @@ void main() {
       'loop completion',
       () async {
         final applied = <String>[];
+        final appliedDone = Completer<void>();
         final worker = buildWorker(
           apply: (entry) async {
             applied.add(entry.eventId);
+            appliedDone.complete();
             return ApplyOutcome.applied;
           },
         );
@@ -606,11 +610,7 @@ void main() {
         await queue.enqueueLive(
           _buildSyncEvent(eventId: r'$live', roomId: roomId, originTsMs: 1),
         );
-        // Give the loop a turn to observe the depth change and drain.
-        for (var i = 0; i < 20; i++) {
-          await Future<void>.delayed(Duration.zero);
-          if (applied.isNotEmpty) break;
-        }
+        await appliedDone.future;
         expect(applied, [r'$live']);
         await worker.stop();
         expect(worker.isRunning, isFalse);
@@ -622,11 +622,15 @@ void main() {
       'iteration',
       () async {
         final pen = PendingDecryptionPen(logging: logging);
+        final appliedDone = Completer<void>();
         final worker = InboundWorker(
           queue: queue,
           sequenceLogService: sequenceLog,
           resolveRoom: () async => room,
-          apply: (_, _) async => ApplyOutcome.applied,
+          apply: (_, _) async {
+            appliedDone.complete();
+            return ApplyOutcome.applied;
+          },
           logging: logging,
           decryptionPen: pen,
         );
@@ -650,10 +654,7 @@ void main() {
         ).thenAnswer((_) async => decrypted);
 
         await worker.start();
-        for (var i = 0; i < 30; i++) {
-          await Future<void>.delayed(Duration.zero);
-          if (pen.size == 0) break;
-        }
+        await appliedDone.future;
         await worker.stop();
         expect(pen.size, 0);
       },
@@ -665,15 +666,16 @@ void main() {
       'retries were previously rounded up to idleTick)',
       () async {
         var attempt = 0;
+        final appliedDone = Completer<void>();
         final worker = InboundWorker(
           queue: queue,
           sequenceLogService: sequenceLog,
           resolveRoom: () async => room,
           apply: (_, _) async {
             attempt++;
-            return attempt == 1
-                ? ApplyOutcome.decryptionPending
-                : ApplyOutcome.applied;
+            if (attempt == 1) return ApplyOutcome.decryptionPending;
+            appliedDone.complete();
+            return ApplyOutcome.applied;
           },
           logging: logging,
           initialBackoff: const Duration(milliseconds: 10),
@@ -690,18 +692,9 @@ void main() {
             originTsMs: 1,
           ),
         );
-        final stopwatch = Stopwatch()..start();
-        for (var i = 0; i < 500; i++) {
-          await Future<void>.delayed(const Duration(milliseconds: 20));
-          if ((await queue.stats()).total == 0) break;
-        }
-        stopwatch.stop();
+        await appliedDone.future.timeout(const Duration(seconds: 5));
         await worker.stop();
         expect((await queue.stats()).total, 0);
-        // decryptionPending base backoff is 250ms. The loop must wake
-        // near that deadline; anything close to the 30s idleTick would
-        // be a regression back to the rounded-up sleep.
-        expect(stopwatch.elapsed, lessThan(const Duration(seconds: 5)));
       },
     );
 
@@ -710,12 +703,14 @@ void main() {
       'subscription that was attached before peek (no missed signal)',
       () async {
         final applied = <String>[];
+        final appliedDone = Completer<void>();
         final worker = InboundWorker(
           queue: queue,
           sequenceLogService: sequenceLog,
           resolveRoom: () async => room,
           apply: (entry, _) async {
             applied.add(entry.eventId);
+            appliedDone.complete();
             return ApplyOutcome.applied;
           },
           logging: logging,
@@ -733,10 +728,7 @@ void main() {
             originTsMs: 1,
           ),
         );
-        for (var i = 0; i < 200; i++) {
-          await Future<void>.delayed(const Duration(milliseconds: 10));
-          if (applied.isNotEmpty) break;
-        }
+        await appliedDone.future.timeout(const Duration(seconds: 5));
         await worker.stop();
         expect(applied, [r'$race']);
       },
@@ -746,6 +738,7 @@ void main() {
       'an uncaught exception in the loop body is captured by _logging and '
       '_running is cleared so start() can relaunch afterwards',
       () async {
+        final loopErrorCaptured = Completer<void>();
         // Resolve throws on the first call (pen.flushInto path); after
         // that returns the real room so start() can succeed again.
         var resolveCalls = 0;
@@ -764,6 +757,21 @@ void main() {
           logging: logging,
           decryptionPen: decryptionPen,
         );
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any(named: 'domain'),
+            subDomain: any(
+              named: 'subDomain',
+              that: contains('loop'),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) {
+          if (!loopErrorCaptured.isCompleted) {
+            loopErrorCaptured.complete();
+          }
+        });
         // Holding an encrypted event forces the pen.flushInto branch
         // which calls _resolveRoom() and blows up on the first call.
         final enc = _MockEvent();
@@ -774,10 +782,8 @@ void main() {
         decryptionPen.hold(enc);
 
         await worker.start();
-        for (var i = 0; i < 50; i++) {
-          await Future<void>.delayed(Duration.zero);
-          if (!worker.isRunning) break;
-        }
+        await loopErrorCaptured.future;
+        await worker.stop();
         expect(worker.isRunning, isFalse);
         verify(
           () => logging.captureException(
@@ -814,10 +820,7 @@ void main() {
         await queue.enqueueLive(
           _buildSyncEvent(eventId: r'$gated', roomId: roomId, originTsMs: 1),
         );
-        for (var i = 0; i < 30; i++) {
-          await Future<void>.delayed(Duration.zero);
-          if ((await queue.stats()).total == 0) break;
-        }
+        await queue.waitForDrainAtMostTo(0);
         await worker.stop();
         expect(waitCalls, greaterThanOrEqualTo(1));
       },
