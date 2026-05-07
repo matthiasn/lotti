@@ -43,6 +43,49 @@ Event _buildSyncEvent({
   return event;
 }
 
+Event _buildGeneratedBatchEvent(
+  _GeneratedBatchEventRow row, {
+  required String roomId,
+}) {
+  switch (row.kind) {
+    case _GeneratedBatchEventKind.encrypted:
+      return _buildSyncEvent(
+        eventId: row.eventId,
+        roomId: roomId,
+        originTsMs: row.originTsMs,
+        type: EventTypes.Encrypted,
+        content: <String, dynamic>{
+          'algorithm': 'm.megolm.v1.aes-sha2',
+          'msgtype': syncMessageType,
+        },
+      );
+    case _GeneratedBatchEventKind.nonPayload:
+      return _buildSyncEvent(
+        eventId: row.eventId,
+        roomId: roomId,
+        originTsMs: row.originTsMs,
+        type: EventTypes.RoomName,
+        content: <String, dynamic>{'name': 'generated room'},
+      );
+    case _GeneratedBatchEventKind.syncPayload:
+      final content = <String, dynamic>{'msgtype': syncMessageType};
+      switch (row.pathShape) {
+        case _GeneratedJsonPathShape.none:
+          break;
+        case _GeneratedJsonPathShape.jsonPath:
+          content['jsonPath'] = row.rawPath;
+        case _GeneratedJsonPathShape.jsonPathSnake:
+          content['json_path'] = row.rawPath;
+      }
+      return _buildSyncEvent(
+        eventId: row.eventId,
+        roomId: roomId,
+        originTsMs: row.originTsMs,
+        content: content,
+      );
+  }
+}
+
 enum _GeneratedTerminalAction { commit, skip }
 
 class _GeneratedInboundQueueRow {
@@ -169,6 +212,137 @@ class _GeneratedResurrectionScenario {
   }
 }
 
+enum _GeneratedBatchEventKind {
+  syncPayload,
+  nonPayload,
+  encrypted,
+}
+
+enum _GeneratedJsonPathShape {
+  none,
+  jsonPath,
+  jsonPathSnake,
+}
+
+class _GeneratedBatchEventRow {
+  const _GeneratedBatchEventRow({
+    required this.eventSlot,
+    required this.timestampBucket,
+    required this.kind,
+    required this.pathShape,
+    required this.pathSlot,
+    required this.withLeadingSlash,
+  });
+
+  final int eventSlot;
+  final int timestampBucket;
+  final _GeneratedBatchEventKind kind;
+  final _GeneratedJsonPathShape pathShape;
+  final int pathSlot;
+  final bool withLeadingSlash;
+
+  String get eventId =>
+      r'$generated-batch-'
+      '$eventSlot';
+
+  int get originTsMs => 3000 + timestampBucket;
+
+  String get canonicalPath => '/generated/batch-$pathSlot.json';
+
+  String get rawPath =>
+      withLeadingSlash ? canonicalPath : canonicalPath.substring(1);
+
+  String? get expectedStoredPath =>
+      pathShape == _GeneratedJsonPathShape.none ? null : canonicalPath;
+
+  @override
+  String toString() {
+    return '_GeneratedBatchEventRow('
+        'eventSlot: $eventSlot, '
+        'timestampBucket: $timestampBucket, '
+        'kind: $kind, '
+        'pathShape: $pathShape, '
+        'pathSlot: $pathSlot, '
+        'withLeadingSlash: $withLeadingSlash'
+        ')';
+  }
+}
+
+class _GeneratedBatchAccountingScenario {
+  const _GeneratedBatchAccountingScenario({required this.rows});
+
+  final List<_GeneratedBatchEventRow> rows;
+
+  _ExpectedBatchAccounting expected() {
+    final accepted = <String, _ExpectedAcceptedBatchRow>{};
+    var duplicates = 0;
+    var filtered = 0;
+    var deferred = 0;
+    var oldest = 0;
+    var newest = 0;
+
+    for (final row in rows) {
+      switch (row.kind) {
+        case _GeneratedBatchEventKind.encrypted:
+          deferred++;
+        case _GeneratedBatchEventKind.nonPayload:
+          filtered++;
+        case _GeneratedBatchEventKind.syncPayload:
+          if (accepted.containsKey(row.eventId)) {
+            duplicates++;
+            continue;
+          }
+          accepted[row.eventId] = _ExpectedAcceptedBatchRow(
+            originTsMs: row.originTsMs,
+            jsonPath: row.expectedStoredPath,
+          );
+          if (oldest == 0 || row.originTsMs < oldest) oldest = row.originTsMs;
+          if (row.originTsMs > newest) newest = row.originTsMs;
+      }
+    }
+
+    return _ExpectedBatchAccounting(
+      acceptedByEventId: accepted,
+      duplicates: duplicates,
+      filtered: filtered,
+      deferred: deferred,
+      oldest: oldest,
+      newest: newest,
+    );
+  }
+
+  @override
+  String toString() => '_GeneratedBatchAccountingScenario(rows: $rows)';
+}
+
+class _ExpectedAcceptedBatchRow {
+  const _ExpectedAcceptedBatchRow({
+    required this.originTsMs,
+    required this.jsonPath,
+  });
+
+  final int originTsMs;
+  final String? jsonPath;
+}
+
+class _ExpectedBatchAccounting {
+  const _ExpectedBatchAccounting({
+    required this.acceptedByEventId,
+    required this.duplicates,
+    required this.filtered,
+    required this.deferred,
+    required this.oldest,
+    required this.newest,
+  });
+
+  final Map<String, _ExpectedAcceptedBatchRow> acceptedByEventId;
+  final int duplicates;
+  final int filtered;
+  final int deferred;
+  final int oldest;
+  final int newest;
+}
+
 class _ExpectedQueueMarker {
   int lastAppliedTs = 0;
   String? lastAppliedEventId;
@@ -265,6 +439,49 @@ extension _AnyInboundQueueScenario on glados.Any {
               rows: rows,
             ),
       );
+
+  glados.Generator<_GeneratedBatchEventKind> get batchEventKind =>
+      glados.AnyUtils(this).choose(_GeneratedBatchEventKind.values);
+
+  glados.Generator<_GeneratedJsonPathShape> get jsonPathShape =>
+      glados.AnyUtils(this).choose(_GeneratedJsonPathShape.values);
+
+  glados.Generator<_GeneratedBatchEventRow> get batchEventRow =>
+      glados.CombinableAny(this).combine6(
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 9),
+        batchEventKind,
+        jsonPathShape,
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.BoolAny(this).bool,
+        (
+          int eventSlot,
+          int timestampBucket,
+          _GeneratedBatchEventKind kind,
+          _GeneratedJsonPathShape pathShape,
+          int pathSlot,
+          bool withLeadingSlash,
+        ) => _GeneratedBatchEventRow(
+          eventSlot: eventSlot,
+          timestampBucket: timestampBucket,
+          kind: kind,
+          pathShape: pathShape,
+          pathSlot: pathSlot,
+          withLeadingSlash: withLeadingSlash,
+        ),
+      );
+
+  glados.Generator<_GeneratedBatchAccountingScenario>
+  get batchAccountingScenario =>
+      glados.ListAnys(
+            this,
+          )
+          .listWithLengthInRange(
+            1,
+            14,
+            batchEventRow,
+          )
+          .map((rows) => _GeneratedBatchAccountingScenario(rows: rows));
 }
 
 Future<void> _withFreshInboundQueue(
@@ -662,6 +879,47 @@ void main() {
             ready.map((entry) => entry.eventId).toList(),
             expectedEventIds,
           );
+        });
+      },
+    );
+
+    glados.Glados(
+      glados.any.batchAccountingScenario,
+      glados.ExploreConfig(numRuns: 140),
+    ).test(
+      'enqueueBatch generated accounting partitions every input event',
+      (scenario) async {
+        await _withFreshInboundQueue((db, queue) async {
+          final result = await queue.enqueueBatch(
+            [
+              for (final row in scenario.rows)
+                _buildGeneratedBatchEvent(row, roomId: roomA),
+            ],
+            producer: InboundEventProducer.live,
+          );
+          final expected = scenario.expected();
+
+          expect(
+            result.accepted +
+                result.duplicatesDropped +
+                result.filteredOutByType +
+                result.deferredPendingDecryption,
+            scenario.rows.length,
+          );
+          expect(result.accepted, expected.acceptedByEventId.length);
+          expect(result.duplicatesDropped, expected.duplicates);
+          expect(result.filteredOutByType, expected.filtered);
+          expect(result.deferredPendingDecryption, expected.deferred);
+          expect(result.oldestTsAccepted, expected.oldest);
+          expect(result.newestTsAccepted, expected.newest);
+
+          final stored = await db.select(db.inboundEventQueue).get();
+          expect(stored, hasLength(expected.acceptedByEventId.length));
+          for (final row in stored) {
+            final expectedRow = expected.acceptedByEventId[row.eventId]!;
+            expect(row.originTs, expectedRow.originTsMs);
+            expect(row.jsonPath, expectedRow.jsonPath);
+          }
         });
       },
     );

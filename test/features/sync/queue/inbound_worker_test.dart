@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
@@ -65,6 +66,83 @@ Event _buildSyncEvent({
     'content': content,
   });
   return event;
+}
+
+class _GeneratedWorkerOutcomeScenario {
+  const _GeneratedWorkerOutcomeScenario({required this.outcomes});
+
+  final List<ApplyOutcome> outcomes;
+
+  ApplyOutcome outcomeAt(int index) =>
+      index < outcomes.length ? outcomes[index] : ApplyOutcome.applied;
+
+  @override
+  String toString() => '_GeneratedWorkerOutcomeScenario($outcomes)';
+}
+
+class _ExpectedWorkerLifecycle {
+  _ExpectedWorkerLifecycle({
+    required this.enqueuedAt,
+    required this.maxAttempts,
+  });
+
+  final DateTime enqueuedAt;
+  final int maxAttempts;
+  int attempts = 0;
+  bool active = true;
+  bool applied = false;
+  bool abandoned = false;
+
+  int apply(ApplyOutcome outcome, DateTime now) {
+    switch (outcome) {
+      case ApplyOutcome.applied:
+        active = false;
+        applied = true;
+        return 1;
+      case ApplyOutcome.retriable:
+      case ApplyOutcome.missingBase:
+      case ApplyOutcome.decryptionPending:
+        final nextAttempts = attempts + 1;
+        if (nextAttempts >= maxAttempts) {
+          active = false;
+          abandoned = true;
+        } else {
+          attempts = nextAttempts;
+        }
+        return 0;
+      case ApplyOutcome.pendingAttachment:
+        final elapsed = now.difference(enqueuedAt);
+        if (elapsed >= const Duration(minutes: 10)) {
+          active = false;
+          abandoned = true;
+        } else {
+          attempts++;
+        }
+        return 0;
+      case ApplyOutcome.permanentSkip:
+        active = false;
+        abandoned = true;
+        return 0;
+    }
+  }
+}
+
+extension _AnyInboundWorkerScenario on glados.Any {
+  glados.Generator<ApplyOutcome> get applyOutcome =>
+      glados.AnyUtils(this).choose(ApplyOutcome.values);
+
+  glados.Generator<_GeneratedWorkerOutcomeScenario> get workerOutcomeScenario =>
+      glados.ListAnys(
+            this,
+          )
+          .listWithLengthInRange(
+            1,
+            8,
+            applyOutcome,
+          )
+          .map(
+            (outcomes) => _GeneratedWorkerOutcomeScenario(outcomes: outcomes),
+          );
 }
 
 void main() {
@@ -380,6 +458,79 @@ void main() {
         final second = await worker.drainToCompletion();
         expect(second, 1);
       });
+    },
+  );
+
+  glados.Glados(
+    glados.any.workerOutcomeScenario,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'generated apply outcome sequences match retry and terminal state model',
+    (scenario) async {
+      final localDb = SyncDatabase(inMemoryDatabase: true);
+      final localLogging = MockLoggingService();
+      final localQueue = InboundQueue(db: localDb, logging: localLogging);
+      final localSequenceLog = _SpySequenceLog(
+        syncDatabase: localDb,
+        vectorClockService: _MockVectorClockService(),
+        loggingService: localLogging,
+      );
+      final localRoom = _MockRoom();
+      when(() => localRoom.id).thenReturn(roomId);
+
+      var virtualNow = DateTime(2024);
+      try {
+        await withClock(Clock(() => virtualNow), () async {
+          await localQueue.enqueueLive(
+            _buildSyncEvent(
+              eventId: r'$generated-worker',
+              roomId: roomId,
+              originTsMs: 1,
+            ),
+          );
+
+          var applyCalls = 0;
+          final worker = InboundWorker(
+            queue: localQueue,
+            sequenceLogService: localSequenceLog,
+            resolveRoom: () async => localRoom,
+            apply: (entry, _) async => scenario.outcomeAt(applyCalls++),
+            logging: localLogging,
+            initialBackoff: const Duration(milliseconds: 10),
+            maxBackoff: const Duration(milliseconds: 100),
+            maxAttempts: 4,
+          );
+          final expected = _ExpectedWorkerLifecycle(
+            enqueuedAt: virtualNow,
+            maxAttempts: 4,
+          );
+          var expectedAppliedTotal = 0;
+
+          for (var guard = 0; guard < 12 && expected.active; guard++) {
+            final expectedOutcome = scenario.outcomeAt(guard);
+            final expectedApplied = expected.apply(
+              expectedOutcome,
+              virtualNow,
+            );
+            expectedAppliedTotal += expectedApplied;
+
+            final actualApplied = await worker.drainToCompletion();
+            expect(actualApplied, expectedApplied);
+            virtualNow = virtualNow.add(const Duration(minutes: 11));
+          }
+
+          expect(applyCalls, lessThanOrEqualTo(12));
+          expect(expected.active, isFalse);
+          final stats = await localQueue.stats();
+          expect(stats.total, 0);
+          expect(stats.applied, expected.applied ? 1 : 0);
+          expect(stats.abandoned, expected.abandoned ? 1 : 0);
+          expect(expectedAppliedTotal, expected.applied ? 1 : 0);
+        });
+      } finally {
+        await localQueue.dispose();
+        await localDb.close();
+      }
     },
   );
 

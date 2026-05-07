@@ -1,4 +1,7 @@
+import 'dart:collection';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
@@ -37,6 +40,194 @@ Event _buildEvent({
     'content': c,
   });
   return event;
+}
+
+enum _GeneratedPenOperationKind {
+  holdEncrypted,
+  holdPlain,
+  flushAllStillEncrypted,
+  flushAllDecrypt,
+  flushTargetDecrypt,
+  flushTargetThrows,
+}
+
+class _GeneratedPenOperation {
+  const _GeneratedPenOperation({
+    required this.kind,
+    required this.targetSlot,
+  });
+
+  final _GeneratedPenOperationKind kind;
+  final int targetSlot;
+
+  String get eventId =>
+      r'$pen-'
+      '$targetSlot';
+
+  bool get isFlush {
+    switch (kind) {
+      case _GeneratedPenOperationKind.flushAllStillEncrypted:
+      case _GeneratedPenOperationKind.flushAllDecrypt:
+      case _GeneratedPenOperationKind.flushTargetDecrypt:
+      case _GeneratedPenOperationKind.flushTargetThrows:
+        return true;
+      case _GeneratedPenOperationKind.holdEncrypted:
+      case _GeneratedPenOperationKind.holdPlain:
+        return false;
+    }
+  }
+
+  bool decrypts(String eventId) {
+    switch (kind) {
+      case _GeneratedPenOperationKind.flushAllDecrypt:
+        return true;
+      case _GeneratedPenOperationKind.flushTargetDecrypt:
+        return eventId == this.eventId;
+      case _GeneratedPenOperationKind.holdEncrypted:
+      case _GeneratedPenOperationKind.holdPlain:
+      case _GeneratedPenOperationKind.flushAllStillEncrypted:
+      case _GeneratedPenOperationKind.flushTargetThrows:
+        return false;
+    }
+  }
+
+  bool throwsFor(String eventId) =>
+      kind == _GeneratedPenOperationKind.flushTargetThrows &&
+      eventId == this.eventId;
+
+  @override
+  String toString() {
+    return '_GeneratedPenOperation('
+        'kind: $kind, '
+        'targetSlot: $targetSlot'
+        ')';
+  }
+}
+
+class _GeneratedPenScenario {
+  const _GeneratedPenScenario({
+    required this.capacity,
+    required this.maxAttempts,
+    required this.operations,
+  });
+
+  final int capacity;
+  final int maxAttempts;
+  final List<_GeneratedPenOperation> operations;
+
+  @override
+  String toString() {
+    return '_GeneratedPenScenario('
+        'capacity: $capacity, '
+        'maxAttempts: $maxAttempts, '
+        'operations: $operations'
+        ')';
+  }
+}
+
+class _ExpectedHeldPenEntry {
+  int attempts = 0;
+}
+
+class _ExpectedPenFlush {
+  const _ExpectedPenFlush({
+    required this.enqueued,
+    required this.stillEncrypted,
+    required this.dropped,
+  });
+
+  final int enqueued;
+  final int stillEncrypted;
+  final int dropped;
+}
+
+class _ExpectedPenModel {
+  _ExpectedPenModel({
+    required this.capacity,
+    required this.maxAttempts,
+  });
+
+  final int capacity;
+  final int maxAttempts;
+  final LinkedHashMap<String, _ExpectedHeldPenEntry> held =
+      LinkedHashMap<String, _ExpectedHeldPenEntry>();
+  final Set<String> queuedEventIds = <String>{};
+
+  void holdEncrypted(String eventId) {
+    final existing = held.remove(eventId) ?? _ExpectedHeldPenEntry();
+    held[eventId] = existing;
+    while (held.length > capacity) {
+      held.remove(held.keys.first);
+    }
+  }
+
+  _ExpectedPenFlush flush(_GeneratedPenOperation operation) {
+    var enqueued = 0;
+    var stillEncrypted = 0;
+    var dropped = 0;
+    final decrypted = <String>[];
+
+    for (final eventId in held.keys.toList(growable: false)) {
+      final entry = held[eventId];
+      if (entry == null) continue;
+
+      if (operation.decrypts(eventId)) {
+        decrypted.add(eventId);
+        continue;
+      }
+
+      entry.attempts++;
+      if (entry.attempts >= maxAttempts) {
+        held.remove(eventId);
+        dropped++;
+      } else {
+        stillEncrypted++;
+      }
+    }
+
+    for (final eventId in decrypted) {
+      held.remove(eventId);
+      queuedEventIds.add(eventId);
+    }
+    enqueued = decrypted.length;
+
+    return _ExpectedPenFlush(
+      enqueued: enqueued,
+      stillEncrypted: stillEncrypted,
+      dropped: dropped,
+    );
+  }
+}
+
+extension _AnyPendingDecryptionPenScenario on glados.Any {
+  glados.Generator<_GeneratedPenOperationKind> get penOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedPenOperationKind.values);
+
+  glados.Generator<_GeneratedPenOperation> get penOperation =>
+      glados.CombinableAny(this).combine2(
+        penOperationKind,
+        glados.IntAnys(this).intInRange(0, 5),
+        (
+          _GeneratedPenOperationKind kind,
+          int targetSlot,
+        ) => _GeneratedPenOperation(kind: kind, targetSlot: targetSlot),
+      );
+
+  glados.Generator<_GeneratedPenScenario> get penScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(1, 5),
+        glados.IntAnys(this).intInRange(1, 4),
+        glados.ListAnys(this).listWithLengthInRange(1, 24, penOperation),
+        (
+          int capacity,
+          int maxAttempts,
+          List<_GeneratedPenOperation> operations,
+        ) => _GeneratedPenScenario(
+          capacity: capacity,
+          maxAttempts: maxAttempts,
+          operations: operations,
+        ),
+      );
 }
 
 void main() {
@@ -316,6 +507,103 @@ void main() {
         ..startSweeping(resolveRoom: () async => room, queue: queue);
       // No timer has been installed — calling stop() is a no-op too.
       expect(pen.size, 0);
+    },
+  );
+
+  glados.Glados(
+    glados.any.penScenario,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'generated hold and flush sequences match the bounded pen model',
+    (scenario) async {
+      final localDb = SyncDatabase(inMemoryDatabase: true);
+      final localLogging = MockLoggingService();
+      final localQueue = InboundQueue(db: localDb, logging: localLogging);
+      final localRoom = _MockRoom();
+      when(() => localRoom.id).thenReturn(roomId);
+
+      try {
+        final pen = PendingDecryptionPen(
+          logging: localLogging,
+          capacity: scenario.capacity,
+          maxAttempts: scenario.maxAttempts,
+        );
+        final expected = _ExpectedPenModel(
+          capacity: scenario.capacity,
+          maxAttempts: scenario.maxAttempts,
+        );
+        var activeFlush = const _GeneratedPenOperation(
+          kind: _GeneratedPenOperationKind.flushAllStillEncrypted,
+          targetSlot: 0,
+        );
+        when(
+          () => localRoom.getEventById(any()),
+        ).thenAnswer((invocation) async {
+          final eventId = invocation.positionalArguments.single as String;
+          if (activeFlush.throwsFor(eventId)) {
+            throw StateError('generated fetch failure');
+          }
+          return _buildEvent(
+            eventId: eventId,
+            roomId: roomId,
+            originTsMs: 1000 + int.parse(eventId.split('-').last),
+            type: activeFlush.decrypts(eventId)
+                ? EventTypes.Message
+                : EventTypes.Encrypted,
+          );
+        });
+
+        for (final operation in scenario.operations) {
+          switch (operation.kind) {
+            case _GeneratedPenOperationKind.holdEncrypted:
+              expect(
+                pen.hold(
+                  _buildEvent(
+                    eventId: operation.eventId,
+                    roomId: roomId,
+                    originTsMs: 1000 + operation.targetSlot,
+                    type: EventTypes.Encrypted,
+                  ),
+                ),
+                isTrue,
+              );
+              expected.holdEncrypted(operation.eventId);
+            case _GeneratedPenOperationKind.holdPlain:
+              expect(
+                pen.hold(
+                  _buildEvent(
+                    eventId: operation.eventId,
+                    roomId: roomId,
+                    originTsMs: 1000 + operation.targetSlot,
+                    type: EventTypes.Message,
+                  ),
+                ),
+                isFalse,
+              );
+            case _GeneratedPenOperationKind.flushAllStillEncrypted:
+            case _GeneratedPenOperationKind.flushAllDecrypt:
+            case _GeneratedPenOperationKind.flushTargetDecrypt:
+            case _GeneratedPenOperationKind.flushTargetThrows:
+              activeFlush = operation;
+              final actual = await pen.flushInto(
+                queue: localQueue,
+                room: localRoom,
+              );
+              final expectedFlush = expected.flush(operation);
+              expect(actual.enqueued, expectedFlush.enqueued);
+              expect(actual.stillEncrypted, expectedFlush.stillEncrypted);
+              expect(actual.dropped, expectedFlush.dropped);
+          }
+
+          expect(pen.size, expected.held.length);
+        }
+
+        final stats = await localQueue.stats();
+        expect(stats.total, expected.queuedEventIds.length);
+      } finally {
+        await localQueue.dispose();
+        await localDb.close();
+      }
     },
   );
 }

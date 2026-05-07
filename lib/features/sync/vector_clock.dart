@@ -63,6 +63,10 @@ class VectorClock extends Equatable {
       }
     }
 
+    if (comparisons.length == 1 && comparisons.contains(VclockStatus.equal)) {
+      return VclockStatus.equal;
+    }
+
     if (comparisons.contains(VclockStatus.a_gt_b) &&
         !comparisons.contains(VclockStatus.b_gt_a)) {
       return VclockStatus.a_gt_b;
