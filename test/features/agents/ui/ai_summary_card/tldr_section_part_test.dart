@@ -19,7 +19,11 @@ import 'test_bench.dart';
 /// the LayoutBuilder inside the TLDR header sees the requested width.
 /// The shared `RiverpodWidgetTestBench` enforces a 800px min-width which
 /// would force the wide-layout branch.
-Widget _narrowScope({required double width}) {
+///
+/// Pass [nextWakeAt] to seed an active wake countdown — when present the
+/// header should render the play / countdown / cancel cluster, which is
+/// the only group the narrow branch actually stacks below the title.
+Widget _narrowScope({required double width, DateTime? nextWakeAt}) {
   return ProviderScope(
     overrides: [
       configFlagProvider.overrideWith(
@@ -35,7 +39,10 @@ Widget _narrowScope({required double width}) {
       agentIsRunningProvider.overrideWith(
         (ref, agentId) => Stream.value(false),
       ),
-      agentStateProvider.overrideWith((ref, agentId) async => null),
+      agentStateProvider.overrideWith(
+        (ref, agentId) async =>
+            nextWakeAt == null ? null : makeTestState(nextWakeAt: nextWakeAt),
+      ),
       unifiedSuggestionListProvider.overrideWith(
         (ref, taskId) async => const UnifiedSuggestionList.empty(),
       ),
@@ -87,39 +94,64 @@ void main() {
     );
 
     testWidgets(
-      'stacks controls under the title block on narrow viewports (Wrap layout)',
+      'lays the header out as a Wrap so the leading block and controls '
+      'sit in a single run with the controls right-aligned via '
+      'WrapAlignment.spaceBetween whenever there is room',
       (tester) async {
-        await tester.pumpWidget(_narrowScope(width: 320));
+        await tester.pumpWidget(_narrowScope(width: 800));
         await tester.pumpAndSettle();
 
-        // The narrow branch stacks the wake / read-more controls in a
-        // Wrap run below the title block. Two Wraps are now in the
-        // tree: the narrow-layout one + the proposals section's inner
-        // title-row Wrap. The proposals header itself is a Row so the
-        // confirm-all button can pin to the right edge of the card.
+        // Two Wraps in the tree: the header's space-between Wrap and
+        // the proposals section's title-row Wrap.
         expect(find.byType(Wrap), findsNWidgets(2));
         expect(find.text('AI summary'), findsOneWidget);
         expect(find.text('Test Agent'), findsOneWidget);
-        // The refresh affordance lives inside the narrow-layout Wrap
-        // below the title.
         expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+
+        // Single run → leading block + controls share a Y coordinate.
+        final titleY = tester.getCenter(find.text('AI summary')).dy;
+        final refreshY = tester
+            .getCenter(find.byIcon(Icons.refresh_rounded))
+            .dy;
+        expect((titleY - refreshY).abs() < 24, isTrue);
+
+        // The refresh affordance is pushed to the right edge of the
+        // card by WrapAlignment.spaceBetween rather than sitting flush
+        // against the title.
+        final titleRight = tester.getTopRight(find.text('AI summary')).dx;
+        final refreshLeft = tester
+            .getTopLeft(find.byIcon(Icons.refresh_rounded))
+            .dx;
+        expect(refreshLeft, greaterThan(titleRight + 100));
       },
     );
 
     testWidgets(
-      'keeps controls inline alongside the title on wide viewports (Row layout)',
+      'lets the control cluster fall to a second Wrap run only when the '
+      'row truly cannot fit, instead of stacking it pre-emptively',
       (tester) async {
-        // 800px ≥ 360px stacked threshold → LayoutBuilder picks the
-        // Row branch, no narrow-layout Wrap is built.
-        await tester.pumpWidget(_narrowScope(width: 800));
+        // Pathologically narrow card forces the leading block + controls
+        // to overflow a single run, exercising the wrap-to-second-row
+        // branch the previous threshold-based stacking always took.
+        // Wide enough that each cluster on its own still fits in its
+        // run — only the combined width spills.
+        await tester.pumpWidget(_narrowScope(width: 260));
         await tester.pumpAndSettle();
 
-        // In the wide layout the TLDR header uses a Row, so the only
-        // Wrap left in the tree is the proposals section's title-row
-        // Wrap (the proposals header itself is a Row now).
-        expect(find.byType(Wrap), findsOneWidget);
+        expect(find.byType(Wrap), findsNWidgets(2));
         expect(find.text('AI summary'), findsOneWidget);
         expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+
+        final titleY = tester.getCenter(find.text('AI summary')).dy;
+        final refreshY = tester
+            .getCenter(find.byIcon(Icons.refresh_rounded))
+            .dy;
+        expect(
+          refreshY,
+          greaterThan(titleY),
+          reason:
+              'controls should drop to a second run when they no longer fit',
+        );
       },
     );
 

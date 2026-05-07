@@ -20,7 +20,6 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/utils/platform.dart';
 
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
@@ -198,12 +197,13 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       ),
     );
 
-    // On desktop, scope toasts triggered from inside the task details
-    // subtree to a nested ScaffoldMessenger so SnackBars float above the
-    // sticky [TaskActionBar] (the Scaffold's bottomNavigationBar) instead
-    // of the app window's bottom edge. Mobile keeps the root messenger so
-    // toasts continue to appear at the screen bottom as before.
-    final body = isDesktop ? ScaffoldMessenger(child: scaffold) : scaffold;
+    // Scope toasts triggered from inside the task details subtree to a
+    // nested ScaffoldMessenger so SnackBars float above the sticky
+    // [TaskActionBar] (the Scaffold's bottomNavigationBar) instead of the
+    // screen / window bottom edge — on mobile the bar would otherwise
+    // cover the toast, on desktop it would sit visually detached at the
+    // app window's bottom edge.
+    final body = ScaffoldMessenger(child: scaffold);
 
     return DropTarget(
       onDragDone: (data) {

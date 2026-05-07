@@ -6,17 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.998]
 ### Changed
-- Toast notifications triggered from the desktop task details page
-  (e.g. "Change applied" after confirming a proposed change) now float
-  above the sticky `TaskActionBar` instead of pinned to the bottom edge
-  of the app window, so the confirmation reads as belonging to the task
-  view it came from. The page now wraps its `Scaffold` in a nested
-  `ScaffoldMessenger` on macOS / Linux / Windows, scoping
+- AI summary card header (the `AI summary / Task Laura` row) keeps its
+  wake / refresh affordances and Read more pill inline alongside the
+  title on every viewport instead of stacking them underneath on
+  cards narrower than ~360 px. The title block uses an `Expanded` so
+  it softWraps to a second line if the controls really need the room;
+  on a phone-sized card with the wake-cycle countdown active the pill
+  also switches to a tighter compact width so the inline cluster
+  reads less crowded. Previously the header dropped the entire
+  control cluster to a second row even when only the refresh icon +
+  Read more pill were present and would have fit alongside the title
+  comfortably.
+- Toast notifications triggered from the task details page (e.g.
+  "Change applied" after confirming a proposed change) now float above
+  the sticky `TaskActionBar` on every platform instead of being pinned
+  to the screen / window bottom edge, so the confirmation reads as
+  belonging to the task view it came from. The page wraps its
+  `Scaffold` in a nested `ScaffoldMessenger`, scoping
   `context.showToast()` calls fired from inside the subtree to that
   messenger — Flutter then floats the `SnackBar` above the
-  `bottomNavigationBar` slot automatically. Mobile (iOS / Android) is
-  unchanged: no nested wrapper is added, toasts continue to bubble up
-  to the root messenger and render at the screen bottom as before.
+  `bottomNavigationBar` slot automatically. Previously this was gated
+  to macOS / Linux / Windows; on mobile the `TaskActionBar` would
+  cover the toast docked at the screen bottom.
 
 ## [0.9.997]
 ### Changed

@@ -30,12 +30,12 @@ class _TldrHeader extends StatelessWidget {
   final VoidCallback onCancelTimer;
   final VoidCallback onCountdownExpired;
 
-  /// Width threshold below which the header drops the inline control
-  /// cluster to a second row. Below this, the badge + "AI summary" +
-  /// agent-name column gets the full card width and the wake / refresh
-  /// affordances + Read more pill flow underneath instead of crushing
-  /// the title.
-  static const double _stackedHeaderWidth = 360;
+  /// Card width at or below which the countdown pill switches to its
+  /// compact variant (tighter width / padding). Doesn't change the
+  /// layout — the controls always sit inline on the right of the
+  /// title — just trims the pill so the inline cluster reads less
+  /// crowded on a phone-sized card.
+  static const double _compactCountdownWidth = 360;
 
   @override
   Widget build(BuildContext context) {
@@ -43,123 +43,150 @@ class _TldrHeader extends StatelessWidget {
     final ai = tokens.colors.aiCard;
     final messages = context.messages;
     final hasAgentName = agentName != null && agentName!.trim().isNotEmpty;
+    // The countdown cluster needs both `showCountdown` and a non-null
+    // `nextWakeAt`; if the parent ever passes `showCountdown: true`
+    // without a timestamp, fall back to the plain refresh affordance so
+    // the header never ends up with no run / wake control at all.
+    final hasCountdownCluster = showCountdown && nextWakeAt != null;
 
-    final leadingBlock = Row(
-      children: [
-        const _SparkleBadge(),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                messages.aiCardTitle,
-                softWrap: true,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: ai.titleText,
-                  fontWeight: FontWeight.w600,
-                  height: 1.1,
+    Widget buildLeadingBlock({required double maxColumnWidth}) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const _SparkleBadge(),
+          const SizedBox(width: 10),
+          // Cap the title column so an unusually long agent name softWraps
+          // inside the column instead of pushing the whole leading block
+          // wider than the card.
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxColumnWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  messages.aiCardTitle,
+                  softWrap: true,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: ai.titleText,
+                    fontWeight: FontWeight.w600,
+                    height: 1.1,
+                  ),
                 ),
-              ),
-              if (hasAgentName)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: GestureDetector(
-                    onTap: onAgentTap,
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Text(
-                        agentName!.trim(),
-                        softWrap: true,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: ai.metaText,
-                          decoration: TextDecoration.underline,
-                          decorationColor: ai.metaText.withValues(alpha: 0.40),
+                if (hasAgentName)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: GestureDetector(
+                      onTap: onAgentTap,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: Text(
+                          agentName!.trim(),
+                          softWrap: true,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: ai.metaText,
+                                decoration: TextDecoration.underline,
+                                decorationColor: ai.metaText.withValues(
+                                  alpha: 0.40,
+                                ),
+                              ),
                         ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    }
 
-    final controls = <Widget>[
-      if (isRunning)
-        SizedBox(
-          width: 28,
-          height: 28,
-          child: Center(
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: ai.accent,
+    List<Widget> buildControls({required bool compactCountdown}) {
+      return <Widget>[
+        if (isRunning)
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: Center(
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: ai.accent,
+                ),
               ),
             ),
           ),
-        ),
-      // The countdown cluster needs both `showCountdown` and a
-      // non-null `nextWakeAt`; if the parent ever passes
-      // `showCountdown: true` without a timestamp, fall back to
-      // the plain refresh affordance so the header never ends up
-      // with no run / wake control at all.
-      if (!isRunning && (!showCountdown || nextWakeAt == null))
-        _IconAffordance(
-          icon: Icons.refresh_rounded,
-          tooltip: messages.taskAgentRunNowTooltip,
-          onPressed: onRunNow,
-        ),
-      if (showCountdown && nextWakeAt != null) ...[
-        _IconAffordance(
-          icon: Icons.play_arrow_rounded,
-          tooltip: messages.taskAgentRunNowTooltip,
-          onPressed: onRunNow,
-        ),
-        _CountdownPill(
-          nextWakeAt: nextWakeAt!,
-          onExpired: onCountdownExpired,
-        ),
-        _IconAffordance(
-          icon: Icons.close_rounded,
-          tooltip: messages.taskAgentCancelTimerTooltip,
-          onPressed: onCancelTimer,
-          compact: true,
-        ),
-      ],
-      if (hasMore) _ReadMorePill(expanded: expanded, onPressed: onToggle),
-    ];
+        if (!isRunning && !hasCountdownCluster)
+          _IconAffordance(
+            icon: Icons.refresh_rounded,
+            tooltip: messages.taskAgentRunNowTooltip,
+            onPressed: onRunNow,
+          ),
+        if (hasCountdownCluster) ...[
+          _IconAffordance(
+            icon: Icons.play_arrow_rounded,
+            tooltip: messages.taskAgentRunNowTooltip,
+            onPressed: onRunNow,
+          ),
+          _CountdownPill(
+            nextWakeAt: nextWakeAt!,
+            onExpired: onCountdownExpired,
+            compact: compactCountdown,
+          ),
+          _IconAffordance(
+            icon: Icons.close_rounded,
+            tooltip: messages.taskAgentCancelTimerTooltip,
+            onPressed: onCancelTimer,
+            compact: true,
+          ),
+        ],
+        if (hasMore) _ReadMorePill(expanded: expanded, onPressed: onToggle),
+      ];
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < _stackedHeaderWidth;
-          if (isNarrow) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // Lay the leading block + control cluster out via a Wrap with
+          // space-between alignment. When both clusters fit the card
+          // width they share a single run with the gap between them;
+          // when they truly don't fit (extreme narrow card or a long
+          // agent name eating the title column), the controls fall to
+          // a second run instead of crushing the title or overflowing.
+          // Previously a fixed 360 px threshold dropped the controls
+          // even when there was clearly room for them inline.
+          final compact = constraints.maxWidth < _compactCountdownWidth;
+          // 22 px badge + 10 px gap inside leadingBlock — leave the
+          // rest of the card width for the title column.
+          final maxColumnWidth = (constraints.maxWidth - 32).clamp(
+            0.0,
+            double.infinity,
+          );
+          // Wrap shrink-wraps each run to its children's combined
+          // width by default, so WrapAlignment.spaceBetween only
+          // spreads items when there is leftover space inside the
+          // run. Forcing the Wrap to occupy the full available width
+          // via a SizedBox makes the single-run case spread across
+          // the card — leading block at the left edge, control
+          // cluster at the right edge.
+          return SizedBox(
+            width: constraints.maxWidth,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: 8,
               children: [
-                leadingBlock,
-                if (controls.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: controls,
-                  ),
-                ],
+                buildLeadingBlock(maxColumnWidth: maxColumnWidth),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: buildControls(compactCountdown: compact),
+                ),
               ],
-            );
-          }
-          return Row(
-            children: [
-              Expanded(child: leadingBlock),
-              ...controls,
-            ],
+            ),
           );
         },
       ),
@@ -270,10 +297,21 @@ class _IconAffordance extends StatelessWidget {
 }
 
 class _CountdownPill extends StatefulWidget {
-  const _CountdownPill({required this.nextWakeAt, required this.onExpired});
+  const _CountdownPill({
+    required this.nextWakeAt,
+    required this.onExpired,
+    this.compact = false,
+  });
 
   final DateTime nextWakeAt;
   final VoidCallback onExpired;
+
+  /// When true, draws the pill at a tighter width / padding so the
+  /// stacked-mobile control row reads more compact alongside the play
+  /// and cancel icons. The fixed pill width (rather than letting it
+  /// shrink-wrap the digits) is kept on purpose so the row doesn't
+  /// jiggle as the countdown ticks across digit-width changes.
+  final bool compact;
 
   @override
   State<_CountdownPill> createState() => _CountdownPillState();
@@ -300,14 +338,18 @@ class _CountdownPillState extends State<_CountdownPill>
     if (countdownSeconds <= 0) return const SizedBox.shrink();
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
+    final compact = widget.compact;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4),
       child: Container(
-        width: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        width: compact ? 44 : 52,
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 6 : 8,
+          vertical: compact ? 2 : 3,
+        ),
         decoration: BoxDecoration(
           color: ai.accentSoft,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(compact ? 9 : 10),
           border: Border.all(color: ai.border),
         ),
         child: Text(
