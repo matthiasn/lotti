@@ -43,25 +43,14 @@ class HabitsController extends _$HabitsController {
     _repository = ref.read(habitsRepositoryProvider);
 
     ref.onDispose(_cleanup);
-    // Schedule initialization after build() completes to avoid
-    // reading state before it's initialized
-    Future.microtask(_init);
-    return HabitsState.initial();
-  }
 
-  void _cleanup() {
-    _definitionsSubscription?.cancel();
-    _updateSubscription?.cancel();
-    _navIndexSubscription?.cancel();
-    EasyDebounce.cancel('clearInfoYmd');
-  }
-
-  Future<void> _init() async {
+    // Subscribe synchronously inside build() so the subscriptions are
+    // anchored to this controller's lifecycle even if disposal races
+    // with init — they are guaranteed to be cancelled by _cleanup.
     _wasHabitsActive = _navService.index == _navService.habitsIndex;
     _navIndexSubscription = _navService.getIndexStream().listen(
       _handleNavIndex,
     );
-
     _definitionsSubscription = _repository.watchHabitDefinitions().listen((
       habitDefinitions,
     ) {
@@ -78,17 +67,32 @@ class HabitsController extends _$HabitsController {
       _determineHabitSuccessByDays();
     });
 
-    await _startWatching();
+    // The initial fetch + update-stream subscription is async, so it
+    // runs as a microtask. The mounted-guard inside _startWatching
+    // avoids touching disposed state if the provider is torn down
+    // before the microtask drains.
+    Future.microtask(_startWatching);
+    return HabitsState.initial();
+  }
+
+  void _cleanup() {
+    _definitionsSubscription?.cancel();
+    _updateSubscription?.cancel();
+    _navIndexSubscription?.cancel();
+    EasyDebounce.cancel('clearInfoYmd');
   }
 
   Future<void> _startWatching() async {
+    if (!ref.mounted) return;
     await _fetchHabitCompletions();
+    if (!ref.mounted) return;
     _determineHabitSuccessByDays();
 
     _updateSubscription = _repository.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(habitCompletionNotification)) {
         await _fetchHabitCompletions();
         await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (!ref.mounted) return;
         _determineHabitSuccessByDays();
       }
     });
@@ -269,8 +273,10 @@ class HabitsController extends _$HabitsController {
 
   /// Recomputes habit success on the inactive→active edge of the habits
   /// tab — time may have passed while the tab was off-screen, so the
-  /// due/later split needs refreshing.
-  void _handleNavIndex(int newIndex) {
+  /// due/later split needs refreshing. Refetches completions first so a
+  /// midnight rollover (which extends the relevant day range) is also
+  /// reflected, not just the wall-clock-driven `showHabit` bucketing.
+  Future<void> _handleNavIndex(int newIndex) async {
     if (!ref.mounted) return;
 
     final isHabitsActive = newIndex == _navService.habitsIndex;
@@ -278,6 +284,8 @@ class HabitsController extends _$HabitsController {
     _wasHabitsActive = isHabitsActive;
 
     if (isHabitsActive && !wasActive) {
+      await _fetchHabitCompletions();
+      if (!ref.mounted) return;
       _determineHabitSuccessByDays();
     }
   }

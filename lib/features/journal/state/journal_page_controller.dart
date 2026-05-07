@@ -698,7 +698,7 @@ class JournalPageController extends _$JournalPageController {
     final isVisible = newIndex == _myTabIndex(getIt<NavService>());
     if (!_isVisible && isVisible && _needsRefreshOnVisible) {
       _needsRefreshOnVisible = false;
-      refreshQuery(preserveVisibleItems: true);
+      unawaited(refreshQuery(preserveVisibleItems: true));
     }
     _isVisible = isVisible;
   }
