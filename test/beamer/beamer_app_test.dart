@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
@@ -30,6 +31,7 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:uuid/uuid.dart';
 
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
@@ -734,6 +736,71 @@ void main() {
       await tester.pump();
     });
   });
+
+  group('isTaskDetailRoute', () {
+    // Single source of truth for the drives the predicate: this is the
+    // exact same callsite shape used by both shells in beamer_app.dart
+    // (mobile bottom-nav suppression + desktop floating recording
+    // indicator hiding), so unit-testing it covers both behaviors.
+
+    test('returns false when the active tab is not the tasks tab', () {
+      // Even with a task-detail location, any non-tasks tab keeps the
+      // floating indicator visible — the desktop TaskActionBar only
+      // renders inside the tasks-tab pane.
+      final location = TasksLocation(
+        RouteInformation(uri: Uri.parse('/tasks/${const Uuid().v4()}')),
+      );
+      expect(isTaskDetailRoute(location, 1), isFalse);
+      expect(isTaskDetailRoute(location, 5), isFalse);
+    });
+
+    test('returns false when the location is not a TasksLocation', () {
+      final location = _ArbitraryLocation(
+        RouteInformation(uri: Uri.parse('/tasks/abc')),
+      );
+      expect(isTaskDetailRoute(location, 0), isFalse);
+    });
+
+    test('returns false when the location is null', () {
+      expect(isTaskDetailRoute(null, 0), isFalse);
+    });
+
+    test('returns false on the tasks list route (no taskId in path)', () {
+      final location = TasksLocation(
+        RouteInformation(uri: Uri.parse('/tasks')),
+      );
+      expect(isTaskDetailRoute(location, 0), isFalse);
+    });
+
+    test('returns false when the trailing path segment is not a uuid', () {
+      // A non-uuid segment (legacy/typo path) must not falsely flag the
+      // route as a task detail and hide the indicator.
+      final location = TasksLocation(
+        RouteInformation(uri: Uri.parse('/tasks/not-a-uuid')),
+      );
+      expect(isTaskDetailRoute(location, 0), isFalse);
+    });
+
+    test('returns true on /tasks/<uuid> with the tasks tab active', () {
+      final taskId = const Uuid().v4();
+      final location = TasksLocation(
+        RouteInformation(uri: Uri.parse('/tasks/$taskId')),
+      );
+      expect(isTaskDetailRoute(location, 0), isTrue);
+    });
+  });
+}
+
+class _ArbitraryLocation extends BeamLocation<BeamState> {
+  _ArbitraryLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) => const [
+    BeamPage(key: ValueKey('arbitrary'), child: SizedBox.shrink()),
+  ];
+
+  @override
+  List<Pattern> get pathPatterns => ['*'];
 }
 
 class _StubSavedTaskFiltersController extends SavedTaskFiltersController {

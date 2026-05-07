@@ -197,10 +197,12 @@ Checklist content is modeled separately through checklist entities and linked ch
   The page sets `Scaffold.extendBody: true` so body content paints
   behind the bar — that's what the `BackdropFilter` blurs. The mobile
   shell hides its bottom nav pill whenever the active beamer route is
-  `/tasks/<uuid>` (computed in `_AppScreenState._isMobileImmersiveRoute`,
+  `/tasks/<uuid>` (computed in `_AppScreenState._isTaskDetailRoute`,
   no per-page lifecycle plumbing), so the action bar can dock flush
-  against the home indicator. TaskActionBar consumes the safe-area
-  inset internally.
+  against the home indicator. The desktop shell uses the same predicate
+  to hide its bottom-right floating recording indicator on task detail
+  routes, since the action bar already exposes the recording control.
+  TaskActionBar consumes the safe-area inset internally.
 
 ```mermaid
 flowchart TD

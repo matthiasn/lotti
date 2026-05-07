@@ -120,7 +120,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       extendBody: true,
       // The mobile shell hides its bottom nav bar whenever the
       // current beamer route is `/tasks/<uuid>` (see
-      // _AppScreenState._isMobileImmersiveRoute), so the action bar
+      // _AppScreenState._isTaskDetailRoute), so the action bar
       // sits flush with the home indicator. TaskActionBar handles its
       // own bottom safe-inset padding.
       bottomNavigationBar: Column(
