@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -13,6 +14,182 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+enum _GeneratedTaskTemplateSlot {
+  explicitValid,
+  explicitDeleted,
+  explicitMissing,
+  explicitWrongType,
+  defaultFirst,
+  defaultLaura,
+  defaultNone,
+}
+
+enum _GeneratedTaskStateSlot { present, missing }
+
+enum _GeneratedTaskDisplaySlot { defaultName, customName }
+
+enum _GeneratedTaskProfileSlot { none, profile }
+
+enum _GeneratedTaskCategorySlot { empty, single, pair }
+
+class _GeneratedTaskAgentCreateScenario {
+  const _GeneratedTaskAgentCreateScenario({
+    required this.templateSlot,
+    required this.duplicateExists,
+    required this.stateSlot,
+    required this.awaitContent,
+    required this.displaySlot,
+    required this.profileSlot,
+    required this.categorySlot,
+  });
+
+  final _GeneratedTaskTemplateSlot templateSlot;
+  final bool duplicateExists;
+  final _GeneratedTaskStateSlot stateSlot;
+  final bool awaitContent;
+  final _GeneratedTaskDisplaySlot displaySlot;
+  final _GeneratedTaskProfileSlot profileSlot;
+  final _GeneratedTaskCategorySlot categorySlot;
+
+  bool get usesExplicitTemplate {
+    return switch (templateSlot) {
+      _GeneratedTaskTemplateSlot.explicitValid ||
+      _GeneratedTaskTemplateSlot.explicitDeleted ||
+      _GeneratedTaskTemplateSlot.explicitMissing ||
+      _GeneratedTaskTemplateSlot.explicitWrongType => true,
+      _GeneratedTaskTemplateSlot.defaultFirst ||
+      _GeneratedTaskTemplateSlot.defaultLaura ||
+      _GeneratedTaskTemplateSlot.defaultNone => false,
+    };
+  }
+
+  bool get templateIsValid {
+    return switch (templateSlot) {
+      _GeneratedTaskTemplateSlot.explicitValid ||
+      _GeneratedTaskTemplateSlot.defaultFirst ||
+      _GeneratedTaskTemplateSlot.defaultLaura => true,
+      _GeneratedTaskTemplateSlot.explicitDeleted ||
+      _GeneratedTaskTemplateSlot.explicitMissing ||
+      _GeneratedTaskTemplateSlot.explicitWrongType ||
+      _GeneratedTaskTemplateSlot.defaultNone => false,
+    };
+  }
+
+  bool get stateExists => stateSlot == _GeneratedTaskStateSlot.present;
+
+  bool get shouldCreateAgent => templateIsValid && !duplicateExists;
+
+  bool get shouldSucceed => shouldCreateAgent && stateExists;
+
+  String? get inputTemplateId {
+    return switch (templateSlot) {
+      _GeneratedTaskTemplateSlot.explicitValid => kTestTemplateId,
+      _GeneratedTaskTemplateSlot.explicitDeleted =>
+        'generated-deleted-template',
+      _GeneratedTaskTemplateSlot.explicitMissing =>
+        'generated-missing-template',
+      _GeneratedTaskTemplateSlot.explicitWrongType =>
+        'generated-version-template',
+      _GeneratedTaskTemplateSlot.defaultFirst ||
+      _GeneratedTaskTemplateSlot.defaultLaura ||
+      _GeneratedTaskTemplateSlot.defaultNone => null,
+    };
+  }
+
+  String? get resolvedTemplateId {
+    return switch (templateSlot) {
+      _GeneratedTaskTemplateSlot.explicitValid => kTestTemplateId,
+      _GeneratedTaskTemplateSlot.explicitDeleted =>
+        'generated-deleted-template',
+      _GeneratedTaskTemplateSlot.explicitMissing =>
+        'generated-missing-template',
+      _GeneratedTaskTemplateSlot.explicitWrongType =>
+        'generated-version-template',
+      _GeneratedTaskTemplateSlot.defaultFirst => 'generated-default-template',
+      _GeneratedTaskTemplateSlot.defaultLaura => lauraTemplateId,
+      _GeneratedTaskTemplateSlot.defaultNone => null,
+    };
+  }
+
+  String? get displayName {
+    return switch (displaySlot) {
+      _GeneratedTaskDisplaySlot.defaultName => null,
+      _GeneratedTaskDisplaySlot.customName => 'Generated Task Agent',
+    };
+  }
+
+  String get expectedDisplayName => displayName ?? 'Task Agent';
+
+  String? get profileId {
+    return switch (profileSlot) {
+      _GeneratedTaskProfileSlot.none => null,
+      _GeneratedTaskProfileSlot.profile => 'generated-profile',
+    };
+  }
+
+  Set<String> get allowedCategoryIds {
+    return switch (categorySlot) {
+      _GeneratedTaskCategorySlot.empty => const <String>{},
+      _GeneratedTaskCategorySlot.single => {'generated-cat-1'},
+      _GeneratedTaskCategorySlot.pair => {'generated-cat-1', 'generated-cat-2'},
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedTaskAgentCreateScenario('
+        'templateSlot: $templateSlot, duplicateExists: $duplicateExists, '
+        'stateSlot: $stateSlot, awaitContent: $awaitContent, '
+        'displaySlot: $displaySlot, profileSlot: $profileSlot, '
+        'categorySlot: $categorySlot)';
+  }
+}
+
+extension _AnyGeneratedTaskAgentServiceScenario on glados.Any {
+  glados.Generator<_GeneratedTaskTemplateSlot> get taskTemplateSlot =>
+      glados.any.choose(_GeneratedTaskTemplateSlot.values);
+
+  glados.Generator<_GeneratedTaskStateSlot> get taskStateSlot =>
+      glados.any.choose(_GeneratedTaskStateSlot.values);
+
+  glados.Generator<_GeneratedTaskDisplaySlot> get taskDisplaySlot =>
+      glados.any.choose(_GeneratedTaskDisplaySlot.values);
+
+  glados.Generator<_GeneratedTaskProfileSlot> get taskProfileSlot =>
+      glados.any.choose(_GeneratedTaskProfileSlot.values);
+
+  glados.Generator<_GeneratedTaskCategorySlot> get taskCategorySlot =>
+      glados.any.choose(_GeneratedTaskCategorySlot.values);
+
+  glados.Generator<_GeneratedTaskAgentCreateScenario>
+  get taskAgentCreateScenario => glados.any.combine7(
+    taskTemplateSlot,
+    glados.any.bool,
+    taskStateSlot,
+    glados.any.bool,
+    taskDisplaySlot,
+    taskProfileSlot,
+    taskCategorySlot,
+    (
+      _GeneratedTaskTemplateSlot templateSlot,
+      bool duplicateExists,
+      _GeneratedTaskStateSlot stateSlot,
+      bool awaitContent,
+      _GeneratedTaskDisplaySlot displaySlot,
+      _GeneratedTaskProfileSlot profileSlot,
+      _GeneratedTaskCategorySlot categorySlot,
+    ) => _GeneratedTaskAgentCreateScenario(
+      templateSlot: templateSlot,
+      duplicateExists: duplicateExists,
+      stateSlot: stateSlot,
+      awaitContent: awaitContent,
+      displaySlot: displaySlot,
+      profileSlot: profileSlot,
+      categorySlot: categorySlot,
+    ),
+  );
+}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -79,6 +256,272 @@ void main() {
 
   group('TaskAgentService', () {
     group('createTaskAgent', () {
+      glados.Glados(
+        glados.any.taskAgentCreateScenario,
+        glados.ExploreConfig(numRuns: 220),
+      ).test('matches generated create-flow invariants', (scenario) async {
+        final generatedAgentService = MockAgentService();
+        final generatedRepository = MockAgentRepository();
+        final generatedOrchestrator = MockWakeOrchestrator();
+        final generatedSyncService = MockAgentSyncService();
+        final generatedService = TaskAgentService(
+          agentService: generatedAgentService,
+          repository: generatedRepository,
+          orchestrator: generatedOrchestrator,
+          syncService: generatedSyncService,
+        );
+        const taskId = 'generated-task';
+        const agentId = 'generated-agent';
+        final identity = makeIdentity(agentId: agentId);
+        final initialState = makeState(
+          id: 'state-$agentId',
+          agentId: agentId,
+          activeTaskId: 'previous-task',
+        );
+        final explicitTemplate = makeTestTemplate(
+          modelId: 'generated-explicit-model',
+        );
+        final defaultTemplate = makeTestTemplate(
+          id: 'generated-default-template',
+          agentId: 'generated-default-template',
+          modelId: 'generated-default-model',
+        );
+        final lauraTemplate = makeTestTemplate(
+          id: lauraTemplateId,
+          agentId: lauraTemplateId,
+          modelId: 'generated-laura-model',
+        );
+        final deletedTemplate = makeTestTemplate(
+          id: 'generated-deleted-template',
+          agentId: 'generated-deleted-template',
+        ).copyWith(deletedAt: kAgentTestDate);
+        final duplicateLink = AgentLink.agentTask(
+          id: 'generated-duplicate-link',
+          fromId: 'duplicate-agent',
+          toId: taskId,
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => generatedSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => generatedSyncService.upsertLink(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => generatedOrchestrator.addSubscription(any()),
+        ).thenReturn(null);
+        when(
+          () => generatedOrchestrator.setAwaitingContent(
+            any(),
+            awaiting: any(named: 'awaiting'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => generatedOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => generatedRepository.getEntity(kTestTemplateId),
+        ).thenAnswer((_) async => explicitTemplate);
+        when(
+          () => generatedRepository.getEntity('generated-default-template'),
+        ).thenAnswer((_) async => defaultTemplate);
+        when(
+          () => generatedRepository.getEntity(lauraTemplateId),
+        ).thenAnswer((_) async => lauraTemplate);
+        when(
+          () => generatedRepository.getEntity('generated-deleted-template'),
+        ).thenAnswer((_) async => deletedTemplate);
+        when(
+          () => generatedRepository.getEntity('generated-missing-template'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => generatedRepository.getEntity('generated-version-template'),
+        ).thenAnswer(
+          (_) async =>
+              makeTestTemplateVersion(id: 'generated-version-template'),
+        );
+        when(generatedRepository.getAllTemplates).thenAnswer((_) async {
+          return switch (scenario.templateSlot) {
+            _GeneratedTaskTemplateSlot.defaultFirst => [defaultTemplate],
+            _GeneratedTaskTemplateSlot.defaultLaura => [
+              defaultTemplate,
+              lauraTemplate,
+            ],
+            _GeneratedTaskTemplateSlot.defaultNone => <AgentTemplateEntity>[],
+            _ => <AgentTemplateEntity>[],
+          };
+        });
+        when(
+          () => generatedRepository.getLinksTo(
+            taskId,
+            type: 'agent_task',
+          ),
+        ).thenAnswer(
+          (_) async => scenario.duplicateExists ? [duplicateLink] : [],
+        );
+        when(
+          () => generatedAgentService.createAgent(
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => generatedRepository.getAgentState(agentId),
+        ).thenAnswer(
+          (_) async => scenario.stateExists ? initialState : null,
+        );
+
+        Future<AgentIdentityEntity> create() {
+          return generatedService.createTaskAgent(
+            taskId: taskId,
+            templateId: scenario.inputTemplateId,
+            profileId: scenario.profileId,
+            displayName: scenario.displayName,
+            allowedCategoryIds: scenario.allowedCategoryIds,
+            awaitContent: scenario.awaitContent,
+          );
+        }
+
+        if (!scenario.shouldSucceed) {
+          await expectLater(
+            create,
+            throwsA(isA<StateError>()),
+            reason: '$scenario',
+          );
+
+          if (scenario.shouldCreateAgent) {
+            verify(
+              () => generatedAgentService.createAgent(
+                kind: any(named: 'kind'),
+                displayName: any(named: 'displayName'),
+                config: any(named: 'config'),
+                allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              ),
+            ).called(1);
+          } else {
+            verifyNever(
+              () => generatedAgentService.createAgent(
+                kind: any(named: 'kind'),
+                displayName: any(named: 'displayName'),
+                config: any(named: 'config'),
+                allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              ),
+            );
+          }
+          verifyNever(() => generatedSyncService.upsertEntity(any()));
+          verifyNever(() => generatedSyncService.upsertLink(any()));
+          verifyNever(() => generatedOrchestrator.addSubscription(any()));
+          verifyNever(
+            () => generatedOrchestrator.setAwaitingContent(
+              any(),
+              awaiting: any(named: 'awaiting'),
+            ),
+          );
+          verifyNever(
+            () => generatedOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+          return;
+        }
+
+        final result = await create();
+
+        expect(result, same(identity), reason: '$scenario');
+        final createCall = verify(
+          () => generatedAgentService.createAgent(
+            kind: captureAny(named: 'kind'),
+            displayName: captureAny(named: 'displayName'),
+            config: captureAny(named: 'config'),
+            allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
+          ),
+        ).captured;
+        expect(createCall[0], 'task_agent', reason: '$scenario');
+        expect(
+          createCall[1],
+          scenario.expectedDisplayName,
+          reason: '$scenario',
+        );
+        final config = createCall[2] as AgentConfig;
+        expect(config.profileId, scenario.profileId, reason: '$scenario');
+        expect(
+          config.modelId,
+          switch (scenario.resolvedTemplateId) {
+            kTestTemplateId => explicitTemplate.modelId,
+            'generated-default-template' => defaultTemplate.modelId,
+            lauraTemplateId => lauraTemplate.modelId,
+            _ => null,
+          },
+          reason: '$scenario',
+        );
+        expect(
+          createCall[3],
+          scenario.allowedCategoryIds,
+          reason: '$scenario',
+        );
+
+        final entityWrites = verify(
+          () => generatedSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(entityWrites, hasLength(1), reason: '$scenario');
+        final updatedState = entityWrites.single as AgentStateEntity;
+        expect(updatedState.agentId, agentId, reason: '$scenario');
+        expect(updatedState.slots.activeTaskId, taskId, reason: '$scenario');
+        expect(
+          updatedState.awaitingContent,
+          scenario.awaitContent,
+          reason: '$scenario',
+        );
+
+        final linkWrites = verify(
+          () => generatedSyncService.upsertLink(captureAny()),
+        ).captured;
+        expect(linkWrites, hasLength(2), reason: '$scenario');
+        final taskLink = linkWrites.whereType<AgentTaskLink>().single;
+        expect(taskLink.fromId, agentId, reason: '$scenario');
+        expect(taskLink.toId, taskId, reason: '$scenario');
+        final templateLink = linkWrites
+            .whereType<TemplateAssignmentLink>()
+            .single;
+        expect(
+          templateLink.fromId,
+          scenario.resolvedTemplateId,
+          reason: '$scenario',
+        );
+        expect(templateLink.toId, agentId, reason: '$scenario');
+
+        final subscriptions = verify(
+          () => generatedOrchestrator.addSubscription(captureAny()),
+        ).captured.cast<AgentSubscription>();
+        expect(subscriptions, hasLength(1), reason: '$scenario');
+        expect(subscriptions.single.agentId, agentId, reason: '$scenario');
+        expect(subscriptions.single.matchEntityIds, {taskId});
+        verify(
+          () => generatedOrchestrator.setAwaitingContent(
+            agentId,
+            awaiting: scenario.awaitContent,
+          ),
+        ).called(1);
+        verify(
+          () => generatedOrchestrator.enqueueManualWake(
+            agentId: agentId,
+            reason: WakeReason.creation.name,
+            triggerTokens: {taskId},
+          ),
+        ).called(1);
+      });
+
       test('creates agent via service, updates state, creates link, '
           'and registers subscription', () async {
         final identity = makeIdentity();
