@@ -894,6 +894,124 @@ void main() {
       expect(sorted.map((l) => l.id), ['link-new', 'link-old']);
     });
 
+    test('breaks ties deterministically by createdAt then id', () async {
+      // All three entries share the same dateFrom, so the primary sort
+      // key returns 0 for every pair. The tie-breaker chain must pick
+      // a stable order: createdAt ascending, then id ascending.
+      final sharedDate = DateTime(2026, 5, 7, 20);
+      final entryA = JournalEntry(
+        meta: Metadata(
+          id: 'entry-a',
+          createdAt: linkCreatedAt,
+          updatedAt: linkCreatedAt,
+          dateFrom: sharedDate,
+          dateTo: sharedDate,
+        ),
+        entryText: const EntryText(plainText: 'a'),
+      );
+      final entryB = JournalEntry(
+        meta: Metadata(
+          id: 'entry-b',
+          createdAt: linkCreatedAt,
+          updatedAt: linkCreatedAt,
+          dateFrom: sharedDate,
+          dateTo: sharedDate,
+        ),
+        entryText: const EntryText(plainText: 'b'),
+      );
+      final entryC = JournalEntry(
+        meta: Metadata(
+          id: 'entry-c',
+          createdAt: linkCreatedAt,
+          updatedAt: linkCreatedAt,
+          dateFrom: sharedDate,
+          dateTo: sharedDate,
+        ),
+        entryText: const EntryText(plainText: 'c'),
+      );
+
+      // Same createdAt for two of the three links — the third gets a
+      // distinct (later) timestamp so we exercise both tie-breaker
+      // levels: createdAt orders link-c last, then id picks between
+      // link-a and link-b.
+      final linkA = EntryLink.basic(
+        id: 'link-a',
+        fromId: testId,
+        toId: entryA.meta.id,
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
+        vectorClock: null,
+        hidden: false,
+      );
+      final linkB = EntryLink.basic(
+        id: 'link-b',
+        fromId: testId,
+        toId: entryB.meta.id,
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
+        vectorClock: null,
+        hidden: false,
+      );
+      final linkC = EntryLink.basic(
+        id: 'link-c',
+        fromId: testId,
+        toId: entryC.meta.id,
+        createdAt: DateTime(2026, 6),
+        updatedAt: DateTime(2026, 6),
+        vectorClock: null,
+        hidden: false,
+      );
+
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => [linkB, linkC, linkA]);
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          includeHiddenControllerProvider(id: testId).overrideWith(
+            () => MockIncludeHiddenController(false),
+          ),
+          createEntryControllerOverride(entryA),
+          createEntryControllerOverride(entryB),
+          createEntryControllerOverride(entryC),
+        ],
+      );
+
+      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await Future.wait([
+        for (final entry in [entryA, entryB, entryC])
+          container.read(entryControllerProvider(id: entry.meta.id).future),
+      ]);
+
+      // Newest first: tie on dateFrom → newest createdAt wins, so link-c
+      // (createdAt 2026-06) is first. link-a/link-b share createdAt;
+      // the id tie-breaker is always ascending (not sign-flipped) so
+      // link-a comes before link-b regardless of sort direction.
+      expect(
+        container
+            .read(sortedLinkedEntriesProvider(testId))
+            .map((l) => l.id)
+            .toList(),
+        ['link-c', 'link-a', 'link-b'],
+      );
+
+      container
+              .read(linkedEntriesSortControllerProvider(id: testId).notifier)
+              .order =
+          LinkedEntriesSortOrder.oldestFirst;
+
+      // Oldest first: link-a / link-b come before link-c (older
+      // createdAt), and id orders them link-a, link-b.
+      expect(
+        container
+            .read(sortedLinkedEntriesProvider(testId))
+            .map((l) => l.id)
+            .toList(),
+        ['link-a', 'link-b', 'link-c'],
+      );
+    });
+
     test('returns empty list when no links exist', () async {
       when(
         () => mockJournalRepository.getLinksFromId(testId),

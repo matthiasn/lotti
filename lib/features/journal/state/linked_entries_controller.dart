@@ -159,18 +159,33 @@ List<EntryLink> sortedLinkedEntries(Ref ref, String id) {
 
   final sortOrder = ref.watch(linkedEntriesSortControllerProvider(id: id));
 
-  DateTime sortKey(EntryLink link) {
-    final entry = ref
-        .watch(entryControllerProvider(id: link.toId))
-        .value
-        ?.entry;
-    return entry?.meta.dateFrom ?? link.createdAt;
-  }
+  // Pre-resolve sort keys in a single pass. Watching inside the sort
+  // comparator would (a) re-watch O(N log N) times and (b) miss
+  // dependencies for any pair the algorithm happens to skip, leaving
+  // the provider stale when those entries' dateFrom values change.
+  final sortKeys = <String, DateTime>{
+    for (final link in links)
+      link.id:
+          ref
+              .watch(entryControllerProvider(id: link.toId))
+              .value
+              ?.entry
+              ?.meta
+              .dateFrom ??
+          link.createdAt,
+  };
 
+  // Tie-breakers (link.createdAt, then link.id) keep the order stable
+  // across rebuilds when two entries share the same dateFrom. Without
+  // them the row order can jitter on every sort.
+  final sign = sortOrder == LinkedEntriesSortOrder.newestFirst ? -1 : 1;
   final sorted = [...links]
     ..sort((a, b) {
-      final cmp = sortKey(a).compareTo(sortKey(b));
-      return sortOrder == LinkedEntriesSortOrder.newestFirst ? -cmp : cmp;
+      final primary = sortKeys[a.id]!.compareTo(sortKeys[b.id]!);
+      if (primary != 0) return sign * primary;
+      final secondary = a.createdAt.compareTo(b.createdAt);
+      if (secondary != 0) return sign * secondary;
+      return a.id.compareTo(b.id);
     });
   return sorted;
 }
