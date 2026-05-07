@@ -4,30 +4,31 @@
   <metadata_license>CC-BY-SA-4.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <name>Lotti</name>
-  <summary>A smart journal and life management app</summary>
+  <summary>Open-source private logbook with a local agentic layer</summary>
   <description>
     <p>
-      Lotti is a comprehensive life management and journaling application that helps you track your goals, 
-      habits, and daily activities while maintaining your privacy. It features:
+      Lotti is an open-source personal logbook — tasks, time recordings, voice notes, transcriptions, journal entries, habits, and health data — paired with an agentic layer of long-living AI agents that observe, suggest, summarise, and nudge. The agents run on your machine. With a powerful enough device, the model they call can run locally too — meaning your data never has to leave the device at all. On lighter hardware, or when you need to save battery, you keep the same agentic experience and route inference to a cloud provider you choose, on a per-category basis.
     </p>
-    <ul>
-      <li>Smart journaling with text, audio, and image support</li>
-      <li>Habit tracking and goal management</li>
-      <li>Health data integration</li>
-      <li>Privacy-first design with local data storage</li>
-      <li>Cross-platform synchronization</li>
-      <li>Customizable dashboards and analytics</li>
-    </ul>
     <p>
-      Read the multi-part blog series with video walkthroughs exploring everything Lotti can do — from task management to AI-powered insights. Learn how to take control of your productivity while keeping your data private! See Substack link.
+      No accounts, no telemetry, no cloud storage. End-to-end encrypted multi-device sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; the homeserver you bring relays only ciphertext between your own devices.
     </p>
+    <p>What it does:</p>
+    <ul>
+      <li>Long-living AI agents (mission, soul, report directive) that read your logbook, propose changes, and only act after you approve</li>
+      <li>Two-database architecture: a strict separation between your facts (the user database) and what the agents think (the agentic database), enforced on disk</li>
+      <li>Run reasoning-capable models locally via Ollama (e.g. Qwen 3.6 35B A3B, a Mixture-of-Experts model with ~3B active parameters) — or use Gemini Flash, OpenAI, Anthropic, Mistral, or any OpenAI-compatible cloud provider, on a per-category basis</li>
+      <li>Local voice transcription with Whisper or Voxtral; cloud transcription via Gemini, OpenAI, or Mistral</li>
+      <li>AI-generated cover art for tasks via Nano Banana Pro on Gemini, OpenAI, or Qwen</li>
+      <li>Both the logbook and the agentic state sync end-to-end encrypted</li>
+      <li>Habit tracking with success/fail/skip completion types, custom measurables, dashboards, and time recording</li>
+      <li>Bring-your-own API keys for cloud providers, with jurisdiction choice per category (US, EU/GDPR-compliant, or Chinese)</li>
+    </ul>
   </description>
   <developer id="com.matthiasn">
     <name>Matthias Nehlsen</name>
   </developer>
   <url type="homepage">https://github.com/matthiasn/lotti</url>
   <url type="bugtracker">https://github.com/matthiasn/lotti/issues</url>
-  <url type="help">https://matthiasnehlsen.substack.com/p/meet-lotti</url>
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
@@ -1361,7 +1362,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>Lotti application interface</caption>
-      <image type="source" width="536" height="999">https://raw.githubusercontent.com/matthiasn/lotti/8a5b9ef0f9d8e7132638f497107bc33215819c0d/flatpak/screenshot.png</image>
+      <image type="source" width="536" height="999">https://raw.githubusercontent.com/matthiasn/lotti-docs/89d8e81b93711e3c41685e903349cc93d6ab5239/images/0.9.998/task_details_screenshot_linux.png</image>
     </screenshot>
   </screenshots>
 </component>
