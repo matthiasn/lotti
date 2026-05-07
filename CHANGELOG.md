@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.998]
+### Fixed
+- Linked-entries activity log on a task now sorts entries by each
+  entry's `dateFrom` instead of the link's own `createdAt`, so the
+  "Newest first" / "Oldest first" toggle reflects the timestamps
+  shown in the row headers. Previously two entries linked in the
+  same session could appear in an order that contradicted their
+  visible times because their links shared a `createdAt` and the
+  list was sorted by that field. The widget now reads a new
+  `sortedLinkedEntriesProvider` that resolves each linked entity and
+  falls back to `link.createdAt` only while an entry is still
+  loading.
+
 ### Changed
 - AI summary card header (the `AI summary / Task Laura` row) keeps its
   wake / refresh affordances and Read more pill inline alongside the
