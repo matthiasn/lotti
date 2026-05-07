@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.998]
+### Changed
+- Toast notifications triggered from the desktop task details page
+  (e.g. "Change applied" after confirming a proposed change) now float
+  above the sticky `TaskActionBar` instead of pinned to the bottom edge
+  of the app window, so the confirmation reads as belonging to the task
+  view it came from. The page now wraps its `Scaffold` in a nested
+  `ScaffoldMessenger` on macOS / Linux / Windows, scoping
+  `context.showToast()` calls fired from inside the subtree to that
+  messenger — Flutter then floats the `SnackBar` above the
+  `bottomNavigationBar` slot automatically. Mobile (iOS / Android) is
+  unchanged: no nested wrapper is added, toasts continue to bubble up
+  to the root messenger and render at the screen bottom as before.
+
 ## [0.9.997]
 ### Changed
 - Sidebar running-timer card now hides itself only when the timer's

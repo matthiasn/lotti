@@ -20,6 +20,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/utils/platform.dart';
 
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
@@ -109,6 +110,101 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       return const EmptyScaffoldWithTitle('');
     }
 
+    final scaffold = Scaffold(
+      backgroundColor: context.designTokens.colors.background.level01,
+      // extendBody so the BackdropFilter inside [TaskActionBar]'s
+      // glass strip has body content underneath to actually blur. The
+      // body's bottom inset is reserved automatically for the
+      // bottomNavigationBar slot, so we don't need a magic-number
+      // bottom padding on the slivers.
+      extendBody: true,
+      // The mobile shell hides its bottom nav bar whenever the
+      // current beamer route is `/tasks/<uuid>` (see
+      // _AppScreenState._isMobileImmersiveRoute), so the action bar
+      // sits flush with the home indicator. TaskActionBar handles its
+      // own bottom safe-inset padding.
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AiRunningAnimationWrapperCard(
+            entryId: widget.taskId,
+            height: 50,
+            isInteractive: true,
+            responseTypes: const {
+              AiResponseType.imageAnalysis,
+              AiResponseType.audioTranscription,
+              AiResponseType.promptGeneration,
+              AiResponseType.imageGeneration,
+            },
+          ),
+          TaskActionBar(task: task),
+        ],
+      ),
+      // Builder so MediaQuery.paddingOf reads the Scaffold-modified
+      // value: with extendBody: true, Scaffold adds the
+      // bottomNavigationBar slot height (action bar + AI overlay when
+      // running) to padding.bottom on the body's MediaQuery. The
+      // trailing SliverPadding consumes that inset so the last entry
+      // can scroll fully above the bar instead of being hidden behind.
+      body: Builder(
+        builder: (context) => CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            TaskSliverAppBar(taskId: widget.taskId),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  left: 15,
+                  right: 15,
+                  top: 10,
+                ),
+                child: TaskForm(taskId: widget.taskId),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: 8,
+                  left: 10,
+                  right: 10,
+                ),
+                child:
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: <Widget>[
+                        LinkedEntriesWithTimer(
+                          item: task,
+                          entryKeyBuilder: _getEntryKey,
+                          highlightedEntryId: highlightedEntryId,
+                          hideTaskEntries: true,
+                        ),
+                        LinkedFromEntriesWidget(
+                          task,
+                          hideTaskEntries: true,
+                        ),
+                      ],
+                    ).animate().fadeIn(
+                      duration: const Duration(milliseconds: 100),
+                    ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.paddingOf(context).bottom,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // On desktop, scope toasts triggered from inside the task details
+    // subtree to a nested ScaffoldMessenger so SnackBars float above the
+    // sticky [TaskActionBar] (the Scaffold's bottomNavigationBar) instead
+    // of the app window's bottom edge. Mobile keeps the root messenger so
+    // toasts continue to appear at the screen bottom as before.
+    final body = isDesktop ? ScaffoldMessenger(child: scaffold) : scaffold;
+
     return DropTarget(
       onDragDone: (data) {
         handleDroppedMedia(
@@ -118,93 +214,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
           analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
         );
       },
-      child: Scaffold(
-        backgroundColor: context.designTokens.colors.background.level01,
-        // extendBody so the BackdropFilter inside [TaskActionBar]'s
-        // glass strip has body content underneath to actually blur. The
-        // body's bottom inset is reserved automatically for the
-        // bottomNavigationBar slot, so we don't need a magic-number
-        // bottom padding on the slivers.
-        extendBody: true,
-        // The mobile shell hides its bottom nav bar whenever the
-        // current beamer route is `/tasks/<uuid>` (see
-        // _AppScreenState._isMobileImmersiveRoute), so the action bar
-        // sits flush with the home indicator. TaskActionBar handles its
-        // own bottom safe-inset padding.
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AiRunningAnimationWrapperCard(
-              entryId: widget.taskId,
-              height: 50,
-              isInteractive: true,
-              responseTypes: const {
-                AiResponseType.imageAnalysis,
-                AiResponseType.audioTranscription,
-                AiResponseType.promptGeneration,
-                AiResponseType.imageGeneration,
-              },
-            ),
-            TaskActionBar(task: task),
-          ],
-        ),
-        // Builder so MediaQuery.paddingOf reads the Scaffold-modified
-        // value: with extendBody: true, Scaffold adds the
-        // bottomNavigationBar slot height (action bar + AI overlay when
-        // running) to padding.bottom on the body's MediaQuery. The
-        // trailing SliverPadding consumes that inset so the last entry
-        // can scroll fully above the bar instead of being hidden behind.
-        body: Builder(
-          builder: (context) => CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              TaskSliverAppBar(taskId: widget.taskId),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 15,
-                    right: 15,
-                    top: 10,
-                  ),
-                  child: TaskForm(taskId: widget.taskId),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    top: 8,
-                    left: 10,
-                    right: 10,
-                  ),
-                  child:
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: <Widget>[
-                          LinkedEntriesWithTimer(
-                            item: task,
-                            entryKeyBuilder: _getEntryKey,
-                            highlightedEntryId: highlightedEntryId,
-                            hideTaskEntries: true,
-                          ),
-                          LinkedFromEntriesWidget(
-                            task,
-                            hideTaskEntries: true,
-                          ),
-                        ],
-                      ).animate().fadeIn(
-                        duration: const Duration(milliseconds: 100),
-                      ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.paddingOf(context).bottom,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      child: body,
     );
   }
 }

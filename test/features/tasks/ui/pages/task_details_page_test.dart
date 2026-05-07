@@ -22,6 +22,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -202,6 +203,81 @@ void main() {
       // Stack so it stacks correctly with the AI overlay above it.
       expect(scaffold.floatingActionButton, isNull);
     });
+
+    testWidgets(
+      'desktop wraps task scaffold in nested ScaffoldMessenger so toasts '
+      'float above the sticky action bar instead of the app window bottom',
+      (tester) async {
+        final originalIsDesktop = platform.isDesktop;
+        platform.isDesktop = true;
+        addTearDown(() => platform.isDesktop = originalIsDesktop);
+
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => testTask);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: _taskDetailsPageOverrides(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The nested messenger is mounted inside the TaskDetailsPage
+        // subtree, so a context resolving via ScaffoldMessenger.of from
+        // within the page (e.g. from TaskActionBar) hits the nested one
+        // and SnackBars float above the sticky action bar — not at the
+        // app window bottom owned by the outer/root messenger.
+        final nestedFinder = find.descendant(
+          of: find.byType(TaskDetailsPage),
+          matching: find.byType(ScaffoldMessenger),
+        );
+        expect(nestedFinder, findsOneWidget);
+
+        final nestedMessengerState =
+            tester.state<ScaffoldMessengerState>(nestedFinder);
+        final innerContext = tester.element(find.byType(TaskActionBar));
+        expect(
+          ScaffoldMessenger.of(innerContext),
+          same(nestedMessengerState),
+        );
+      },
+    );
+
+    testWidgets(
+      'mobile keeps using the root ScaffoldMessenger so toasts continue to '
+      'appear at the screen bottom unchanged',
+      (tester) async {
+        final originalIsDesktop = platform.isDesktop;
+        platform.isDesktop = false;
+        addTearDown(() => platform.isDesktop = originalIsDesktop);
+
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => testTask);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: _taskDetailsPageOverrides(),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // On mobile no nested wrapper is added: the only ScaffoldMessenger
+        // in the tree is the one MaterialApp installs above the page, so
+        // toasts continue to bubble up to it and render at the screen
+        // bottom — the existing iOS behaviour.
+        expect(
+          find.descendant(
+            of: find.byType(TaskDetailsPage),
+            matching: find.byType(ScaffoldMessenger),
+          ),
+          findsNothing,
+        );
+      },
+    );
   });
 
   group('TaskDetailsPage Auto-Scroll Tests - ', () {
