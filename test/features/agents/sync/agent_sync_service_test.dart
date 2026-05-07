@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -12,6 +13,210 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+
+enum _GeneratedSyncWriteKind {
+  entity,
+  link,
+  exclusiveLink,
+  entityFromSync,
+  linkFromSync,
+  exclusiveLinkFromSync,
+}
+
+enum _GeneratedSyncOperationKind {
+  write,
+  innerSuccess,
+  innerCaughtRollback,
+  innerUncaughtRollback,
+  abortOuter,
+}
+
+enum _GeneratedSyncOutboxFailureSlot { none, first, second, last }
+
+enum _GeneratedSyncMessageKind { entity, link }
+
+enum _GeneratedPersistedWriteKind { entity, link, exclusiveLink }
+
+class _GeneratedSyncRollbackException implements Exception {
+  const _GeneratedSyncRollbackException();
+}
+
+class _ExpectedPersistedWrite {
+  const _ExpectedPersistedWrite({
+    required this.kind,
+    required this.fromSync,
+  });
+
+  final _GeneratedPersistedWriteKind kind;
+  final bool fromSync;
+}
+
+class _ObservedPersistedWrite {
+  const _ObservedPersistedWrite({
+    required this.kind,
+    required this.hasVectorClock,
+  });
+
+  final _GeneratedPersistedWriteKind kind;
+  final bool hasVectorClock;
+}
+
+class _GeneratedTransactionSnapshot {
+  const _GeneratedTransactionSnapshot({
+    required this.expectedPersistedWriteCount,
+    required this.observedPersistedWriteCount,
+    required this.expectedOutboxKindCount,
+  });
+
+  final int expectedPersistedWriteCount;
+  final int observedPersistedWriteCount;
+  final int expectedOutboxKindCount;
+}
+
+class _GeneratedTransactionAwareAgentRepository extends MockAgentRepository {
+  _GeneratedTransactionAwareAgentRepository({
+    required this.snapshot,
+    required this.rollbackTo,
+  });
+
+  final _GeneratedTransactionSnapshot Function() snapshot;
+  final void Function(_GeneratedTransactionSnapshot snapshot) rollbackTo;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    final marker = snapshot();
+    try {
+      return await action();
+    } catch (_) {
+      rollbackTo(marker);
+      rethrow;
+    }
+  }
+}
+
+class _GeneratedSyncTransactionOperation {
+  const _GeneratedSyncTransactionOperation({
+    required this.kind,
+    required this.firstWrite,
+    required this.secondWrite,
+  });
+
+  final _GeneratedSyncOperationKind kind;
+  final _GeneratedSyncWriteKind firstWrite;
+  final _GeneratedSyncWriteKind secondWrite;
+
+  @override
+  String toString() {
+    return '_GeneratedSyncTransactionOperation('
+        'kind: $kind, firstWrite: $firstWrite, secondWrite: $secondWrite)';
+  }
+}
+
+class _GeneratedSyncTransactionScenario {
+  const _GeneratedSyncTransactionScenario({
+    required this.operations,
+    required this.outboxFailureSlot,
+  });
+
+  final List<_GeneratedSyncTransactionOperation> operations;
+  final _GeneratedSyncOutboxFailureSlot outboxFailureSlot;
+
+  int? failureAttemptFor(int flushCount) {
+    if (flushCount == 0) return null;
+    return switch (outboxFailureSlot) {
+      _GeneratedSyncOutboxFailureSlot.none => null,
+      _GeneratedSyncOutboxFailureSlot.first => 1,
+      _GeneratedSyncOutboxFailureSlot.second => flushCount >= 2 ? 2 : null,
+      _GeneratedSyncOutboxFailureSlot.last => flushCount,
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedSyncTransactionScenario('
+        'operations: $operations, outboxFailureSlot: $outboxFailureSlot)';
+  }
+}
+
+extension _GeneratedSyncWriteKindX on _GeneratedSyncWriteKind {
+  bool get fromSync {
+    return switch (this) {
+      _GeneratedSyncWriteKind.entity ||
+      _GeneratedSyncWriteKind.link ||
+      _GeneratedSyncWriteKind.exclusiveLink => false,
+      _GeneratedSyncWriteKind.entityFromSync ||
+      _GeneratedSyncWriteKind.linkFromSync ||
+      _GeneratedSyncWriteKind.exclusiveLinkFromSync => true,
+    };
+  }
+
+  _GeneratedPersistedWriteKind get persistedKind {
+    return switch (this) {
+      _GeneratedSyncWriteKind.entity ||
+      _GeneratedSyncWriteKind.entityFromSync =>
+        _GeneratedPersistedWriteKind.entity,
+      _GeneratedSyncWriteKind.link ||
+      _GeneratedSyncWriteKind.linkFromSync => _GeneratedPersistedWriteKind.link,
+      _GeneratedSyncWriteKind.exclusiveLink ||
+      _GeneratedSyncWriteKind.exclusiveLinkFromSync =>
+        _GeneratedPersistedWriteKind.exclusiveLink,
+    };
+  }
+
+  _GeneratedSyncMessageKind? get outboxMessageKind {
+    if (fromSync) return null;
+    return switch (this) {
+      _GeneratedSyncWriteKind.entity => _GeneratedSyncMessageKind.entity,
+      _GeneratedSyncWriteKind.link ||
+      _GeneratedSyncWriteKind.exclusiveLink => _GeneratedSyncMessageKind.link,
+      _GeneratedSyncWriteKind.entityFromSync ||
+      _GeneratedSyncWriteKind.linkFromSync ||
+      _GeneratedSyncWriteKind.exclusiveLinkFromSync => null,
+    };
+  }
+}
+
+extension _AnyGeneratedAgentSyncServiceScenario on glados.Any {
+  glados.Generator<_GeneratedSyncWriteKind> get syncWriteKind =>
+      glados.AnyUtils(this).choose(_GeneratedSyncWriteKind.values);
+
+  glados.Generator<_GeneratedSyncOperationKind> get syncOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedSyncOperationKind.values);
+
+  glados.Generator<_GeneratedSyncOutboxFailureSlot> get syncOutboxFailureSlot =>
+      glados.AnyUtils(this).choose(_GeneratedSyncOutboxFailureSlot.values);
+
+  glados.Generator<_GeneratedSyncTransactionOperation>
+  get syncTransactionOperation => glados.CombinableAny(this).combine3(
+    syncOperationKind,
+    syncWriteKind,
+    syncWriteKind,
+    (
+      _GeneratedSyncOperationKind kind,
+      _GeneratedSyncWriteKind firstWrite,
+      _GeneratedSyncWriteKind secondWrite,
+    ) => _GeneratedSyncTransactionOperation(
+      kind: kind,
+      firstWrite: firstWrite,
+      secondWrite: secondWrite,
+    ),
+  );
+
+  glados.Generator<_GeneratedSyncTransactionScenario>
+  get syncTransactionScenario => glados.CombinableAny(this).combine2(
+    glados.ListAnys(
+      this,
+    ).listWithLengthInRange(0, 8, syncTransactionOperation),
+    syncOutboxFailureSlot,
+    (
+      List<_GeneratedSyncTransactionOperation> operations,
+      _GeneratedSyncOutboxFailureSlot outboxFailureSlot,
+    ) => _GeneratedSyncTransactionScenario(
+      operations: operations,
+      outboxFailureSlot: outboxFailureSlot,
+    ),
+  );
+}
 
 void main() {
   late MockAgentRepository mockRepository;
@@ -475,6 +680,273 @@ void main() {
     });
 
     group('runInTransaction', () {
+      glados.Glados(
+        glados.any.syncTransactionScenario,
+        glados.ExploreConfig(numRuns: 260),
+      ).test('matches generated nested transaction buffer semantics', (
+        scenario,
+      ) async {
+        final expectedPersistedWrites = <_ExpectedPersistedWrite>[];
+        final observedPersistedWrites = <_ObservedPersistedWrite>[];
+        final expectedOutboxKinds = <_GeneratedSyncMessageKind>[];
+        final generatedRepository = _GeneratedTransactionAwareAgentRepository(
+          snapshot: () => _GeneratedTransactionSnapshot(
+            expectedPersistedWriteCount: expectedPersistedWrites.length,
+            observedPersistedWriteCount: observedPersistedWrites.length,
+            expectedOutboxKindCount: expectedOutboxKinds.length,
+          ),
+          rollbackTo: (snapshot) {
+            expectedPersistedWrites.removeRange(
+              snapshot.expectedPersistedWriteCount,
+              expectedPersistedWrites.length,
+            );
+            observedPersistedWrites.removeRange(
+              snapshot.observedPersistedWriteCount,
+              observedPersistedWrites.length,
+            );
+            expectedOutboxKinds.removeRange(
+              snapshot.expectedOutboxKindCount,
+              expectedOutboxKinds.length,
+            );
+          },
+        );
+        final generatedOutboxService = MockOutboxService();
+        final generatedVectorClockService = MockVectorClockService();
+        final generatedSyncService = AgentSyncService(
+          repository: generatedRepository,
+          outboxService: generatedOutboxService,
+          vectorClockService: generatedVectorClockService,
+        );
+        final outboxAttempts = <SyncMessage>[];
+        var writeIndex = 0;
+        var expectedLocalWriteAttempts = 0;
+        var reservedVectorClocks = 0;
+        var abortedByTransaction = false;
+
+        AgentDomainEntity entityFor(int index) {
+          return AgentDomainEntity.agentState(
+            id: 'generated-state-$index',
+            agentId: 'generated-agent-$index',
+            revision: index,
+            slots: const AgentSlots(),
+            updatedAt: testDate,
+            vectorClock: null,
+          );
+        }
+
+        AgentLink linkFor(int index) {
+          return AgentLink.basic(
+            id: 'generated-link-$index',
+            fromId: 'generated-agent-$index',
+            toId: 'generated-state-$index',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          );
+        }
+
+        _GeneratedSyncMessageKind messageKind(SyncMessage message) {
+          if (message is SyncAgentEntity) {
+            return _GeneratedSyncMessageKind.entity;
+          }
+          if (message is SyncAgentLink) {
+            return _GeneratedSyncMessageKind.link;
+          }
+          throw StateError('Unexpected sync message type: $message');
+        }
+
+        when(
+          () => generatedRepository.upsertEntity(any()),
+        ).thenAnswer((invocation) async {
+          final entity =
+              invocation.positionalArguments.single as AgentDomainEntity;
+          observedPersistedWrites.add(
+            _ObservedPersistedWrite(
+              kind: _GeneratedPersistedWriteKind.entity,
+              hasVectorClock: entity.vectorClock != null,
+            ),
+          );
+        });
+        when(
+          () => generatedRepository.upsertLink(any()),
+        ).thenAnswer((invocation) async {
+          final link = invocation.positionalArguments.single as AgentLink;
+          observedPersistedWrites.add(
+            _ObservedPersistedWrite(
+              kind: _GeneratedPersistedWriteKind.link,
+              hasVectorClock: link.vectorClock != null,
+            ),
+          );
+        });
+        when(
+          () => generatedRepository.insertLinkExclusive(any()),
+        ).thenAnswer((invocation) async {
+          final link = invocation.positionalArguments.single as AgentLink;
+          observedPersistedWrites.add(
+            _ObservedPersistedWrite(
+              kind: _GeneratedPersistedWriteKind.exclusiveLink,
+              hasVectorClock: link.vectorClock != null,
+            ),
+          );
+        });
+        when(
+          () => generatedOutboxService.enqueueMessage(any()),
+        ).thenAnswer((invocation) async {
+          final message = invocation.positionalArguments.single as SyncMessage;
+          outboxAttempts.add(message);
+          final failureAttempt = scenario.failureAttemptFor(
+            expectedOutboxKinds.length,
+          );
+          if (failureAttempt == outboxAttempts.length) {
+            throw Exception('generated outbox failure');
+          }
+        });
+        when(
+          () => generatedVectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+          ),
+        ).thenAnswer((_) async {
+          reservedVectorClocks++;
+          return VectorClock({'generated': reservedVectorClocks});
+        });
+
+        Future<void> performWrite(_GeneratedSyncWriteKind kind) async {
+          final index = writeIndex++;
+          expectedPersistedWrites.add(
+            _ExpectedPersistedWrite(
+              kind: kind.persistedKind,
+              fromSync: kind.fromSync,
+            ),
+          );
+          final outboxKind = kind.outboxMessageKind;
+          if (outboxKind != null) {
+            expectedOutboxKinds.add(outboxKind);
+            expectedLocalWriteAttempts++;
+          }
+
+          switch (kind) {
+            case _GeneratedSyncWriteKind.entity:
+              await generatedSyncService.upsertEntity(entityFor(index));
+            case _GeneratedSyncWriteKind.link:
+              await generatedSyncService.upsertLink(linkFor(index));
+            case _GeneratedSyncWriteKind.exclusiveLink:
+              await generatedSyncService.insertLinkExclusive(linkFor(index));
+            case _GeneratedSyncWriteKind.entityFromSync:
+              await generatedSyncService.upsertEntity(
+                entityFor(index),
+                fromSync: true,
+              );
+            case _GeneratedSyncWriteKind.linkFromSync:
+              await generatedSyncService.upsertLink(
+                linkFor(index),
+                fromSync: true,
+              );
+            case _GeneratedSyncWriteKind.exclusiveLinkFromSync:
+              await generatedSyncService.insertLinkExclusive(
+                linkFor(index),
+                fromSync: true,
+              );
+          }
+        }
+
+        Future<void> runOperation(
+          _GeneratedSyncTransactionOperation operation,
+        ) async {
+          switch (operation.kind) {
+            case _GeneratedSyncOperationKind.write:
+              await performWrite(operation.firstWrite);
+            case _GeneratedSyncOperationKind.innerSuccess:
+              await generatedSyncService.runInTransaction(() async {
+                await performWrite(operation.firstWrite);
+                await performWrite(operation.secondWrite);
+                expect(outboxAttempts, isEmpty, reason: '$scenario');
+              });
+            case _GeneratedSyncOperationKind.innerCaughtRollback:
+              final snapshot = expectedOutboxKinds.length;
+              try {
+                await generatedSyncService.runInTransaction(() async {
+                  await performWrite(operation.firstWrite);
+                  await performWrite(operation.secondWrite);
+                  throw const _GeneratedSyncRollbackException();
+                });
+              } on _GeneratedSyncRollbackException {
+                expectedOutboxKinds.removeRange(
+                  snapshot,
+                  expectedOutboxKinds.length,
+                );
+              }
+            case _GeneratedSyncOperationKind.innerUncaughtRollback:
+              abortedByTransaction = true;
+              await generatedSyncService.runInTransaction(() async {
+                await performWrite(operation.firstWrite);
+                await performWrite(operation.secondWrite);
+                throw const _GeneratedSyncRollbackException();
+              });
+            case _GeneratedSyncOperationKind.abortOuter:
+              await performWrite(operation.firstWrite);
+              abortedByTransaction = true;
+              throw const _GeneratedSyncRollbackException();
+          }
+        }
+
+        Object? error;
+        try {
+          await generatedSyncService.runInTransaction(() async {
+            for (final operation in scenario.operations) {
+              await runOperation(operation);
+              expect(
+                outboxAttempts,
+                isEmpty,
+                reason: 'Outbox flushed before outer commit: $scenario',
+              );
+            }
+          });
+        } on Object catch (caught) {
+          error = caught;
+        }
+
+        final expectedFlushKinds = abortedByTransaction
+            ? const <_GeneratedSyncMessageKind>[]
+            : expectedOutboxKinds;
+        final expectedFailureAttempt = scenario.failureAttemptFor(
+          expectedFlushKinds.length,
+        );
+
+        if (abortedByTransaction) {
+          expect(error, isA<_GeneratedSyncRollbackException>());
+        } else if (expectedFailureAttempt != null) {
+          expect(error, isA<Exception>());
+        } else {
+          expect(error, isNull, reason: '$scenario');
+        }
+
+        expect(
+          outboxAttempts.map(messageKind).toList(),
+          expectedFlushKinds,
+          reason: '$scenario',
+        );
+        expect(
+          observedPersistedWrites,
+          hasLength(expectedPersistedWrites.length),
+          reason: '$scenario',
+        );
+        for (var i = 0; i < expectedPersistedWrites.length; i++) {
+          final expected = expectedPersistedWrites[i];
+          final observed = observedPersistedWrites[i];
+          expect(observed.kind, expected.kind, reason: '$scenario at $i');
+          expect(
+            observed.hasVectorClock,
+            isNot(expected.fromSync),
+            reason: '$scenario at $i',
+          );
+        }
+        expect(
+          reservedVectorClocks,
+          expectedLocalWriteAttempts,
+          reason: '$scenario',
+        );
+      });
+
       test('delegates to repository', () async {
         var called = false;
         await syncService.runInTransaction(() async {
