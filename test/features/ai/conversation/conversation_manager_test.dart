@@ -21,7 +21,13 @@ enum _GeneratedConversationTextSlot { first, second, third, fourth }
 
 enum _GeneratedConversationToolSlot { first, second, third }
 
-enum _GeneratedConversationRole { system, user, assistant, tool }
+enum _GeneratedConversationRole {
+  system,
+  truncationNotice,
+  user,
+  assistant,
+  tool,
+}
 
 String _generatedConversationText(_GeneratedConversationTextSlot slot) =>
     'generated conversation text ${slot.name}';
@@ -72,6 +78,33 @@ class _GeneratedConversationScenario {
     return '_GeneratedConversationScenario('
         'maxTurns: $maxTurns, maxHistorySize: $maxHistorySize, '
         'operations: $operations)';
+  }
+}
+
+class _GeneratedConversationHistoryScenario {
+  const _GeneratedConversationHistoryScenario({
+    required this.hasSystemMessage,
+    required this.maxHistorySize,
+    required this.userMessageCount,
+  });
+
+  final bool hasSystemMessage;
+  final int maxHistorySize;
+  final int userMessageCount;
+
+  int get retainedMessageLimit {
+    final minimumRetainedSize = hasSystemMessage ? 3 : 2;
+    return maxHistorySize < minimumRetainedSize
+        ? minimumRetainedSize
+        : maxHistorySize;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedConversationHistoryScenario('
+        'hasSystemMessage: $hasSystemMessage, '
+        'maxHistorySize: $maxHistorySize, '
+        'userMessageCount: $userMessageCount)';
   }
 }
 
@@ -144,22 +177,34 @@ class _GeneratedConversationModel {
   void _trimHistoryIfNeeded() {
     if (roles.length <= maxHistorySize) return;
 
-    final effectiveMaxSize = maxHistorySize < 2 ? 2 : maxHistorySize;
-    final hasSystem =
+    final hasInitialSystem =
         roles.isNotEmpty && roles.first == _GeneratedConversationRole.system;
-    final totalToKeep = effectiveMaxSize - 1;
-    final messagesToKeepAfterSystem = hasSystem ? totalToKeep - 1 : totalToKeep;
-    final keepAfterSystem = messagesToKeepAfterSystem < 1
-        ? 1
-        : messagesToKeepAfterSystem;
-    final start = hasSystem ? 1 : 0;
-    final end = roles.length - keepAfterSystem;
+    final minimumRetainedSize = hasInitialSystem ? 3 : 2;
+    final effectiveMaxSize = maxHistorySize < minimumRetainedSize
+        ? minimumRetainedSize
+        : maxHistorySize;
+    final keepTailCount = effectiveMaxSize - (hasInitialSystem ? 2 : 1);
+    final bodyStart = hasInitialSystem ? 1 : 0;
+    final bodyRoles = roles
+        .skip(bodyStart)
+        .where((role) => role != _GeneratedConversationRole.truncationNotice)
+        .toList();
+    final tailStart = bodyRoles.length > keepTailCount
+        ? bodyRoles.length - keepTailCount
+        : 0;
+    final hadTruncationNotice = roles.contains(
+      _GeneratedConversationRole.truncationNotice,
+    );
 
-    if (end > start && end <= roles.length) {
-      roles
-        ..removeRange(start, end)
-        ..insert(start, _GeneratedConversationRole.system);
-    }
+    if (tailStart == 0 && !hadTruncationNotice) return;
+
+    roles
+      ..clear()
+      ..addAll([
+        if (hasInitialSystem) _GeneratedConversationRole.system,
+        _GeneratedConversationRole.truncationNotice,
+        ...bodyRoles.skip(tailStart),
+      ]);
   }
 }
 
@@ -193,7 +238,7 @@ extension _AnyGeneratedConversationScenario on glados.Any {
   glados.Generator<_GeneratedConversationScenario> get conversationScenario =>
       glados.CombinableAny(this).combine3(
         glados.IntAnys(this).intInRange(0, 8),
-        glados.IntAnys(this).intInRange(1, 10),
+        glados.IntAnys(this).intInRange(0, 10),
         glados.ListAnys(this).listWithLengthInRange(
           0,
           45,
@@ -209,6 +254,22 @@ extension _AnyGeneratedConversationScenario on glados.Any {
           operations: operations,
         ),
       );
+
+  glados.Generator<_GeneratedConversationHistoryScenario>
+  get conversationHistoryScenario => glados.CombinableAny(this).combine3(
+    glados.AnyUtils(this).choose([false, true]),
+    glados.IntAnys(this).intInRange(0, 12),
+    glados.IntAnys(this).intInRange(0, 60),
+    (
+      bool hasSystemMessage,
+      int maxHistorySize,
+      int userMessageCount,
+    ) => _GeneratedConversationHistoryScenario(
+      hasSystemMessage: hasSystemMessage,
+      maxHistorySize: maxHistorySize,
+      userMessageCount: userMessageCount,
+    ),
+  );
 }
 
 ChatCompletionMessageToolCall _generatedToolCall(String toolId) {
@@ -226,6 +287,10 @@ List<_GeneratedConversationRole> _conversationRoles(
   List<ChatCompletionMessage> messages,
 ) {
   return messages.map((message) {
+    if (_isGeneratedTruncationNotice(message)) {
+      return _GeneratedConversationRole.truncationNotice;
+    }
+
     return switch (message.role) {
       ChatCompletionMessageRole.system => _GeneratedConversationRole.system,
       ChatCompletionMessageRole.user => _GeneratedConversationRole.user,
@@ -236,6 +301,12 @@ List<_GeneratedConversationRole> _conversationRoles(
       ChatCompletionMessageRole.developer => _GeneratedConversationRole.system,
     };
   }).toList();
+}
+
+bool _isGeneratedTruncationNotice(ChatCompletionMessage message) {
+  return message.role == ChatCompletionMessageRole.system &&
+      (message.content?.toString().contains('Previous messages truncated') ??
+          false);
 }
 
 void main() {
@@ -920,6 +991,85 @@ void main() {
 
           generatedManager.dispose();
         });
+      });
+
+      glados.Glados(
+        glados.any.conversationHistoryScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('preserve latest generated history with one truncation notice', (
+        scenario,
+      ) {
+        final generatedManager = ConversationManager(
+          conversationId: 'generated-history',
+          maxHistorySize: scenario.maxHistorySize,
+        );
+
+        if (scenario.hasSystemMessage) {
+          generatedManager.initialize(systemMessage: 'generated system');
+        }
+        for (var i = 0; i < scenario.userMessageCount; i++) {
+          generatedManager.addUserMessage('generated user $i');
+        }
+
+        final messages = generatedManager.messages;
+        final truncationNoticeCount = messages
+            .where(_isGeneratedTruncationNotice)
+            .length;
+        final retainedUserMessages = messages
+            .where((message) => message.role == ChatCompletionMessageRole.user)
+            .toList();
+
+        expect(
+          truncationNoticeCount,
+          lessThanOrEqualTo(1),
+          reason: '$scenario',
+        );
+        expect(
+          messages.length,
+          lessThanOrEqualTo(scenario.retainedMessageLimit),
+          reason: '$scenario',
+        );
+        expect(
+          generatedManager.turnCount,
+          retainedUserMessages.length,
+          reason: '$scenario',
+        );
+
+        if (scenario.hasSystemMessage) {
+          expect(messages.first.content, 'generated system');
+        } else {
+          expect(
+            messages
+                .where(
+                  (message) =>
+                      message.role == ChatCompletionMessageRole.system &&
+                      !_isGeneratedTruncationNotice(message),
+                )
+                .toList(),
+            isEmpty,
+            reason: '$scenario',
+          );
+        }
+
+        if (scenario.userMessageCount > 0) {
+          expect(
+            messages.last.content?.toString(),
+            contains('generated user ${scenario.userMessageCount - 1}'),
+            reason: '$scenario',
+          );
+        }
+
+        if (truncationNoticeCount == 1) {
+          final noticeIndex = scenario.hasSystemMessage ? 1 : 0;
+          expect(
+            _isGeneratedTruncationNotice(messages[noticeIndex]),
+            true,
+            reason: '$scenario',
+          );
+          expect(retainedUserMessages, isNotEmpty, reason: '$scenario');
+        }
+
+        generatedManager.dispose();
       });
     });
 

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
@@ -6,6 +7,81 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
+
+enum _GeneratedAgentResolutionOutcome {
+  noAgent,
+  noTemplate,
+  noActiveVersion,
+  unresolvedProfile,
+  resolvedProfile,
+}
+
+enum _GeneratedTaskProfileOutcome {
+  noProfileId,
+  unresolvedProfile,
+  resolvedProfile,
+}
+
+class _GeneratedAutomationResolutionScenario {
+  const _GeneratedAutomationResolutionScenario({
+    required this.agentOutcome,
+    required this.taskOutcome,
+  });
+
+  final _GeneratedAgentResolutionOutcome agentOutcome;
+  final _GeneratedTaskProfileOutcome taskOutcome;
+
+  bool get reachesTemplate =>
+      agentOutcome != _GeneratedAgentResolutionOutcome.noAgent;
+
+  bool get reachesVersion =>
+      reachesTemplate &&
+      agentOutcome != _GeneratedAgentResolutionOutcome.noTemplate;
+
+  bool get reachesAgentProfileResolution =>
+      reachesVersion &&
+      agentOutcome != _GeneratedAgentResolutionOutcome.noActiveVersion;
+
+  bool get resolvesViaAgent =>
+      agentOutcome == _GeneratedAgentResolutionOutcome.resolvedProfile;
+
+  bool get fallsBackToTask => !resolvesViaAgent;
+
+  bool get hasTaskProfileId =>
+      taskOutcome != _GeneratedTaskProfileOutcome.noProfileId;
+
+  bool get resolvesViaTask =>
+      fallsBackToTask &&
+      taskOutcome == _GeneratedTaskProfileOutcome.resolvedProfile;
+
+  @override
+  String toString() {
+    return '_GeneratedAutomationResolutionScenario('
+        'agentOutcome: $agentOutcome, taskOutcome: $taskOutcome)';
+  }
+}
+
+extension _AnyGeneratedAutomationResolutionScenario on glados.Any {
+  glados.Generator<_GeneratedAgentResolutionOutcome>
+  get agentResolutionOutcome =>
+      glados.AnyUtils(this).choose(_GeneratedAgentResolutionOutcome.values);
+
+  glados.Generator<_GeneratedTaskProfileOutcome> get taskProfileOutcome =>
+      glados.AnyUtils(this).choose(_GeneratedTaskProfileOutcome.values);
+
+  glados.Generator<_GeneratedAutomationResolutionScenario>
+  get automationResolutionScenario => glados.CombinableAny(this).combine2(
+    agentResolutionOutcome,
+    taskProfileOutcome,
+    (
+      _GeneratedAgentResolutionOutcome agentOutcome,
+      _GeneratedTaskProfileOutcome taskOutcome,
+    ) => _GeneratedAutomationResolutionScenario(
+      agentOutcome: agentOutcome,
+      taskOutcome: taskOutcome,
+    ),
+  );
+}
 
 void main() {
   late MockTaskAgentService mockTaskAgentService;
@@ -297,5 +373,155 @@ void main() {
 
       expect(result, isNull);
     });
+
+    glados.Glados(
+      glados.any.automationResolutionScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'matches generated agent-chain and task-fallback semantics',
+      (scenario) async {
+        const taskId = 'generated-task';
+        const taskProfileId = 'generated-task-profile';
+        final generatedTaskAgentService = MockTaskAgentService();
+        final generatedTemplateService = MockAgentTemplateService();
+        final generatedProfileResolver = MockProfileResolver();
+        final agent = makeTestIdentity(
+          agentId: 'generated-agent',
+          config: const AgentConfig(profileId: 'generated-agent-profile'),
+        );
+        final template = makeTestTemplate(id: 'generated-template');
+        final version = makeTestTemplateVersion(id: 'generated-version');
+        final agentProfile = ResolvedProfile(
+          thinkingModelId: 'generated-agent-model',
+          thinkingProvider: testInferenceProvider(id: 'generated-agent-p'),
+        );
+        final taskProfile = ResolvedProfile(
+          thinkingModelId: 'generated-task-model',
+          thinkingProvider: testInferenceProvider(id: 'generated-task-p'),
+        );
+        var taskProfileLookupCount = 0;
+
+        when(
+          () => generatedTaskAgentService.getTaskAgentForTask(taskId),
+        ).thenAnswer(
+          (_) async => scenario.reachesTemplate ? agent : null,
+        );
+
+        if (scenario.reachesTemplate) {
+          when(
+            () => generatedTemplateService.getTemplateForAgent(agent.agentId),
+          ).thenAnswer(
+            (_) async => scenario.reachesVersion ? template : null,
+          );
+        }
+
+        if (scenario.reachesVersion) {
+          when(
+            () => generatedTemplateService.getActiveVersion(template.id),
+          ).thenAnswer(
+            (_) async =>
+                scenario.reachesAgentProfileResolution ? version : null,
+          );
+        }
+
+        if (scenario.reachesAgentProfileResolution) {
+          when(
+            () => generatedProfileResolver.resolve(
+              agentConfig: agent.config,
+              template: template,
+              version: version,
+            ),
+          ).thenAnswer(
+            (_) async => scenario.resolvesViaAgent ? agentProfile : null,
+          );
+        }
+
+        if (scenario.fallsBackToTask && scenario.hasTaskProfileId) {
+          when(
+            () => generatedProfileResolver.resolveByProfileId(taskProfileId),
+          ).thenAnswer(
+            (_) async => scenario.resolvesViaTask ? taskProfile : null,
+          );
+        }
+
+        final generatedResolver = ProfileAutomationResolver(
+          taskAgentService: generatedTaskAgentService,
+          templateService: generatedTemplateService,
+          profileResolver: generatedProfileResolver,
+          taskProfileLookup: (lookupTaskId) async {
+            taskProfileLookupCount++;
+            expect(lookupTaskId, taskId, reason: '$scenario');
+            return scenario.hasTaskProfileId ? taskProfileId : null;
+          },
+        );
+
+        final result = await generatedResolver.resolveForTask(taskId);
+
+        if (scenario.resolvesViaAgent) {
+          expect(result, same(agentProfile), reason: '$scenario');
+        } else if (scenario.resolvesViaTask) {
+          expect(result, same(taskProfile), reason: '$scenario');
+        } else {
+          expect(result, isNull, reason: '$scenario');
+        }
+
+        expect(
+          taskProfileLookupCount,
+          scenario.fallsBackToTask ? 1 : 0,
+          reason: '$scenario',
+        );
+        verify(
+          () => generatedTaskAgentService.getTaskAgentForTask(taskId),
+        ).called(1);
+
+        if (scenario.reachesTemplate) {
+          verify(
+            () => generatedTemplateService.getTemplateForAgent(agent.agentId),
+          ).called(1);
+        } else {
+          verifyNever(
+            () => generatedTemplateService.getTemplateForAgent(any()),
+          );
+        }
+
+        if (scenario.reachesVersion) {
+          verify(
+            () => generatedTemplateService.getActiveVersion(template.id),
+          ).called(1);
+        } else {
+          verifyNever(
+            () => generatedTemplateService.getActiveVersion(any()),
+          );
+        }
+
+        if (scenario.reachesAgentProfileResolution) {
+          verify(
+            () => generatedProfileResolver.resolve(
+              agentConfig: agent.config,
+              template: template,
+              version: version,
+            ),
+          ).called(1);
+        } else {
+          verifyNever(
+            () => generatedProfileResolver.resolve(
+              agentConfig: any(named: 'agentConfig'),
+              template: any(named: 'template'),
+              version: any(named: 'version'),
+            ),
+          );
+        }
+
+        if (scenario.fallsBackToTask && scenario.hasTaskProfileId) {
+          verify(
+            () => generatedProfileResolver.resolveByProfileId(taskProfileId),
+          ).called(1);
+        } else {
+          verifyNever(
+            () => generatedProfileResolver.resolveByProfileId(any()),
+          );
+        }
+      },
+    );
   });
 }

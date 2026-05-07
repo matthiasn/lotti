@@ -73,9 +73,48 @@ class _GeneratedPromptStreamScenario {
   }
 }
 
+enum _GeneratedPromptSourceKind {
+  journalEntry,
+  journalAudio,
+  missingEntity,
+  taskEntity,
+}
+
+class _GeneratedPromptGenerationScenario {
+  const _GeneratedPromptGenerationScenario({
+    required this.streamScenario,
+    required this.sourceKind,
+    required this.useHighEndModel,
+  });
+
+  final _GeneratedPromptStreamScenario streamScenario;
+  final _GeneratedPromptSourceKind sourceKind;
+  final bool useHighEndModel;
+
+  bool get hasTextBearingEntity =>
+      sourceKind == _GeneratedPromptSourceKind.journalEntry ||
+      sourceKind == _GeneratedPromptSourceKind.journalAudio;
+
+  bool get shouldPersist =>
+      hasTextBearingEntity && streamScenario.shouldPersist;
+
+  String get expectedModel =>
+      useHighEndModel ? 'models/gemini-pro' : 'models/gemini-flash';
+
+  @override
+  String toString() {
+    return '_GeneratedPromptGenerationScenario('
+        'sourceKind: $sourceKind, useHighEndModel: $useHighEndModel, '
+        'streamScenario: $streamScenario)';
+  }
+}
+
 extension _AnyGeneratedPromptStreamScenario on glados.Any {
   glados.Generator<_GeneratedPromptStreamPartKind> get promptStreamPartKind =>
       glados.AnyUtils(this).choose(_GeneratedPromptStreamPartKind.values);
+
+  glados.Generator<_GeneratedPromptSourceKind> get promptSourceKind =>
+      glados.AnyUtils(this).choose(_GeneratedPromptSourceKind.values);
 
   glados.Generator<_GeneratedPromptStreamPart> get promptStreamPart =>
       glados.CombinableAny(this).combine2(
@@ -102,6 +141,115 @@ extension _AnyGeneratedPromptStreamScenario on glados.Any {
           includeLinkedTask: includeLinkedTask,
         ),
       );
+
+  glados.Generator<_GeneratedPromptGenerationScenario>
+  get promptGenerationScenario => glados.CombinableAny(this).combine3(
+    promptStreamScenario,
+    promptSourceKind,
+    glados.AnyUtils(this).choose([false, true]),
+    (
+      _GeneratedPromptStreamScenario streamScenario,
+      _GeneratedPromptSourceKind sourceKind,
+      bool useHighEndModel,
+    ) => _GeneratedPromptGenerationScenario(
+      streamScenario: streamScenario,
+      sourceKind: sourceKind,
+      useHighEndModel: useHighEndModel,
+    ),
+  );
+}
+
+class _GeneratedSkillRunnerBench {
+  _GeneratedSkillRunnerBench._({
+    required this.cloudRepository,
+    required this.aiInputRepository,
+    required this.journalRepository,
+    required this.loggingService,
+    required this.promptBuilderHelper,
+    required this.taskSummaryResolver,
+    required this.container,
+    required this.runner,
+  });
+
+  factory _GeneratedSkillRunnerBench.create() {
+    final cloudRepository = MockCloudInferenceRepository();
+    final aiInputRepository = MockAiInputRepository();
+    final journalRepository = MockJournalRepository();
+    final loggingService = MockLoggingService();
+    final promptBuilderHelper = MockPromptBuilderHelper();
+    final taskSummaryResolver = MockTaskSummaryResolver();
+    final container = ProviderContainer();
+
+    late final Ref capturedRef;
+    final refProvider = Provider<void>((ref) {
+      capturedRef = ref;
+    });
+    container.read(refProvider);
+
+    final runner = SkillInferenceRunner(
+      ref: capturedRef,
+      cloudRepository: cloudRepository,
+      aiInputRepository: aiInputRepository,
+      journalRepository: journalRepository,
+      loggingService: loggingService,
+      promptBuilderHelper: promptBuilderHelper,
+      taskSummaryResolver: taskSummaryResolver,
+    );
+
+    return _GeneratedSkillRunnerBench._(
+      cloudRepository: cloudRepository,
+      aiInputRepository: aiInputRepository,
+      journalRepository: journalRepository,
+      loggingService: loggingService,
+      promptBuilderHelper: promptBuilderHelper,
+      taskSummaryResolver: taskSummaryResolver,
+      container: container,
+      runner: runner,
+    );
+  }
+
+  final MockCloudInferenceRepository cloudRepository;
+  final MockAiInputRepository aiInputRepository;
+  final MockJournalRepository journalRepository;
+  final MockLoggingService loggingService;
+  final MockPromptBuilderHelper promptBuilderHelper;
+  final MockTaskSummaryResolver taskSummaryResolver;
+  final ProviderContainer container;
+  final SkillInferenceRunner runner;
+
+  InferenceStatus promptStatus(String id) {
+    return container.read(
+      inferenceStatusControllerProvider(
+        id: id,
+        aiResponseType: AiResponseType.promptGeneration,
+      ),
+    );
+  }
+
+  void stubLoggingException() {
+    when(
+      () => loggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
+  }
+
+  void stubLoggingEvent() {
+    when(
+      () => loggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+  }
+
+  void dispose() {
+    container.dispose();
+  }
 }
 
 void main() {
@@ -230,6 +378,9 @@ void main() {
     String id = 'audio-1',
     String audioDirectory = '/audio/',
     String audioFile = 'test.aac',
+    String? plainText,
+    String? markdown,
+    String? categoryId,
   }) {
     return JournalEntity.journalAudio(
           meta: Metadata(
@@ -238,6 +389,7 @@ void main() {
             updatedAt: DateTime(2024),
             dateFrom: DateTime(2024),
             dateTo: DateTime(2024),
+            categoryId: categoryId,
           ),
           data: AudioData(
             dateFrom: DateTime(2024),
@@ -246,6 +398,12 @@ void main() {
             audioDirectory: audioDirectory,
             audioFile: audioFile,
           ),
+          entryText: (plainText == null && markdown == null)
+              ? null
+              : EntryText(
+                  plainText: plainText ?? '',
+                  markdown: markdown,
+                ),
         )
         as JournalAudio;
   }
@@ -1910,6 +2068,197 @@ void main() {
             expect(captured[2], 'cat-generated');
           } finally {
             localContainer.dispose();
+          }
+        },
+      );
+
+      glados.Glados(
+        glados.any.promptGenerationScenario,
+        glados.ExploreConfig(numRuns: 160),
+      ).test(
+        'matches generated prompt source, model, and status semantics',
+        (scenario) async {
+          final bench = _GeneratedSkillRunnerBench.create();
+
+          try {
+            const entryId = 'generated-source-entry';
+            final linkedTaskId = scenario.streamScenario.includeLinkedTask
+                ? 'generated-source-linked-task'
+                : null;
+            final entity = switch (scenario.sourceKind) {
+              _GeneratedPromptSourceKind.journalEntry => makeTextEntry(
+                id: entryId,
+                markdown: 'Generated **markdown** source',
+                plainText: 'Generated plain source',
+                categoryId: 'cat-generated',
+              ),
+              _GeneratedPromptSourceKind.journalAudio => makeAudioEntity(
+                id: entryId,
+                plainText: 'Generated audio transcript',
+                categoryId: 'cat-generated',
+              ),
+              _GeneratedPromptSourceKind.missingEntity => null,
+              _GeneratedPromptSourceKind.taskEntity => makeTaskEntity(entryId),
+            };
+
+            when(
+              () => bench.aiInputRepository.getEntity(entryId),
+            ).thenAnswer((_) async => entity);
+            if (scenario.hasTextBearingEntity && linkedTaskId != null) {
+              when(
+                () => bench.aiInputRepository.buildTaskDetailsJson(
+                  id: linkedTaskId,
+                ),
+              ).thenAnswer((_) async => '{"id": "$linkedTaskId"}');
+              when(
+                () => bench.aiInputRepository.buildLinkedTasksJson(
+                  linkedTaskId,
+                ),
+              ).thenAnswer((_) async => '{"linked": []}');
+            }
+            if (scenario.hasTextBearingEntity) {
+              when(
+                () => bench.cloudRepository.generate(
+                  any(),
+                  model: any(named: 'model'),
+                  temperature: any(named: 'temperature'),
+                  baseUrl: any(named: 'baseUrl'),
+                  apiKey: any(named: 'apiKey'),
+                  provider: any(named: 'provider'),
+                  systemMessage: any(named: 'systemMessage'),
+                ),
+              ).thenAnswer(
+                (_) => Stream.fromIterable(
+                  scenario.streamScenario.parts.map(
+                    (part) => makeStreamChunk(part.content),
+                  ),
+                ),
+              );
+            }
+
+            if (scenario.shouldPersist) {
+              when(
+                () => bench.aiInputRepository.createAiResponseEntry(
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: any(named: 'linkedId'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              ).thenAnswer((_) async => null);
+              bench.stubLoggingEvent();
+            } else {
+              bench.stubLoggingException();
+            }
+
+            final automationResult = scenario.useHighEndModel
+                ? makePromptGenerationResult(
+                    thinkingHighEndModelId: scenario.expectedModel,
+                    thinkingHighEndProvider: testInferenceProvider(id: 'p-pro'),
+                  )
+                : makePromptGenerationResult();
+
+            await bench.runner.runPromptGeneration(
+              entryId: entryId,
+              automationResult: automationResult,
+              linkedTaskId: linkedTaskId,
+            );
+
+            final expectedStatus = scenario.shouldPersist
+                ? InferenceStatus.idle
+                : InferenceStatus.error;
+            expect(
+              bench.promptStatus(entryId),
+              expectedStatus,
+              reason: '$scenario',
+            );
+            if (linkedTaskId != null) {
+              expect(
+                bench.promptStatus(linkedTaskId),
+                expectedStatus,
+                reason: '$scenario',
+              );
+            }
+
+            if (!scenario.hasTextBearingEntity) {
+              verifyNever(
+                () => bench.cloudRepository.generate(
+                  any(),
+                  model: any(named: 'model'),
+                  temperature: any(named: 'temperature'),
+                  baseUrl: any(named: 'baseUrl'),
+                  apiKey: any(named: 'apiKey'),
+                  provider: any(named: 'provider'),
+                  systemMessage: any(named: 'systemMessage'),
+                ),
+              );
+            } else {
+              final generatedCall = verify(
+                () => bench.cloudRepository.generate(
+                  captureAny(),
+                  model: scenario.expectedModel,
+                  temperature: any(named: 'temperature'),
+                  baseUrl: any(named: 'baseUrl'),
+                  apiKey: any(named: 'apiKey'),
+                  provider: any(named: 'provider'),
+                  systemMessage: any(named: 'systemMessage'),
+                ),
+              ).captured;
+              final prompt = generatedCall.single as String;
+              final expectedSourceText =
+                  scenario.sourceKind == _GeneratedPromptSourceKind.journalAudio
+                  ? 'Generated audio transcript'
+                  : 'Generated **markdown** source';
+              expect(prompt, contains(expectedSourceText), reason: '$scenario');
+            }
+
+            if (!scenario.shouldPersist) {
+              verifyNever(
+                () => bench.aiInputRepository.createAiResponseEntry(
+                  data: any(named: 'data'),
+                  start: any(named: 'start'),
+                  linkedId: any(named: 'linkedId'),
+                  categoryId: any(named: 'categoryId'),
+                ),
+              );
+              verify(
+                () => bench.loggingService.captureException(
+                  any<dynamic>(),
+                  domain: 'SkillInferenceRunner',
+                  subDomain: 'runPromptGeneration',
+                  stackTrace: any<StackTrace?>(named: 'stackTrace'),
+                ),
+              ).called(1);
+              return;
+            }
+
+            final captured = verify(
+              () => bench.aiInputRepository.createAiResponseEntry(
+                data: captureAny(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: captureAny(named: 'linkedId'),
+                categoryId: captureAny(named: 'categoryId'),
+              ),
+            ).captured;
+            final data = captured[0] as AiResponseData;
+            expect(
+              data.response,
+              scenario.streamScenario.expectedResponse,
+              reason: '$scenario',
+            );
+            expect(data.model, scenario.expectedModel, reason: '$scenario');
+            expect(data.type, AiResponseType.promptGeneration);
+            expect(data.skillId, testPromptGenSkill.id);
+            expect(captured[1], entryId);
+            expect(captured[2], 'cat-generated');
+            verify(
+              () => bench.loggingService.captureEvent(
+                any<String>(),
+                domain: 'SkillInferenceRunner',
+                subDomain: 'runPromptGeneration',
+              ),
+            ).called(1);
+          } finally {
+            bench.dispose();
           }
         },
       );

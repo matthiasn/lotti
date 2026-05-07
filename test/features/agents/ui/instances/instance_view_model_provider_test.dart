@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -9,11 +11,91 @@ import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 
 import '../../test_utils.dart';
 
+enum _GeneratedInstanceKindSlot {
+  taskAgent,
+  projectAgent,
+  templateImprover,
+  unknown,
+  empty,
+}
+
+enum _GeneratedEvolutionStatusSlot { active, completed, abandoned }
+
+String _generatedInstanceKind(_GeneratedInstanceKindSlot slot) {
+  return switch (slot) {
+    _GeneratedInstanceKindSlot.taskAgent => AgentKinds.taskAgent,
+    _GeneratedInstanceKindSlot.projectAgent => AgentKinds.projectAgent,
+    _GeneratedInstanceKindSlot.templateImprover => AgentKinds.templateImprover,
+    _GeneratedInstanceKindSlot.unknown => 'unknown_kind',
+    _GeneratedInstanceKindSlot.empty => '',
+  };
+}
+
+InstanceType? _expectedInstanceType(_GeneratedInstanceKindSlot slot) {
+  return switch (slot) {
+    _GeneratedInstanceKindSlot.taskAgent => InstanceType.taskAgent,
+    _GeneratedInstanceKindSlot.projectAgent => InstanceType.projectAgent,
+    _GeneratedInstanceKindSlot.templateImprover =>
+      InstanceType.templateImprover,
+    _GeneratedInstanceKindSlot.unknown => null,
+    _GeneratedInstanceKindSlot.empty => null,
+  };
+}
+
+EvolutionSessionStatus _generatedEvolutionStatus(
+  _GeneratedEvolutionStatusSlot slot,
+) {
+  return switch (slot) {
+    _GeneratedEvolutionStatusSlot.active => EvolutionSessionStatus.active,
+    _GeneratedEvolutionStatusSlot.completed => EvolutionSessionStatus.completed,
+    _GeneratedEvolutionStatusSlot.abandoned => EvolutionSessionStatus.abandoned,
+  };
+}
+
+AgentLifecycle _expectedEvolutionLifecycle(_GeneratedEvolutionStatusSlot slot) {
+  return switch (slot) {
+    _GeneratedEvolutionStatusSlot.active => AgentLifecycle.active,
+    _GeneratedEvolutionStatusSlot.completed => AgentLifecycle.dormant,
+    _GeneratedEvolutionStatusSlot.abandoned => AgentLifecycle.destroyed,
+  };
+}
+
+class _GeneratedEvolutionStatusScenario {
+  const _GeneratedEvolutionStatusScenario({required this.statusSlots});
+
+  final List<_GeneratedEvolutionStatusSlot> statusSlots;
+
+  @override
+  String toString() {
+    return '_GeneratedEvolutionStatusScenario(statusSlots: $statusSlots)';
+  }
+}
+
+extension _AnyGeneratedInstanceViewModelScenario on glados.Any {
+  glados.Generator<_GeneratedInstanceKindSlot> get instanceKindSlot =>
+      glados.AnyUtils(this).choose(_GeneratedInstanceKindSlot.values);
+
+  glados.Generator<_GeneratedEvolutionStatusSlot> get evolutionStatusSlot =>
+      glados.AnyUtils(this).choose(_GeneratedEvolutionStatusSlot.values);
+
+  glados.Generator<_GeneratedEvolutionStatusScenario>
+  get evolutionStatusScenario => glados.ListAnys(this)
+      .listWithLengthInRange(0, 35, evolutionStatusSlot)
+      .map(
+        (statusSlots) => _GeneratedEvolutionStatusScenario(
+          statusSlots: statusSlots,
+        ),
+      );
+}
+
 void main() {
   Future<List<InstanceVm>> readVms(List<Override> overrides) async {
     final container = ProviderContainer(overrides: overrides);
-    addTearDown(container.dispose);
-    return container.read(agentInstanceVmsProvider.future);
+    try {
+      return await container.read(agentInstanceVmsProvider.future);
+    } finally {
+      container.dispose();
+    }
   }
 
   test('hydrates a task agent with its template + soul + name', () async {
@@ -122,5 +204,54 @@ void main() {
     // Evolution rows leave displayName blank — the row widget builds the
     // localized title from sessionNumber.
     expect(byId['evo-active']!.displayName, isEmpty);
+  });
+
+  glados.Glados(
+    glados.any.instanceKindSlot,
+    glados.ExploreConfig(numRuns: 120),
+  ).test('maps generated agent kind ids to instance types', (kindSlot) {
+    expect(
+      instanceTypeFromAgentKind(_generatedInstanceKind(kindSlot)),
+      equals(_expectedInstanceType(kindSlot)),
+      reason: '$kindSlot',
+    );
+  });
+
+  glados.Glados(
+    glados.any.evolutionStatusScenario,
+    glados.ExploreConfig(numRuns: 160),
+  ).test('maps generated evolution statuses onto lifecycle rows', (
+    scenario,
+  ) async {
+    final sessions = [
+      for (final (index, statusSlot) in scenario.statusSlots.indexed)
+        makeTestEvolutionSession(
+          id: 'evo-$index',
+          sessionNumber: index + 1,
+          status: _generatedEvolutionStatus(statusSlot),
+        ),
+    ];
+
+    final vms = await readVms([
+      allAgentInstancesProvider.overrideWith(
+        (ref) async => <AgentDomainEntity>[],
+      ),
+      allEvolutionSessionsProvider.overrideWith((ref) async => sessions),
+      templateForAgentProvider.overrideWith((ref, _) async => null),
+      soulForTemplateProvider.overrideWith((ref, _) async => null),
+    ]);
+
+    expect(vms, hasLength(scenario.statusSlots.length));
+    for (final (index, statusSlot) in scenario.statusSlots.indexed) {
+      final vm = vms[index];
+      expect(vm.id, 'evo-$index', reason: '$scenario');
+      expect(vm.type, InstanceType.evolution, reason: '$scenario');
+      expect(vm.status, _expectedEvolutionLifecycle(statusSlot));
+      expect(vm.sessionNumber, index + 1);
+      expect(vm.displayName, isEmpty);
+      expect(vm.searchKey, contains('evolution'));
+      expect(vm.searchKey, contains('${index + 1}'));
+      expect(vm.searchKey, contains('evo-$index'));
+    }
   });
 }

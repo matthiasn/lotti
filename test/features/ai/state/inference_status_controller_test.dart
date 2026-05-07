@@ -1,7 +1,167 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+
+enum _GeneratedInferenceIdSlot { primary, secondary }
+
+enum _GeneratedInferenceResponseSlot {
+  imageAnalysis,
+  audioTranscription,
+  promptGeneration,
+  imagePromptGeneration,
+  imageGeneration,
+}
+
+enum _GeneratedInferenceStatusSlot { idle, running, error }
+
+enum _GeneratedInferenceResponseSetKind {
+  empty,
+  first,
+  second,
+  firstAndSecond,
+  all,
+}
+
+String _generatedInferenceId(_GeneratedInferenceIdSlot slot) =>
+    'generated-inference-${slot.name}';
+
+AiResponseType _generatedInferenceResponseType(
+  _GeneratedInferenceResponseSlot slot,
+) {
+  return switch (slot) {
+    _GeneratedInferenceResponseSlot.imageAnalysis =>
+      AiResponseType.imageAnalysis,
+    _GeneratedInferenceResponseSlot.audioTranscription =>
+      AiResponseType.audioTranscription,
+    _GeneratedInferenceResponseSlot.promptGeneration =>
+      AiResponseType.promptGeneration,
+    _GeneratedInferenceResponseSlot.imagePromptGeneration =>
+      AiResponseType.imagePromptGeneration,
+    _GeneratedInferenceResponseSlot.imageGeneration =>
+      AiResponseType.imageGeneration,
+  };
+}
+
+InferenceStatus _generatedInferenceStatus(
+  _GeneratedInferenceStatusSlot slot,
+) {
+  return switch (slot) {
+    _GeneratedInferenceStatusSlot.idle => InferenceStatus.idle,
+    _GeneratedInferenceStatusSlot.running => InferenceStatus.running,
+    _GeneratedInferenceStatusSlot.error => InferenceStatus.error,
+  };
+}
+
+class _GeneratedInferenceOperation {
+  const _GeneratedInferenceOperation({
+    required this.idSlot,
+    required this.responseSlot,
+    required this.statusSlot,
+  });
+
+  final _GeneratedInferenceIdSlot idSlot;
+  final _GeneratedInferenceResponseSlot responseSlot;
+  final _GeneratedInferenceStatusSlot statusSlot;
+
+  String get id => _generatedInferenceId(idSlot);
+
+  AiResponseType get responseType => _generatedInferenceResponseType(
+    responseSlot,
+  );
+
+  InferenceStatus get status => _generatedInferenceStatus(statusSlot);
+
+  @override
+  String toString() {
+    return '_GeneratedInferenceOperation('
+        'idSlot: $idSlot, responseSlot: $responseSlot, '
+        'statusSlot: $statusSlot)';
+  }
+}
+
+class _GeneratedInferenceScenario {
+  const _GeneratedInferenceScenario({
+    required this.responseSetKind,
+    required this.operations,
+  });
+
+  final _GeneratedInferenceResponseSetKind responseSetKind;
+  final List<_GeneratedInferenceOperation> operations;
+
+  Set<AiResponseType> get responseTypes {
+    final generatedTypes = _GeneratedInferenceResponseSlot.values
+        .map(_generatedInferenceResponseType)
+        .toList();
+
+    return switch (responseSetKind) {
+      _GeneratedInferenceResponseSetKind.empty => <AiResponseType>{},
+      _GeneratedInferenceResponseSetKind.first => {generatedTypes.first},
+      _GeneratedInferenceResponseSetKind.second => {generatedTypes[1]},
+      _GeneratedInferenceResponseSetKind.firstAndSecond => {
+        generatedTypes.first,
+        generatedTypes[1],
+      },
+      _GeneratedInferenceResponseSetKind.all => generatedTypes.toSet(),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedInferenceScenario('
+        'responseSetKind: $responseSetKind, operations: $operations)';
+  }
+}
+
+extension _AnyGeneratedInferenceScenario on glados.Any {
+  glados.Generator<_GeneratedInferenceIdSlot> get inferenceIdSlot =>
+      glados.AnyUtils(this).choose(_GeneratedInferenceIdSlot.values);
+
+  glados.Generator<_GeneratedInferenceResponseSlot> get inferenceResponseSlot =>
+      glados.AnyUtils(this).choose(_GeneratedInferenceResponseSlot.values);
+
+  glados.Generator<_GeneratedInferenceStatusSlot> get inferenceStatusSlot =>
+      glados.AnyUtils(this).choose(_GeneratedInferenceStatusSlot.values);
+
+  glados.Generator<_GeneratedInferenceResponseSetKind>
+  get inferenceResponseSetKind => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedInferenceResponseSetKind.values);
+
+  glados.Generator<_GeneratedInferenceOperation> get inferenceOperation =>
+      glados.CombinableAny(this).combine3(
+        inferenceIdSlot,
+        inferenceResponseSlot,
+        inferenceStatusSlot,
+        (
+          _GeneratedInferenceIdSlot idSlot,
+          _GeneratedInferenceResponseSlot responseSlot,
+          _GeneratedInferenceStatusSlot statusSlot,
+        ) => _GeneratedInferenceOperation(
+          idSlot: idSlot,
+          responseSlot: responseSlot,
+          statusSlot: statusSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedInferenceScenario> get inferenceScenario =>
+      glados.CombinableAny(this).combine2(
+        inferenceResponseSetKind,
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          55,
+          inferenceOperation,
+        ),
+        (
+          _GeneratedInferenceResponseSetKind responseSetKind,
+          List<_GeneratedInferenceOperation> operations,
+        ) => _GeneratedInferenceScenario(
+          responseSetKind: responseSetKind,
+          operations: operations,
+        ),
+      );
+}
 
 void main() {
   late ProviderContainer container;
@@ -364,6 +524,78 @@ void main() {
       );
 
       expect(state, equals(false));
+    });
+
+    glados.Glados(
+      glados.any.inferenceScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated multi-response running semantics', (scenario) {
+      final generatedContainer = ProviderContainer();
+      final expectedById = <String, Map<AiResponseType, InferenceStatus>>{};
+      final watchedId = _generatedInferenceId(
+        _GeneratedInferenceIdSlot.primary,
+      );
+      final watchedResponseTypes = scenario.responseTypes;
+
+      try {
+        for (final operation in scenario.operations) {
+          generatedContainer
+              .read(
+                inferenceStatusControllerProvider(
+                  id: operation.id,
+                  aiResponseType: operation.responseType,
+                ).notifier,
+              )
+              .setStatus(operation.status);
+
+          expectedById.putIfAbsent(
+            operation.id,
+            () => <AiResponseType, InferenceStatus>{},
+          )[operation.responseType] = operation.status;
+
+          final expectedRunning = watchedResponseTypes.any((responseType) {
+            final status =
+                expectedById[watchedId]?[responseType] ?? InferenceStatus.idle;
+            return status == InferenceStatus.running;
+          });
+
+          expect(
+            generatedContainer.read(
+              inferenceRunningControllerProvider(
+                id: watchedId,
+                responseTypes: watchedResponseTypes,
+              ),
+            ),
+            expectedRunning,
+            reason: '$scenario after $operation',
+          );
+          expect(
+            generatedContainer.read(
+              inferenceStatusControllerProvider(
+                id: operation.id,
+                aiResponseType: operation.responseType,
+              ),
+            ),
+            operation.status,
+            reason: '$scenario after $operation',
+          );
+        }
+
+        if (scenario.operations.isEmpty) {
+          expect(
+            generatedContainer.read(
+              inferenceRunningControllerProvider(
+                id: watchedId,
+                responseTypes: watchedResponseTypes,
+              ),
+            ),
+            isFalse,
+            reason: '$scenario has no status updates',
+          );
+        }
+      } finally {
+        generatedContainer.dispose();
+      }
     });
   });
 }

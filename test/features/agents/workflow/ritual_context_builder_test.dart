@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
@@ -6,6 +7,96 @@ import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 import 'package:lotti/features/agents/workflow/ritual_context_builder.dart';
 
 import '../test_utils.dart';
+
+class _GeneratedRitualFeedbackScenario {
+  const _GeneratedRitualFeedbackScenario({
+    required this.criticalNegativeCount,
+    required this.criticalPositiveCount,
+    required this.nonCriticalCount,
+    required this.nonCriticalSentiment,
+  });
+
+  final int criticalNegativeCount;
+  final int criticalPositiveCount;
+  final int nonCriticalCount;
+  final FeedbackSentiment nonCriticalSentiment;
+
+  int get highPriorityCount => criticalNegativeCount + criticalPositiveCount;
+
+  int get expectedShownNonCriticalCount {
+    final remainingSlots =
+        RitualContextBuilder.maxFeedbackItems - highPriorityCount;
+    if (remainingSlots <= 0) return 0;
+    return nonCriticalCount > remainingSlots
+        ? remainingSlots
+        : nonCriticalCount;
+  }
+
+  List<ClassifiedFeedbackItem> get items => [
+    for (var i = 0; i < criticalNegativeCount; i++)
+      makeTestClassifiedFeedbackItem(
+        sentiment: FeedbackSentiment.negative,
+        detail: 'Generated critical grievance $i',
+        source: 'observation',
+        observationPriority: ObservationPriority.critical,
+      ),
+    for (var i = 0; i < criticalPositiveCount; i++)
+      makeTestClassifiedFeedbackItem(
+        // ignore: avoid_redundant_argument_values
+        sentiment: FeedbackSentiment.positive,
+        detail: 'Generated critical excellence $i',
+        source: 'observation',
+        observationPriority: ObservationPriority.critical,
+      ),
+    for (var i = 0; i < nonCriticalCount; i++)
+      makeTestClassifiedFeedbackItem(
+        sentiment: nonCriticalSentiment,
+        detail: 'Generated regular feedback $i',
+      ),
+  ];
+
+  String get sentimentHeading => switch (nonCriticalSentiment) {
+    FeedbackSentiment.negative => 'Negative Signals',
+    FeedbackSentiment.positive => 'Positive Signals',
+    FeedbackSentiment.neutral => 'Neutral Signals',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedRitualFeedbackScenario('
+        'criticalNegativeCount: $criticalNegativeCount, '
+        'criticalPositiveCount: $criticalPositiveCount, '
+        'nonCriticalCount: $nonCriticalCount, '
+        'nonCriticalSentiment: $nonCriticalSentiment)';
+  }
+}
+
+extension _AnyGeneratedRitualFeedbackScenario on glados.Any {
+  glados.Generator<FeedbackSentiment> get feedbackSentiment =>
+      glados.AnyUtils(this).choose(FeedbackSentiment.values);
+
+  glados.Generator<_GeneratedRitualFeedbackScenario>
+  get ritualFeedbackScenario => glados.CombinableAny(this).combine4(
+    glados.IntAnys(this).intInRange(0, 6),
+    glados.IntAnys(this).intInRange(0, 6),
+    glados.IntAnys(this).intInRange(
+      0,
+      RitualContextBuilder.maxFeedbackItems + 12,
+    ),
+    feedbackSentiment,
+    (
+      int criticalNegativeCount,
+      int criticalPositiveCount,
+      int nonCriticalCount,
+      FeedbackSentiment nonCriticalSentiment,
+    ) => _GeneratedRitualFeedbackScenario(
+      criticalNegativeCount: criticalNegativeCount,
+      criticalPositiveCount: criticalPositiveCount,
+      nonCriticalCount: nonCriticalCount,
+      nonCriticalSentiment: nonCriticalSentiment,
+    ),
+  );
+}
 
 void main() {
   late RitualContextBuilder builder;
@@ -186,6 +277,108 @@ void main() {
         ctx.initialUserMessage,
         contains('(${RitualContextBuilder.maxFeedbackItems} items)'),
       );
+    });
+
+    glados.Glados(
+      glados.any.ritualFeedbackScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('matches generated high-priority and feedback cap semantics', (
+      scenario,
+    ) {
+      final ctx = buildCtx(feedbackItems: scenario.items);
+      final message = ctx.initialUserMessage;
+
+      if (scenario.highPriorityCount == 0) {
+        expect(
+          message,
+          isNot(contains('HIGH-PRIORITY FEEDBACK')),
+          reason: '$scenario',
+        );
+      } else {
+        expect(
+          message,
+          contains('HIGH-PRIORITY FEEDBACK'),
+          reason: '$scenario',
+        );
+        if (scenario.criticalNegativeCount > 0) {
+          expect(
+            message,
+            contains('Grievances (${scenario.criticalNegativeCount})'),
+            reason: '$scenario',
+          );
+        }
+        if (scenario.criticalPositiveCount > 0) {
+          expect(
+            message,
+            contains(
+              'Notes of Excellence (${scenario.criticalPositiveCount})',
+            ),
+            reason: '$scenario',
+          );
+        }
+      }
+
+      if (scenario.items.isEmpty) {
+        expect(
+          message,
+          contains('No classified feedback items in this window.'),
+          reason: '$scenario',
+        );
+        expect(
+          message,
+          isNot(contains('Feedback by Category')),
+          reason: '$scenario',
+        );
+      } else if (scenario.nonCriticalCount == 0) {
+        expect(
+          message,
+          contains(
+            'All feedback items in this window are high-priority',
+          ),
+          reason: '$scenario',
+        );
+        expect(
+          message,
+          isNot(contains('Feedback by Category')),
+          reason: '$scenario',
+        );
+      } else {
+        expect(
+          message,
+          contains(
+            '(${scenario.expectedShownNonCriticalCount} items)',
+          ),
+          reason: '$scenario',
+        );
+        expect(
+          message,
+          contains(
+            '${scenario.sentimentHeading} '
+            '(${scenario.expectedShownNonCriticalCount})',
+          ),
+          reason: '$scenario',
+        );
+        expect(
+          message,
+          contains(
+            'accuracy (${scenario.expectedShownNonCriticalCount})',
+          ),
+          reason: '$scenario',
+        );
+        if (scenario.nonCriticalCount >
+            scenario.expectedShownNonCriticalCount) {
+          expect(
+            message,
+            isNot(
+              contains(
+                'Generated regular feedback '
+                '${scenario.expectedShownNonCriticalCount}',
+              ),
+            ),
+            reason: '$scenario',
+          );
+        }
+      }
     });
 
     test('preserves standard evolution user message content', () {

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -7,6 +8,182 @@ import 'package:lotti/features/ai/state/settings/inference_model_form_controller
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+
+enum _GeneratedModelFormOperationKind {
+  name,
+  providerModelId,
+  description,
+  maxCompletionTokens,
+  inferenceProviderId,
+  inputModalities,
+  outputModalities,
+  isReasoningModel,
+  supportsFunctionCalling,
+}
+
+enum _GeneratedModelFormTextSlot {
+  empty,
+  short,
+  valid,
+  other,
+  numeric,
+  invalidNumber,
+}
+
+enum _GeneratedModelFormModalitiesSlot {
+  text,
+  textImage,
+  audioText,
+  all,
+  empty,
+}
+
+String _generatedModelFormText(_GeneratedModelFormTextSlot slot) {
+  return switch (slot) {
+    _GeneratedModelFormTextSlot.empty => '',
+    _GeneratedModelFormTextSlot.short => 'xy',
+    _GeneratedModelFormTextSlot.valid => 'Generated value',
+    _GeneratedModelFormTextSlot.other => 'Other generated value',
+    _GeneratedModelFormTextSlot.numeric => '4096',
+    _GeneratedModelFormTextSlot.invalidNumber => '-3',
+  };
+}
+
+List<Modality> _generatedModelFormModalities(
+  _GeneratedModelFormModalitiesSlot slot,
+) {
+  return switch (slot) {
+    _GeneratedModelFormModalitiesSlot.text => [Modality.text],
+    _GeneratedModelFormModalitiesSlot.textImage => [
+      Modality.text,
+      Modality.image,
+    ],
+    _GeneratedModelFormModalitiesSlot.audioText => [
+      Modality.audio,
+      Modality.text,
+    ],
+    _GeneratedModelFormModalitiesSlot.all => [
+      Modality.text,
+      Modality.audio,
+      Modality.image,
+    ],
+    _GeneratedModelFormModalitiesSlot.empty => <Modality>[],
+  };
+}
+
+class _GeneratedModelFormOperation {
+  const _GeneratedModelFormOperation({
+    required this.kind,
+    required this.textSlot,
+    required this.modalitiesSlot,
+    required this.flag,
+  });
+
+  final _GeneratedModelFormOperationKind kind;
+  final _GeneratedModelFormTextSlot textSlot;
+  final _GeneratedModelFormModalitiesSlot modalitiesSlot;
+  final bool flag;
+
+  String get text => _generatedModelFormText(textSlot);
+
+  List<Modality> get modalities => _generatedModelFormModalities(
+    modalitiesSlot,
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedModelFormOperation('
+        'kind: $kind, textSlot: $textSlot, '
+        'modalitiesSlot: $modalitiesSlot, flag: $flag)';
+  }
+}
+
+class _GeneratedModelFormScenario {
+  const _GeneratedModelFormScenario({required this.operations});
+
+  final List<_GeneratedModelFormOperation> operations;
+
+  @override
+  String toString() {
+    return '_GeneratedModelFormScenario(operations: $operations)';
+  }
+}
+
+class _ExpectedModelFormState {
+  String name = '';
+  String providerModelId = '';
+  String description = '';
+  String maxCompletionTokens = '';
+  String inferenceProviderId = '';
+  List<Modality> inputModalities = [Modality.text];
+  List<Modality> outputModalities = [Modality.text];
+  bool isReasoningModel = false;
+  bool supportsFunctionCalling = false;
+
+  void apply(_GeneratedModelFormOperation operation) {
+    switch (operation.kind) {
+      case _GeneratedModelFormOperationKind.name:
+        name = operation.text;
+      case _GeneratedModelFormOperationKind.providerModelId:
+        providerModelId = operation.text;
+      case _GeneratedModelFormOperationKind.description:
+        description = operation.text;
+      case _GeneratedModelFormOperationKind.maxCompletionTokens:
+        maxCompletionTokens = operation.text;
+      case _GeneratedModelFormOperationKind.inferenceProviderId:
+        inferenceProviderId = operation.text;
+      case _GeneratedModelFormOperationKind.inputModalities:
+        inputModalities = operation.modalities;
+      case _GeneratedModelFormOperationKind.outputModalities:
+        outputModalities = operation.modalities;
+      case _GeneratedModelFormOperationKind.isReasoningModel:
+        isReasoningModel = operation.flag;
+      case _GeneratedModelFormOperationKind.supportsFunctionCalling:
+        supportsFunctionCalling = operation.flag;
+    }
+  }
+}
+
+extension _AnyGeneratedModelFormScenario on glados.Any {
+  glados.Generator<_GeneratedModelFormOperationKind>
+  get modelFormOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedModelFormOperationKind.values);
+
+  glados.Generator<_GeneratedModelFormTextSlot> get modelFormTextSlot =>
+      glados.AnyUtils(this).choose(_GeneratedModelFormTextSlot.values);
+
+  glados.Generator<_GeneratedModelFormModalitiesSlot>
+  get modelFormModalitiesSlot =>
+      glados.AnyUtils(this).choose(_GeneratedModelFormModalitiesSlot.values);
+
+  glados.Generator<_GeneratedModelFormOperation> get modelFormOperation =>
+      glados.CombinableAny(this).combine4(
+        modelFormOperationKind,
+        modelFormTextSlot,
+        modelFormModalitiesSlot,
+        glados.any.bool,
+        (
+          _GeneratedModelFormOperationKind kind,
+          _GeneratedModelFormTextSlot textSlot,
+          _GeneratedModelFormModalitiesSlot modalitiesSlot,
+          bool flag,
+        ) => _GeneratedModelFormOperation(
+          kind: kind,
+          textSlot: textSlot,
+          modalitiesSlot: modalitiesSlot,
+          flag: flag,
+        ),
+      );
+
+  glados.Generator<_GeneratedModelFormScenario> get modelFormScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 45, modelFormOperation)
+          .map(
+            (operations) => _GeneratedModelFormScenario(
+              operations: operations,
+            ),
+          );
+}
 
 void main() {
   late MockAiConfigRepository mockRepository;
@@ -335,5 +512,95 @@ void main() {
         expect(formState?.supportsFunctionCalling, isTrue);
       },
     );
+
+    glados.Glados(
+      glados.any.modelFormScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated edit sequence semantics', (scenario) async {
+      final generatedRepository = MockAiConfigRepository();
+      final generatedContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(generatedRepository),
+        ],
+      );
+      final expected = _ExpectedModelFormState();
+
+      try {
+        final controller = generatedContainer.read(
+          inferenceModelFormControllerProvider(configId: null).notifier,
+        );
+        await generatedContainer.read(
+          inferenceModelFormControllerProvider(configId: null).future,
+        );
+
+        for (final operation in scenario.operations) {
+          switch (operation.kind) {
+            case _GeneratedModelFormOperationKind.name:
+              controller.nameChanged(operation.text);
+            case _GeneratedModelFormOperationKind.providerModelId:
+              controller.providerModelIdChanged(operation.text);
+            case _GeneratedModelFormOperationKind.description:
+              controller.descriptionChanged(operation.text);
+            case _GeneratedModelFormOperationKind.maxCompletionTokens:
+              controller.maxCompletionTokensChanged(operation.text);
+            case _GeneratedModelFormOperationKind.inferenceProviderId:
+              controller.inferenceProviderIdChanged(operation.text);
+            case _GeneratedModelFormOperationKind.inputModalities:
+              controller.inputModalitiesChanged(operation.modalities);
+            case _GeneratedModelFormOperationKind.outputModalities:
+              controller.outputModalitiesChanged(operation.modalities);
+            case _GeneratedModelFormOperationKind.isReasoningModel:
+              controller.isReasoningModelChanged(operation.flag);
+            case _GeneratedModelFormOperationKind.supportsFunctionCalling:
+              controller.supportsFunctionCallingChanged(operation.flag);
+          }
+          expected.apply(operation);
+
+          final formState = generatedContainer
+              .read(inferenceModelFormControllerProvider(configId: null))
+              .value!;
+
+          expect(formState.name.value, expected.name, reason: '$scenario');
+          expect(controller.nameController.text, expected.name);
+          expect(
+            formState.providerModelId.value,
+            expected.providerModelId,
+            reason: '$scenario',
+          );
+          expect(
+            controller.providerModelIdController.text,
+            expected.providerModelId,
+          );
+          expect(
+            formState.description.value,
+            expected.description,
+            reason: '$scenario',
+          );
+          expect(controller.descriptionController.text, expected.description);
+          expect(
+            formState.maxCompletionTokens.value,
+            expected.maxCompletionTokens,
+            reason: '$scenario',
+          );
+          expect(
+            controller.maxCompletionTokensController.text,
+            expected.maxCompletionTokens,
+          );
+          expect(
+            formState.inferenceProviderId,
+            expected.inferenceProviderId,
+          );
+          expect(formState.inputModalities, expected.inputModalities);
+          expect(formState.outputModalities, expected.outputModalities);
+          expect(formState.isReasoningModel, expected.isReasoningModel);
+          expect(
+            formState.supportsFunctionCalling,
+            expected.supportsFunctionCalling,
+          );
+        }
+      } finally {
+        generatedContainer.dispose();
+      }
+    });
   });
 }

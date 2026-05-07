@@ -165,6 +165,91 @@ void main() {
       });
     });
 
+    testWidgets('matches generated ticker and nextWakeAt update scenarios', (
+      tester,
+    ) async {
+      for (final scenario in _generatedCountdownScenarios()) {
+        final start = DateTime(2024, 3, 15, 12);
+        var now = start;
+
+        DateTime targetFromOffset(int offsetSeconds) =>
+            start.add(Duration(seconds: offsetSeconds));
+
+        await withClock(Clock(() => now), () async {
+          final initialTarget = targetFromOffset(
+            scenario.initialOffsetSeconds,
+          );
+
+          await tester.pumpWidget(
+            wrap(_CountdownProbe(nextWakeAt: initialTarget)),
+          );
+          await tester.pump();
+
+          var expectedSeconds = _remainingCountdownSeconds(
+            now,
+            initialTarget,
+          );
+          _expectCountdownSeconds(
+            expectedSeconds,
+            reason: 'initial $scenario',
+          );
+
+          if (scenario.disableTickerBeforeElapsed) {
+            await tester.pumpWidget(
+              wrap(
+                _CountdownProbe(nextWakeAt: initialTarget),
+                tickerModeEnabled: false,
+              ),
+            );
+            await tester.pump();
+
+            final frozenSeconds = expectedSeconds;
+            now = start.add(Duration(seconds: scenario.elapsedSeconds));
+            await tester.pump(const Duration(seconds: 1));
+            _expectCountdownSeconds(
+              frozenSeconds,
+              reason: 'disabled elapsed $scenario',
+            );
+          } else {
+            now = start.add(Duration(seconds: scenario.elapsedSeconds));
+            await tester.pump(const Duration(seconds: 1));
+            expectedSeconds = _remainingCountdownSeconds(now, initialTarget);
+            _expectCountdownSeconds(
+              expectedSeconds,
+              reason: 'enabled elapsed $scenario',
+            );
+          }
+
+          final updatedTarget = targetFromOffset(
+            scenario.updatedOffsetSeconds,
+          );
+          await tester.pumpWidget(
+            wrap(_CountdownProbe(nextWakeAt: updatedTarget)),
+          );
+          await tester.pump();
+
+          expectedSeconds = _remainingCountdownSeconds(now, updatedTarget);
+          _expectCountdownSeconds(
+            expectedSeconds,
+            reason: 'updated $scenario',
+          );
+
+          if (expectedSeconds > 0) {
+            now = now.add(const Duration(seconds: 1));
+            await tester.pump(const Duration(seconds: 1));
+            expectedSeconds = _remainingCountdownSeconds(now, updatedTarget);
+            _expectCountdownSeconds(
+              expectedSeconds,
+              reason: 'updated tick $scenario',
+            );
+          }
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+        });
+      }
+    });
+
     testWidgets(
       'starts in expired state when nextWakeAt is already past and emits '
       'onCountdownExpired post-frame without scheduling a periodic timer',
@@ -211,6 +296,69 @@ void main() {
       });
     });
   });
+}
+
+class _GeneratedCountdownScenario {
+  const _GeneratedCountdownScenario({
+    required this.initialOffsetSeconds,
+    required this.elapsedSeconds,
+    required this.updatedOffsetSeconds,
+    required this.disableTickerBeforeElapsed,
+  });
+
+  final int initialOffsetSeconds;
+  final int elapsedSeconds;
+  final int updatedOffsetSeconds;
+  final bool disableTickerBeforeElapsed;
+
+  @override
+  String toString() {
+    return '_GeneratedCountdownScenario('
+        'initialOffsetSeconds: $initialOffsetSeconds, '
+        'elapsedSeconds: $elapsedSeconds, '
+        'updatedOffsetSeconds: $updatedOffsetSeconds, '
+        'disableTickerBeforeElapsed: $disableTickerBeforeElapsed)';
+  }
+}
+
+List<_GeneratedCountdownScenario> _generatedCountdownScenarios() {
+  final scenarios = <_GeneratedCountdownScenario>[];
+
+  for (final initialOffsetSeconds in const <int>[-1, 0, 1, 7, 90]) {
+    for (final elapsedSeconds in const <int>[0, 2, 30]) {
+      for (final updatedOffsetSeconds in const <int>[-1, 0, 5, 120]) {
+        for (final disableTickerBeforeElapsed in const <bool>[false, true]) {
+          scenarios.add(
+            _GeneratedCountdownScenario(
+              initialOffsetSeconds: initialOffsetSeconds,
+              elapsedSeconds: elapsedSeconds,
+              updatedOffsetSeconds: updatedOffsetSeconds,
+              disableTickerBeforeElapsed: disableTickerBeforeElapsed,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  return scenarios;
+}
+
+int _remainingCountdownSeconds(DateTime now, DateTime nextWakeAt) {
+  final remaining = nextWakeAt.difference(now);
+  if (remaining <= Duration.zero) {
+    return 0;
+  }
+
+  return remaining.inSeconds;
+}
+
+void _expectCountdownSeconds(int seconds, {required String reason}) {
+  expect(
+    find.text(seconds <= 0 ? 'expired' : '$seconds'),
+    findsOneWidget,
+    reason: reason,
+  );
 }
 
 /// Minimal harness widget that mixes in [WakeCountdownState] so the

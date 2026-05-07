@@ -1,8 +1,101 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 
 import '../test_utils.dart';
+
+class _GeneratedEvolutionContextCounts {
+  const _GeneratedEvolutionContextCounts({
+    required this.reportCount,
+    required this.observationCount,
+    required this.noteCount,
+    required this.versionCount,
+    required this.changesSinceLastSession,
+  });
+
+  final int reportCount;
+  final int observationCount;
+  final int noteCount;
+  final int versionCount;
+  final int changesSinceLastSession;
+
+  int get expectedReportCount =>
+      reportCount > EvolutionContextBuilder.maxInstanceReports
+      ? EvolutionContextBuilder.maxInstanceReports
+      : reportCount;
+
+  int get expectedObservationCount =>
+      observationCount > EvolutionContextBuilder.maxInstanceObservations
+      ? EvolutionContextBuilder.maxInstanceObservations
+      : observationCount;
+
+  int get expectedNoteCount => noteCount > EvolutionContextBuilder.maxPastNotes
+      ? EvolutionContextBuilder.maxPastNotes
+      : noteCount;
+
+  int get expectedVersionHistoryCount =>
+      versionCount - 1 > EvolutionContextBuilder.maxVersionHistory
+      ? EvolutionContextBuilder.maxVersionHistory
+      : versionCount - 1;
+
+  @override
+  String toString() {
+    return '_GeneratedEvolutionContextCounts('
+        'reportCount: $reportCount, '
+        'observationCount: $observationCount, '
+        'noteCount: $noteCount, '
+        'versionCount: $versionCount, '
+        'changesSinceLastSession: $changesSinceLastSession)';
+  }
+}
+
+extension _AnyGeneratedEvolutionContextCounts on glados.Any {
+  glados.Generator<_GeneratedEvolutionContextCounts>
+  get evolutionContextCounts => glados.CombinableAny(this).combine5(
+    glados.IntAnys(this).intInRange(
+      0,
+      EvolutionContextBuilder.maxInstanceReports + 8,
+    ),
+    glados.IntAnys(this).intInRange(
+      0,
+      EvolutionContextBuilder.maxInstanceObservations + 8,
+    ),
+    glados.IntAnys(this).intInRange(
+      0,
+      EvolutionContextBuilder.maxPastNotes + 8,
+    ),
+    glados.IntAnys(this).intInRange(
+      1,
+      EvolutionContextBuilder.maxVersionHistory + 8,
+    ),
+    glados.IntAnys(this).intInRange(0, 8),
+    (
+      int reportCount,
+      int observationCount,
+      int noteCount,
+      int versionCount,
+      int changesSinceLastSession,
+    ) => _GeneratedEvolutionContextCounts(
+      reportCount: reportCount,
+      observationCount: observationCount,
+      noteCount: noteCount,
+      versionCount: versionCount,
+      changesSinceLastSession: changesSinceLastSession,
+    ),
+  );
+}
+
+String _sectionByHeading(String message, String heading) {
+  final sectionStart = message.indexOf(heading);
+  if (sectionStart == -1) return '';
+
+  final nextSectionStart = message.indexOf('\n## ', sectionStart + 1);
+  return message.substring(
+    sectionStart,
+    nextSectionStart == -1 ? message.length : nextSectionStart,
+  );
+}
 
 void main() {
   late EvolutionContextBuilder builder;
@@ -328,6 +421,107 @@ void main() {
         versionLines.length,
         lessThanOrEqualTo(EvolutionContextBuilder.maxVersionHistory),
       );
+    });
+
+    glados.Glados(
+      glados.any.evolutionContextCounts,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('matches generated section cap and omission semantics', (
+      scenario,
+    ) {
+      final ctx = buildWithDefaults(
+        reportCount: scenario.reportCount,
+        observationCount: scenario.observationCount,
+        noteCount: scenario.noteCount,
+        versionCount: scenario.versionCount,
+        changesSinceLastSession: scenario.changesSinceLastSession,
+      );
+      final message = ctx.initialUserMessage;
+
+      if (scenario.reportCount == 0) {
+        expect(
+          message,
+          isNot(contains('Recent Instance Reports')),
+          reason: '$scenario',
+        );
+      } else {
+        expect(
+          message,
+          contains('Recent Instance Reports (${scenario.expectedReportCount})'),
+          reason: '$scenario',
+        );
+        if (scenario.reportCount > EvolutionContextBuilder.maxInstanceReports) {
+          expect(
+            message,
+            isNot(
+              contains(
+                'Report content ${EvolutionContextBuilder.maxInstanceReports}',
+              ),
+            ),
+            reason: '$scenario',
+          );
+        }
+      }
+
+      if (scenario.observationCount == 0) {
+        expect(
+          message,
+          isNot(contains('Recent Instance Observations')),
+          reason: '$scenario',
+        );
+      } else {
+        expect(
+          message,
+          contains(
+            'Recent Instance Observations '
+            '(${scenario.expectedObservationCount})',
+          ),
+          reason: '$scenario',
+        );
+      }
+
+      if (scenario.noteCount == 0) {
+        expect(
+          message,
+          isNot(contains('Your Notes From Past Sessions')),
+          reason: '$scenario',
+        );
+      } else {
+        expect(
+          message,
+          contains(
+            'Your Notes From Past Sessions (${scenario.expectedNoteCount})',
+          ),
+          reason: '$scenario',
+        );
+      }
+
+      final versionHistorySection = _sectionByHeading(
+        message,
+        '## Version History',
+      );
+      final versionLines = RegExp(r'- v\d+').allMatches(versionHistorySection);
+      expect(
+        versionLines.length,
+        scenario.expectedVersionHistoryCount,
+        reason: '$scenario',
+      );
+
+      if (scenario.changesSinceLastSession == 0) {
+        expect(
+          message,
+          isNot(contains('Changes Since Last Session')),
+          reason: '$scenario',
+        );
+      } else {
+        expect(
+          message,
+          contains(
+            '${scenario.changesSinceLastSession} entity changes',
+          ),
+          reason: '$scenario',
+        );
+      }
     });
   });
 
