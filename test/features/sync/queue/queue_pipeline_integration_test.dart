@@ -84,8 +84,14 @@ Future<void> _waitForQueueStats(
     }
   }
 
-  final sub = queue.depthChanges.listen((_) {
-    unawaited(check());
+  final sub = queue.depthChanges.listen((_) async {
+    try {
+      await check();
+    } catch (error, stack) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stack);
+      }
+    }
   });
   try {
     await check();
