@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.998" date="2026-05-07">
+      <description>
+          <p>Toast notifications triggered from the desktop task details page (e.g. "Change applied" after confirming a proposed change) now float above the sticky action bar instead of pinned to the bottom edge of the app window, so the confirmation reads as belonging to the task view it came from. The page now wraps its Scaffold in a nested ScaffoldMessenger on macOS / Linux / Windows, scoping toast calls fired from inside the subtree to that messenger — Flutter then floats the SnackBar above the bottomNavigationBar slot automatically. Mobile (iOS / Android) is unchanged: no nested wrapper is added, toasts continue to bubble up to the root messenger and render at the screen bottom as before.</p>
+      </description>
+    </release>
     <release version="0.9.997" date="2026-05-06">
       <description>
           <p>Sidebar running-timer card now hides itself only when the timer's parent task is the same task currently open in the desktop task-details pane and the user is actually on a /tasks/&lt;uuid&gt; route. The detail page's sticky action bar already shows a running indicator, so duplicating the title in the sidebar would be noise — but the card still surfaces on every other tab (Habits, Settings, …) because the selected-task notifier is sticky across tab switches and the action bar isn't visible there. The show/hide flip runs through a combined AnimatedSwitcher + AnimatedSize (~220 ms, easeInOut) so the card fades and the surrounding sidebar collapses smoothly instead of popping. The stream is seeded with the current running entity so a session already running is rendered on first frame instead of flashing through a hidden state.</p>
