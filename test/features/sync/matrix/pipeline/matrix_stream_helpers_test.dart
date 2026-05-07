@@ -1,11 +1,277 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_helpers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockEvent extends Mock implements Event {}
+import '../../../../mocks/mocks.dart';
+
+class _GeneratedStreamEvent {
+  const _GeneratedStreamEvent({
+    required this.eventSlot,
+    required this.timestampBucket,
+    required this.payload,
+    required this.completed,
+  });
+
+  final int eventSlot;
+  final int timestampBucket;
+  final bool payload;
+  final bool completed;
+
+  String get eventId => '\$generated-$eventSlot';
+
+  int get timestampMs => 1000 + timestampBucket;
+
+  @override
+  String toString() {
+    return '_GeneratedStreamEvent('
+        'eventSlot: $eventSlot, '
+        'timestampBucket: $timestampBucket, '
+        'payload: $payload, '
+        'completed: $completed'
+        ')';
+  }
+}
+
+class _GeneratedLiveScanSliceScenario {
+  const _GeneratedLiveScanSliceScenario({
+    required this.events,
+    required this.useLastEventId,
+    required this.lastEventSlot,
+    required this.tailLimit,
+    required this.hasLastTimestamp,
+    required this.lastTimestampBucket,
+  });
+
+  final List<_GeneratedStreamEvent> events;
+  final bool useLastEventId;
+  final int lastEventSlot;
+  final int tailLimit;
+  final bool hasLastTimestamp;
+  final int lastTimestampBucket;
+
+  String? get lastEventId =>
+      useLastEventId ? '\$generated-$lastEventSlot' : null;
+
+  int? get lastTimestamp =>
+      hasLastTimestamp ? 1000 + lastTimestampBucket : null;
+
+  List<String> expectedEventIds() {
+    final ordered =
+        <({int index, _GeneratedStreamEvent event})>[
+          for (var index = 0; index < events.length; index++)
+            (index: index, event: events[index]),
+        ]..sort((a, b) {
+          final timestampCompare = a.event.timestampMs.compareTo(
+            b.event.timestampMs,
+          );
+          if (timestampCompare != 0) return timestampCompare;
+          return a.index.compareTo(b.index);
+        });
+
+    final marker = lastEventId;
+    var markerIndex = -1;
+    if (marker != null) {
+      for (var index = ordered.length - 1; index >= 0; index--) {
+        if (ordered[index].event.eventId == marker) {
+          markerIndex = index;
+          break;
+        }
+      }
+    }
+
+    final slice = markerIndex >= 0
+        ? ordered.sublist(markerIndex + 1)
+        : ordered.isEmpty
+        ? ordered
+        : ordered.sublist(
+            (ordered.length - tailLimit).clamp(0, ordered.length),
+          );
+
+    final seen = <String>{};
+    return [
+      for (final item in slice)
+        if (seen.add(item.event.eventId)) item.event.eventId,
+    ];
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedLiveScanSliceScenario('
+        'events: $events, '
+        'useLastEventId: $useLastEventId, '
+        'lastEventSlot: $lastEventSlot, '
+        'tailLimit: $tailLimit, '
+        'hasLastTimestamp: $hasLastTimestamp, '
+        'lastTimestampBucket: $lastTimestampBucket'
+        ')';
+  }
+}
+
+class _GeneratedMonotonicFilterScenario {
+  const _GeneratedMonotonicFilterScenario({
+    required this.events,
+    required this.dropOldSyncPayloads,
+    required this.hasMarker,
+    required this.markerEventSlot,
+    required this.markerTimestampBucket,
+  });
+
+  final List<_GeneratedStreamEvent> events;
+  final bool dropOldSyncPayloads;
+  final bool hasMarker;
+  final int markerEventSlot;
+  final int markerTimestampBucket;
+
+  String? get markerEventId =>
+      hasMarker ? '\$generated-$markerEventSlot' : null;
+
+  int? get markerTimestamp => hasMarker ? 1000 + markerTimestampBucket : null;
+
+  Set<String> get completedEventIds => {
+    for (final event in events)
+      if (event.completed) event.eventId,
+  };
+
+  List<String> expectedEventIds() {
+    if (!dropOldSyncPayloads) {
+      return [for (final event in events) event.eventId];
+    }
+    return [
+      for (final event in events)
+        if (_keeps(event)) event.eventId,
+    ];
+  }
+
+  int expectedSkippedCount() {
+    if (!dropOldSyncPayloads) return 0;
+    return events.where((event) => !_keeps(event)).length;
+  }
+
+  bool _keeps(_GeneratedStreamEvent event) {
+    if (!event.payload) return true;
+    final newer = _isNewer(event);
+    return newer || !completedEventIds.contains(event.eventId);
+  }
+
+  bool _isNewer(_GeneratedStreamEvent event) {
+    final latestTimestamp = markerTimestamp;
+    final latestEventId = markerEventId;
+    if (latestTimestamp == null || latestEventId == null) return true;
+    if (event.timestampMs > latestTimestamp) return true;
+    if (event.timestampMs < latestTimestamp) return false;
+    return event.eventId.compareTo(latestEventId) > 0;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedMonotonicFilterScenario('
+        'events: $events, '
+        'dropOldSyncPayloads: $dropOldSyncPayloads, '
+        'hasMarker: $hasMarker, '
+        'markerEventSlot: $markerEventSlot, '
+        'markerTimestampBucket: $markerTimestampBucket'
+        ')';
+  }
+}
+
+extension _AnyMatrixStreamHelperScenario on glados.Any {
+  glados.Generator<_GeneratedStreamEvent> get streamEvent =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 7),
+        glados.IntAnys(this).intInRange(0, 7),
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        (
+          int eventSlot,
+          int timestampBucket,
+          bool payload,
+          bool completed,
+        ) => _GeneratedStreamEvent(
+          eventSlot: eventSlot,
+          timestampBucket: timestampBucket,
+          payload: payload,
+          completed: completed,
+        ),
+      );
+
+  glados.Generator<_GeneratedLiveScanSliceScenario> get liveScanSliceScenario =>
+      glados.CombinableAny(this).combine6(
+        glados.ListAnys(this).listWithLengthInRange(0, 14, streamEvent),
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(0, 7),
+        glados.IntAnys(this).intInRange(1, 7),
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(0, 7),
+        (
+          List<_GeneratedStreamEvent> events,
+          bool useLastEventId,
+          int lastEventSlot,
+          int tailLimit,
+          bool hasLastTimestamp,
+          int lastTimestampBucket,
+        ) => _GeneratedLiveScanSliceScenario(
+          events: events,
+          useLastEventId: useLastEventId,
+          lastEventSlot: lastEventSlot,
+          tailLimit: tailLimit,
+          hasLastTimestamp: hasLastTimestamp,
+          lastTimestampBucket: lastTimestampBucket,
+        ),
+      );
+
+  glados.Generator<_GeneratedMonotonicFilterScenario>
+  get monotonicFilterScenario => glados.CombinableAny(this).combine5(
+    glados.ListAnys(this).listWithLengthInRange(1, 14, streamEvent),
+    glados.BoolAny(this).bool,
+    glados.BoolAny(this).bool,
+    glados.IntAnys(this).intInRange(0, 7),
+    glados.IntAnys(this).intInRange(0, 7),
+    (
+      List<_GeneratedStreamEvent> events,
+      bool dropOldSyncPayloads,
+      bool hasMarker,
+      int markerEventSlot,
+      int markerTimestampBucket,
+    ) => _GeneratedMonotonicFilterScenario(
+      events: events,
+      dropOldSyncPayloads: dropOldSyncPayloads,
+      hasMarker: hasMarker,
+      markerEventSlot: markerEventSlot,
+      markerTimestampBucket: markerTimestampBucket,
+    ),
+  );
+}
+
+Event _buildGeneratedEvent(_GeneratedStreamEvent generated) {
+  final event = MockEvent();
+  when(() => event.eventId).thenReturn(generated.eventId);
+  when(
+    () => event.originServerTs,
+  ).thenReturn(DateTime.fromMillisecondsSinceEpoch(generated.timestampMs));
+  when(() => event.text).thenReturn(
+    generated.payload ? _encodedSyncPayloadText(generated.eventId) : '',
+  );
+  when(
+    () => event.attachmentMimetype,
+  ).thenReturn(generated.payload ? '' : 'image/png');
+  when(() => event.content).thenReturn(<String, dynamic>{});
+  return event;
+}
+
+String _encodedSyncPayloadText(String id) {
+  return base64.encode(
+    utf8.encode(
+      json.encode(<String, dynamic>{
+        'runtimeType': 'journalEntity',
+        'jsonPath': '/generated/$id.json',
+      }),
+    ),
+  );
+}
 
 void main() {
   group('matrix_stream_helpers', () {
@@ -314,6 +580,27 @@ void main() {
       expect(slice.map((e) => e.eventId), ['a', 'b']);
     });
 
+    glados.Glados(
+      glados.any.liveScanSliceScenario,
+    ).test(
+      'generated live scan slices match the stable sort/tail/dedupe model',
+      (scenario) {
+        final slice = buildLiveScanSlice(
+          timelineEvents: [
+            for (final event in scenario.events) _buildGeneratedEvent(event),
+          ],
+          lastEventId: scenario.lastEventId,
+          tailLimit: scenario.tailLimit,
+          lastTimestamp: scenario.lastTimestamp,
+        );
+
+        expect(
+          slice.map((event) => event.eventId).toList(),
+          scenario.expectedEventIds(),
+        );
+      },
+    );
+
     test(
       'filterSyncPayloadsByMonotonic drops old payloads, keeps retries/attachments',
       () {
@@ -377,6 +664,31 @@ void main() {
           isFalse,
         );
         expect(skipped, 2);
+      },
+    );
+
+    glados.Glados(
+      glados.any.monotonicFilterScenario,
+    ).test(
+      'generated monotonic filtering keeps attachments and pending retries',
+      (scenario) {
+        var skipped = 0;
+        final kept = filterSyncPayloadsByMonotonic(
+          events: [
+            for (final event in scenario.events) _buildGeneratedEvent(event),
+          ],
+          dropOldSyncPayloads: scenario.dropOldSyncPayloads,
+          lastTimestamp: scenario.markerTimestamp,
+          lastEventId: scenario.markerEventId,
+          wasCompleted: scenario.completedEventIds.contains,
+          onSkipped: () => skipped++,
+        );
+
+        expect(
+          kept.map((event) => event.eventId).toList(),
+          scenario.expectedEventIds(),
+        );
+        expect(skipped, scenario.expectedSkippedCount());
       },
     );
   });

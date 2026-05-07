@@ -1,12 +1,72 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockEvent extends Mock implements Event {}
+import '../../../../mocks/mocks.dart';
+
+class _GeneratedClassifierScenario {
+  const _GeneratedClassifierScenario({
+    required this.syncMsgType,
+    required this.validFallbackText,
+    required this.nonEmptyAttachmentMime,
+  });
+
+  final bool syncMsgType;
+  final bool validFallbackText;
+  final bool nonEmptyAttachmentMime;
+
+  bool get expectedSyncPayload => syncMsgType || validFallbackText;
+
+  bool get expectedAttachment => nonEmptyAttachmentMime;
+
+  @override
+  String toString() {
+    return '_GeneratedClassifierScenario('
+        'syncMsgType: $syncMsgType, '
+        'validFallbackText: $validFallbackText, '
+        'nonEmptyAttachmentMime: $nonEmptyAttachmentMime'
+        ')';
+  }
+}
+
+extension _AnyMatrixEventClassifierScenario on glados.Any {
+  glados.Generator<_GeneratedClassifierScenario> get classifierScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        (
+          bool syncMsgType,
+          bool validFallbackText,
+          bool nonEmptyAttachmentMime,
+        ) => _GeneratedClassifierScenario(
+          syncMsgType: syncMsgType,
+          validFallbackText: validFallbackText,
+          nonEmptyAttachmentMime: nonEmptyAttachmentMime,
+        ),
+      );
+}
+
+Event _generatedEvent(_GeneratedClassifierScenario scenario) {
+  final event = MockEvent();
+  when(() => event.attachmentMimetype).thenReturn(
+    scenario.nonEmptyAttachmentMime ? 'application/json' : '',
+  );
+  when(() => event.content).thenReturn(<String, dynamic>{
+    if (scenario.syncMsgType) 'msgtype': syncMessageType,
+  });
+  when(() => event.text).thenReturn(
+    scenario.validFallbackText
+        ? base64.encode(utf8.encode('{"runtimeType":"journalEntity"}'))
+        : 'not-base64',
+  );
+  return event;
+}
 
 void main() {
   group('MatrixEventClassifier', () {
@@ -48,5 +108,23 @@ void main() {
     });
 
     // Prefetch behavior removed.
+
+    glados.Glados(
+      glados.any.classifierScenario,
+    ).test(
+      'generated classification matches msgtype/text and attachment model',
+      (scenario) {
+        final event = _generatedEvent(scenario);
+
+        expect(
+          MatrixEventClassifier.isSyncPayloadEvent(event),
+          scenario.expectedSyncPayload,
+        );
+        expect(
+          MatrixEventClassifier.isAttachment(event),
+          scenario.expectedAttachment,
+        );
+      },
+    );
   });
 }

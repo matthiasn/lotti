@@ -1,5 +1,6 @@
 // ignore_for_file: unnecessary_lambdas
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -7,9 +8,229 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 
-class MockRoom extends Mock implements Room {}
+class _GeneratedCatchUpEvent {
+  const _GeneratedCatchUpEvent({
+    required this.eventSlot,
+    required this.timestampBucket,
+  });
 
-class MockTimeline extends Mock implements Timeline {}
+  final int eventSlot;
+  final int timestampBucket;
+
+  String get eventId => 'generated-$eventSlot-$timestampBucket';
+
+  int get timestampMs => 1000 + timestampBucket;
+
+  @override
+  String toString() {
+    return '_GeneratedCatchUpEvent('
+        'eventSlot: $eventSlot, '
+        'timestampBucket: $timestampBucket'
+        ')';
+  }
+}
+
+class _GeneratedTimestampCatchUpScenario {
+  const _GeneratedTimestampCatchUpScenario({
+    required this.events,
+    required this.boundaryBucket,
+    required this.preContextCount,
+    required this.prevBatch,
+    required this.backfillSatisfied,
+  });
+
+  final List<_GeneratedCatchUpEvent> events;
+  final int boundaryBucket;
+  final int preContextCount;
+  final bool prevBatch;
+  final bool backfillSatisfied;
+
+  int get boundaryTs => 1000 + boundaryBucket;
+
+  List<String> expectedEventIds() {
+    final ordered = orderedEvents();
+    if (ordered.isEmpty) return const [];
+    if (ordered.first.timestampMs > boundaryTs) {
+      return [for (final event in ordered) event.eventId];
+    }
+
+    var start = 0;
+    while (start < ordered.length && ordered[start].timestampMs < boundaryTs) {
+      start++;
+    }
+    start -= preContextCount;
+    if (start < 0) start = 0;
+    return [
+      for (final event in ordered.sublist(start)) event.eventId,
+    ];
+  }
+
+  List<_GeneratedCatchUpEvent> orderedEvents() {
+    final indexed =
+        <({int index, _GeneratedCatchUpEvent event})>[
+          for (var index = 0; index < events.length; index++)
+            (index: index, event: events[index]),
+        ]..sort((a, b) {
+          final tsCompare = a.event.timestampMs.compareTo(b.event.timestampMs);
+          if (tsCompare != 0) return tsCompare;
+          return a.index.compareTo(b.index);
+        });
+
+    return [for (final item in indexed) item.event];
+  }
+
+  bool get expectsIncomplete => events.isEmpty;
+
+  @override
+  String toString() {
+    return '_GeneratedTimestampCatchUpScenario('
+        'events: $events, '
+        'boundaryBucket: $boundaryBucket, '
+        'preContextCount: $preContextCount, '
+        'prevBatch: $prevBatch, '
+        'backfillSatisfied: $backfillSatisfied'
+        ')';
+  }
+}
+
+class _GeneratedHistoryBootstrapScenario {
+  const _GeneratedHistoryBootstrapScenario({
+    required this.historyPages,
+    required this.boundaryContinuationCap,
+    required this.acceptedPositive,
+  });
+
+  final int historyPages;
+  final int boundaryContinuationCap;
+  final bool acceptedPositive;
+
+  int get expectedHistoryCalls =>
+      acceptedPositive ? 0 : _min(historyPages, boundaryContinuationCap);
+
+  int get expectedPages => expectedHistoryCalls + 1;
+
+  BootstrapStopReason get expectedStopReason {
+    if (acceptedPositive) return BootstrapStopReason.boundaryReached;
+    return boundaryContinuationCap <= historyPages
+        ? BootstrapStopReason.boundaryReached
+        : BootstrapStopReason.serverExhausted;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedHistoryBootstrapScenario('
+        'historyPages: $historyPages, '
+        'boundaryContinuationCap: $boundaryContinuationCap, '
+        'acceptedPositive: $acceptedPositive'
+        ')';
+  }
+}
+
+class _GeneratedForwardBootstrapScenario {
+  const _GeneratedForwardBootstrapScenario({
+    required this.futurePages,
+    required this.forwardPageCap,
+  });
+
+  final int futurePages;
+  final int forwardPageCap;
+
+  int get expectedFutureCalls =>
+      expectedStopReason == BootstrapStopReason.boundaryReached
+      ? forwardPageCap - 1
+      : futurePages;
+
+  int get expectedPages =>
+      expectedStopReason == BootstrapStopReason.boundaryReached
+      ? forwardPageCap
+      : futurePages + 1;
+
+  BootstrapStopReason get expectedStopReason => forwardPageCap <= futurePages
+      ? BootstrapStopReason.boundaryReached
+      : BootstrapStopReason.serverExhausted;
+
+  @override
+  String toString() {
+    return '_GeneratedForwardBootstrapScenario('
+        'futurePages: $futurePages, '
+        'forwardPageCap: $forwardPageCap'
+        ')';
+  }
+}
+
+extension _AnyCatchUpStrategyScenario on glados.Any {
+  glados.Generator<_GeneratedCatchUpEvent> get catchUpEvent =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 8),
+        glados.IntAnys(this).intInRange(0, 8),
+        (int eventSlot, int timestampBucket) => _GeneratedCatchUpEvent(
+          eventSlot: eventSlot,
+          timestampBucket: timestampBucket,
+        ),
+      );
+
+  glados.Generator<_GeneratedTimestampCatchUpScenario>
+  get timestampCatchUpScenario => glados.CombinableAny(this).combine5(
+    glados.ListAnys(this).listWithLengthInRange(0, 12, catchUpEvent),
+    glados.IntAnys(this).intInRange(0, 8),
+    glados.IntAnys(this).intInRange(0, 5),
+    glados.BoolAny(this).bool,
+    glados.BoolAny(this).bool,
+    (
+      List<_GeneratedCatchUpEvent> events,
+      int boundaryBucket,
+      int preContextCount,
+      bool prevBatch,
+      bool backfillSatisfied,
+    ) => _GeneratedTimestampCatchUpScenario(
+      events: events,
+      boundaryBucket: boundaryBucket,
+      preContextCount: preContextCount,
+      prevBatch: prevBatch,
+      backfillSatisfied: backfillSatisfied,
+    ),
+  );
+
+  glados.Generator<_GeneratedHistoryBootstrapScenario>
+  get historyBootstrapScenario => glados.CombinableAny(this).combine3(
+    glados.IntAnys(this).intInRange(0, 5),
+    glados.IntAnys(this).intInRange(0, 5),
+    glados.BoolAny(this).bool,
+    (
+      int historyPages,
+      int boundaryContinuationCap,
+      bool acceptedPositive,
+    ) => _GeneratedHistoryBootstrapScenario(
+      historyPages: historyPages,
+      boundaryContinuationCap: boundaryContinuationCap,
+      acceptedPositive: acceptedPositive,
+    ),
+  );
+
+  glados.Generator<_GeneratedForwardBootstrapScenario>
+  get forwardBootstrapScenario => glados.CombinableAny(this).combine2(
+    glados.IntAnys(this).intInRange(0, 5),
+    glados.IntAnys(this).intInRange(1, 6),
+    (int futurePages, int forwardPageCap) => _GeneratedForwardBootstrapScenario(
+      futurePages: futurePages,
+      forwardPageCap: forwardPageCap,
+    ),
+  );
+}
+
+int _min(int a, int b) => a < b ? a : b;
+
+Event _generatedEvent(String id, int timestampMs) {
+  final event = MockEvent();
+  when(() => event.eventId).thenReturn(id);
+  when(
+    () => event.originServerTs,
+  ).thenReturn(DateTime.fromMillisecondsSinceEpoch(timestampMs));
+  return event;
+}
+
+Event _eventFromGenerated(_GeneratedCatchUpEvent event) =>
+    _generatedEvent(event.eventId, event.timestampMs);
 
 void main() {
   setUpAll(() {
@@ -17,6 +238,77 @@ void main() {
   });
 
   group('CatchUpStrategy', () {
+    glados.Glados(
+      glados.any.timestampCatchUpScenario,
+    ).test(
+      'generated timestamp catch-up returns the modeled boundary slice',
+      (scenario) async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final timeline = MockTimeline();
+        final events = [
+          for (final event in scenario.events) _eventFromGenerated(event),
+        ];
+        var backfillCalls = 0;
+
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+        when(
+          () => room.prev_batch,
+        ).thenReturn(scenario.prevBatch ? 'server-gap-token' : null);
+        when(() => timeline.events).thenReturn(events);
+        when(timeline.cancelSubscriptions).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'legacy-marker',
+          logging: log,
+          initialLimit: 50,
+          maxLookback: 50,
+          preContextSinceTs: scenario.boundaryTs,
+          preContextCount: scenario.preContextCount,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int? maxPages,
+                required LoggingService logging,
+                num? untilTimestamp,
+              }) async {
+                backfillCalls++;
+                expect(untilTimestamp, scenario.boundaryTs);
+                expect(maxPages, isNull);
+                return scenario.backfillSatisfied;
+              },
+        );
+
+        if (scenario.expectsIncomplete) {
+          expect(result.incomplete, isTrue);
+          expect(result.events, isEmpty);
+        } else {
+          expect(result.incomplete, isFalse);
+          expect(result.timestampAnchored, isTrue);
+          expect(
+            result.events.map((event) => event.eventId).toList(),
+            scenario.expectedEventIds(),
+          );
+        }
+        expect(result.snapshotSize, events.length);
+        expect(
+          backfillCalls,
+          scenario.prevBatch ||
+                  scenario.events.isEmpty ||
+                  scenario.orderedEvents().first.timestampMs >
+                      scenario.boundaryTs
+              ? 1
+              : 0,
+        );
+        verify(timeline.cancelSubscriptions).called(1);
+      },
+    );
+
     test(
       'returns best-effort events when timestamp boundary stays unreachable and snapshot is full',
       () async {
@@ -1147,6 +1439,57 @@ void main() {
       return e;
     }
 
+    glados.Glados(
+      glados.any.historyBootstrapScenario,
+    ).test(
+      'generated backward bootstrap honors boundary continuation cap',
+      (scenario) async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final timeline = MockTimeline();
+        final events = <Event>[_generatedEvent('history-0', 900)];
+        var historyCalls = 0;
+
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+        when(() => timeline.events).thenAnswer((_) => events);
+        when(
+          () => timeline.canRequestHistory,
+        ).thenAnswer((_) => historyCalls < scenario.historyPages);
+        when(
+          () => timeline.requestHistory(
+            historyCount: any(named: 'historyCount'),
+          ),
+        ).thenAnswer((_) async {
+          historyCalls++;
+          events.insert(
+            0,
+            _generatedEvent('history-$historyCalls', 900 - historyCalls),
+          );
+        });
+        when(timeline.cancelSubscriptions).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink(
+            (_) {},
+            acceptedPerPage: scenario.acceptedPositive ? 1 : 0,
+          ),
+          logging: log,
+          pageSize: 1,
+          untilTimestamp: 1000,
+          boundaryContinuationCap: scenario.boundaryContinuationCap,
+        );
+
+        expect(result.stopReason, scenario.expectedStopReason);
+        expect(result.totalPages, scenario.expectedPages);
+        expect(result.totalEvents, scenario.expectedPages);
+        expect(historyCalls, scenario.expectedHistoryCalls);
+        verify(timeline.cancelSubscriptions).called(1);
+      },
+    );
+
     test(
       'emits each event exactly once without an ever-growing seen-set '
       '(memory bounded by page size, not total history depth)',
@@ -1584,6 +1927,68 @@ void main() {
       ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
       return e;
     }
+
+    glados.Glados(
+      glados.any.forwardBootstrapScenario,
+    ).test(
+      'generated forward bootstrap honors future paging and cap semantics',
+      (scenario) async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final timeline = MockTimeline();
+        final events = <Event>[
+          _generatedEvent(r'$anchor', 1000),
+          _generatedEvent(r'$future-0', 1001),
+        ];
+        var futureCalls = 0;
+
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => timeline);
+        when(() => timeline.events).thenAnswer((_) => events);
+        when(
+          () => timeline.canRequestFuture,
+        ).thenAnswer((_) => futureCalls < scenario.futurePages);
+        when(
+          () => timeline.requestFuture(
+            historyCount: any(named: 'historyCount'),
+          ),
+        ).thenAnswer((_) async {
+          futureCalls++;
+          events.add(
+            _generatedEvent(
+              '\$future-$futureCalls',
+              1001 + futureCalls,
+            ),
+          );
+        });
+        when(timeline.cancelSubscriptions).thenReturn(null);
+
+        final pages = <List<Event>>[];
+        final result = await CatchUpStrategy.collectForwardForBootstrap(
+          room: room,
+          sink: _CollectingBootstrapSink(pages.add, acceptedPerPage: 1),
+          logging: log,
+          anchorEventId: r'$anchor',
+          forwardPageCap: scenario.forwardPageCap,
+        );
+
+        expect(result.stopReason, scenario.expectedStopReason);
+        expect(result.totalPages, scenario.expectedPages);
+        expect(result.totalEvents, scenario.expectedPages);
+        expect(futureCalls, scenario.expectedFutureCalls);
+        expect(pages, hasLength(scenario.expectedPages));
+        for (var index = 0; index < pages.length; index++) {
+          expect(pages[index].map((event) => event.eventId).toList(), [
+            '\$future-$index',
+          ]);
+        }
+        verify(timeline.cancelSubscriptions).called(1);
+      },
+    );
 
     test(
       'emits events strictly newer than the anchor and stops when the '

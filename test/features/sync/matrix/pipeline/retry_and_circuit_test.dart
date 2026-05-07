@@ -1,5 +1,115 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/retry_and_circuit.dart';
+
+class _GeneratedRetryEntry {
+  const _GeneratedRetryEntry({
+    required this.idSlot,
+    required this.attempts,
+  });
+
+  final int idSlot;
+  final int attempts;
+
+  String get id => 'generated-$idSlot';
+
+  DateTime nextDue(DateTime base) => base.add(Duration(milliseconds: idSlot));
+
+  @override
+  String toString() {
+    return '_GeneratedRetryEntry('
+        'idSlot: $idSlot, '
+        'attempts: $attempts'
+        ')';
+  }
+}
+
+class _GeneratedRetryPruneScenario {
+  const _GeneratedRetryPruneScenario({
+    required this.ttlMs,
+    required this.maxEntries,
+    required this.nowOffsetMs,
+    required this.entries,
+  });
+
+  final int ttlMs;
+  final int maxEntries;
+  final int nowOffsetMs;
+  final List<_GeneratedRetryEntry> entries;
+
+  DateTime now(DateTime base) => base.add(Duration(milliseconds: nowOffsetMs));
+
+  Map<String, _GeneratedRetryEntry> latestById() {
+    return {
+      for (final entry in entries) entry.id: entry,
+    };
+  }
+
+  Set<String> expectedRetainedIds(DateTime base) {
+    final nowValue = now(base);
+    final ttl = Duration(milliseconds: ttlMs);
+    final retained = Map<String, _GeneratedRetryEntry>.of(latestById())
+      ..removeWhere(
+        (_, entry) => nowValue.difference(entry.nextDue(base)) > ttl,
+      );
+
+    if (retained.length <= maxEntries) return retained.keys.toSet();
+
+    final sorted = retained.entries.toList()
+      ..sort(
+        (a, b) => a.value.nextDue(base).compareTo(b.value.nextDue(base)),
+      );
+    final idsToRemove = {
+      for (var index = 0; index < retained.length - maxEntries; index++)
+        sorted[index].key,
+    };
+    return {
+      for (final id in retained.keys)
+        if (!idsToRemove.contains(id)) id,
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedRetryPruneScenario('
+        'ttlMs: $ttlMs, '
+        'maxEntries: $maxEntries, '
+        'nowOffsetMs: $nowOffsetMs, '
+        'entries: $entries'
+        ')';
+  }
+}
+
+extension _AnyRetryAndCircuitScenario on glados.Any {
+  glados.Generator<_GeneratedRetryEntry> get retryEntry =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 8),
+        glados.IntAnys(this).intInRange(1, 5),
+        (int idSlot, int attempts) => _GeneratedRetryEntry(
+          idSlot: idSlot,
+          attempts: attempts,
+        ),
+      );
+
+  glados.Generator<_GeneratedRetryPruneScenario> get retryPruneScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 8),
+        glados.IntAnys(this).intInRange(1, 7),
+        glados.IntAnys(this).intInRange(0, 12),
+        glados.ListAnys(this).listWithLengthInRange(1, 14, retryEntry),
+        (
+          int ttlMs,
+          int maxEntries,
+          int nowOffsetMs,
+          List<_GeneratedRetryEntry> entries,
+        ) => _GeneratedRetryPruneScenario(
+          ttlMs: ttlMs,
+          maxEntries: maxEntries,
+          nowOffsetMs: nowOffsetMs,
+          entries: entries,
+        ),
+      );
+}
 
 void main() {
   group('RetryTracker', () {
@@ -41,6 +151,52 @@ void main() {
       expect(tracker.blockedUntil('b', now), isNull);
       expect(tracker.blockedUntil('c', now), isNull);
     });
+
+    glados.Glados(
+      glados.any.retryPruneScenario,
+    ).test(
+      'generated prune keeps the non-expired newest schedule bounded by cap',
+      (scenario) {
+        final base = DateTime(2024, 3, 15);
+        final now = scenario.now(base);
+        final tracker = RetryTracker(
+          ttl: Duration(milliseconds: scenario.ttlMs),
+          maxEntries: scenario.maxEntries,
+        );
+
+        for (final entry in scenario.entries) {
+          tracker.scheduleNext(entry.id, entry.attempts, entry.nextDue(base));
+        }
+
+        final latestById = scenario.latestById();
+        for (final entry in latestById.values) {
+          expect(tracker.attempts(entry.id), entry.attempts);
+          expect(
+            tracker.blockedUntil(entry.id, now),
+            now.isBefore(entry.nextDue(base)) ? entry.nextDue(base) : null,
+          );
+        }
+
+        tracker.prune(now);
+
+        final retained = scenario.expectedRetainedIds(base);
+        expect(tracker.size(), retained.length);
+        for (var idSlot = 0; idSlot <= 8; idSlot++) {
+          final id = 'generated-$idSlot';
+          final entry = latestById[id];
+          if (retained.contains(id)) {
+            expect(tracker.attempts(id), entry?.attempts);
+            expect(
+              tracker.blockedUntil(id, now),
+              now.isBefore(entry!.nextDue(base)) ? entry.nextDue(base) : null,
+            );
+          } else {
+            expect(tracker.attempts(id), 0);
+            expect(tracker.blockedUntil(id, now), isNull);
+          }
+        }
+      },
+    );
   });
 
   group('CircuitBreaker', () {
