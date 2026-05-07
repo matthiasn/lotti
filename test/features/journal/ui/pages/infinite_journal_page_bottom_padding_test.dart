@@ -8,6 +8,7 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 
@@ -122,4 +123,49 @@ void main() {
     // Smoke check: branch builds without throwing.
     expect(true, isTrue);
   });
+
+  testWidgets(
+    'passes the single selected category id to FloatingAddActionButton',
+    (tester) async {
+      // selectedCategoryIds.length == 1 takes the `selectedCategoryIds.first`
+      // branch in InfiniteJournalPage.build.
+      const state = JournalPageState(
+        match: '',
+        filters: <DisplayFilter>{},
+        showPrivateEntries: false,
+        showTasks: false,
+        selectedEntryTypes: <String>[],
+        fullTextMatches: <String>{},
+        pagingController: null,
+        taskStatuses: <String>[],
+        selectedTaskStatuses: <String>{},
+        selectedCategoryIds: {'cat-only-one'},
+        selectedLabelIds: <String>{},
+        selectedPriorities: <String>{},
+      );
+
+      final fakeController = _FakeJournalPageController(state);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const InfiniteJournalPage(),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 16));
+
+      // The FAB is the only consumer of the resolved categoryId — finding
+      // it confirms the single-id branch built without throwing.
+      final fab = tester.widget<FloatingAddActionButton>(
+        find.byType(FloatingAddActionButton),
+      );
+      expect(fab.categoryId, 'cat-only-one');
+    },
+  );
 }
