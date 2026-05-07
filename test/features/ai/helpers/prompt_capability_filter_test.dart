@@ -1,11 +1,131 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
+
+enum _GeneratedPromptLookupShape {
+  missingPrompt,
+  wrongPromptType,
+  missingModel,
+  wrongModelType,
+  missingProvider,
+  wrongProviderType,
+  cloudProvider,
+  localProvider,
+}
+
+class _GeneratedPromptLookupScenario {
+  const _GeneratedPromptLookupScenario({required this.shapes});
+
+  final List<_GeneratedPromptLookupShape> shapes;
+
+  List<String> get promptIds => [
+    for (var i = 0; i < shapes.length; i++) 'generated-prompt-$i',
+  ];
+
+  Set<String> get expectedLookupIds {
+    return {
+      for (var i = 0; i < shapes.length; i++) ...[
+        'generated-prompt-$i',
+        if (shapes[i] != _GeneratedPromptLookupShape.missingPrompt &&
+            shapes[i] != _GeneratedPromptLookupShape.wrongPromptType)
+          'generated-model-$i',
+        if (shapes[i] != _GeneratedPromptLookupShape.missingPrompt &&
+            shapes[i] != _GeneratedPromptLookupShape.wrongPromptType &&
+            shapes[i] != _GeneratedPromptLookupShape.missingModel &&
+            shapes[i] != _GeneratedPromptLookupShape.wrongModelType)
+          'generated-provider-$i',
+      ],
+    };
+  }
+
+  String? get expectedFirstAvailablePromptId {
+    final index = shapes.indexWhere(
+      (shape) => shape == _GeneratedPromptLookupShape.cloudProvider,
+    );
+    return index == -1 ? null : promptIds[index];
+  }
+
+  AiConfig? configById(String id) {
+    final promptIndex = _indexFromPrefix(id, 'generated-prompt-');
+    if (promptIndex != null && promptIndex < shapes.length) {
+      final shape = shapes[promptIndex];
+      return switch (shape) {
+        _GeneratedPromptLookupShape.missingPrompt => null,
+        _GeneratedPromptLookupShape.wrongPromptType =>
+          AiTestDataFactory.createTestModel(id: id),
+        _ => AiTestDataFactory.createTestPrompt(
+          id: id,
+          defaultModelId: 'generated-model-$promptIndex',
+        ),
+      };
+    }
+
+    final modelIndex = _indexFromPrefix(id, 'generated-model-');
+    if (modelIndex != null && modelIndex < shapes.length) {
+      final shape = shapes[modelIndex];
+      return switch (shape) {
+        _GeneratedPromptLookupShape.missingModel => null,
+        _GeneratedPromptLookupShape.wrongModelType =>
+          AiTestDataFactory.createTestPrompt(id: id),
+        _ => AiTestDataFactory.createTestModel(
+          id: id,
+          inferenceProviderId: 'generated-provider-$modelIndex',
+        ),
+      };
+    }
+
+    final providerIndex = _indexFromPrefix(id, 'generated-provider-');
+    if (providerIndex != null && providerIndex < shapes.length) {
+      final shape = shapes[providerIndex];
+      return switch (shape) {
+        _GeneratedPromptLookupShape.missingProvider => null,
+        _GeneratedPromptLookupShape.wrongProviderType =>
+          AiTestDataFactory.createTestModel(id: id),
+        _GeneratedPromptLookupShape.localProvider =>
+          AiTestDataFactory.createTestProvider(
+            id: id,
+            type: InferenceProviderType.ollama,
+            apiKey: '',
+          ),
+        _ => AiTestDataFactory.createTestProvider(
+          id: id,
+          type: InferenceProviderType.openAi,
+        ),
+      };
+    }
+
+    return null;
+  }
+
+  int? _indexFromPrefix(String value, String prefix) {
+    if (!value.startsWith(prefix)) return null;
+    return int.tryParse(value.substring(prefix.length));
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedPromptLookupScenario(shapes: $shapes)';
+  }
+}
+
+extension _AnyGeneratedPromptCapabilityScenario on glados.Any {
+  glados.Generator<InferenceProviderType> get inferenceProviderType =>
+      glados.AnyUtils(this).choose(InferenceProviderType.values);
+
+  glados.Generator<_GeneratedPromptLookupShape> get promptLookupShape =>
+      glados.AnyUtils(this).choose(_GeneratedPromptLookupShape.values);
+
+  glados.Generator<_GeneratedPromptLookupScenario> get promptLookupScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 24, promptLookupShape)
+          .map((shapes) => _GeneratedPromptLookupScenario(shapes: shapes));
+}
 
 void main() {
   late MockAiConfigRepository mockRepo;
@@ -520,6 +640,24 @@ void main() {
           isFalse,
         );
       });
+
+      glados.Glados(
+        glados.any.inferenceProviderType,
+        glados.ExploreConfig(numRuns: 80),
+      ).test('matches generated local-only provider classification', (
+        providerType,
+      ) {
+        final expected = {
+          InferenceProviderType.whisper,
+          InferenceProviderType.ollama,
+          InferenceProviderType.voxtral,
+        }.contains(providerType);
+
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(providerType),
+          expected,
+        );
+      });
     });
 
     group('Mobile platform simulation', () {
@@ -612,6 +750,56 @@ void main() {
 
         // Assert - Gemini is cloud-based, should be available on mobile
         expect(result, isTrue);
+      });
+
+      glados.Glados(
+        glados.any.promptLookupScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test('returns first generated mobile-compatible prompt', (
+        scenario,
+      ) async {
+        final originalIsDesktop = platform.isDesktop;
+        final originalIsMobile = platform.isMobile;
+        final generatedRepository = MockAiConfigRepository();
+        final generatedContainer = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(generatedRepository),
+          ],
+        );
+        final generatedFilter = PromptCapabilityFilter(
+          generatedContainer.read(testRefProvider),
+        );
+
+        platform.isDesktop = false;
+        platform.isMobile = true;
+
+        when(
+          () => generatedRepository.getConfigById(any()),
+        ).thenAnswer((invocation) async {
+          final id = invocation.positionalArguments.single as String;
+          if (!scenario.expectedLookupIds.contains(id)) {
+            throw StateError(
+              'Unexpected generated config lookup for $id in $scenario',
+            );
+          }
+          return scenario.configById(id);
+        });
+
+        try {
+          final result = await generatedFilter.getFirstAvailablePrompt(
+            scenario.promptIds,
+          );
+
+          expect(
+            result?.id,
+            scenario.expectedFirstAvailablePromptId,
+            reason: '$scenario',
+          );
+        } finally {
+          generatedContainer.dispose();
+          platform.isDesktop = originalIsDesktop;
+          platform.isMobile = originalIsMobile;
+        }
       });
     });
 

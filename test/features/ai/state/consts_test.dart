@@ -1,9 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 
 import '../../../test_helper.dart';
+
+extension _AnyGeneratedAiConsts on glados.Any {
+  glados.Generator<SkillType> get skillType =>
+      glados.AnyUtils(this).choose(SkillType.values);
+}
+
+AiResponseType _expectedResponseTypeForSkill(SkillType skillType) {
+  return switch (skillType) {
+    SkillType.transcription => AiResponseType.audioTranscription,
+    SkillType.imageAnalysis => AiResponseType.imageAnalysis,
+    SkillType.imageGeneration => AiResponseType.imageGeneration,
+    SkillType.promptGeneration => AiResponseType.promptGeneration,
+    SkillType.imagePromptGeneration => AiResponseType.imagePromptGeneration,
+  };
+}
 
 void main() {
   group('AiResponseType', () {
@@ -159,6 +175,18 @@ void main() {
       // ignore: deprecated_member_use_from_same_package
       expect(AiResponseType.checklistUpdates.isPromptGenerationType, false);
       expect(AiResponseType.imageGeneration.isPromptGenerationType, false);
+    });
+  });
+
+  group('SkillTypeToResponseType', () {
+    glados.Glados(
+      glados.any.skillType,
+      glados.ExploreConfig(numRuns: 80),
+    ).test('maps generated skill types to response types', (skillType) {
+      expect(
+        skillType.toResponseType,
+        _expectedResponseTypeForSkill(skillType),
+      );
     });
   });
 }

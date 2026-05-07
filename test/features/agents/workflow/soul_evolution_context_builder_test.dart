@@ -1,8 +1,105 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/soul_evolution_context_builder.dart';
 
 import '../test_utils.dart';
+
+class _GeneratedSoulContextCounts {
+  const _GeneratedSoulContextCounts({
+    required this.templateCount,
+    required this.versionCount,
+    required this.noteCount,
+    required this.feedbackTemplateCount,
+    required this.feedbackItemsPerTemplate,
+  });
+
+  final int templateCount;
+  final int versionCount;
+  final int noteCount;
+  final int feedbackTemplateCount;
+  final int feedbackItemsPerTemplate;
+
+  int get expectedTemplateOverflow =>
+      templateCount > SoulEvolutionContextBuilder.maxCrossTemplateNames
+      ? templateCount - SoulEvolutionContextBuilder.maxCrossTemplateNames
+      : 0;
+
+  int get expectedVersionHistoryCount =>
+      versionCount - 1 > SoulEvolutionContextBuilder.maxVersionHistory
+      ? SoulEvolutionContextBuilder.maxVersionHistory
+      : versionCount - 1;
+
+  int get expectedNoteCount =>
+      noteCount > SoulEvolutionContextBuilder.maxPastNotes
+      ? SoulEvolutionContextBuilder.maxPastNotes
+      : noteCount;
+
+  int get expectedFeedbackItems {
+    var remaining = SoulEvolutionContextBuilder.maxTotalFeedbackItems;
+    var written = 0;
+    for (var i = 0; i < feedbackTemplateCount; i++) {
+      if (remaining <= 0) break;
+      final perTemplate =
+          feedbackItemsPerTemplate >
+              SoulEvolutionContextBuilder.maxFeedbackItemsPerTemplate
+          ? SoulEvolutionContextBuilder.maxFeedbackItemsPerTemplate
+          : feedbackItemsPerTemplate;
+      final fromThisTemplate = perTemplate > remaining
+          ? remaining
+          : perTemplate;
+      written += fromThisTemplate;
+      remaining -= fromThisTemplate;
+    }
+    return written;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedSoulContextCounts('
+        'templateCount: $templateCount, '
+        'versionCount: $versionCount, '
+        'noteCount: $noteCount, '
+        'feedbackTemplateCount: $feedbackTemplateCount, '
+        'feedbackItemsPerTemplate: $feedbackItemsPerTemplate)';
+  }
+}
+
+extension _AnyGeneratedSoulContextCounts on glados.Any {
+  glados.Generator<_GeneratedSoulContextCounts> get soulContextCounts =>
+      glados.CombinableAny(this).combine5(
+        glados.IntAnys(this).intInRange(
+          0,
+          SoulEvolutionContextBuilder.maxCrossTemplateNames + 8,
+        ),
+        glados.IntAnys(this).intInRange(
+          1,
+          SoulEvolutionContextBuilder.maxVersionHistory + 8,
+        ),
+        glados.IntAnys(this).intInRange(
+          0,
+          SoulEvolutionContextBuilder.maxPastNotes + 8,
+        ),
+        glados.IntAnys(this).intInRange(0, 8),
+        glados.IntAnys(this).intInRange(
+          0,
+          SoulEvolutionContextBuilder.maxFeedbackItemsPerTemplate + 8,
+        ),
+        (
+          int templateCount,
+          int versionCount,
+          int noteCount,
+          int feedbackTemplateCount,
+          int feedbackItemsPerTemplate,
+        ) => _GeneratedSoulContextCounts(
+          templateCount: templateCount,
+          versionCount: versionCount,
+          noteCount: noteCount,
+          feedbackTemplateCount: feedbackTemplateCount,
+          feedbackItemsPerTemplate: feedbackItemsPerTemplate,
+        ),
+      );
+}
 
 void main() {
   late SoulEvolutionContextBuilder builder;
@@ -308,6 +405,133 @@ void main() {
         ctx.initialUserMessage,
         contains('personality changes affect ALL templates'),
       );
+    });
+
+    glados.Glados(
+      glados.any.soulContextCounts,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('matches generated section cap and omission semantics', (
+      scenario,
+    ) {
+      final currentVersion = makeTestSoulDocumentVersion(
+        id: 'sv-current',
+        version: 99,
+      );
+      final affectedTemplates = [
+        for (var i = 0; i < scenario.templateCount; i++)
+          (
+            templateId: 't-${i.toString().padLeft(3, '0')}',
+            displayName: 'Generated Template ${i + 1}',
+          ),
+      ];
+      final feedbackByTemplate = {
+        for (var i = 0; i < scenario.feedbackTemplateCount; i++)
+          't-${i.toString().padLeft(3, '0')}': makeTestClassifiedFeedback(
+            items: [
+              for (
+                var itemIndex = 0;
+                itemIndex < scenario.feedbackItemsPerTemplate;
+                itemIndex++
+              )
+                makeTestClassifiedFeedbackItem(
+                  sentiment: switch (itemIndex % 3) {
+                    0 => FeedbackSentiment.negative,
+                    1 => FeedbackSentiment.positive,
+                    _ => FeedbackSentiment.neutral,
+                  },
+                  detail: 'Generated feedback $i-$itemIndex for soul context',
+                ),
+            ],
+          ),
+      };
+
+      final ctx = builder.build(
+        soul: makeTestSoulDocument(),
+        currentVersion: currentVersion,
+        recentVersions: [
+          currentVersion,
+          for (var i = 0; i < scenario.versionCount - 1; i++)
+            makeTestSoulDocumentVersion(
+              id: 'sv-$i',
+              version: i + 1,
+              status: SoulDocumentVersionStatus.archived,
+            ),
+        ],
+        affectedTemplates: affectedTemplates,
+        feedbackByTemplate: feedbackByTemplate,
+        pastNotes: [
+          for (var i = 0; i < scenario.noteCount; i++)
+            makeTestEvolutionNote(
+              id: 'soul-note-$i',
+              content: 'Generated soul note $i',
+            ),
+        ],
+        sessionNumber: 7,
+      );
+      final message = ctx.initialUserMessage;
+
+      if (scenario.templateCount == 0) {
+        expect(
+          message,
+          contains('No templates are currently using this soul'),
+          reason: '$scenario',
+        );
+      } else {
+        expect(
+          message,
+          contains(
+            'Any personality changes will affect ALL '
+            '${scenario.templateCount} template(s)',
+          ),
+          reason: '$scenario',
+        );
+        if (scenario.expectedTemplateOverflow > 0) {
+          expect(
+            message,
+            contains('...and ${scenario.expectedTemplateOverflow} more'),
+            reason: '$scenario',
+          );
+        }
+      }
+
+      final feedbackLines = RegExp(
+        r'- \[(negative|positive|neutral)\] Generated feedback',
+      ).allMatches(message);
+      expect(
+        feedbackLines.length,
+        scenario.expectedFeedbackItems,
+        reason: '$scenario',
+      );
+      if (scenario.expectedFeedbackItems == 0) {
+        expect(
+          message,
+          contains('No feedback signals in the current window'),
+          reason: '$scenario',
+        );
+      }
+
+      final versionLines = RegExp(r'- v\d+').allMatches(message);
+      expect(
+        versionLines.length,
+        scenario.expectedVersionHistoryCount,
+        reason: '$scenario',
+      );
+
+      if (scenario.noteCount == 0) {
+        expect(
+          message,
+          isNot(contains('Notes From Past Soul Sessions')),
+          reason: '$scenario',
+        );
+      } else {
+        expect(
+          message,
+          contains(
+            'Notes From Past Soul Sessions (${scenario.expectedNoteCount})',
+          ),
+          reason: '$scenario',
+        );
+      }
     });
   });
 }

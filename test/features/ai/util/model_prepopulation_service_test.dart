@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/model_prepopulation_service.dart';
@@ -6,6 +7,116 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+
+enum _GeneratedExistingKnownModelsShape {
+  none,
+  first,
+  alternating,
+  all,
+}
+
+class _GeneratedPrepopulationScenario {
+  const _GeneratedPrepopulationScenario({
+    required this.providerType,
+    required this.existingShape,
+  });
+
+  final InferenceProviderType providerType;
+  final _GeneratedExistingKnownModelsShape existingShape;
+
+  String get providerId => 'generated-${providerType.name}-provider';
+
+  List<KnownModel> get knownModels =>
+      knownModelsByProvider[providerType] ?? const [];
+
+  Set<int> get existingKnownModelIndexes {
+    return switch (existingShape) {
+      _GeneratedExistingKnownModelsShape.none => const <int>{},
+      _GeneratedExistingKnownModelsShape.first =>
+        knownModels.isEmpty ? const <int>{} : const <int>{0},
+      _GeneratedExistingKnownModelsShape.alternating => {
+        for (var i = 0; i < knownModels.length; i++)
+          if (i.isEven) i,
+      },
+      _GeneratedExistingKnownModelsShape.all => {
+        for (var i = 0; i < knownModels.length; i++) i,
+      },
+    };
+  }
+
+  List<AiConfig> get existingConfigs {
+    return [
+      for (final index in existingKnownModelIndexes)
+        AiConfig.model(
+          id: generateModelId(providerId, knownModels[index].providerModelId),
+          name: 'Existing ${knownModels[index].name}',
+          providerModelId: knownModels[index].providerModelId,
+          inferenceProviderId: providerId,
+          createdAt: DateTime(2026, 3, 15),
+          inputModalities: const [Modality.text],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        ),
+      AiConfig.inferenceProvider(
+        id: 'not-a-model',
+        baseUrl: 'https://generated.example.com',
+        apiKey: 'key',
+        name: 'Not a model',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.openAi,
+      ),
+    ];
+  }
+
+  List<KnownModel> get modelsToCreate => [
+    for (var i = 0; i < knownModels.length; i++)
+      if (!existingKnownModelIndexes.contains(i)) knownModels[i],
+  ];
+
+  List<String> get expectedCreatedIds => [
+    for (final model in modelsToCreate)
+      generateModelId(providerId, model.providerModelId),
+  ];
+
+  AiConfigInferenceProvider get provider =>
+      AiConfig.inferenceProvider(
+            id: providerId,
+            baseUrl: 'https://generated.example.com',
+            apiKey: 'key',
+            name: 'Generated ${providerType.name}',
+            createdAt: DateTime(2026, 3, 15),
+            inferenceProviderType: providerType,
+          )
+          as AiConfigInferenceProvider;
+
+  @override
+  String toString() {
+    return '_GeneratedPrepopulationScenario('
+        'providerType: $providerType, existingShape: $existingShape)';
+  }
+}
+
+extension _AnyGeneratedPrepopulationScenario on glados.Any {
+  glados.Generator<InferenceProviderType> get inferenceProviderType =>
+      glados.AnyUtils(this).choose(InferenceProviderType.values);
+
+  glados.Generator<_GeneratedExistingKnownModelsShape>
+  get existingKnownModelsShape =>
+      glados.AnyUtils(this).choose(_GeneratedExistingKnownModelsShape.values);
+
+  glados.Generator<_GeneratedPrepopulationScenario> get prepopulationScenario =>
+      glados.CombinableAny(this).combine2(
+        inferenceProviderType,
+        existingKnownModelsShape,
+        (
+          InferenceProviderType providerType,
+          _GeneratedExistingKnownModelsShape existingShape,
+        ) => _GeneratedPrepopulationScenario(
+          providerType: providerType,
+          existingShape: existingShape,
+        ),
+      );
+}
 
 void main() {
   setUpAll(() {
@@ -22,186 +133,6 @@ void main() {
     });
 
     group('prepopulateModelsForProvider', () {
-      test('should create all known models for Gemini provider', () async {
-        // Arrange
-        const providerId = 'gemini-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'https://api.gemini.com',
-          apiKey: 'test-key',
-          name: 'Gemini',
-          createdAt: DateTime(2026, 3, 15),
-          inferenceProviderType: InferenceProviderType.gemini,
-        );
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => []);
-
-        when(
-          () => mockRepository.saveConfig(any()),
-        ).thenAnswer((_) async => {});
-
-        // Act
-        final result = await service.prepopulateModelsForProvider(provider);
-
-        // Assert
-        expect(result, equals(geminiModels.length));
-        verify(
-          () => mockRepository.saveConfig(any()),
-        ).called(geminiModels.length);
-      });
-
-      test('should create all known models for Nebius provider', () async {
-        // Arrange
-        const providerId = 'nebius-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'https://api.nebius.com',
-          apiKey: 'test-key',
-          name: 'Nebius',
-          createdAt: DateTime(2026, 3, 15),
-          inferenceProviderType: InferenceProviderType.nebiusAiStudio,
-        );
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => []);
-
-        when(
-          () => mockRepository.saveConfig(any()),
-        ).thenAnswer((_) async => {});
-
-        // Act
-        final result = await service.prepopulateModelsForProvider(provider);
-
-        // Assert
-        expect(result, equals(nebiusModels.length));
-        verify(
-          () => mockRepository.saveConfig(any()),
-        ).called(nebiusModels.length);
-      });
-
-      test('should create all known models for Ollama provider', () async {
-        // Arrange
-        const providerId = 'ollama-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'http://localhost:11434',
-          apiKey: '',
-          name: 'Ollama',
-          createdAt: DateTime(2026, 3, 15),
-          inferenceProviderType: InferenceProviderType.ollama,
-        );
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => []);
-
-        when(
-          () => mockRepository.saveConfig(any()),
-        ).thenAnswer((_) async => {});
-
-        // Act
-        final result = await service.prepopulateModelsForProvider(provider);
-
-        // Assert
-        expect(result, equals(ollamaModels.length));
-        verify(
-          () => mockRepository.saveConfig(any()),
-        ).called(ollamaModels.length);
-      });
-
-      test('should create all known models for Anthropic provider', () async {
-        // Arrange
-        const providerId = 'anthropic-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'https://api.anthropic.com/v1',
-          apiKey: 'test-key',
-          name: 'Anthropic',
-          createdAt: DateTime(2026, 3, 15),
-          inferenceProviderType: InferenceProviderType.anthropic,
-        );
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => []);
-
-        when(
-          () => mockRepository.saveConfig(any()),
-        ).thenAnswer((_) async => {});
-
-        // Act
-        final result = await service.prepopulateModelsForProvider(provider);
-
-        // Assert
-        expect(result, equals(anthropicModels.length));
-        verify(
-          () => mockRepository.saveConfig(any()),
-        ).called(anthropicModels.length);
-      });
-
-      test('should create all known models for OpenRouter provider', () async {
-        // Arrange
-        const providerId = 'openrouter-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'https://openrouter.ai/api/v1',
-          apiKey: 'test-key',
-          name: 'OpenRouter',
-          createdAt: DateTime(2026, 3, 15),
-          inferenceProviderType: InferenceProviderType.openRouter,
-        );
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => []);
-
-        when(
-          () => mockRepository.saveConfig(any()),
-        ).thenAnswer((_) async => {});
-
-        // Act
-        final result = await service.prepopulateModelsForProvider(provider);
-
-        // Assert
-        expect(result, equals(openRouterModels.length));
-        verify(
-          () => mockRepository.saveConfig(any()),
-        ).called(openRouterModels.length);
-      });
-
-      test('should create all known models for OpenAI provider', () async {
-        // Arrange
-        const providerId = 'openai-provider-id';
-        final provider = AiConfigInferenceProvider(
-          id: providerId,
-          baseUrl: 'https://api.openai.com/v1',
-          apiKey: 'test-key',
-          name: 'OpenAI',
-          createdAt: DateTime(2026, 3, 15),
-          inferenceProviderType: InferenceProviderType.openAi,
-        );
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => []);
-
-        when(
-          () => mockRepository.saveConfig(any()),
-        ).thenAnswer((_) async => {});
-
-        // Act
-        final result = await service.prepopulateModelsForProvider(provider);
-
-        // Assert
-        expect(result, equals(openaiModels.length));
-        verify(
-          () => mockRepository.saveConfig(any()),
-        ).called(openaiModels.length);
-      });
-
       test('should skip existing models and only create new ones', () async {
         // Arrange
         const providerId = 'gemini-provider-id';
@@ -248,39 +179,6 @@ void main() {
         ).called(geminiModels.length - 1);
       });
 
-      test(
-        'should create all known models for Generic OpenAI provider',
-        () async {
-          // Arrange
-          const providerId = 'generic-provider-id';
-          final provider = AiConfigInferenceProvider(
-            id: providerId,
-            baseUrl: 'http://localhost:8002/v1',
-            apiKey: '',
-            name: 'AI Proxy (local)',
-            createdAt: DateTime(2026, 3, 15),
-            inferenceProviderType: InferenceProviderType.genericOpenAi,
-          );
-
-          when(
-            () => mockRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => []);
-
-          when(
-            () => mockRepository.saveConfig(any()),
-          ).thenAnswer((_) async => {});
-
-          // Act
-          final result = await service.prepopulateModelsForProvider(provider);
-
-          // Assert
-          expect(result, equals(genericOpenAiModels.length));
-          verify(
-            () => mockRepository.saveConfig(any()),
-          ).called(genericOpenAiModels.length);
-        },
-      );
-
       test('should create models with correct properties', () async {
         // Arrange
         const providerId = 'gemini-provider-id';
@@ -313,6 +211,57 @@ void main() {
         expect(capturedModel!.inputModalities, contains(Modality.text));
         expect(capturedModel!.description, isNotEmpty);
       });
+
+      glados.Glados(
+        glados.any.prepopulationScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'matches generated provider prepopulation skip semantics',
+        (scenario) async {
+          final generatedRepository = MockAiConfigRepository();
+          final generatedService = ModelPrepopulationService(
+            repository: generatedRepository,
+          );
+          final savedModels = <AiConfigModel>[];
+
+          when(
+            () => generatedRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => scenario.existingConfigs);
+          when(
+            () => generatedRepository.saveConfig(any()),
+          ).thenAnswer((invocation) async {
+            savedModels.add(
+              invocation.positionalArguments.single as AiConfigModel,
+            );
+          });
+
+          final createdCount = await generatedService
+              .prepopulateModelsForProvider(scenario.provider);
+
+          expect(
+            createdCount,
+            scenario.expectedCreatedIds.length,
+            reason: '$scenario',
+          );
+          expect(
+            savedModels.map((model) => model.id),
+            equals(scenario.expectedCreatedIds),
+            reason: '$scenario',
+          );
+          expect(
+            savedModels.map((model) => model.inferenceProviderId).toSet(),
+            savedModels.isEmpty ? isEmpty : {scenario.providerId},
+            reason: '$scenario',
+          );
+          expect(
+            savedModels.map((model) => model.providerModelId),
+            equals(
+              scenario.modelsToCreate.map((model) => model.providerModelId),
+            ),
+            reason: '$scenario',
+          );
+        },
+      );
     });
   });
 

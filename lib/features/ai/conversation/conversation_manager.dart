@@ -17,6 +17,9 @@ class ConversationManager {
     this.maxHistorySize = 100,
   });
 
+  static const _truncationNotice =
+      '[Previous messages truncated for context length]';
+
   final String conversationId;
   final int maxTurns;
   final int maxHistorySize;
@@ -177,48 +180,44 @@ class ConversationManager {
 
   /// Trim history if it exceeds max size
   void _trimHistoryIfNeeded() {
-    if (_messages.length > maxHistorySize) {
-      // Ensure maxHistorySize is at least 2 to accommodate system message and at least one other message
-      final effectiveMaxSize = maxHistorySize < 2 ? 2 : maxHistorySize;
+    if (_messages.length <= maxHistorySize) return;
 
-      // Keep system message if present
-      final hasSystem =
-          _messages.isNotEmpty &&
-          _messages.first.role == ChatCompletionMessageRole.system;
+    final hasInitialSystem =
+        _messages.isNotEmpty &&
+        _messages.first.role == ChatCompletionMessageRole.system &&
+        !_isTruncationNotice(_messages.first);
+    final minimumRetainedSize = hasInitialSystem ? 3 : 2;
+    final effectiveMaxSize = maxHistorySize < minimumRetainedSize
+        ? minimumRetainedSize
+        : maxHistorySize;
+    final keepTailCount = effectiveMaxSize - (hasInitialSystem ? 2 : 1);
+    final bodyStart = hasInitialSystem ? 1 : 0;
+    final bodyMessages = _messages
+        .skip(bodyStart)
+        .where((message) => !_isTruncationNotice(message))
+        .toList();
+    final tailStart = bodyMessages.length > keepTailCount
+        ? bodyMessages.length - keepTailCount
+        : 0;
+    final hadTruncationNotice = _messages.any(_isTruncationNotice);
 
-      // Calculate how many messages to keep
-      // We want final count to be effectiveMaxSize, including truncation notice
-      // So keep effectiveMaxSize - 1 total messages (including system if present)
-      final totalToKeep = effectiveMaxSize - 1; // -1 for truncation notice
+    if (tailStart == 0 && !hadTruncationNotice) return;
 
-      // Calculate how many to keep after system message (if present)
-      final messagesToKeepAfterSystem = hasSystem
-          ? totalToKeep - 1
-          : totalToKeep;
+    final retainedTail = bodyMessages.skip(tailStart);
+    final retainedMessages = [
+      if (hasInitialSystem) _messages.first,
+      const ChatCompletionMessage.system(content: _truncationNotice),
+      ...retainedTail,
+    ];
 
-      // Ensure we keep at least one message after system
-      final keepAfterSystem = messagesToKeepAfterSystem < 1
-          ? 1
-          : messagesToKeepAfterSystem;
+    _messages
+      ..clear()
+      ..addAll(retainedMessages);
+  }
 
-      // Calculate trim range
-      final start = hasSystem ? 1 : 0;
-      final totalMessages = _messages.length;
-      final end = totalMessages - keepAfterSystem;
-
-      // Only trim if there are messages to remove and end > start
-      if (end > start && end <= totalMessages) {
-        _messages
-          ..removeRange(start, end)
-          // Add truncation notice
-          ..insert(
-            start,
-            const ChatCompletionMessage.system(
-              content: '[Previous messages truncated for context length]',
-            ),
-          );
-      }
-    }
+  bool _isTruncationNotice(ChatCompletionMessage message) {
+    return message.role == ChatCompletionMessageRole.system &&
+        message.content == _truncationNotice;
   }
 
   void dispose() {

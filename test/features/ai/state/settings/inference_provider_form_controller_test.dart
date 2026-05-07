@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -7,6 +9,179 @@ import 'package:lotti/features/ai/state/settings/inference_provider_form_control
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+
+enum _GeneratedProviderFormOperationKind {
+  name,
+  apiKey,
+  baseUrl,
+  description,
+  providerType,
+}
+
+enum _GeneratedProviderFormTextSlot {
+  empty,
+  short,
+  valid,
+  apiKey,
+  url,
+  invalidUrl,
+}
+
+enum _GeneratedProviderFormTypeSlot {
+  alibaba,
+  anthropic,
+  gemini,
+  genericOpenAi,
+  mistral,
+  nebiusAiStudio,
+  openAi,
+  openRouter,
+  ollama,
+  voxtral,
+  whisper,
+}
+
+String _generatedProviderFormText(_GeneratedProviderFormTextSlot slot) {
+  return switch (slot) {
+    _GeneratedProviderFormTextSlot.empty => '',
+    _GeneratedProviderFormTextSlot.short => 'xy',
+    _GeneratedProviderFormTextSlot.valid => 'Generated provider',
+    _GeneratedProviderFormTextSlot.apiKey => 'sk-generated-key',
+    _GeneratedProviderFormTextSlot.url => 'https://generated.example.com/v1',
+    _GeneratedProviderFormTextSlot.invalidUrl => 'not a url',
+  };
+}
+
+InferenceProviderType _generatedProviderType(
+  _GeneratedProviderFormTypeSlot slot,
+) {
+  return switch (slot) {
+    _GeneratedProviderFormTypeSlot.alibaba => InferenceProviderType.alibaba,
+    _GeneratedProviderFormTypeSlot.anthropic => InferenceProviderType.anthropic,
+    _GeneratedProviderFormTypeSlot.gemini => InferenceProviderType.gemini,
+    _GeneratedProviderFormTypeSlot.genericOpenAi =>
+      InferenceProviderType.genericOpenAi,
+    _GeneratedProviderFormTypeSlot.mistral => InferenceProviderType.mistral,
+    _GeneratedProviderFormTypeSlot.nebiusAiStudio =>
+      InferenceProviderType.nebiusAiStudio,
+    _GeneratedProviderFormTypeSlot.openAi => InferenceProviderType.openAi,
+    _GeneratedProviderFormTypeSlot.openRouter =>
+      InferenceProviderType.openRouter,
+    _GeneratedProviderFormTypeSlot.ollama => InferenceProviderType.ollama,
+    _GeneratedProviderFormTypeSlot.voxtral => InferenceProviderType.voxtral,
+    _GeneratedProviderFormTypeSlot.whisper => InferenceProviderType.whisper,
+  };
+}
+
+class _GeneratedProviderFormOperation {
+  const _GeneratedProviderFormOperation({
+    required this.kind,
+    required this.textSlot,
+    required this.typeSlot,
+  });
+
+  final _GeneratedProviderFormOperationKind kind;
+  final _GeneratedProviderFormTextSlot textSlot;
+  final _GeneratedProviderFormTypeSlot typeSlot;
+
+  String get text => _generatedProviderFormText(textSlot);
+
+  InferenceProviderType get providerType => _generatedProviderType(typeSlot);
+
+  @override
+  String toString() {
+    return '_GeneratedProviderFormOperation('
+        'kind: $kind, textSlot: $textSlot, typeSlot: $typeSlot)';
+  }
+}
+
+class _GeneratedProviderFormScenario {
+  const _GeneratedProviderFormScenario({required this.operations});
+
+  final List<_GeneratedProviderFormOperation> operations;
+
+  @override
+  String toString() {
+    return '_GeneratedProviderFormScenario(operations: $operations)';
+  }
+}
+
+class _ExpectedProviderFormState {
+  String name = '';
+  String apiKey = '';
+  String baseUrl = '';
+  String description = '';
+  InferenceProviderType providerType = InferenceProviderType.genericOpenAi;
+
+  void apply(_GeneratedProviderFormOperation operation) {
+    switch (operation.kind) {
+      case _GeneratedProviderFormOperationKind.name:
+        name = operation.text;
+      case _GeneratedProviderFormOperationKind.apiKey:
+        apiKey = operation.text;
+      case _GeneratedProviderFormOperationKind.baseUrl:
+        baseUrl = operation.text;
+      case _GeneratedProviderFormOperationKind.description:
+        description = operation.text;
+      case _GeneratedProviderFormOperationKind.providerType:
+        final nextType = operation.providerType;
+        if (nextType == providerType) {
+          return;
+        }
+        providerType = nextType;
+        final defaultBaseUrl = ProviderConfig.getDefaultBaseUrl(nextType);
+        if (defaultBaseUrl.isNotEmpty) {
+          baseUrl = defaultBaseUrl;
+        }
+        if (name.isEmpty) {
+          final defaultName = ProviderConfig.getDefaultName(nextType);
+          if (defaultName.isNotEmpty) {
+            name = defaultName;
+          }
+        }
+        if (!ProviderConfig.requiresApiKey(nextType)) {
+          apiKey = '';
+        }
+    }
+  }
+}
+
+extension _AnyGeneratedProviderFormScenario on glados.Any {
+  glados.Generator<_GeneratedProviderFormOperationKind>
+  get providerFormOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedProviderFormOperationKind.values);
+
+  glados.Generator<_GeneratedProviderFormTextSlot> get providerFormTextSlot =>
+      glados.AnyUtils(this).choose(_GeneratedProviderFormTextSlot.values);
+
+  glados.Generator<_GeneratedProviderFormTypeSlot> get providerFormTypeSlot =>
+      glados.AnyUtils(this).choose(_GeneratedProviderFormTypeSlot.values);
+
+  glados.Generator<_GeneratedProviderFormOperation> get providerFormOperation =>
+      glados.CombinableAny(this).combine3(
+        providerFormOperationKind,
+        providerFormTextSlot,
+        providerFormTypeSlot,
+        (
+          _GeneratedProviderFormOperationKind kind,
+          _GeneratedProviderFormTextSlot textSlot,
+          _GeneratedProviderFormTypeSlot typeSlot,
+        ) => _GeneratedProviderFormOperation(
+          kind: kind,
+          textSlot: textSlot,
+          typeSlot: typeSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedProviderFormScenario> get providerFormScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 45, providerFormOperation)
+          .map(
+            (operations) => _GeneratedProviderFormScenario(
+              operations: operations,
+            ),
+          );
+}
 
 void main() {
   late MockAiConfigRepository mockRepository;
@@ -706,6 +881,74 @@ void main() {
         ); // Invalid again because API key was cleared
       },
     );
+
+    glados.Glados(
+      glados.any.providerFormScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated edit sequence semantics', (scenario) async {
+      final generatedRepository = MockAiConfigRepository();
+      final generatedContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(generatedRepository),
+        ],
+      );
+      final expected = _ExpectedProviderFormState();
+
+      try {
+        final controller = generatedContainer.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await generatedContainer.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
+
+        for (final operation in scenario.operations) {
+          switch (operation.kind) {
+            case _GeneratedProviderFormOperationKind.name:
+              controller.nameChanged(operation.text);
+            case _GeneratedProviderFormOperationKind.apiKey:
+              controller.apiKeyChanged(operation.text);
+            case _GeneratedProviderFormOperationKind.baseUrl:
+              controller.baseUrlChanged(operation.text);
+            case _GeneratedProviderFormOperationKind.description:
+              controller.descriptionChanged(operation.text);
+            case _GeneratedProviderFormOperationKind.providerType:
+              controller.inferenceProviderTypeChanged(operation.providerType);
+          }
+          expected.apply(operation);
+
+          final formState = generatedContainer
+              .read(inferenceProviderFormControllerProvider(configId: null))
+              .value!;
+
+          expect(formState.name.value, expected.name, reason: '$scenario');
+          expect(controller.nameController.text, expected.name);
+          expect(formState.apiKey.value, expected.apiKey, reason: '$scenario');
+          expect(controller.apiKeyController.text, expected.apiKey);
+          expect(
+            formState.baseUrl.value,
+            expected.baseUrl,
+            reason: '$scenario after $operation',
+          );
+          expect(controller.baseUrlController.text, expected.baseUrl);
+          expect(
+            formState.description.value,
+            expected.description,
+            reason: '$scenario',
+          );
+          expect(controller.descriptionController.text, expected.description);
+          expect(formState.inferenceProviderType, expected.providerType);
+          expect(
+            formState.apiKey.isValid,
+            !ProviderConfig.requiresApiKey(expected.providerType) ||
+                expected.apiKey.isNotEmpty,
+            reason: '$scenario after $operation',
+          );
+        }
+      } finally {
+        generatedContainer.dispose();
+      }
+    });
   });
 
   group('Whisper Provider Tests', () {
