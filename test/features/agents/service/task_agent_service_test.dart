@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
@@ -361,7 +362,7 @@ void main() {
         when(
           () => generatedRepository.getLinksTo(
             taskId,
-            type: 'agent_task',
+            type: AgentLinkTypes.agentTask,
           ),
         ).thenAnswer(
           (_) async => scenario.duplicateExists ? [duplicateLink] : [],
@@ -447,7 +448,7 @@ void main() {
             allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
           ),
         ).captured;
-        expect(createCall[0], 'task_agent', reason: '$scenario');
+        expect(createCall[0], AgentKinds.taskAgent, reason: '$scenario');
         expect(
           createCall[1],
           scenario.expectedDisplayName,
