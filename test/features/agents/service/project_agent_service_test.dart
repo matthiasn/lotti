@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -15,6 +16,117 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+enum _GeneratedProjectTemplateSlot {
+  valid,
+  deleted,
+  missing,
+  wrongType,
+  wrongKind,
+}
+
+enum _GeneratedProjectStateSlot { present, missing }
+
+enum _GeneratedProjectProfileSlot { none, profile }
+
+enum _GeneratedProjectCategorySlot { empty, single, pair }
+
+class _GeneratedProjectAgentCreateScenario {
+  const _GeneratedProjectAgentCreateScenario({
+    required this.templateSlot,
+    required this.duplicateExists,
+    required this.stateSlot,
+    required this.profileSlot,
+    required this.categorySlot,
+  });
+
+  final _GeneratedProjectTemplateSlot templateSlot;
+  final bool duplicateExists;
+  final _GeneratedProjectStateSlot stateSlot;
+  final _GeneratedProjectProfileSlot profileSlot;
+  final _GeneratedProjectCategorySlot categorySlot;
+
+  bool get templateIsValid =>
+      templateSlot == _GeneratedProjectTemplateSlot.valid;
+
+  bool get stateExists => stateSlot == _GeneratedProjectStateSlot.present;
+
+  bool get shouldCreateAgent => templateIsValid && !duplicateExists;
+
+  bool get shouldSucceed => shouldCreateAgent && stateExists;
+
+  String get templateId {
+    return switch (templateSlot) {
+      _GeneratedProjectTemplateSlot.valid => kTestTemplateId,
+      _GeneratedProjectTemplateSlot.deleted => 'generated-deleted-template',
+      _GeneratedProjectTemplateSlot.missing => 'generated-missing-template',
+      _GeneratedProjectTemplateSlot.wrongType => 'generated-version-template',
+      _GeneratedProjectTemplateSlot.wrongKind => 'generated-task-template',
+    };
+  }
+
+  String? get profileId {
+    return switch (profileSlot) {
+      _GeneratedProjectProfileSlot.none => null,
+      _GeneratedProjectProfileSlot.profile => 'generated-profile',
+    };
+  }
+
+  Set<String> get allowedCategoryIds {
+    return switch (categorySlot) {
+      _GeneratedProjectCategorySlot.empty => const <String>{},
+      _GeneratedProjectCategorySlot.single => {'generated-cat-1'},
+      _GeneratedProjectCategorySlot.pair => {
+        'generated-cat-1',
+        'generated-cat-2',
+      },
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedProjectAgentCreateScenario('
+        'templateSlot: $templateSlot, duplicateExists: $duplicateExists, '
+        'stateSlot: $stateSlot, profileSlot: $profileSlot, '
+        'categorySlot: $categorySlot)';
+  }
+}
+
+extension _AnyGeneratedProjectAgentServiceScenario on glados.Any {
+  glados.Generator<_GeneratedProjectTemplateSlot> get projectTemplateSlot =>
+      glados.any.choose(_GeneratedProjectTemplateSlot.values);
+
+  glados.Generator<_GeneratedProjectStateSlot> get projectStateSlot =>
+      glados.any.choose(_GeneratedProjectStateSlot.values);
+
+  glados.Generator<_GeneratedProjectProfileSlot> get projectProfileSlot =>
+      glados.any.choose(_GeneratedProjectProfileSlot.values);
+
+  glados.Generator<_GeneratedProjectCategorySlot> get projectCategorySlot =>
+      glados.any.choose(_GeneratedProjectCategorySlot.values);
+
+  glados.Generator<_GeneratedProjectAgentCreateScenario>
+  get projectAgentCreateScenario => glados.any.combine5(
+    projectTemplateSlot,
+    glados.any.bool,
+    projectStateSlot,
+    projectProfileSlot,
+    projectCategorySlot,
+    (
+      _GeneratedProjectTemplateSlot templateSlot,
+      bool duplicateExists,
+      _GeneratedProjectStateSlot stateSlot,
+      _GeneratedProjectProfileSlot profileSlot,
+      _GeneratedProjectCategorySlot categorySlot,
+    ) => _GeneratedProjectAgentCreateScenario(
+      templateSlot: templateSlot,
+      duplicateExists: duplicateExists,
+      stateSlot: stateSlot,
+      profileSlot: profileSlot,
+      categorySlot: categorySlot,
+    ),
+  );
+}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -82,6 +194,238 @@ void main() {
 
   group('ProjectAgentService', () {
     group('createProjectAgent', () {
+      glados.Glados(
+        glados.any.projectAgentCreateScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('matches generated create-flow invariants', (scenario) async {
+        final generatedAgentService = MockAgentService();
+        final generatedRepository = MockAgentRepository();
+        final generatedOrchestrator = MockWakeOrchestrator();
+        final generatedSyncService = MockAgentSyncService();
+        final generatedNotifiedAgentIds = <String>[];
+        final generatedService = ProjectAgentService(
+          agentService: generatedAgentService,
+          repository: generatedRepository,
+          orchestrator: generatedOrchestrator,
+          syncService: generatedSyncService,
+          onPersistedStateChanged: generatedNotifiedAgentIds.add,
+        );
+        const projectId = 'generated-project';
+        const agentId = 'generated-agent';
+        const displayName = 'Generated Project Agent';
+        final identity = makeIdentity(agentId: agentId);
+        final initialState = makeState(
+          id: 'state-$agentId',
+          agentId: agentId,
+          activeProjectId: 'previous-project',
+        );
+        final validTemplate = makeTestTemplate(
+          kind: AgentTemplateKind.projectAgent,
+        );
+        final deletedTemplate = makeTestTemplate(
+          id: 'generated-deleted-template',
+          agentId: 'generated-deleted-template',
+          kind: AgentTemplateKind.projectAgent,
+        ).copyWith(deletedAt: kAgentTestDate);
+        final wrongKindTemplate = makeTestTemplate(
+          id: 'generated-task-template',
+          agentId: 'generated-task-template',
+          // ignore: avoid_redundant_argument_values
+          kind: AgentTemplateKind.taskAgent,
+        );
+        final duplicateLink = AgentLink.agentProject(
+          id: 'generated-duplicate-link',
+          fromId: 'duplicate-agent',
+          toId: projectId,
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+        final testDate = DateTime(2026, 3, 20, 14, 30);
+
+        when(
+          () => generatedSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => generatedSyncService.upsertLink(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => generatedOrchestrator.addSubscription(any()),
+        ).thenReturn(null);
+        when(
+          () => generatedOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => generatedRepository.getLinksTo(
+            projectId,
+            type: AgentLinkTypes.agentProject,
+          ),
+        ).thenAnswer(
+          (_) async => scenario.duplicateExists ? [duplicateLink] : [],
+        );
+        when(
+          () => generatedRepository.getEntity(kTestTemplateId),
+        ).thenAnswer((_) async => validTemplate);
+        when(
+          () => generatedRepository.getEntity('generated-deleted-template'),
+        ).thenAnswer((_) async => deletedTemplate);
+        when(
+          () => generatedRepository.getEntity('generated-missing-template'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => generatedRepository.getEntity('generated-version-template'),
+        ).thenAnswer(
+          (_) async =>
+              makeTestTemplateVersion(id: 'generated-version-template'),
+        );
+        when(
+          () => generatedRepository.getEntity('generated-task-template'),
+        ).thenAnswer((_) async => wrongKindTemplate);
+        when(
+          () => generatedAgentService.createAgent(
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => generatedRepository.getAgentState(agentId),
+        ).thenAnswer(
+          (_) async => scenario.stateExists ? initialState : null,
+        );
+
+        Future<AgentIdentityEntity> create() {
+          return withClock(Clock.fixed(testDate), () {
+            return generatedService.createProjectAgent(
+              projectId: projectId,
+              templateId: scenario.templateId,
+              displayName: displayName,
+              profileId: scenario.profileId,
+              allowedCategoryIds: scenario.allowedCategoryIds,
+            );
+          });
+        }
+
+        if (!scenario.shouldSucceed) {
+          await expectLater(
+            create,
+            throwsA(isA<StateError>()),
+            reason: '$scenario',
+          );
+
+          if (scenario.shouldCreateAgent) {
+            verify(
+              () => generatedAgentService.createAgent(
+                kind: any(named: 'kind'),
+                displayName: any(named: 'displayName'),
+                config: any(named: 'config'),
+                allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              ),
+            ).called(1);
+          } else {
+            verifyNever(
+              () => generatedAgentService.createAgent(
+                kind: any(named: 'kind'),
+                displayName: any(named: 'displayName'),
+                config: any(named: 'config'),
+                allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              ),
+            );
+          }
+          verifyNever(() => generatedSyncService.upsertEntity(any()));
+          verifyNever(() => generatedSyncService.upsertLink(any()));
+          verifyNever(() => generatedOrchestrator.addSubscription(any()));
+          verifyNever(
+            () => generatedOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          );
+          expect(generatedNotifiedAgentIds, isEmpty, reason: '$scenario');
+          return;
+        }
+
+        final result = await create();
+
+        expect(result, same(identity), reason: '$scenario');
+        final createCall = verify(
+          () => generatedAgentService.createAgent(
+            kind: captureAny(named: 'kind'),
+            displayName: captureAny(named: 'displayName'),
+            config: captureAny(named: 'config'),
+            allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
+          ),
+        ).captured;
+        expect(createCall[0], AgentKinds.projectAgent, reason: '$scenario');
+        expect(createCall[1], displayName, reason: '$scenario');
+        final config = createCall[2] as AgentConfig;
+        expect(
+          config,
+          AgentConfig(profileId: scenario.profileId),
+          reason: '$scenario',
+        );
+        expect(
+          createCall[3],
+          scenario.allowedCategoryIds,
+          reason: '$scenario',
+        );
+
+        final entityWrites = verify(
+          () => generatedSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(entityWrites, hasLength(1), reason: '$scenario');
+        final updatedState = entityWrites.single as AgentStateEntity;
+        expect(updatedState.agentId, agentId, reason: '$scenario');
+        expect(
+          updatedState.slots.activeProjectId,
+          projectId,
+          reason: '$scenario',
+        );
+        expect(
+          updatedState.scheduledWakeAt,
+          DateTime(2026, 3, 21, 6),
+          reason: '$scenario',
+        );
+
+        final linkWrites = verify(
+          () => generatedSyncService.upsertLink(captureAny()),
+        ).captured;
+        expect(linkWrites, hasLength(2), reason: '$scenario');
+        final projectLink = linkWrites.whereType<AgentProjectLink>().single;
+        expect(projectLink.fromId, agentId, reason: '$scenario');
+        expect(projectLink.toId, projectId, reason: '$scenario');
+        final templateLink = linkWrites
+            .whereType<TemplateAssignmentLink>()
+            .single;
+        expect(templateLink.fromId, kTestTemplateId, reason: '$scenario');
+        expect(templateLink.toId, agentId, reason: '$scenario');
+
+        final subscriptions = verify(
+          () => generatedOrchestrator.addSubscription(captureAny()),
+        ).captured.cast<AgentSubscription>();
+        expect(subscriptions, hasLength(1), reason: '$scenario');
+        expect(subscriptions.single.agentId, agentId, reason: '$scenario');
+        expect(
+          subscriptions.single.matchEntityIds,
+          {projectEntityUpdateNotification(projectId)},
+          reason: '$scenario',
+        );
+        verify(
+          () => generatedOrchestrator.enqueueManualWake(
+            agentId: agentId,
+            reason: WakeReason.creation.name,
+            triggerTokens: {projectId},
+          ),
+        ).called(1);
+        expect(generatedNotifiedAgentIds, [agentId], reason: '$scenario');
+      });
+
       test('creates agent, updates state, creates links, and enqueues '
           'creation wake', () async {
         final identity = makeIdentity();
