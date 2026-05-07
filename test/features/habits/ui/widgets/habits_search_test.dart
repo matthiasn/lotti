@@ -9,6 +9,7 @@ import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,12 +21,14 @@ void main() {
 
   late MockJournalDb mockJournalDb;
   late MockUpdateNotifications mockUpdateNotifications;
+  late MockNavService mockNavService;
   late StreamController<List<HabitDefinition>> definitionsController;
   late StreamController<Set<String>> updateController;
 
   setUp(() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
+    mockNavService = MockNavService();
     definitionsController = StreamController.broadcast();
     updateController = StreamController.broadcast();
 
@@ -43,9 +46,16 @@ void main() {
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => updateController.stream);
 
+    when(() => mockNavService.habitsIndex).thenReturn(3);
+    when(() => mockNavService.index).thenReturn(3);
+    when(
+      mockNavService.getIndexStream,
+    ).thenAnswer((_) => const Stream<int>.empty());
+
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<NavService>(mockNavService);
   });
 
   tearDown(() async {

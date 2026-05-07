@@ -18,9 +18,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 part 'journal_page_controller.g.dart';
 
@@ -54,6 +54,7 @@ class JournalPageController extends _$JournalPageController {
   late final JournalFilterPersistence _persistence;
   late final JournalQueryRunner _queryRunner;
   late final JournalPageSubscriptions _subscriptions;
+  StreamSubscription<int>? _navIndexSubscription;
 
   // Internal state (mutable for efficiency, exposed via immutable state)
   bool _isVisible = false;
@@ -109,6 +110,16 @@ class JournalPageController extends _$JournalPageController {
       updateNotifications: updateNotifications,
     );
 
+    // Visibility tracking is driven by the top-level nav index. The
+    // controller starts visible if its tab is the active one when
+    // build() runs (the page provider is keepAlive, so the first build
+    // typically coincides with the tab being shown).
+    final navService = getIt<NavService>();
+    _isVisible = navService.index == _myTabIndex(navService);
+    _navIndexSubscription = navService.getIndexStream().listen(
+      _handleNavIndex,
+    );
+
     // Initialize category selection for tasks tab
     if (showTasks) {
       final allCategoryIds = entitiesCacheService.sortedCategories
@@ -144,6 +155,7 @@ class JournalPageController extends _$JournalPageController {
     // Clean up on dispose
     ref.onDispose(() {
       _subscriptions.dispose();
+      _navIndexSubscription?.cancel();
       controller.dispose();
     });
 
@@ -669,13 +681,36 @@ class JournalPageController extends _$JournalPageController {
       ..fetchNextPage();
   }
 
-  void updateVisibility(VisibilityInfo visibilityInfo) {
-    final isVisible = visibilityInfo.visibleBounds.size.width > 0;
+  /// Tab index that this controller's page lives at, derived from
+  /// `showTasks`. The tasks tab is always at index 0; the journal tab
+  /// position depends on which other tabs are enabled, so we ask the
+  /// NavService for it.
+  int _myTabIndex(NavService navService) =>
+      _showTasks ? navService.tasksIndex : navService.journalIndex;
+
+  /// Drains a deferred refresh when this controller's tab becomes the
+  /// active top-level tab. Updates from the DB stream while the tab is
+  /// hidden are coalesced via `_needsRefreshOnVisible`; this method
+  /// fires the held-back refresh on the inactive→active edge.
+  void _handleNavIndex(int newIndex) {
+    if (!ref.mounted) return;
+
+    final isVisible = newIndex == _myTabIndex(getIt<NavService>());
     if (!_isVisible && isVisible && _needsRefreshOnVisible) {
       _needsRefreshOnVisible = false;
-      refreshQuery(preserveVisibleItems: true);
+      unawaited(refreshQuery(preserveVisibleItems: true));
     }
     _isVisible = isVisible;
+  }
+
+  /// Test-only entry point that lets tests drive the visibility edge
+  /// without standing up a full NavService stream. Equivalent to a
+  /// nav-index emission whose value resolves to `isVisible`.
+  @visibleForTesting
+  void debugSetVisibility({required bool isVisible}) {
+    _handleNavIndex(
+      isVisible ? _myTabIndex(getIt<NavService>()) : -1,
+    );
   }
 
   Future<List<JournalEntity>> _fetchPage(int pageKey) async {

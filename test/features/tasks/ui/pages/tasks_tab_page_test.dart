@@ -25,7 +25,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../helpers/entity_factories.dart';
 import '../../../../helpers/fallbacks.dart';
@@ -46,12 +45,8 @@ void main() {
   late MockPersistenceLogic mockPersistenceLogic;
   late List<JournalEntity> tasks;
   late PagingController<int, JournalEntity> pagingController;
-  late Duration previousVisibilityUpdateInterval;
 
   setUp(() async {
-    previousVisibilityUpdateInterval =
-        VisibilityDetectorController.instance.updateInterval;
-    VisibilityDetectorController.instance.updateInterval = Duration.zero;
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockNavService = MockNavService();
     mockTimeService = MockTimeService();
@@ -151,8 +146,6 @@ void main() {
   });
 
   tearDown(() async {
-    VisibilityDetectorController.instance.updateInterval =
-        previousVisibilityUpdateInterval;
     pagingController.dispose();
     await tearDownTestGetIt();
   });
@@ -736,6 +729,167 @@ void main() {
       },
     );
   });
+
+  testWidgets(
+    'shows the noItemsFound indicator when the page is empty',
+    (tester) async {
+      pagingController.value = PagingState<int, JournalEntity>(
+        pages: const [<JournalEntity>[]],
+        keys: const [0],
+        hasNextPage: false,
+      );
+
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No tasks match your search.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'clear and submit on the search header route through setSearchString',
+    (tester) async {
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pumpAndSettle();
+
+      // Pull the wired callbacks straight off the header to avoid
+      // flakiness from the search bar's internal show-clear-when-non-empty
+      // state. Each callback should land in setSearchString.
+      tester.widget<TabSectionHeader>(find.byType(TabSectionHeader))
+        ..onSearchPressed('agentic')
+        ..onSearchCleared();
+      await tester.pump();
+
+      expect(
+        fakeController.searchStringCalls,
+        containsAll(<String>['agentic', '']),
+      );
+    },
+  );
+
+  testWidgets(
+    'looks up vectorSearchDistances when showDistances is true',
+    (tester) async {
+      // The first task in `tasks` is task-1; rows are keyed by task id,
+      // so a distance entry under that key is what the row would
+      // forward into TaskBrowseListItem.vectorDistance.
+      final stateWithDistances = state().copyWith(
+        showDistances: true,
+        vectorSearchDistances: const {'task-1': 0.31},
+      );
+
+      await tester.pumpWidget(buildSubject(state: stateWithDistances));
+      await tester.pumpAndSettle();
+
+      // Layout-time success here means itemBuilder ran and the
+      // showDistances branch was taken without throwing — the same
+      // pre-existing 'search updates...' test verifies the row content
+      // for the same fixture. Sanity-check both tasks rendered.
+      expect(find.text('Write migration'), findsOneWidget);
+      expect(find.text('Validate grouping'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'renders a project chip and removes the id via applyBatchFilterUpdate',
+    (tester) async {
+      final project = TestProjectFactory.create(
+        id: 'proj-1',
+        title: 'Migration',
+        categoryId: 'cat-1',
+      );
+      when(
+        () => getItMocks.journalDb.getVisibleProjects(),
+      ).thenAnswer((_) async => [project]);
+
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(
+            selectedTaskStatuses: const <String>{},
+            selectedCategoryIds: const <String>{},
+            selectedProjectIds: const <String>{'proj-1'},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActiveFilterChip), findsOneWidget);
+      final chip = tester.widget<ActiveFilterChip>(
+        find.byType(ActiveFilterChip),
+      );
+      expect(chip.label, 'Migration');
+      expect(chip.leadingIcon, Icons.folder_outlined);
+
+      await tester.tap(find.byType(ActiveFilterChip));
+      await tester.pump();
+
+      expect(fakeController.applyBatchFilterUpdateCalled, 1);
+      expect(fakeController.setSelectedProjectIdsCalls.last, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'renders a P3 priority chip with the matching avatar glyph',
+    (tester) async {
+      // Covers the P3 arms of _priorityFromInternalId / _priorityAccent.
+      // The earlier "P0 priority chip" test already exercises P0; this
+      // hits the bottom rung of the priority palette.
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(
+            selectedTaskStatuses: const <String>{},
+            selectedCategoryIds: const <String>{},
+            selectedPriorities: const <String>{'P3'},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActiveFilterChip), findsOneWidget);
+      final chip = tester.widget<ActiveFilterChip>(
+        find.byType(ActiveFilterChip),
+      );
+      expect(chip.label, 'P3');
+      expect(chip.avatar, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'first-page and new-page progress indicators delegate to '
+    'CircularProgressIndicator.adaptive',
+    (tester) async {
+      // The two builders never fire on their own without a real paging
+      // lifecycle, but coverage just needs the closures invoked once.
+      // Pull the delegate off the rendered PagedSliverList and call the
+      // builders against a live BuildContext, then inspect the returned
+      // widget tree to confirm both wire a Padding > Center > spinner.
+      await tester.pumpWidget(buildSubject(state: state()));
+      await tester.pumpAndSettle();
+
+      final pagedList = tester.widget<PagedSliverList<int, JournalEntity>>(
+        find.byType(PagedSliverList<int, JournalEntity>),
+      );
+      final delegate = pagedList.builderDelegate;
+      final ctx = tester.element(
+        find.byType(PagedSliverList<int, JournalEntity>),
+      );
+
+      final firstPageWidget = delegate.firstPageProgressIndicatorBuilder!(
+        ctx,
+      );
+      final newPageWidget = delegate.newPageProgressIndicatorBuilder!(ctx);
+
+      Widget unwrapToCenter(Widget w) {
+        expect(w, isA<Padding>());
+        final padding = w as Padding;
+        expect(padding.child, isA<Center>());
+        return (padding.child! as Center).child!;
+      }
+
+      expect(unwrapToCenter(firstPageWidget), isA<CircularProgressIndicator>());
+      expect(unwrapToCenter(newPageWidget), isA<CircularProgressIndicator>());
+    },
+  );
 }
 
 class _StubSavedTaskFiltersController extends SavedTaskFiltersController {

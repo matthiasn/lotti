@@ -16,7 +16,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
@@ -28,7 +27,6 @@ void main() {
   late FakeJournalPageController fakeController;
 
   setUp(() async {
-    VisibilityDetectorController.instance.updateInterval = Duration.zero;
     await setUpTestGetIt(
       additionalSetup: () {
         getIt.registerSingleton<UserActivityService>(UserActivityService());

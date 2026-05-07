@@ -10,8 +10,8 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -58,8 +58,6 @@ void main() {
 
   group('HabitsTabPage Widget Tests - ', () {
     setUp(() {
-      VisibilityDetectorController.instance.updateInterval = Duration.zero;
-
       mockJournalDb = mockJournalDbWithHabits([
         habitFlossing,
         habitFlossingDueLater,
@@ -283,5 +281,69 @@ void main() {
       // No HabitCompletionCards when all lists are empty
       expect(find.byType(HabitCompletionCard), findsNothing);
     });
+
+    testWidgets(
+      'renders TimeSpanSegmentedControl when showTimeSpan is true',
+      (tester) async {
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing],
+          openNow: [habitFlossing],
+          showTimeSpan: true,
+          displayFilter: HabitDisplayFilter.openNow,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => MockHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'searchString narrows the visible habit list when showSearch is true',
+      (tester) async {
+        // habitFlossing.name = "Flossing"
+        // habitFlossingDueLater.name = "Flossing later today"
+        // searchString 'later today' is a unique fragment of the second
+        // habit's name, so the filter pass should drop habitFlossing.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing, habitFlossingDueLater],
+          showSearch: true,
+          searchString: 'later today',
+          displayFilter: HabitDisplayFilter.openNow,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => MockHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
+        expect(find.byKey(Key(habitFlossing.id)), findsNothing);
+      },
+    );
   });
 }

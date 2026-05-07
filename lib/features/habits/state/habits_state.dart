@@ -39,7 +39,6 @@ abstract class HabitsState with _$HabitsState {
     required int timeSpanDays,
     required double minY,
     required bool zeroBased,
-    required bool isVisible,
     required bool showTimeSpan,
     required bool showSearch,
     required String searchString,
@@ -75,7 +74,6 @@ abstract class HabitsState with _$HabitsState {
     showTimeSpan: false,
     searchString: '',
     selectedCategoryIds: <String>{},
-    isVisible: true,
   );
 }
 

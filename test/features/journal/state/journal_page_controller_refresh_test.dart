@@ -3,7 +3,6 @@
 import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -12,7 +11,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../mocks/mocks.dart';
 import 'helpers/journal_controller_test_setup.dart';
@@ -42,7 +40,7 @@ void main() {
 
     group('Visibility Updates', () {
       test(
-        'updateVisibility refreshes when becoming visible after missed update',
+        'visibility transition refreshes when becoming visible after missed update',
         () {
           fakeAsync((async) {
             var queryCallCount = 0;
@@ -72,9 +70,7 @@ void main() {
             final initialCount = queryCallCount;
 
             // First, simulate being invisible
-            controller.updateVisibility(
-              const MockVisibilityInfo(visibleBounds: Rect.zero),
-            );
+            controller.debugSetVisibility(isVisible: false);
 
             async.elapse(const Duration(milliseconds: 50));
             async.flushMicrotasks();
@@ -92,11 +88,7 @@ void main() {
 
             // Now simulate becoming visible - should trigger refresh
             // because updates were missed
-            controller.updateVisibility(
-              const MockVisibilityInfo(
-                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-              ),
-            );
+            controller.debugSetVisibility(isVisible: true);
 
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
@@ -107,56 +99,53 @@ void main() {
         },
       );
 
-      test('updateVisibility does not refresh when no updates were missed', () {
-        fakeAsync((async) {
-          var queryCallCount = 0;
-          when(
-            () => mockJournalDb.getJournalEntities(
-              types: any(named: 'types'),
-              starredStatuses: any(named: 'starredStatuses'),
-              privateStatuses: any(named: 'privateStatuses'),
-              flaggedStatuses: any(named: 'flaggedStatuses'),
-              ids: any(named: 'ids'),
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              categoryIds: any(named: 'categoryIds'),
-            ),
-          ).thenAnswer((_) async {
-            queryCallCount++;
-            return [];
+      test(
+        'visibility transition does not refresh when no updates were missed',
+        () {
+          fakeAsync((async) {
+            var queryCallCount = 0;
+            when(
+              () => mockJournalDb.getJournalEntities(
+                types: any(named: 'types'),
+                starredStatuses: any(named: 'starredStatuses'),
+                privateStatuses: any(named: 'privateStatuses'),
+                flaggedStatuses: any(named: 'flaggedStatuses'),
+                ids: any(named: 'ids'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+                categoryIds: any(named: 'categoryIds'),
+              ),
+            ).thenAnswer((_) async {
+              queryCallCount++;
+              return [];
+            });
+
+            final controller = container.read(
+              journalPageControllerProvider(false).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 100));
+            async.flushMicrotasks();
+
+            final initialCount = queryCallCount;
+
+            // Go invisible
+            controller.debugSetVisibility(isVisible: false);
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            // Come back visible without any missed updates
+            controller.debugSetVisibility(isVisible: true);
+
+            async.elapse(const Duration(milliseconds: 100));
+            async.flushMicrotasks();
+
+            // Should NOT have refreshed — no updates were missed
+            expect(queryCallCount, equals(initialCount));
           });
-
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
-
-          final initialCount = queryCallCount;
-
-          // Go invisible
-          controller.updateVisibility(
-            const MockVisibilityInfo(visibleBounds: Rect.zero),
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          // Come back visible without any missed updates
-          controller.updateVisibility(
-            const MockVisibilityInfo(
-              visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-            ),
-          );
-
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
-
-          // Should NOT have refreshed — no updates were missed
-          expect(queryCallCount, equals(initialCount));
-        });
-      });
+        },
+      );
 
       test('does not refresh when staying invisible', () {
         fakeAsync((async) {
@@ -187,17 +176,13 @@ void main() {
           final initialCount = queryCallCount;
 
           // Simulate being invisible
-          controller.updateVisibility(
-            const MockVisibilityInfo(visibleBounds: Rect.zero),
-          );
+          controller.debugSetVisibility(isVisible: false);
 
           async.elapse(const Duration(milliseconds: 50));
           async.flushMicrotasks();
 
           // Stay invisible - should NOT trigger refresh
-          controller.updateVisibility(
-            const MockVisibilityInfo(visibleBounds: Rect.zero),
-          );
+          controller.debugSetVisibility(isVisible: false);
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -218,20 +203,14 @@ void main() {
 
           expect(controller.isVisible, isFalse);
 
-          controller.updateVisibility(
-            const MockVisibilityInfo(
-              visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-            ),
-          );
+          controller.debugSetVisibility(isVisible: true);
 
           async.elapse(const Duration(milliseconds: 50));
           async.flushMicrotasks();
 
           expect(controller.isVisible, isTrue);
 
-          controller.updateVisibility(
-            const MockVisibilityInfo(visibleBounds: Rect.zero),
-          );
+          controller.debugSetVisibility(isVisible: false);
 
           async.elapse(const Duration(milliseconds: 50));
           async.flushMicrotasks();
@@ -271,11 +250,7 @@ void main() {
             async.flushMicrotasks();
 
             // Make visible
-            controller.updateVisibility(
-              const MockVisibilityInfo(
-                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-              ),
-            );
+            controller.debugSetVisibility(isVisible: true);
 
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
@@ -332,11 +307,7 @@ void main() {
 
             async.flushMicrotasks();
 
-            controller.updateVisibility(
-              const MockVisibilityInfo(
-                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-              ),
-            );
+            controller.debugSetVisibility(isVisible: true);
 
             clearInteractions(mockJournalDb);
             getTasksCallCount = 0;
@@ -409,11 +380,7 @@ void main() {
 
             async.flushMicrotasks();
 
-            controller.updateVisibility(
-              const MockVisibilityInfo(
-                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-              ),
-            );
+            controller.debugSetVisibility(isVisible: true);
 
             clearInteractions(mockJournalDb);
             getTasksCallCount = 1;
@@ -506,11 +473,7 @@ void main() {
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
 
-            controller.updateVisibility(
-              const MockVisibilityInfo(
-                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-              ),
-            );
+            controller.debugSetVisibility(isVisible: true);
 
             clearInteractions(mockJournalDb);
 
@@ -603,11 +566,7 @@ void main() {
 
             async.flushMicrotasks();
 
-            controller.updateVisibility(
-              const MockVisibilityInfo(
-                visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-              ),
-            );
+            controller.debugSetVisibility(isVisible: true);
 
             clearInteractions(mockJournalDb);
             queryCallCount = 0;
@@ -1760,11 +1719,7 @@ void main() {
           async.flushMicrotasks();
 
           // Make visible first
-          controller.updateVisibility(
-            const MockVisibilityInfo(
-              visibleBounds: Rect.fromLTWH(0, 0, 100, 100),
-            ),
-          );
+          controller.debugSetVisibility(isVisible: true);
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -1772,9 +1727,7 @@ void main() {
           final visibleCount = queryCount;
 
           // Now make invisible
-          controller.updateVisibility(
-            const MockVisibilityInfo(visibleBounds: Rect.zero),
-          );
+          controller.debugSetVisibility(isVisible: false);
 
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
@@ -1795,29 +1748,15 @@ void main() {
           async.flushMicrotasks();
 
           // Multiple calls with zero bounds
-          controller.updateVisibility(
-            const MockVisibilityInfo(visibleBounds: Rect.zero),
-          );
-          controller.updateVisibility(
-            const MockVisibilityInfo(visibleBounds: Rect.zero),
-          );
-          controller.updateVisibility(
-            const MockVisibilityInfo(visibleBounds: Rect.zero),
-          );
+          controller.debugSetVisibility(isVisible: false);
+          controller.debugSetVisibility(isVisible: false);
+          controller.debugSetVisibility(isVisible: false);
 
           expect(controller.isVisible, isFalse);
         });
       });
     });
   });
-}
-
-class MockVisibilityInfo extends VisibilityInfo {
-  const MockVisibilityInfo({required super.visibleBounds})
-    : super(
-        key: const Key('test'),
-        size: const Size(100, 100),
-      );
 }
 
 Task _buildTestTask({

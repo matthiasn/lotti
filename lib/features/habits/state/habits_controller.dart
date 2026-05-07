@@ -7,11 +7,12 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:visibility_detector/visibility_detector.dart';
 
 part 'habits_controller.g.dart';
 
@@ -21,31 +22,35 @@ part 'habits_controller.g.dart';
 class HabitsController extends _$HabitsController {
   StreamSubscription<List<HabitDefinition>>? _definitionsSubscription;
   StreamSubscription<Set<String>>? _updateSubscription;
+  StreamSubscription<int>? _navIndexSubscription;
 
   List<HabitDefinition> _habitDefinitions = [];
   Map<String, HabitDefinition> _habitDefinitionsMap = {};
   List<JournalEntity> _habitCompletions = [];
 
+  /// Tracks whether the habits tab was the active top-level tab on the
+  /// previous nav-index emission. Used to detect the off→on edge that
+  /// triggers a recompute — `showHabit()` depends on `DateTime.now()`,
+  /// so re-entering the tab is the cue to refresh the due/later split
+  /// without keeping a background ticker alive.
+  bool _wasHabitsActive = false;
+
   late HabitsRepository _repository;
+  late final NavService _navService = getIt<NavService>();
 
   @override
   HabitsState build() {
     _repository = ref.read(habitsRepositoryProvider);
 
     ref.onDispose(_cleanup);
-    // Schedule initialization after build() completes to avoid
-    // reading state before it's initialized
-    Future.microtask(_init);
-    return HabitsState.initial();
-  }
 
-  void _cleanup() {
-    _definitionsSubscription?.cancel();
-    _updateSubscription?.cancel();
-    EasyDebounce.cancel('clearInfoYmd');
-  }
-
-  Future<void> _init() async {
+    // Subscribe synchronously inside build() so the subscriptions are
+    // anchored to this controller's lifecycle even if disposal races
+    // with init — they are guaranteed to be cancelled by _cleanup.
+    _wasHabitsActive = _navService.index == _navService.habitsIndex;
+    _navIndexSubscription = _navService.getIndexStream().listen(
+      _handleNavIndex,
+    );
     _definitionsSubscription = _repository.watchHabitDefinitions().listen((
       habitDefinitions,
     ) {
@@ -62,17 +67,32 @@ class HabitsController extends _$HabitsController {
       _determineHabitSuccessByDays();
     });
 
-    await _startWatching();
+    // The initial fetch + update-stream subscription is async, so it
+    // runs as a microtask. The mounted-guard inside _startWatching
+    // avoids touching disposed state if the provider is torn down
+    // before the microtask drains.
+    Future.microtask(_startWatching);
+    return HabitsState.initial();
+  }
+
+  void _cleanup() {
+    _definitionsSubscription?.cancel();
+    _updateSubscription?.cancel();
+    _navIndexSubscription?.cancel();
+    EasyDebounce.cancel('clearInfoYmd');
   }
 
   Future<void> _startWatching() async {
+    if (!ref.mounted) return;
     await _fetchHabitCompletions();
+    if (!ref.mounted) return;
     _determineHabitSuccessByDays();
 
     _updateSubscription = _repository.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(habitCompletionNotification)) {
         await _fetchHabitCompletions();
         await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (!ref.mounted) return;
         _determineHabitSuccessByDays();
       }
     });
@@ -244,7 +264,6 @@ class HabitsController extends _$HabitsController {
       allByDay: allByDay,
       shortStreakCount: shortStreakCount,
       longStreakCount: longStreakCount,
-      isVisible: state.isVisible,
     );
 
     state = nextState.copyWith(
@@ -252,19 +271,23 @@ class HabitsController extends _$HabitsController {
     );
   }
 
-  /// Updates visibility state based on widget visibility.
-  void updateVisibility(VisibilityInfo visibilityInfo) {
-    // Guard against callback after disposal
+  /// Recomputes habit success on the inactive→active edge of the habits
+  /// tab — time may have passed while the tab was off-screen, so the
+  /// due/later split needs refreshing. Refetches completions first so a
+  /// midnight rollover (which extends the relevant day range) is also
+  /// reflected, not just the wall-clock-driven `showHabit` bucketing.
+  Future<void> _handleNavIndex(int newIndex) async {
     if (!ref.mounted) return;
 
-    final isVisible = visibilityInfo.visibleBounds.size.width > 0;
-    final wasNotVisible = !state.isVisible;
+    final isHabitsActive = newIndex == _navService.habitsIndex;
+    final wasActive = _wasHabitsActive;
+    _wasHabitsActive = isHabitsActive;
 
-    if (wasNotVisible && isVisible) {
+    if (isHabitsActive && !wasActive) {
+      await _fetchHabitCompletions();
+      if (!ref.mounted) return;
       _determineHabitSuccessByDays();
     }
-
-    state = state.copyWith(isVisible: isVisible);
   }
 
   /// Sets the time span for habit history display.

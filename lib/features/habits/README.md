@@ -176,6 +176,7 @@ One important grounding detail: the controller immediately filters definitions t
 ```mermaid
 sequenceDiagram
   participant Repo as "HabitsRepository"
+  participant Nav as "NavService"
   participant Ctrl as "HabitsController"
   participant State as "HabitsState"
   participant UI as "HabitsTabPage"
@@ -188,6 +189,8 @@ sequenceDiagram
   State-->>UI: render chart + sections
   Repo-->>Ctrl: updateStream(HABIT_COMPLETION)
   Ctrl->>Repo: refetch range and recompute
+  Nav-->>Ctrl: getIndexStream() emits habits index
+  Ctrl->>Ctrl: recompute (off→on edge only)
 ```
 
 The controller does not run a timer for "open now" logic. Instead, it recomputes when:
@@ -196,9 +199,9 @@ The controller does not run a timer for "open now" logic. Instead, it recomputes
 - habit completion notifications arrive
 - the time span changes
 - the selected category set changes
-- the tab becomes visible again through `VisibilityDetector`
+- the habits tab becomes the active top-level tab again (off→on edge on `NavService.getIndexStream()`)
 
-That last part is worth calling out. `showHabit()` depends on `DateTime.now()`, so visibility-triggered recomputation is the feature's lightweight answer to "time passed while the tab was off-screen." It refreshes the due/later split without keeping a background ticker alive.
+That last part is worth calling out. `showHabit()` depends on `DateTime.now()`, so the tab-active recomputation is the feature's lightweight answer to "time passed while the tab was off-screen." It refreshes the due/later split without keeping a background ticker alive. The trigger is wired by subscribing to `NavService.getIndexStream()` in `HabitsController._init` and comparing the emitted index to `NavService.habitsIndex` — the controller tracks the previous active state and only recomputes on the inactive→active edge, so a stream of repeated active emissions costs nothing.
 
 ### Search vs. category filtering
 
