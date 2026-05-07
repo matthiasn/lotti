@@ -1407,7 +1407,9 @@ void main() {
         when(() => peer.status).thenReturn(EventStatus.synced);
         final enqueued = Completer<void>();
         when(() => queue.enqueueLive(peer)).thenAnswer((_) async {
-          enqueued.complete();
+          if (!enqueued.isCompleted) {
+            enqueued.complete();
+          }
           return EnqueueResult.empty;
         });
 
