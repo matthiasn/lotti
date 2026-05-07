@@ -1,4 +1,6 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -10,6 +12,498 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+const _generatedTemplateId = 'generated-template';
+const _generatedDisplayName = 'Generated Template';
+const _generatedChangedDisplayName = 'Generated Template Updated';
+const _generatedModelId = 'models/generated-original';
+const _generatedChangedModelId = 'models/generated-updated';
+const _generatedProfileId = 'generated-profile';
+const _generatedChangedProfileId = 'generated-profile-updated';
+const _generatedHeadId = 'generated-template-head';
+
+enum _GeneratedTemplateEntitySlot { present, missing, wrongType }
+
+enum _GeneratedTemplateDisplayNameSlot { omitted, same, changed }
+
+enum _GeneratedTemplateModelSlot { omitted, same, changed }
+
+enum _GeneratedTemplateExistingProfileSlot { none, profile }
+
+enum _GeneratedTemplateProfileSlot {
+  omitted,
+  same,
+  changed,
+  cleared,
+  changedAndCleared,
+}
+
+enum _GeneratedTemplateActiveVersionSlot { present, missing }
+
+enum _GeneratedTemplateHistorySlot { empty, allArchived, headActive, mixed }
+
+enum _GeneratedTemplateHeadSlot { present, missing }
+
+enum _GeneratedTemplateDeleteAssignmentSlot {
+  active,
+  created,
+  dormant,
+  destroyed,
+  missing,
+  wrongType,
+}
+
+enum _GeneratedTemplateDeleteVersionSlot {
+  version,
+  archivedVersion,
+  nonVersion,
+}
+
+class _GeneratedTemplateUpdateDelta {
+  const _GeneratedTemplateUpdateDelta({
+    required this.existingProfileSlot,
+    required this.displayNameSlot,
+    required this.modelSlot,
+    required this.profileSlot,
+  });
+
+  final _GeneratedTemplateExistingProfileSlot existingProfileSlot;
+  final _GeneratedTemplateDisplayNameSlot displayNameSlot;
+  final _GeneratedTemplateModelSlot modelSlot;
+  final _GeneratedTemplateProfileSlot profileSlot;
+
+  String? get existingProfileId {
+    return switch (existingProfileSlot) {
+      _GeneratedTemplateExistingProfileSlot.none => null,
+      _GeneratedTemplateExistingProfileSlot.profile => _generatedProfileId,
+    };
+  }
+
+  String? get requestedDisplayName {
+    return switch (displayNameSlot) {
+      _GeneratedTemplateDisplayNameSlot.omitted => null,
+      _GeneratedTemplateDisplayNameSlot.same => _generatedDisplayName,
+      _GeneratedTemplateDisplayNameSlot.changed => _generatedChangedDisplayName,
+    };
+  }
+
+  String get expectedDisplayName =>
+      requestedDisplayName ?? _generatedDisplayName;
+
+  String? get requestedModelId {
+    return switch (modelSlot) {
+      _GeneratedTemplateModelSlot.omitted => null,
+      _GeneratedTemplateModelSlot.same => _generatedModelId,
+      _GeneratedTemplateModelSlot.changed => _generatedChangedModelId,
+    };
+  }
+
+  String get expectedModelId => requestedModelId ?? _generatedModelId;
+
+  bool get modelChanged =>
+      requestedModelId != null && requestedModelId != _generatedModelId;
+
+  String? get requestedProfileId {
+    return switch (profileSlot) {
+      _GeneratedTemplateProfileSlot.omitted => null,
+      _GeneratedTemplateProfileSlot.same => existingProfileId,
+      _GeneratedTemplateProfileSlot.changed => _generatedChangedProfileId,
+      _GeneratedTemplateProfileSlot.cleared => null,
+      _GeneratedTemplateProfileSlot.changedAndCleared =>
+        _generatedChangedProfileId,
+    };
+  }
+
+  bool get clearProfileId =>
+      profileSlot == _GeneratedTemplateProfileSlot.cleared ||
+      profileSlot == _GeneratedTemplateProfileSlot.changedAndCleared;
+
+  String? get expectedProfileId {
+    if (clearProfileId) {
+      return null;
+    }
+    return requestedProfileId ?? existingProfileId;
+  }
+
+  bool get profileChanged => expectedProfileId != existingProfileId;
+
+  @override
+  String toString() {
+    return '_GeneratedTemplateUpdateDelta('
+        'existingProfileSlot: $existingProfileSlot, '
+        'displayNameSlot: $displayNameSlot, modelSlot: $modelSlot, '
+        'profileSlot: $profileSlot)';
+  }
+}
+
+class _GeneratedTemplateUpdateScenario {
+  const _GeneratedTemplateUpdateScenario({
+    required this.templateSlot,
+    required this.delta,
+    required this.activeVersionSlot,
+    required this.historySlot,
+    required this.headSlot,
+    required this.nextVersionNumber,
+  });
+
+  final _GeneratedTemplateEntitySlot templateSlot;
+  final _GeneratedTemplateUpdateDelta delta;
+  final _GeneratedTemplateActiveVersionSlot activeVersionSlot;
+  final _GeneratedTemplateHistorySlot historySlot;
+  final _GeneratedTemplateHeadSlot headSlot;
+  final int nextVersionNumber;
+
+  bool get templateExists =>
+      templateSlot == _GeneratedTemplateEntitySlot.present;
+
+  bool get shouldReadActiveVersion =>
+      templateExists && (delta.modelChanged || delta.profileChanged);
+
+  bool get shouldCreateVersion =>
+      shouldReadActiveVersion &&
+      activeVersionSlot == _GeneratedTemplateActiveVersionSlot.present;
+
+  AgentDomainEntity? get initialTemplateEntity {
+    return switch (templateSlot) {
+      _GeneratedTemplateEntitySlot.present => makeTestTemplate(
+        id: _generatedTemplateId,
+        agentId: _generatedTemplateId,
+        displayName: _generatedDisplayName,
+        modelId: _generatedModelId,
+        profileId: delta.existingProfileId,
+      ),
+      _GeneratedTemplateEntitySlot.missing => null,
+      _GeneratedTemplateEntitySlot.wrongType => makeTestTemplateVersion(
+        id: _generatedTemplateId,
+        agentId: _generatedTemplateId,
+      ),
+    };
+  }
+
+  AgentTemplateVersionEntity? get activeVersion {
+    if (activeVersionSlot == _GeneratedTemplateActiveVersionSlot.missing) {
+      return null;
+    }
+    return makeTestTemplateVersion(
+      id: 'generated-active-version',
+      agentId: _generatedTemplateId,
+      version: 3,
+      directives: 'Generated active directives.',
+      generalDirective: 'Generated general directive.',
+      reportDirective: 'Generated report directive.',
+      authoredBy: 'generated-user',
+      modelId: _generatedModelId,
+      profileId: delta.existingProfileId,
+    );
+  }
+
+  AgentTemplateHeadEntity? get currentHead {
+    return switch (headSlot) {
+      _GeneratedTemplateHeadSlot.present => makeTestTemplateHead(
+        id: _generatedHeadId,
+        agentId: _generatedTemplateId,
+        versionId: 'generated-active-version',
+      ),
+      _GeneratedTemplateHeadSlot.missing => null,
+    };
+  }
+
+  List<AgentTemplateVersionEntity> get versionHistory {
+    return switch (historySlot) {
+      _GeneratedTemplateHistorySlot.empty => const [],
+      _GeneratedTemplateHistorySlot.allArchived => [
+        makeTestTemplateVersion(
+          id: 'generated-archived-version-1',
+          agentId: _generatedTemplateId,
+          status: AgentTemplateVersionStatus.archived,
+        ),
+        makeTestTemplateVersion(
+          id: 'generated-archived-version-2',
+          agentId: _generatedTemplateId,
+          version: 2,
+          status: AgentTemplateVersionStatus.archived,
+        ),
+      ],
+      _GeneratedTemplateHistorySlot.headActive => [
+        makeTestTemplateVersion(
+          id: 'generated-active-version',
+          agentId: _generatedTemplateId,
+          version: 3,
+        ),
+      ],
+      _GeneratedTemplateHistorySlot.mixed => [
+        makeTestTemplateVersion(
+          id: 'generated-archived-version',
+          agentId: _generatedTemplateId,
+          status: AgentTemplateVersionStatus.archived,
+        ),
+        makeTestTemplateVersion(
+          id: 'generated-stale-active-version',
+          agentId: _generatedTemplateId,
+          version: 2,
+        ),
+        makeTestTemplateVersion(
+          id: 'generated-active-version',
+          agentId: _generatedTemplateId,
+          version: 3,
+        ),
+      ],
+    };
+  }
+
+  Set<String> get archivedVersionIds {
+    return versionHistory
+        .where(
+          (version) => version.status != AgentTemplateVersionStatus.archived,
+        )
+        .map((version) => version.id)
+        .toSet();
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedTemplateUpdateScenario('
+        'templateSlot: $templateSlot, delta: $delta, '
+        'activeVersionSlot: $activeVersionSlot, historySlot: $historySlot, '
+        'headSlot: $headSlot, nextVersionNumber: $nextVersionNumber)';
+  }
+}
+
+class _GeneratedTemplateDeleteScenario {
+  const _GeneratedTemplateDeleteScenario({
+    required this.templateSlot,
+    required this.headSlot,
+    required this.assignmentSlots,
+    required this.versionSlots,
+  });
+
+  final _GeneratedTemplateEntitySlot templateSlot;
+  final _GeneratedTemplateHeadSlot headSlot;
+  final List<_GeneratedTemplateDeleteAssignmentSlot> assignmentSlots;
+  final List<_GeneratedTemplateDeleteVersionSlot> versionSlots;
+
+  bool get templateExists =>
+      templateSlot == _GeneratedTemplateEntitySlot.present;
+
+  AgentDomainEntity? get initialTemplateEntity {
+    return switch (templateSlot) {
+      _GeneratedTemplateEntitySlot.present => makeTestTemplate(
+        id: _generatedTemplateId,
+        agentId: _generatedTemplateId,
+        displayName: _generatedDisplayName,
+        modelId: _generatedModelId,
+      ),
+      _GeneratedTemplateEntitySlot.missing => null,
+      _GeneratedTemplateEntitySlot.wrongType => makeTestTemplateVersion(
+        id: _generatedTemplateId,
+        agentId: _generatedTemplateId,
+      ),
+    };
+  }
+
+  AgentTemplateHeadEntity? get currentHead {
+    return switch (headSlot) {
+      _GeneratedTemplateHeadSlot.present => makeTestTemplateHead(
+        id: _generatedHeadId,
+        agentId: _generatedTemplateId,
+        versionId: 'generated-delete-version-0',
+      ),
+      _GeneratedTemplateHeadSlot.missing => null,
+    };
+  }
+
+  int get blockingAgentCount {
+    return assignmentSlots.where((slot) {
+      return switch (slot) {
+        _GeneratedTemplateDeleteAssignmentSlot.active ||
+        _GeneratedTemplateDeleteAssignmentSlot.created ||
+        _GeneratedTemplateDeleteAssignmentSlot.dormant => true,
+        _GeneratedTemplateDeleteAssignmentSlot.destroyed ||
+        _GeneratedTemplateDeleteAssignmentSlot.missing ||
+        _GeneratedTemplateDeleteAssignmentSlot.wrongType => false,
+      };
+    }).length;
+  }
+
+  List<AgentDomainEntity> get versionEntities {
+    return [
+      for (final (index, slot) in versionSlots.indexed)
+        switch (slot) {
+          _GeneratedTemplateDeleteVersionSlot.version =>
+            makeTestTemplateVersion(
+              id: 'generated-delete-version-$index',
+              agentId: _generatedTemplateId,
+              version: index + 1,
+            ),
+          _GeneratedTemplateDeleteVersionSlot.archivedVersion =>
+            makeTestTemplateVersion(
+              id: 'generated-delete-version-$index',
+              agentId: _generatedTemplateId,
+              version: index + 1,
+              status: AgentTemplateVersionStatus.archived,
+            ),
+          _GeneratedTemplateDeleteVersionSlot.nonVersion => makeTestTemplate(
+            id: 'generated-delete-non-version-$index',
+            agentId: _generatedTemplateId,
+          ),
+        },
+    ];
+  }
+
+  Set<String> get deletedVersionIds {
+    return versionEntities
+        .whereType<AgentTemplateVersionEntity>()
+        .map((version) => version.id)
+        .toSet();
+  }
+
+  AgentDomainEntity? assignmentEntity(
+    _GeneratedTemplateDeleteAssignmentSlot slot,
+    int index,
+  ) {
+    final agentId = 'generated-delete-agent-$index';
+    return switch (slot) {
+      _GeneratedTemplateDeleteAssignmentSlot.active => makeTestIdentity(
+        id: agentId,
+        agentId: agentId,
+      ),
+      _GeneratedTemplateDeleteAssignmentSlot.created => makeTestIdentity(
+        id: agentId,
+        agentId: agentId,
+        lifecycle: AgentLifecycle.created,
+      ),
+      _GeneratedTemplateDeleteAssignmentSlot.dormant => makeTestIdentity(
+        id: agentId,
+        agentId: agentId,
+        lifecycle: AgentLifecycle.dormant,
+      ),
+      _GeneratedTemplateDeleteAssignmentSlot.destroyed => makeTestIdentity(
+        id: agentId,
+        agentId: agentId,
+        lifecycle: AgentLifecycle.destroyed,
+      ),
+      _GeneratedTemplateDeleteAssignmentSlot.missing => null,
+      _GeneratedTemplateDeleteAssignmentSlot.wrongType => makeTestTemplate(
+        id: agentId,
+        agentId: agentId,
+      ),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedTemplateDeleteScenario('
+        'templateSlot: $templateSlot, headSlot: $headSlot, '
+        'assignmentSlots: $assignmentSlots, versionSlots: $versionSlots)';
+  }
+}
+
+extension _AnyGeneratedAgentTemplateServiceScenario on glados.Any {
+  glados.Generator<_GeneratedTemplateEntitySlot> get templateEntitySlot =>
+      glados.AnyUtils(this).choose(_GeneratedTemplateEntitySlot.values);
+
+  glados.Generator<_GeneratedTemplateDisplayNameSlot>
+  get templateDisplayNameSlot =>
+      glados.AnyUtils(this).choose(_GeneratedTemplateDisplayNameSlot.values);
+
+  glados.Generator<_GeneratedTemplateModelSlot> get templateModelSlot =>
+      glados.AnyUtils(this).choose(_GeneratedTemplateModelSlot.values);
+
+  glados.Generator<_GeneratedTemplateExistingProfileSlot>
+  get templateExistingProfileSlot => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedTemplateExistingProfileSlot.values);
+
+  glados.Generator<_GeneratedTemplateProfileSlot> get templateProfileSlot =>
+      glados.AnyUtils(this).choose(_GeneratedTemplateProfileSlot.values);
+
+  glados.Generator<_GeneratedTemplateActiveVersionSlot>
+  get templateActiveVersionSlot =>
+      glados.AnyUtils(this).choose(_GeneratedTemplateActiveVersionSlot.values);
+
+  glados.Generator<_GeneratedTemplateHistorySlot> get templateHistorySlot =>
+      glados.AnyUtils(this).choose(_GeneratedTemplateHistorySlot.values);
+
+  glados.Generator<_GeneratedTemplateHeadSlot> get templateHeadSlot =>
+      glados.AnyUtils(this).choose(_GeneratedTemplateHeadSlot.values);
+
+  glados.Generator<_GeneratedTemplateDeleteAssignmentSlot>
+  get templateDeleteAssignmentSlot => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedTemplateDeleteAssignmentSlot.values);
+
+  glados.Generator<_GeneratedTemplateDeleteVersionSlot>
+  get templateDeleteVersionSlot => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedTemplateDeleteVersionSlot.values);
+
+  glados.Generator<_GeneratedTemplateUpdateDelta> get templateUpdateDelta =>
+      glados.CombinableAny(this).combine4(
+        templateExistingProfileSlot,
+        templateDisplayNameSlot,
+        templateModelSlot,
+        templateProfileSlot,
+        (
+          _GeneratedTemplateExistingProfileSlot existingProfileSlot,
+          _GeneratedTemplateDisplayNameSlot displayNameSlot,
+          _GeneratedTemplateModelSlot modelSlot,
+          _GeneratedTemplateProfileSlot profileSlot,
+        ) => _GeneratedTemplateUpdateDelta(
+          existingProfileSlot: existingProfileSlot,
+          displayNameSlot: displayNameSlot,
+          modelSlot: modelSlot,
+          profileSlot: profileSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedTemplateUpdateScenario>
+  get templateUpdateScenario => glados.CombinableAny(this).combine6(
+    templateEntitySlot,
+    templateUpdateDelta,
+    templateActiveVersionSlot,
+    templateHistorySlot,
+    templateHeadSlot,
+    glados.IntAnys(this).intInRange(1, 20),
+    (
+      _GeneratedTemplateEntitySlot templateSlot,
+      _GeneratedTemplateUpdateDelta delta,
+      _GeneratedTemplateActiveVersionSlot activeVersionSlot,
+      _GeneratedTemplateHistorySlot historySlot,
+      _GeneratedTemplateHeadSlot headSlot,
+      int nextVersionNumber,
+    ) => _GeneratedTemplateUpdateScenario(
+      templateSlot: templateSlot,
+      delta: delta,
+      activeVersionSlot: activeVersionSlot,
+      historySlot: historySlot,
+      headSlot: headSlot,
+      nextVersionNumber: nextVersionNumber,
+    ),
+  );
+
+  glados.Generator<_GeneratedTemplateDeleteScenario>
+  get templateDeleteScenario => glados.CombinableAny(this).combine4(
+    templateEntitySlot,
+    templateHeadSlot,
+    glados.ListAnys(
+      this,
+    ).listWithLengthInRange(0, 5, templateDeleteAssignmentSlot),
+    glados.ListAnys(
+      this,
+    ).listWithLengthInRange(0, 5, templateDeleteVersionSlot),
+    (
+      _GeneratedTemplateEntitySlot templateSlot,
+      _GeneratedTemplateHeadSlot headSlot,
+      List<_GeneratedTemplateDeleteAssignmentSlot> assignmentSlots,
+      List<_GeneratedTemplateDeleteVersionSlot> versionSlots,
+    ) => _GeneratedTemplateDeleteScenario(
+      templateSlot: templateSlot,
+      headSlot: headSlot,
+      assignmentSlots: assignmentSlots,
+      versionSlots: versionSlots,
+    ),
+  );
+}
 
 void main() {
   late MockAgentRepository mockRepo;
@@ -153,6 +647,266 @@ void main() {
   });
 
   group('updateTemplate', () {
+    glados.Glados(
+      glados.any.templateUpdateScenario,
+      glados.ExploreConfig(numRuns: 220),
+    ).test('matches generated update/versioning invariants', (scenario) async {
+      final generatedRepository = MockAgentRepository();
+      final generatedSync = MockAgentSyncService();
+      final generatedService = AgentTemplateService(
+        repository: generatedRepository,
+        syncService: generatedSync,
+      );
+      final testDate = DateTime(2026, 4, 20, 10, 15);
+      var storedTemplate = scenario.initialTemplateEntity;
+
+      when(
+        () => generatedRepository.getEntity(_generatedTemplateId),
+      ).thenAnswer((_) async => storedTemplate);
+      when(
+        () => generatedRepository.getActiveTemplateVersion(
+          _generatedTemplateId,
+        ),
+      ).thenAnswer((_) async => scenario.activeVersion);
+      when(
+        () => generatedRepository.getTemplateHead(_generatedTemplateId),
+      ).thenAnswer((_) async => scenario.currentHead);
+      when(
+        () => generatedRepository.getNextTemplateVersionNumber(
+          _generatedTemplateId,
+        ),
+      ).thenAnswer((_) async => scenario.nextVersionNumber);
+      when(
+        () => generatedRepository.getEntitiesByAgentId(
+          _generatedTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => scenario.versionHistory);
+      when(() => generatedSync.upsertEntity(any())).thenAnswer((invocation) {
+        final entity =
+            invocation.positionalArguments.single as AgentDomainEntity;
+        if (entity is AgentTemplateEntity) {
+          storedTemplate = entity;
+        }
+        return Future<void>.value();
+      });
+
+      Future<AgentTemplateEntity> updateTemplate() {
+        return withClock(Clock.fixed(testDate), () {
+          return generatedService.updateTemplate(
+            templateId: _generatedTemplateId,
+            displayName: scenario.delta.requestedDisplayName,
+            modelId: scenario.delta.requestedModelId,
+            profileId: scenario.delta.requestedProfileId,
+            clearProfileId: scenario.delta.clearProfileId,
+          );
+        });
+      }
+
+      if (!scenario.templateExists) {
+        await expectLater(
+          updateTemplate,
+          throwsA(isA<StateError>()),
+          reason: '$scenario',
+        );
+
+        verifyNever(() => generatedSync.upsertEntity(any()));
+        verifyNever(
+          () => generatedRepository.getActiveTemplateVersion(
+            _generatedTemplateId,
+          ),
+        );
+        verifyNever(
+          () => generatedRepository.getTemplateHead(_generatedTemplateId),
+        );
+        verifyNever(
+          () => generatedRepository.getNextTemplateVersionNumber(
+            _generatedTemplateId,
+          ),
+        );
+        return;
+      }
+
+      final result = await updateTemplate();
+      expect(
+        result.displayName,
+        scenario.delta.expectedDisplayName,
+        reason: '$scenario',
+      );
+      expect(
+        result.modelId,
+        scenario.delta.expectedModelId,
+        reason: '$scenario',
+      );
+      expect(
+        result.profileId,
+        scenario.delta.expectedProfileId,
+        reason: '$scenario',
+      );
+      expect(result.updatedAt, testDate, reason: '$scenario');
+
+      if (scenario.shouldReadActiveVersion) {
+        verify(
+          () => generatedRepository.getActiveTemplateVersion(
+            _generatedTemplateId,
+          ),
+        ).called(1);
+      } else {
+        verifyNever(
+          () => generatedRepository.getActiveTemplateVersion(
+            _generatedTemplateId,
+          ),
+        );
+      }
+
+      final writes = verify(
+        () => generatedSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
+      final expectedWriteCount =
+          1 +
+          (scenario.shouldCreateVersion
+              ? scenario.archivedVersionIds.length + 2
+              : 0);
+      expect(writes, hasLength(expectedWriteCount), reason: '$scenario');
+
+      final updatedTemplate = writes.first as AgentTemplateEntity;
+      expect(
+        updatedTemplate.displayName,
+        scenario.delta.expectedDisplayName,
+        reason: '$scenario',
+      );
+      expect(
+        updatedTemplate.modelId,
+        scenario.delta.expectedModelId,
+        reason: '$scenario',
+      );
+      expect(
+        updatedTemplate.profileId,
+        scenario.delta.expectedProfileId,
+        reason: '$scenario',
+      );
+      expect(updatedTemplate.updatedAt, testDate, reason: '$scenario');
+
+      if (!scenario.shouldCreateVersion) {
+        verifyNever(
+          () => generatedRepository.getTemplateHead(_generatedTemplateId),
+        );
+        verifyNever(
+          () => generatedRepository.getNextTemplateVersionNumber(
+            _generatedTemplateId,
+          ),
+        );
+        verifyNever(
+          () => generatedRepository.getEntitiesByAgentId(
+            _generatedTemplateId,
+            type: AgentEntityTypes.agentTemplateVersion,
+            limit: any(named: 'limit'),
+          ),
+        );
+        expect(
+          writes.whereType<AgentTemplateVersionEntity>(),
+          isEmpty,
+          reason: '$scenario',
+        );
+        expect(
+          writes.whereType<AgentTemplateHeadEntity>(),
+          isEmpty,
+          reason: '$scenario',
+        );
+        return;
+      }
+
+      verify(
+        () => generatedRepository.getTemplateHead(_generatedTemplateId),
+      ).called(1);
+      verify(
+        () => generatedRepository.getNextTemplateVersionNumber(
+          _generatedTemplateId,
+        ),
+      ).called(1);
+      verify(
+        () => generatedRepository.getEntitiesByAgentId(
+          _generatedTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).called(1);
+
+      final archivedWrites = writes
+          .whereType<AgentTemplateVersionEntity>()
+          .where(
+            (version) => version.status == AgentTemplateVersionStatus.archived,
+          )
+          .toList();
+      expect(
+        archivedWrites.map((version) => version.id).toSet(),
+        scenario.archivedVersionIds,
+        reason: '$scenario',
+      );
+
+      final activeVersionWrites = writes
+          .whereType<AgentTemplateVersionEntity>()
+          .where(
+            (version) => version.status == AgentTemplateVersionStatus.active,
+          )
+          .toList();
+      expect(activeVersionWrites, hasLength(1), reason: '$scenario');
+
+      final newVersion = activeVersionWrites.single;
+      final activeVersion = scenario.activeVersion!;
+      expect(newVersion.agentId, _generatedTemplateId, reason: '$scenario');
+      expect(
+        newVersion.version,
+        scenario.nextVersionNumber,
+        reason: '$scenario',
+      );
+      expect(
+        newVersion.directives,
+        activeVersion.directives,
+        reason: '$scenario',
+      );
+      expect(
+        newVersion.generalDirective,
+        activeVersion.generalDirective,
+        reason: '$scenario',
+      );
+      expect(
+        newVersion.reportDirective,
+        activeVersion.reportDirective,
+        reason: '$scenario',
+      );
+      expect(
+        newVersion.authoredBy,
+        'system:config_change',
+        reason: '$scenario',
+      );
+      expect(
+        newVersion.modelId,
+        scenario.delta.expectedModelId,
+        reason: '$scenario',
+      );
+      expect(
+        newVersion.profileId,
+        scenario.delta.expectedProfileId,
+        reason: '$scenario',
+      );
+      expect(newVersion.createdAt, testDate, reason: '$scenario');
+
+      final headWrites = writes.whereType<AgentTemplateHeadEntity>().toList();
+      expect(headWrites, hasLength(1), reason: '$scenario');
+      final head = headWrites.single;
+      expect(head.agentId, _generatedTemplateId, reason: '$scenario');
+      expect(head.versionId, newVersion.id, reason: '$scenario');
+      expect(head.updatedAt, testDate, reason: '$scenario');
+      final currentHead = scenario.currentHead;
+      if (currentHead != null) {
+        expect(head.id, currentHead.id, reason: '$scenario');
+      } else {
+        expect(head.id, isNotEmpty, reason: '$scenario');
+      }
+    });
+
     test('updates display name and model ID', () async {
       stubTemplateExists();
       stubVersionCreationChain();
@@ -683,6 +1437,145 @@ void main() {
   });
 
   group('deleteTemplate', () {
+    glados.Glados(
+      glados.any.templateDeleteScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated soft-delete invariants', (scenario) async {
+      final generatedRepository = MockAgentRepository();
+      final generatedSync = MockAgentSyncService();
+      final generatedService = AgentTemplateService(
+        repository: generatedRepository,
+        syncService: generatedSync,
+      );
+      final testDate = DateTime(2026, 4, 21, 11, 30);
+      final links = [
+        for (final (index, _) in scenario.assignmentSlots.indexed)
+          makeTestTemplateAssignmentLink(
+            id: 'generated-delete-link-$index',
+            fromId: _generatedTemplateId,
+            toId: 'generated-delete-agent-$index',
+          ),
+      ];
+
+      when(
+        () => generatedRepository.getLinksFrom(
+          _generatedTemplateId,
+          type: AgentLinkTypes.templateAssignment,
+        ),
+      ).thenAnswer((_) async => links);
+      for (final (index, slot) in scenario.assignmentSlots.indexed) {
+        when(
+          () => generatedRepository.getEntity('generated-delete-agent-$index'),
+        ).thenAnswer((_) async => scenario.assignmentEntity(slot, index));
+      }
+      when(
+        () => generatedRepository.getEntity(_generatedTemplateId),
+      ).thenAnswer((_) async => scenario.initialTemplateEntity);
+      when(
+        () => generatedRepository.getTemplateHead(_generatedTemplateId),
+      ).thenAnswer((_) async => scenario.currentHead);
+      when(
+        () => generatedRepository.getEntitiesByAgentId(
+          _generatedTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+        ),
+      ).thenAnswer((_) async => scenario.versionEntities);
+      when(() => generatedSync.upsertEntity(any())).thenAnswer((_) async {});
+
+      Future<void> deleteTemplate() {
+        return withClock(Clock.fixed(testDate), () {
+          return generatedService.deleteTemplate(_generatedTemplateId);
+        });
+      }
+
+      if (scenario.blockingAgentCount > 0) {
+        await expectLater(
+          deleteTemplate,
+          throwsA(
+            isA<TemplateInUseException>().having(
+              (error) => error.activeCount,
+              'activeCount',
+              scenario.blockingAgentCount,
+            ),
+          ),
+          reason: '$scenario',
+        );
+
+        verifyNever(() => generatedSync.upsertEntity(any()));
+        verifyNever(
+          () => generatedRepository.getTemplateHead(_generatedTemplateId),
+        );
+        verifyNever(
+          () => generatedRepository.getEntitiesByAgentId(
+            _generatedTemplateId,
+            type: AgentEntityTypes.agentTemplateVersion,
+          ),
+        );
+        return;
+      }
+
+      await deleteTemplate();
+
+      if (!scenario.templateExists) {
+        verifyNever(() => generatedSync.upsertEntity(any()));
+        verifyNever(
+          () => generatedRepository.getTemplateHead(_generatedTemplateId),
+        );
+        verifyNever(
+          () => generatedRepository.getEntitiesByAgentId(
+            _generatedTemplateId,
+            type: AgentEntityTypes.agentTemplateVersion,
+          ),
+        );
+        return;
+      }
+
+      verify(
+        () => generatedRepository.getTemplateHead(_generatedTemplateId),
+      ).called(1);
+      verify(
+        () => generatedRepository.getEntitiesByAgentId(
+          _generatedTemplateId,
+          type: AgentEntityTypes.agentTemplateVersion,
+        ),
+      ).called(1);
+
+      final writes = verify(
+        () => generatedSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
+      final expectedWriteCount =
+          1 +
+          (scenario.currentHead == null ? 0 : 1) +
+          scenario.deletedVersionIds.length;
+      expect(writes, hasLength(expectedWriteCount), reason: '$scenario');
+
+      final deletedTemplate = writes.first as AgentTemplateEntity;
+      expect(deletedTemplate.deletedAt, testDate, reason: '$scenario');
+      expect(deletedTemplate.updatedAt, testDate, reason: '$scenario');
+
+      final headWrites = writes.whereType<AgentTemplateHeadEntity>().toList();
+      if (scenario.currentHead == null) {
+        expect(headWrites, isEmpty, reason: '$scenario');
+      } else {
+        expect(headWrites, hasLength(1), reason: '$scenario');
+        expect(headWrites.single.id, _generatedHeadId, reason: '$scenario');
+        expect(headWrites.single.deletedAt, testDate, reason: '$scenario');
+        expect(headWrites.single.updatedAt, testDate, reason: '$scenario');
+      }
+
+      final versionWrites = writes
+          .whereType<AgentTemplateVersionEntity>()
+          .toList();
+      expect(
+        versionWrites.map((version) => version.id).toSet(),
+        scenario.deletedVersionIds,
+        reason: '$scenario',
+      );
+      for (final version in versionWrites) {
+        expect(version.deletedAt, testDate, reason: '$scenario');
+      }
+    });
+
     test('fails when active instances exist', () async {
       final activeAgent = makeTestIdentity(id: 'agent-a', agentId: 'agent-a');
       final links = [
