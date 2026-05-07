@@ -1,6 +1,94 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/util/gemini_config.dart';
+
+enum _GeneratedDefaultThinkingModelKind {
+  gemini31ProWithPrefix,
+  gemini31ProWithoutPrefix,
+  gemini3LegacyWithPrefix,
+  gemini3LegacyWithoutPrefix,
+  gemini25FlashWithPrefix,
+  gemini25FlashWithoutPrefix,
+  gemini25FlashLiteWithPrefix,
+  gemini25FlashLiteWithoutPrefix,
+  gemini25ProWithPrefix,
+  gemini25ProWithoutPrefix,
+  gemini20FlashWithPrefix,
+  gemini20FlashWithoutPrefix,
+  unknown,
+  empty,
+  uppercaseGemini3,
+}
+
+String _generatedDefaultThinkingModelId(
+  _GeneratedDefaultThinkingModelKind kind,
+) {
+  return switch (kind) {
+    _GeneratedDefaultThinkingModelKind.gemini31ProWithPrefix =>
+      'models/gemini-3.1-pro-preview',
+    _GeneratedDefaultThinkingModelKind.gemini31ProWithoutPrefix =>
+      'gemini-3.1-pro-preview',
+    _GeneratedDefaultThinkingModelKind.gemini3LegacyWithPrefix =>
+      'models/gemini-3-pro-preview',
+    _GeneratedDefaultThinkingModelKind.gemini3LegacyWithoutPrefix =>
+      'gemini-3-pro-preview',
+    _GeneratedDefaultThinkingModelKind.gemini25FlashWithPrefix =>
+      'models/gemini-2.5-flash',
+    _GeneratedDefaultThinkingModelKind.gemini25FlashWithoutPrefix =>
+      'gemini-2.5-flash',
+    _GeneratedDefaultThinkingModelKind.gemini25FlashLiteWithPrefix =>
+      'models/gemini-2.5-flash-lite',
+    _GeneratedDefaultThinkingModelKind.gemini25FlashLiteWithoutPrefix =>
+      'gemini-2.5-flash-lite',
+    _GeneratedDefaultThinkingModelKind.gemini25ProWithPrefix =>
+      'models/gemini-2.5-pro',
+    _GeneratedDefaultThinkingModelKind.gemini25ProWithoutPrefix =>
+      'gemini-2.5-pro',
+    _GeneratedDefaultThinkingModelKind.gemini20FlashWithPrefix =>
+      'models/gemini-2.0-flash',
+    _GeneratedDefaultThinkingModelKind.gemini20FlashWithoutPrefix =>
+      'gemini-2.0-flash',
+    _GeneratedDefaultThinkingModelKind.unknown => 'models/gemini-unknown',
+    _GeneratedDefaultThinkingModelKind.empty => '',
+    _GeneratedDefaultThinkingModelKind.uppercaseGemini3 =>
+      'GEMINI-3-PRO-PREVIEW',
+  };
+}
+
+GeminiThinkingConfig _expectedDefaultThinkingConfig(
+  _GeneratedDefaultThinkingModelKind kind,
+) {
+  return switch (kind) {
+    _GeneratedDefaultThinkingModelKind.gemini31ProWithPrefix ||
+    _GeneratedDefaultThinkingModelKind.gemini31ProWithoutPrefix ||
+    _GeneratedDefaultThinkingModelKind.gemini3LegacyWithPrefix ||
+    _GeneratedDefaultThinkingModelKind.gemini3LegacyWithoutPrefix =>
+      const GeminiThinkingConfig(thinkingBudget: 4096),
+    _GeneratedDefaultThinkingModelKind.gemini25FlashWithPrefix ||
+    _GeneratedDefaultThinkingModelKind.gemini25FlashWithoutPrefix =>
+      GeminiThinkingConfig.standard,
+    _GeneratedDefaultThinkingModelKind.gemini25FlashLiteWithPrefix ||
+    _GeneratedDefaultThinkingModelKind.gemini25FlashLiteWithoutPrefix =>
+      const GeminiThinkingConfig(thinkingBudget: 4096),
+    _GeneratedDefaultThinkingModelKind.gemini25ProWithPrefix ||
+    _GeneratedDefaultThinkingModelKind.gemini25ProWithoutPrefix =>
+      GeminiThinkingConfig.auto,
+    _GeneratedDefaultThinkingModelKind.gemini20FlashWithPrefix ||
+    _GeneratedDefaultThinkingModelKind.gemini20FlashWithoutPrefix =>
+      GeminiThinkingConfig.disabled,
+    _GeneratedDefaultThinkingModelKind.unknown ||
+    _GeneratedDefaultThinkingModelKind.empty ||
+    _GeneratedDefaultThinkingModelKind.uppercaseGemini3 =>
+      GeminiThinkingConfig.auto,
+  };
+}
+
+extension _AnyGeneratedDefaultThinkingConfig on glados.Any {
+  glados.Generator<_GeneratedDefaultThinkingModelKind>
+  get defaultThinkingModelKind =>
+      glados.AnyUtils(this).choose(_GeneratedDefaultThinkingModelKind.values);
+}
 
 void main() {
   group('getDefaultThinkingConfig', () {
@@ -151,6 +239,21 @@ void main() {
         expect(lowercase.thinkingBudget, 4096);
         // Uppercase falls through to default (auto)
         expect(uppercase, equals(GeminiThinkingConfig.auto));
+      });
+
+      glados.Glados(
+        glados.any.defaultThinkingModelKind,
+        glados.ExploreConfig(numRuns: 120),
+      ).test('matches generated default thinking config model mappings', (
+        kind,
+      ) {
+        final config = getDefaultThinkingConfig(
+          _generatedDefaultThinkingModelId(kind),
+        );
+        final expected = _expectedDefaultThinkingConfig(kind);
+
+        expect(config.thinkingBudget, expected.thinkingBudget);
+        expect(config.includeThoughts, expected.includeThoughts);
       });
     });
   });

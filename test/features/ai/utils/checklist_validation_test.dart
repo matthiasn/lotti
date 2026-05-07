@@ -1,5 +1,125 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/utils/checklist_validation.dart';
+
+enum _GeneratedChecklistEntryShape {
+  validUnchecked,
+  validChecked,
+  validPadded,
+  validCheckedString,
+  emptyTitle,
+  whitespaceTitle,
+  tooLongTitle,
+  missingTitle,
+  nonStringTitle,
+  stringEntry,
+  numberEntry,
+  nullEntry,
+  listEntry,
+}
+
+class _GeneratedChecklistEntry {
+  const _GeneratedChecklistEntry({
+    required this.shape,
+    required this.seed,
+  });
+
+  final _GeneratedChecklistEntryShape shape;
+  final int seed;
+
+  dynamic get raw => switch (shape) {
+    _GeneratedChecklistEntryShape.validUnchecked => {
+      'title': 'Generated item $seed',
+      'isChecked': false,
+    },
+    _GeneratedChecklistEntryShape.validChecked => {
+      'title': 'Generated checked item $seed',
+      'isChecked': true,
+    },
+    _GeneratedChecklistEntryShape.validPadded => {
+      'title': '  Generated padded item $seed  ',
+      'isChecked': seed.isEven,
+    },
+    _GeneratedChecklistEntryShape.validCheckedString => {
+      'title': 'Generated string checked item $seed',
+      'isChecked': 'true',
+    },
+    _GeneratedChecklistEntryShape.emptyTitle => {'title': ''},
+    _GeneratedChecklistEntryShape.whitespaceTitle => {'title': '   '},
+    _GeneratedChecklistEntryShape.tooLongTitle => {'title': 'x' * 401},
+    _GeneratedChecklistEntryShape.missingTitle => {'notTitle': 'item $seed'},
+    _GeneratedChecklistEntryShape.nonStringTitle => {'title': seed},
+    _GeneratedChecklistEntryShape.stringEntry => 'Generated string entry $seed',
+    _GeneratedChecklistEntryShape.numberEntry => seed,
+    _GeneratedChecklistEntryShape.nullEntry => null,
+    _GeneratedChecklistEntryShape.listEntry => ['Generated', seed],
+  };
+
+  ({String title, bool isChecked})? get expected => switch (shape) {
+    _GeneratedChecklistEntryShape.validUnchecked => (
+      title: 'Generated item $seed',
+      isChecked: false,
+    ),
+    _GeneratedChecklistEntryShape.validChecked => (
+      title: 'Generated checked item $seed',
+      isChecked: true,
+    ),
+    _GeneratedChecklistEntryShape.validPadded => (
+      title: 'Generated padded item $seed',
+      isChecked: seed.isEven,
+    ),
+    _GeneratedChecklistEntryShape.validCheckedString => (
+      title: 'Generated string checked item $seed',
+      isChecked: false,
+    ),
+    _ => null,
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedChecklistEntry(shape: $shape, seed: $seed)';
+  }
+}
+
+class _GeneratedChecklistValidationScenario {
+  const _GeneratedChecklistValidationScenario({required this.entries});
+
+  final List<_GeneratedChecklistEntry> entries;
+
+  List<dynamic> get rawEntries => entries.map((entry) => entry.raw).toList();
+
+  List<({String title, bool isChecked})> get expectedItems =>
+      entries.map((entry) => entry.expected).nonNulls.toList();
+
+  @override
+  String toString() {
+    return '_GeneratedChecklistValidationScenario(entries: $entries)';
+  }
+}
+
+extension _AnyGeneratedChecklistValidationScenario on glados.Any {
+  glados.Generator<_GeneratedChecklistEntryShape> get checklistEntryShape =>
+      glados.AnyUtils(this).choose(_GeneratedChecklistEntryShape.values);
+
+  glados.Generator<_GeneratedChecklistEntry> get checklistEntry =>
+      glados.CombinableAny(this).combine2(
+        checklistEntryShape,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedChecklistEntryShape shape,
+          int seed,
+        ) => _GeneratedChecklistEntry(shape: shape, seed: seed),
+      );
+
+  glados.Generator<_GeneratedChecklistValidationScenario>
+  get checklistValidationScenario => glados.ListAnys(this)
+      .listWithLengthInRange(0, 30, checklistEntry)
+      .map(
+        (entries) => _GeneratedChecklistValidationScenario(
+          entries: entries,
+        ),
+      );
+}
 
 void main() {
   group('ChecklistValidation', () {
@@ -137,6 +257,39 @@ void main() {
         expect(result[1].title, 'Second');
         expect(result[2].title, 'Third');
       });
+
+      glados.Glados(
+        glados.any.checklistValidationScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'matches generated sanitization and per-entry validation semantics',
+        (scenario) {
+          final result = ChecklistValidation.validateItems(
+            scenario.rawEntries,
+          );
+
+          expect(
+            result,
+            scenario.expectedItems,
+            reason: '$scenario',
+          );
+
+          for (final entry in scenario.entries) {
+            expect(
+              ChecklistValidation.validateItemEntry(entry.raw) == null,
+              entry.expected != null,
+              reason: '$scenario entry=$entry',
+            );
+          }
+
+          expect(
+            ChecklistValidation.isValidBatchSize(result.length),
+            result.isNotEmpty &&
+                result.length <= ChecklistValidation.maxBatchSize,
+            reason: '$scenario',
+          );
+        },
+      );
     });
 
     group('validateItemEntry', () {

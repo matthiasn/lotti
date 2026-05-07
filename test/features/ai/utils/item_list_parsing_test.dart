@@ -1,5 +1,119 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/utils/item_list_parsing.dart';
+
+enum _GeneratedItemListShape {
+  plain,
+  padded,
+  doubleQuotedComma,
+  singleQuotedComma,
+  escapedComma,
+  parentheses,
+  brackets,
+  braces,
+}
+
+class _GeneratedItemListElement {
+  const _GeneratedItemListElement({
+    required this.shape,
+    required this.seed,
+  });
+
+  final _GeneratedItemListShape shape;
+  final int seed;
+
+  String get base => 'item-$seed';
+
+  String get rawSegment => switch (shape) {
+    _GeneratedItemListShape.plain => base,
+    _GeneratedItemListShape.padded => '  $base  ',
+    _GeneratedItemListShape.doubleQuotedComma => '"$base, detail"',
+    _GeneratedItemListShape.singleQuotedComma => "'$base, detail'",
+    _GeneratedItemListShape.escapedComma => '$base\\, detail',
+    _GeneratedItemListShape.parentheses => '$base (left, right)',
+    _GeneratedItemListShape.brackets => '[$base, detail]',
+    _GeneratedItemListShape.braces => '{$base: left, right}',
+  };
+
+  String get expected => switch (shape) {
+    _GeneratedItemListShape.plain => base,
+    _GeneratedItemListShape.padded => base,
+    _GeneratedItemListShape.doubleQuotedComma => '$base, detail',
+    _GeneratedItemListShape.singleQuotedComma => '$base, detail',
+    _GeneratedItemListShape.escapedComma => '$base, detail',
+    _GeneratedItemListShape.parentheses => '$base (left, right)',
+    _GeneratedItemListShape.brackets => '[$base, detail]',
+    _GeneratedItemListShape.braces => '{$base: left, right}',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedItemListElement(shape: $shape, seed: $seed)';
+  }
+}
+
+class _GeneratedItemListScenario {
+  const _GeneratedItemListScenario({
+    required this.elements,
+    required this.leadingSeparator,
+    required this.trailingSeparator,
+  });
+
+  final List<_GeneratedItemListElement> elements;
+  final bool leadingSeparator;
+  final bool trailingSeparator;
+
+  String get input {
+    final body = elements.map((element) => element.rawSegment).join(', ');
+    return [
+      if (leadingSeparator) '',
+      body,
+      if (trailingSeparator) '',
+    ].join(', ');
+  }
+
+  List<String> get expected =>
+      elements.map((element) => element.expected).toList();
+
+  @override
+  String toString() {
+    return '_GeneratedItemListScenario('
+        'elements: $elements, '
+        'leadingSeparator: $leadingSeparator, '
+        'trailingSeparator: $trailingSeparator)';
+  }
+}
+
+extension _AnyGeneratedItemListScenario on glados.Any {
+  glados.Generator<_GeneratedItemListShape> get itemListShape =>
+      glados.AnyUtils(this).choose(_GeneratedItemListShape.values);
+
+  glados.Generator<_GeneratedItemListElement> get itemListElement =>
+      glados.CombinableAny(this).combine2(
+        itemListShape,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedItemListShape shape,
+          int seed,
+        ) => _GeneratedItemListElement(shape: shape, seed: seed),
+      );
+
+  glados.Generator<_GeneratedItemListScenario> get itemListScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.ListAnys(this).listWithLengthInRange(0, 8, itemListElement),
+        glados.AnyUtils(this).choose([false, true]),
+        glados.AnyUtils(this).choose([false, true]),
+        (
+          List<_GeneratedItemListElement> elements,
+          bool leadingSeparator,
+          bool trailingSeparator,
+        ) => _GeneratedItemListScenario(
+          elements: elements,
+          leadingSeparator: leadingSeparator,
+          trailingSeparator: trailingSeparator,
+        ),
+      );
+}
 
 void main() {
   group('parseItemListString', () {
@@ -73,6 +187,17 @@ void main() {
 
     test('trims and discards empties', () {
       expect(parseItemListString('a, , b , ,'), ['a', 'b']);
+    });
+
+    glados.Glados(
+      glados.any.itemListScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('roundtrips generated escaped and grouped item lists', (scenario) {
+      expect(
+        parseItemListString(scenario.input),
+        scenario.expected,
+        reason: '$scenario',
+      );
     });
   });
 }

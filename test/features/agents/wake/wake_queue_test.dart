@@ -1,5 +1,131 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/wake/wake_queue.dart';
+
+enum _GeneratedWakeQueueOperationKind {
+  enqueue,
+  dequeue,
+  mergeTokens,
+  removeByAgent,
+  requeueLastDequeued,
+  clearHistoryWhenEmpty,
+}
+
+enum _GeneratedWakeQueueRunKeySlot { first, second, third, fourth }
+
+enum _GeneratedWakeQueueAgentSlot { first, second, third }
+
+enum _GeneratedWakeQueueTokenSlot { first, second, third, fourth }
+
+final _generatedWakeQueueBase = DateTime(2026, 5, 18, 10);
+
+String _generatedWakeQueueRunKey(_GeneratedWakeQueueRunKeySlot slot) =>
+    'generated-wake-run-${slot.name}';
+
+String _generatedWakeQueueAgentId(_GeneratedWakeQueueAgentSlot slot) =>
+    'generated-wake-agent-${slot.name}';
+
+String _generatedWakeQueueToken(_GeneratedWakeQueueTokenSlot slot) =>
+    'generated-wake-token-${slot.name}';
+
+class _GeneratedWakeQueueOperation {
+  const _GeneratedWakeQueueOperation({
+    required this.kind,
+    required this.runKeySlot,
+    required this.agentSlot,
+    required this.tokenSlot,
+  });
+
+  final _GeneratedWakeQueueOperationKind kind;
+  final _GeneratedWakeQueueRunKeySlot runKeySlot;
+  final _GeneratedWakeQueueAgentSlot agentSlot;
+  final _GeneratedWakeQueueTokenSlot tokenSlot;
+
+  String get runKey => _generatedWakeQueueRunKey(runKeySlot);
+
+  String get agentId => _generatedWakeQueueAgentId(agentSlot);
+
+  String get token => _generatedWakeQueueToken(tokenSlot);
+
+  @override
+  String toString() {
+    return '_GeneratedWakeQueueOperation('
+        'kind: $kind, runKeySlot: $runKeySlot, '
+        'agentSlot: $agentSlot, tokenSlot: $tokenSlot)';
+  }
+}
+
+class _GeneratedWakeQueueScenario {
+  const _GeneratedWakeQueueScenario({required this.operations});
+
+  final List<_GeneratedWakeQueueOperation> operations;
+
+  @override
+  String toString() {
+    return '_GeneratedWakeQueueScenario(operations: $operations)';
+  }
+}
+
+class _GeneratedWakeQueueModelJob {
+  _GeneratedWakeQueueModelJob({
+    required this.runKey,
+    required this.agentId,
+    required Set<String> triggerTokens,
+  }) : triggerTokens = Set<String>.of(triggerTokens);
+
+  final String runKey;
+  final String agentId;
+  final Set<String> triggerTokens;
+}
+
+class _GeneratedWakeQueueModel {
+  final queue = <_GeneratedWakeQueueModelJob>[];
+  final seenRunKeys = <String>{};
+  _GeneratedWakeQueueModelJob? lastDequeued;
+}
+
+extension _AnyGeneratedWakeQueueScenario on glados.Any {
+  glados.Generator<_GeneratedWakeQueueOperationKind>
+  get wakeQueueOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedWakeQueueOperationKind.values);
+
+  glados.Generator<_GeneratedWakeQueueRunKeySlot> get wakeQueueRunKeySlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeQueueRunKeySlot.values);
+
+  glados.Generator<_GeneratedWakeQueueAgentSlot> get wakeQueueAgentSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeQueueAgentSlot.values);
+
+  glados.Generator<_GeneratedWakeQueueTokenSlot> get wakeQueueTokenSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeQueueTokenSlot.values);
+
+  glados.Generator<_GeneratedWakeQueueOperation> get wakeQueueOperation =>
+      glados.CombinableAny(this).combine4(
+        wakeQueueOperationKind,
+        wakeQueueRunKeySlot,
+        wakeQueueAgentSlot,
+        wakeQueueTokenSlot,
+        (
+          _GeneratedWakeQueueOperationKind kind,
+          _GeneratedWakeQueueRunKeySlot runKeySlot,
+          _GeneratedWakeQueueAgentSlot agentSlot,
+          _GeneratedWakeQueueTokenSlot tokenSlot,
+        ) => _GeneratedWakeQueueOperation(
+          kind: kind,
+          runKeySlot: runKeySlot,
+          agentSlot: agentSlot,
+          tokenSlot: tokenSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedWakeQueueScenario> get wakeQueueScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 40, wakeQueueOperation)
+          .map(
+            (operations) => _GeneratedWakeQueueScenario(
+              operations: operations,
+            ),
+          );
+}
 
 void main() {
   late WakeQueue queue;
@@ -276,6 +402,135 @@ void main() {
         final removed = queue.removeByAgent('agent-1');
         expect(removed, isEmpty);
       });
+    });
+
+    glados.Glados(
+      glados.any.wakeQueueScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('matches generated operation sequence semantics', (scenario) {
+      final generatedQueue = WakeQueue();
+      final model = _GeneratedWakeQueueModel();
+      WakeJob? lastDequeued;
+
+      for (final (index, operation) in scenario.operations.indexed) {
+        switch (operation.kind) {
+          case _GeneratedWakeQueueOperationKind.enqueue:
+            final expectedAccepted = model.seenRunKeys.add(operation.runKey);
+            if (expectedAccepted) {
+              model.queue.add(
+                _GeneratedWakeQueueModelJob(
+                  runKey: operation.runKey,
+                  agentId: operation.agentId,
+                  triggerTokens: {operation.token},
+                ),
+              );
+            }
+
+            final accepted = generatedQueue.enqueue(
+              WakeJob(
+                runKey: operation.runKey,
+                agentId: operation.agentId,
+                reason: 'subscription',
+                triggerTokens: {operation.token},
+                createdAt: _generatedWakeQueueBase.add(
+                  Duration(seconds: index),
+                ),
+              ),
+            );
+
+            expect(accepted, expectedAccepted, reason: '$scenario');
+
+          case _GeneratedWakeQueueOperationKind.dequeue:
+            final expected = model.queue.isEmpty
+                ? null
+                : model.queue.removeAt(0);
+            model.lastDequeued = expected;
+
+            final actual = generatedQueue.dequeue();
+            lastDequeued = actual;
+
+            expect(actual?.runKey, expected?.runKey, reason: '$scenario');
+            expect(actual?.agentId, expected?.agentId, reason: '$scenario');
+            expect(
+              actual?.triggerTokens,
+              expected?.triggerTokens,
+              reason: '$scenario',
+            );
+
+          case _GeneratedWakeQueueOperationKind.mergeTokens:
+            final expected = model.queue
+                .where((job) => job.agentId == operation.agentId)
+                .firstOrNull;
+            expected?.triggerTokens.add(operation.token);
+
+            final merged = generatedQueue.mergeTokens(
+              operation.agentId,
+              {operation.token},
+            );
+
+            expect(merged, expected != null, reason: '$scenario');
+
+          case _GeneratedWakeQueueOperationKind.removeByAgent:
+            final removed = <_GeneratedWakeQueueModelJob>[];
+            model.queue.removeWhere((job) {
+              if (job.agentId == operation.agentId) {
+                removed.add(job);
+                return true;
+              }
+              return false;
+            });
+
+            final actual = generatedQueue.removeByAgent(operation.agentId);
+
+            expect(
+              actual.map((job) => job.runKey).toList(),
+              removed.map((job) => job.runKey).toList(),
+              reason: '$scenario',
+            );
+
+          case _GeneratedWakeQueueOperationKind.requeueLastDequeued:
+            final expected = model.lastDequeued;
+            if (expected != null && lastDequeued != null) {
+              model.queue.add(expected);
+              generatedQueue.requeue(lastDequeued);
+            }
+
+          case _GeneratedWakeQueueOperationKind.clearHistoryWhenEmpty:
+            if (model.queue.isEmpty) {
+              model.seenRunKeys.clear();
+              generatedQueue.clearHistory();
+            }
+        }
+
+        expect(generatedQueue.length, model.queue.length, reason: '$scenario');
+        expect(
+          generatedQueue.isEmpty,
+          model.queue.isEmpty,
+          reason: '$scenario',
+        );
+      }
+
+      final drained = <WakeJob>[];
+      WakeJob? next;
+      while ((next = generatedQueue.dequeue()) != null) {
+        drained.add(next!);
+      }
+
+      expect(
+        drained.map((job) => job.runKey).toList(),
+        model.queue.map((job) => job.runKey).toList(),
+        reason: '$scenario',
+      );
+      expect(
+        drained.map((job) => job.agentId).toList(),
+        model.queue.map((job) => job.agentId).toList(),
+        reason: '$scenario',
+      );
+      expect(
+        drained.map((job) => job.triggerTokens).toList(),
+        model.queue.map((job) => job.triggerTokens).toList(),
+        reason: '$scenario',
+      );
     });
   });
 }

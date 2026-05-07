@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 
@@ -71,6 +72,129 @@ class _MockRequestException {
 
   @override
   String toString() => 'RequestException: $code $message';
+}
+
+enum _GeneratedErrorCategoryShape {
+  failedHostLookup,
+  connectionRefused,
+  connectionClosed,
+  timeoutException,
+  timedOut,
+  unauthorized401,
+  rateLimit429,
+  badRequest400,
+  server500,
+  server502,
+  server503,
+  modelNotFound404,
+  generic404,
+  unknown,
+}
+
+class _GeneratedCategorizedError {
+  const _GeneratedCategorizedError({
+    required this.shape,
+    required this.seed,
+  });
+
+  final _GeneratedErrorCategoryShape shape;
+  final int seed;
+
+  Object get raw => switch (shape) {
+    _GeneratedErrorCategoryShape.failedHostLookup =>
+      'SocketException: Failed host lookup: api-$seed.example.com',
+    _GeneratedErrorCategoryShape.connectionRefused =>
+      'Connection refused by generated server $seed',
+    _GeneratedErrorCategoryShape.connectionClosed =>
+      'Connection closed while reading generated response $seed',
+    _GeneratedErrorCategoryShape.timeoutException =>
+      'TimeoutException: generated request $seed',
+    _GeneratedErrorCategoryShape.timedOut =>
+      'generated request $seed timed out',
+    _GeneratedErrorCategoryShape.unauthorized401 =>
+      'HTTP 401 Unauthorized generated $seed',
+    _GeneratedErrorCategoryShape.rateLimit429 =>
+      'HTTP 429 Rate limit exceeded generated $seed',
+    _GeneratedErrorCategoryShape.badRequest400 =>
+      'HTTP 400 Bad Request generated $seed',
+    _GeneratedErrorCategoryShape.server500 =>
+      'HTTP 500 Internal Server Error generated $seed',
+    _GeneratedErrorCategoryShape.server502 =>
+      'HTTP 502 Bad Gateway generated $seed',
+    _GeneratedErrorCategoryShape.server503 =>
+      'HTTP 503 Service Unavailable generated $seed',
+    _GeneratedErrorCategoryShape.modelNotFound404 =>
+      'HTTP 404 model generated-$seed not found',
+    _GeneratedErrorCategoryShape.generic404 =>
+      'HTTP 404 generated resource missing $seed',
+    _GeneratedErrorCategoryShape.unknown =>
+      'Generated unclassified AI error $seed',
+  };
+
+  InferenceErrorType get expectedType => switch (shape) {
+    _GeneratedErrorCategoryShape.failedHostLookup =>
+      InferenceErrorType.networkConnection,
+    _GeneratedErrorCategoryShape.connectionRefused =>
+      InferenceErrorType.networkConnection,
+    _GeneratedErrorCategoryShape.connectionClosed =>
+      InferenceErrorType.networkConnection,
+    _GeneratedErrorCategoryShape.timeoutException => InferenceErrorType.timeout,
+    _GeneratedErrorCategoryShape.timedOut => InferenceErrorType.timeout,
+    _GeneratedErrorCategoryShape.unauthorized401 =>
+      InferenceErrorType.authentication,
+    _GeneratedErrorCategoryShape.rateLimit429 => InferenceErrorType.rateLimit,
+    _GeneratedErrorCategoryShape.badRequest400 =>
+      InferenceErrorType.invalidRequest,
+    _GeneratedErrorCategoryShape.server500 => InferenceErrorType.serverError,
+    _GeneratedErrorCategoryShape.server502 => InferenceErrorType.serverError,
+    _GeneratedErrorCategoryShape.server503 => InferenceErrorType.serverError,
+    _GeneratedErrorCategoryShape.modelNotFound404 =>
+      InferenceErrorType.invalidRequest,
+    _GeneratedErrorCategoryShape.generic404 => InferenceErrorType.unknown,
+    _GeneratedErrorCategoryShape.unknown => InferenceErrorType.unknown,
+  };
+
+  String get expectedMessageFragment => switch (shape) {
+    _GeneratedErrorCategoryShape.failedHostLookup =>
+      'Unable to resolve the server address',
+    _GeneratedErrorCategoryShape.connectionRefused => 'Connection refused',
+    _GeneratedErrorCategoryShape.connectionClosed =>
+      'Connection was closed unexpectedly',
+    _GeneratedErrorCategoryShape.timeoutException => 'timed out',
+    _GeneratedErrorCategoryShape.timedOut => 'timed out',
+    _GeneratedErrorCategoryShape.unauthorized401 => 'Authentication failed',
+    _GeneratedErrorCategoryShape.rateLimit429 => 'Rate limit exceeded',
+    _GeneratedErrorCategoryShape.badRequest400 => 'HTTP 400 Bad Request',
+    _GeneratedErrorCategoryShape.server500 => 'AI service is experiencing',
+    _GeneratedErrorCategoryShape.server502 => 'AI service is experiencing',
+    _GeneratedErrorCategoryShape.server503 => 'AI service is experiencing',
+    _GeneratedErrorCategoryShape.modelNotFound404 =>
+      'model generated-$seed not found',
+    _GeneratedErrorCategoryShape.generic404 =>
+      'HTTP 404 generated resource missing $seed',
+    _GeneratedErrorCategoryShape.unknown =>
+      'Generated unclassified AI error $seed',
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedCategorizedError(shape: $shape, seed: $seed)';
+  }
+}
+
+extension _AnyGeneratedCategorizedError on glados.Any {
+  glados.Generator<_GeneratedErrorCategoryShape> get errorCategoryShape =>
+      glados.AnyUtils(this).choose(_GeneratedErrorCategoryShape.values);
+
+  glados.Generator<_GeneratedCategorizedError> get categorizedError =>
+      glados.CombinableAny(this).combine2(
+        errorCategoryShape,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedErrorCategoryShape shape,
+          int seed,
+        ) => _GeneratedCategorizedError(shape: shape, seed: seed),
+      );
 }
 
 void main() {
@@ -222,6 +346,26 @@ void main() {
         final result = AiErrorUtils.categorizeError(error);
 
         expect(result.originalError, error);
+      });
+
+      glados.Glados(
+        glados.any.categorizedError,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('matches generated string categorization semantics', (scenario) {
+        final stackTrace = StackTrace.current;
+        final result = AiErrorUtils.categorizeError(
+          scenario.raw,
+          stackTrace: stackTrace,
+        );
+
+        expect(result.type, scenario.expectedType, reason: '$scenario');
+        expect(
+          result.message,
+          contains(scenario.expectedMessageFragment),
+          reason: '$scenario',
+        );
+        expect(result.originalError, scenario.raw, reason: '$scenario');
+        expect(result.stackTrace, stackTrace, reason: '$scenario');
       });
 
       test('handles Ollama model not found error', () {

@@ -1,6 +1,145 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 import 'package:lotti/features/agents/model/task_resolution_time_series_utils.dart';
+
+final _generatedResolutionBase = DateTime(2026, 5, 19, 8);
+
+class _GeneratedResolutionEntrySpec {
+  const _GeneratedResolutionEntrySpec({
+    required this.resolved,
+    required this.createdDayOffset,
+    required this.createdMinuteOffset,
+    required this.resolutionDelayMinutes,
+    required this.seed,
+  });
+
+  final bool resolved;
+  final int createdDayOffset;
+  final int createdMinuteOffset;
+  final int resolutionDelayMinutes;
+  final int seed;
+
+  TaskResolutionEntry toEntry(int index) {
+    final createdAt = _generatedResolutionBase.add(
+      Duration(days: createdDayOffset, minutes: createdMinuteOffset),
+    );
+    return TaskResolutionEntry(
+      agentId: 'generated-resolution-agent-$index-$seed',
+      taskId: 'generated-resolution-task-$index-$seed',
+      agentCreatedAt: createdAt,
+      resolvedAt: resolved
+          ? createdAt.add(Duration(minutes: resolutionDelayMinutes))
+          : null,
+      resolution: resolved ? (seed.isEven ? 'done' : 'rejected') : null,
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedResolutionEntrySpec('
+        'resolved: $resolved, createdDayOffset: $createdDayOffset, '
+        'createdMinuteOffset: $createdMinuteOffset, '
+        'resolutionDelayMinutes: $resolutionDelayMinutes, seed: $seed)';
+  }
+}
+
+class _GeneratedResolutionScenario {
+  const _GeneratedResolutionScenario({required this.entries});
+
+  final List<_GeneratedResolutionEntrySpec> entries;
+
+  List<TaskResolutionEntry> get taskEntries =>
+      entries.indexed.map((entry) => entry.$2.toEntry(entry.$1)).toList();
+
+  List<DailyResolutionBucket> get expectedBuckets {
+    final resolved = taskEntries
+        .where((entry) => entry.resolvedAt != null)
+        .toList();
+    if (resolved.isEmpty) return [];
+
+    final byDay = <DateTime, List<TaskResolutionEntry>>{};
+    for (final entry in resolved) {
+      final day = DateTime(
+        entry.resolvedAt!.year,
+        entry.resolvedAt!.month,
+        entry.resolvedAt!.day,
+      );
+      byDay.putIfAbsent(day, () => []).add(entry);
+    }
+
+    final days = byDay.keys.toList()..sort();
+    final buckets = <DailyResolutionBucket>[];
+    var current = days.first;
+    while (!current.isAfter(days.last)) {
+      final dayEntries = byDay[current];
+      if (dayEntries == null) {
+        buckets.add(
+          DailyResolutionBucket(
+            date: current,
+            resolvedCount: 0,
+            averageMttr: Duration.zero,
+          ),
+        );
+      } else {
+        final totalMs = dayEntries
+            .map(
+              (entry) => entry.resolvedAt!
+                  .difference(entry.agentCreatedAt)
+                  .inMilliseconds,
+            )
+            .reduce((a, b) => a + b);
+        buckets.add(
+          DailyResolutionBucket(
+            date: current,
+            resolvedCount: dayEntries.length,
+            averageMttr: Duration(
+              milliseconds: totalMs ~/ dayEntries.length,
+            ),
+          ),
+        );
+      }
+      current = current.add(const Duration(days: 1));
+    }
+    return buckets;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedResolutionScenario(entries: $entries)';
+  }
+}
+
+extension _AnyGeneratedResolutionScenario on glados.Any {
+  glados.Generator<_GeneratedResolutionEntrySpec> get resolutionEntrySpec =>
+      glados.CombinableAny(this).combine5(
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 1439),
+        glados.IntAnys(this).intInRange(0, 4320),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          bool resolved,
+          int createdDayOffset,
+          int createdMinuteOffset,
+          int resolutionDelayMinutes,
+          int seed,
+        ) => _GeneratedResolutionEntrySpec(
+          resolved: resolved,
+          createdDayOffset: createdDayOffset,
+          createdMinuteOffset: createdMinuteOffset,
+          resolutionDelayMinutes: resolutionDelayMinutes,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedResolutionScenario> get resolutionScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 14, resolutionEntrySpec)
+          .map(
+            (entries) => _GeneratedResolutionScenario(entries: entries),
+          );
+}
 
 void main() {
   group('computeResolutionTimeSeries', () {
@@ -189,6 +328,19 @@ void main() {
       expect(
         result.dailyBuckets.first.averageMttr,
         const Duration(hours: 84),
+      );
+    });
+
+    glados.Glados(
+      glados.any.resolutionScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated daily MTTR bucket semantics', (scenario) {
+      final result = computeResolutionTimeSeries(scenario.taskEntries);
+
+      expect(
+        result.dailyBuckets,
+        scenario.expectedBuckets,
+        reason: '$scenario',
       );
     });
   });

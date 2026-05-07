@@ -1,7 +1,262 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/database/agent_database.dart'
+    show WakeRunLogData;
+import 'package:lotti/features/agents/model/wake_run_time_series.dart';
 import 'package:lotti/features/agents/model/wake_run_time_series_utils.dart';
 
 import '../test_utils.dart';
+
+enum _GeneratedWakeRunStatusShape { completed, failed, pending }
+
+enum _GeneratedWakeRunTimingShape { none, valid, negative }
+
+enum _GeneratedWakeVersionSlot { none, first, second, third }
+
+final _generatedWakeSeriesBase = DateTime(2026, 5, 20, 8);
+
+class _GeneratedWakeRunSpec {
+  const _GeneratedWakeRunSpec({
+    required this.statusShape,
+    required this.timingShape,
+    required this.versionSlot,
+    required this.dayOffset,
+    required this.minuteOffset,
+    required this.durationMilliseconds,
+    required this.seed,
+  });
+
+  final _GeneratedWakeRunStatusShape statusShape;
+  final _GeneratedWakeRunTimingShape timingShape;
+  final _GeneratedWakeVersionSlot versionSlot;
+  final int dayOffset;
+  final int minuteOffset;
+  final int durationMilliseconds;
+  final int seed;
+
+  String get status => switch (statusShape) {
+    _GeneratedWakeRunStatusShape.completed => 'completed',
+    _GeneratedWakeRunStatusShape.failed => 'failed',
+    _GeneratedWakeRunStatusShape.pending => 'pending',
+  };
+
+  String? get versionId => switch (versionSlot) {
+    _GeneratedWakeVersionSlot.none => null,
+    _GeneratedWakeVersionSlot.first => 'generated-version-first',
+    _GeneratedWakeVersionSlot.second => 'generated-version-second',
+    _GeneratedWakeVersionSlot.third => 'generated-version-third',
+  };
+
+  DateTime createdAt(int index) => _generatedWakeSeriesBase.add(
+    Duration(days: dayOffset, minutes: minuteOffset, seconds: index),
+  );
+
+  DateTime? startedAt(int index) => switch (timingShape) {
+    _GeneratedWakeRunTimingShape.none => null,
+    _ => createdAt(index).add(const Duration(minutes: 1)),
+  };
+
+  DateTime? completedAt(int index) => switch (timingShape) {
+    _GeneratedWakeRunTimingShape.none => null,
+    _GeneratedWakeRunTimingShape.valid => startedAt(
+      index,
+    )!.add(Duration(milliseconds: durationMilliseconds)),
+    _GeneratedWakeRunTimingShape.negative => startedAt(
+      index,
+    )!.subtract(const Duration(milliseconds: 1)),
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedWakeRunSpec('
+        'statusShape: $statusShape, timingShape: $timingShape, '
+        'versionSlot: $versionSlot, dayOffset: $dayOffset, '
+        'minuteOffset: $minuteOffset, '
+        'durationMilliseconds: $durationMilliseconds, seed: $seed)';
+  }
+}
+
+class _GeneratedWakeSeriesScenario {
+  const _GeneratedWakeSeriesScenario({required this.runs});
+
+  final List<_GeneratedWakeRunSpec> runs;
+
+  List<WakeRunLogData> get wakeRuns => runs.indexed.map((entry) {
+    final index = entry.$1;
+    final run = entry.$2;
+    return makeTestWakeRun(
+      runKey: 'generated-wake-series-$index-${run.seed}',
+      status: run.status,
+      createdAt: run.createdAt(index),
+      startedAt: run.startedAt(index),
+      completedAt: run.completedAt(index),
+      templateVersionId: run.versionId,
+    );
+  }).toList();
+
+  List<DailyWakeBucket> get expectedDailyBuckets {
+    if (wakeRuns.isEmpty) return [];
+
+    final byDay = <DateTime, List<WakeRunLogData>>{};
+    for (final run in wakeRuns) {
+      final day = DateTime(
+        run.createdAt.year,
+        run.createdAt.month,
+        run.createdAt.day,
+      );
+      byDay.putIfAbsent(day, () => []).add(run);
+    }
+
+    final days = byDay.keys.toList()..sort();
+    final buckets = <DailyWakeBucket>[];
+    var current = days.first;
+    while (!current.isAfter(days.last)) {
+      final dayRuns = byDay[current];
+      if (dayRuns == null) {
+        buckets.add(
+          DailyWakeBucket(
+            date: current,
+            successCount: 0,
+            failureCount: 0,
+            successRate: 0,
+            averageDuration: Duration.zero,
+          ),
+        );
+      } else {
+        final stats = _expectedWakeStats(dayRuns);
+        buckets.add(
+          DailyWakeBucket(
+            date: current,
+            successCount: stats.successCount,
+            failureCount: stats.failureCount,
+            successRate: stats.successRate,
+            averageDuration: stats.averageDuration,
+          ),
+        );
+      }
+      current = current.add(const Duration(days: 1));
+    }
+    return buckets;
+  }
+
+  Map<String, VersionPerformanceBucket> get expectedVersionBucketsById {
+    final byVersion = <String, List<WakeRunLogData>>{};
+    for (final run in wakeRuns) {
+      final versionId = run.templateVersionId;
+      if (versionId == null) continue;
+      byVersion.putIfAbsent(versionId, () => []).add(run);
+    }
+
+    final firstRunByVersion = byVersion.map(
+      (versionId, runs) => MapEntry(
+        versionId,
+        runs
+            .map((run) => run.createdAt)
+            .reduce((a, b) => a.isBefore(b) ? a : b),
+      ),
+    );
+    final sortedVersionIds = byVersion.keys.toList()
+      ..sort((a, b) => firstRunByVersion[a]!.compareTo(firstRunByVersion[b]!));
+
+    return {
+      for (final entry in sortedVersionIds.indexed)
+        entry.$2: VersionPerformanceBucket(
+          versionId: entry.$2,
+          versionNumber: entry.$1 + 1,
+          totalRuns: byVersion[entry.$2]!.length,
+          successRate: _expectedWakeStats(byVersion[entry.$2]!).successRate,
+          averageDuration: _expectedWakeStats(
+            byVersion[entry.$2]!,
+          ).averageDuration,
+        ),
+    };
+  }
+
+  ({
+    int successCount,
+    int failureCount,
+    double successRate,
+    Duration averageDuration,
+  })
+  _expectedWakeStats(List<WakeRunLogData> runs) {
+    final successCount = runs.where((run) => run.status == 'completed').length;
+    final failureCount = runs.where((run) => run.status == 'failed').length;
+    final durations = runs
+        .where((run) => run.startedAt != null && run.completedAt != null)
+        .map((run) => run.completedAt!.difference(run.startedAt!))
+        .where((duration) => !duration.isNegative)
+        .toList();
+    return (
+      successCount: successCount,
+      failureCount: failureCount,
+      successRate: successCount + failureCount == 0
+          ? 0
+          : successCount / (successCount + failureCount),
+      averageDuration: durations.isEmpty
+          ? Duration.zero
+          : Duration(
+              milliseconds:
+                  durations
+                      .map((duration) => duration.inMilliseconds)
+                      .reduce(
+                        (a, b) => a + b,
+                      ) ~/
+                  durations.length,
+            ),
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedWakeSeriesScenario(runs: $runs)';
+  }
+}
+
+extension _AnyGeneratedWakeSeriesScenario on glados.Any {
+  glados.Generator<_GeneratedWakeRunStatusShape> get wakeRunStatusShape =>
+      glados.AnyUtils(this).choose(_GeneratedWakeRunStatusShape.values);
+
+  glados.Generator<_GeneratedWakeRunTimingShape> get wakeRunTimingShape =>
+      glados.AnyUtils(this).choose(_GeneratedWakeRunTimingShape.values);
+
+  glados.Generator<_GeneratedWakeVersionSlot> get wakeVersionSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeVersionSlot.values);
+
+  glados.Generator<_GeneratedWakeRunSpec> get wakeRunSpec =>
+      glados.CombinableAny(this).combine7(
+        wakeRunStatusShape,
+        wakeRunTimingShape,
+        wakeVersionSlot,
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 1439),
+        glados.IntAnys(this).intInRange(0, 120000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedWakeRunStatusShape statusShape,
+          _GeneratedWakeRunTimingShape timingShape,
+          _GeneratedWakeVersionSlot versionSlot,
+          int dayOffset,
+          int minuteOffset,
+          int durationMilliseconds,
+          int seed,
+        ) => _GeneratedWakeRunSpec(
+          statusShape: statusShape,
+          timingShape: timingShape,
+          versionSlot: versionSlot,
+          dayOffset: dayOffset,
+          minuteOffset: minuteOffset,
+          durationMilliseconds: durationMilliseconds,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedWakeSeriesScenario> get wakeSeriesScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 14, wakeRunSpec)
+          .map(
+            (runs) => _GeneratedWakeSeriesScenario(runs: runs),
+          );
+}
 
 void main() {
   group('computeTimeSeries', () {
@@ -267,6 +522,24 @@ void main() {
         expect(ids, ['version-1', 'version-2', 'version-10']);
         expect(numbers, [1, 2, 3]);
       });
+    });
+
+    glados.Glados(
+      glados.any.wakeSeriesScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated wake time-series semantics', (scenario) {
+      final result = computeTimeSeries(scenario.wakeRuns);
+
+      expect(
+        result.dailyBuckets,
+        scenario.expectedDailyBuckets,
+        reason: '$scenario',
+      );
+      expect(
+        result.versionBuckets,
+        scenario.expectedVersionBucketsById.values.toList(),
+        reason: '$scenario',
+      );
     });
   });
 }

@@ -1,8 +1,114 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+enum _GeneratedGeminiFrame {
+  spaces,
+  newlineTabs,
+  openingArray,
+  closingArray,
+  comma,
+  emptyDataLine,
+  blankDataLine,
+  heartbeatDataLine,
+}
+
+enum _GeneratedGeminiFramedPayloadKind {
+  directObject,
+  arrayObject,
+  sseObject,
+  sseArrayObject,
+}
+
+String _generatedGeminiFrameText(_GeneratedGeminiFrame frame) {
+  return switch (frame) {
+    _GeneratedGeminiFrame.spaces => '   ',
+    _GeneratedGeminiFrame.newlineTabs => '\n\t  ',
+    _GeneratedGeminiFrame.openingArray => '[',
+    _GeneratedGeminiFrame.closingArray => ']',
+    _GeneratedGeminiFrame.comma => ',',
+    _GeneratedGeminiFrame.emptyDataLine => 'data:\n',
+    _GeneratedGeminiFrame.blankDataLine => 'data:   \n',
+    _GeneratedGeminiFrame.heartbeatDataLine => 'data: heartbeat\n',
+  };
+}
+
+class _GeneratedGeminiFramingScenario {
+  const _GeneratedGeminiFramingScenario({
+    required this.frames,
+    required this.payloadKind,
+    required this.value,
+  });
+
+  final List<_GeneratedGeminiFrame> frames;
+  final _GeneratedGeminiFramedPayloadKind payloadKind;
+  final int value;
+
+  String get objectPayload => '{"value":$value,"marker":"generated"}';
+
+  String get trailer => '\ntrailer:$value';
+
+  String get input {
+    final prefix = frames.map(_generatedGeminiFrameText).join();
+    return '$prefix${_renderPayload()}$trailer';
+  }
+
+  String get expected {
+    return switch (payloadKind) {
+      _GeneratedGeminiFramedPayloadKind.directObject =>
+        '$objectPayload$trailer',
+      _GeneratedGeminiFramedPayloadKind.arrayObject =>
+        '$objectPayload ]$trailer',
+      _GeneratedGeminiFramedPayloadKind.sseObject => '$objectPayload$trailer',
+      _GeneratedGeminiFramedPayloadKind.sseArrayObject =>
+        '$objectPayload]$trailer',
+    };
+  }
+
+  String _renderPayload() {
+    return switch (payloadKind) {
+      _GeneratedGeminiFramedPayloadKind.directObject => objectPayload,
+      _GeneratedGeminiFramedPayloadKind.arrayObject => '[ $objectPayload ]',
+      _GeneratedGeminiFramedPayloadKind.sseObject => 'data: $objectPayload\n',
+      _GeneratedGeminiFramedPayloadKind.sseArrayObject =>
+        'data: [$objectPayload]\n',
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedGeminiFramingScenario('
+        'frames: $frames, payloadKind: $payloadKind, value: $value)';
+  }
+}
+
+extension _AnyGeneratedGeminiFramingScenario on glados.Any {
+  glados.Generator<_GeneratedGeminiFrame> get geminiFrame =>
+      glados.AnyUtils(this).choose(_GeneratedGeminiFrame.values);
+
+  glados.Generator<_GeneratedGeminiFramedPayloadKind>
+  get geminiFramedPayloadKind =>
+      glados.AnyUtils(this).choose(_GeneratedGeminiFramedPayloadKind.values);
+
+  glados.Generator<_GeneratedGeminiFramingScenario> get geminiFramingScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.ListAnys(this).listWithLengthInRange(0, 24, geminiFrame),
+        geminiFramedPayloadKind,
+        glados.IntAnys(this).intInRange(-1000, 1000),
+        (
+          List<_GeneratedGeminiFrame> frames,
+          _GeneratedGeminiFramedPayloadKind payloadKind,
+          int value,
+        ) => _GeneratedGeminiFramingScenario(
+          frames: frames,
+          payloadKind: payloadKind,
+          value: value,
+        ),
+      );
+}
 
 void main() {
   group('GeminiUtils.build* URIs', () {
@@ -963,6 +1069,19 @@ void main() {
       const input = '   [  ,  {"data": "value"}';
       final out = GeminiUtils.stripLeadingFraming(input);
       expect(out, startsWith('{"data"'));
+    });
+
+    glados.Glados(
+      glados.any.geminiFramingScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated SSE and JSON array framing semantics', (
+      scenario,
+    ) {
+      expect(
+        GeminiUtils.stripLeadingFraming(scenario.input),
+        scenario.expected,
+        reason: '$scenario',
+      );
     });
   });
 }

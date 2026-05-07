@@ -1,8 +1,204 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+
+enum _GeneratedKnownModelIdPart {
+  lower,
+  upper,
+  slash,
+  colon,
+  dash,
+  dot,
+  mixed,
+}
+
+enum _GeneratedKnownModelModalities {
+  empty,
+  text,
+  audio,
+  image,
+  textImage,
+  audioText,
+  duplicateImage,
+}
+
+enum _GeneratedKnownModelTokens { absent, small, large }
+
+String _generatedKnownModelIdPartText(_GeneratedKnownModelIdPart part) {
+  return switch (part) {
+    _GeneratedKnownModelIdPart.lower => 'alpha',
+    _GeneratedKnownModelIdPart.upper => 'BETA',
+    _GeneratedKnownModelIdPart.slash => 'model/test',
+    _GeneratedKnownModelIdPart.colon => 'name:123',
+    _GeneratedKnownModelIdPart.dash => 'with-dash',
+    _GeneratedKnownModelIdPart.dot => 'with.dot',
+    _GeneratedKnownModelIdPart.mixed => 'MiXeD-Case.42',
+  };
+}
+
+List<Modality> _generatedKnownModelModalities(
+  _GeneratedKnownModelModalities modalities,
+) {
+  return switch (modalities) {
+    _GeneratedKnownModelModalities.empty => const [],
+    _GeneratedKnownModelModalities.text => const [Modality.text],
+    _GeneratedKnownModelModalities.audio => const [Modality.audio],
+    _GeneratedKnownModelModalities.image => const [Modality.image],
+    _GeneratedKnownModelModalities.textImage => const [
+      Modality.text,
+      Modality.image,
+    ],
+    _GeneratedKnownModelModalities.audioText => const [
+      Modality.audio,
+      Modality.text,
+    ],
+    _GeneratedKnownModelModalities.duplicateImage => const [
+      Modality.image,
+      Modality.image,
+    ],
+  };
+}
+
+int? _generatedKnownModelMaxTokens(_GeneratedKnownModelTokens tokens) {
+  return switch (tokens) {
+    _GeneratedKnownModelTokens.absent => null,
+    _GeneratedKnownModelTokens.small => 128,
+    _GeneratedKnownModelTokens.large => 8192,
+  };
+}
+
+class _GeneratedKnownModelIdScenario {
+  const _GeneratedKnownModelIdScenario({
+    required this.providerPart,
+    required this.modelPart,
+  });
+
+  final _GeneratedKnownModelIdPart providerPart;
+  final _GeneratedKnownModelIdPart modelPart;
+
+  String get providerId => _generatedKnownModelIdPartText(providerPart);
+
+  String get providerModelId => _generatedKnownModelIdPartText(modelPart);
+
+  String get expectedId => '${providerId}_$providerModelId'
+      .replaceAll(RegExp(r'[/:\-.]'), '_')
+      .toLowerCase();
+
+  @override
+  String toString() {
+    return '_GeneratedKnownModelIdScenario('
+        'providerPart: $providerPart, modelPart: $modelPart)';
+  }
+}
+
+class _GeneratedKnownModelConversionScenario {
+  const _GeneratedKnownModelConversionScenario({
+    required this.providerPart,
+    required this.modelPart,
+    required this.inputModalitiesKind,
+    required this.outputModalitiesKind,
+    required this.isReasoningModel,
+    required this.supportsFunctionCalling,
+    required this.maxTokensKind,
+  });
+
+  final _GeneratedKnownModelIdPart providerPart;
+  final _GeneratedKnownModelIdPart modelPart;
+  final _GeneratedKnownModelModalities inputModalitiesKind;
+  final _GeneratedKnownModelModalities outputModalitiesKind;
+  final bool isReasoningModel;
+  final bool supportsFunctionCalling;
+  final _GeneratedKnownModelTokens maxTokensKind;
+
+  String get modelId => _generatedKnownModelIdPartText(modelPart);
+
+  String get providerId => _generatedKnownModelIdPartText(providerPart);
+
+  List<Modality> get inputModalities =>
+      _generatedKnownModelModalities(inputModalitiesKind);
+
+  List<Modality> get outputModalities =>
+      _generatedKnownModelModalities(outputModalitiesKind);
+
+  int? get maxCompletionTokens => _generatedKnownModelMaxTokens(maxTokensKind);
+
+  KnownModel get knownModel => KnownModel(
+    providerModelId: modelId,
+    name: 'Generated $modelId',
+    inputModalities: inputModalities,
+    outputModalities: outputModalities,
+    isReasoningModel: isReasoningModel,
+    supportsFunctionCalling: supportsFunctionCalling,
+    description: 'Generated description for $modelId',
+    maxCompletionTokens: maxCompletionTokens,
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedKnownModelConversionScenario('
+        'providerPart: $providerPart, modelPart: $modelPart, '
+        'inputModalitiesKind: $inputModalitiesKind, '
+        'outputModalitiesKind: $outputModalitiesKind, '
+        'isReasoningModel: $isReasoningModel, '
+        'supportsFunctionCalling: $supportsFunctionCalling, '
+        'maxTokensKind: $maxTokensKind)';
+  }
+}
+
+extension _AnyGeneratedKnownModelScenario on glados.Any {
+  glados.Generator<_GeneratedKnownModelIdPart> get knownModelIdPart =>
+      glados.AnyUtils(this).choose(_GeneratedKnownModelIdPart.values);
+
+  glados.Generator<_GeneratedKnownModelModalities> get knownModelModalities =>
+      glados.AnyUtils(this).choose(_GeneratedKnownModelModalities.values);
+
+  glados.Generator<_GeneratedKnownModelTokens> get knownModelTokens =>
+      glados.AnyUtils(this).choose(_GeneratedKnownModelTokens.values);
+
+  glados.Generator<_GeneratedKnownModelIdScenario> get knownModelIdScenario =>
+      glados.CombinableAny(this).combine2(
+        knownModelIdPart,
+        knownModelIdPart,
+        (
+          _GeneratedKnownModelIdPart providerPart,
+          _GeneratedKnownModelIdPart modelPart,
+        ) => _GeneratedKnownModelIdScenario(
+          providerPart: providerPart,
+          modelPart: modelPart,
+        ),
+      );
+
+  glados.Generator<_GeneratedKnownModelConversionScenario>
+  get knownModelConversionScenario => glados.CombinableAny(this).combine7(
+    knownModelIdPart,
+    knownModelIdPart,
+    knownModelModalities,
+    knownModelModalities,
+    glados.any.bool,
+    glados.any.bool,
+    knownModelTokens,
+    (
+      _GeneratedKnownModelIdPart providerPart,
+      _GeneratedKnownModelIdPart modelPart,
+      _GeneratedKnownModelModalities inputModalitiesKind,
+      _GeneratedKnownModelModalities outputModalitiesKind,
+      bool isReasoningModel,
+      bool supportsFunctionCalling,
+      _GeneratedKnownModelTokens maxTokensKind,
+    ) => _GeneratedKnownModelConversionScenario(
+      providerPart: providerPart,
+      modelPart: modelPart,
+      inputModalitiesKind: inputModalitiesKind,
+      outputModalitiesKind: outputModalitiesKind,
+      isReasoningModel: isReasoningModel,
+      supportsFunctionCalling: supportsFunctionCalling,
+      maxTokensKind: maxTokensKind,
+    ),
+  );
+}
 
 void main() {
   group('KnownModel', () {
@@ -204,6 +400,44 @@ void main() {
           generateModelId('Provider-2', 'model.test.name'),
           equals('provider_2_model_test_name'),
         );
+      });
+
+      glados.Glados(
+        glados.any.knownModelIdScenario,
+        glados.ExploreConfig(numRuns: 160),
+      ).test('normalizes generated provider and model IDs', (scenario) {
+        final id = generateModelId(
+          scenario.providerId,
+          scenario.providerModelId,
+        );
+
+        expect(id, scenario.expectedId, reason: '$scenario');
+        expect(id, isNot(contains(RegExp(r'[/:\-.]'))));
+        expect(id, id.toLowerCase());
+      });
+    });
+
+    group('toAiConfigModel', () {
+      glados.Glados(
+        glados.any.knownModelConversionScenario,
+        glados.ExploreConfig(numRuns: 160),
+      ).test('preserves generated known model fields', (scenario) {
+        final model = scenario.knownModel;
+        final aiConfig = model.toAiConfigModel(
+          id: 'generated-config-id',
+          inferenceProviderId: scenario.providerId,
+        );
+
+        expect(aiConfig.id, 'generated-config-id');
+        expect(aiConfig.name, model.name);
+        expect(aiConfig.providerModelId, model.providerModelId);
+        expect(aiConfig.inferenceProviderId, scenario.providerId);
+        expect(aiConfig.inputModalities, model.inputModalities);
+        expect(aiConfig.outputModalities, model.outputModalities);
+        expect(aiConfig.isReasoningModel, model.isReasoningModel);
+        expect(aiConfig.supportsFunctionCalling, model.supportsFunctionCalling);
+        expect(aiConfig.description, model.description);
+        expect(aiConfig.maxCompletionTokens, model.maxCompletionTokens);
       });
     });
 

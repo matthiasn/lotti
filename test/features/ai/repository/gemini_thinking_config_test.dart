@@ -1,5 +1,129 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+
+enum _GeneratedThinkingBudgetKind {
+  belowAuto,
+  auto,
+  disabled,
+  minimal,
+  lowBoundary,
+  mediumBoundary,
+  highBoundary,
+  maxDocumented,
+}
+
+enum _GeneratedGeminiThinkingModelKind {
+  nullModel,
+  gemini3WithPrefix,
+  gemini3WithoutPrefix,
+  gemini3LegacyWithPrefix,
+  gemini25,
+  gemini20,
+  uppercaseGemini3,
+  unknown,
+}
+
+int _generatedThinkingBudget(_GeneratedThinkingBudgetKind kind) {
+  return switch (kind) {
+    _GeneratedThinkingBudgetKind.belowAuto => -2,
+    _GeneratedThinkingBudgetKind.auto => -1,
+    _GeneratedThinkingBudgetKind.disabled => 0,
+    _GeneratedThinkingBudgetKind.minimal => 1,
+    _GeneratedThinkingBudgetKind.lowBoundary => 4095,
+    _GeneratedThinkingBudgetKind.mediumBoundary => 4096,
+    _GeneratedThinkingBudgetKind.highBoundary => 8192,
+    _GeneratedThinkingBudgetKind.maxDocumented => 24576,
+  };
+}
+
+String? _generatedThinkingModelId(_GeneratedGeminiThinkingModelKind kind) {
+  return switch (kind) {
+    _GeneratedGeminiThinkingModelKind.nullModel => null,
+    _GeneratedGeminiThinkingModelKind.gemini3WithPrefix =>
+      'models/gemini-3.1-pro-preview',
+    _GeneratedGeminiThinkingModelKind.gemini3WithoutPrefix =>
+      'gemini-3.1-pro-preview',
+    _GeneratedGeminiThinkingModelKind.gemini3LegacyWithPrefix =>
+      'models/gemini-3-pro-preview',
+    _GeneratedGeminiThinkingModelKind.gemini25 => 'models/gemini-2.5-pro',
+    _GeneratedGeminiThinkingModelKind.gemini20 => 'gemini-2.0-flash',
+    _GeneratedGeminiThinkingModelKind.uppercaseGemini3 =>
+      'GEMINI-3.1-PRO-PREVIEW',
+    _GeneratedGeminiThinkingModelKind.unknown => 'models/custom-model',
+  };
+}
+
+String _generatedThinkingLevel(int budget) {
+  if (budget == -1) return 'HIGH';
+  if (budget < 4096) return 'LOW';
+  if (budget < 8192) return 'MEDIUM';
+  return 'HIGH';
+}
+
+class _GeneratedGeminiThinkingScenario {
+  const _GeneratedGeminiThinkingScenario({
+    required this.budgetKind,
+    required this.modelKind,
+    required this.includeThoughts,
+  });
+
+  final _GeneratedThinkingBudgetKind budgetKind;
+  final _GeneratedGeminiThinkingModelKind modelKind;
+  final bool includeThoughts;
+
+  int get budget => _generatedThinkingBudget(budgetKind);
+
+  String? get modelId => _generatedThinkingModelId(modelKind);
+
+  bool get isGemini3Model =>
+      modelId != null && GeminiThinkingConfig.isGemini3(modelId!);
+
+  Map<String, dynamic> get expectedJson {
+    if (isGemini3Model) {
+      return {
+        'thinkingLevel': _generatedThinkingLevel(budget),
+        'includeThoughts': includeThoughts,
+      };
+    }
+
+    return {
+      'thinkingBudget': budget,
+      'includeThoughts': includeThoughts,
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedGeminiThinkingScenario('
+        'budgetKind: $budgetKind, modelKind: $modelKind, '
+        'includeThoughts: $includeThoughts)';
+  }
+}
+
+extension _AnyGeneratedGeminiThinkingScenario on glados.Any {
+  glados.Generator<_GeneratedThinkingBudgetKind> get thinkingBudgetKind =>
+      glados.AnyUtils(this).choose(_GeneratedThinkingBudgetKind.values);
+
+  glados.Generator<_GeneratedGeminiThinkingModelKind> get thinkingModelKind =>
+      glados.AnyUtils(this).choose(_GeneratedGeminiThinkingModelKind.values);
+
+  glados.Generator<_GeneratedGeminiThinkingScenario>
+  get geminiThinkingScenario => glados.CombinableAny(this).combine3(
+    thinkingBudgetKind,
+    thinkingModelKind,
+    glados.any.bool,
+    (
+      _GeneratedThinkingBudgetKind budgetKind,
+      _GeneratedGeminiThinkingModelKind modelKind,
+      bool includeThoughts,
+    ) => _GeneratedGeminiThinkingScenario(
+      budgetKind: budgetKind,
+      modelKind: modelKind,
+      includeThoughts: includeThoughts,
+    ),
+  );
+}
 
 void main() {
   group('GeminiThinkingConfig', () {
@@ -240,6 +364,24 @@ void main() {
           modelId: 'gemini-3.1-pro-preview',
         );
         expect(json['thinkingLevel'], 'HIGH');
+      });
+
+      glados.Glados(
+        glados.any.geminiThinkingScenario,
+        glados.ExploreConfig(numRuns: 160),
+      ).test('matches generated model and budget serialization semantics', (
+        scenario,
+      ) {
+        final config = GeminiThinkingConfig(
+          thinkingBudget: scenario.budget,
+          includeThoughts: scenario.includeThoughts,
+        );
+
+        expect(
+          config.toJson(modelId: scenario.modelId),
+          scenario.expectedJson,
+          reason: '$scenario',
+        );
       });
     });
 
