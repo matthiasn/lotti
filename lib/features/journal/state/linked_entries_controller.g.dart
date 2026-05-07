@@ -557,6 +557,129 @@ abstract class _$LinkedEntriesSortController
   }
 }
 
+/// Returns the linked entries for [id] sorted by the linked entity's
+/// `meta.dateFrom`, applying the user's selected [LinkedEntriesSortOrder].
+///
+/// Sorting by `dateFrom` matches the timestamp shown for each linked
+/// entry in the UI, so "Newest first" puts the entry with the latest
+/// `dateFrom` at the top — independent of when the link was created.
+/// Links whose target entity has not yet resolved fall back to
+/// `link.createdAt` so the order remains stable while data loads.
+
+@ProviderFor(sortedLinkedEntries)
+final sortedLinkedEntriesProvider = SortedLinkedEntriesFamily._();
+
+/// Returns the linked entries for [id] sorted by the linked entity's
+/// `meta.dateFrom`, applying the user's selected [LinkedEntriesSortOrder].
+///
+/// Sorting by `dateFrom` matches the timestamp shown for each linked
+/// entry in the UI, so "Newest first" puts the entry with the latest
+/// `dateFrom` at the top — independent of when the link was created.
+/// Links whose target entity has not yet resolved fall back to
+/// `link.createdAt` so the order remains stable while data loads.
+
+final class SortedLinkedEntriesProvider
+    extends
+        $FunctionalProvider<List<EntryLink>, List<EntryLink>, List<EntryLink>>
+    with $Provider<List<EntryLink>> {
+  /// Returns the linked entries for [id] sorted by the linked entity's
+  /// `meta.dateFrom`, applying the user's selected [LinkedEntriesSortOrder].
+  ///
+  /// Sorting by `dateFrom` matches the timestamp shown for each linked
+  /// entry in the UI, so "Newest first" puts the entry with the latest
+  /// `dateFrom` at the top — independent of when the link was created.
+  /// Links whose target entity has not yet resolved fall back to
+  /// `link.createdAt` so the order remains stable while data loads.
+  SortedLinkedEntriesProvider._({
+    required SortedLinkedEntriesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'sortedLinkedEntriesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$sortedLinkedEntriesHash();
+
+  @override
+  String toString() {
+    return r'sortedLinkedEntriesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $ProviderElement<List<EntryLink>> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  List<EntryLink> create(Ref ref) {
+    final argument = this.argument as String;
+    return sortedLinkedEntries(ref, argument);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<EntryLink> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<EntryLink>>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SortedLinkedEntriesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$sortedLinkedEntriesHash() =>
+    r'34ad98185c3a688d8d72ad755150845cd5ea9a44';
+
+/// Returns the linked entries for [id] sorted by the linked entity's
+/// `meta.dateFrom`, applying the user's selected [LinkedEntriesSortOrder].
+///
+/// Sorting by `dateFrom` matches the timestamp shown for each linked
+/// entry in the UI, so "Newest first" puts the entry with the latest
+/// `dateFrom` at the top — independent of when the link was created.
+/// Links whose target entity has not yet resolved fall back to
+/// `link.createdAt` so the order remains stable while data loads.
+
+final class SortedLinkedEntriesFamily extends $Family
+    with $FunctionalFamilyOverride<List<EntryLink>, String> {
+  SortedLinkedEntriesFamily._()
+    : super(
+        retry: null,
+        name: r'sortedLinkedEntriesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Returns the linked entries for [id] sorted by the linked entity's
+  /// `meta.dateFrom`, applying the user's selected [LinkedEntriesSortOrder].
+  ///
+  /// Sorting by `dateFrom` matches the timestamp shown for each linked
+  /// entry in the UI, so "Newest first" puts the entry with the latest
+  /// `dateFrom` at the top — independent of when the link was created.
+  /// Links whose target entity has not yet resolved fall back to
+  /// `link.createdAt` so the order remains stable while data loads.
+
+  SortedLinkedEntriesProvider call(String id) =>
+      SortedLinkedEntriesProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'sortedLinkedEntriesProvider';
+}
+
 @ProviderFor(NewestLinkedIdController)
 final newestLinkedIdControllerProvider = NewestLinkedIdControllerFamily._();
 

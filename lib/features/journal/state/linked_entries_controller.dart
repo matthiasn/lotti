@@ -141,6 +141,40 @@ class LinkedEntriesSortController extends _$LinkedEntriesSortController {
   set order(LinkedEntriesSortOrder value) => state = value;
 }
 
+/// Returns the linked entries for [id] sorted by the linked entity's
+/// `meta.dateFrom`, applying the user's selected [LinkedEntriesSortOrder].
+///
+/// Sorting by `dateFrom` matches the timestamp shown for each linked
+/// entry in the UI, so "Newest first" puts the entry with the latest
+/// `dateFrom` at the top — independent of when the link was created.
+/// Links whose target entity has not yet resolved fall back to
+/// `link.createdAt` so the order remains stable while data loads.
+@riverpod
+List<EntryLink> sortedLinkedEntries(Ref ref, String id) {
+  final links =
+      ref.watch(linkedEntriesControllerProvider(id: id)).value ?? const [];
+  if (links.isEmpty) {
+    return const [];
+  }
+
+  final sortOrder = ref.watch(linkedEntriesSortControllerProvider(id: id));
+
+  DateTime sortKey(EntryLink link) {
+    final entry = ref
+        .watch(entryControllerProvider(id: link.toId))
+        .value
+        ?.entry;
+    return entry?.meta.dateFrom ?? link.createdAt;
+  }
+
+  final sorted = [...links]
+    ..sort((a, b) {
+      final cmp = sortKey(a).compareTo(sortKey(b));
+      return sortOrder == LinkedEntriesSortOrder.newestFirst ? -cmp : cmp;
+    });
+  return sorted;
+}
+
 @riverpod
 class NewestLinkedIdController extends _$NewestLinkedIdController {
   @override

@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -30,8 +29,7 @@ class LinkedEntriesWidget extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final provider = linkedEntriesControllerProvider(id: item.id);
-    final entryLinks = ref.watch(provider).value ?? [];
+    final orderedLinks = ref.watch(sortedLinkedEntriesProvider(item.id));
 
     final includeAiEntries = ref.watch(
       includeAiEntriesControllerProvider(id: item.id),
@@ -39,11 +37,8 @@ class LinkedEntriesWidget extends ConsumerWidget {
     final activeKinds = ref.watch(
       linkedEntriesActivityFilterControllerProvider(id: item.id),
     );
-    final sortOrder = ref.watch(
-      linkedEntriesSortControllerProvider(id: item.id),
-    );
 
-    if (entryLinks.isEmpty) {
+    if (orderedLinks.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -55,14 +50,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
         return const SizedBox.shrink();
       }
     }
-
-    final sortedLinks = entryLinks
-        .sortedBy((link) => link.createdAt)
-        .toList(growable: false);
-    final orderedLinks = switch (sortOrder) {
-      LinkedEntriesSortOrder.newestFirst => sortedLinks.reversed.toList(),
-      LinkedEntriesSortOrder.oldestFirst => sortedLinks,
-    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

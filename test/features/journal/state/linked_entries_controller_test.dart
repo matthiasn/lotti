@@ -2,19 +2,24 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_activity_filter.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
 
 class MockIncludeHiddenController extends IncludeHiddenController {
@@ -23,6 +28,20 @@ class MockIncludeHiddenController extends IncludeHiddenController {
 
   @override
   bool build({required String id}) => _value;
+}
+
+/// Synchronous links override for the unresolved-fallback test, so the
+/// provider can run without registering a journal repository or stubbing
+/// async loads.
+class _StaticLinksController extends LinkedEntriesController {
+  _StaticLinksController(this._links);
+  final List<EntryLink> _links;
+
+  @override
+  Future<List<EntryLink>> build({required String id}) {
+    state = AsyncData(_links);
+    return SynchronousFuture(_links);
+  }
 }
 
 void main() {
@@ -40,14 +59,20 @@ void main() {
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => updateStreamController.stream);
 
-    // Register mocks in GetIt
+    // Register mocks in GetIt. EntryController is constructed by the
+    // sortedLinkedEntriesProvider tests via FakeEntryController, which
+    // resolves these services in field initializers.
     getIt.allowReassignment = true;
-    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    getIt
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<JournalDb>(MockJournalDb())
+      ..registerSingleton<EditorStateService>(MockEditorStateService())
+      ..registerSingleton<PersistenceLogic>(MockPersistenceLogic());
   });
 
-  tearDown(() {
-    updateStreamController.close();
-    getIt.unregister<UpdateNotifications>();
+  tearDown(() async {
+    await updateStreamController.close();
+    await getIt.reset();
   });
 
   group('LinkedEntriesController', () {
@@ -670,6 +695,222 @@ void main() {
       );
       expect(stateA, isNot(contains(LinkedEntryActivityFilter.images)));
       expect(stateB, contains(LinkedEntryActivityFilter.images));
+    });
+  });
+
+  group('sortedLinkedEntriesProvider', () {
+    const testId = 'test-entry-id';
+    final linkCreatedAt = DateTime(2024, 3, 15, 10);
+
+    EntryLink buildLink(String suffix) => EntryLink.basic(
+      id: 'link-$suffix',
+      fromId: testId,
+      toId: 'linked-id-$suffix',
+      // All links share the same createdAt — so any ordering must come
+      // from the linked entity's dateFrom, not the link timestamp.
+      createdAt: linkCreatedAt,
+      updatedAt: linkCreatedAt,
+      vectorClock: null,
+      hidden: false,
+    );
+
+    JournalEntry buildEntry(String suffix, DateTime dateFrom) => JournalEntry(
+      meta: Metadata(
+        id: 'linked-id-$suffix',
+        createdAt: linkCreatedAt,
+        updatedAt: linkCreatedAt,
+        dateFrom: dateFrom,
+        dateTo: dateFrom,
+      ),
+      entryText: EntryText(plainText: 'entry $suffix'),
+    );
+
+    test('orders by entity dateFrom descending when newestFirst', () async {
+      final earliest = buildEntry('a', DateTime(2026, 5, 7, 19, 45));
+      final latest = buildEntry('b', DateTime(2026, 5, 7, 20, 45));
+      final middle = buildEntry('c', DateTime(2026, 5, 7, 20, 17));
+      final links = [buildLink('a'), buildLink('b'), buildLink('c')];
+
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => links);
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          includeHiddenControllerProvider(id: testId).overrideWith(
+            () => MockIncludeHiddenController(false),
+          ),
+          createEntryControllerOverride(earliest),
+          createEntryControllerOverride(latest),
+          createEntryControllerOverride(middle),
+        ],
+      );
+
+      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await Future.wait([
+        for (final entry in [earliest, latest, middle])
+          container.read(entryControllerProvider(id: entry.meta.id).future),
+      ]);
+
+      final sorted = container.read(sortedLinkedEntriesProvider(testId));
+
+      expect(
+        sorted.map((l) => l.toId),
+        [latest.meta.id, middle.meta.id, earliest.meta.id],
+      );
+    });
+
+    test('orders by entity dateFrom ascending when oldestFirst', () async {
+      final earliest = buildEntry('a', DateTime(2026, 5, 7, 19, 45));
+      final latest = buildEntry('b', DateTime(2026, 5, 7, 20, 45));
+      final middle = buildEntry('c', DateTime(2026, 5, 7, 20, 17));
+      final links = [buildLink('a'), buildLink('b'), buildLink('c')];
+
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => links);
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          includeHiddenControllerProvider(id: testId).overrideWith(
+            () => MockIncludeHiddenController(false),
+          ),
+          createEntryControllerOverride(earliest),
+          createEntryControllerOverride(latest),
+          createEntryControllerOverride(middle),
+        ],
+      );
+
+      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await Future.wait([
+        for (final entry in [earliest, latest, middle])
+          container.read(entryControllerProvider(id: entry.meta.id).future),
+      ]);
+      container
+              .read(linkedEntriesSortControllerProvider(id: testId).notifier)
+              .order =
+          LinkedEntriesSortOrder.oldestFirst;
+
+      final sorted = container.read(sortedLinkedEntriesProvider(testId));
+
+      expect(
+        sorted.map((l) => l.toId),
+        [earliest.meta.id, middle.meta.id, latest.meta.id],
+      );
+    });
+
+    test('ignores link.createdAt when sorting by dateFrom', () async {
+      // The link for the "latest" entry was created earliest; the link for
+      // the "earliest" entry was created last. If sort used link.createdAt
+      // the order would be inverted.
+      final earliest = buildEntry('a', DateTime(2026, 5, 7, 19, 45));
+      final latest = buildEntry('b', DateTime(2026, 5, 7, 20, 45));
+
+      final earliestLink = EntryLink.basic(
+        id: 'link-a',
+        fromId: testId,
+        toId: earliest.meta.id,
+        createdAt: DateTime(2026, 6),
+        updatedAt: DateTime(2026, 6),
+        vectorClock: null,
+        hidden: false,
+      );
+      final latestLink = EntryLink.basic(
+        id: 'link-b',
+        fromId: testId,
+        toId: latest.meta.id,
+        createdAt: DateTime(2026, 4),
+        updatedAt: DateTime(2026, 4),
+        vectorClock: null,
+        hidden: false,
+      );
+
+      when(() => mockJournalRepository.getLinksFromId(testId)).thenAnswer(
+        (_) async => [earliestLink, latestLink],
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          includeHiddenControllerProvider(id: testId).overrideWith(
+            () => MockIncludeHiddenController(false),
+          ),
+          createEntryControllerOverride(earliest),
+          createEntryControllerOverride(latest),
+        ],
+      );
+
+      await container.read(linkedEntriesControllerProvider(id: testId).future);
+      await Future.wait([
+        for (final entry in [earliest, latest])
+          container.read(entryControllerProvider(id: entry.meta.id).future),
+      ]);
+
+      final sorted = container.read(sortedLinkedEntriesProvider(testId));
+
+      expect(sorted.map((l) => l.toId), [latest.meta.id, earliest.meta.id]);
+    });
+
+    test('falls back to link.createdAt when entity is unresolved', () {
+      final unresolvedLink = EntryLink.basic(
+        id: 'link-old',
+        fromId: testId,
+        toId: 'unresolved-id',
+        createdAt: DateTime(2026, 5),
+        updatedAt: DateTime(2026, 5),
+        vectorClock: null,
+        hidden: false,
+      );
+      final newerLink = EntryLink.basic(
+        id: 'link-new',
+        fromId: testId,
+        toId: 'unresolved-id-2',
+        createdAt: DateTime(2026, 5, 6),
+        updatedAt: DateTime(2026, 5, 6),
+        vectorClock: null,
+        hidden: false,
+      );
+
+      when(() => mockJournalRepository.getLinksFromId(testId)).thenAnswer(
+        (_) async => [unresolvedLink, newerLink],
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          includeHiddenControllerProvider(id: testId).overrideWith(
+            () => MockIncludeHiddenController(false),
+          ),
+          linkedEntriesControllerProvider(id: testId).overrideWith(
+            () => _StaticLinksController([unresolvedLink, newerLink]),
+          ),
+        ],
+      );
+
+      final sorted = container.read(sortedLinkedEntriesProvider(testId));
+
+      expect(sorted.map((l) => l.id), ['link-new', 'link-old']);
+    });
+
+    test('returns empty list when no links exist', () async {
+      when(
+        () => mockJournalRepository.getLinksFromId(testId),
+      ).thenAnswer((_) async => const []);
+
+      final container = ProviderContainer(
+        overrides: [
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          includeHiddenControllerProvider(id: testId).overrideWith(
+            () => MockIncludeHiddenController(false),
+          ),
+        ],
+      );
+
+      await container.read(linkedEntriesControllerProvider(id: testId).future);
+
+      expect(container.read(sortedLinkedEntriesProvider(testId)), isEmpty);
     });
   });
 
