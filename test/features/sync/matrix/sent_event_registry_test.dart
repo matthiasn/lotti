@@ -1,5 +1,8 @@
+import 'dart:collection';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 
 class _MutableClock extends Clock {
@@ -13,6 +16,165 @@ class _MutableClock extends Clock {
 
   @override
   DateTime now() => _now;
+}
+
+enum _GeneratedRegistryOperationKind {
+  registerWithoutSource,
+  registerText,
+  registerFile,
+  consume,
+  prune,
+  clear,
+  advance,
+}
+
+class _GeneratedRegistryOperation {
+  const _GeneratedRegistryOperation({
+    required this.kind,
+    required this.eventSlot,
+    required this.advanceSeconds,
+  });
+
+  final _GeneratedRegistryOperationKind kind;
+  final int eventSlot;
+  final int advanceSeconds;
+
+  String get eventId =>
+      r'$generated-'
+      '$eventSlot';
+
+  SentEventSource? get source {
+    switch (kind) {
+      case _GeneratedRegistryOperationKind.registerText:
+        return SentEventSource.text;
+      case _GeneratedRegistryOperationKind.registerFile:
+        return SentEventSource.file;
+      case _GeneratedRegistryOperationKind.registerWithoutSource:
+      case _GeneratedRegistryOperationKind.consume:
+      case _GeneratedRegistryOperationKind.prune:
+      case _GeneratedRegistryOperationKind.clear:
+      case _GeneratedRegistryOperationKind.advance:
+        return null;
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedRegistryOperation('
+        'kind: $kind, '
+        'eventSlot: $eventSlot, '
+        'advanceSeconds: $advanceSeconds'
+        ')';
+  }
+}
+
+class _GeneratedRegistryScenario {
+  const _GeneratedRegistryScenario({
+    required this.maxEntries,
+    required this.operations,
+  });
+
+  final int maxEntries;
+  final List<_GeneratedRegistryOperation> operations;
+
+  @override
+  String toString() {
+    return '_GeneratedRegistryScenario('
+        'maxEntries: $maxEntries, '
+        'operations: $operations'
+        ')';
+  }
+}
+
+class _ExpectedRegistryEntry {
+  _ExpectedRegistryEntry({
+    required this.expirySecond,
+    this.source,
+  });
+
+  int expirySecond;
+  SentEventSource? source;
+}
+
+class _ExpectedSentRegistry {
+  _ExpectedSentRegistry({
+    required this.ttlSeconds,
+    required this.maxEntries,
+  });
+
+  final int ttlSeconds;
+  final int maxEntries;
+  final LinkedHashMap<String, _ExpectedRegistryEntry> entries =
+      LinkedHashMap<String, _ExpectedRegistryEntry>();
+  int nowSecond = 0;
+
+  void advance(int seconds) {
+    nowSecond += seconds;
+  }
+
+  void register(String eventId, {SentEventSource? source}) {
+    prune();
+    final existing = entries.remove(eventId);
+    entries[eventId] = _ExpectedRegistryEntry(
+      expirySecond: nowSecond + ttlSeconds,
+      source: source ?? existing?.source,
+    );
+    _enforceCapacity();
+  }
+
+  bool consume(String eventId) {
+    prune();
+    return entries.containsKey(eventId);
+  }
+
+  void prune() {
+    entries.removeWhere((_, entry) => entry.expirySecond < nowSecond);
+    _enforceCapacity();
+  }
+
+  void clear() {
+    entries.clear();
+  }
+
+  void _enforceCapacity() {
+    while (entries.length > maxEntries) {
+      entries.remove(entries.keys.first);
+    }
+  }
+}
+
+extension _AnySentRegistryScenario on glados.Any {
+  glados.Generator<_GeneratedRegistryOperationKind> get registryOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedRegistryOperationKind.values);
+
+  glados.Generator<_GeneratedRegistryOperation> get registryOperation =>
+      glados.CombinableAny(this).combine3(
+        registryOperationKind,
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 7),
+        (
+          _GeneratedRegistryOperationKind kind,
+          int eventSlot,
+          int advanceSeconds,
+        ) => _GeneratedRegistryOperation(
+          kind: kind,
+          eventSlot: eventSlot,
+          advanceSeconds: advanceSeconds,
+        ),
+      );
+
+  glados.Generator<_GeneratedRegistryScenario> get registryScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(1, 5),
+        glados.ListAnys(this).listWithLengthInRange(1, 30, registryOperation),
+        (
+          int maxEntries,
+          List<_GeneratedRegistryOperation> operations,
+        ) => _GeneratedRegistryScenario(
+          maxEntries: maxEntries,
+          operations: operations,
+        ),
+      );
 }
 
 void main() {
@@ -158,4 +320,63 @@ void main() {
     expect(registry.length, 0);
     expect(registry.debugNextPruneAt.isAfter(firstNextPrune), isTrue);
   });
+
+  glados.Glados(
+    glados.any.registryScenario,
+    glados.ExploreConfig(numRuns: 160),
+  ).test(
+    'generated operation sequences preserve TTL, FIFO cap, and sources',
+    (scenario) {
+      const ttlSeconds = 5;
+      final clock = _MutableClock(DateTime.utc(2024));
+      final registry = SentEventRegistry(
+        ttl: const Duration(seconds: ttlSeconds),
+        maxEntries: scenario.maxEntries,
+        pruneInterval: Duration.zero,
+        clockSource: clock,
+      );
+      final expected = _ExpectedSentRegistry(
+        ttlSeconds: ttlSeconds,
+        maxEntries: scenario.maxEntries,
+      );
+
+      for (final operation in scenario.operations) {
+        switch (operation.kind) {
+          case _GeneratedRegistryOperationKind.registerWithoutSource:
+          case _GeneratedRegistryOperationKind.registerText:
+          case _GeneratedRegistryOperationKind.registerFile:
+            registry.register(operation.eventId, source: operation.source);
+            expected.register(operation.eventId, source: operation.source);
+          case _GeneratedRegistryOperationKind.consume:
+            expect(
+              registry.consume(operation.eventId),
+              expected.consume(
+                operation.eventId,
+              ),
+            );
+          case _GeneratedRegistryOperationKind.prune:
+            registry.prune();
+            expected.prune();
+          case _GeneratedRegistryOperationKind.clear:
+            registry.clear();
+            expected.clear();
+          case _GeneratedRegistryOperationKind.advance:
+            final delta = Duration(seconds: operation.advanceSeconds);
+            clock.advance(delta);
+            expected.advance(operation.advanceSeconds);
+        }
+
+        expect(registry.length, expected.entries.length);
+        for (var slot = 0; slot < 5; slot++) {
+          final eventId =
+              r'$generated-'
+              '$slot';
+          expect(
+            registry.debugSource(eventId),
+            expected.entries[eventId]?.source,
+          );
+        }
+      }
+    },
+  );
 }

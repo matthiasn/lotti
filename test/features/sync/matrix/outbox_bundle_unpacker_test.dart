@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -13,6 +14,109 @@ class _MockEvent extends Mock implements Event {}
 
 PreparedSyncEvent _preparedFor(Event event, SyncMessage msg) =>
     PreparedSyncEvent.forTesting(event: event, syncMessage: msg);
+
+enum _GeneratedBundleChildOutcome {
+  ok,
+  nested,
+  nonIoThrow,
+  ioThrow,
+}
+
+class _GeneratedBundleChild {
+  const _GeneratedBundleChild({
+    required this.index,
+    required this.outcome,
+  });
+
+  final int index;
+  final _GeneratedBundleChildOutcome outcome;
+
+  String get id => 'generated-child-$index';
+
+  SyncMessage get syncMessage {
+    switch (outcome) {
+      case _GeneratedBundleChildOutcome.nested:
+        return const SyncOutboxBundle(children: []);
+      case _GeneratedBundleChildOutcome.ok:
+      case _GeneratedBundleChildOutcome.nonIoThrow:
+      case _GeneratedBundleChildOutcome.ioThrow:
+        return SyncMessage.aiConfigDelete(id: id);
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedBundleChild(index: $index, outcome: $outcome)';
+  }
+}
+
+class _GeneratedBundleScenario {
+  const _GeneratedBundleScenario({required this.children});
+
+  final List<_GeneratedBundleChild> children;
+
+  List<String> expectedPrepareIdsBeforeIo() {
+    final ids = <String>[];
+    for (final child in children) {
+      switch (child.outcome) {
+        case _GeneratedBundleChildOutcome.ok:
+          ids.add(child.id);
+        case _GeneratedBundleChildOutcome.nested:
+        case _GeneratedBundleChildOutcome.nonIoThrow:
+          break;
+        case _GeneratedBundleChildOutcome.ioThrow:
+          return ids;
+      }
+    }
+    return ids;
+  }
+
+  List<String> expectedApplyIdsBeforeIo() {
+    final ids = <String>[];
+    for (final child in children) {
+      switch (child.outcome) {
+        case _GeneratedBundleChildOutcome.ok:
+        case _GeneratedBundleChildOutcome.nested:
+          ids.add(child.id);
+        case _GeneratedBundleChildOutcome.nonIoThrow:
+          break;
+        case _GeneratedBundleChildOutcome.ioThrow:
+          return ids;
+      }
+    }
+    return ids;
+  }
+
+  bool get throwsIo => children.any(
+    (child) => child.outcome == _GeneratedBundleChildOutcome.ioThrow,
+  );
+
+  @override
+  String toString() => '_GeneratedBundleScenario(children: $children)';
+}
+
+extension _AnyOutboxBundleScenario on glados.Any {
+  glados.Generator<_GeneratedBundleChildOutcome> get bundleChildOutcome =>
+      glados.AnyUtils(this).choose(_GeneratedBundleChildOutcome.values);
+
+  glados.Generator<_GeneratedBundleScenario> get outboxBundleScenario =>
+      glados.ListAnys(
+            this,
+          )
+          .listWithLengthInRange(
+            0,
+            10,
+            bundleChildOutcome,
+          )
+          .map(
+            (outcomes) => _GeneratedBundleScenario(
+              children: [
+                for (var index = 0; index < outcomes.length; index++)
+                  _GeneratedBundleChild(index: index, outcome: outcomes[index]),
+              ],
+            ),
+          );
+}
 
 void main() {
   setUpAll(() {
@@ -238,6 +342,54 @@ void main() {
         );
       },
     );
+
+    glados.Glados(
+      glados.any.outboxBundleScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'generated child outcomes preserve prepare order and IO rethrow',
+      (scenario) async {
+        final bundle = SyncOutboxBundle(
+          children: [for (final child in scenario.children) child.syncMessage],
+        );
+        final preparedIds = <String>[];
+        final prepareFuture = unpacker.prepare(
+          event: event,
+          msg: bundle,
+          resolveSidecar: (_) async => bundle,
+          prepareChild: (e, m) async {
+            final id = (m as SyncAiConfigDelete).id;
+            final generated = scenario.children.singleWhere(
+              (child) => child.id == id,
+            );
+            switch (generated.outcome) {
+              case _GeneratedBundleChildOutcome.ok:
+                preparedIds.add(id);
+                return _preparedFor(e, m);
+              case _GeneratedBundleChildOutcome.nonIoThrow:
+                throw StateError('generated child failure');
+              case _GeneratedBundleChildOutcome.ioThrow:
+                throw const FileSystemException('generated child io');
+              case _GeneratedBundleChildOutcome.nested:
+                fail('nested bundle children must not be prepared');
+            }
+          },
+        );
+
+        if (scenario.throwsIo) {
+          await expectLater(prepareFuture, throwsA(isA<FileSystemException>()));
+          expect(preparedIds, scenario.expectedPrepareIdsBeforeIo());
+        } else {
+          final prepared = await prepareFuture;
+          expect(
+            prepared!.children
+                .map((child) => (child.syncMessage as SyncAiConfigDelete).id)
+                .toList(),
+            scenario.expectedPrepareIdsBeforeIo(),
+          );
+        }
+      },
+    );
   });
 
   group('apply', () {
@@ -362,6 +514,45 @@ void main() {
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         );
+      },
+    );
+
+    glados.Glados(
+      glados.any.outboxBundleScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'generated child outcomes preserve apply order and IO rethrow',
+      (scenario) async {
+        final children = [
+          for (final child in scenario.children)
+            _preparedFor(event, SyncMessage.aiConfigDelete(id: child.id)),
+        ];
+        final applied = <String>[];
+        final applyFuture = unpacker.apply(
+          bundle: PreparedOutboxSyncBundle(children: children),
+          applyChild: (child) async {
+            final id = (child.syncMessage as SyncAiConfigDelete).id;
+            final generated = scenario.children.singleWhere(
+              (candidate) => candidate.id == id,
+            );
+            switch (generated.outcome) {
+              case _GeneratedBundleChildOutcome.ok:
+              case _GeneratedBundleChildOutcome.nested:
+                applied.add(id);
+              case _GeneratedBundleChildOutcome.nonIoThrow:
+                throw StateError('generated apply failure');
+              case _GeneratedBundleChildOutcome.ioThrow:
+                throw const FileSystemException('generated apply io');
+            }
+          },
+        );
+
+        if (scenario.throwsIo) {
+          await expectLater(applyFuture, throwsA(isA<FileSystemException>()));
+        } else {
+          await applyFuture;
+        }
+        expect(applied, scenario.expectedApplyIdsBeforeIo());
       },
     );
   });
