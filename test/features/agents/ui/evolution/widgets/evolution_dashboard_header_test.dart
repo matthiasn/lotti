@@ -66,18 +66,6 @@ void main() {
         find.text(context.messages.agentRitualSummarySubtitle),
         findsNothing,
       );
-      expect(
-        find.text(context.messages.agentTemplateMetricsSuccessRate),
-        findsNothing,
-      );
-      expect(
-        find.text(context.messages.agentTemplateMetricsActiveInstances),
-        findsNothing,
-      );
-      expect(
-        find.text(context.messages.agentEvolutionMttrLabel),
-        findsNothing,
-      );
     });
 
     testWidgets('expands to show the wake activity chart', (tester) async {
