@@ -1,7 +1,10 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,6 +12,222 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+enum _GeneratedAgentKindSlot { task, project, improver, custom }
+
+enum _GeneratedAgentConfigSlot { defaultConfig, customModel, profile }
+
+enum _GeneratedAgentCategoriesSlot { empty, single, duplicate, pair }
+
+enum _GeneratedAgentLookupSlot {
+  missing,
+  wrongType,
+  active,
+  dormant,
+  destroyed,
+}
+
+enum _GeneratedAgentLifecycleOperation { pause, resume, destroy, delete }
+
+class _GeneratedAgentCreateScenario {
+  const _GeneratedAgentCreateScenario({
+    required this.kindSlot,
+    required this.configSlot,
+    required this.categoriesSlot,
+  });
+
+  final _GeneratedAgentKindSlot kindSlot;
+  final _GeneratedAgentConfigSlot configSlot;
+  final _GeneratedAgentCategoriesSlot categoriesSlot;
+
+  String get kind {
+    return switch (kindSlot) {
+      _GeneratedAgentKindSlot.task => 'task_agent',
+      _GeneratedAgentKindSlot.project => 'project_agent',
+      _GeneratedAgentKindSlot.improver => 'template_improver',
+      _GeneratedAgentKindSlot.custom => 'generated_custom_agent',
+    };
+  }
+
+  String get displayName => 'Generated ${kindSlot.name} agent';
+
+  AgentConfig get config {
+    return switch (configSlot) {
+      _GeneratedAgentConfigSlot.defaultConfig => const AgentConfig(),
+      _GeneratedAgentConfigSlot.customModel => const AgentConfig(
+        modelId: 'models/generated-custom',
+        maxTurnsPerWake: 7,
+      ),
+      _GeneratedAgentConfigSlot.profile => const AgentConfig(
+        profileId: 'generated-profile',
+        maxTurnsPerWake: 13,
+      ),
+    };
+  }
+
+  Set<String> get allowedCategoryIds {
+    return switch (categoriesSlot) {
+      _GeneratedAgentCategoriesSlot.empty => const <String>{},
+      _GeneratedAgentCategoriesSlot.single => {'generated-cat-1'},
+      _GeneratedAgentCategoriesSlot.duplicate => {'generated-cat-1'},
+      _GeneratedAgentCategoriesSlot.pair => {
+        'generated-cat-1',
+        'generated-cat-2',
+      },
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedAgentCreateScenario('
+        'kindSlot: $kindSlot, configSlot: $configSlot, '
+        'categoriesSlot: $categoriesSlot)';
+  }
+}
+
+class _GeneratedAgentLifecycleScenario {
+  const _GeneratedAgentLifecycleScenario({
+    required this.lookupSlot,
+    required this.operation,
+  });
+
+  final _GeneratedAgentLookupSlot lookupSlot;
+  final _GeneratedAgentLifecycleOperation operation;
+
+  bool get hasIdentity =>
+      lookupSlot == _GeneratedAgentLookupSlot.active ||
+      lookupSlot == _GeneratedAgentLookupSlot.dormant ||
+      lookupSlot == _GeneratedAgentLookupSlot.destroyed;
+
+  AgentDomainEntity? get lookupEntity {
+    return switch (lookupSlot) {
+      _GeneratedAgentLookupSlot.missing => null,
+      _GeneratedAgentLookupSlot.wrongType => makeTestState(
+        id: 'generated-agent',
+        agentId: 'generated-agent',
+      ),
+      _GeneratedAgentLookupSlot.active => makeTestIdentity(
+        id: 'generated-agent',
+        agentId: 'generated-agent',
+      ),
+      _GeneratedAgentLookupSlot.dormant => makeTestIdentity(
+        id: 'generated-agent',
+        agentId: 'generated-agent',
+        lifecycle: AgentLifecycle.dormant,
+      ),
+      _GeneratedAgentLookupSlot.destroyed => makeTestIdentity(
+        id: 'generated-agent',
+        agentId: 'generated-agent',
+        lifecycle: AgentLifecycle.destroyed,
+      ),
+    };
+  }
+
+  AgentIdentityEntity? get identity {
+    final entity = lookupEntity;
+    return entity is AgentIdentityEntity ? entity : null;
+  }
+
+  bool get expectsLifecycleWrite {
+    return switch (operation) {
+      _GeneratedAgentLifecycleOperation.pause ||
+      _GeneratedAgentLifecycleOperation.resume ||
+      _GeneratedAgentLifecycleOperation.destroy => hasIdentity,
+      _GeneratedAgentLifecycleOperation.delete =>
+        hasIdentity && identity!.lifecycle != AgentLifecycle.destroyed,
+    };
+  }
+
+  bool get expectsRemoveSubscriptions {
+    return switch (operation) {
+      _GeneratedAgentLifecycleOperation.pause ||
+      _GeneratedAgentLifecycleOperation.destroy => hasIdentity,
+      _GeneratedAgentLifecycleOperation.resume => false,
+      _GeneratedAgentLifecycleOperation.delete => true,
+    };
+  }
+
+  bool get expectsHardDelete =>
+      operation == _GeneratedAgentLifecycleOperation.delete;
+
+  AgentLifecycle? get expectedLifecycle {
+    return switch (operation) {
+      _GeneratedAgentLifecycleOperation.pause => AgentLifecycle.dormant,
+      _GeneratedAgentLifecycleOperation.resume => AgentLifecycle.active,
+      _GeneratedAgentLifecycleOperation.destroy ||
+      _GeneratedAgentLifecycleOperation.delete =>
+        expectsLifecycleWrite ? AgentLifecycle.destroyed : null,
+    };
+  }
+
+  bool get expectedBoolResult {
+    return operation != _GeneratedAgentLifecycleOperation.delete && hasIdentity;
+  }
+
+  Future<Object?> run(AgentService service, String agentId) {
+    return switch (operation) {
+      _GeneratedAgentLifecycleOperation.pause => service.pauseAgent(agentId),
+      _GeneratedAgentLifecycleOperation.resume => service.resumeAgent(agentId),
+      _GeneratedAgentLifecycleOperation.destroy => service.destroyAgent(
+        agentId,
+      ),
+      _GeneratedAgentLifecycleOperation.delete => service.deleteAgent(agentId),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedAgentLifecycleScenario('
+        'lookupSlot: $lookupSlot, operation: $operation)';
+  }
+}
+
+extension _AnyGeneratedAgentServiceScenario on glados.Any {
+  glados.Generator<_GeneratedAgentKindSlot> get agentKindSlot =>
+      glados.AnyUtils(this).choose(_GeneratedAgentKindSlot.values);
+
+  glados.Generator<_GeneratedAgentConfigSlot> get agentConfigSlot =>
+      glados.AnyUtils(this).choose(_GeneratedAgentConfigSlot.values);
+
+  glados.Generator<_GeneratedAgentCategoriesSlot> get agentCategoriesSlot =>
+      glados.AnyUtils(this).choose(_GeneratedAgentCategoriesSlot.values);
+
+  glados.Generator<_GeneratedAgentLookupSlot> get agentLookupSlot =>
+      glados.AnyUtils(this).choose(_GeneratedAgentLookupSlot.values);
+
+  glados.Generator<_GeneratedAgentLifecycleOperation>
+  get agentLifecycleOperation =>
+      glados.AnyUtils(this).choose(_GeneratedAgentLifecycleOperation.values);
+
+  glados.Generator<_GeneratedAgentCreateScenario> get agentCreateScenario =>
+      glados.CombinableAny(this).combine3(
+        agentKindSlot,
+        agentConfigSlot,
+        agentCategoriesSlot,
+        (
+          _GeneratedAgentKindSlot kindSlot,
+          _GeneratedAgentConfigSlot configSlot,
+          _GeneratedAgentCategoriesSlot categoriesSlot,
+        ) => _GeneratedAgentCreateScenario(
+          kindSlot: kindSlot,
+          configSlot: configSlot,
+          categoriesSlot: categoriesSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedAgentLifecycleScenario>
+  get agentLifecycleScenario => glados.CombinableAny(this).combine2(
+    agentLookupSlot,
+    agentLifecycleOperation,
+    (
+      _GeneratedAgentLookupSlot lookupSlot,
+      _GeneratedAgentLifecycleOperation operation,
+    ) => _GeneratedAgentLifecycleScenario(
+      lookupSlot: lookupSlot,
+      operation: operation,
+    ),
+  );
+}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -39,6 +258,99 @@ void main() {
 
   group('AgentService', () {
     group('createAgent', () {
+      glados.Glados(
+        glados.any.agentCreateScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test('matches generated identity/state/link invariants', (
+        scenario,
+      ) async {
+        final generatedRepository = MockAgentRepository();
+        final generatedOrchestrator = MockWakeOrchestrator();
+        final generatedSyncService = MockAgentSyncService();
+        final generatedService = AgentService(
+          repository: generatedRepository,
+          orchestrator: generatedOrchestrator,
+          syncService: generatedSyncService,
+        );
+        final testDate = DateTime(2026, 4, 24, 10, 30);
+
+        when(
+          () => generatedSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => generatedSyncService.upsertLink(any()),
+        ).thenAnswer((_) async {});
+
+        final identity = await withClock(Clock.fixed(testDate), () {
+          return generatedService.createAgent(
+            kind: scenario.kind,
+            displayName: scenario.displayName,
+            config: scenario.config,
+            allowedCategoryIds: scenario.allowedCategoryIds,
+          );
+        });
+
+        final entityWrites = verify(
+          () => generatedSyncService.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        expect(entityWrites, hasLength(2), reason: '$scenario');
+
+        final savedIdentity = entityWrites.first as AgentIdentityEntity;
+        final savedState = entityWrites.last as AgentStateEntity;
+        expect(identity, savedIdentity, reason: '$scenario');
+        expect(savedIdentity.id, isNotEmpty, reason: '$scenario');
+        expect(savedIdentity.id, savedIdentity.agentId, reason: '$scenario');
+        expect(savedIdentity.kind, scenario.kind, reason: '$scenario');
+        expect(
+          savedIdentity.displayName,
+          scenario.displayName,
+          reason: '$scenario',
+        );
+        expect(
+          savedIdentity.lifecycle,
+          AgentLifecycle.active,
+          reason: '$scenario',
+        );
+        expect(
+          savedIdentity.mode,
+          AgentInteractionMode.autonomous,
+          reason: '$scenario',
+        );
+        expect(
+          savedIdentity.allowedCategoryIds,
+          scenario.allowedCategoryIds,
+          reason: '$scenario',
+        );
+        expect(savedIdentity.config, scenario.config, reason: '$scenario');
+        expect(savedIdentity.createdAt, testDate, reason: '$scenario');
+        expect(savedIdentity.updatedAt, testDate, reason: '$scenario');
+        expect(savedIdentity.destroyedAt, isNull, reason: '$scenario');
+        expect(
+          savedIdentity.currentStateId,
+          savedState.id,
+          reason: '$scenario',
+        );
+
+        expect(savedState.id, isNotEmpty, reason: '$scenario');
+        expect(savedState.agentId, savedIdentity.agentId, reason: '$scenario');
+        expect(savedState.revision, 0, reason: '$scenario');
+        expect(savedState.slots, const AgentSlots(), reason: '$scenario');
+        expect(savedState.updatedAt, testDate, reason: '$scenario');
+        expect(savedState.vectorClock, isNull, reason: '$scenario');
+
+        final linkWrites = verify(
+          () => generatedSyncService.upsertLink(captureAny()),
+        ).captured.cast<AgentLink>();
+        expect(linkWrites, hasLength(1), reason: '$scenario');
+        final stateLink = linkWrites.single as AgentStateLink;
+        expect(stateLink.id, isNotEmpty, reason: '$scenario');
+        expect(stateLink.fromId, savedIdentity.agentId, reason: '$scenario');
+        expect(stateLink.toId, savedState.id, reason: '$scenario');
+        expect(stateLink.createdAt, testDate, reason: '$scenario');
+        expect(stateLink.updatedAt, testDate, reason: '$scenario');
+        expect(stateLink.vectorClock, isNull, reason: '$scenario');
+      });
+
       test(
         'creates identity, state, and link, then returns identity',
         () async {
@@ -301,6 +613,83 @@ void main() {
     });
 
     group('pauseAgent', () {
+      glados.Glados(
+        glados.any.agentLifecycleScenario,
+        glados.ExploreConfig(numRuns: 160),
+      ).test('matches generated lifecycle/delete invariants', (scenario) async {
+        final generatedRepository = MockAgentRepository();
+        final generatedOrchestrator = MockWakeOrchestrator();
+        final generatedSyncService = MockAgentSyncService();
+        final generatedService = AgentService(
+          repository: generatedRepository,
+          orchestrator: generatedOrchestrator,
+          syncService: generatedSyncService,
+        );
+        final testDate = DateTime(2026, 4, 24, 11, 15);
+        const agentId = 'generated-agent';
+
+        when(
+          () => generatedRepository.getEntity(agentId),
+        ).thenAnswer((_) async => scenario.lookupEntity);
+        when(
+          () => generatedSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => generatedOrchestrator.removeSubscriptions(agentId),
+        ).thenReturn(null);
+        when(
+          () => generatedRepository.hardDeleteAgent(agentId),
+        ).thenAnswer((_) async {});
+
+        final result = await withClock(Clock.fixed(testDate), () {
+          return scenario.run(generatedService, agentId);
+        });
+
+        if (scenario.operation != _GeneratedAgentLifecycleOperation.delete) {
+          expect(result, scenario.expectedBoolResult, reason: '$scenario');
+        } else {
+          expect(result, isNull, reason: '$scenario');
+        }
+
+        if (scenario.expectsLifecycleWrite) {
+          final writes = verify(
+            () => generatedSyncService.upsertEntity(captureAny()),
+          ).captured.cast<AgentDomainEntity>();
+          expect(writes, hasLength(1), reason: '$scenario');
+          final updated = writes.single as AgentIdentityEntity;
+          expect(updated.id, agentId, reason: '$scenario');
+          expect(
+            updated.lifecycle,
+            scenario.expectedLifecycle,
+            reason: '$scenario',
+          );
+          expect(updated.updatedAt, testDate, reason: '$scenario');
+          if (scenario.expectedLifecycle == AgentLifecycle.destroyed) {
+            expect(updated.destroyedAt, testDate, reason: '$scenario');
+          } else {
+            expect(updated.destroyedAt, isNull, reason: '$scenario');
+          }
+        } else {
+          verifyNever(() => generatedSyncService.upsertEntity(any()));
+        }
+
+        if (scenario.expectsRemoveSubscriptions) {
+          verify(
+            () => generatedOrchestrator.removeSubscriptions(agentId),
+          ).called(1);
+        } else {
+          verifyNever(
+            () => generatedOrchestrator.removeSubscriptions(agentId),
+          );
+        }
+
+        if (scenario.expectsHardDelete) {
+          verify(() => generatedRepository.hardDeleteAgent(agentId)).called(1);
+        } else {
+          verifyNever(() => generatedRepository.hardDeleteAgent(agentId));
+        }
+      });
+
       test('sets lifecycle to dormant and unregisters subscriptions', () async {
         final identity = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');
 

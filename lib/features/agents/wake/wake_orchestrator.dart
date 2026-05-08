@@ -447,7 +447,11 @@ class WakeOrchestrator {
         subDomain: 'suppression',
       );
 
-      // 3. During-execution gate: when the agent is actively executing,
+      // 3. Apply optional fine-grained predicate before any queueing path.
+      final predicate = sub.predicate;
+      if (predicate != null && !predicate(matched)) continue;
+
+      // 4. During-execution gate: when the agent is actively executing,
       //    silently queue the notification for the drain re-check instead
       //    of going through the throttle/defer path. The drain re-check
       //    uses _isPreRegisteredSuppressed (with actual subscription IDs)
@@ -486,7 +490,7 @@ class WakeOrchestrator {
         continue;
       }
 
-      // 4. Throttle gate: when the agent is throttled (but not executing),
+      // 5. Throttle gate: when the agent is throttled (but not executing),
       //    merge tokens into the queued job or enqueue a new one so the
       //    deferred drain timer can pick it up.
       if (_isThrottled(sub.agentId)) {
@@ -500,10 +504,6 @@ class WakeOrchestrator {
         if (merged) continue;
         // Fall through to enqueue a new job for the deferred drain.
       }
-
-      // 5. Apply optional fine-grained predicate.
-      final predicate = sub.predicate;
-      if (predicate != null && !predicate(matched)) continue;
 
       // 6. Derive a deterministic run key and enqueue.
       final counter = _wakeCounters[sub.agentId] ?? 0;
