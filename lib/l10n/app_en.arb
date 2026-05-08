@@ -4,20 +4,17 @@
   "addActionAddChecklist": "Checklist",
   "addActionAddEvent": "Event",
   "addActionAddImageFromClipboard": "Paste Image",
-  "addActionAddPhotos": "Photo(s)",
   "addActionAddScreenshot": "Screenshot",
   "addActionAddTask": "Task",
   "addActionAddText": "Text Entry",
   "addActionAddTimer": "Timer",
   "addActionAddTimeRecording": "Timer Entry",
   "addActionImportImage": "Import Image",
-  "addAudioTitle": "Audio Recording",
   "addHabitCommentLabel": "Comment",
   "addHabitDateLabel": "Completed at",
   "addMeasurementCommentLabel": "Comment",
   "addMeasurementDateLabel": "Observed at",
   "addMeasurementSaveButton": "Save",
-  "addSurveyTitle": "Fill Survey",
   "addToDictionary": "Add to Dictionary",
   "addToDictionaryDuplicate": "Term already exists in dictionary",
   "addToDictionaryNoCategory": "Cannot add to dictionary: task has no category",
@@ -48,7 +45,6 @@
       }
     }
   },
-  "agentActivityLogHeading": "Activity Log",
   "agentBinaryChoiceNo": "No",
   "agentBinaryChoiceYes": "Yes",
   "agentCategoryRatingsScaleMax": "Fix first",
@@ -86,14 +82,6 @@
   "agentControlsReanalyzeButton": "Re-analyze",
   "agentControlsResumeButton": "Resume",
   "agentConversationEmpty": "No conversations yet.",
-  "agentConversationThreadHeader": "Wake {runKey}",
-  "@agentConversationThreadHeader": {
-    "placeholders": {
-      "runKey": {
-        "type": "String"
-      }
-    }
-  },
   "agentConversationThreadSummary": "{messageCount} messages, {toolCallCount} tool calls · {shortId}",
   "@agentConversationThreadSummary": {
     "placeholders": {
@@ -139,10 +127,8 @@
   "agentEvolutionMetricActive": "Active",
   "agentEvolutionMetricAvgDuration": "Avg Duration",
   "agentEvolutionMetricFailures": "Failures",
-  "agentEvolutionMetricNotAvailable": "N/A",
   "agentEvolutionMetricSuccess": "Success",
   "agentEvolutionMetricWakes": "Wakes",
-  "agentEvolutionMttrLabel": "Mean Time to Resolution",
   "agentEvolutionNoSessions": "No evolution sessions yet",
   "agentEvolutionNoteRecorded": "Note Recorded",
   "agentEvolutionProposalApprovalFailed": "Approval failed — please try again",
@@ -150,10 +136,6 @@
   "agentEvolutionProposalRejected": "Proposal rejected — continue the conversation",
   "agentEvolutionProposalTitle": "Proposed Changes",
   "agentEvolutionProposedDirectives": "Proposed Directives",
-  "agentEvolutionRatingAdequate": "Adequate",
-  "agentEvolutionRatingExcellent": "Excellent",
-  "agentEvolutionRatingNeedsWork": "Needs work",
-  "agentEvolutionRatingPrompt": "How well is this template performing?",
   "agentEvolutionSessionAbandoned": "Session ended without changes",
   "agentEvolutionSessionCompleted": "Session completed — version {version} created",
   "@agentEvolutionSessionCompleted": {
@@ -230,13 +212,8 @@
   "agentFeedbackSourceObservation": "Observation",
   "agentFeedbackSourceRating": "Rating",
   "agentInstancesEmptyFiltered": "No instances match your filters.",
-  "agentInstancesEmptyList": "No agent instances found",
-  "agentInstancesFilterActive": "Active",
-  "agentInstancesFilterAll": "All",
   "agentInstancesFilterClearAll": "Clear all",
   "agentInstancesFilterClearSection": "Clear",
-  "agentInstancesFilterDestroyed": "Destroyed",
-  "agentInstancesFilterDormant": "Dormant",
   "agentInstancesFilterSectionSoul": "Soul",
   "agentInstancesFilterSectionStatus": "Status",
   "agentInstancesFilterSectionType": "Type",
@@ -251,7 +228,6 @@
   "agentInstancesGroupBySoul": "Soul",
   "agentInstancesGroupByStatus": "Status",
   "agentInstancesGroupByType": "Type",
-  "agentInstancesKindAll": "All",
   "agentInstancesKindEvolution": "Evolution",
   "agentInstancesKindTaskAgent": "Task Agent",
   "agentInstancesPageTitle": "Agent Instances",
@@ -279,23 +255,6 @@
   "agentInstancesSortName": "Name",
   "agentInstancesSortOldest": "Oldest",
   "agentInstancesSortRecent": "Recent",
-  "agentInstancesStatsSummary": "Total {total} · Active {active} · Dormant {dormant} · Destroyed {destroyed}",
-  "@agentInstancesStatsSummary": {
-    "placeholders": {
-      "total": {
-        "type": "int"
-      },
-      "active": {
-        "type": "int"
-      },
-      "dormant": {
-        "type": "int"
-      },
-      "destroyed": {
-        "type": "int"
-      }
-    }
-  },
   "agentInstancesTitle": "Instances",
   "agentInstancesToolbarFilters": "Filters",
   "agentInstancesToolbarGroupBy": "Group by",
@@ -304,7 +263,6 @@
   "agentLifecycleCreated": "Created",
   "agentLifecycleDestroyed": "Destroyed",
   "agentLifecycleDormant": "Dormant",
-  "agentLifecyclePaused": "Paused",
   "agentMessageKindAction": "Action",
   "agentMessageKindObservation": "Observation",
   "agentMessageKindSummary": "Summary",
@@ -346,11 +304,8 @@
       }
     }
   },
-  "agentPendingWakesCountdownLabel": "Countdown",
   "agentPendingWakesDeleteTooltip": "Remove wake",
-  "agentPendingWakesDueAtLabel": "Due at",
   "agentPendingWakesEmptyFiltered": "No wakes match your filters.",
-  "agentPendingWakesEmptyList": "No pending wakes",
   "agentPendingWakesFilterSectionType": "Type",
   "agentPendingWakesGroupByType": "Type",
   "agentPendingWakesPendingLabel": "Pending",
@@ -367,40 +322,17 @@
   "agentPendingWakesSortDueLatest": "Due latest",
   "agentPendingWakesSortDueSoonest": "Due soonest",
   "agentPendingWakesTitle": "Wake Cycles",
-  "agentReportErrorLoading": "Failed to load report: {error}",
-  "@agentReportErrorLoading": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "agentReportHistoryBadge": "Report",
   "agentReportHistoryEmpty": "No report snapshots yet.",
   "agentReportHistoryError": "An error occurred while loading the report history.",
   "agentReportNone": "No report available yet.",
-  "agentReportSectionTitle": "Agent Report",
-  "@agentReportSectionTitle": {
-    "description": "Header title for the agent report section on a task page."
-  },
-  "agentRitualPendingNotification": "Rituals pending review",
-  "agentRitualPendingReviewCount": "{count, plural, =1{1 pending} other{{count} pending}}",
-  "@agentRitualPendingReviewCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "agentRitualReviewAction": "Start Conversation",
-  "agentRitualReviewFeedbackTitle": "Feedback Signals",
   "agentRitualReviewNegativeSignals": "Negative",
   "agentRitualReviewNeutralSignals": "Neutral",
   "agentRitualReviewNoFeedback": "No feedback signals in this window",
   "agentRitualReviewNoNegativeSignals": "No negative feedback signals in this tab",
   "agentRitualReviewNoNeutralSignals": "No neutral feedback signals in this tab",
   "agentRitualReviewNoPositiveSignals": "No positive feedback signals in this tab",
-  "agentRitualReviewNoProposal": "No active proposal",
   "agentRitualReviewPositiveSignals": "Positive",
   "agentRitualReviewProposalSection": "Current Proposal",
   "agentRitualReviewSessionHistory": "Session History",
@@ -412,7 +344,6 @@
   "agentRitualSummaryRoleUser": "You",
   "agentRitualSummaryStartHint": "Start a 1-on-1 to review what bothered you, what worked, and what should change next.",
   "agentRitualSummarySubtitle": "Recent 1-on-1s, real wake activity, and the changes you agreed to.",
-  "agentRitualSummaryTldrHeading": "TLDR",
   "agentRitualSummaryTokensSinceLast": "Tokens since last 1-on-1",
   "agentRitualSummaryWakeHistory30Days": "Wake activity (last 30 days)",
   "agentRitualSummaryWakesSinceLast": "Wakes since last 1-on-1",
@@ -430,7 +361,6 @@
   "agentSoulDeleteConfirmTitle": "Delete Soul",
   "agentSoulDetailTitle": "Soul Detail",
   "agentSoulDisplayNameLabel": "Name",
-  "agentSoulEmptyList": "No soul documents yet",
   "agentSoulEvolutionHistoryTitle": "Soul Evolution History",
   "agentSoulEvolutionNoSessions": "No soul evolution sessions yet",
   "agentSoulFieldAntiSycophancy": "Anti-Sycophancy",
@@ -549,38 +479,6 @@
     }
   },
   "agentStatsWakesLabel": "Wakes",
-  "agentStatsWeekTotalLabel": "7-Day Total",
-  "agentSuggestionsActivityAgentFallback": "the agent",
-  "agentSuggestionsActivityCountTotal": "{total} total",
-  "@agentSuggestionsActivityCountTotal": {
-    "placeholders": {
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "agentSuggestionsActivityCountVisible": "{visible} of {total}",
-  "@agentSuggestionsActivityCountVisible": {
-    "placeholders": {
-      "visible": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "agentSuggestionsActivityTitle": "Recent proposal activity",
-  "agentSuggestionsActivityVerdictConfirmed": "Confirmed",
-  "agentSuggestionsActivityVerdictRejected": "Rejected",
-  "agentSuggestionsActivityVerdictRetracted": "Retracted by {agentName}",
-  "@agentSuggestionsActivityVerdictRetracted": {
-    "placeholders": {
-      "agentName": {
-        "type": "String"
-      }
-    }
-  },
   "agentSuggestionTimeEntryUpdateCurrent": "Current",
   "@agentSuggestionTimeEntryUpdateCurrent": {
     "description": "Label for the current value in an agent-proposed time entry edit diff."
@@ -602,17 +500,9 @@
   "agentTabObservations": "Observations",
   "agentTabReports": "Reports",
   "agentTabStats": "Stats",
-  "agentTemplateActiveInstancesTitle": "Active Instances",
-  "@agentTemplateActiveInstancesTitle": {
-    "description": "Section title for the list of active agent instances using this template."
-  },
   "agentTemplateAggregateTokenUsageHeading": "Aggregate Token Usage",
   "@agentTemplateAggregateTokenUsageHeading": {
     "description": "Heading for the aggregate token usage section in agent template stats."
-  },
-  "agentTemplateAllProviders": "All Providers",
-  "@agentTemplateAllProviders": {
-    "description": "Filter option to show models from all AI providers."
   },
   "agentTemplateAssignedLabel": "Template",
   "@agentTemplateAssignedLabel": {
@@ -634,14 +524,6 @@
   "@agentTemplateDeleteHasInstances": {
     "description": "Error message when trying to delete a template that has active instances."
   },
-  "agentTemplateDirectivesHint": "Define the agent's personality, tone, goals, and style...",
-  "@agentTemplateDirectivesHint": {
-    "description": "Placeholder hint text for the directives text field."
-  },
-  "agentTemplateDirectivesLabel": "Directives",
-  "@agentTemplateDirectivesLabel": {
-    "description": "Label for the text field where the user writes agent directives."
-  },
   "agentTemplateDisplayNameLabel": "Name",
   "@agentTemplateDisplayNameLabel": {
     "description": "Label for the template display name input field."
@@ -649,10 +531,6 @@
   "agentTemplateEditTitle": "Edit Template",
   "@agentTemplateEditTitle": {
     "description": "Page title for the edit-template form."
-  },
-  "agentTemplateEmptyList": "No templates yet. Tap + to create one.",
-  "@agentTemplateEmptyList": {
-    "description": "Placeholder shown when the template list is empty."
   },
   "agentTemplateEvolveApprove": "Approve & Save",
   "@agentTemplateEvolveApprove": {
@@ -674,14 +552,6 @@
   "@agentTemplateInstanceBreakdownHeading": {
     "description": "Heading for the per-instance breakdown section in agent template stats."
   },
-  "agentTemplateInstanceCount": "{count, plural, =0{No instances} =1{1 instance} other{{count} instances}}",
-  "@agentTemplateInstanceCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "agentTemplateKindImprover": "Template Improver",
   "@agentTemplateKindImprover": {
     "description": "Display name for the template-improver agent kind."
@@ -694,37 +564,13 @@
   "@agentTemplateKindTaskAgent": {
     "description": "Display name for the task-agent template kind."
   },
-  "agentTemplateMetricsActiveInstances": "Active Instances",
-  "@agentTemplateMetricsActiveInstances": {
-    "description": "Metric label for the number of active agent instances."
-  },
-  "agentTemplateMetricsSuccessRate": "Success Rate",
-  "@agentTemplateMetricsSuccessRate": {
-    "description": "Metric label for the percentage of successful agent wakes."
-  },
   "agentTemplateMetricsTotalWakes": "Total Wakes",
   "@agentTemplateMetricsTotalWakes": {
     "description": "Metric label for the total number of agent wakes."
   },
-  "agentTemplateModelLabel": "Model ID",
-  "@agentTemplateModelLabel": {
-    "description": "Label for the AI model selection field in the template form."
-  },
-  "agentTemplateModelRequirements": "Only reasoning models with function calling are shown",
-  "@agentTemplateModelRequirements": {
-    "description": "Helper text explaining which AI models are eligible for agent templates."
-  },
-  "agentTemplateNoMetrics": "No performance data yet",
-  "@agentTemplateNoMetrics": {
-    "description": "Placeholder shown when no performance metrics are available."
-  },
   "agentTemplateNoneAssigned": "No template assigned",
   "@agentTemplateNoneAssigned": {
     "description": "Text shown when an agent has no template assigned."
-  },
-  "agentTemplateNoSuitableModels": "No suitable models found",
-  "@agentTemplateNoSuitableModels": {
-    "description": "Message shown when no AI models meet the template requirements."
   },
   "agentTemplateNoTemplates": "No templates available. Create one in Settings first.",
   "@agentTemplateNoTemplates": {
@@ -772,10 +618,6 @@
     "description": "Title for the template selection dialog when creating an agent."
   },
   "agentTemplatesEmptyFiltered": "No templates match your filters.",
-  "agentTemplateSettingsSubtitle": "Manage agent personalities and directives",
-  "@agentTemplateSettingsSubtitle": {
-    "description": "Subtitle shown under the agent templates settings entry."
-  },
   "agentTemplateSettingsTab": "Settings",
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
@@ -838,12 +680,7 @@
   "agentTokenUsageThoughtsTokens": "Thoughts",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Wakes",
-  "aiAssistantActionItemSuggestions": "Action Item Suggestions",
-  "aiAssistantAnalyzeImage": "Analyze image",
-  "aiAssistantSummarizeTask": "Summarize task",
-  "aiAssistantThinking": "Thinking...",
   "aiAssistantTitle": "Generate…",
-  "aiAssistantTranscribeAudio": "Transcribe audio",
   "aiBatchToggleTooltip": "Switch to standard recording",
   "aiCardEmptyProposals": "No open proposals · agent will surface new changes here",
   "aiCardHistoryToggle": "History · {count}",
@@ -855,7 +692,6 @@
     }
   },
   "aiCardOpenAgentInternals": "Open agent internals",
-  "aiCardProposalAgoSeparator": "·",
   "aiCardProposalConfirmed": "Confirmed",
   "aiCardProposalDismissed": "Dismissed",
   "aiCardProposalKindAdd": "Add",
@@ -868,141 +704,27 @@
   "aiCardProposalKindUpdate": "Update",
   "aiCardReadMore": "Read more",
   "aiCardShowLess": "Show less",
-  "aiCardSummaryAgo": "{relative}",
-  "@aiCardSummaryAgo": {
-    "placeholders": {
-      "relative": {
-        "type": "String"
-      }
-    }
-  },
   "aiCardTitle": "AI summary",
   "aiChatMessageCopied": "Copied to clipboard",
-  "aiConfigApiKeyEmptyError": "API key cannot be empty",
-  "aiConfigApiKeyFieldLabel": "API Key",
-  "aiConfigAssociatedModelsRemoved": "{count} associated model{count, plural, =1{} other{s}} removed",
-  "@aiConfigAssociatedModelsRemoved": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "aiConfigBaseUrlFieldLabel": "Base URL",
-  "aiConfigCommentFieldLabel": "Comment (Optional)",
-  "aiConfigCreateButtonLabel": "Create Prompt",
-  "aiConfigDescriptionFieldLabel": "Description (Optional)",
-  "aiConfigFailedToLoadModels": "Failed to load models: {error}",
-  "@aiConfigFailedToLoadModels": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "aiConfigFailedToLoadModelsGeneric": "Failed to load models. Please try again.",
-  "aiConfigFailedToSaveMessage": "Failed to save configuration. Please try again.",
-  "aiConfigInputDataTypesTitle": "Required Input Data Types",
-  "aiConfigInputModalitiesFieldLabel": "Input Modalities",
-  "aiConfigInputModalitiesTitle": "Input Modalities",
-  "aiConfigInvalidUrlError": "Please enter a valid URL",
-  "aiConfigListCascadeDeleteWarning": "This will also delete all models associated with this provider.",
-  "aiConfigListDeleteConfirmCancel": "CANCEL",
-  "aiConfigListDeleteConfirmDelete": "DELETE",
-  "aiConfigListDeleteConfirmMessage": "Are you sure you want to delete \"{configName}\"?",
-  "@aiConfigListDeleteConfirmMessage": {
-    "placeholders": {
-      "configName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiConfigListDeleteConfirmTitle": "Confirm Deletion",
-  "aiConfigListEmptyState": "No configurations found. Add one to get started.",
-  "aiConfigListErrorDeleting": "Error deleting {configName}: {error}",
-  "@aiConfigListErrorDeleting": {
-    "placeholders": {
-      "configName": {
-        "type": "String"
-      },
-      "error": {
-        "type": "String"
-      }
-    }
-  },
-  "aiConfigListErrorLoading": "Error loading configurations",
-  "aiConfigListItemDeleted": "{configName} deleted",
-  "@aiConfigListItemDeleted": {
-    "placeholders": {
-      "configName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiConfigListUndoDelete": "UNDO",
-  "aiConfigManageModelsButton": "Manage Models",
-  "aiConfigModelRemovedMessage": "{modelName} removed from prompt",
-  "@aiConfigModelRemovedMessage": {
-    "placeholders": {
-      "modelName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiConfigModelsTitle": "Available Models",
-  "aiConfigNameFieldLabel": "Display Name",
-  "aiConfigNameTooShortError": "Name must be at least 3 characters",
   "aiConfigNoModelsAvailable": "No AI models are configured yet. Please add one in settings.",
-  "aiConfigNoModelsSelected": "No models selected. At least one model is required.",
-  "aiConfigNoProvidersAvailable": "No API providers available. Please add an API provider first.",
   "aiConfigNoSuitableModelsAvailable": "No models meet the requirements for this prompt. Please configure models that support the required capabilities.",
-  "aiConfigOutputModalitiesFieldLabel": "Output Modalities",
-  "aiConfigOutputModalitiesTitle": "Output Modalities",
-  "aiConfigProviderDeletedSuccessfully": "Provider deleted successfully",
-  "aiConfigProviderFieldLabel": "Inference Provider",
-  "aiConfigProviderModelIdFieldLabel": "Provider Model ID",
-  "aiConfigProviderModelIdTooShortError": "ProviderModelId must be at least 3 characters",
-  "aiConfigProviderTypeFieldLabel": "Provider Type",
-  "aiConfigReasoningCapabilityDescription": "Model can perform step-by-step reasoning",
-  "aiConfigReasoningCapabilityFieldLabel": "Reasoning Capability",
-  "aiConfigRequiredInputDataFieldLabel": "Required Input Data",
-  "aiConfigResponseTypeFieldLabel": "AI Response Type",
-  "aiConfigResponseTypeNotSelectedError": "Please select a response type",
-  "aiConfigResponseTypeSelectHint": "Select response type",
-  "aiConfigSelectInputDataTypesPrompt": "Select required data types...",
-  "aiConfigSelectModalitiesPrompt": "Select modalities",
   "aiConfigSelectProviderModalTitle": "Select Inference Provider",
-  "aiConfigSelectProviderNotFound": "Inference Provider not found",
   "aiConfigSelectProviderTypeModalTitle": "Select Provider Type",
-  "aiConfigSelectResponseTypeTitle": "Select AI Response Type",
-  "aiConfigSystemMessageFieldLabel": "System Message",
-  "aiConfigUpdateButtonLabel": "Update Prompt",
-  "aiConfigUseReasoningDescription": "If enabled, the model will use its reasoning capabilities for this prompt.",
   "aiConfigUseReasoningFieldLabel": "Use Reasoning",
-  "aiConfigUserMessageEmptyError": "User message cannot be empty",
-  "aiConfigUserMessageFieldLabel": "User Message",
   "aiFormCancel": "Cancel",
   "aiFormFixErrors": "Please fix errors before saving",
   "aiFormNoChanges": "No unsaved changes",
-  "aiInferenceErrorAuthenticationMessage": "Authentication failed. Please check your API key and ensure it is valid.",
   "aiInferenceErrorAuthenticationTitle": "Authentication Failed",
-  "aiInferenceErrorConnectionFailedMessage": "Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.",
   "aiInferenceErrorConnectionFailedTitle": "Connection Failed",
-  "aiInferenceErrorInvalidRequestMessage": "The request was invalid. Please check your configuration and try again.",
   "aiInferenceErrorInvalidRequestTitle": "Invalid Request",
-  "aiInferenceErrorRateLimitMessage": "You have exceeded the rate limit. Please wait a moment before trying again.",
   "aiInferenceErrorRateLimitTitle": "Rate Limit Exceeded",
   "aiInferenceErrorRetryButton": "Try Again",
-  "aiInferenceErrorServerMessage": "The AI service encountered an error. Please try again later.",
   "aiInferenceErrorServerTitle": "Server Error",
   "aiInferenceErrorSuggestionsTitle": "Suggestions:",
-  "aiInferenceErrorTimeoutMessage": "The request took too long to complete. Please try again or check if the service is responding.",
   "aiInferenceErrorTimeoutTitle": "Request Timed Out",
-  "aiInferenceErrorUnknownMessage": "An unexpected error occurred. Please try again.",
   "aiInferenceErrorUnknownTitle": "Error",
-  "aiInferenceErrorViewLogButton": "View Log",
   "aiInternalsTitle": "Agent internals",
-  "aiModelSettings": "AI Model Settings",
   "aiOllamaModelInstalledSuccessfully": "Model \"{modelName}\" installed successfully!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -1034,8 +756,6 @@
   "aiProviderWhisperDescription": "Local Whisper transcription with OpenAI-compatible API",
   "aiProviderWhisperName": "Whisper (local)",
   "aiRealtimeToggleTooltip": "Switch to live transcription",
-  "aiRealtimeTranscribing": "Live transcription...",
-  "aiRealtimeTranscriptionError": "Live transcription disconnected. Audio saved for batch processing.",
   "aiResponseDeleteCancel": "Cancel",
   "aiResponseDeleteConfirm": "Delete",
   "aiResponseDeleteError": "Failed to delete AI response. Please try again.",
@@ -1051,28 +771,9 @@
   "aiSettingsAddModelButton": "Add Model",
   "aiSettingsAddModelTooltip": "Add this model to your provider",
   "aiSettingsAddProfileButton": "Add Profile",
-  "aiSettingsAddPromptButton": "Add Prompt",
   "aiSettingsAddProviderButton": "Add Provider",
   "aiSettingsClearAllFiltersTooltip": "Clear all filters",
   "aiSettingsClearFiltersButton": "Clear",
-  "aiSettingsDeleteSelectedConfirmMessage": "Are you sure you want to delete {count} selected prompts? This action cannot be undone.",
-  "@aiSettingsDeleteSelectedConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "aiSettingsDeleteSelectedConfirmTitle": "Delete Selected Prompts",
-  "aiSettingsDeleteSelectedLabel": "Delete ({count})",
-  "@aiSettingsDeleteSelectedLabel": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "aiSettingsDeleteSelectedTooltip": "Delete selected prompts",
   "aiSettingsFilterByCapabilityTooltip": "Filter by {capability} capability",
   "@aiSettingsFilterByCapabilityTooltip": {
     "placeholders": {
@@ -1090,28 +791,16 @@
     }
   },
   "aiSettingsFilterByReasoningTooltip": "Filter by reasoning capability",
-  "aiSettingsFilterByResponseTypeTooltip": "Filter by {responseType} prompts",
-  "@aiSettingsFilterByResponseTypeTooltip": {
-    "placeholders": {
-      "responseType": {
-        "type": "String"
-      }
-    }
-  },
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Vision",
   "aiSettingsNoModelsConfigured": "No AI models configured",
-  "aiSettingsNoPromptsConfigured": "No AI prompts configured",
   "aiSettingsNoProvidersConfigured": "No AI providers configured",
   "aiSettingsPageTitle": "AI Settings",
   "aiSettingsReasoningLabel": "Reasoning",
   "aiSettingsSearchHint": "Search AI configurations...",
-  "aiSettingsSelectLabel": "Select",
-  "aiSettingsSelectModeTooltip": "Toggle selection mode for bulk operations",
   "aiSettingsTabModels": "Models",
   "aiSettingsTabProfiles": "Profiles",
-  "aiSettingsTabPrompts": "Prompts",
   "aiSettingsTabProviders": "Providers",
   "aiSetupWizardCreatesOptimized": "Creates optimized models, prompts, and a test category",
   "aiSetupWizardDescription": "Set up or refresh models, prompts, and test category for {providerName}",
@@ -1127,31 +816,16 @@
   "aiSetupWizardRunningButton": "Running...",
   "aiSetupWizardSafeToRunMultiple": "Safe to run multiple times - existing items will be kept",
   "aiSetupWizardTitle": "AI Setup Wizard",
-  "aiTaskSummaryDeleteConfirmMessage": "{count, plural, =1{Do you really want to delete this task summary? This cannot be undone.} other{Do you really want to delete {count} task summaries? This cannot be undone.}}",
-  "@aiTaskSummaryDeleteConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "aiTaskSummaryDeleteConfirmTitle": "Delete Task Summaries",
-  "aiTaskSummaryDeleteTooltip": "Delete all task summaries",
   "aiTaskSummaryTitle": "AI Task Summary",
-  "aiTranscribingAudio": "Transcribing audio...",
   "apiKeyAddPageTitle": "Add Provider",
   "apiKeyEditLoadError": "Failed to load API key configuration",
   "apiKeyEditPageTitle": "Edit Provider",
-  "apiKeyFormCreateButton": "Create",
-  "apiKeyFormUpdateButton": "Update",
-  "apiKeysSettingsPageTitle": "AI Inference Providers",
   "audioRecordingCancel": "CANCEL",
   "audioRecordingListening": "Listening...",
   "audioRecordingRealtime": "Live Transcription",
   "audioRecordings": "Audio Recordings",
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOP",
-  "automaticPrompts": "Automatic Prompts",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1193,38 +867,14 @@
   },
   "backfillManualDescription": "Request all missing entries regardless of age. Use this to recover older sync gaps.",
   "backfillManualProcessing": "Processing...",
-  "backfillManualSuccess": "{count} entries requested",
-  "@backfillManualSuccess": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "backfillManualTitle": "Manual Backfill",
   "backfillManualTrigger": "Request Missing Entries",
   "backfillReRequestDescription": "Re-request entries that were requested but never received. Use this when responses are stuck.",
   "backfillReRequestProcessing": "Re-requesting...",
-  "backfillReRequestSuccess": "{count} entries re-requested",
-  "@backfillReRequestSuccess": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "backfillReRequestTitle": "Re-Request Pending",
   "backfillReRequestTrigger": "Re-Request Pending Entries",
   "backfillResetUnresolvableDescription": "Reset entries marked as unresolvable back to missing so they can be re-requested. Use after sequence log repopulation.",
   "backfillResetUnresolvableProcessing": "Resetting...",
-  "backfillResetUnresolvableSuccess": "{count, plural, =1{1 entry reset to missing} other{{count} entries reset to missing}}",
-  "@backfillResetUnresolvableSuccess": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "backfillResetUnresolvableTitle": "Reset Unresolvable",
   "backfillResetUnresolvableTrigger": "Reset Unresolvable Entries",
   "backfillRetireStuckConfirmAccept": "Retire now",
@@ -1248,19 +898,10 @@
       }
     }
   },
-  "backfillSettingsInfo": "Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.",
   "backfillSettingsSubtitle": "Manage sync gap recovery",
   "backfillSettingsTitle": "Backfill sync",
   "backfillStatsBackfilled": "Backfilled",
   "backfillStatsDeleted": "Deleted",
-  "backfillStatsHostsTitle": "{count} connected device{count, plural, =1{} other{s}}",
-  "@backfillStatsHostsTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "backfillStatsMissing": "Missing",
   "backfillStatsNoData": "No sync data available",
   "backfillStatsReceived": "Received",
@@ -1273,33 +914,25 @@
   "backfillStatusMissing": "Missing",
   "backfillStatusSkipped": "Skipped",
   "backfillToggleDescription": "Requests missing entries from the last 24 hours.",
-  "backfillToggleDisabledDescription": "Backfill disabled - useful on metered networks",
-  "backfillToggleEnabledDescription": "Automatically request missing sync entries",
   "backfillToggleTitle": "Automatic backfill",
   "basicSettings": "Basic Settings",
   "cancelButton": "Cancel",
   "categoryActiveDescription": "Inactive categories won't appear in selection lists",
   "categoryAiDefaultsDescription": "Set default AI profile and agent template for new tasks in this category",
   "categoryAiDefaultsTitle": "AI Defaults",
-  "categoryAiModelDescription": "Control which AI prompts can be used with this category",
-  "categoryAutomaticPromptsDescription": "Configure prompts that run automatically for different content types",
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDefaultLanguageDescription": "Set a default language for tasks in this category",
   "categoryDefaultProfileHint": "Select a profile…",
-  "categoryDefaultProfileLabel": "Default inference profile",
   "categoryDefaultTemplateHint": "Select a template…",
   "categoryDefaultTemplateLabel": "Default agent template",
   "categoryDeleteConfirm": "YES, DELETE THIS CATEGORY",
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorized.",
-  "categoryDeleteQuestion": "Do you want to delete this category?",
   "categoryDeleteTitle": "Delete Category?",
   "categoryFavoriteDescription": "Mark this category as a favorite",
   "categoryNameRequired": "Category name is required",
   "categoryNotFound": "Category not found",
   "categoryPrivateDescription": "Hide this category when private mode is enabled",
-  "categoryPromptFilterAll": "All",
   "categorySearchPlaceholder": "Search categories...",
-  "celebrationTapToContinue": "Tap to continue",
   "changeSetCardTitle": "Proposed changes",
   "changeSetConfirmAll": "Confirm all",
   "changeSetConfirmAllPartialIssues": "{count, plural, =1{1 item had partial issues} other{{count} items had partial issues}}",
@@ -1375,45 +1008,22 @@
   "checklistExpandTooltip": "Expand",
   "checklistExportAsMarkdown": "Export checklist as Markdown",
   "checklistExportFailed": "Export failed",
-  "checklistFilterShowAll": "Show all items",
-  "checklistFilterShowOpen": "Show open items",
-  "checklistFilterStateAll": "Showing all items",
-  "checklistFilterStateOpenOnly": "Showing open items",
-  "checklistFilterToggleSemantics": "Toggle checklist filter (current: {state})",
-  "@checklistFilterToggleSemantics": {
-    "placeholders": {
-      "state": {
-        "type": "String"
-      }
-    }
-  },
   "checklistItemArchived": "Item archived",
   "checklistItemArchiveUndo": "Undo",
-  "checklistItemDelete": "Delete checklist item?",
   "checklistItemDeleteCancel": "Cancel",
   "checklistItemDeleteConfirm": "Confirm",
   "checklistItemDeleted": "Item deleted",
   "checklistItemDeleteWarning": "This action cannot be undone.",
-  "checklistItemDrag": "Drag suggestions into checklist",
-  "checklistItemUnarchived": "Item unarchived",
   "checklistMarkdownCopied": "Checklist copied as Markdown",
   "checklistMoreTooltip": "More",
   "checklistNoneDone": "No completed items yet.",
-  "checklistNoSuggestionsTitle": "No suggested Action Items",
   "checklistNothingToExport": "No items to export",
   "checklistProgressSemantics": "Checklist progress",
   "checklistShare": "Share",
   "checklistShareHint": "Long press to share",
   "checklistsReorder": "Reorder",
-  "checklistsTitle": "Checklists",
-  "checklistSuggestionsOutdated": "Outdated",
-  "checklistSuggestionsRunning": "Thinking about untracked suggestions...",
-  "checklistSuggestionsTitle": "Suggested Action Items",
-  "checklistUpdates": "Checklist Updates",
   "clearButton": "Clear",
   "colorLabel": "Color:",
-  "colorPickerError": "Invalid Hex color",
-  "colorPickerHint": "Enter Hex color or pick",
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
@@ -1421,14 +1031,10 @@
   "completeHabitSkipButton": "Skip",
   "completeHabitSuccessButton": "Success",
   "configFlagAttemptEmbeddingDescription": "When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.",
-  "configFlagAutoTranscribeDescription": "Automatically transcribe audio recordings in your entries. This requires an internet connection.",
   "configFlagEnableAgents": "Enable Agents",
   "configFlagEnableAgentsDescription": "Allow AI agents to autonomously monitor and analyze your tasks.",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
-  "configFlagEnableAutoTaskTldrDescription": "Automatically generate summaries for your tasks to help you quickly understand their status.",
-  "configFlagEnableCalendarPage": "Enable Calendar page",
-  "configFlagEnableCalendarPageDescription": "Show the Calendar page in the main navigation. View and manage your entries in a calendar view.",
   "configFlagEnableDailyOs": "Enable DailyOS",
   "configFlagEnableDailyOsDescription": "Show the DailyOS page in the main navigation.",
   "configFlagEnableDashboardsPage": "Enable Dashboards page",
@@ -1464,7 +1070,6 @@
   "configFlagShowSidebarWakeQueueDescription": "Show the inline Wake Queue above Settings — header, the next two pending wakes with countdowns, and a link to the full list.",
   "configFlagShowSyncActivityIndicator": "Show sync activity indicator",
   "configFlagShowSyncActivityIndicatorDescription": "Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.",
-  "configFlagUseCloudInferenceDescription": "Use cloud-based AI services for enhanced features. This requires an internet connection.",
   "configFlagUseCompressedJsonAttachments": "Compress JSON sync payloads",
   "configFlagUseCompressedJsonAttachmentsDescription": "Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.",
   "configFlagUseOutboxBundling": "Bundle outbox messages",
@@ -1481,7 +1086,6 @@
   "copyAsMarkdown": "Copy as Markdown",
   "copyAsText": "Copy as text",
   "correctionExampleCancel": "CANCEL",
-  "correctionExampleCaptured": "Correction saved for AI learning",
   "correctionExamplePending": "Saving correction in {seconds}s...",
   "@correctionExamplePending": {
     "placeholders": {
@@ -1504,18 +1108,15 @@
       }
     }
   },
-  "coverArtAssign": "Set as cover art",
   "coverArtChipActive": "Cover",
   "coverArtChipSet": "Set cover",
   "coverArtGenerationComplete": "Cover art ready!",
   "coverArtGenerationDismissHint": "You can close this — generation continues in the background",
-  "coverArtRemove": "Remove as cover art",
   "createButton": "Create",
   "createCategoryTitle": "Create Category:",
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
   "createNewLinkedTask": "Create new linked task...",
-  "createPromptsFirst": "Create AI prompts first to configure them here",
   "customColor": "Custom Color",
   "dailyOsActual": "Actual",
   "dailyOsAddBlock": "Add Block",
@@ -1525,33 +1126,14 @@
   "dailyOsCancel": "Cancel",
   "dailyOsCategory": "Category",
   "dailyOsChooseCategory": "Choose a category...",
-  "dailyOsCompletionMessage": "Great job! You completed your day.",
-  "dailyOsCopyToTomorrow": "Copy to tomorrow",
-  "dailyOsDayComplete": "Day Complete",
   "dailyOsDayPlan": "Day Plan",
   "dailyOsDaySummary": "Day Summary",
   "dailyOsDelete": "Delete",
-  "dailyOsDeleteBudget": "Delete Budget?",
-  "dailyOsDeleteBudgetConfirm": "This will remove the time budget from your day plan.",
   "dailyOsDeletePlannedBlock": "Delete Block?",
   "dailyOsDeletePlannedBlockConfirm": "This will remove the planned block from your timeline.",
-  "dailyOsDoneForToday": "Done for today",
   "dailyOsDraftMessage": "Plan is in draft. Agree to lock it in.",
   "dailyOsDueToday": "Due today",
   "dailyOsDueTodayShort": "Due",
-  "dailyOsDuplicateBudget": "A budget for \"{categoryName}\" already exists",
-  "@dailyOsDuplicateBudget": {
-    "placeholders": {
-      "categoryName": {
-        "type": "String"
-      }
-    }
-  },
-  "dailyOsDuration1h": "1h",
-  "dailyOsDuration2h": "2h",
-  "dailyOsDuration30m": "30m",
-  "dailyOsDuration3h": "3h",
-  "dailyOsDuration4h": "4h",
   "dailyOsDurationHours": "{count, plural, =1{1 hour} other{{count} hours}}",
   "@dailyOsDurationHours": {
     "placeholders": {
@@ -1579,43 +1161,14 @@
       }
     }
   },
-  "dailyOsEditBudget": "Edit Budget",
   "dailyOsEditPlannedBlock": "Edit Planned Block",
   "dailyOsEndTime": "End",
-  "dailyOsEntry": "Entry",
   "dailyOsExpandToMove": "Expand timeline to drag this block",
   "dailyOsExpandToMoveMore": "Expand timeline to move further",
   "dailyOsFailedToLoadBudgets": "Failed to load budgets",
   "dailyOsFailedToLoadTimeline": "Failed to load timeline",
   "dailyOsFold": "Fold",
-  "dailyOsHoursMinutesPlanned": "{hours}h {minutes}m planned",
-  "@dailyOsHoursMinutesPlanned": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsHoursPlanned": "{count, plural, =1{1 hour planned} other{{count} hours planned}}",
-  "@dailyOsHoursPlanned": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "dailyOsInvalidTimeRange": "Invalid time range",
-  "dailyOsMinutesPlanned": "{count} min planned",
-  "@dailyOsMinutesPlanned": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "dailyOsNearLimit": "Near limit",
   "dailyOsNoBudgets": "No time budgets",
   "dailyOsNoBudgetsHint": "Add budgets to track how you spend your time across categories.",
@@ -1633,7 +1186,6 @@
   "dailyOsPlanCreated": "Plan created successfully",
   "dailyOsPlanCreatedDescription": "Your time blocks have been saved. You can start tracking your tasks.",
   "dailyOsPlanned": "Planned",
-  "dailyOsPlannedDuration": "Planned Duration",
   "dailyOsPlanWithoutVoice": "Plan without voice",
   "dailyOsQuickCreateTask": "Create task for this budget",
   "dailyOsReAgree": "Re-agree",
@@ -1674,8 +1226,6 @@
   "dailyOsTimesUp": "Time's up",
   "dailyOsTodayButton": "Today",
   "dailyOsUncategorized": "Uncategorized",
-  "dailyOsViewModeClassic": "Classic",
-  "dailyOsViewModeDailyOs": "Daily OS",
   "dashboardActiveLabel": "Active:",
   "dashboardAddChartsTitle": "Add Charts:",
   "dashboardAddHabitButton": "Habit Charts",
@@ -1762,14 +1312,10 @@
   "designSystemFileUploadRetryLabel": "Retry",
   "designSystemFileUploadUploadingLabel": "Uploading",
   "designSystemFilledLabel": "Filled",
-  "designSystemHeaderApiConfigurationTitle": "API Configuration",
   "designSystemHeaderApiDocumentationLabel": "API Documentation",
   "designSystemHeaderBackActionLabel": "Back",
   "designSystemHeaderDesktopSectionTitle": "Desktop",
-  "designSystemHeaderFigmaDefaultLabel": "Figma default",
   "designSystemHeaderHelpActionLabel": "Help",
-  "designSystemHeaderLongTitleExample": "This is a very long page title that should truncate before the action area",
-  "designSystemHeaderLongTitleLabel": "Long title",
   "designSystemHeaderMobileSectionTitle": "Mobile",
   "designSystemHeaderNotificationsActionLabel": "Notifications",
   "designSystemHeaderSearchActionLabel": "Search",
@@ -1792,15 +1338,6 @@
   "designSystemListItemVariantsTitle": "List Item Variants",
   "designSystemListItemWithDividerLabel": "With divider",
   "designSystemMediumLabel": "Medium",
-  "designSystemMyDailyDeepWorkTitle": "Deep work",
-  "designSystemMyDailyDurationHoursCompact": "{count}h",
-  "@designSystemMyDailyDurationHoursCompact": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "designSystemMyDailyDurationHoursMinutesCompact": "{hours}h {minutes}m",
   "@designSystemMyDailyDurationHoursMinutesCompact": {
     "placeholders": {
@@ -1808,14 +1345,6 @@
         "type": "int"
       },
       "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "designSystemMyDailyDurationMinutesCompact": "{count}m",
-  "@designSystemMyDailyDurationMinutesCompact": {
-    "placeholders": {
-      "count": {
         "type": "int"
       }
     }
@@ -1868,7 +1397,6 @@
   "designSystemSizeScaleTitle": "Size Scale",
   "designSystemSmallLabel": "Small",
   "designSystemSpinnerPlainLabel": "Plain",
-  "designSystemSpinnerSkeletonLabel": "Skeleton",
   "designSystemSpinnerSkeletonPulseLabel": "Pulse",
   "designSystemSpinnerSkeletonsTitle": "Skeletons",
   "designSystemSpinnerSkeletonWaveLabel": "Wave",
@@ -1893,7 +1421,6 @@
   "designSystemTaskListOnHoldLabel": "On Hold",
   "designSystemTaskListOpenLabel": "Open",
   "designSystemTaskListPressedLabel": "Pressed",
-  "designSystemTaskListSampleCategory": "Study",
   "designSystemTaskListSampleTime": "8:00-9:30am",
   "designSystemTaskListSampleTitle": "User Testing",
   "designSystemTaskListWithDividerLabel": "With divider",
@@ -1921,7 +1448,6 @@
   "designSystemWithLabelLabel": "With label",
   "desktopEmptyStateSelectDashboard": "Select a dashboard to view details",
   "desktopEmptyStateSelectProject": "Select a project to view details",
-  "desktopEmptyStateSelectSetting": "Select a setting to view details",
   "desktopEmptyStateSelectTask": "Select a task to view details",
   "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
   "@deviceDeletedSuccess": {
@@ -1939,27 +1465,13 @@
       }
     }
   },
-  "done": "Done",
   "doneButton": "Done",
   "editMenuTitle": "Edit",
   "editorInsertDivider": "Insert divider",
   "editorPlaceholder": "Enter notes...",
   "embeddingSelectAll": "Select All",
   "embeddingUnselectAll": "Deselect All",
-  "enhancedPromptFormAdditionalDetailsTitle": "Additional Details",
-  "enhancedPromptFormAiResponseTypeSubtitle": "Format of the expected response",
-  "enhancedPromptFormBasicConfigurationTitle": "Basic Configuration",
-  "enhancedPromptFormConfigurationOptionsTitle": "Configuration Options",
-  "enhancedPromptFormDescription": "Create custom prompts that can be used with your AI models to generate specific types of responses",
-  "enhancedPromptFormDescriptionHelperText": "Optional notes about this prompt's purpose and usage",
-  "enhancedPromptFormDisplayNameHelperText": "A descriptive name for this prompt template",
   "enhancedPromptFormPreconfiguredPromptDescription": "Choose from ready-made prompt templates",
-  "enhancedPromptFormPromptConfigurationTitle": "Prompt Configuration",
-  "enhancedPromptFormQuickStartDescription": "Start with a pre-built template to save time",
-  "enhancedPromptFormQuickStartTitle": "Quick Start",
-  "enhancedPromptFormRequiredInputDataSubtitle": "Type of data this prompt expects",
-  "enhancedPromptFormSystemMessageHelperText": "Instructions that define the AI's behavior and response style",
-  "enhancedPromptFormUserMessageHelperText": "The main prompt text.",
   "enterCategoryName": "Enter category name",
   "entryActions": "Actions",
   "entryLabelsActionSubtitle": "Assign labels to organize this entry",
@@ -1980,7 +1492,6 @@
   "entryTypeLabelSurveyEntry": "Survey",
   "entryTypeLabelTask": "Task",
   "entryTypeLabelWorkoutEntry": "Workout",
-  "errorLoadingPrompts": "Error loading prompts",
   "eventNameLabel": "Event:",
   "favoriteLabel": "Favorite",
   "fileMenuNewEllipsis": "New ...",
@@ -2008,22 +1519,8 @@
   "habitShowFromLabel": "Show from",
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
-  "imageGenerationAcceptButton": "Accept as Cover Art",
-  "imageGenerationCancelEdit": "Cancel",
-  "imageGenerationEditPromptButton": "Edit Prompt",
-  "imageGenerationEditPromptLabel": "Edit prompt",
   "imageGenerationError": "Failed to generate image",
   "imageGenerationGenerating": "Generating image...",
-  "imageGenerationModalTitle": "Generated Image",
-  "imageGenerationRetry": "Retry",
-  "imageGenerationSaveError": "Failed to save image: {error}",
-  "@imageGenerationSaveError": {
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  },
   "imageGenerationWithReferences": "{count, plural, =0{No reference images} =1{Using 1 reference image} other{Using {count} reference images}}",
   "@imageGenerationWithReferences": {
     "placeholders": {
@@ -2041,7 +1538,6 @@
   "images": "Images",
   "inactiveLabel": "Inactive",
   "inferenceProfileCreateTitle": "Create Profile",
-  "inferenceProfileDeleteInUseMessage": "This profile is in use by agents or templates and cannot be deleted.",
   "inferenceProfileDescriptionLabel": "Description",
   "inferenceProfileDesktopOnly": "Desktop Only",
   "inferenceProfileDesktopOnlyDescription": "Only available on desktop platforms (e.g. for local models)",
@@ -2101,10 +1597,7 @@
   "journalLinkedEntriesActivityFilterAudio": "Audio",
   "journalLinkedEntriesActivityFilterImages": "Images",
   "journalLinkedEntriesActivityFilterTimer": "Timer",
-  "journalLinkedEntriesAiLabel": "Show AI-generated entries:",
   "journalLinkedEntriesFilterModalTitle": "Filter & Sort",
-  "journalLinkedEntriesHiddenLabel": "Show hidden entries:",
-  "journalLinkedEntriesLabel": "Linked Entries",
   "journalLinkedEntriesShowHidden": "Show hidden entries",
   "journalLinkedEntriesSortLabel": "Sort by",
   "journalLinkedEntriesSortNewestFirst": "Newest first",
@@ -2114,9 +1607,7 @@
   "journalLinkToHint": "Link to",
   "journalPrivateTooltip": "private only",
   "journalSearchHint": "Search journal...",
-  "journalShareAudioHint": "Share audio",
   "journalShareHint": "Share",
-  "journalSharePhotoHint": "Share photo",
   "journalShowLinkHint": "Show link",
   "journalShowMapHint": "Show map",
   "journalToggleFlaggedTitle": "Flagged",
@@ -2125,35 +1616,12 @@
   "journalUnlinkConfirm": "YES, UNLINK ENTRY",
   "journalUnlinkHint": "Unlink",
   "journalUnlinkQuestion": "Are you sure you want to unlink this entry?",
-  "legacyPromptsSectionTitle": "Legacy Prompts",
   "linkedFromCaption": "from",
-  "linkedFromLabel": "LINKED FROM",
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksMenuTooltip": "Linked tasks options",
   "linkedTasksTitle": "Linked Tasks",
   "linkedToCaption": "to",
-  "linkedToLabel": "LINKED TO",
   "linkExistingTask": "Link existing task...",
-  "logsFoundCount": "Found {count} matching {count, plural, =1{log} other{logs}}",
-  "@logsFoundCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "logsLineCopied": "Log line copied",
-  "logsNoLogsForDate": "No logs for {date}",
-  "@logsNoLogsForDate": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "logsNoMatch": "No logs match your search",
-  "logsReload": "Reload",
-  "logsSearchHint": "Search all logs...",
   "maintenanceDeleteAgentDb": "Delete Agents Database",
   "maintenanceDeleteAgentDbDescription": "Delete agents database and restart app",
   "maintenanceDeleteDatabaseConfirm": "YES, DELETE DATABASE",
@@ -2220,7 +1688,6 @@
   "maintenanceSyncDefinitions": "Sync measurables, dashboards, habits, categories, AI settings",
   "maintenanceSyncDefinitionsDescription": "Sync measurables, dashboards, habits, categories, and AI settings",
   "manageLinks": "Manage links...",
-  "matrixStatsError": "Error loading Matrix stats",
   "measurableDeleteConfirm": "YES, DELETE THIS MEASURABLE",
   "measurableDeleteQuestion": "Do you want to delete this measurable data type?",
   "measurableNotFound": "Measurable not found",
@@ -2241,7 +1708,6 @@
       }
     }
   },
-  "modelsSettingsPageTitle": "AI Models",
   "multiSelectAddButton": "Add",
   "multiSelectAddButtonWithCount": "Add ({count})",
   "@multiSelectAddButtonWithCount": {
@@ -2267,10 +1733,7 @@
       }
     }
   },
-  "noAgentProfileError": "No agent profile configured for this task. Assign an agent with a profile first.",
   "noDefaultLanguage": "No default language",
-  "noPromptsAvailable": "No prompts available",
-  "noPromptsForType": "No prompts available for this type",
   "noTasksFound": "No tasks found",
   "noTasksToLink": "No tasks available to link",
   "outboxMonitorAttachmentLabel": "Attachment",
@@ -2282,7 +1745,6 @@
   "outboxMonitorEmptyDescription": "There are no sync items in this view.",
   "outboxMonitorEmptyTitle": "Outbox is clear",
   "outboxMonitorFetchFailed": "Couldn't load the outbox. Pull to refresh and try again.",
-  "outboxMonitorLabelAll": "all",
   "outboxMonitorLabelError": "error",
   "outboxMonitorLabelPending": "pending",
   "outboxMonitorLabelSent": "sent",
@@ -2297,7 +1759,6 @@
   "outboxMonitorRetryFailed": "Retry failed. Please try again.",
   "outboxMonitorRetryQueued": "Retry scheduled",
   "outboxMonitorSubjectLabel": "Subject",
-  "outboxMonitorSwitchLabel": "enabled",
   "outboxMonitorVolumeChartTitle": "Daily sync volume",
   "privateLabel": "Private",
   "projectAgentNotProvisioned": "No project agent has been provisioned for this project yet.",
@@ -2323,29 +1784,6 @@
   "projectHealthBandOnTrack": "On Track",
   "projectHealthBandSurviving": "Surviving",
   "projectHealthBandWatch": "Watch",
-  "projectHealthReasonCompleted": "The project is complete.",
-  "projectHealthReasonNoLinkedTasks": "No linked tasks yet.",
-  "projectHealthReasonNoRecentProgress": "No recent progress.",
-  "projectHealthReasonOnHold": "The project is on hold.",
-  "projectHealthReasonOverdueTasks": "{count, plural, one{{count} task is overdue} other{{count} tasks are overdue}}",
-  "@projectHealthReasonOverdueTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonStalledTasks": "{count, plural, one{{count} task is stalled} other{{count} tasks are stalled}}",
-  "@projectHealthReasonStalledTasks": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "projectHealthReasonSteadyProgress": "The project is moving steadily.",
-  "projectHealthReasonSummaryOutdated": "The project summary is outdated.",
-  "projectHealthReasonTargetDatePassed": "The target date has passed.",
   "projectHealthSectionTitle": "Project health",
   "projectHealthSummary": "{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}",
   "@projectHealthSummary": {
@@ -2420,7 +1858,6 @@
   "projectShowcaseOneOnOneReviewsTab": "One-on-one Reviews",
   "projectShowcaseOngoing": "Ongoing",
   "projectShowcaseProjectTasksTab": "Project Tasks",
-  "projectShowcaseRecommendationsTitle": "Recommendations",
   "projectShowcaseSearchHint": "Search projects",
   "projectShowcaseSessionsCount": "{count, plural, one{{count} session} other{{count} sessions}}",
   "@projectShowcaseSessionsCount": {
@@ -2480,53 +1917,14 @@
   "projectTargetDateLabel": "Target Date",
   "projectTitleLabel": "Project Title",
   "projectTitleRequired": "Project title cannot be empty",
-  "promptAddOrRemoveModelsButton": "Add or Remove Models",
-  "promptAddPageTitle": "Add Prompt",
-  "promptAiResponseTypeDescription": "Format of the expected response",
-  "promptAiResponseTypeLabel": "AI Response Type",
-  "promptBehaviorDescription": "Configure how the prompt processes and responds",
-  "promptBehaviorTitle": "Prompt Behavior",
-  "promptCancelButton": "Cancel",
-  "promptContentDescription": "Define the system and user prompts",
-  "promptContentTitle": "Prompt Content",
   "promptDefaultModelBadge": "Default",
-  "promptDescriptionHint": "Describe this prompt",
-  "promptDescriptionLabel": "Description",
-  "promptDetailsDescription": "Basic information about this prompt",
-  "promptDetailsTitle": "Prompt Details",
-  "promptDisplayNameHint": "Enter a friendly name",
-  "promptDisplayNameLabel": "Display Name",
-  "promptEditLoadError": "Failed to load prompt",
-  "promptEditPageTitle": "Edit Prompt",
-  "promptErrorLoadingModel": "Error loading model",
   "promptGenerationCardTitle": "AI Coding Prompt",
   "promptGenerationCopiedSnackbar": "Prompt copied to clipboard",
   "promptGenerationCopyButton": "Copy Prompt",
   "promptGenerationCopyTooltip": "Copy prompt to clipboard",
   "promptGenerationExpandTooltip": "Show full prompt",
   "promptGenerationFullPromptLabel": "Full Prompt:",
-  "promptGoBackButton": "Go Back",
-  "promptLoadingModel": "Loading model...",
-  "promptModelSelectionDescription": "Choose compatible models for this prompt",
-  "promptModelSelectionTitle": "Model Selection",
-  "promptNoModelsSelectedError": "No models selected. Select at least one model.",
-  "promptReasoningModeDescription": "Enable for prompts requiring deep thinking",
-  "promptReasoningModeLabel": "Reasoning Mode",
-  "promptRequiredInputDataDescription": "Type of data this prompt expects",
-  "promptRequiredInputDataLabel": "Required Input Data",
-  "promptSaveButton": "Save Prompt",
-  "promptSelectInputTypeHint": "Select input type",
   "promptSelectionModalTitle": "Select Preconfigured Prompt",
-  "promptSelectModelsButton": "Select Models",
-  "promptSelectResponseTypeHint": "Select response type",
-  "promptSetDefaultButton": "Set Default",
-  "promptSettingsPageTitle": "AI Prompts",
-  "promptSystemPromptHint": "Enter the system prompt...",
-  "promptSystemPromptLabel": "System Prompt",
-  "promptTryAgainMessage": "Please try again or contact support",
-  "promptUsePreconfiguredButton": "Use Preconfigured Prompt",
-  "promptUserPromptHint": "Enter the user prompt...",
-  "promptUserPromptLabel": "User Prompt",
   "provisionedSyncBundleImported": "Provisioning code imported",
   "provisionedSyncConfigureButton": "Configure",
   "provisionedSyncCopiedToClipboard": "Copied to clipboard",
@@ -2563,11 +1961,9 @@
       }
     }
   },
-  "queueCatchUpNowRunning": "Bridging recent gap…",
   "queueDepthCardEmpty": "Queue empty — worker is caught up.",
   "queueDepthCardLoading": "Reading queue depth…",
   "queueDepthCardTitle": "Inbound queue",
-  "queueFetchAllHistoryButton": "Fetch all history",
   "queueFetchAllHistoryCancel": "Cancel",
   "queueFetchAllHistoryCancelled": "Cancelled — {events, plural, =0{no events} =1{1 event} other{{events} events}} fetched so far.",
   "@queueFetchAllHistoryCancelled": {
@@ -2667,7 +2063,6 @@
   "searchModeFullText": "Full Text",
   "searchModeVector": "Vector",
   "searchTasksHint": "Search tasks...",
-  "selectAllowedPrompts": "Select which prompts are allowed for this category",
   "selectButton": "Select",
   "selectColor": "Select Color",
   "selectLanguage": "Select Language",
@@ -2690,19 +2085,14 @@
   "settingsAboutAppInformation": "App Information",
   "settingsAboutAppTagline": "Your Personal Journal",
   "settingsAboutBuildType": "Build Type",
-  "settingsAboutBuiltWithFlutter": "Built with Flutter and love for personal journaling.",
-  "settingsAboutCredits": "Credits",
   "settingsAboutJournalEntries": "Journal Entries",
   "settingsAboutPlatform": "Platform",
-  "settingsAboutThankYou": "Thank you for using Lotti!",
   "settingsAboutTitle": "About Lotti",
   "settingsAboutVersion": "Version",
   "settingsAboutYourData": "Your Data",
   "settingsAdvancedAboutSubtitle": "Learn more about the Lotti application",
   "settingsAdvancedHealthImportSubtitle": "Import health-related data from external sources",
-  "settingsAdvancedLogsSubtitle": "Access and review application logs for debugging",
   "settingsAdvancedMaintenanceSubtitle": "Perform maintenance tasks to optimize application performance",
-  "settingsAdvancedMatrixSyncSubtitle": "Configure and manage Matrix synchronization settings",
   "settingsAdvancedOutboxSubtitle": "Manage sync items",
   "settingsAdvancedSubtitle": "Advanced settings and maintenance",
   "settingsAdvancedTitle": "Advanced Settings",
@@ -2711,22 +2101,15 @@
   "settingsAgentsSoulsSubtitle": "Long-lived agent personalities",
   "settingsAgentsStatsSubtitle": "Token usage and activity",
   "settingsAgentsTemplatesSubtitle": "Shared agent blueprints",
-  "settingsAiApiKeys": "AI Inference Providers",
-  "settingsAiModels": "AI Models",
   "settingsAiProfilesSubtitle": "Providers and models",
   "settingsAiProfilesTitle": "Inference Profiles",
   "settingsAiSubtitle": "Configure AI providers, models, and prompts",
   "settingsAiTitle": "AI Settings",
-  "settingsCategoriesAddTooltip": "Add Category",
   "settingsCategoriesCreateTitle": "Create category",
   "settingsCategoriesDetailsLabel": "Category Details",
-  "settingsCategoriesDuplicateError": "Category exists already",
   "settingsCategoriesEmptyState": "No categories found",
   "settingsCategoriesEmptyStateHint": "Create a category to organize your entries",
   "settingsCategoriesErrorLoading": "Error loading categories",
-  "settingsCategoriesHasAiSettings": "AI settings",
-  "settingsCategoriesHasAutomaticPrompts": "Automatic AI",
-  "settingsCategoriesHasDefaultLanguage": "Default language",
   "settingsCategoriesNameLabel": "Category name:",
   "settingsCategoriesNoMatchQuery": "No categories match \"{query}\"",
   "@settingsCategoriesNoMatchQuery": {
@@ -2770,16 +2153,13 @@
   "settingsHealthImportFromDate": "Start",
   "settingsHealthImportTitle": "Health Import",
   "settingsHealthImportToDate": "End",
-  "settingsLabelsActionsTooltip": "Label actions",
   "settingsLabelsCategoriesAdd": "Add category",
   "settingsLabelsCategoriesHeading": "Applicable categories",
   "settingsLabelsCategoriesNone": "Applies to all categories",
   "settingsLabelsCategoriesRemoveTooltip": "Remove",
   "settingsLabelsColorHeading": "Select a color",
   "settingsLabelsColorSubheading": "Quick presets",
-  "settingsLabelsCreateSuccess": "Label created successfully",
   "settingsLabelsCreateTitle": "Create label",
-  "settingsLabelsDeleteCancel": "Cancel",
   "settingsLabelsDeleteConfirmAction": "Delete",
   "settingsLabelsDeleteConfirmMessage": "Are you sure you want to delete \"{labelName}\"? Tasks with this label will lose the assignment.",
   "settingsLabelsDeleteConfirmTitle": "Delete label",
@@ -2792,7 +2172,6 @@
   "settingsLabelsErrorLoading": "Failed to load labels",
   "settingsLabelsNameHint": "Bug, Release blocker, Sync…",
   "settingsLabelsNameLabel": "Label name",
-  "settingsLabelsNameRequired": "Label name must not be empty.",
   "settingsLabelsNoMatchCreate": "Create \"{query}\" label",
   "@settingsLabelsNoMatchCreate": {
     "placeholders": {
@@ -2814,7 +2193,6 @@
   "settingsLabelsSearchHint": "Search labels…",
   "settingsLabelsSubtitle": "Organize tasks with colored labels",
   "settingsLabelsTitle": "Labels",
-  "settingsLabelsUpdateSuccess": "Label updated",
   "settingsLabelsUsageCount": "Used on {count, plural, =1{1 task} other{{count} tasks}}",
   "@settingsLabelsUsageCount": {
     "placeholders": {
@@ -2835,43 +2213,24 @@
   "settingsLoggingSlowQueriesSubtitle": "Writes slow queries to slow_queries-YYYY-MM-DD.log",
   "settingsLoggingSync": "Sync",
   "settingsLoggingSyncSubtitle": "Cross-device sync operations",
-  "settingsLoggingViewLogsSubtitle": "Browse and search all log entries",
-  "settingsLogsTitle": "Logs",
   "settingsMaintenanceTitle": "Maintenance",
   "settingsMatrixAccept": "Accept",
   "settingsMatrixAcceptVerificationLabel": "Other device shows emojis, continue",
   "settingsMatrixCancel": "Cancel",
-  "settingsMatrixCancelVerificationLabel": "Cancel Verification",
   "settingsMatrixContinueVerificationLabel": "Accept on other device to continue",
-  "settingsMatrixCount": "Count",
-  "settingsMatrixDeleteLabel": "Delete",
   "settingsMatrixDiagnosticCopied": "Diagnostic info copied to clipboard",
   "settingsMatrixDiagnosticCopyButton": "Copy to Clipboard",
   "settingsMatrixDiagnosticDialogTitle": "Sync Diagnostic Info",
   "settingsMatrixDiagnosticShowButton": "Show Diagnostic Info",
   "settingsMatrixDone": "Done",
-  "settingsMatrixEnterValidUrl": "Please enter a valid URL",
-  "settingsMatrixHomeserverConfigTitle": "Matrix Homeserver Setup",
-  "settingsMatrixHomeServerLabel": "Homeserver",
   "settingsMatrixLastUpdated": "Last updated:",
   "settingsMatrixListUnverifiedLabel": "Unverified devices",
-  "settingsMatrixLoginButtonLabel": "Login",
-  "settingsMatrixLoginFailed": "Login failed",
-  "settingsMatrixLogoutButtonLabel": "Logout",
   "settingsMatrixMaintenanceSubtitle": "Run Matrix maintenance tasks and recovery tools",
   "settingsMatrixMaintenanceTitle": "Maintenance",
-  "settingsMatrixMessageType": "Message Type",
-  "settingsMatrixMetric": "Metric",
   "settingsMatrixMetrics": "Sync Metrics",
-  "settingsMatrixMetricsNoData": "Sync Metrics: no data",
   "settingsMatrixNextPage": "Next Page",
   "settingsMatrixNoUnverifiedLabel": "No unverified devices",
-  "settingsMatrixPasswordLabel": "Password",
-  "settingsMatrixPasswordTooShort": "Password too short",
   "settingsMatrixPreviousPage": "Previous Page",
-  "settingsMatrixQrTextPage": "Scan this QR code to invite device to a sync room.",
-  "settingsMatrixRefresh": "Refresh",
-  "settingsMatrixRoomConfigTitle": "Matrix Sync Room Setup",
   "settingsMatrixRoomInviteMessage": "Invite to room {roomId} from {senderId}. Accept?",
   "@settingsMatrixRoomInviteMessage": {
     "placeholders": {
@@ -2887,12 +2246,8 @@
   "settingsMatrixSentMessagesLabel": "Sent messages:",
   "settingsMatrixStartVerificationLabel": "Start Verification",
   "settingsMatrixStatsTitle": "Matrix Stats",
-  "settingsMatrixSubtitle": "Configure end-to-end encrypted sync",
   "settingsMatrixTitle": "Sync Settings",
   "settingsMatrixUnverifiedDevicesPage": "Unverified Devices",
-  "settingsMatrixUserLabel": "User",
-  "settingsMatrixUserNameTooShort": "User name too short",
-  "settingsMatrixValue": "Value",
   "settingsMatrixVerificationCancelledLabel": "Cancelled on other device...",
   "settingsMatrixVerificationSuccessConfirm": "Got it",
   "settingsMatrixVerificationSuccessLabel": "You've successfully verified {deviceName} ({deviceID})",
@@ -2913,7 +2268,6 @@
   "settingsMeasurableDeleteTooltip": "Delete measurable type",
   "settingsMeasurableDescriptionLabel": "Description (optional):",
   "settingsMeasurableDetailsLabel": "Measurable Details",
-  "settingsMeasurableFavoriteLabel": "Favorite: ",
   "settingsMeasurableNameLabel": "Measurable name:",
   "settingsMeasurablePrivateLabel": "Private: ",
   "settingsMeasurableSaveLabel": "Save",
@@ -2936,10 +2290,6 @@
   },
   "settingsResetHintsSubtitle": "Clear one‑time tips and onboarding hints",
   "settingsResetHintsTitle": "Reset In‑App Hints",
-  "settingsSpeechAudioWithoutTranscript": "Audio entries without transcript:",
-  "settingsSpeechAudioWithoutTranscriptButton": "Find & transcribe",
-  "settingsSpeechLastActivity": "Last transcription activity:",
-  "settingsSpeechModelSelectionTitle": "Whisper speech recognition model:",
   "settingsSyncConflictsSubtitle": "Resolve synchronization conflicts to ensure data consistency",
   "settingsSyncOutboxTitle": "Sync Outbox",
   "settingsSyncStatsSubtitle": "Inspect sync pipeline metrics",
@@ -2954,37 +2304,16 @@
   "settingsV2EmptyStateBody": "Pick a section on the left to begin.",
   "settingsV2ResizeHandleLabel": "Resize settings tree",
   "settingsV2UnimplementedTitle": "Panel not yet implemented",
-  "settingsWhatsNewCaughtUpBody": "No new release notes to read — the latest version has already been viewed.",
-  "settingsWhatsNewCaughtUpHeadline": "You're all caught up",
-  "settingsWhatsNewOpenAction": "Open release notes",
   "settingsWhatsNewSubtitle": "See the latest updates and features",
   "settingsWhatsNewTitle": "What's New",
-  "settingsWhatsNewUnseenBody": "Open the release notes to see what's new since your last visit.",
-  "settingsWhatsNewUnseenHeadline": "{count, plural, =1{1 new release} other{{count} new releases}}",
-  "@settingsWhatsNewUnseenHeadline": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "settingThemingDark": "Dark Theme",
   "settingThemingLight": "Light Theme",
-  "showCompleted": "Show completed",
   "sidebarRunningTimerLabel": "Running timer",
   "sidebarRunningTimerStopTooltip": "Stop timer",
   "sidebarToggleCollapseLabel": "Collapse sidebar",
   "sidebarToggleExpandLabel": "Expand sidebar",
   "sidebarWakesCancelTooltip": "Cancel wake",
   "sidebarWakesHeader": "Wakes",
-  "sidebarWakesMore": "+{count} more",
-  "@sidebarWakesMore": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "sidebarWakesNow": "now",
   "sidebarWakesOpenList": "Open list",
   "skillsSectionTitle": "Skills",
@@ -2994,10 +2323,8 @@
   "speechDictionarySectionDescription": "Add terms that are often misspelled by speech recognition (names, places, technical terms)",
   "speechDictionarySectionTitle": "Speech Recognition",
   "speechDictionaryWarning": "Large dictionary ({count} terms) may increase API costs",
-  "speechModalAddTranscription": "Add Transcription",
   "speechModalSelectLanguage": "Select Language",
   "speechModalTitle": "Speech Recognition",
-  "speechModalTranscriptionProgress": "Transcription Progress",
   "syncActivityIndicatorSemantics": "Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {
@@ -3009,22 +2336,12 @@
       }
     }
   },
-  "syncCreateNewRoom": "Create New Room",
-  "syncCreateNewRoomInstead": "Create New Room Instead",
   "syncDeleteConfigConfirm": "YES, I'M SURE",
   "syncDeleteConfigQuestion": "Do you want to delete the sync configuration?",
-  "syncDiscoveringRooms": "Discovering sync rooms...",
-  "syncDiscoverRoomsButton": "Discover Existing Rooms",
-  "syncDiscoveryError": "Failed to discover rooms",
   "syncEntitiesConfirm": "START SYNC",
   "syncEntitiesMessage": "Choose the entities you want to sync.",
   "syncEntitiesSuccessDescription": "Everything is up to date.",
   "syncEntitiesSuccessTitle": "Sync complete",
-  "syncInviteErrorForbidden": "Permission denied. You may not have access to invite this user.",
-  "syncInviteErrorNetwork": "Network error. Please check your connection and try again.",
-  "syncInviteErrorRateLimited": "Too many requests. Please wait a moment and try again.",
-  "syncInviteErrorUnknown": "Failed to send invite. Please try again later.",
-  "syncInviteErrorUserNotFound": "User not found. Please verify the scanned code is correct.",
   "syncListCountSummary": "{label} · {itemCount, plural, =0{0 items} =1{1 item} other{{itemCount} items}}",
   "@syncListCountSummary": {
     "placeholders": {
@@ -3038,7 +2355,6 @@
   },
   "syncListPayloadKindLabel": "Payload",
   "syncListUnknownPayload": "Unknown payload",
-  "syncNoRoomsFound": "No existing sync rooms found.\nYou can create a new room to start syncing.",
   "syncNotLoggedInToast": "Sync is not logged in",
   "syncPayloadAgentBundle": "Agent bundle",
   "syncPayloadAgentEntity": "Agent entity",
@@ -3052,15 +2368,6 @@
   "syncPayloadJournalEntity": "Journal entry",
   "syncPayloadOutboxBundle": "Outbox bundle",
   "syncPayloadThemingSelection": "Theming selection",
-  "syncRetry": "Retry",
-  "syncRoomCreatedUnknown": "Unknown",
-  "syncRoomDiscoveryTitle": "Find Existing Sync Room",
-  "syncRoomHasContent": "Has Content",
-  "syncRoomUnnamed": "Unnamed Room",
-  "syncRoomVerified": "Verified",
-  "syncSelectRoom": "Select a Sync Room",
-  "syncSelectRoomDescription": "We found existing sync rooms. Select one to join, or create a new room.",
-  "syncSkip": "Skip",
   "syncStepAgentEntities": "Agent entities",
   "syncStepAgentLinks": "Agent links",
   "syncStepAiSettings": "AI settings",
@@ -3078,7 +2385,6 @@
   "taskActionBarStopTracking": "Stop time tracking",
   "taskActionBarTrackTime": "Track time",
   "taskAgentCancelTimerTooltip": "Cancel",
-  "taskAgentChipLabel": "Agent",
   "taskAgentCountdownTooltip": "Next auto-run in {countdown}",
   "@taskAgentCountdownTooltip": {
     "placeholders": {
@@ -3122,7 +2428,6 @@
   "taskDueYesterday": "Due Yesterday",
   "taskEditTitleLabel": "Edit task title",
   "taskEstimateLabel": "Estimate:",
-  "taskLabelUnassignedLabel": "unassigned",
   "taskLanguageArabic": "Arabic",
   "taskLanguageBengali": "Bengali",
   "taskLanguageBulgarian": "Bulgarian",
@@ -3154,7 +2459,6 @@
   "taskLanguagePortuguese": "Portuguese",
   "taskLanguageRomanian": "Romanian",
   "taskLanguageRussian": "Russian",
-  "taskLanguageSearchPlaceholder": "Search languages...",
   "taskLanguageSelectedLabel": "Currently selected",
   "taskLanguageSerbian": "Serbian",
   "taskLanguageSetAction": "Set language",
@@ -3172,7 +2476,6 @@
   "taskLanguageUkrainian": "Ukrainian",
   "taskLanguageVietnamese": "Vietnamese",
   "taskLanguageYoruba": "Yoruba",
-  "taskNameHint": "Enter a name for the task",
   "taskNoDueDateLabel": "No due date",
   "taskNoEstimateLabel": "No estimate",
   "taskOverdueByDays": "Overdue by {days, plural, =1{1 day} other{{days} days}}",
@@ -3191,7 +2494,6 @@
   "tasksFilterApplyTitle": "Apply filter",
   "tasksFilterClearAll": "Clear all",
   "tasksFilterTitle": "Tasks Filter",
-  "taskShowcaseActiveFilters": "Active filters",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} done",
   "@taskShowcaseCompletedCount": {
@@ -3240,12 +2542,8 @@
   "tasksLabelFilterTitle": "Label",
   "tasksLabelFilterUnlabeled": "Unlabeled",
   "tasksLabelsDialogClose": "Close",
-  "tasksLabelsHeaderEditTooltip": "Edit labels",
-  "tasksLabelsHeaderTitle": "Labels",
-  "tasksLabelsNoLabels": "No labels",
   "tasksLabelsSheetApply": "Apply",
   "tasksLabelsSheetSearchHint": "Search labels…",
-  "tasksLabelsSheetTitle": "Select labels",
   "tasksLabelsUpdateFailed": "Failed to update labels",
   "tasksPriorityFilterAll": "All",
   "tasksPriorityFilterTitle": "Priority",
@@ -3258,7 +2556,6 @@
   "tasksPriorityP3": "Low",
   "tasksPriorityP3Description": "Low (Whenever)",
   "tasksPriorityPickerTitle": "Select priority",
-  "tasksPriorityTitle": "Priority:",
   "tasksQuickFilterClear": "Clear",
   "tasksQuickFilterLabelsActiveTitle": "Active label filters",
   "tasksQuickFilterUnassignedLabel": "Unassigned",
@@ -3266,8 +2563,6 @@
   "tasksSavedFilterDeleteTooltip": "Delete saved filter",
   "tasksSavedFilterDragHandleSemantics": "Drag to reorder",
   "tasksSavedFilterRenameSemantics": "Rename saved filter",
-  "tasksSavedFiltersAddTooltip": "Save current filter",
-  "tasksSavedFiltersEmpty": "No saved filters yet. Adjust the task filter, then tap Save.",
   "tasksSavedFiltersSaveButtonLabel": "Save",
   "tasksSavedFiltersSavePopupCancel": "Cancel",
   "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}",
@@ -3299,13 +2594,9 @@
     }
   },
   "tasksSearchModeLabel": "Search mode",
-  "tasksShowCoverArt": "Show cover art on cards",
   "tasksShowCreationDate": "Show creation date on cards",
-  "tasksShowDistances": "Show distances on cards",
   "tasksShowDueDate": "Show due date on cards",
-  "tasksShowProjectsHeader": "Show projects header",
   "tasksSortByCreationDate": "Created",
-  "tasksSortByDate": "Date",
   "tasksSortByDueDate": "Due Date",
   "tasksSortByLabel": "Sort by",
   "tasksSortByPriority": "Priority",
@@ -3318,7 +2609,6 @@
   "taskStatusOnHold": "On Hold",
   "taskStatusOpen": "Open",
   "taskStatusRejected": "Rejected",
-  "taskSummaries": "Task Summaries",
   "taskTitleEmpty": "No title",
   "taskUntitled": "(untitled)",
   "thinkingDisclosureCopied": "Reasoning copied",
@@ -3327,8 +2617,6 @@
   "thinkingDisclosureShow": "Show reasoning",
   "thinkingDisclosureStateCollapsed": "collapsed",
   "thinkingDisclosureStateExpanded": "expanded",
-  "timeByCategoryChartTitle": "Time by Category",
-  "timeByCategoryChartTotalLabel": "Total",
   "timeEntryItemEnd": "End",
   "timeEntryItemRunning": "Running",
   "timeEntryItemStart": "Start",

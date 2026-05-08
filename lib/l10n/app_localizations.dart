@@ -137,12 +137,6 @@ abstract class AppLocalizations {
   /// **'Paste Image'**
   String get addActionAddImageFromClipboard;
 
-  /// No description provided for @addActionAddPhotos.
-  ///
-  /// In en, this message translates to:
-  /// **'Photo(s)'**
-  String get addActionAddPhotos;
-
   /// No description provided for @addActionAddScreenshot.
   ///
   /// In en, this message translates to:
@@ -179,12 +173,6 @@ abstract class AppLocalizations {
   /// **'Import Image'**
   String get addActionImportImage;
 
-  /// No description provided for @addAudioTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio Recording'**
-  String get addAudioTitle;
-
   /// No description provided for @addHabitCommentLabel.
   ///
   /// In en, this message translates to:
@@ -214,12 +202,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get addMeasurementSaveButton;
-
-  /// No description provided for @addSurveyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Fill Survey'**
-  String get addSurveyTitle;
 
   /// No description provided for @addToDictionary.
   ///
@@ -274,12 +256,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I prefer Option {option}'**
   String agentABComparisonPrefer(String option);
-
-  /// No description provided for @agentActivityLogHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'Activity Log'**
-  String get agentActivityLogHeading;
 
   /// No description provided for @agentBinaryChoiceNo.
   ///
@@ -401,12 +377,6 @@ abstract class AppLocalizations {
   /// **'No conversations yet.'**
   String get agentConversationEmpty;
 
-  /// No description provided for @agentConversationThreadHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Wake {runKey}'**
-  String agentConversationThreadHeader(String runKey);
-
   /// No description provided for @agentConversationThreadSummary.
   ///
   /// In en, this message translates to:
@@ -519,12 +489,6 @@ abstract class AppLocalizations {
   /// **'Failures'**
   String get agentEvolutionMetricFailures;
 
-  /// No description provided for @agentEvolutionMetricNotAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'N/A'**
-  String get agentEvolutionMetricNotAvailable;
-
   /// No description provided for @agentEvolutionMetricSuccess.
   ///
   /// In en, this message translates to:
@@ -536,12 +500,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wakes'**
   String get agentEvolutionMetricWakes;
-
-  /// No description provided for @agentEvolutionMttrLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Mean Time to Resolution'**
-  String get agentEvolutionMttrLabel;
 
   /// No description provided for @agentEvolutionNoSessions.
   ///
@@ -584,30 +542,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Proposed Directives'**
   String get agentEvolutionProposedDirectives;
-
-  /// No description provided for @agentEvolutionRatingAdequate.
-  ///
-  /// In en, this message translates to:
-  /// **'Adequate'**
-  String get agentEvolutionRatingAdequate;
-
-  /// No description provided for @agentEvolutionRatingExcellent.
-  ///
-  /// In en, this message translates to:
-  /// **'Excellent'**
-  String get agentEvolutionRatingExcellent;
-
-  /// No description provided for @agentEvolutionRatingNeedsWork.
-  ///
-  /// In en, this message translates to:
-  /// **'Needs work'**
-  String get agentEvolutionRatingNeedsWork;
-
-  /// No description provided for @agentEvolutionRatingPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'How well is this template performing?'**
-  String get agentEvolutionRatingPrompt;
 
   /// No description provided for @agentEvolutionSessionAbandoned.
   ///
@@ -795,24 +729,6 @@ abstract class AppLocalizations {
   /// **'No instances match your filters.'**
   String get agentInstancesEmptyFiltered;
 
-  /// No description provided for @agentInstancesEmptyList.
-  ///
-  /// In en, this message translates to:
-  /// **'No agent instances found'**
-  String get agentInstancesEmptyList;
-
-  /// No description provided for @agentInstancesFilterActive.
-  ///
-  /// In en, this message translates to:
-  /// **'Active'**
-  String get agentInstancesFilterActive;
-
-  /// No description provided for @agentInstancesFilterAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get agentInstancesFilterAll;
-
   /// No description provided for @agentInstancesFilterClearAll.
   ///
   /// In en, this message translates to:
@@ -824,18 +740,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get agentInstancesFilterClearSection;
-
-  /// No description provided for @agentInstancesFilterDestroyed.
-  ///
-  /// In en, this message translates to:
-  /// **'Destroyed'**
-  String get agentInstancesFilterDestroyed;
-
-  /// No description provided for @agentInstancesFilterDormant.
-  ///
-  /// In en, this message translates to:
-  /// **'Dormant'**
-  String get agentInstancesFilterDormant;
 
   /// No description provided for @agentInstancesFilterSectionSoul.
   ///
@@ -878,12 +782,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Type'**
   String get agentInstancesGroupByType;
-
-  /// No description provided for @agentInstancesKindAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get agentInstancesKindAll;
 
   /// No description provided for @agentInstancesKindEvolution.
   ///
@@ -945,17 +843,6 @@ abstract class AppLocalizations {
   /// **'Recent'**
   String get agentInstancesSortRecent;
 
-  /// No description provided for @agentInstancesStatsSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'Total {total} · Active {active} · Dormant {dormant} · Destroyed {destroyed}'**
-  String agentInstancesStatsSummary(
-    int total,
-    int active,
-    int dormant,
-    int destroyed,
-  );
-
   /// No description provided for @agentInstancesTitle.
   ///
   /// In en, this message translates to:
@@ -1003,12 +890,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dormant'**
   String get agentLifecycleDormant;
-
-  /// No description provided for @agentLifecyclePaused.
-  ///
-  /// In en, this message translates to:
-  /// **'Paused'**
-  String get agentLifecyclePaused;
 
   /// No description provided for @agentMessageKindAction.
   ///
@@ -1098,35 +979,17 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 total wake} other{{count} total wakes}}'**
   String agentPendingWakesActivityTotal(int count);
 
-  /// No description provided for @agentPendingWakesCountdownLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Countdown'**
-  String get agentPendingWakesCountdownLabel;
-
   /// No description provided for @agentPendingWakesDeleteTooltip.
   ///
   /// In en, this message translates to:
   /// **'Remove wake'**
   String get agentPendingWakesDeleteTooltip;
 
-  /// No description provided for @agentPendingWakesDueAtLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Due at'**
-  String get agentPendingWakesDueAtLabel;
-
   /// No description provided for @agentPendingWakesEmptyFiltered.
   ///
   /// In en, this message translates to:
   /// **'No wakes match your filters.'**
   String get agentPendingWakesEmptyFiltered;
-
-  /// No description provided for @agentPendingWakesEmptyList.
-  ///
-  /// In en, this message translates to:
-  /// **'No pending wakes'**
-  String get agentPendingWakesEmptyList;
 
   /// No description provided for @agentPendingWakesFilterSectionType.
   ///
@@ -1182,12 +1045,6 @@ abstract class AppLocalizations {
   /// **'Wake Cycles'**
   String get agentPendingWakesTitle;
 
-  /// No description provided for @agentReportErrorLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load report: {error}'**
-  String agentReportErrorLoading(String error);
-
   /// No description provided for @agentReportHistoryBadge.
   ///
   /// In en, this message translates to:
@@ -1212,35 +1069,11 @@ abstract class AppLocalizations {
   /// **'No report available yet.'**
   String get agentReportNone;
 
-  /// Header title for the agent report section on a task page.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent Report'**
-  String get agentReportSectionTitle;
-
-  /// No description provided for @agentRitualPendingNotification.
-  ///
-  /// In en, this message translates to:
-  /// **'Rituals pending review'**
-  String get agentRitualPendingNotification;
-
-  /// No description provided for @agentRitualPendingReviewCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 pending} other{{count} pending}}'**
-  String agentRitualPendingReviewCount(int count);
-
   /// No description provided for @agentRitualReviewAction.
   ///
   /// In en, this message translates to:
   /// **'Start Conversation'**
   String get agentRitualReviewAction;
-
-  /// No description provided for @agentRitualReviewFeedbackTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Feedback Signals'**
-  String get agentRitualReviewFeedbackTitle;
 
   /// No description provided for @agentRitualReviewNegativeSignals.
   ///
@@ -1277,12 +1110,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No positive feedback signals in this tab'**
   String get agentRitualReviewNoPositiveSignals;
-
-  /// No description provided for @agentRitualReviewNoProposal.
-  ///
-  /// In en, this message translates to:
-  /// **'No active proposal'**
-  String get agentRitualReviewNoProposal;
 
   /// No description provided for @agentRitualReviewPositiveSignals.
   ///
@@ -1349,12 +1176,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recent 1-on-1s, real wake activity, and the changes you agreed to.'**
   String get agentRitualSummarySubtitle;
-
-  /// No description provided for @agentRitualSummaryTldrHeading.
-  ///
-  /// In en, this message translates to:
-  /// **'TLDR'**
-  String get agentRitualSummaryTldrHeading;
 
   /// No description provided for @agentRitualSummaryTokensSinceLast.
   ///
@@ -1457,12 +1278,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Name'**
   String get agentSoulDisplayNameLabel;
-
-  /// No description provided for @agentSoulEmptyList.
-  ///
-  /// In en, this message translates to:
-  /// **'No soul documents yet'**
-  String get agentSoulEmptyList;
 
   /// No description provided for @agentSoulEvolutionHistoryTitle.
   ///
@@ -1794,54 +1609,6 @@ abstract class AppLocalizations {
   /// **'Wakes'**
   String get agentStatsWakesLabel;
 
-  /// No description provided for @agentStatsWeekTotalLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'7-Day Total'**
-  String get agentStatsWeekTotalLabel;
-
-  /// No description provided for @agentSuggestionsActivityAgentFallback.
-  ///
-  /// In en, this message translates to:
-  /// **'the agent'**
-  String get agentSuggestionsActivityAgentFallback;
-
-  /// No description provided for @agentSuggestionsActivityCountTotal.
-  ///
-  /// In en, this message translates to:
-  /// **'{total} total'**
-  String agentSuggestionsActivityCountTotal(int total);
-
-  /// No description provided for @agentSuggestionsActivityCountVisible.
-  ///
-  /// In en, this message translates to:
-  /// **'{visible} of {total}'**
-  String agentSuggestionsActivityCountVisible(int visible, int total);
-
-  /// No description provided for @agentSuggestionsActivityTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent proposal activity'**
-  String get agentSuggestionsActivityTitle;
-
-  /// No description provided for @agentSuggestionsActivityVerdictConfirmed.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed'**
-  String get agentSuggestionsActivityVerdictConfirmed;
-
-  /// No description provided for @agentSuggestionsActivityVerdictRejected.
-  ///
-  /// In en, this message translates to:
-  /// **'Rejected'**
-  String get agentSuggestionsActivityVerdictRejected;
-
-  /// No description provided for @agentSuggestionsActivityVerdictRetracted.
-  ///
-  /// In en, this message translates to:
-  /// **'Retracted by {agentName}'**
-  String agentSuggestionsActivityVerdictRetracted(String agentName);
-
   /// Label for the current value in an agent-proposed time entry edit diff.
   ///
   /// In en, this message translates to:
@@ -1896,23 +1663,11 @@ abstract class AppLocalizations {
   /// **'Stats'**
   String get agentTabStats;
 
-  /// Section title for the list of active agent instances using this template.
-  ///
-  /// In en, this message translates to:
-  /// **'Active Instances'**
-  String get agentTemplateActiveInstancesTitle;
-
   /// Heading for the aggregate token usage section in agent template stats.
   ///
   /// In en, this message translates to:
   /// **'Aggregate Token Usage'**
   String get agentTemplateAggregateTokenUsageHeading;
-
-  /// Filter option to show models from all AI providers.
-  ///
-  /// In en, this message translates to:
-  /// **'All Providers'**
-  String get agentTemplateAllProviders;
 
   /// Label shown next to the template assigned to an agent.
   ///
@@ -1944,18 +1699,6 @@ abstract class AppLocalizations {
   /// **'Cannot delete: active agents are using this template.'**
   String get agentTemplateDeleteHasInstances;
 
-  /// Placeholder hint text for the directives text field.
-  ///
-  /// In en, this message translates to:
-  /// **'Define the agent\'s personality, tone, goals, and style...'**
-  String get agentTemplateDirectivesHint;
-
-  /// Label for the text field where the user writes agent directives.
-  ///
-  /// In en, this message translates to:
-  /// **'Directives'**
-  String get agentTemplateDirectivesLabel;
-
   /// Label for the template display name input field.
   ///
   /// In en, this message translates to:
@@ -1967,12 +1710,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit Template'**
   String get agentTemplateEditTitle;
-
-  /// Placeholder shown when the template list is empty.
-  ///
-  /// In en, this message translates to:
-  /// **'No templates yet. Tap + to create one.'**
-  String get agentTemplateEmptyList;
 
   /// Button to accept and save proposed directive changes.
   ///
@@ -2004,12 +1741,6 @@ abstract class AppLocalizations {
   /// **'Per-Instance Breakdown'**
   String get agentTemplateInstanceBreakdownHeading;
 
-  /// No description provided for @agentTemplateInstanceCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =0{No instances} =1{1 instance} other{{count} instances}}'**
-  String agentTemplateInstanceCount(int count);
-
   /// Display name for the template-improver agent kind.
   ///
   /// In en, this message translates to:
@@ -2028,53 +1759,17 @@ abstract class AppLocalizations {
   /// **'Task Agent'**
   String get agentTemplateKindTaskAgent;
 
-  /// Metric label for the number of active agent instances.
-  ///
-  /// In en, this message translates to:
-  /// **'Active Instances'**
-  String get agentTemplateMetricsActiveInstances;
-
-  /// Metric label for the percentage of successful agent wakes.
-  ///
-  /// In en, this message translates to:
-  /// **'Success Rate'**
-  String get agentTemplateMetricsSuccessRate;
-
   /// Metric label for the total number of agent wakes.
   ///
   /// In en, this message translates to:
   /// **'Total Wakes'**
   String get agentTemplateMetricsTotalWakes;
 
-  /// Label for the AI model selection field in the template form.
-  ///
-  /// In en, this message translates to:
-  /// **'Model ID'**
-  String get agentTemplateModelLabel;
-
-  /// Helper text explaining which AI models are eligible for agent templates.
-  ///
-  /// In en, this message translates to:
-  /// **'Only reasoning models with function calling are shown'**
-  String get agentTemplateModelRequirements;
-
-  /// Placeholder shown when no performance metrics are available.
-  ///
-  /// In en, this message translates to:
-  /// **'No performance data yet'**
-  String get agentTemplateNoMetrics;
-
   /// Text shown when an agent has no template assigned.
   ///
   /// In en, this message translates to:
   /// **'No template assigned'**
   String get agentTemplateNoneAssigned;
-
-  /// Message shown when no AI models meet the template requirements.
-  ///
-  /// In en, this message translates to:
-  /// **'No suitable models found'**
-  String get agentTemplateNoSuitableModels;
 
   /// Message shown when no templates exist for agent creation.
   ///
@@ -2147,12 +1842,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No templates match your filters.'**
   String get agentTemplatesEmptyFiltered;
-
-  /// Subtitle shown under the agent templates settings entry.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage agent personalities and directives'**
-  String get agentTemplateSettingsSubtitle;
 
   /// Tab label for the settings tab in agent template detail.
   ///
@@ -2298,41 +1987,11 @@ abstract class AppLocalizations {
   /// **'Wakes'**
   String get agentTokenUsageWakeCount;
 
-  /// No description provided for @aiAssistantActionItemSuggestions.
-  ///
-  /// In en, this message translates to:
-  /// **'Action Item Suggestions'**
-  String get aiAssistantActionItemSuggestions;
-
-  /// No description provided for @aiAssistantAnalyzeImage.
-  ///
-  /// In en, this message translates to:
-  /// **'Analyze image'**
-  String get aiAssistantAnalyzeImage;
-
-  /// No description provided for @aiAssistantSummarizeTask.
-  ///
-  /// In en, this message translates to:
-  /// **'Summarize task'**
-  String get aiAssistantSummarizeTask;
-
-  /// No description provided for @aiAssistantThinking.
-  ///
-  /// In en, this message translates to:
-  /// **'Thinking...'**
-  String get aiAssistantThinking;
-
   /// No description provided for @aiAssistantTitle.
   ///
   /// In en, this message translates to:
   /// **'Generate…'**
   String get aiAssistantTitle;
-
-  /// No description provided for @aiAssistantTranscribeAudio.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcribe audio'**
-  String get aiAssistantTranscribeAudio;
 
   /// No description provided for @aiBatchToggleTooltip.
   ///
@@ -2357,12 +2016,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open agent internals'**
   String get aiCardOpenAgentInternals;
-
-  /// No description provided for @aiCardProposalAgoSeparator.
-  ///
-  /// In en, this message translates to:
-  /// **'·'**
-  String get aiCardProposalAgoSeparator;
 
   /// No description provided for @aiCardProposalConfirmed.
   ///
@@ -2436,12 +2089,6 @@ abstract class AppLocalizations {
   /// **'Show less'**
   String get aiCardShowLess;
 
-  /// No description provided for @aiCardSummaryAgo.
-  ///
-  /// In en, this message translates to:
-  /// **'{relative}'**
-  String aiCardSummaryAgo(String relative);
-
   /// No description provided for @aiCardTitle.
   ///
   /// In en, this message translates to:
@@ -2454,179 +2101,11 @@ abstract class AppLocalizations {
   /// **'Copied to clipboard'**
   String get aiChatMessageCopied;
 
-  /// No description provided for @aiConfigApiKeyEmptyError.
-  ///
-  /// In en, this message translates to:
-  /// **'API key cannot be empty'**
-  String get aiConfigApiKeyEmptyError;
-
-  /// No description provided for @aiConfigApiKeyFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'API Key'**
-  String get aiConfigApiKeyFieldLabel;
-
-  /// No description provided for @aiConfigAssociatedModelsRemoved.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} associated model{count, plural, =1{} other{s}} removed'**
-  String aiConfigAssociatedModelsRemoved(int count);
-
-  /// No description provided for @aiConfigBaseUrlFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Base URL'**
-  String get aiConfigBaseUrlFieldLabel;
-
-  /// No description provided for @aiConfigCommentFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Comment (Optional)'**
-  String get aiConfigCommentFieldLabel;
-
-  /// No description provided for @aiConfigCreateButtonLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Prompt'**
-  String get aiConfigCreateButtonLabel;
-
-  /// No description provided for @aiConfigDescriptionFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Description (Optional)'**
-  String get aiConfigDescriptionFieldLabel;
-
-  /// No description provided for @aiConfigFailedToLoadModels.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load models: {error}'**
-  String aiConfigFailedToLoadModels(String error);
-
   /// No description provided for @aiConfigFailedToLoadModelsGeneric.
   ///
   /// In en, this message translates to:
   /// **'Failed to load models. Please try again.'**
   String get aiConfigFailedToLoadModelsGeneric;
-
-  /// No description provided for @aiConfigFailedToSaveMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to save configuration. Please try again.'**
-  String get aiConfigFailedToSaveMessage;
-
-  /// No description provided for @aiConfigInputDataTypesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Required Input Data Types'**
-  String get aiConfigInputDataTypesTitle;
-
-  /// No description provided for @aiConfigInputModalitiesFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Input Modalities'**
-  String get aiConfigInputModalitiesFieldLabel;
-
-  /// No description provided for @aiConfigInputModalitiesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Input Modalities'**
-  String get aiConfigInputModalitiesTitle;
-
-  /// No description provided for @aiConfigInvalidUrlError.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter a valid URL'**
-  String get aiConfigInvalidUrlError;
-
-  /// No description provided for @aiConfigListCascadeDeleteWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'This will also delete all models associated with this provider.'**
-  String get aiConfigListCascadeDeleteWarning;
-
-  /// No description provided for @aiConfigListDeleteConfirmCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'CANCEL'**
-  String get aiConfigListDeleteConfirmCancel;
-
-  /// No description provided for @aiConfigListDeleteConfirmDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'DELETE'**
-  String get aiConfigListDeleteConfirmDelete;
-
-  /// No description provided for @aiConfigListDeleteConfirmMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete \"{configName}\"?'**
-  String aiConfigListDeleteConfirmMessage(String configName);
-
-  /// No description provided for @aiConfigListDeleteConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm Deletion'**
-  String get aiConfigListDeleteConfirmTitle;
-
-  /// No description provided for @aiConfigListEmptyState.
-  ///
-  /// In en, this message translates to:
-  /// **'No configurations found. Add one to get started.'**
-  String get aiConfigListEmptyState;
-
-  /// No description provided for @aiConfigListErrorDeleting.
-  ///
-  /// In en, this message translates to:
-  /// **'Error deleting {configName}: {error}'**
-  String aiConfigListErrorDeleting(String configName, String error);
-
-  /// No description provided for @aiConfigListErrorLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Error loading configurations'**
-  String get aiConfigListErrorLoading;
-
-  /// No description provided for @aiConfigListItemDeleted.
-  ///
-  /// In en, this message translates to:
-  /// **'{configName} deleted'**
-  String aiConfigListItemDeleted(String configName);
-
-  /// No description provided for @aiConfigListUndoDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'UNDO'**
-  String get aiConfigListUndoDelete;
-
-  /// No description provided for @aiConfigManageModelsButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage Models'**
-  String get aiConfigManageModelsButton;
-
-  /// No description provided for @aiConfigModelRemovedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'{modelName} removed from prompt'**
-  String aiConfigModelRemovedMessage(String modelName);
-
-  /// No description provided for @aiConfigModelsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Available Models'**
-  String get aiConfigModelsTitle;
-
-  /// No description provided for @aiConfigNameFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Display Name'**
-  String get aiConfigNameFieldLabel;
-
-  /// No description provided for @aiConfigNameTooShortError.
-  ///
-  /// In en, this message translates to:
-  /// **'Name must be at least 3 characters'**
-  String get aiConfigNameTooShortError;
 
   /// No description provided for @aiConfigNoModelsAvailable.
   ///
@@ -2634,113 +2113,11 @@ abstract class AppLocalizations {
   /// **'No AI models are configured yet. Please add one in settings.'**
   String get aiConfigNoModelsAvailable;
 
-  /// No description provided for @aiConfigNoModelsSelected.
-  ///
-  /// In en, this message translates to:
-  /// **'No models selected. At least one model is required.'**
-  String get aiConfigNoModelsSelected;
-
-  /// No description provided for @aiConfigNoProvidersAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No API providers available. Please add an API provider first.'**
-  String get aiConfigNoProvidersAvailable;
-
   /// No description provided for @aiConfigNoSuitableModelsAvailable.
   ///
   /// In en, this message translates to:
   /// **'No models meet the requirements for this prompt. Please configure models that support the required capabilities.'**
   String get aiConfigNoSuitableModelsAvailable;
-
-  /// No description provided for @aiConfigOutputModalitiesFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Output Modalities'**
-  String get aiConfigOutputModalitiesFieldLabel;
-
-  /// No description provided for @aiConfigOutputModalitiesTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Output Modalities'**
-  String get aiConfigOutputModalitiesTitle;
-
-  /// No description provided for @aiConfigProviderDeletedSuccessfully.
-  ///
-  /// In en, this message translates to:
-  /// **'Provider deleted successfully'**
-  String get aiConfigProviderDeletedSuccessfully;
-
-  /// No description provided for @aiConfigProviderFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Inference Provider'**
-  String get aiConfigProviderFieldLabel;
-
-  /// No description provided for @aiConfigProviderModelIdFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Provider Model ID'**
-  String get aiConfigProviderModelIdFieldLabel;
-
-  /// No description provided for @aiConfigProviderModelIdTooShortError.
-  ///
-  /// In en, this message translates to:
-  /// **'ProviderModelId must be at least 3 characters'**
-  String get aiConfigProviderModelIdTooShortError;
-
-  /// No description provided for @aiConfigProviderTypeFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Provider Type'**
-  String get aiConfigProviderTypeFieldLabel;
-
-  /// No description provided for @aiConfigReasoningCapabilityDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Model can perform step-by-step reasoning'**
-  String get aiConfigReasoningCapabilityDescription;
-
-  /// No description provided for @aiConfigReasoningCapabilityFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reasoning Capability'**
-  String get aiConfigReasoningCapabilityFieldLabel;
-
-  /// No description provided for @aiConfigRequiredInputDataFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Required Input Data'**
-  String get aiConfigRequiredInputDataFieldLabel;
-
-  /// No description provided for @aiConfigResponseTypeFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Response Type'**
-  String get aiConfigResponseTypeFieldLabel;
-
-  /// No description provided for @aiConfigResponseTypeNotSelectedError.
-  ///
-  /// In en, this message translates to:
-  /// **'Please select a response type'**
-  String get aiConfigResponseTypeNotSelectedError;
-
-  /// No description provided for @aiConfigResponseTypeSelectHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select response type'**
-  String get aiConfigResponseTypeSelectHint;
-
-  /// No description provided for @aiConfigSelectInputDataTypesPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Select required data types...'**
-  String get aiConfigSelectInputDataTypesPrompt;
-
-  /// No description provided for @aiConfigSelectModalitiesPrompt.
-  ///
-  /// In en, this message translates to:
-  /// **'Select modalities'**
-  String get aiConfigSelectModalitiesPrompt;
 
   /// No description provided for @aiConfigSelectProviderModalTitle.
   ///
@@ -2748,59 +2125,17 @@ abstract class AppLocalizations {
   /// **'Select Inference Provider'**
   String get aiConfigSelectProviderModalTitle;
 
-  /// No description provided for @aiConfigSelectProviderNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'Inference Provider not found'**
-  String get aiConfigSelectProviderNotFound;
-
   /// No description provided for @aiConfigSelectProviderTypeModalTitle.
   ///
   /// In en, this message translates to:
   /// **'Select Provider Type'**
   String get aiConfigSelectProviderTypeModalTitle;
 
-  /// No description provided for @aiConfigSelectResponseTypeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select AI Response Type'**
-  String get aiConfigSelectResponseTypeTitle;
-
-  /// No description provided for @aiConfigSystemMessageFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'System Message'**
-  String get aiConfigSystemMessageFieldLabel;
-
-  /// No description provided for @aiConfigUpdateButtonLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Update Prompt'**
-  String get aiConfigUpdateButtonLabel;
-
-  /// No description provided for @aiConfigUseReasoningDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'If enabled, the model will use its reasoning capabilities for this prompt.'**
-  String get aiConfigUseReasoningDescription;
-
   /// No description provided for @aiConfigUseReasoningFieldLabel.
   ///
   /// In en, this message translates to:
   /// **'Use Reasoning'**
   String get aiConfigUseReasoningFieldLabel;
-
-  /// No description provided for @aiConfigUserMessageEmptyError.
-  ///
-  /// In en, this message translates to:
-  /// **'User message cannot be empty'**
-  String get aiConfigUserMessageEmptyError;
-
-  /// No description provided for @aiConfigUserMessageFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'User Message'**
-  String get aiConfigUserMessageFieldLabel;
 
   /// No description provided for @aiFormCancel.
   ///
@@ -2820,23 +2155,11 @@ abstract class AppLocalizations {
   /// **'No unsaved changes'**
   String get aiFormNoChanges;
 
-  /// No description provided for @aiInferenceErrorAuthenticationMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Authentication failed. Please check your API key and ensure it is valid.'**
-  String get aiInferenceErrorAuthenticationMessage;
-
   /// No description provided for @aiInferenceErrorAuthenticationTitle.
   ///
   /// In en, this message translates to:
   /// **'Authentication Failed'**
   String get aiInferenceErrorAuthenticationTitle;
-
-  /// No description provided for @aiInferenceErrorConnectionFailedMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Unable to connect to the AI service. Please check your internet connection and ensure the service is accessible.'**
-  String get aiInferenceErrorConnectionFailedMessage;
 
   /// No description provided for @aiInferenceErrorConnectionFailedTitle.
   ///
@@ -2844,23 +2167,11 @@ abstract class AppLocalizations {
   /// **'Connection Failed'**
   String get aiInferenceErrorConnectionFailedTitle;
 
-  /// No description provided for @aiInferenceErrorInvalidRequestMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The request was invalid. Please check your configuration and try again.'**
-  String get aiInferenceErrorInvalidRequestMessage;
-
   /// No description provided for @aiInferenceErrorInvalidRequestTitle.
   ///
   /// In en, this message translates to:
   /// **'Invalid Request'**
   String get aiInferenceErrorInvalidRequestTitle;
-
-  /// No description provided for @aiInferenceErrorRateLimitMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'You have exceeded the rate limit. Please wait a moment before trying again.'**
-  String get aiInferenceErrorRateLimitMessage;
 
   /// No description provided for @aiInferenceErrorRateLimitTitle.
   ///
@@ -2874,12 +2185,6 @@ abstract class AppLocalizations {
   /// **'Try Again'**
   String get aiInferenceErrorRetryButton;
 
-  /// No description provided for @aiInferenceErrorServerMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The AI service encountered an error. Please try again later.'**
-  String get aiInferenceErrorServerMessage;
-
   /// No description provided for @aiInferenceErrorServerTitle.
   ///
   /// In en, this message translates to:
@@ -2892,23 +2197,11 @@ abstract class AppLocalizations {
   /// **'Suggestions:'**
   String get aiInferenceErrorSuggestionsTitle;
 
-  /// No description provided for @aiInferenceErrorTimeoutMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'The request took too long to complete. Please try again or check if the service is responding.'**
-  String get aiInferenceErrorTimeoutMessage;
-
   /// No description provided for @aiInferenceErrorTimeoutTitle.
   ///
   /// In en, this message translates to:
   /// **'Request Timed Out'**
   String get aiInferenceErrorTimeoutTitle;
-
-  /// No description provided for @aiInferenceErrorUnknownMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'An unexpected error occurred. Please try again.'**
-  String get aiInferenceErrorUnknownMessage;
 
   /// No description provided for @aiInferenceErrorUnknownTitle.
   ///
@@ -2916,23 +2209,11 @@ abstract class AppLocalizations {
   /// **'Error'**
   String get aiInferenceErrorUnknownTitle;
 
-  /// No description provided for @aiInferenceErrorViewLogButton.
-  ///
-  /// In en, this message translates to:
-  /// **'View Log'**
-  String get aiInferenceErrorViewLogButton;
-
   /// No description provided for @aiInternalsTitle.
   ///
   /// In en, this message translates to:
   /// **'Agent internals'**
   String get aiInternalsTitle;
-
-  /// No description provided for @aiModelSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Model Settings'**
-  String get aiModelSettings;
 
   /// No description provided for @aiOllamaModelInstalledSuccessfully.
   ///
@@ -3078,18 +2359,6 @@ abstract class AppLocalizations {
   /// **'Switch to live transcription'**
   String get aiRealtimeToggleTooltip;
 
-  /// No description provided for @aiRealtimeTranscribing.
-  ///
-  /// In en, this message translates to:
-  /// **'Live transcription...'**
-  String get aiRealtimeTranscribing;
-
-  /// No description provided for @aiRealtimeTranscriptionError.
-  ///
-  /// In en, this message translates to:
-  /// **'Live transcription disconnected. Audio saved for batch processing.'**
-  String get aiRealtimeTranscriptionError;
-
   /// No description provided for @aiResponseDeleteCancel.
   ///
   /// In en, this message translates to:
@@ -3180,12 +2449,6 @@ abstract class AppLocalizations {
   /// **'Add Profile'**
   String get aiSettingsAddProfileButton;
 
-  /// No description provided for @aiSettingsAddPromptButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Prompt'**
-  String get aiSettingsAddPromptButton;
-
   /// No description provided for @aiSettingsAddProviderButton.
   ///
   /// In en, this message translates to:
@@ -3204,30 +2467,6 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get aiSettingsClearFiltersButton;
 
-  /// No description provided for @aiSettingsDeleteSelectedConfirmMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete {count} selected prompts? This action cannot be undone.'**
-  String aiSettingsDeleteSelectedConfirmMessage(int count);
-
-  /// No description provided for @aiSettingsDeleteSelectedConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Selected Prompts'**
-  String get aiSettingsDeleteSelectedConfirmTitle;
-
-  /// No description provided for @aiSettingsDeleteSelectedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete ({count})'**
-  String aiSettingsDeleteSelectedLabel(int count);
-
-  /// No description provided for @aiSettingsDeleteSelectedTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete selected prompts'**
-  String get aiSettingsDeleteSelectedTooltip;
-
   /// No description provided for @aiSettingsFilterByCapabilityTooltip.
   ///
   /// In en, this message translates to:
@@ -3245,12 +2484,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter by reasoning capability'**
   String get aiSettingsFilterByReasoningTooltip;
-
-  /// No description provided for @aiSettingsFilterByResponseTypeTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by {responseType} prompts'**
-  String aiSettingsFilterByResponseTypeTooltip(String responseType);
 
   /// No description provided for @aiSettingsModalityAudio.
   ///
@@ -3276,12 +2509,6 @@ abstract class AppLocalizations {
   /// **'No AI models configured'**
   String get aiSettingsNoModelsConfigured;
 
-  /// No description provided for @aiSettingsNoPromptsConfigured.
-  ///
-  /// In en, this message translates to:
-  /// **'No AI prompts configured'**
-  String get aiSettingsNoPromptsConfigured;
-
   /// No description provided for @aiSettingsNoProvidersConfigured.
   ///
   /// In en, this message translates to:
@@ -3306,18 +2533,6 @@ abstract class AppLocalizations {
   /// **'Search AI configurations...'**
   String get aiSettingsSearchHint;
 
-  /// No description provided for @aiSettingsSelectLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Select'**
-  String get aiSettingsSelectLabel;
-
-  /// No description provided for @aiSettingsSelectModeTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle selection mode for bulk operations'**
-  String get aiSettingsSelectModeTooltip;
-
   /// No description provided for @aiSettingsTabModels.
   ///
   /// In en, this message translates to:
@@ -3329,12 +2544,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profiles'**
   String get aiSettingsTabProfiles;
-
-  /// No description provided for @aiSettingsTabPrompts.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompts'**
-  String get aiSettingsTabPrompts;
 
   /// No description provided for @aiSettingsTabProviders.
   ///
@@ -3384,35 +2593,11 @@ abstract class AppLocalizations {
   /// **'AI Setup Wizard'**
   String get aiSetupWizardTitle;
 
-  /// No description provided for @aiTaskSummaryDeleteConfirmMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Do you really want to delete this task summary? This cannot be undone.} other{Do you really want to delete {count} task summaries? This cannot be undone.}}'**
-  String aiTaskSummaryDeleteConfirmMessage(int count);
-
-  /// No description provided for @aiTaskSummaryDeleteConfirmTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Task Summaries'**
-  String get aiTaskSummaryDeleteConfirmTitle;
-
-  /// No description provided for @aiTaskSummaryDeleteTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete all task summaries'**
-  String get aiTaskSummaryDeleteTooltip;
-
   /// No description provided for @aiTaskSummaryTitle.
   ///
   /// In en, this message translates to:
   /// **'AI Task Summary'**
   String get aiTaskSummaryTitle;
-
-  /// No description provided for @aiTranscribingAudio.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcribing audio...'**
-  String get aiTranscribingAudio;
 
   /// No description provided for @apiKeyAddPageTitle.
   ///
@@ -3431,24 +2616,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit Provider'**
   String get apiKeyEditPageTitle;
-
-  /// No description provided for @apiKeyFormCreateButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Create'**
-  String get apiKeyFormCreateButton;
-
-  /// No description provided for @apiKeyFormUpdateButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Update'**
-  String get apiKeyFormUpdateButton;
-
-  /// No description provided for @apiKeysSettingsPageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Inference Providers'**
-  String get apiKeysSettingsPageTitle;
 
   /// No description provided for @audioRecordingCancel.
   ///
@@ -3485,12 +2652,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'STOP'**
   String get audioRecordingStop;
-
-  /// No description provided for @automaticPrompts.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic Prompts'**
-  String get automaticPrompts;
 
   /// No description provided for @backfillAdvancedRecoveryActions.
   ///
@@ -3570,12 +2731,6 @@ abstract class AppLocalizations {
   /// **'Processing...'**
   String get backfillManualProcessing;
 
-  /// No description provided for @backfillManualSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} entries requested'**
-  String backfillManualSuccess(int count);
-
   /// No description provided for @backfillManualTitle.
   ///
   /// In en, this message translates to:
@@ -3600,12 +2755,6 @@ abstract class AppLocalizations {
   /// **'Re-requesting...'**
   String get backfillReRequestProcessing;
 
-  /// No description provided for @backfillReRequestSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} entries re-requested'**
-  String backfillReRequestSuccess(int count);
-
   /// No description provided for @backfillReRequestTitle.
   ///
   /// In en, this message translates to:
@@ -3629,12 +2778,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Resetting...'**
   String get backfillResetUnresolvableProcessing;
-
-  /// No description provided for @backfillResetUnresolvableSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 entry reset to missing} other{{count} entries reset to missing}}'**
-  String backfillResetUnresolvableSuccess(int count);
 
   /// No description provided for @backfillResetUnresolvableTitle.
   ///
@@ -3690,12 +2833,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{Retire 1 stuck entry} other{Retire {count} stuck entries}}'**
   String backfillRetireStuckTrigger(int count);
 
-  /// No description provided for @backfillSettingsInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.'**
-  String get backfillSettingsInfo;
-
   /// No description provided for @backfillSettingsSubtitle.
   ///
   /// In en, this message translates to:
@@ -3719,12 +2856,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deleted'**
   String get backfillStatsDeleted;
-
-  /// No description provided for @backfillStatsHostsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} connected device{count, plural, =1{} other{s}}'**
-  String backfillStatsHostsTitle(int count);
 
   /// No description provided for @backfillStatsMissing.
   ///
@@ -3798,18 +2929,6 @@ abstract class AppLocalizations {
   /// **'Requests missing entries from the last 24 hours.'**
   String get backfillToggleDescription;
 
-  /// No description provided for @backfillToggleDisabledDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Backfill disabled - useful on metered networks'**
-  String get backfillToggleDisabledDescription;
-
-  /// No description provided for @backfillToggleEnabledDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatically request missing sync entries'**
-  String get backfillToggleEnabledDescription;
-
   /// No description provided for @backfillToggleTitle.
   ///
   /// In en, this message translates to:
@@ -3846,18 +2965,6 @@ abstract class AppLocalizations {
   /// **'AI Defaults'**
   String get categoryAiDefaultsTitle;
 
-  /// No description provided for @categoryAiModelDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Control which AI prompts can be used with this category'**
-  String get categoryAiModelDescription;
-
-  /// No description provided for @categoryAutomaticPromptsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure prompts that run automatically for different content types'**
-  String get categoryAutomaticPromptsDescription;
-
   /// No description provided for @categoryCreationError.
   ///
   /// In en, this message translates to:
@@ -3875,12 +2982,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a profile…'**
   String get categoryDefaultProfileHint;
-
-  /// No description provided for @categoryDefaultProfileLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Default inference profile'**
-  String get categoryDefaultProfileLabel;
 
   /// No description provided for @categoryDefaultTemplateHint.
   ///
@@ -3905,12 +3006,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This action cannot be undone. All entries in this category will remain but will no longer be categorized.'**
   String get categoryDeleteConfirmation;
-
-  /// No description provided for @categoryDeleteQuestion.
-  ///
-  /// In en, this message translates to:
-  /// **'Do you want to delete this category?'**
-  String get categoryDeleteQuestion;
 
   /// No description provided for @categoryDeleteTitle.
   ///
@@ -3942,23 +3037,11 @@ abstract class AppLocalizations {
   /// **'Hide this category when private mode is enabled'**
   String get categoryPrivateDescription;
 
-  /// No description provided for @categoryPromptFilterAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All'**
-  String get categoryPromptFilterAll;
-
   /// No description provided for @categorySearchPlaceholder.
   ///
   /// In en, this message translates to:
   /// **'Search categories...'**
   String get categorySearchPlaceholder;
-
-  /// No description provided for @celebrationTapToContinue.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap to continue'**
-  String get celebrationTapToContinue;
 
   /// No description provided for @changeSetCardTitle.
   ///
@@ -4170,36 +3253,6 @@ abstract class AppLocalizations {
   /// **'Export failed'**
   String get checklistExportFailed;
 
-  /// No description provided for @checklistFilterShowAll.
-  ///
-  /// In en, this message translates to:
-  /// **'Show all items'**
-  String get checklistFilterShowAll;
-
-  /// No description provided for @checklistFilterShowOpen.
-  ///
-  /// In en, this message translates to:
-  /// **'Show open items'**
-  String get checklistFilterShowOpen;
-
-  /// No description provided for @checklistFilterStateAll.
-  ///
-  /// In en, this message translates to:
-  /// **'Showing all items'**
-  String get checklistFilterStateAll;
-
-  /// No description provided for @checklistFilterStateOpenOnly.
-  ///
-  /// In en, this message translates to:
-  /// **'Showing open items'**
-  String get checklistFilterStateOpenOnly;
-
-  /// No description provided for @checklistFilterToggleSemantics.
-  ///
-  /// In en, this message translates to:
-  /// **'Toggle checklist filter (current: {state})'**
-  String checklistFilterToggleSemantics(String state);
-
   /// No description provided for @checklistItemArchived.
   ///
   /// In en, this message translates to:
@@ -4211,12 +3264,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undo'**
   String get checklistItemArchiveUndo;
-
-  /// No description provided for @checklistItemDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete checklist item?'**
-  String get checklistItemDelete;
 
   /// No description provided for @checklistItemDeleteCancel.
   ///
@@ -4242,18 +3289,6 @@ abstract class AppLocalizations {
   /// **'This action cannot be undone.'**
   String get checklistItemDeleteWarning;
 
-  /// No description provided for @checklistItemDrag.
-  ///
-  /// In en, this message translates to:
-  /// **'Drag suggestions into checklist'**
-  String get checklistItemDrag;
-
-  /// No description provided for @checklistItemUnarchived.
-  ///
-  /// In en, this message translates to:
-  /// **'Item unarchived'**
-  String get checklistItemUnarchived;
-
   /// No description provided for @checklistMarkdownCopied.
   ///
   /// In en, this message translates to:
@@ -4271,12 +3306,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No completed items yet.'**
   String get checklistNoneDone;
-
-  /// No description provided for @checklistNoSuggestionsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No suggested Action Items'**
-  String get checklistNoSuggestionsTitle;
 
   /// No description provided for @checklistNothingToExport.
   ///
@@ -4308,36 +3337,6 @@ abstract class AppLocalizations {
   /// **'Reorder'**
   String get checklistsReorder;
 
-  /// No description provided for @checklistsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Checklists'**
-  String get checklistsTitle;
-
-  /// No description provided for @checklistSuggestionsOutdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Outdated'**
-  String get checklistSuggestionsOutdated;
-
-  /// No description provided for @checklistSuggestionsRunning.
-  ///
-  /// In en, this message translates to:
-  /// **'Thinking about untracked suggestions...'**
-  String get checklistSuggestionsRunning;
-
-  /// No description provided for @checklistSuggestionsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Suggested Action Items'**
-  String get checklistSuggestionsTitle;
-
-  /// No description provided for @checklistUpdates.
-  ///
-  /// In en, this message translates to:
-  /// **'Checklist Updates'**
-  String get checklistUpdates;
-
   /// No description provided for @clearButton.
   ///
   /// In en, this message translates to:
@@ -4349,18 +3348,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Color:'**
   String get colorLabel;
-
-  /// No description provided for @colorPickerError.
-  ///
-  /// In en, this message translates to:
-  /// **'Invalid Hex color'**
-  String get colorPickerError;
-
-  /// No description provided for @colorPickerHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter Hex color or pick'**
-  String get colorPickerHint;
 
   /// No description provided for @commonError.
   ///
@@ -4404,12 +3391,6 @@ abstract class AppLocalizations {
   /// **'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.'**
   String get configFlagAttemptEmbeddingDescription;
 
-  /// No description provided for @configFlagAutoTranscribeDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatically transcribe audio recordings in your entries. This requires an internet connection.'**
-  String get configFlagAutoTranscribeDescription;
-
   /// No description provided for @configFlagEnableAgents.
   ///
   /// In en, this message translates to:
@@ -4433,24 +3414,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.'**
   String get configFlagEnableAiStreamingDescription;
-
-  /// No description provided for @configFlagEnableAutoTaskTldrDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatically generate summaries for your tasks to help you quickly understand their status.'**
-  String get configFlagEnableAutoTaskTldrDescription;
-
-  /// No description provided for @configFlagEnableCalendarPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable Calendar page'**
-  String get configFlagEnableCalendarPage;
-
-  /// No description provided for @configFlagEnableCalendarPageDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the Calendar page in the main navigation. View and manage your entries in a calendar view.'**
-  String get configFlagEnableCalendarPageDescription;
 
   /// No description provided for @configFlagEnableDailyOs.
   ///
@@ -4662,12 +3625,6 @@ abstract class AppLocalizations {
   /// **'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.'**
   String get configFlagShowSyncActivityIndicatorDescription;
 
-  /// No description provided for @configFlagUseCloudInferenceDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Use cloud-based AI services for enhanced features. This requires an internet connection.'**
-  String get configFlagUseCloudInferenceDescription;
-
   /// No description provided for @configFlagUseCompressedJsonAttachments.
   ///
   /// In en, this message translates to:
@@ -4764,12 +3721,6 @@ abstract class AppLocalizations {
   /// **'CANCEL'**
   String get correctionExampleCancel;
 
-  /// No description provided for @correctionExampleCaptured.
-  ///
-  /// In en, this message translates to:
-  /// **'Correction saved for AI learning'**
-  String get correctionExampleCaptured;
-
   /// No description provided for @correctionExamplePending.
   ///
   /// In en, this message translates to:
@@ -4800,12 +3751,6 @@ abstract class AppLocalizations {
   /// **'You have {count} corrections. Only the most recent {max} will be used in AI prompts. Consider deleting old or redundant examples.'**
   String correctionExamplesWarning(int count, int max);
 
-  /// No description provided for @coverArtAssign.
-  ///
-  /// In en, this message translates to:
-  /// **'Set as cover art'**
-  String get coverArtAssign;
-
   /// No description provided for @coverArtChipActive.
   ///
   /// In en, this message translates to:
@@ -4829,12 +3774,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You can close this — generation continues in the background'**
   String get coverArtGenerationDismissHint;
-
-  /// No description provided for @coverArtRemove.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove as cover art'**
-  String get coverArtRemove;
 
   /// No description provided for @createButton.
   ///
@@ -4865,12 +3804,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create new linked task...'**
   String get createNewLinkedTask;
-
-  /// No description provided for @createPromptsFirst.
-  ///
-  /// In en, this message translates to:
-  /// **'Create AI prompts first to configure them here'**
-  String get createPromptsFirst;
 
   /// No description provided for @customColor.
   ///
@@ -4926,24 +3859,6 @@ abstract class AppLocalizations {
   /// **'Choose a category...'**
   String get dailyOsChooseCategory;
 
-  /// No description provided for @dailyOsCompletionMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Great job! You completed your day.'**
-  String get dailyOsCompletionMessage;
-
-  /// No description provided for @dailyOsCopyToTomorrow.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy to tomorrow'**
-  String get dailyOsCopyToTomorrow;
-
-  /// No description provided for @dailyOsDayComplete.
-  ///
-  /// In en, this message translates to:
-  /// **'Day Complete'**
-  String get dailyOsDayComplete;
-
   /// No description provided for @dailyOsDayPlan.
   ///
   /// In en, this message translates to:
@@ -4962,18 +3877,6 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get dailyOsDelete;
 
-  /// No description provided for @dailyOsDeleteBudget.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Budget?'**
-  String get dailyOsDeleteBudget;
-
-  /// No description provided for @dailyOsDeleteBudgetConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'This will remove the time budget from your day plan.'**
-  String get dailyOsDeleteBudgetConfirm;
-
   /// No description provided for @dailyOsDeletePlannedBlock.
   ///
   /// In en, this message translates to:
@@ -4985,12 +3888,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This will remove the planned block from your timeline.'**
   String get dailyOsDeletePlannedBlockConfirm;
-
-  /// No description provided for @dailyOsDoneForToday.
-  ///
-  /// In en, this message translates to:
-  /// **'Done for today'**
-  String get dailyOsDoneForToday;
 
   /// No description provided for @dailyOsDraftMessage.
   ///
@@ -5010,42 +3907,6 @@ abstract class AppLocalizations {
   /// **'Due'**
   String get dailyOsDueTodayShort;
 
-  /// No description provided for @dailyOsDuplicateBudget.
-  ///
-  /// In en, this message translates to:
-  /// **'A budget for \"{categoryName}\" already exists'**
-  String dailyOsDuplicateBudget(String categoryName);
-
-  /// No description provided for @dailyOsDuration1h.
-  ///
-  /// In en, this message translates to:
-  /// **'1h'**
-  String get dailyOsDuration1h;
-
-  /// No description provided for @dailyOsDuration2h.
-  ///
-  /// In en, this message translates to:
-  /// **'2h'**
-  String get dailyOsDuration2h;
-
-  /// No description provided for @dailyOsDuration30m.
-  ///
-  /// In en, this message translates to:
-  /// **'30m'**
-  String get dailyOsDuration30m;
-
-  /// No description provided for @dailyOsDuration3h.
-  ///
-  /// In en, this message translates to:
-  /// **'3h'**
-  String get dailyOsDuration3h;
-
-  /// No description provided for @dailyOsDuration4h.
-  ///
-  /// In en, this message translates to:
-  /// **'4h'**
-  String get dailyOsDuration4h;
-
   /// No description provided for @dailyOsDurationHours.
   ///
   /// In en, this message translates to:
@@ -5064,12 +3925,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 minute} other{{count} minutes}}'**
   String dailyOsDurationMinutes(int count);
 
-  /// No description provided for @dailyOsEditBudget.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit Budget'**
-  String get dailyOsEditBudget;
-
   /// No description provided for @dailyOsEditPlannedBlock.
   ///
   /// In en, this message translates to:
@@ -5081,12 +3936,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'End'**
   String get dailyOsEndTime;
-
-  /// No description provided for @dailyOsEntry.
-  ///
-  /// In en, this message translates to:
-  /// **'Entry'**
-  String get dailyOsEntry;
 
   /// No description provided for @dailyOsExpandToMove.
   ///
@@ -5118,29 +3967,11 @@ abstract class AppLocalizations {
   /// **'Fold'**
   String get dailyOsFold;
 
-  /// No description provided for @dailyOsHoursMinutesPlanned.
-  ///
-  /// In en, this message translates to:
-  /// **'{hours}h {minutes}m planned'**
-  String dailyOsHoursMinutesPlanned(int hours, int minutes);
-
-  /// No description provided for @dailyOsHoursPlanned.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 hour planned} other{{count} hours planned}}'**
-  String dailyOsHoursPlanned(int count);
-
   /// No description provided for @dailyOsInvalidTimeRange.
   ///
   /// In en, this message translates to:
   /// **'Invalid time range'**
   String get dailyOsInvalidTimeRange;
-
-  /// No description provided for @dailyOsMinutesPlanned.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} min planned'**
-  String dailyOsMinutesPlanned(int count);
 
   /// No description provided for @dailyOsNearLimit.
   ///
@@ -5243,12 +4074,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Planned'**
   String get dailyOsPlanned;
-
-  /// No description provided for @dailyOsPlannedDuration.
-  ///
-  /// In en, this message translates to:
-  /// **'Planned Duration'**
-  String get dailyOsPlannedDuration;
 
   /// No description provided for @dailyOsPlanWithoutVoice.
   ///
@@ -5405,18 +4230,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uncategorized'**
   String get dailyOsUncategorized;
-
-  /// No description provided for @dailyOsViewModeClassic.
-  ///
-  /// In en, this message translates to:
-  /// **'Classic'**
-  String get dailyOsViewModeClassic;
-
-  /// No description provided for @dailyOsViewModeDailyOs.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily OS'**
-  String get dailyOsViewModeDailyOs;
 
   /// No description provided for @dashboardActiveLabel.
   ///
@@ -5934,12 +4747,6 @@ abstract class AppLocalizations {
   /// **'Filled'**
   String get designSystemFilledLabel;
 
-  /// No description provided for @designSystemHeaderApiConfigurationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'API Configuration'**
-  String get designSystemHeaderApiConfigurationTitle;
-
   /// No description provided for @designSystemHeaderApiDocumentationLabel.
   ///
   /// In en, this message translates to:
@@ -5958,29 +4765,11 @@ abstract class AppLocalizations {
   /// **'Desktop'**
   String get designSystemHeaderDesktopSectionTitle;
 
-  /// No description provided for @designSystemHeaderFigmaDefaultLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Figma default'**
-  String get designSystemHeaderFigmaDefaultLabel;
-
   /// No description provided for @designSystemHeaderHelpActionLabel.
   ///
   /// In en, this message translates to:
   /// **'Help'**
   String get designSystemHeaderHelpActionLabel;
-
-  /// No description provided for @designSystemHeaderLongTitleExample.
-  ///
-  /// In en, this message translates to:
-  /// **'This is a very long page title that should truncate before the action area'**
-  String get designSystemHeaderLongTitleExample;
-
-  /// No description provided for @designSystemHeaderLongTitleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Long title'**
-  String get designSystemHeaderLongTitleLabel;
 
   /// No description provided for @designSystemHeaderMobileSectionTitle.
   ///
@@ -6114,29 +4903,11 @@ abstract class AppLocalizations {
   /// **'Medium'**
   String get designSystemMediumLabel;
 
-  /// No description provided for @designSystemMyDailyDeepWorkTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Deep work'**
-  String get designSystemMyDailyDeepWorkTitle;
-
-  /// No description provided for @designSystemMyDailyDurationHoursCompact.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}h'**
-  String designSystemMyDailyDurationHoursCompact(int count);
-
   /// No description provided for @designSystemMyDailyDurationHoursMinutesCompact.
   ///
   /// In en, this message translates to:
   /// **'{hours}h {minutes}m'**
   String designSystemMyDailyDurationHoursMinutesCompact(int hours, int minutes);
-
-  /// No description provided for @designSystemMyDailyDurationMinutesCompact.
-  ///
-  /// In en, this message translates to:
-  /// **'{count}m'**
-  String designSystemMyDailyDurationMinutesCompact(int count);
 
   /// No description provided for @designSystemMyDailyEditPlanLabel.
   ///
@@ -6384,12 +5155,6 @@ abstract class AppLocalizations {
   /// **'Plain'**
   String get designSystemSpinnerPlainLabel;
 
-  /// No description provided for @designSystemSpinnerSkeletonLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Skeleton'**
-  String get designSystemSpinnerSkeletonLabel;
-
   /// No description provided for @designSystemSpinnerSkeletonPulseLabel.
   ///
   /// In en, this message translates to:
@@ -6491,12 +5256,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pressed'**
   String get designSystemTaskListPressedLabel;
-
-  /// No description provided for @designSystemTaskListSampleCategory.
-  ///
-  /// In en, this message translates to:
-  /// **'Study'**
-  String get designSystemTaskListSampleCategory;
 
   /// No description provided for @designSystemTaskListSampleTime.
   ///
@@ -6660,12 +5419,6 @@ abstract class AppLocalizations {
   /// **'Select a project to view details'**
   String get desktopEmptyStateSelectProject;
 
-  /// No description provided for @desktopEmptyStateSelectSetting.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a setting to view details'**
-  String get desktopEmptyStateSelectSetting;
-
   /// No description provided for @desktopEmptyStateSelectTask.
   ///
   /// In en, this message translates to:
@@ -6683,12 +5436,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to delete device: {error}'**
   String deviceDeleteFailed(String error);
-
-  /// No description provided for @done.
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get done;
 
   /// No description provided for @doneButton.
   ///
@@ -6726,89 +5473,11 @@ abstract class AppLocalizations {
   /// **'Deselect All'**
   String get embeddingUnselectAll;
 
-  /// No description provided for @enhancedPromptFormAdditionalDetailsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Additional Details'**
-  String get enhancedPromptFormAdditionalDetailsTitle;
-
-  /// No description provided for @enhancedPromptFormAiResponseTypeSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Format of the expected response'**
-  String get enhancedPromptFormAiResponseTypeSubtitle;
-
-  /// No description provided for @enhancedPromptFormBasicConfigurationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Basic Configuration'**
-  String get enhancedPromptFormBasicConfigurationTitle;
-
-  /// No description provided for @enhancedPromptFormConfigurationOptionsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Configuration Options'**
-  String get enhancedPromptFormConfigurationOptionsTitle;
-
-  /// No description provided for @enhancedPromptFormDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Create custom prompts that can be used with your AI models to generate specific types of responses'**
-  String get enhancedPromptFormDescription;
-
-  /// No description provided for @enhancedPromptFormDescriptionHelperText.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional notes about this prompt\'s purpose and usage'**
-  String get enhancedPromptFormDescriptionHelperText;
-
-  /// No description provided for @enhancedPromptFormDisplayNameHelperText.
-  ///
-  /// In en, this message translates to:
-  /// **'A descriptive name for this prompt template'**
-  String get enhancedPromptFormDisplayNameHelperText;
-
   /// No description provided for @enhancedPromptFormPreconfiguredPromptDescription.
   ///
   /// In en, this message translates to:
   /// **'Choose from ready-made prompt templates'**
   String get enhancedPromptFormPreconfiguredPromptDescription;
-
-  /// No description provided for @enhancedPromptFormPromptConfigurationTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt Configuration'**
-  String get enhancedPromptFormPromptConfigurationTitle;
-
-  /// No description provided for @enhancedPromptFormQuickStartDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Start with a pre-built template to save time'**
-  String get enhancedPromptFormQuickStartDescription;
-
-  /// No description provided for @enhancedPromptFormQuickStartTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Quick Start'**
-  String get enhancedPromptFormQuickStartTitle;
-
-  /// No description provided for @enhancedPromptFormRequiredInputDataSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Type of data this prompt expects'**
-  String get enhancedPromptFormRequiredInputDataSubtitle;
-
-  /// No description provided for @enhancedPromptFormSystemMessageHelperText.
-  ///
-  /// In en, this message translates to:
-  /// **'Instructions that define the AI\'s behavior and response style'**
-  String get enhancedPromptFormSystemMessageHelperText;
-
-  /// No description provided for @enhancedPromptFormUserMessageHelperText.
-  ///
-  /// In en, this message translates to:
-  /// **'The main prompt text.'**
-  String get enhancedPromptFormUserMessageHelperText;
 
   /// No description provided for @enterCategoryName.
   ///
@@ -6929,12 +5598,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Workout'**
   String get entryTypeLabelWorkoutEntry;
-
-  /// No description provided for @errorLoadingPrompts.
-  ///
-  /// In en, this message translates to:
-  /// **'Error loading prompts'**
-  String get errorLoadingPrompts;
 
   /// No description provided for @eventNameLabel.
   ///
@@ -7098,30 +5761,6 @@ abstract class AppLocalizations {
   /// **'Later today'**
   String get habitsPendingLaterHeader;
 
-  /// No description provided for @imageGenerationAcceptButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Accept as Cover Art'**
-  String get imageGenerationAcceptButton;
-
-  /// No description provided for @imageGenerationCancelEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get imageGenerationCancelEdit;
-
-  /// No description provided for @imageGenerationEditPromptButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit Prompt'**
-  String get imageGenerationEditPromptButton;
-
-  /// No description provided for @imageGenerationEditPromptLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit prompt'**
-  String get imageGenerationEditPromptLabel;
-
   /// No description provided for @imageGenerationError.
   ///
   /// In en, this message translates to:
@@ -7133,24 +5772,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generating image...'**
   String get imageGenerationGenerating;
-
-  /// No description provided for @imageGenerationModalTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Generated Image'**
-  String get imageGenerationModalTitle;
-
-  /// No description provided for @imageGenerationRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get imageGenerationRetry;
-
-  /// No description provided for @imageGenerationSaveError.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to save image: {error}'**
-  String imageGenerationSaveError(String error);
 
   /// No description provided for @imageGenerationWithReferences.
   ///
@@ -7211,12 +5832,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create Profile'**
   String get inferenceProfileCreateTitle;
-
-  /// No description provided for @inferenceProfileDeleteInUseMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'This profile is in use by agents or templates and cannot be deleted.'**
-  String get inferenceProfileDeleteInUseMessage;
 
   /// No description provided for @inferenceProfileDescriptionLabel.
   ///
@@ -7488,29 +6103,11 @@ abstract class AppLocalizations {
   /// **'Timer'**
   String get journalLinkedEntriesActivityFilterTimer;
 
-  /// No description provided for @journalLinkedEntriesAiLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Show AI-generated entries:'**
-  String get journalLinkedEntriesAiLabel;
-
   /// No description provided for @journalLinkedEntriesFilterModalTitle.
   ///
   /// In en, this message translates to:
   /// **'Filter & Sort'**
   String get journalLinkedEntriesFilterModalTitle;
-
-  /// No description provided for @journalLinkedEntriesHiddenLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Show hidden entries:'**
-  String get journalLinkedEntriesHiddenLabel;
-
-  /// No description provided for @journalLinkedEntriesLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Linked Entries'**
-  String get journalLinkedEntriesLabel;
 
   /// No description provided for @journalLinkedEntriesShowHidden.
   ///
@@ -7566,23 +6163,11 @@ abstract class AppLocalizations {
   /// **'Search journal...'**
   String get journalSearchHint;
 
-  /// No description provided for @journalShareAudioHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Share audio'**
-  String get journalShareAudioHint;
-
   /// No description provided for @journalShareHint.
   ///
   /// In en, this message translates to:
   /// **'Share'**
   String get journalShareHint;
-
-  /// No description provided for @journalSharePhotoHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Share photo'**
-  String get journalSharePhotoHint;
 
   /// No description provided for @journalShowLinkHint.
   ///
@@ -7632,23 +6217,11 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to unlink this entry?'**
   String get journalUnlinkQuestion;
 
-  /// No description provided for @legacyPromptsSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Legacy Prompts'**
-  String get legacyPromptsSectionTitle;
-
   /// No description provided for @linkedFromCaption.
   ///
   /// In en, this message translates to:
   /// **'from'**
   String get linkedFromCaption;
-
-  /// No description provided for @linkedFromLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'LINKED FROM'**
-  String get linkedFromLabel;
 
   /// No description provided for @linkedTaskImageBadge.
   ///
@@ -7674,53 +6247,11 @@ abstract class AppLocalizations {
   /// **'to'**
   String get linkedToCaption;
 
-  /// No description provided for @linkedToLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'LINKED TO'**
-  String get linkedToLabel;
-
   /// No description provided for @linkExistingTask.
   ///
   /// In en, this message translates to:
   /// **'Link existing task...'**
   String get linkExistingTask;
-
-  /// No description provided for @logsFoundCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Found {count} matching {count, plural, =1{log} other{logs}}'**
-  String logsFoundCount(int count);
-
-  /// No description provided for @logsLineCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'Log line copied'**
-  String get logsLineCopied;
-
-  /// No description provided for @logsNoLogsForDate.
-  ///
-  /// In en, this message translates to:
-  /// **'No logs for {date}'**
-  String logsNoLogsForDate(String date);
-
-  /// No description provided for @logsNoMatch.
-  ///
-  /// In en, this message translates to:
-  /// **'No logs match your search'**
-  String get logsNoMatch;
-
-  /// No description provided for @logsReload.
-  ///
-  /// In en, this message translates to:
-  /// **'Reload'**
-  String get logsReload;
-
-  /// No description provided for @logsSearchHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Search all logs...'**
-  String get logsSearchHint;
 
   /// No description provided for @maintenanceDeleteAgentDb.
   ///
@@ -7960,12 +6491,6 @@ abstract class AppLocalizations {
   /// **'Manage links...'**
   String get manageLinks;
 
-  /// No description provided for @matrixStatsError.
-  ///
-  /// In en, this message translates to:
-  /// **'Error loading Matrix stats'**
-  String get matrixStatsError;
-
   /// No description provided for @measurableDeleteConfirm.
   ///
   /// In en, this message translates to:
@@ -8044,12 +6569,6 @@ abstract class AppLocalizations {
   /// **'{count} model{count, plural, =1{} other{s}} selected'**
   String modelManagementSelectedCount(int count);
 
-  /// No description provided for @modelsSettingsPageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Models'**
-  String get modelsSettingsPageTitle;
-
   /// No description provided for @multiSelectAddButton.
   ///
   /// In en, this message translates to:
@@ -8116,29 +6635,11 @@ abstract class AppLocalizations {
   /// **'{count} AI response{count, plural, =1{} other{s}}'**
   String nestedAiResponsesTitle(int count);
 
-  /// No description provided for @noAgentProfileError.
-  ///
-  /// In en, this message translates to:
-  /// **'No agent profile configured for this task. Assign an agent with a profile first.'**
-  String get noAgentProfileError;
-
   /// No description provided for @noDefaultLanguage.
   ///
   /// In en, this message translates to:
   /// **'No default language'**
   String get noDefaultLanguage;
-
-  /// No description provided for @noPromptsAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'No prompts available'**
-  String get noPromptsAvailable;
-
-  /// No description provided for @noPromptsForType.
-  ///
-  /// In en, this message translates to:
-  /// **'No prompts available for this type'**
-  String get noPromptsForType;
 
   /// No description provided for @noTasksFound.
   ///
@@ -8205,12 +6706,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t load the outbox. Pull to refresh and try again.'**
   String get outboxMonitorFetchFailed;
-
-  /// No description provided for @outboxMonitorLabelAll.
-  ///
-  /// In en, this message translates to:
-  /// **'all'**
-  String get outboxMonitorLabelAll;
 
   /// No description provided for @outboxMonitorLabelError.
   ///
@@ -8295,12 +6790,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subject'**
   String get outboxMonitorSubjectLabel;
-
-  /// No description provided for @outboxMonitorSwitchLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'enabled'**
-  String get outboxMonitorSwitchLabel;
 
   /// No description provided for @outboxMonitorVolumeChartTitle.
   ///
@@ -8409,60 +6898,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Watch'**
   String get projectHealthBandWatch;
-
-  /// No description provided for @projectHealthReasonCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'The project is complete.'**
-  String get projectHealthReasonCompleted;
-
-  /// No description provided for @projectHealthReasonNoLinkedTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'No linked tasks yet.'**
-  String get projectHealthReasonNoLinkedTasks;
-
-  /// No description provided for @projectHealthReasonNoRecentProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'No recent progress.'**
-  String get projectHealthReasonNoRecentProgress;
-
-  /// No description provided for @projectHealthReasonOnHold.
-  ///
-  /// In en, this message translates to:
-  /// **'The project is on hold.'**
-  String get projectHealthReasonOnHold;
-
-  /// No description provided for @projectHealthReasonOverdueTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} task is overdue} other{{count} tasks are overdue}}'**
-  String projectHealthReasonOverdueTasks(int count);
-
-  /// No description provided for @projectHealthReasonStalledTasks.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} task is stalled} other{{count} tasks are stalled}}'**
-  String projectHealthReasonStalledTasks(int count);
-
-  /// No description provided for @projectHealthReasonSteadyProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'The project is moving steadily.'**
-  String get projectHealthReasonSteadyProgress;
-
-  /// No description provided for @projectHealthReasonSummaryOutdated.
-  ///
-  /// In en, this message translates to:
-  /// **'The project summary is outdated.'**
-  String get projectHealthReasonSummaryOutdated;
-
-  /// No description provided for @projectHealthReasonTargetDatePassed.
-  ///
-  /// In en, this message translates to:
-  /// **'The target date has passed.'**
-  String get projectHealthReasonTargetDatePassed;
 
   /// No description provided for @projectHealthSectionTitle.
   ///
@@ -8638,12 +7073,6 @@ abstract class AppLocalizations {
   /// **'Project Tasks'**
   String get projectShowcaseProjectTasksTab;
 
-  /// No description provided for @projectShowcaseRecommendationsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recommendations'**
-  String get projectShowcaseRecommendationsTitle;
-
   /// No description provided for @projectShowcaseSearchHint.
   ///
   /// In en, this message translates to:
@@ -8752,119 +7181,11 @@ abstract class AppLocalizations {
   /// **'Project title cannot be empty'**
   String get projectTitleRequired;
 
-  /// No description provided for @promptAddOrRemoveModelsButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add or Remove Models'**
-  String get promptAddOrRemoveModelsButton;
-
-  /// No description provided for @promptAddPageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Prompt'**
-  String get promptAddPageTitle;
-
-  /// No description provided for @promptAiResponseTypeDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Format of the expected response'**
-  String get promptAiResponseTypeDescription;
-
-  /// No description provided for @promptAiResponseTypeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Response Type'**
-  String get promptAiResponseTypeLabel;
-
-  /// No description provided for @promptBehaviorDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure how the prompt processes and responds'**
-  String get promptBehaviorDescription;
-
-  /// No description provided for @promptBehaviorTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt Behavior'**
-  String get promptBehaviorTitle;
-
-  /// No description provided for @promptCancelButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get promptCancelButton;
-
-  /// No description provided for @promptContentDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Define the system and user prompts'**
-  String get promptContentDescription;
-
-  /// No description provided for @promptContentTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt Content'**
-  String get promptContentTitle;
-
   /// No description provided for @promptDefaultModelBadge.
   ///
   /// In en, this message translates to:
   /// **'Default'**
   String get promptDefaultModelBadge;
-
-  /// No description provided for @promptDescriptionHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Describe this prompt'**
-  String get promptDescriptionHint;
-
-  /// No description provided for @promptDescriptionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Description'**
-  String get promptDescriptionLabel;
-
-  /// No description provided for @promptDetailsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Basic information about this prompt'**
-  String get promptDetailsDescription;
-
-  /// No description provided for @promptDetailsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Prompt Details'**
-  String get promptDetailsTitle;
-
-  /// No description provided for @promptDisplayNameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a friendly name'**
-  String get promptDisplayNameHint;
-
-  /// No description provided for @promptDisplayNameLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Display Name'**
-  String get promptDisplayNameLabel;
-
-  /// No description provided for @promptEditLoadError.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load prompt'**
-  String get promptEditLoadError;
-
-  /// No description provided for @promptEditPageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit Prompt'**
-  String get promptEditPageTitle;
-
-  /// No description provided for @promptErrorLoadingModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Error loading model'**
-  String get promptErrorLoadingModel;
 
   /// No description provided for @promptGenerationCardTitle.
   ///
@@ -8902,137 +7223,11 @@ abstract class AppLocalizations {
   /// **'Full Prompt:'**
   String get promptGenerationFullPromptLabel;
 
-  /// No description provided for @promptGoBackButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Go Back'**
-  String get promptGoBackButton;
-
-  /// No description provided for @promptLoadingModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading model...'**
-  String get promptLoadingModel;
-
-  /// No description provided for @promptModelSelectionDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose compatible models for this prompt'**
-  String get promptModelSelectionDescription;
-
-  /// No description provided for @promptModelSelectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Model Selection'**
-  String get promptModelSelectionTitle;
-
-  /// No description provided for @promptNoModelsSelectedError.
-  ///
-  /// In en, this message translates to:
-  /// **'No models selected. Select at least one model.'**
-  String get promptNoModelsSelectedError;
-
-  /// No description provided for @promptReasoningModeDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable for prompts requiring deep thinking'**
-  String get promptReasoningModeDescription;
-
-  /// No description provided for @promptReasoningModeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reasoning Mode'**
-  String get promptReasoningModeLabel;
-
-  /// No description provided for @promptRequiredInputDataDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Type of data this prompt expects'**
-  String get promptRequiredInputDataDescription;
-
-  /// No description provided for @promptRequiredInputDataLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Required Input Data'**
-  String get promptRequiredInputDataLabel;
-
-  /// No description provided for @promptSaveButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Save Prompt'**
-  String get promptSaveButton;
-
-  /// No description provided for @promptSelectInputTypeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select input type'**
-  String get promptSelectInputTypeHint;
-
   /// No description provided for @promptSelectionModalTitle.
   ///
   /// In en, this message translates to:
   /// **'Select Preconfigured Prompt'**
   String get promptSelectionModalTitle;
-
-  /// No description provided for @promptSelectModelsButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Select Models'**
-  String get promptSelectModelsButton;
-
-  /// No description provided for @promptSelectResponseTypeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select response type'**
-  String get promptSelectResponseTypeHint;
-
-  /// No description provided for @promptSetDefaultButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Set Default'**
-  String get promptSetDefaultButton;
-
-  /// No description provided for @promptSettingsPageTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Prompts'**
-  String get promptSettingsPageTitle;
-
-  /// No description provided for @promptSystemPromptHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the system prompt...'**
-  String get promptSystemPromptHint;
-
-  /// No description provided for @promptSystemPromptLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'System Prompt'**
-  String get promptSystemPromptLabel;
-
-  /// No description provided for @promptTryAgainMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Please try again or contact support'**
-  String get promptTryAgainMessage;
-
-  /// No description provided for @promptUsePreconfiguredButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Use Preconfigured Prompt'**
-  String get promptUsePreconfiguredButton;
-
-  /// No description provided for @promptUserPromptHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the user prompt...'**
-  String get promptUserPromptHint;
-
-  /// No description provided for @promptUserPromptLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'User Prompt'**
-  String get promptUserPromptLabel;
 
   /// No description provided for @provisionedSyncBundleImported.
   ///
@@ -9208,12 +7403,6 @@ abstract class AppLocalizations {
   /// **'Catch-up failed: {reason}'**
   String queueCatchUpNowError(String reason);
 
-  /// No description provided for @queueCatchUpNowRunning.
-  ///
-  /// In en, this message translates to:
-  /// **'Bridging recent gap…'**
-  String get queueCatchUpNowRunning;
-
   /// No description provided for @queueDepthCardEmpty.
   ///
   /// In en, this message translates to:
@@ -9231,12 +7420,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inbound queue'**
   String get queueDepthCardTitle;
-
-  /// No description provided for @queueFetchAllHistoryButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Fetch all history'**
-  String get queueFetchAllHistoryButton;
 
   /// No description provided for @queueFetchAllHistoryCancel.
   ///
@@ -9412,12 +7595,6 @@ abstract class AppLocalizations {
   /// **'Search tasks...'**
   String get searchTasksHint;
 
-  /// No description provided for @selectAllowedPrompts.
-  ///
-  /// In en, this message translates to:
-  /// **'Select which prompts are allowed for this category'**
-  String get selectAllowedPrompts;
-
   /// No description provided for @selectButton.
   ///
   /// In en, this message translates to:
@@ -9550,18 +7727,6 @@ abstract class AppLocalizations {
   /// **'Build Type'**
   String get settingsAboutBuildType;
 
-  /// No description provided for @settingsAboutBuiltWithFlutter.
-  ///
-  /// In en, this message translates to:
-  /// **'Built with Flutter and love for personal journaling.'**
-  String get settingsAboutBuiltWithFlutter;
-
-  /// No description provided for @settingsAboutCredits.
-  ///
-  /// In en, this message translates to:
-  /// **'Credits'**
-  String get settingsAboutCredits;
-
   /// No description provided for @settingsAboutJournalEntries.
   ///
   /// In en, this message translates to:
@@ -9573,12 +7738,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Platform'**
   String get settingsAboutPlatform;
-
-  /// No description provided for @settingsAboutThankYou.
-  ///
-  /// In en, this message translates to:
-  /// **'Thank you for using Lotti!'**
-  String get settingsAboutThankYou;
 
   /// No description provided for @settingsAboutTitle.
   ///
@@ -9610,23 +7769,11 @@ abstract class AppLocalizations {
   /// **'Import health-related data from external sources'**
   String get settingsAdvancedHealthImportSubtitle;
 
-  /// No description provided for @settingsAdvancedLogsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Access and review application logs for debugging'**
-  String get settingsAdvancedLogsSubtitle;
-
   /// No description provided for @settingsAdvancedMaintenanceSubtitle.
   ///
   /// In en, this message translates to:
   /// **'Perform maintenance tasks to optimize application performance'**
   String get settingsAdvancedMaintenanceSubtitle;
-
-  /// No description provided for @settingsAdvancedMatrixSyncSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure and manage Matrix synchronization settings'**
-  String get settingsAdvancedMatrixSyncSubtitle;
 
   /// No description provided for @settingsAdvancedOutboxSubtitle.
   ///
@@ -9676,18 +7823,6 @@ abstract class AppLocalizations {
   /// **'Shared agent blueprints'**
   String get settingsAgentsTemplatesSubtitle;
 
-  /// No description provided for @settingsAiApiKeys.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Inference Providers'**
-  String get settingsAiApiKeys;
-
-  /// No description provided for @settingsAiModels.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Models'**
-  String get settingsAiModels;
-
   /// No description provided for @settingsAiProfilesSubtitle.
   ///
   /// In en, this message translates to:
@@ -9712,12 +7847,6 @@ abstract class AppLocalizations {
   /// **'AI Settings'**
   String get settingsAiTitle;
 
-  /// No description provided for @settingsCategoriesAddTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Category'**
-  String get settingsCategoriesAddTooltip;
-
   /// No description provided for @settingsCategoriesCreateTitle.
   ///
   /// In en, this message translates to:
@@ -9729,12 +7858,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Category Details'**
   String get settingsCategoriesDetailsLabel;
-
-  /// No description provided for @settingsCategoriesDuplicateError.
-  ///
-  /// In en, this message translates to:
-  /// **'Category exists already'**
-  String get settingsCategoriesDuplicateError;
 
   /// No description provided for @settingsCategoriesEmptyState.
   ///
@@ -9753,24 +7876,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error loading categories'**
   String get settingsCategoriesErrorLoading;
-
-  /// No description provided for @settingsCategoriesHasAiSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'AI settings'**
-  String get settingsCategoriesHasAiSettings;
-
-  /// No description provided for @settingsCategoriesHasAutomaticPrompts.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic AI'**
-  String get settingsCategoriesHasAutomaticPrompts;
-
-  /// No description provided for @settingsCategoriesHasDefaultLanguage.
-  ///
-  /// In en, this message translates to:
-  /// **'Default language'**
-  String get settingsCategoriesHasDefaultLanguage;
 
   /// No description provided for @settingsCategoriesNameLabel.
   ///
@@ -9946,12 +8051,6 @@ abstract class AppLocalizations {
   /// **'End'**
   String get settingsHealthImportToDate;
 
-  /// No description provided for @settingsLabelsActionsTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Label actions'**
-  String get settingsLabelsActionsTooltip;
-
   /// No description provided for @settingsLabelsCategoriesAdd.
   ///
   /// In en, this message translates to:
@@ -9988,23 +8087,11 @@ abstract class AppLocalizations {
   /// **'Quick presets'**
   String get settingsLabelsColorSubheading;
 
-  /// No description provided for @settingsLabelsCreateSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Label created successfully'**
-  String get settingsLabelsCreateSuccess;
-
   /// No description provided for @settingsLabelsCreateTitle.
   ///
   /// In en, this message translates to:
   /// **'Create label'**
   String get settingsLabelsCreateTitle;
-
-  /// No description provided for @settingsLabelsDeleteCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get settingsLabelsDeleteCancel;
 
   /// No description provided for @settingsLabelsDeleteConfirmAction.
   ///
@@ -10078,12 +8165,6 @@ abstract class AppLocalizations {
   /// **'Label name'**
   String get settingsLabelsNameLabel;
 
-  /// No description provided for @settingsLabelsNameRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Label name must not be empty.'**
-  String get settingsLabelsNameRequired;
-
   /// No description provided for @settingsLabelsNoMatchCreate.
   ///
   /// In en, this message translates to:
@@ -10125,12 +8206,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Labels'**
   String get settingsLabelsTitle;
-
-  /// No description provided for @settingsLabelsUpdateSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Label updated'**
-  String get settingsLabelsUpdateSuccess;
 
   /// No description provided for @settingsLabelsUsageCount.
   ///
@@ -10210,18 +8285,6 @@ abstract class AppLocalizations {
   /// **'Cross-device sync operations'**
   String get settingsLoggingSyncSubtitle;
 
-  /// No description provided for @settingsLoggingViewLogsSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Browse and search all log entries'**
-  String get settingsLoggingViewLogsSubtitle;
-
-  /// No description provided for @settingsLogsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Logs'**
-  String get settingsLogsTitle;
-
   /// No description provided for @settingsMaintenanceTitle.
   ///
   /// In en, this message translates to:
@@ -10246,29 +8309,11 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get settingsMatrixCancel;
 
-  /// No description provided for @settingsMatrixCancelVerificationLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel Verification'**
-  String get settingsMatrixCancelVerificationLabel;
-
   /// No description provided for @settingsMatrixContinueVerificationLabel.
   ///
   /// In en, this message translates to:
   /// **'Accept on other device to continue'**
   String get settingsMatrixContinueVerificationLabel;
-
-  /// No description provided for @settingsMatrixCount.
-  ///
-  /// In en, this message translates to:
-  /// **'Count'**
-  String get settingsMatrixCount;
-
-  /// No description provided for @settingsMatrixDeleteLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get settingsMatrixDeleteLabel;
 
   /// No description provided for @settingsMatrixDiagnosticCopied.
   ///
@@ -10300,24 +8345,6 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get settingsMatrixDone;
 
-  /// No description provided for @settingsMatrixEnterValidUrl.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter a valid URL'**
-  String get settingsMatrixEnterValidUrl;
-
-  /// No description provided for @settingsMatrixHomeserverConfigTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Matrix Homeserver Setup'**
-  String get settingsMatrixHomeserverConfigTitle;
-
-  /// No description provided for @settingsMatrixHomeServerLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Homeserver'**
-  String get settingsMatrixHomeServerLabel;
-
   /// No description provided for @settingsMatrixLastUpdated.
   ///
   /// In en, this message translates to:
@@ -10329,24 +8356,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unverified devices'**
   String get settingsMatrixListUnverifiedLabel;
-
-  /// No description provided for @settingsMatrixLoginButtonLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Login'**
-  String get settingsMatrixLoginButtonLabel;
-
-  /// No description provided for @settingsMatrixLoginFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Login failed'**
-  String get settingsMatrixLoginFailed;
-
-  /// No description provided for @settingsMatrixLogoutButtonLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Logout'**
-  String get settingsMatrixLogoutButtonLabel;
 
   /// No description provided for @settingsMatrixMaintenanceSubtitle.
   ///
@@ -10360,29 +8369,11 @@ abstract class AppLocalizations {
   /// **'Maintenance'**
   String get settingsMatrixMaintenanceTitle;
 
-  /// No description provided for @settingsMatrixMessageType.
-  ///
-  /// In en, this message translates to:
-  /// **'Message Type'**
-  String get settingsMatrixMessageType;
-
-  /// No description provided for @settingsMatrixMetric.
-  ///
-  /// In en, this message translates to:
-  /// **'Metric'**
-  String get settingsMatrixMetric;
-
   /// No description provided for @settingsMatrixMetrics.
   ///
   /// In en, this message translates to:
   /// **'Sync Metrics'**
   String get settingsMatrixMetrics;
-
-  /// No description provided for @settingsMatrixMetricsNoData.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync Metrics: no data'**
-  String get settingsMatrixMetricsNoData;
 
   /// No description provided for @settingsMatrixNextPage.
   ///
@@ -10396,41 +8387,11 @@ abstract class AppLocalizations {
   /// **'No unverified devices'**
   String get settingsMatrixNoUnverifiedLabel;
 
-  /// No description provided for @settingsMatrixPasswordLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Password'**
-  String get settingsMatrixPasswordLabel;
-
-  /// No description provided for @settingsMatrixPasswordTooShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Password too short'**
-  String get settingsMatrixPasswordTooShort;
-
   /// No description provided for @settingsMatrixPreviousPage.
   ///
   /// In en, this message translates to:
   /// **'Previous Page'**
   String get settingsMatrixPreviousPage;
-
-  /// No description provided for @settingsMatrixQrTextPage.
-  ///
-  /// In en, this message translates to:
-  /// **'Scan this QR code to invite device to a sync room.'**
-  String get settingsMatrixQrTextPage;
-
-  /// No description provided for @settingsMatrixRefresh.
-  ///
-  /// In en, this message translates to:
-  /// **'Refresh'**
-  String get settingsMatrixRefresh;
-
-  /// No description provided for @settingsMatrixRoomConfigTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Matrix Sync Room Setup'**
-  String get settingsMatrixRoomConfigTitle;
 
   /// No description provided for @settingsMatrixRoomInviteMessage.
   ///
@@ -10462,12 +8423,6 @@ abstract class AppLocalizations {
   /// **'Matrix Stats'**
   String get settingsMatrixStatsTitle;
 
-  /// No description provided for @settingsMatrixSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure end-to-end encrypted sync'**
-  String get settingsMatrixSubtitle;
-
   /// No description provided for @settingsMatrixTitle.
   ///
   /// In en, this message translates to:
@@ -10479,24 +8434,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unverified Devices'**
   String get settingsMatrixUnverifiedDevicesPage;
-
-  /// No description provided for @settingsMatrixUserLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'User'**
-  String get settingsMatrixUserLabel;
-
-  /// No description provided for @settingsMatrixUserNameTooShort.
-  ///
-  /// In en, this message translates to:
-  /// **'User name too short'**
-  String get settingsMatrixUserNameTooShort;
-
-  /// No description provided for @settingsMatrixValue.
-  ///
-  /// In en, this message translates to:
-  /// **'Value'**
-  String get settingsMatrixValue;
 
   /// No description provided for @settingsMatrixVerificationCancelledLabel.
   ///
@@ -10560,12 +8497,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Measurable Details'**
   String get settingsMeasurableDetailsLabel;
-
-  /// No description provided for @settingsMeasurableFavoriteLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Favorite: '**
-  String get settingsMeasurableFavoriteLabel;
 
   /// No description provided for @settingsMeasurableNameLabel.
   ///
@@ -10657,30 +8588,6 @@ abstract class AppLocalizations {
   /// **'Reset In‑App Hints'**
   String get settingsResetHintsTitle;
 
-  /// No description provided for @settingsSpeechAudioWithoutTranscript.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio entries without transcript:'**
-  String get settingsSpeechAudioWithoutTranscript;
-
-  /// No description provided for @settingsSpeechAudioWithoutTranscriptButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Find & transcribe'**
-  String get settingsSpeechAudioWithoutTranscriptButton;
-
-  /// No description provided for @settingsSpeechLastActivity.
-  ///
-  /// In en, this message translates to:
-  /// **'Last transcription activity:'**
-  String get settingsSpeechLastActivity;
-
-  /// No description provided for @settingsSpeechModelSelectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Whisper speech recognition model:'**
-  String get settingsSpeechModelSelectionTitle;
-
   /// No description provided for @settingsSyncConflictsSubtitle.
   ///
   /// In en, this message translates to:
@@ -10765,24 +8672,6 @@ abstract class AppLocalizations {
   /// **'Panel not yet implemented'**
   String get settingsV2UnimplementedTitle;
 
-  /// No description provided for @settingsWhatsNewCaughtUpBody.
-  ///
-  /// In en, this message translates to:
-  /// **'No new release notes to read — the latest version has already been viewed.'**
-  String get settingsWhatsNewCaughtUpBody;
-
-  /// No description provided for @settingsWhatsNewCaughtUpHeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'You\'re all caught up'**
-  String get settingsWhatsNewCaughtUpHeadline;
-
-  /// No description provided for @settingsWhatsNewOpenAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Open release notes'**
-  String get settingsWhatsNewOpenAction;
-
   /// No description provided for @settingsWhatsNewSubtitle.
   ///
   /// In en, this message translates to:
@@ -10795,18 +8684,6 @@ abstract class AppLocalizations {
   /// **'What\'s New'**
   String get settingsWhatsNewTitle;
 
-  /// No description provided for @settingsWhatsNewUnseenBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Open the release notes to see what\'s new since your last visit.'**
-  String get settingsWhatsNewUnseenBody;
-
-  /// No description provided for @settingsWhatsNewUnseenHeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 new release} other{{count} new releases}}'**
-  String settingsWhatsNewUnseenHeadline(int count);
-
   /// No description provided for @settingThemingDark.
   ///
   /// In en, this message translates to:
@@ -10818,12 +8695,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Light Theme'**
   String get settingThemingLight;
-
-  /// No description provided for @showCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Show completed'**
-  String get showCompleted;
 
   /// No description provided for @sidebarRunningTimerLabel.
   ///
@@ -10860,12 +8731,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wakes'**
   String get sidebarWakesHeader;
-
-  /// No description provided for @sidebarWakesMore.
-  ///
-  /// In en, this message translates to:
-  /// **'+{count} more'**
-  String sidebarWakesMore(int count);
 
   /// No description provided for @sidebarWakesNow.
   ///
@@ -10921,12 +8786,6 @@ abstract class AppLocalizations {
   /// **'Large dictionary ({count} terms) may increase API costs'**
   String speechDictionaryWarning(Object count);
 
-  /// No description provided for @speechModalAddTranscription.
-  ///
-  /// In en, this message translates to:
-  /// **'Add Transcription'**
-  String get speechModalAddTranscription;
-
   /// No description provided for @speechModalSelectLanguage.
   ///
   /// In en, this message translates to:
@@ -10939,29 +8798,11 @@ abstract class AppLocalizations {
   /// **'Speech Recognition'**
   String get speechModalTitle;
 
-  /// No description provided for @speechModalTranscriptionProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'Transcription Progress'**
-  String get speechModalTranscriptionProgress;
-
   /// No description provided for @syncActivityIndicatorSemantics.
   ///
   /// In en, this message translates to:
   /// **'Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.'**
   String syncActivityIndicatorSemantics(int outbox, int inbox);
-
-  /// No description provided for @syncCreateNewRoom.
-  ///
-  /// In en, this message translates to:
-  /// **'Create New Room'**
-  String get syncCreateNewRoom;
-
-  /// No description provided for @syncCreateNewRoomInstead.
-  ///
-  /// In en, this message translates to:
-  /// **'Create New Room Instead'**
-  String get syncCreateNewRoomInstead;
 
   /// No description provided for @syncDeleteConfigConfirm.
   ///
@@ -10974,24 +8815,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Do you want to delete the sync configuration?'**
   String get syncDeleteConfigQuestion;
-
-  /// No description provided for @syncDiscoveringRooms.
-  ///
-  /// In en, this message translates to:
-  /// **'Discovering sync rooms...'**
-  String get syncDiscoveringRooms;
-
-  /// No description provided for @syncDiscoverRoomsButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Discover Existing Rooms'**
-  String get syncDiscoverRoomsButton;
-
-  /// No description provided for @syncDiscoveryError.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to discover rooms'**
-  String get syncDiscoveryError;
 
   /// No description provided for @syncEntitiesConfirm.
   ///
@@ -11017,36 +8840,6 @@ abstract class AppLocalizations {
   /// **'Sync complete'**
   String get syncEntitiesSuccessTitle;
 
-  /// No description provided for @syncInviteErrorForbidden.
-  ///
-  /// In en, this message translates to:
-  /// **'Permission denied. You may not have access to invite this user.'**
-  String get syncInviteErrorForbidden;
-
-  /// No description provided for @syncInviteErrorNetwork.
-  ///
-  /// In en, this message translates to:
-  /// **'Network error. Please check your connection and try again.'**
-  String get syncInviteErrorNetwork;
-
-  /// No description provided for @syncInviteErrorRateLimited.
-  ///
-  /// In en, this message translates to:
-  /// **'Too many requests. Please wait a moment and try again.'**
-  String get syncInviteErrorRateLimited;
-
-  /// No description provided for @syncInviteErrorUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to send invite. Please try again later.'**
-  String get syncInviteErrorUnknown;
-
-  /// No description provided for @syncInviteErrorUserNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'User not found. Please verify the scanned code is correct.'**
-  String get syncInviteErrorUserNotFound;
-
   /// No description provided for @syncListCountSummary.
   ///
   /// In en, this message translates to:
@@ -11064,12 +8857,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown payload'**
   String get syncListUnknownPayload;
-
-  /// No description provided for @syncNoRoomsFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No existing sync rooms found.\nYou can create a new room to start syncing.'**
-  String get syncNoRoomsFound;
 
   /// No description provided for @syncNotLoggedInToast.
   ///
@@ -11148,60 +8935,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Theming selection'**
   String get syncPayloadThemingSelection;
-
-  /// No description provided for @syncRetry.
-  ///
-  /// In en, this message translates to:
-  /// **'Retry'**
-  String get syncRetry;
-
-  /// No description provided for @syncRoomCreatedUnknown.
-  ///
-  /// In en, this message translates to:
-  /// **'Unknown'**
-  String get syncRoomCreatedUnknown;
-
-  /// No description provided for @syncRoomDiscoveryTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Find Existing Sync Room'**
-  String get syncRoomDiscoveryTitle;
-
-  /// No description provided for @syncRoomHasContent.
-  ///
-  /// In en, this message translates to:
-  /// **'Has Content'**
-  String get syncRoomHasContent;
-
-  /// No description provided for @syncRoomUnnamed.
-  ///
-  /// In en, this message translates to:
-  /// **'Unnamed Room'**
-  String get syncRoomUnnamed;
-
-  /// No description provided for @syncRoomVerified.
-  ///
-  /// In en, this message translates to:
-  /// **'Verified'**
-  String get syncRoomVerified;
-
-  /// No description provided for @syncSelectRoom.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a Sync Room'**
-  String get syncSelectRoom;
-
-  /// No description provided for @syncSelectRoomDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'We found existing sync rooms. Select one to join, or create a new room.'**
-  String get syncSelectRoomDescription;
-
-  /// No description provided for @syncSkip.
-  ///
-  /// In en, this message translates to:
-  /// **'Skip'**
-  String get syncSkip;
 
   /// No description provided for @syncStepAgentEntities.
   ///
@@ -11305,12 +9038,6 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get taskAgentCancelTimerTooltip;
 
-  /// No description provided for @taskAgentChipLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent'**
-  String get taskAgentChipLabel;
-
   /// No description provided for @taskAgentCountdownTooltip.
   ///
   /// In en, this message translates to:
@@ -11400,12 +9127,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Estimate:'**
   String get taskEstimateLabel;
-
-  /// No description provided for @taskLabelUnassignedLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'unassigned'**
-  String get taskLabelUnassignedLabel;
 
   /// No description provided for @taskLanguageArabic.
   ///
@@ -11593,12 +9314,6 @@ abstract class AppLocalizations {
   /// **'Russian'**
   String get taskLanguageRussian;
 
-  /// No description provided for @taskLanguageSearchPlaceholder.
-  ///
-  /// In en, this message translates to:
-  /// **'Search languages...'**
-  String get taskLanguageSearchPlaceholder;
-
   /// No description provided for @taskLanguageSelectedLabel.
   ///
   /// In en, this message translates to:
@@ -11683,12 +9398,6 @@ abstract class AppLocalizations {
   /// **'Yoruba'**
   String get taskLanguageYoruba;
 
-  /// No description provided for @taskNameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a name for the task'**
-  String get taskNameHint;
-
   /// No description provided for @taskNoDueDateLabel.
   ///
   /// In en, this message translates to:
@@ -11754,12 +9463,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tasks Filter'**
   String get tasksFilterTitle;
-
-  /// No description provided for @taskShowcaseActiveFilters.
-  ///
-  /// In en, this message translates to:
-  /// **'Active filters'**
-  String get taskShowcaseActiveFilters;
 
   /// No description provided for @taskShowcaseAudio.
   ///
@@ -11863,24 +9566,6 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get tasksLabelsDialogClose;
 
-  /// No description provided for @tasksLabelsHeaderEditTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit labels'**
-  String get tasksLabelsHeaderEditTooltip;
-
-  /// No description provided for @tasksLabelsHeaderTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Labels'**
-  String get tasksLabelsHeaderTitle;
-
-  /// No description provided for @tasksLabelsNoLabels.
-  ///
-  /// In en, this message translates to:
-  /// **'No labels'**
-  String get tasksLabelsNoLabels;
-
   /// No description provided for @tasksLabelsSheetApply.
   ///
   /// In en, this message translates to:
@@ -11892,12 +9577,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search labels…'**
   String get tasksLabelsSheetSearchHint;
-
-  /// No description provided for @tasksLabelsSheetTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select labels'**
-  String get tasksLabelsSheetTitle;
 
   /// No description provided for @tasksLabelsUpdateFailed.
   ///
@@ -11971,12 +9650,6 @@ abstract class AppLocalizations {
   /// **'Select priority'**
   String get tasksPriorityPickerTitle;
 
-  /// No description provided for @tasksPriorityTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Priority:'**
-  String get tasksPriorityTitle;
-
   /// No description provided for @tasksQuickFilterClear.
   ///
   /// In en, this message translates to:
@@ -12018,18 +9691,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rename saved filter'**
   String get tasksSavedFilterRenameSemantics;
-
-  /// No description provided for @tasksSavedFiltersAddTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Save current filter'**
-  String get tasksSavedFiltersAddTooltip;
-
-  /// No description provided for @tasksSavedFiltersEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No saved filters yet. Adjust the task filter, then tap Save.'**
-  String get tasksSavedFiltersEmpty;
 
   /// No description provided for @tasksSavedFiltersSaveButtonLabel.
   ///
@@ -12091,23 +9752,11 @@ abstract class AppLocalizations {
   /// **'Search mode'**
   String get tasksSearchModeLabel;
 
-  /// No description provided for @tasksShowCoverArt.
-  ///
-  /// In en, this message translates to:
-  /// **'Show cover art on cards'**
-  String get tasksShowCoverArt;
-
   /// No description provided for @tasksShowCreationDate.
   ///
   /// In en, this message translates to:
   /// **'Show creation date on cards'**
   String get tasksShowCreationDate;
-
-  /// No description provided for @tasksShowDistances.
-  ///
-  /// In en, this message translates to:
-  /// **'Show distances on cards'**
-  String get tasksShowDistances;
 
   /// No description provided for @tasksShowDueDate.
   ///
@@ -12115,23 +9764,11 @@ abstract class AppLocalizations {
   /// **'Show due date on cards'**
   String get tasksShowDueDate;
 
-  /// No description provided for @tasksShowProjectsHeader.
-  ///
-  /// In en, this message translates to:
-  /// **'Show projects header'**
-  String get tasksShowProjectsHeader;
-
   /// No description provided for @tasksSortByCreationDate.
   ///
   /// In en, this message translates to:
   /// **'Created'**
   String get tasksSortByCreationDate;
-
-  /// No description provided for @tasksSortByDate.
-  ///
-  /// In en, this message translates to:
-  /// **'Date'**
-  String get tasksSortByDate;
 
   /// No description provided for @tasksSortByDueDate.
   ///
@@ -12205,12 +9842,6 @@ abstract class AppLocalizations {
   /// **'Rejected'**
   String get taskStatusRejected;
 
-  /// No description provided for @taskSummaries.
-  ///
-  /// In en, this message translates to:
-  /// **'Task Summaries'**
-  String get taskSummaries;
-
   /// No description provided for @taskTitleEmpty.
   ///
   /// In en, this message translates to:
@@ -12258,18 +9889,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'expanded'**
   String get thinkingDisclosureStateExpanded;
-
-  /// No description provided for @timeByCategoryChartTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Time by Category'**
-  String get timeByCategoryChartTitle;
-
-  /// No description provided for @timeByCategoryChartTotalLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Total'**
-  String get timeByCategoryChartTotalLabel;
 
   /// No description provided for @timeEntryItemEnd.
   ///
