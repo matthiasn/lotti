@@ -110,6 +110,34 @@ const DsTokens dsTokensLight = DsTokens(
         surface: Color(0x2E7BC0E2),
       ),
     ),
+    conflict: DsColorsConflict(
+      local: DsColorsConflictLocal(
+        color: Color(0xFF2BA184),
+        surface: Color(0x0F2BA184),
+      ),
+      remote: DsColorsConflictRemote(
+        color: Color(0xFF1CA3E3),
+        surface: Color(0x0F1CA3E3),
+      ),
+      diverged: DsColorsConflictDiverged(
+        color: Color(0xFFFA8C05),
+        surface: Color(0x12FA8C05),
+      ),
+    ),
+    diff: DsColorsDiff(
+      added: DsColorsDiffAdded(
+        color: Color(0xFF366340),
+        surface: Color(0x2E59A66B),
+      ),
+      removed: DsColorsDiffRemoved(
+        color: Color(0xFF7A1F1F),
+        surface: Color(0x24CC3633),
+      ),
+      replaced: DsColorsDiffReplaced(
+        color: Color(0xFF116288),
+        surface: Color(0x2E1CA3E3),
+      ),
+    ),
   ),
   typography: DsTypography(
     styles: DsTypographyStyles(
@@ -468,6 +496,34 @@ const DsTokens dsTokensDark = DsTokens(
       due: DsColorsProposalKindDue(
         color: Color(0xFF7BC0E2),
         surface: Color(0x2E7BC0E2),
+      ),
+    ),
+    conflict: DsColorsConflict(
+      local: DsColorsConflictLocal(
+        color: Color(0xFF5ED4B7),
+        surface: Color(0x0F5ED4B7),
+      ),
+      remote: DsColorsConflictRemote(
+        color: Color(0xFF64B5F6),
+        surface: Color(0x0F64B5F6),
+      ),
+      diverged: DsColorsConflictDiverged(
+        color: Color(0xFFFFA726),
+        surface: Color(0x12FFA726),
+      ),
+    ),
+    diff: DsColorsDiff(
+      added: DsColorsDiffAdded(
+        color: Color(0xFF9CE7CE),
+        surface: Color(0x385ED4B7),
+      ),
+      removed: DsColorsDiffRemoved(
+        color: Color(0xFFF2B0B0),
+        surface: Color(0x2EE57373),
+      ),
+      replaced: DsColorsDiffReplaced(
+        color: Color(0xFFA8D2F8),
+        surface: Color(0x3864B5F6),
       ),
     ),
   ),
@@ -1899,6 +1955,376 @@ class DsColorsProposalKind {
 }
 
 @immutable
+class DsColorsConflictLocal {
+  final Color color;
+  final Color surface;
+
+  const DsColorsConflictLocal({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsConflictLocal copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsConflictLocal(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsConflictLocal lerp(covariant DsColorsConflictLocal? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsConflictLocal(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsConflictLocal &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsConflictRemote {
+  final Color color;
+  final Color surface;
+
+  const DsColorsConflictRemote({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsConflictRemote copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsConflictRemote(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsConflictRemote lerp(
+    covariant DsColorsConflictRemote? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsConflictRemote(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsConflictRemote &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsConflictDiverged {
+  final Color color;
+  final Color surface;
+
+  const DsColorsConflictDiverged({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsConflictDiverged copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsConflictDiverged(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsConflictDiverged lerp(
+    covariant DsColorsConflictDiverged? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsConflictDiverged(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsConflictDiverged &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsConflict {
+  final DsColorsConflictLocal local;
+  final DsColorsConflictRemote remote;
+  final DsColorsConflictDiverged diverged;
+
+  const DsColorsConflict({
+    required this.local,
+    required this.remote,
+    required this.diverged,
+  });
+
+  DsColorsConflict copyWith({
+    DsColorsConflictLocal? local,
+    DsColorsConflictRemote? remote,
+    DsColorsConflictDiverged? diverged,
+  }) {
+    return DsColorsConflict(
+      local: local ?? this.local,
+      remote: remote ?? this.remote,
+      diverged: diverged ?? this.diverged,
+    );
+  }
+
+  DsColorsConflict lerp(covariant DsColorsConflict? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsConflict(
+      local: local.lerp(other.local, t),
+      remote: remote.lerp(other.remote, t),
+      diverged: diverged.lerp(other.diverged, t),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsConflict &&
+        local == other.local &&
+        remote == other.remote &&
+        diverged == other.diverged;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([local, remote, diverged]);
+}
+
+@immutable
+class DsColorsDiffAdded {
+  final Color color;
+  final Color surface;
+
+  const DsColorsDiffAdded({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsDiffAdded copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsDiffAdded(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsDiffAdded lerp(covariant DsColorsDiffAdded? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsDiffAdded(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsDiffAdded &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsDiffRemoved {
+  final Color color;
+  final Color surface;
+
+  const DsColorsDiffRemoved({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsDiffRemoved copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsDiffRemoved(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsDiffRemoved lerp(covariant DsColorsDiffRemoved? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsDiffRemoved(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsDiffRemoved &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsDiffReplaced {
+  final Color color;
+  final Color surface;
+
+  const DsColorsDiffReplaced({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsDiffReplaced copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsDiffReplaced(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsDiffReplaced lerp(covariant DsColorsDiffReplaced? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsDiffReplaced(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsDiffReplaced &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsDiff {
+  final DsColorsDiffAdded added;
+  final DsColorsDiffRemoved removed;
+  final DsColorsDiffReplaced replaced;
+
+  const DsColorsDiff({
+    required this.added,
+    required this.removed,
+    required this.replaced,
+  });
+
+  DsColorsDiff copyWith({
+    DsColorsDiffAdded? added,
+    DsColorsDiffRemoved? removed,
+    DsColorsDiffReplaced? replaced,
+  }) {
+    return DsColorsDiff(
+      added: added ?? this.added,
+      removed: removed ?? this.removed,
+      replaced: replaced ?? this.replaced,
+    );
+  }
+
+  DsColorsDiff lerp(covariant DsColorsDiff? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsDiff(
+      added: added.lerp(other.added, t),
+      removed: removed.lerp(other.removed, t),
+      replaced: replaced.lerp(other.replaced, t),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsDiff &&
+        added == other.added &&
+        removed == other.removed &&
+        replaced == other.replaced;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([added, removed, replaced]);
+}
+
+@immutable
 class DsColors {
   final DsColorsText text;
   final DsColorsSurface surface;
@@ -1908,6 +2334,8 @@ class DsColors {
   final DsColorsDecorative decorative;
   final DsColorsAiCard aiCard;
   final DsColorsProposalKind proposalKind;
+  final DsColorsConflict conflict;
+  final DsColorsDiff diff;
 
   const DsColors({
     required this.text,
@@ -1918,6 +2346,8 @@ class DsColors {
     required this.decorative,
     required this.aiCard,
     required this.proposalKind,
+    required this.conflict,
+    required this.diff,
   });
 
   DsColors copyWith({
@@ -1929,6 +2359,8 @@ class DsColors {
     DsColorsDecorative? decorative,
     DsColorsAiCard? aiCard,
     DsColorsProposalKind? proposalKind,
+    DsColorsConflict? conflict,
+    DsColorsDiff? diff,
   }) {
     return DsColors(
       text: text ?? this.text,
@@ -1939,6 +2371,8 @@ class DsColors {
       decorative: decorative ?? this.decorative,
       aiCard: aiCard ?? this.aiCard,
       proposalKind: proposalKind ?? this.proposalKind,
+      conflict: conflict ?? this.conflict,
+      diff: diff ?? this.diff,
     );
   }
 
@@ -1955,6 +2389,8 @@ class DsColors {
       decorative: decorative.lerp(other.decorative, t),
       aiCard: aiCard.lerp(other.aiCard, t),
       proposalKind: proposalKind.lerp(other.proposalKind, t),
+      conflict: conflict.lerp(other.conflict, t),
+      diff: diff.lerp(other.diff, t),
     );
   }
 
@@ -1971,7 +2407,9 @@ class DsColors {
         interactive == other.interactive &&
         decorative == other.decorative &&
         aiCard == other.aiCard &&
-        proposalKind == other.proposalKind;
+        proposalKind == other.proposalKind &&
+        conflict == other.conflict &&
+        diff == other.diff;
   }
 
   @override
@@ -1984,6 +2422,8 @@ class DsColors {
     decorative,
     aiCard,
     proposalKind,
+    conflict,
+    diff,
   ]);
 }
 

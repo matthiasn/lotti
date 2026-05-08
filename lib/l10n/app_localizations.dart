@@ -3649,17 +3649,196 @@ abstract class AppLocalizations {
   /// **'Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.'**
   String get configFlagUseOutboxBundlingDescription;
 
-  /// No description provided for @conflictEntityLabel.
+  /// No description provided for @conflictApplyButton.
   ///
   /// In en, this message translates to:
-  /// **'Entity'**
-  String get conflictEntityLabel;
+  /// **'Apply'**
+  String get conflictApplyButton;
 
-  /// No description provided for @conflictIdLabel.
+  /// No description provided for @conflictApplyFailedTitle.
   ///
   /// In en, this message translates to:
-  /// **'ID'**
-  String get conflictIdLabel;
+  /// **'Couldn\'t apply resolution'**
+  String get conflictApplyFailedTitle;
+
+  /// No description provided for @conflictBannerAgoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day ago} other{{count} days ago}}'**
+  String conflictBannerAgoDays(int count);
+
+  /// No description provided for @conflictBannerAgoHours.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 h ago} other{{count} h ago}}'**
+  String conflictBannerAgoHours(int count);
+
+  /// No description provided for @conflictBannerAgoJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get conflictBannerAgoJustNow;
+
+  /// No description provided for @conflictBannerAgoMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String conflictBannerAgoMinutes(int count);
+
+  /// Conflict summary banner first line.
+  ///
+  /// In en, this message translates to:
+  /// **'{entity} · diverged {ago}'**
+  String conflictBannerDivergedAgo(String entity, String ago);
+
+  /// Conflict summary banner subline listing differing fields, e.g. 'Title · word count differ'.
+  ///
+  /// In en, this message translates to:
+  /// **'Differs in: {fields}'**
+  String conflictBannerFieldsDifferList(String fields);
+
+  /// No description provided for @conflictDetailEntryNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry not found'**
+  String get conflictDetailEntryNotFoundTitle;
+
+  /// No description provided for @conflictDetailLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load conflict'**
+  String get conflictDetailLoadErrorTitle;
+
+  /// No description provided for @conflictDetailNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict not found'**
+  String get conflictDetailNotFoundTitle;
+
+  /// No description provided for @conflictFieldCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'category'**
+  String get conflictFieldCategory;
+
+  /// No description provided for @conflictFieldDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'duration'**
+  String get conflictFieldDuration;
+
+  /// No description provided for @conflictFieldTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get conflictFieldTitle;
+
+  /// No description provided for @conflictFieldWordCount.
+  ///
+  /// In en, this message translates to:
+  /// **'word count'**
+  String get conflictFieldWordCount;
+
+  /// No description provided for @conflictFooterHelperLocalSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Will keep your local edit and discard the synced version.'**
+  String get conflictFooterHelperLocalSelected;
+
+  /// No description provided for @conflictFooterHelperPickASide.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a side to apply.'**
+  String get conflictFooterHelperPickASide;
+
+  /// No description provided for @conflictFooterHelperRemoteSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Will accept the synced version and discard your local edit.'**
+  String get conflictFooterHelperRemoteSelected;
+
+  /// No description provided for @conflictHeaderPillEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry} other{{count} entries}}'**
+  String conflictHeaderPillEntries(int count);
+
+  /// No description provided for @conflictHeaderPillFieldsDiffer.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 field differs} other{{count} fields differ}}'**
+  String conflictHeaderPillFieldsDiffer(int count);
+
+  /// Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.
+  ///
+  /// In en, this message translates to:
+  /// **'{status}, {timestamp}, {entityType}, conflict {id}'**
+  String conflictListItemSemanticsLabel(
+    String status,
+    String timestamp,
+    String entityType,
+    String id,
+  );
+
+  /// Tooltip on the truncated conflict id in the list row, revealing the full id.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict ID: {id}'**
+  String conflictListItemTooltipFullId(String id);
+
+  /// No description provided for @conflictMetaLocalEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'local edit'**
+  String get conflictMetaLocalEdit;
+
+  /// No description provided for @conflictMetaVecPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'vec'**
+  String get conflictMetaVecPrefix;
+
+  /// No description provided for @conflictMetaViaSync.
+  ///
+  /// In en, this message translates to:
+  /// **'via sync'**
+  String get conflictMetaViaSync;
+
+  /// No description provided for @conflictPageLeadDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Differences highlighted inline. Click a side to use that version, or open Edit & merge to combine them.'**
+  String get conflictPageLeadDesktop;
+
+  /// No description provided for @conflictPageLeadMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Differences highlighted inline. Tap a side to use that version.'**
+  String get conflictPageLeadMobile;
+
+  /// No description provided for @conflictPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync conflict'**
+  String get conflictPageTitle;
+
+  /// No description provided for @conflictPickerEditMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit & merge…'**
+  String get conflictPickerEditMerge;
+
+  /// No description provided for @conflictPickerUseFromSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Use from sync'**
+  String get conflictPickerUseFromSync;
+
+  /// No description provided for @conflictPickerUseThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this device'**
+  String get conflictPickerUseThisDevice;
 
   /// No description provided for @conflictsCopyTextFromSync.
   ///
@@ -3678,6 +3857,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No conflicts detected'**
   String get conflictsEmptyTitle;
+
+  /// No description provided for @conflictSideFromSync.
+  ///
+  /// In en, this message translates to:
+  /// **'FROM SYNC'**
+  String get conflictSideFromSync;
+
+  /// No description provided for @conflictSideThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'THIS DEVICE'**
+  String get conflictSideThisDevice;
 
   /// No description provided for @conflictsResolved.
   ///
@@ -3702,6 +3893,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'unresolved'**
   String get conflictsUnresolved;
+
+  /// Word count shown on the conflict detail meta row.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} word} other{{count} words}}'**
+  String conflictWordCount(int count);
 
   /// No description provided for @copyAsMarkdown.
   ///

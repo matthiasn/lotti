@@ -698,15 +698,148 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.",
   "configFlagUseOutboxBundling": "Sdružovat zprávy odchozí pošty",
   "configFlagUseOutboxBundlingDescription": "Zabalí po sobě jdoucí textové řádky odchozí pošty do jedné synchronizační obálky, takže dávky drobných změn odejdou jako jediná zpráva Matrixu. Mediální přílohy se i nadále odesílají samostatně.",
-  "conflictEntityLabel": "Entita",
-  "conflictIdLabel": "ID",
+  "conflictApplyButton": "Použít",
+  "conflictApplyFailedTitle": "Konflikt se nepodařilo vyřešit",
+  "conflictBannerAgoDays": "{count, plural, =1{před 1 dnem} few{před {count} dny} other{před {count} dní}}",
+  "@conflictBannerAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "conflictBannerAgoHours": "{count, plural, =1{před 1 h} other{před {count} h}}",
+  "@conflictBannerAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "conflictBannerAgoJustNow": "právě teď",
+  "conflictBannerAgoMinutes": "{count, plural, =1{před 1 min} other{před {count} min}}",
+  "@conflictBannerAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "conflictBannerDivergedAgo": "{entity} · odchýleno {ago}",
+  "@conflictBannerDivergedAgo": {
+    "description": "Conflict summary banner first line.",
+    "placeholders": {
+      "entity": {
+        "type": "String",
+        "example": "Audio note"
+      },
+      "ago": {
+        "type": "String",
+        "example": "2 min ago"
+      }
+    }
+  },
+  "conflictBannerFieldsDifferList": "Liší se: {fields}",
+  "@conflictBannerFieldsDifferList": {
+    "description": "Conflict summary banner subline listing differing fields.",
+    "placeholders": {
+      "fields": {
+        "type": "String",
+        "example": "Title · word count"
+      }
+    }
+  },
+  "conflictDetailEntryNotFoundTitle": "Záznam nenalezen",
+  "conflictDetailLoadErrorTitle": "Konflikt se nepodařilo načíst",
+  "conflictDetailNotFoundTitle": "Konflikt nenalezen",
+  "conflictFieldCategory": "kategorie",
+  "conflictFieldDuration": "trvání",
+  "conflictFieldTitle": "Titulek",
+  "conflictFieldWordCount": "počet slov",
+  "conflictFooterHelperLocalSelected": "Zachová tvou místní úpravu a zahodí synchronizovanou verzi.",
+  "conflictFooterHelperPickASide": "Vyber stranu pro použití.",
+  "conflictFooterHelperRemoteSelected": "Přijme synchronizovanou verzi a zahodí tvou místní úpravu.",
+  "conflictHeaderPillEntries": "{count, plural, =1{1 záznam} few{{count} záznamy} other{{count} záznamů}}",
+  "@conflictHeaderPillEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "conflictHeaderPillFieldsDiffer": "{count, plural, =1{1 pole se liší} few{{count} pole se liší} other{{count} polí se liší}}",
+  "@conflictHeaderPillFieldsDiffer": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, konflikt {id}",
+  "@conflictListItemSemanticsLabel": {
+    "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Nevyřešeno"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "2024-03-15 12:34:56"
+      },
+      "entityType": {
+        "type": "String",
+        "example": "Úkol"
+      },
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictListItemTooltipFullId": "ID konfliktu: {id}",
+  "@conflictListItemTooltipFullId": {
+    "description": "Tooltip on the truncated conflict id in the list row, revealing the full id.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictMetaLocalEdit": "místní úprava",
+  "conflictMetaVecPrefix": "vec",
+  "conflictMetaViaSync": "přes synchronizaci",
+  "conflictPageLeadDesktop": "Rozdíly jsou zvýrazněny v textu. Klikni na stranu, kterou chceš použít, nebo otevři Upravit a sloučit pro kombinaci.",
+  "conflictPageLeadMobile": "Rozdíly jsou zvýrazněny v textu. Klepni na stranu, kterou chceš použít.",
+  "conflictPageTitle": "Konflikt synchronizace",
+  "conflictPickerEditMerge": "Upravit a sloučit…",
+  "conflictPickerUseFromSync": "Použít ze synchronizace",
+  "conflictPickerUseThisDevice": "Použít toto zařízení",
   "conflictsCopyTextFromSync": "Kopírovat text ze synchronizace",
   "conflictsEmptyDescription": "Všechno je teď synchronizované. Vyřešené položky zůstávají dostupné v druhém filtru.",
   "conflictsEmptyTitle": "Nebyly zjištěny žádné konflikty",
+  "conflictSideFromSync": "ZE SYNCHRONIZACE",
+  "conflictSideThisDevice": "TOTO ZAŘÍZENÍ",
   "conflictsResolved": "vyřešeno",
   "conflictsResolveLocalVersion": "Vyřešit s místní verzí",
   "conflictsResolveRemoteVersion": "Vyřešit se vzdálenou verzí",
   "conflictsUnresolved": "nevyřešeno",
+  "conflictWordCount": "{count, plural, one{{count} slovo} few{{count} slova} other{{count} slov}}",
+  "@conflictWordCount": {
+    "description": "Word count shown on the conflict detail meta row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
   "copyAsMarkdown": "Kopírovat jako Markdown",
   "copyAsText": "Kopírovat jako text",
   "correctionExampleCancel": "ZRUŠIT",

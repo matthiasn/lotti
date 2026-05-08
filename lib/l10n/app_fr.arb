@@ -889,15 +889,148 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Compresse les pièces jointes JSON de synchronisation avec gzip avant l'envoi. Économise de la bande passante sur les réseaux lents, au prix d'un léger coût CPU à l'envoi et à la réception.",
   "configFlagUseOutboxBundling": "Regrouper les messages d'outbox",
   "configFlagUseOutboxBundlingDescription": "Regroupe les lignes texte consécutives de l'outbox en une seule enveloppe de synchronisation pour qu'une rafale de petits changements parte en un seul message Matrix. Les pièces jointes média sont toujours envoyées individuellement.",
-  "conflictEntityLabel": "Entité",
-  "conflictIdLabel": "ID",
+  "conflictApplyButton": "Appliquer",
+  "conflictApplyFailedTitle": "Impossible d'appliquer la résolution",
+  "conflictBannerAgoDays": "{count, plural, =1{il y a 1 jour} other{il y a {count} jours}}",
+  "@conflictBannerAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "conflictBannerAgoHours": "{count, plural, =1{il y a 1 h} other{il y a {count} h}}",
+  "@conflictBannerAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "conflictBannerAgoJustNow": "à l'instant",
+  "conflictBannerAgoMinutes": "{count, plural, =1{il y a 1 min} other{il y a {count} min}}",
+  "@conflictBannerAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "conflictBannerDivergedAgo": "{entity} · divergé {ago}",
+  "@conflictBannerDivergedAgo": {
+    "description": "Conflict summary banner first line.",
+    "placeholders": {
+      "entity": {
+        "type": "String",
+        "example": "Audio note"
+      },
+      "ago": {
+        "type": "String",
+        "example": "2 min ago"
+      }
+    }
+  },
+  "conflictBannerFieldsDifferList": "Différences : {fields}",
+  "@conflictBannerFieldsDifferList": {
+    "description": "Conflict summary banner subline listing differing fields.",
+    "placeholders": {
+      "fields": {
+        "type": "String",
+        "example": "Title · word count"
+      }
+    }
+  },
+  "conflictDetailEntryNotFoundTitle": "Entrée introuvable",
+  "conflictDetailLoadErrorTitle": "Impossible de charger le conflit",
+  "conflictDetailNotFoundTitle": "Conflit introuvable",
+  "conflictFieldCategory": "catégorie",
+  "conflictFieldDuration": "durée",
+  "conflictFieldTitle": "Titre",
+  "conflictFieldWordCount": "nombre de mots",
+  "conflictFooterHelperLocalSelected": "Conserve ta modification locale et écarte la version synchronisée.",
+  "conflictFooterHelperPickASide": "Choisis un côté à appliquer.",
+  "conflictFooterHelperRemoteSelected": "Accepte la version synchronisée et écarte ta modification locale.",
+  "conflictHeaderPillEntries": "{count, plural, =1{1 entrée} other{{count} entrées}}",
+  "@conflictHeaderPillEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "conflictHeaderPillFieldsDiffer": "{count, plural, =1{1 champ diffère} other{{count} champs diffèrent}}",
+  "@conflictHeaderPillFieldsDiffer": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, conflit {id}",
+  "@conflictListItemSemanticsLabel": {
+    "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Non résolu"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "2024-03-15 12:34:56"
+      },
+      "entityType": {
+        "type": "String",
+        "example": "Tâche"
+      },
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictListItemTooltipFullId": "ID du conflit : {id}",
+  "@conflictListItemTooltipFullId": {
+    "description": "Tooltip on the truncated conflict id in the list row, revealing the full id.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictMetaLocalEdit": "modif. locale",
+  "conflictMetaVecPrefix": "vec",
+  "conflictMetaViaSync": "via la sync",
+  "conflictPageLeadDesktop": "Différences mises en évidence en ligne. Clique sur un côté pour utiliser cette version, ou ouvre Modifier et fusionner pour les combiner.",
+  "conflictPageLeadMobile": "Différences mises en évidence en ligne. Touche un côté pour utiliser cette version.",
+  "conflictPageTitle": "Conflit de sync",
+  "conflictPickerEditMerge": "Modifier et fusionner…",
+  "conflictPickerUseFromSync": "Utiliser la sync",
+  "conflictPickerUseThisDevice": "Utiliser cet appareil",
   "conflictsCopyTextFromSync": "Copier le texte depuis la synchronisation",
   "conflictsEmptyDescription": "Tout est synchronisé. Les éléments résolus restent disponibles dans l'autre filtre.",
   "conflictsEmptyTitle": "Aucun conflit détecté",
+  "conflictSideFromSync": "DEPUIS LA SYNC",
+  "conflictSideThisDevice": "CET APPAREIL",
   "conflictsResolved": "résolu",
   "conflictsResolveLocalVersion": "Résoudre avec la version locale",
   "conflictsResolveRemoteVersion": "Résoudre avec la version distante",
   "conflictsUnresolved": "non résolu",
+  "conflictWordCount": "{count, plural, one{{count} mot} other{{count} mots}}",
+  "@conflictWordCount": {
+    "description": "Word count shown on the conflict detail meta row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
   "copyAsMarkdown": "Copier en Markdown",
   "copyAsText": "Copier en texte",
   "correctionExampleCancel": "ANNULER",

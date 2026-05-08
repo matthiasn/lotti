@@ -62,15 +62,18 @@ void main() {
       expect(find.byKey(const ValueKey('syncFilter-resolved')), findsOneWidget);
 
       expect(find.text('Unresolved · 1 item'), findsOneWidget);
-      expect(find.textContaining('Entity: Text'), findsOneWidget);
-      expect(find.textContaining('ID: id'), findsOneWidget);
+      expect(find.text('Text'), findsOneWidget);
+      expect(find.text('id'), findsOneWidget);
+      // Legacy "Entity:" / "ID:" prefixes are gone.
+      expect(find.textContaining('Entity:'), findsNothing);
+      expect(find.textContaining('ID:'), findsNothing);
 
-      await tester.tap(find.text('Resolved'));
+      await tester.tap(find.byKey(const ValueKey('syncFilter-resolved')));
       await tester.pumpAndSettle();
 
       expect(find.text('Resolved · 1 item'), findsOneWidget);
-      expect(find.textContaining('Entity: Text'), findsOneWidget);
-      expect(find.textContaining('ID: id'), findsOneWidget);
+      expect(find.text('Text'), findsOneWidget);
+      expect(find.text('id'), findsOneWidget);
     });
 
     testWidgets('segmented filters stay pinned while scrolling', (

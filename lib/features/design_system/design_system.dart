@@ -29,3 +29,4 @@ export 'components/toggles/design_system_toggle.dart';
 export 'components/tooltip_icons/design_system_tooltip_icon.dart';
 export 'theme/design_system_theme.dart';
 export 'theme/design_tokens.dart';
+export 'theme/typography_helpers.dart';
