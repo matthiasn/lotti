@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
 class ProjectCreatePage extends ConsumerStatefulWidget {
@@ -40,12 +42,14 @@ class ProjectCreatePage extends ConsumerStatefulWidget {
 class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
   late final TextEditingController _titleController;
   DateTime? _targetDate;
+  String? _categoryId;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController();
+    _categoryId = widget.categoryId;
   }
 
   @override
@@ -73,7 +77,7 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
     final repository = ref.read(projectRepositoryProvider);
     final templateService = ref.read(agentTemplateServiceProvider);
     final agentService = ref.read(projectAgentServiceProvider);
-    final categoryId = widget.categoryId;
+    final categoryId = _categoryId;
 
     try {
       final now = DateTime.now();
@@ -259,6 +263,12 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
                         textCapitalization: TextCapitalization.sentences,
                       ),
                       const SizedBox(height: 16),
+                      CategoryField(
+                        categoryId: _categoryId,
+                        onSave: (category) =>
+                            setState(() => _categoryId = category?.id),
+                      ),
+                      const SizedBox(height: 16),
                       ProjectTargetDateField(
                         targetDate: _targetDate,
                         onDatePicked: _pickTargetDate,
@@ -272,17 +282,26 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
             ),
           ],
         ),
-        bottomNavigationBar: FormBottomBar(
-          rightButtons: [
-            LottiSecondaryButton(
-              onPressed: () => Navigator.of(context).pop(),
-              label: messages.cancelButton,
-            ),
-            LottiPrimaryButton(
-              onPressed: _isSaving ? null : _handleCreate,
-              label: messages.createButton,
-            ),
-          ],
+        // Pad the form bar above the app shell's bottom navigation pill on
+        // mobile so the Save/Cancel row isn't hidden behind it. The
+        // helper returns 0 in desktop layouts where the sidebar replaces
+        // the pill, so this is a no-op there.
+        bottomNavigationBar: Padding(
+          padding: EdgeInsets.only(
+            bottom: DesignSystemBottomNavigationBar.occupiedHeight(context),
+          ),
+          child: FormBottomBar(
+            rightButtons: [
+              LottiSecondaryButton(
+                onPressed: () => Navigator.of(context).pop(),
+                label: messages.cancelButton,
+              ),
+              LottiPrimaryButton(
+                onPressed: _isSaving ? null : _handleCreate,
+                label: messages.createButton,
+              ),
+            ],
+          ),
         ),
       ),
     );

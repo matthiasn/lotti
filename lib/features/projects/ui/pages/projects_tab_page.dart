@@ -120,19 +120,31 @@ class _ProjectsListScaffold extends ConsumerWidget {
     final floatingActionButton = visibleGroupsAsync.maybeWhen(
       data: (_) => DesignSystemFloatingActionButton(
         semanticLabel: context.messages.projectCreateButton,
-        onPressed: () => beamToNamed('/settings/projects/create'),
+        onPressed: () => beamToNamed('/projects/create'),
       ),
       orElse: () => null,
     );
 
-    return Scaffold(
+    // Reserve a transparent bottomNavigationBar slot the size of the app
+    // shell's nav pill so SnackBars triggered from this subtree (toast
+    // confirmations after creating a project, recording errors, etc.)
+    // float above the pill instead of being clipped behind it on mobile.
+    // Mirrors the nested-ScaffoldMessenger pattern used by
+    // [TaskDetailsPage]. `occupiedHeight` resolves to 0 on desktop, so
+    // the slot collapses there and the layout stays unchanged.
+    final navBarSlot = DesignSystemBottomNavigationBar.occupiedHeight(context);
+    final scaffold = Scaffold(
       backgroundColor: ShowcasePalette.page(context),
+      // `extendBody: true` lets the project list keep painting behind the
+      // pill (and the new bottomNavigationBar spacer) so the visual
+      // density doesn't change — only SnackBar / FAB docking shifts.
+      extendBody: true,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: floatingActionButton == null
-          ? null
-          : DesignSystemBottomNavigationFabPadding(
-              child: floatingActionButton,
-            ),
+      // Scaffold lifts the FAB above its own bottomNavigationBar already;
+      // adding a second padding wrapper here would double-count the
+      // pill height and float the FAB into the search header.
+      floatingActionButton: floatingActionButton,
+      bottomNavigationBar: navBarSlot > 0 ? SizedBox(height: navBarSlot) : null,
       body: SafeArea(
         bottom: false,
         child: visibleGroupsAsync.when(
@@ -201,6 +213,12 @@ class _ProjectsListScaffold extends ConsumerWidget {
         ),
       ),
     );
+
+    // Nested messenger so `context.showToast` calls fired from inside
+    // the projects-tab subtree route to *this* Scaffold rather than the
+    // app-root one — which is what tells Flutter to dock the SnackBar
+    // above the bottomNavigationBar slot we just reserved.
+    return ScaffoldMessenger(child: scaffold);
   }
 }
 

@@ -7,15 +7,19 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/ui/pages/project_create_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../categories/test_utils.dart';
 import '../../test_utils.dart';
 
 void main() {
@@ -23,6 +27,7 @@ void main() {
   late MockProjectRepository mockProjectRepo;
   late MockAgentTemplateService mockTemplateService;
   late MockProjectAgentService mockAgentService;
+  late MockEntitiesCacheService mockEntitiesCacheService;
 
   setUpAll(registerAllFallbackValues);
 
@@ -31,10 +36,21 @@ void main() {
     mockProjectRepo = MockProjectRepository();
     mockTemplateService = MockAgentTemplateService();
     mockAgentService = MockProjectAgentService();
+    mockEntitiesCacheService = MockEntitiesCacheService();
+
+    // CategoryField (rendered by ProjectCreatePage) reads the category
+    // name through `getIt<EntitiesCacheService>()`. Default the lookup
+    // to "no category" so tests that don't preselect one don't trip
+    // GetIt's missing-registration guard.
+    when(
+      () => mockEntitiesCacheService.getCategoryById(any()),
+    ).thenReturn(null);
 
     await setUpTestGetIt(
       additionalSetup: () {
-        getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        getIt
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+          ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
       },
     );
 
@@ -103,24 +119,132 @@ void main() {
   }
 
   group('ProjectCreatePage', () {
-    testWidgets('renders title field, target date field, and action buttons', (
-      tester,
-    ) async {
-      await pumpPage(tester);
+    testWidgets(
+      'CategoryField onSave updates the categoryId passed to createMetadata',
+      (tester) async {
+        const pickedCategoryId = 'cat-picked';
+        // Stub the cache so the field re-renders with the picked
+        // category's name once the onSave callback fires.
+        when(
+          () => mockEntitiesCacheService.getCategoryById(pickedCategoryId),
+        ).thenReturn(
+          CategoryTestUtils.createTestCategory(
+            id: pickedCategoryId,
+            name: 'Picked',
+          ),
+        );
+        stubCreateMetadata(categoryId: pickedCategoryId);
+        stubCreateProject();
 
-      // App bar title
-      expect(find.text('Create Project'), findsOneWidget);
+        await pumpPage(tester);
 
-      // Title text field label (appears in input decoration)
-      expect(find.text('Project Title'), findsWidgets);
+        // Reach into the CategoryField and invoke its onSave directly.
+        // Driving the picker modal end-to-end would be a wider integration
+        // test; what matters here is the wiring between the field's
+        // callback and the page's `_categoryId` state.
+        final field = tester.widget<CategoryField>(find.byType(CategoryField));
+        field.onSave(
+          CategoryTestUtils.createTestCategory(
+            id: pickedCategoryId,
+            name: 'Picked',
+          ),
+        );
+        await tester.pump();
 
-      // Target date field
-      expect(find.text('Target Date'), findsOneWidget);
+        await tester.enterText(
+          find.byType(LottiTextField),
+          'Picked Project',
+        );
+        await tester.pump();
 
-      // Bottom bar buttons
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Create'), findsOneWidget);
-    });
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The new id flows from the field through `_categoryId` into
+        // `createMetadata`. The FAB-driven flow opens the form with
+        // `categoryId == null`, so without the wiring this verify would
+        // see `null` and fail.
+        verify(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: pickedCategoryId,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'CategoryField onSave clearing the selection nulls categoryId again',
+      (tester) async {
+        const seededCategoryId = 'cat-seed';
+        when(
+          () => mockEntitiesCacheService.getCategoryById(seededCategoryId),
+        ).thenReturn(
+          CategoryTestUtils.createTestCategory(
+            id: seededCategoryId,
+            name: 'Seed',
+          ),
+        );
+        // After clearing the selection the form must call
+        // `createMetadata` with `null`, so stub that variant explicitly.
+        stubCreateMetadata();
+        stubCreateProject();
+
+        await pumpPage(tester, categoryId: seededCategoryId);
+
+        // Clear the category by passing `null` to onSave, mirroring the
+        // ✕ tap inside CategoryField.
+        final field = tester.widget<CategoryField>(find.byType(CategoryField));
+        field.onSave(null);
+        await tester.pump();
+
+        await tester.enterText(
+          find.byType(LottiTextField),
+          'Uncategorised Project',
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            // ignore: avoid_redundant_argument_values
+            categoryId: null,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'renders title, category, target date fields, and action buttons',
+      (tester) async {
+        await pumpPage(tester);
+
+        // App bar title
+        expect(find.text('Create Project'), findsOneWidget);
+
+        // Title text field label (appears in input decoration)
+        expect(find.text('Project Title'), findsWidgets);
+
+        // Category picker — present even when nothing is selected. The
+        // field uses the read-only TextField pattern so picking happens
+        // inside a modal triggered by tapping the field.
+        expect(find.byType(CategoryField), findsOneWidget);
+
+        // Target date field
+        expect(find.text('Target Date'), findsOneWidget);
+
+        // Bottom bar buttons
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Create'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'shows error snackbar when title is empty and create is tapped',
@@ -186,7 +310,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Enter a title.
-      await tester.enterText(find.byType(TextField), 'My New Project');
+      await tester.enterText(find.byType(LottiTextField), 'My New Project');
       await tester.pump();
 
       // Tap create.
@@ -220,7 +344,10 @@ void main() {
 
       await pumpPage(tester, categoryId: categoryId);
 
-      await tester.enterText(find.byType(TextField), 'Categorised Project');
+      await tester.enterText(
+        find.byType(LottiTextField),
+        'Categorised Project',
+      );
       await tester.pump();
 
       await tester.tap(find.text('Create'));
@@ -288,7 +415,7 @@ void main() {
 
         await pumpPage(tester);
 
-        await tester.enterText(find.byType(TextField), 'Agent Project');
+        await tester.enterText(find.byType(LottiTextField), 'Agent Project');
         await tester.pump();
 
         await tester.tap(find.text('Create'));
@@ -358,7 +485,7 @@ void main() {
 
       await pumpPage(tester, categoryId: categoryId);
 
-      await tester.enterText(find.byType(TextField), 'Cat Project');
+      await tester.enterText(find.byType(LottiTextField), 'Cat Project');
       await tester.pump();
 
       await tester.tap(find.text('Create'));
@@ -387,7 +514,7 @@ void main() {
 
       await pumpPage(tester);
 
-      await tester.enterText(find.byType(TextField), 'Failing Project');
+      await tester.enterText(find.byType(LottiTextField), 'Failing Project');
       await tester.pump();
 
       await tester.tap(find.text('Create'));
@@ -454,7 +581,10 @@ void main() {
 
       await pumpPage(tester);
 
-      await tester.enterText(find.byType(TextField), 'Null Result Project');
+      await tester.enterText(
+        find.byType(LottiTextField),
+        'Null Result Project',
+      );
       await tester.pump();
 
       await tester.tap(find.text('Create'));
@@ -518,7 +648,7 @@ void main() {
 
       await pumpPage(tester);
 
-      await tester.enterText(find.byType(TextField), 'Shortcut Project');
+      await tester.enterText(find.byType(LottiTextField), 'Shortcut Project');
       await tester.pump();
 
       // Use Ctrl+S shortcut

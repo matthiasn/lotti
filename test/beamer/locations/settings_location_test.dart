@@ -16,7 +16,6 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
-import 'package:lotti/features/projects/ui/pages/project_create_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
@@ -110,7 +109,6 @@ void main() {
         '/settings/categories/:categoryId',
         '/settings/categories/create',
         '/settings/projects/:projectId',
-        '/settings/projects/create',
         '/settings/labels',
         '/settings/labels/create',
         '/settings/labels/:labelId',
@@ -346,23 +344,6 @@ void main() {
       expect(pages[2].child, isA<CategoryDetailsPage>());
       final categoryPage = pages[2].child as CategoryDetailsPage;
       expect(categoryPage.categoryId, 'test-id');
-    });
-
-    test('buildPages builds ProjectCreatePage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/projects/create?categoryId=cat-1'),
-      );
-      final location = SettingsLocation(routeInformation);
-      final beamState = BeamState.fromRouteInformation(routeInformation);
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<ProjectCreatePage>());
-      final createPage = pages[1].child as ProjectCreatePage;
-      expect(createPage.categoryId, 'cat-1');
     });
 
     test('buildPages builds ProjectDetailPage with projectId', () {

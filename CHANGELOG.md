@@ -6,6 +6,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.998]
 ### Fixed
+- The Projects tab "+" FAB now opens the project create page directly
+  inside the Projects tab via `/projects/create` instead of beaming
+  through `/settings/projects/create`. On desktop the old route landed
+  on the Settings V2 root (no `projects` panel is registered there),
+  so the create flow was unreachable. The same path swap is applied
+  to the inline "New project" button on category pages so deep-links
+  with a prefilled `categoryId=` continue to work. The legacy
+  `/settings/projects/create` pattern is removed.
+- The Categories list "+" FAB on Definitions → Categories now opens
+  `CategoryCreateModal` directly instead of beaming to
+  `/settings/categories/create`, which on desktop was bouncing the
+  user back to Settings V2's root. The modal stays inside the
+  current tab and the list refreshes via the shared category stream
+  once the new entry is persisted.
+- The "Save" / "Create" row on the project create page is no longer
+  hidden behind the bottom navigation pill on mobile. The page's
+  `FormBottomBar` is wrapped in a `Padding` sized to
+  `DesignSystemBottomNavigationBar.occupiedHeight`, so it docks above
+  the pill on phones and remains flush at the bottom on desktop where
+  the helper returns 0.
+- Toast notifications fired from inside the Projects tab now float
+  above the app shell's bottom navigation pill on mobile / narrow
+  widths instead of being clipped behind it. The Projects list scaffold
+  reserves a same-height transparent `bottomNavigationBar` slot and
+  is wrapped in a nested `ScaffoldMessenger`, mirroring the pattern
+  already in use on the task details page. On desktop the helper
+  returns 0 so the slot collapses and the layout stays unchanged.
 - Linked-entries activity log on a task now sorts entries by each
   entry's `dateFrom` instead of the link's own `createdAt`, so the
   "Newest first" / "Oldest first" toggle reflects the timestamps
@@ -16,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `sortedLinkedEntriesProvider` that resolves each linked entity and
   falls back to `link.createdAt` only while an entry is still
   loading.
+
+### Added
+- The project create form now exposes a category picker between the
+  title and target-date fields. The picker reuses the shared
+  `CategoryField` and is seeded from the route's `?categoryId=` query
+  parameter so the inline "New project" button on a category page
+  still pre-selects the right category, while users opening the form
+  from the Projects tab FAB can pick a category up front instead of
+  having to backfill it after creation.
 
 ### Changed
 - AI summary card header (the `AI summary / Task Laura` row) keeps its

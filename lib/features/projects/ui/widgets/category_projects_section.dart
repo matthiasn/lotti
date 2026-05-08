@@ -63,7 +63,7 @@ class CategoryProjectsSection extends ConsumerWidget {
             alignment: Alignment.centerLeft,
             child: LottiSecondaryButton(
               onPressed: () => getIt<NavService>().beamToNamed(
-                '/settings/projects/create?categoryId=$categoryId',
+                '/projects/create?categoryId=$categoryId',
               ),
               label: messages.projectCreateButton,
               icon: Icons.add,
