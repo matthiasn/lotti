@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
@@ -21,11 +22,14 @@ OutboxItem _item({
   String subject = 'host:1',
   int retries = 0,
   String messageId = 'cfg',
+  String? rawMessage,
   DateTime? updatedAt,
 }) {
   return OutboxItem(
     id: id,
-    message: jsonEncode(SyncMessage.aiConfigDelete(id: messageId).toJson()),
+    message:
+        rawMessage ??
+        jsonEncode(SyncMessage.aiConfigDelete(id: messageId).toJson()),
     subject: subject,
     status: OutboxStatus.pending.index,
     retries: retries,
@@ -90,6 +94,291 @@ void _stubClaimSequence(
 
 void _stubHasMorePending(MockOutboxRepository repo, {bool hasMore = false}) {
   when(() => repo.hasMorePending()).thenAnswer((_) async => hasMore);
+}
+
+const _generatedProcessorRetryDelay = Duration(milliseconds: 75);
+const _generatedProcessorErrorDelay = Duration(milliseconds: 225);
+const _generatedProcessorMaxRetries = 3;
+
+enum _GeneratedProcessorMode {
+  single,
+  bundle,
+}
+
+enum _GeneratedProcessorPayloadShape {
+  valid,
+  headInvalid,
+  tailInvalid,
+}
+
+enum _GeneratedProcessorSendOutcome {
+  success,
+  softFailure,
+  exception,
+}
+
+enum _GeneratedProcessorRetryProfile {
+  belowCap,
+  headAtCap,
+  tailAtCap,
+}
+
+enum _GeneratedProcessorPostSendObservation {
+  ok,
+  hasMoreThrows,
+  captureEventThrows,
+}
+
+class _GeneratedProcessorScenario {
+  const _GeneratedProcessorScenario({
+    required this.mode,
+    required this.rowCount,
+    required this.payloadShape,
+    required this.sendOutcome,
+    required this.hasMoreAfterSuccess,
+    required this.retryProfile,
+    required this.postSendObservation,
+  });
+
+  final _GeneratedProcessorMode mode;
+  final int rowCount;
+  final _GeneratedProcessorPayloadShape payloadShape;
+  final _GeneratedProcessorSendOutcome sendOutcome;
+  final bool hasMoreAfterSuccess;
+  final _GeneratedProcessorRetryProfile retryProfile;
+  final _GeneratedProcessorPostSendObservation postSendObservation;
+
+  bool get usesBundleClaim => mode == _GeneratedProcessorMode.bundle;
+
+  int get claimedCount {
+    if (rowCount == 0) {
+      return 0;
+    }
+    return usesBundleClaim ? rowCount : 1;
+  }
+
+  bool get hasClaim => claimedCount > 0;
+
+  bool get usesBundleCommit => usesBundleClaim && claimedCount > 1;
+
+  bool get decodeFails {
+    if (!hasClaim) {
+      return false;
+    }
+    return switch (payloadShape) {
+      _GeneratedProcessorPayloadShape.valid => false,
+      _GeneratedProcessorPayloadShape.headInvalid => true,
+      _GeneratedProcessorPayloadShape.tailInvalid => usesBundleCommit,
+    };
+  }
+
+  bool get sendsMessage => hasClaim && !decodeFails;
+
+  bool get sendSucceeds =>
+      sendsMessage && sendOutcome == _GeneratedProcessorSendOutcome.success;
+
+  bool get failsAfterClaim => hasClaim && !sendSucceeds;
+
+  bool get postSendFails =>
+      sendSucceeds &&
+      postSendObservation != _GeneratedProcessorPostSendObservation.ok;
+
+  bool get capReachedOnFailure {
+    if (!failsAfterClaim) {
+      return false;
+    }
+    if (usesBundleCommit) {
+      for (var index = 0; index < claimedCount; index++) {
+        if (retriesForIndex(index) + 1 >= _generatedProcessorMaxRetries) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return retriesForIndex(0) + 1 >= _generatedProcessorMaxRetries;
+  }
+
+  Duration? get expectedDelay {
+    if (!hasClaim) {
+      return null;
+    }
+    if (sendSucceeds) {
+      if (postSendFails || hasMoreAfterSuccess) {
+        return Duration.zero;
+      }
+      return null;
+    }
+    if (capReachedOnFailure) {
+      return Duration.zero;
+    }
+    return sendsMessage &&
+            sendOutcome == _GeneratedProcessorSendOutcome.softFailure
+        ? _generatedProcessorRetryDelay
+        : _generatedProcessorErrorDelay;
+  }
+
+  int retriesForIndex(int index) {
+    return switch (retryProfile) {
+      _GeneratedProcessorRetryProfile.belowCap => 0,
+      _GeneratedProcessorRetryProfile.headAtCap => index == 0 ? 2 : 0,
+      _GeneratedProcessorRetryProfile.tailAtCap =>
+        usesBundleCommit && index == claimedCount - 1 ? 2 : 0,
+    };
+  }
+
+  List<OutboxItem> claimedRows() {
+    return [
+      for (var index = 0; index < claimedCount; index++)
+        _item(
+          id: index + 1,
+          subject: 'generated:${index + 1}',
+          retries: retriesForIndex(index),
+          messageId: 'generated-${index + 1}',
+          rawMessage: _messageForIndex(index),
+        ),
+    ];
+  }
+
+  String? _messageForIndex(int index) {
+    if (payloadShape == _GeneratedProcessorPayloadShape.headInvalid &&
+        index == 0) {
+      return '{not-json';
+    }
+    if (payloadShape == _GeneratedProcessorPayloadShape.tailInvalid &&
+        usesBundleCommit &&
+        index == claimedCount - 1) {
+      return '{not-json';
+    }
+    return null;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedProcessorScenario('
+        'mode: $mode, '
+        'rowCount: $rowCount, '
+        'payloadShape: $payloadShape, '
+        'sendOutcome: $sendOutcome, '
+        'hasMoreAfterSuccess: $hasMoreAfterSuccess, '
+        'retryProfile: $retryProfile, '
+        'postSendObservation: $postSendObservation'
+        ')';
+  }
+}
+
+extension _AnyGeneratedProcessorScenario on glados.Any {
+  glados.Generator<_GeneratedProcessorMode> get processorMode =>
+      glados.AnyUtils(this).choose(_GeneratedProcessorMode.values);
+
+  glados.Generator<_GeneratedProcessorPayloadShape> get processorPayloadShape =>
+      glados.AnyUtils(this).choose(_GeneratedProcessorPayloadShape.values);
+
+  glados.Generator<_GeneratedProcessorSendOutcome> get processorSendOutcome =>
+      glados.AnyUtils(this).choose(_GeneratedProcessorSendOutcome.values);
+
+  glados.Generator<_GeneratedProcessorRetryProfile> get processorRetryProfile =>
+      glados.AnyUtils(this).choose(_GeneratedProcessorRetryProfile.values);
+
+  glados.Generator<_GeneratedProcessorPostSendObservation>
+  get processorPostSendObservation => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedProcessorPostSendObservation.values);
+
+  glados.Generator<_GeneratedProcessorScenario> get processorScenario =>
+      glados.CombinableAny(this).combine7(
+        processorMode,
+        glados.IntAnys(this).intInRange(0, 5),
+        processorPayloadShape,
+        processorSendOutcome,
+        glados.BoolAny(this).bool,
+        processorRetryProfile,
+        processorPostSendObservation,
+        (
+          _GeneratedProcessorMode mode,
+          int rowCount,
+          _GeneratedProcessorPayloadShape payloadShape,
+          _GeneratedProcessorSendOutcome sendOutcome,
+          bool hasMoreAfterSuccess,
+          _GeneratedProcessorRetryProfile retryProfile,
+          _GeneratedProcessorPostSendObservation postSendObservation,
+        ) => _GeneratedProcessorScenario(
+          mode: mode,
+          rowCount: rowCount,
+          payloadShape: payloadShape,
+          sendOutcome: sendOutcome,
+          hasMoreAfterSuccess: hasMoreAfterSuccess,
+          retryProfile: retryProfile,
+          postSendObservation: postSendObservation,
+        ),
+      );
+}
+
+void _stubGeneratedClaim({
+  required MockOutboxRepository repo,
+  required _GeneratedProcessorScenario scenario,
+  required List<OutboxItem> claimedRows,
+}) {
+  if (scenario.usesBundleClaim) {
+    when(
+      () => repo.claimNextBatch(
+        maxSize: any(named: 'maxSize'),
+        leaseDuration: any(named: 'leaseDuration'),
+      ),
+    ).thenAnswer((_) async => claimedRows);
+  } else {
+    when(
+      () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+    ).thenAnswer((_) async => claimedRows.isEmpty ? null : claimedRows.single);
+  }
+}
+
+void _stubGeneratedRepositoryMutations(MockOutboxRepository repo) {
+  when(() => repo.markSent(any<OutboxItem>())).thenAnswer((_) async {});
+  when(() => repo.markSentBatch(any())).thenAnswer((_) async {});
+  when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
+  when(() => repo.markRetryBatch(any())).thenAnswer((_) async {});
+}
+
+void _stubGeneratedHasMore({
+  required MockOutboxRepository repo,
+  required _GeneratedProcessorScenario scenario,
+}) {
+  if (scenario.postSendObservation ==
+      _GeneratedProcessorPostSendObservation.hasMoreThrows) {
+    when(() => repo.hasMorePending()).thenThrow(StateError('hasMore failed'));
+  } else {
+    when(
+      () => repo.hasMorePending(),
+    ).thenAnswer((_) async => scenario.hasMoreAfterSuccess);
+  }
+}
+
+void _stubGeneratedLogging({
+  required MockLoggingService log,
+  required _GeneratedProcessorScenario scenario,
+}) {
+  when(
+    () => log.captureException(
+      any<Object>(),
+      domain: any<String>(named: 'domain'),
+      subDomain: any<String>(named: 'subDomain'),
+      stackTrace: any<StackTrace?>(named: 'stackTrace'),
+    ),
+  ).thenAnswer((_) async {});
+
+  final eventStub = when(
+    () => log.captureEvent(
+      any<Object>(),
+      domain: any<String>(named: 'domain'),
+      subDomain: any<String>(named: 'subDomain'),
+    ),
+  );
+  if (scenario.postSendObservation ==
+      _GeneratedProcessorPostSendObservation.captureEventThrows) {
+    eventStub.thenThrow(StateError('captureEvent failed'));
+  } else {
+    eventStub.thenAnswer((_) {});
+  }
 }
 
 void main() {
@@ -208,6 +497,145 @@ void main() {
     expect(result.shouldSchedule, isFalse);
     verify(() => repo.markSent(any())).called(1);
   });
+
+  glados.Glados(
+    glados.any.processorScenario,
+    glados.ExploreConfig(numRuns: 220),
+  ).test(
+    'generated processQueue scenarios match single and bundle state model',
+    (scenario) async {
+      final repo = MockOutboxRepository();
+      final sender = MockMessageSender();
+      final log = MockLoggingService();
+      final claimedRows = scenario.claimedRows();
+      final sentMessages = <SyncMessage>[];
+
+      _stubGeneratedClaim(
+        repo: repo,
+        scenario: scenario,
+        claimedRows: claimedRows,
+      );
+      _stubGeneratedRepositoryMutations(repo);
+      _stubGeneratedHasMore(repo: repo, scenario: scenario);
+      _stubGeneratedLogging(log: log, scenario: scenario);
+
+      when(() => sender.send(any())).thenAnswer((invocation) async {
+        final message = invocation.positionalArguments.single as SyncMessage;
+        sentMessages.add(message);
+        return switch (scenario.sendOutcome) {
+          _GeneratedProcessorSendOutcome.success => true,
+          _GeneratedProcessorSendOutcome.softFailure => false,
+          _GeneratedProcessorSendOutcome.exception => throw StateError(
+            'generated send failure',
+          ),
+        };
+      });
+
+      final processor = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+        retryDelayOverride: _generatedProcessorRetryDelay,
+        errorDelayOverride: _generatedProcessorErrorDelay,
+        maxRetriesOverride: _generatedProcessorMaxRetries,
+        bundleMaxSizeProvider: () async => scenario.usesBundleClaim ? 50 : 1,
+      );
+
+      final result = await processor.processQueue();
+
+      expect(result.nextDelay, scenario.expectedDelay);
+      expect(result.shouldSchedule, scenario.expectedDelay != null);
+
+      if (scenario.usesBundleClaim) {
+        verify(
+          () => repo.claimNextBatch(
+            maxSize: 50,
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+        );
+      } else {
+        verify(
+          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+        ).called(1);
+        verifyNever(
+          () => repo.claimNextBatch(
+            maxSize: any(named: 'maxSize'),
+            leaseDuration: any(named: 'leaseDuration'),
+          ),
+        );
+      }
+
+      if (scenario.sendsMessage) {
+        expect(sentMessages, hasLength(1));
+        final sent = sentMessages.single;
+        if (scenario.usesBundleCommit) {
+          final bundle = sent as SyncOutboxBundle;
+          expect(bundle.children, hasLength(scenario.claimedCount));
+          expect(
+            bundle.children,
+            everyElement(isA<SyncAiConfigDelete>()),
+          );
+        } else {
+          expect(
+            sent,
+            isA<SyncAiConfigDelete>().having(
+              (message) => message.id,
+              'id',
+              'generated-1',
+            ),
+          );
+        }
+      } else {
+        expect(sentMessages, isEmpty);
+      }
+
+      if (!scenario.hasClaim) {
+        verifyNever(() => repo.markSent(any()));
+        verifyNever(() => repo.markSentBatch(any()));
+        verifyNever(() => repo.markRetry(any()));
+        verifyNever(() => repo.markRetryBatch(any()));
+      } else if (scenario.sendSucceeds) {
+        if (scenario.usesBundleCommit) {
+          final captured =
+              verify(
+                    () => repo.markSentBatch(captureAny()),
+                  ).captured.single
+                  as List<OutboxItem>;
+          expect(
+            captured.map((row) => row.id),
+            claimedRows.map((row) => row.id),
+          );
+          verifyNever(() => repo.markSent(any()));
+        } else {
+          verify(() => repo.markSent(claimedRows.single)).called(1);
+          verifyNever(() => repo.markSentBatch(any()));
+        }
+        verifyNever(() => repo.markRetry(any()));
+        verifyNever(() => repo.markRetryBatch(any()));
+      } else if (scenario.usesBundleCommit) {
+        final captured =
+            verify(
+                  () => repo.markRetryBatch(captureAny()),
+                ).captured.single
+                as List<OutboxItem>;
+        expect(
+          captured.map((row) => row.id),
+          claimedRows.map((row) => row.id),
+        );
+        verifyNever(() => repo.markRetry(any()));
+        verifyNever(() => repo.markSent(any()));
+        verifyNever(() => repo.markSentBatch(any()));
+      } else {
+        verify(() => repo.markRetry(claimedRows.single)).called(1);
+        verifyNever(() => repo.markRetryBatch(any()));
+        verifyNever(() => repo.markSent(any()));
+        verifyNever(() => repo.markSentBatch(any()));
+      }
+    },
+  );
 
   group('retry cap', () {
     test('retry cap on send failure advances queue (delay=0) and logs', () {
