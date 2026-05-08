@@ -2099,10 +2099,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Regroupe les lignes texte consécutives de l\'outbox en une seule enveloppe de synchronisation pour qu\'une rafale de petits changements parte en un seul message Matrix. Les pièces jointes média sont toujours envoyées individuellement.';
 
   @override
-  String get conflictEntityLabel => 'Entité';
+  String conflictListItemSemanticsLabel(
+    String status,
+    String timestamp,
+    String entityType,
+    String id,
+  ) {
+    return '$status, $timestamp, $entityType, conflit $id';
+  }
 
   @override
-  String get conflictIdLabel => 'ID';
+  String conflictListItemTooltipFullId(String id) {
+    return 'ID de conflit : $id';
+  }
 
   @override
   String get conflictsCopyTextFromSync =>

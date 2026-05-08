@@ -698,8 +698,38 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.",
   "configFlagUseOutboxBundling": "Sdružovat zprávy odchozí pošty",
   "configFlagUseOutboxBundlingDescription": "Zabalí po sobě jdoucí textové řádky odchozí pošty do jedné synchronizační obálky, takže dávky drobných změn odejdou jako jediná zpráva Matrixu. Mediální přílohy se i nadále odesílají samostatně.",
-  "conflictEntityLabel": "Entita",
-  "conflictIdLabel": "ID",
+  "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, konflikt {id}",
+  "@conflictListItemSemanticsLabel": {
+    "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Unresolved"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "2024-03-15 12:34:56"
+      },
+      "entityType": {
+        "type": "String",
+        "example": "Task"
+      },
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictListItemTooltipFullId": "ID konfliktu: {id}",
+  "@conflictListItemTooltipFullId": {
+    "description": "Tooltip on the truncated conflict id in the list row, revealing the full id.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
   "conflictsCopyTextFromSync": "Kopírovat text ze synchronizace",
   "conflictsEmptyDescription": "Všechno je teď synchronizované. Vyřešené položky zůstávají dostupné v druhém filtru.",
   "conflictsEmptyTitle": "Nebyly zjištěny žádné konflikty",

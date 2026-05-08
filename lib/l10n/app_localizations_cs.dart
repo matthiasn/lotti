@@ -2086,10 +2086,19 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zabalí po sobě jdoucí textové řádky odchozí pošty do jedné synchronizační obálky, takže dávky drobných změn odejdou jako jediná zpráva Matrixu. Mediální přílohy se i nadále odesílají samostatně.';
 
   @override
-  String get conflictEntityLabel => 'Entita';
+  String conflictListItemSemanticsLabel(
+    String status,
+    String timestamp,
+    String entityType,
+    String id,
+  ) {
+    return '$status, $timestamp, $entityType, konflikt $id';
+  }
 
   @override
-  String get conflictIdLabel => 'ID';
+  String conflictListItemTooltipFullId(String id) {
+    return 'ID konfliktu: $id';
+  }
 
   @override
   String get conflictsCopyTextFromSync => 'Kopírovat text ze synchronizace';

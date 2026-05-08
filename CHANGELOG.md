@@ -18,6 +18,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   loading.
 
 ### Changed
+- Sync Conflicts list page restyled to match the agents listing visual
+  language. The legacy card chrome is gone; each row is now a hover-aware
+  inline strip that pairs a tone-driven status badge (success for
+  resolved, danger for unresolved) with an entity-type badge, the
+  creation timestamp as the row title, and an 8-character mono prefix of
+  the conflict id on the trailing edge with the full id revealed via
+  tooltip. The full vector clock — previously wrapping two lines of
+  monospace text inside every row — is no longer surfaced in the list
+  and stays available on the conflict detail page where the merge view
+  actually needs it. Below 600 px the row collapses to a two-line
+  stacked layout so phone-width viewports stay legible. The shared
+  `monoMetaStyle` helper that used to live inside the agents feature was
+  also lifted into the design system so any feature that needs an
+  Inconsolata mono cell pulls from a single source.
 - AI summary card header (the `AI summary / Task Laura` row) keeps its
   wake / refresh affordances and Read more pill inline alongside the
   title on every viewport instead of stacking them underneath on

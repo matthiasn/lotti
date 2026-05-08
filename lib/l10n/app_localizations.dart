@@ -3649,17 +3649,22 @@ abstract class AppLocalizations {
   /// **'Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.'**
   String get configFlagUseOutboxBundlingDescription;
 
-  /// No description provided for @conflictEntityLabel.
+  /// Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.
   ///
   /// In en, this message translates to:
-  /// **'Entity'**
-  String get conflictEntityLabel;
+  /// **'{status}, {timestamp}, {entityType}, conflict {id}'**
+  String conflictListItemSemanticsLabel(
+    String status,
+    String timestamp,
+    String entityType,
+    String id,
+  );
 
-  /// No description provided for @conflictIdLabel.
+  /// Tooltip on the truncated conflict id in the list row, revealing the full id.
   ///
   /// In en, this message translates to:
-  /// **'ID'**
-  String get conflictIdLabel;
+  /// **'Conflict ID: {id}'**
+  String conflictListItemTooltipFullId(String id);
 
   /// No description provided for @conflictsCopyTextFromSync.
   ///

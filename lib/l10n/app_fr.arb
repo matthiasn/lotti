@@ -889,8 +889,38 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Compresse les pièces jointes JSON de synchronisation avec gzip avant l'envoi. Économise de la bande passante sur les réseaux lents, au prix d'un léger coût CPU à l'envoi et à la réception.",
   "configFlagUseOutboxBundling": "Regrouper les messages d'outbox",
   "configFlagUseOutboxBundlingDescription": "Regroupe les lignes texte consécutives de l'outbox en une seule enveloppe de synchronisation pour qu'une rafale de petits changements parte en un seul message Matrix. Les pièces jointes média sont toujours envoyées individuellement.",
-  "conflictEntityLabel": "Entité",
-  "conflictIdLabel": "ID",
+  "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, conflit {id}",
+  "@conflictListItemSemanticsLabel": {
+    "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Unresolved"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "2024-03-15 12:34:56"
+      },
+      "entityType": {
+        "type": "String",
+        "example": "Task"
+      },
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictListItemTooltipFullId": "ID de conflit : {id}",
+  "@conflictListItemTooltipFullId": {
+    "description": "Tooltip on the truncated conflict id in the list row, revealing the full id.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
   "conflictsCopyTextFromSync": "Copier le texte depuis la synchronisation",
   "conflictsEmptyDescription": "Tout est synchronisé. Les éléments résolus restent disponibles dans l'autre filtre.",
   "conflictsEmptyTitle": "Aucun conflit détecté",

@@ -2104,10 +2104,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Împachetează rândurile consecutive doar cu text din căsuța de trimitere într-un singur mesaj de sincronizare, astfel încât rafalele de modificări mici să fie trimise ca un singur mesaj Matrix. Atașamentele media sunt în continuare trimise individual.';
 
   @override
-  String get conflictEntityLabel => 'Entitate';
+  String conflictListItemSemanticsLabel(
+    String status,
+    String timestamp,
+    String entityType,
+    String id,
+  ) {
+    return '$status, $timestamp, $entityType, conflict $id';
+  }
 
   @override
-  String get conflictIdLabel => 'ID';
+  String conflictListItemTooltipFullId(String id) {
+    return 'ID conflict: $id';
+  }
 
   @override
   String get conflictsCopyTextFromSync => 'Copiază textul din sincronizare';

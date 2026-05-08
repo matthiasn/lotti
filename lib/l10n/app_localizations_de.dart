@@ -2087,10 +2087,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bündelt aufeinanderfolgende reine Textzeilen aus der Outbox in einer einzigen Sync-Nachricht, damit Bursts kleiner Änderungen als eine Matrix-Nachricht verschickt werden. Medienanhänge werden weiterhin einzeln gesendet.';
 
   @override
-  String get conflictEntityLabel => 'Entität';
+  String conflictListItemSemanticsLabel(
+    String status,
+    String timestamp,
+    String entityType,
+    String id,
+  ) {
+    return '$status, $timestamp, $entityType, Konflikt $id';
+  }
 
   @override
-  String get conflictIdLabel => 'ID';
+  String conflictListItemTooltipFullId(String id) {
+    return 'Konflikt-ID: $id';
+  }
 
   @override
   String get conflictsCopyTextFromSync => 'Text aus Synchronisierung kopieren';

@@ -889,8 +889,38 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.",
   "configFlagUseOutboxBundling": "Grupează mesajele din căsuța de trimitere",
   "configFlagUseOutboxBundlingDescription": "Împachetează rândurile consecutive doar cu text din căsuța de trimitere într-un singur mesaj de sincronizare, astfel încât rafalele de modificări mici să fie trimise ca un singur mesaj Matrix. Atașamentele media sunt în continuare trimise individual.",
-  "conflictEntityLabel": "Entitate",
-  "conflictIdLabel": "ID",
+  "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, conflict {id}",
+  "@conflictListItemSemanticsLabel": {
+    "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Unresolved"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "2024-03-15 12:34:56"
+      },
+      "entityType": {
+        "type": "String",
+        "example": "Task"
+      },
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictListItemTooltipFullId": "ID conflict: {id}",
+  "@conflictListItemTooltipFullId": {
+    "description": "Tooltip on the truncated conflict id in the list row, revealing the full id.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
   "conflictsCopyTextFromSync": "Copiază textul din sincronizare",
   "conflictsEmptyDescription": "Totul este sincronizat. Elementele rezolvate rămân disponibile în celălalt filtru.",
   "conflictsEmptyTitle": "Nu s-au detectat conflicte",

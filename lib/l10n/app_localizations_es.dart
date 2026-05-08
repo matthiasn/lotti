@@ -2099,10 +2099,19 @@ class AppLocalizationsEs extends AppLocalizations {
       'Empaqueta las filas de texto consecutivas de la cola de salida en un único envío de sincronización, para que los lotes de cambios pequeños se envíen como un único mensaje de Matrix. Los archivos adjuntos multimedia se siguen enviando por separado.';
 
   @override
-  String get conflictEntityLabel => 'Entidad';
+  String conflictListItemSemanticsLabel(
+    String status,
+    String timestamp,
+    String entityType,
+    String id,
+  ) {
+    return '$status, $timestamp, $entityType, conflicto $id';
+  }
 
   @override
-  String get conflictIdLabel => 'ID';
+  String conflictListItemTooltipFullId(String id) {
+    return 'ID de conflicto: $id';
+  }
 
   @override
   String get conflictsCopyTextFromSync => 'Copiar texto desde sincronización';

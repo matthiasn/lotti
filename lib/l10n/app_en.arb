@@ -1074,8 +1074,38 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.",
   "configFlagUseOutboxBundling": "Bundle outbox messages",
   "configFlagUseOutboxBundlingDescription": "Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.",
-  "conflictEntityLabel": "Entity",
-  "conflictIdLabel": "ID",
+  "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, conflict {id}",
+  "@conflictListItemSemanticsLabel": {
+    "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Unresolved"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "2024-03-15 12:34:56"
+      },
+      "entityType": {
+        "type": "String",
+        "example": "Task"
+      },
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictListItemTooltipFullId": "Conflict ID: {id}",
+  "@conflictListItemTooltipFullId": {
+    "description": "Tooltip on the truncated conflict id in the list row, revealing the full id.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
   "conflictsCopyTextFromSync": "Copy Text from Sync",
   "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
   "conflictsEmptyTitle": "No conflicts detected",

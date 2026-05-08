@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/sync/ui/view_models/conflict_list_item_view_model.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/cards/index.dart';
+
+const _compactBreakpoint = 600.0;
 
 class ConflictListItem extends StatelessWidget {
   const ConflictListItem({
@@ -21,56 +24,171 @@ class ConflictListItem extends StatelessWidget {
       context: context,
       conflict: conflict,
     );
+    final tokens = context.designTokens;
+    final colors = tokens.colors;
 
     return Semantics(
+      button: onTap != null,
       label: viewModel.semanticsLabel,
-      child: ModernBaseCard(
-        onTap: onTap,
-        child: ModernCardContent(
-          leading: ModernIconContainer(
-            icon: viewModel.statusIcon,
-            iconColor: viewModel.statusColor,
-          ),
-          title: viewModel.timestampLabel,
-          trailing: onTap == null
-              ? null
-              : const Icon(Icons.chevron_right_rounded),
-          subtitleWidget: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ModernStatusChip(
-                label: viewModel.statusLabel,
-                color: viewModel.statusColor,
-                icon: viewModel.statusChipIcon,
-              ),
-              const SizedBox(height: AppTheme.spacingSmall),
-              Text(
-                '${context.messages.conflictEntityLabel}: ${viewModel.entityLabel}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacingSmall),
-              Text(
-                '${context.messages.conflictIdLabel}: ${viewModel.conflictIdValue}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant
-                      .withValues(alpha: AppTheme.alphaSurfaceVariant),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacingSmall),
-              Text(
-                viewModel.vectorClockLabel,
-                style: monoTabularStyle(fontSize: fontSizeSmall).copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant
-                      .withValues(alpha: AppTheme.alphaSurfaceVariant),
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          hoverColor: colors.surface.hover,
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step3,
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < _compactBreakpoint;
+                return isCompact
+                    ? _CompactLayout(
+                        viewModel: viewModel,
+                        hasTap: onTap != null,
+                      )
+                    : _WideLayout(viewModel: viewModel, hasTap: onTap != null);
+              },
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _WideLayout extends StatelessWidget {
+  const _WideLayout({required this.viewModel, required this.hasTap});
+
+  final ConflictListItemViewModel viewModel;
+  final bool hasTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final colors = tokens.colors;
+    return Row(
+      children: [
+        _StatusBadge(tone: viewModel.statusTone, label: viewModel.statusLabel),
+        SizedBox(width: tokens.spacing.step3),
+        DesignSystemBadge.filled(
+          label: viewModel.entityLabel,
+          tone: DesignSystemBadgeTone.secondary,
+        ),
+        SizedBox(width: tokens.spacing.step4),
+        Expanded(
+          child: Text(
+            viewModel.timestampLabel,
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: colors.text.highEmphasis,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        _ConflictIdMeta(viewModel: viewModel),
+        if (hasTap) ...[
+          SizedBox(width: tokens.spacing.step3),
+          Icon(Icons.chevron_right, size: 16, color: colors.text.lowEmphasis),
+        ],
+      ],
+    );
+  }
+}
+
+class _CompactLayout extends StatelessWidget {
+  const _CompactLayout({required this.viewModel, required this.hasTap});
+
+  final ConflictListItemViewModel viewModel;
+  final bool hasTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final colors = tokens.colors;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                viewModel.timestampLabel,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: colors.text.highEmphasis,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            _ConflictIdMeta(viewModel: viewModel),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        Row(
+          children: [
+            _StatusBadge(
+              tone: viewModel.statusTone,
+              label: viewModel.statusLabel,
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            DesignSystemBadge.filled(
+              label: viewModel.entityLabel,
+              tone: DesignSystemBadgeTone.secondary,
+            ),
+            const Spacer(),
+            if (hasTap)
+              Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: colors.text.lowEmphasis,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.tone, required this.label});
+
+  final ConflictStatusTone tone;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeTone = switch (tone) {
+      ConflictStatusTone.resolved => DesignSystemBadgeTone.success,
+      ConflictStatusTone.unresolved => DesignSystemBadgeTone.danger,
+    };
+    return DesignSystemBadge.filled(label: label, tone: badgeTone);
+  }
+}
+
+class _ConflictIdMeta extends StatelessWidget {
+  const _ConflictIdMeta({required this.viewModel});
+
+  final ConflictListItemViewModel viewModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final colors = tokens.colors;
+    return Tooltip(
+      message: context.messages.conflictListItemTooltipFullId(
+        viewModel.conflictIdFull,
+      ),
+      child: Text(
+        viewModel.conflictIdShort,
+        style: monoMetaStyle(tokens, colors),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

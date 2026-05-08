@@ -174,6 +174,21 @@ The feature uses vector clocks in three separate ways.
    whether the payload on disk, in memory, or already stored locally is older,
    newer, equal, or concurrent.
 
+   When a `concurrent` result is reached the incoming payload is stored as a
+   `Conflict` row instead of being merged. The user can pick a winner from the
+   **Settings → Advanced → Conflicts** page. The list shows status, entity
+   type, creation timestamp and an 8-char prefix of the conflict id; the full
+   vector clock and the side-by-side merge view live on the conflict detail
+   page.
+
+   ```mermaid
+   stateDiagram-v2
+       [*] --> Detected: incoming clock is concurrent with local
+       Detected: Detected (status = unresolved)
+       Detected --> Resolved: user picks local OR remote
+       Resolved --> [*]
+   ```
+
 2. Gap detection
 
    `SyncSequenceLogService.recordReceivedEntry()` iterates every host in the

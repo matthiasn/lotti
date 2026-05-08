@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
-import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart'
-    show monoMetaStyle;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Toolbar row: Filters / Group by / Sort buttons, search input, count.
@@ -782,14 +781,7 @@ class _PopRow extends StatelessWidget {
                 ),
               ),
               if (count != null)
-                Text(
-                  '$count',
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    fontFamily: 'Inconsolata',
-                    color: colors.text.lowEmphasis,
-                    letterSpacing: 0,
-                  ),
-                ),
+                Text('$count', style: monoMetaStyle(tokens, colors)),
             ],
           ),
         ),

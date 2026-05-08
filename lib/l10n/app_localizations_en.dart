@@ -2056,10 +2056,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.';
 
   @override
-  String get conflictEntityLabel => 'Entity';
+  String conflictListItemSemanticsLabel(
+    String status,
+    String timestamp,
+    String entityType,
+    String id,
+  ) {
+    return '$status, $timestamp, $entityType, conflict $id';
+  }
 
   @override
-  String get conflictIdLabel => 'ID';
+  String conflictListItemTooltipFullId(String id) {
+    return 'Conflict ID: $id';
+  }
 
   @override
   String get conflictsCopyTextFromSync => 'Copy Text from Sync';

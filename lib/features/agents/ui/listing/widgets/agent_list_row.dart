@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 
 /// Single-line dense row used inside grouped sections of any
 /// `AgentListingShell`. Pure: takes only [AgentListRowData] and renders
@@ -195,20 +196,6 @@ class AgentListRow extends StatelessWidget {
       ),
     };
   }
-}
-
-/// Mono-metadata cell style (id, time, group counts). Closest DS token is
-/// `caption`; we keep the Inconsolata override locally because the design
-/// system has no mono family token. Letter-spacing zeroed so timestamps
-/// and short ids stay legible at small sizes.
-///
-/// Exported so the toolbar / group section can match the row's mono cells.
-TextStyle monoMetaStyle(DsTokens tokens, DsColors colors) {
-  return tokens.typography.styles.others.caption.copyWith(
-    fontFamily: 'Inconsolata',
-    color: colors.text.lowEmphasis,
-    letterSpacing: 0,
-  );
 }
 
 class _Pill extends StatelessWidget {
