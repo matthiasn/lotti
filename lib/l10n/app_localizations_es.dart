@@ -2099,6 +2099,109 @@ class AppLocalizationsEs extends AppLocalizations {
       'Empaqueta las filas de texto consecutivas de la cola de salida en un único envío de sincronización, para que los lotes de cambios pequeños se envíen como un único mensaje de Matrix. Los archivos adjuntos multimedia se siguen enviando por separado.';
 
   @override
+  String get conflictApplyButton => 'Aplicar';
+
+  @override
+  String conflictBannerAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'hace $count días',
+      one: 'hace 1 día',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictBannerAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'hace $count h',
+      one: 'hace 1 h',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictBannerAgoJustNow => 'justo ahora';
+
+  @override
+  String conflictBannerAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'hace $count min',
+      one: 'hace 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictBannerDivergedAgo(String entity, String ago) {
+    return '$entity · divergió $ago';
+  }
+
+  @override
+  String conflictBannerFieldsDifferList(String fields) {
+    return '$fields difieren';
+  }
+
+  @override
+  String get conflictDetailEntryNotFoundTitle => 'Entrada no encontrada';
+
+  @override
+  String get conflictDetailLoadErrorTitle => 'No se pudo cargar el conflicto';
+
+  @override
+  String get conflictDetailNotFoundTitle => 'Conflicto no encontrado';
+
+  @override
+  String get conflictFieldCategory => 'categoría';
+
+  @override
+  String get conflictFieldDuration => 'duración';
+
+  @override
+  String get conflictFieldTitle => 'Título';
+
+  @override
+  String get conflictFieldWordCount => 'número de palabras';
+
+  @override
+  String get conflictFooterHelperLocalSelected =>
+      'Conserva tu edición local y descarta la versión sincronizada.';
+
+  @override
+  String get conflictFooterHelperPickASide => 'Elige un lado para aplicar.';
+
+  @override
+  String get conflictFooterHelperRemoteSelected =>
+      'Acepta la versión sincronizada y descarta tu edición local.';
+
+  @override
+  String conflictHeaderPillEntries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entradas',
+      one: '1 entrada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictHeaderPillFieldsDiffer(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count campos difieren',
+      one: '1 campo difiere',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String conflictListItemSemanticsLabel(
     String status,
     String timestamp,
@@ -2110,8 +2213,37 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String conflictListItemTooltipFullId(String id) {
-    return 'ID de conflicto: $id';
+    return 'ID del conflicto: $id';
   }
+
+  @override
+  String get conflictMetaLocalEdit => 'edición local';
+
+  @override
+  String get conflictMetaVecPrefix => 'vec';
+
+  @override
+  String get conflictMetaViaSync => 'vía sync';
+
+  @override
+  String get conflictPageLeadDesktop =>
+      'Diferencias resaltadas en línea. Haz clic en un lado para usar esa versión, o abre Editar y combinar para fusionarlas.';
+
+  @override
+  String get conflictPageLeadMobile =>
+      'Diferencias resaltadas en línea. Toca un lado para usar esa versión.';
+
+  @override
+  String get conflictPageTitle => 'Conflicto de sincronización';
+
+  @override
+  String get conflictPickerEditMerge => 'Editar y combinar…';
+
+  @override
+  String get conflictPickerUseFromSync => 'Usar desde sync';
+
+  @override
+  String get conflictPickerUseThisDevice => 'Usar este dispositivo';
 
   @override
   String get conflictsCopyTextFromSync => 'Copiar texto desde sincronización';
@@ -2124,6 +2256,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get conflictsEmptyTitle => 'No se detectaron conflictos';
 
   @override
+  String get conflictSideFromSync => 'DESDE LA SYNC';
+
+  @override
+  String get conflictSideThisDevice => 'ESTE DISPOSITIVO';
+
+  @override
   String get conflictsResolved => 'resueltos';
 
   @override
@@ -2134,6 +2272,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get conflictsUnresolved => 'sin resolver';
+
+  @override
+  String conflictWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count palabras',
+      one: '$count palabra',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get copyAsMarkdown => 'Copiar como Markdown';

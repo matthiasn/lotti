@@ -2086,6 +2086,112 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zabalí po sobě jdoucí textové řádky odchozí pošty do jedné synchronizační obálky, takže dávky drobných změn odejdou jako jediná zpráva Matrixu. Mediální přílohy se i nadále odesílají samostatně.';
 
   @override
+  String get conflictApplyButton => 'Použít';
+
+  @override
+  String conflictBannerAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count dny',
+      few: 'před $count dny',
+      one: 'před 1 dnem',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictBannerAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count h',
+      one: 'před 1 h',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictBannerAgoJustNow => 'právě teď';
+
+  @override
+  String conflictBannerAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'před $count min',
+      one: 'před 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictBannerDivergedAgo(String entity, String ago) {
+    return '$entity · odchýleno $ago';
+  }
+
+  @override
+  String conflictBannerFieldsDifferList(String fields) {
+    return 'Liší se: $fields';
+  }
+
+  @override
+  String get conflictDetailEntryNotFoundTitle => 'Záznam nenalezen';
+
+  @override
+  String get conflictDetailLoadErrorTitle => 'Konflikt se nepodařilo načíst';
+
+  @override
+  String get conflictDetailNotFoundTitle => 'Konflikt nenalezen';
+
+  @override
+  String get conflictFieldCategory => 'kategorie';
+
+  @override
+  String get conflictFieldDuration => 'trvání';
+
+  @override
+  String get conflictFieldTitle => 'Titulek';
+
+  @override
+  String get conflictFieldWordCount => 'počet slov';
+
+  @override
+  String get conflictFooterHelperLocalSelected =>
+      'Zachová tvou místní úpravu a zahodí synchronizovanou verzi.';
+
+  @override
+  String get conflictFooterHelperPickASide => 'Vyber stranu pro použití.';
+
+  @override
+  String get conflictFooterHelperRemoteSelected =>
+      'Přijme synchronizovanou verzi a zahodí tvou místní úpravu.';
+
+  @override
+  String conflictHeaderPillEntries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count záznamů',
+      few: '$count záznamy',
+      one: '1 záznam',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictHeaderPillFieldsDiffer(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count polí se liší',
+      few: '$count pole se liší',
+      one: '1 pole se liší',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String conflictListItemSemanticsLabel(
     String status,
     String timestamp,
@@ -2101,6 +2207,35 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get conflictMetaLocalEdit => 'místní úprava';
+
+  @override
+  String get conflictMetaVecPrefix => 'vec';
+
+  @override
+  String get conflictMetaViaSync => 'přes synchronizaci';
+
+  @override
+  String get conflictPageLeadDesktop =>
+      'Rozdíly jsou zvýrazněny v textu. Klikni na stranu, kterou chceš použít, nebo otevři Upravit a sloučit pro kombinaci.';
+
+  @override
+  String get conflictPageLeadMobile =>
+      'Rozdíly jsou zvýrazněny v textu. Klepni na stranu, kterou chceš použít.';
+
+  @override
+  String get conflictPageTitle => 'Konflikt synchronizace';
+
+  @override
+  String get conflictPickerEditMerge => 'Upravit a sloučit…';
+
+  @override
+  String get conflictPickerUseFromSync => 'Použít ze synchronizace';
+
+  @override
+  String get conflictPickerUseThisDevice => 'Použít toto zařízení';
+
+  @override
   String get conflictsCopyTextFromSync => 'Kopírovat text ze synchronizace';
 
   @override
@@ -2109,6 +2244,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get conflictsEmptyTitle => 'Nebyly zjištěny žádné konflikty';
+
+  @override
+  String get conflictSideFromSync => 'ZE SYNCHRONIZACE';
+
+  @override
+  String get conflictSideThisDevice => 'TOTO ZAŘÍZENÍ';
 
   @override
   String get conflictsResolved => 'vyřešeno';
@@ -2121,6 +2262,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get conflictsUnresolved => 'nevyřešeno';
+
+  @override
+  String conflictWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count slov',
+      few: '$count slova',
+      one: '$count slovo',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get copyAsMarkdown => 'Kopírovat jako Markdown';

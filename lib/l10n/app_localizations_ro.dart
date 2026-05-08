@@ -2104,6 +2104,111 @@ class AppLocalizationsRo extends AppLocalizations {
       'Împachetează rândurile consecutive doar cu text din căsuța de trimitere într-un singur mesaj de sincronizare, astfel încât rafalele de modificări mici să fie trimise ca un singur mesaj Matrix. Atașamentele media sunt în continuare trimise individual.';
 
   @override
+  String get conflictApplyButton => 'Aplică';
+
+  @override
+  String conflictBannerAgoDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count zile',
+      one: 'acum 1 zi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictBannerAgoHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count h',
+      one: 'acum 1 h',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictBannerAgoJustNow => 'chiar acum';
+
+  @override
+  String conflictBannerAgoMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'acum $count min',
+      one: 'acum 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictBannerDivergedAgo(String entity, String ago) {
+    return '$entity · divergent $ago';
+  }
+
+  @override
+  String conflictBannerFieldsDifferList(String fields) {
+    return '$fields diferă';
+  }
+
+  @override
+  String get conflictDetailEntryNotFoundTitle => 'Intrare negăsită';
+
+  @override
+  String get conflictDetailLoadErrorTitle =>
+      'Conflictul nu a putut fi încărcat';
+
+  @override
+  String get conflictDetailNotFoundTitle => 'Conflict negăsit';
+
+  @override
+  String get conflictFieldCategory => 'categorie';
+
+  @override
+  String get conflictFieldDuration => 'durată';
+
+  @override
+  String get conflictFieldTitle => 'Titlu';
+
+  @override
+  String get conflictFieldWordCount => 'număr de cuvinte';
+
+  @override
+  String get conflictFooterHelperLocalSelected =>
+      'Păstrează modificarea locală și renunță la versiunea sincronizată.';
+
+  @override
+  String get conflictFooterHelperPickASide =>
+      'Alegeți o parte pentru a aplica.';
+
+  @override
+  String get conflictFooterHelperRemoteSelected =>
+      'Acceptă versiunea sincronizată și renunță la modificarea locală.';
+
+  @override
+  String conflictHeaderPillEntries(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count intrări',
+      one: '1 intrare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String conflictHeaderPillFieldsDiffer(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count câmpuri diferă',
+      one: '1 câmp diferă',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String conflictListItemSemanticsLabel(
     String status,
     String timestamp,
@@ -2119,6 +2224,35 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get conflictMetaLocalEdit => 'modificare locală';
+
+  @override
+  String get conflictMetaVecPrefix => 'vec';
+
+  @override
+  String get conflictMetaViaSync => 'prin sincronizare';
+
+  @override
+  String get conflictPageLeadDesktop =>
+      'Diferențele sunt evidențiate inline. Faceți clic pe o parte pentru a folosi versiunea respectivă sau deschideți Editare și îmbinare pentru a le combina.';
+
+  @override
+  String get conflictPageLeadMobile =>
+      'Diferențele sunt evidențiate inline. Atingeți o parte pentru a folosi versiunea respectivă.';
+
+  @override
+  String get conflictPageTitle => 'Conflict de sincronizare';
+
+  @override
+  String get conflictPickerEditMerge => 'Editare și îmbinare…';
+
+  @override
+  String get conflictPickerUseFromSync => 'Folosește din sincronizare';
+
+  @override
+  String get conflictPickerUseThisDevice => 'Folosește acest dispozitiv';
+
+  @override
   String get conflictsCopyTextFromSync => 'Copiază textul din sincronizare';
 
   @override
@@ -2127,6 +2261,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get conflictsEmptyTitle => 'Nu s-au detectat conflicte';
+
+  @override
+  String get conflictSideFromSync => 'DIN SINCRONIZARE';
+
+  @override
+  String get conflictSideThisDevice => 'ACEST DISPOZITIV';
 
   @override
   String get conflictsResolved => 'rezolvat';
@@ -2140,6 +2280,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get conflictsUnresolved => 'nerezolvat';
+
+  @override
+  String conflictWordCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de cuvinte',
+      few: '$count cuvinte',
+      one: '$count cuvânt',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get copyAsMarkdown => 'Copiază ca Markdown';

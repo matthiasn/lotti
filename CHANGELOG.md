@@ -5,7 +5,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.998]
+### Added
+- Sync conflict resolution screen rebuilt as an inline-diff picker.
+  Tapping a conflict row now opens a dedicated page with a back chip
+  + title + amber count pill in the header, lead copy, and an amber
+  summary banner that calls out the entity type and how long ago the
+  two sides diverged plus a subline listing the fields that differ.
+  Below the banner are two diff cards — local (teal) on the left,
+  remote (blue) on the right — with each side's title rendered as a
+  word-level diff: tokens unique to the local side are tinted green,
+  tokens the remote dropped are line-through red, and tokens the
+  remote introduced are tinted blue. Each card carries the side's
+  timestamp + per-side vector-clock counter (`vec N`) plus a category
+  icon, word count, and audio duration when available, with a
+  `local edit` / `via sync` provenance label on desktop. A picker
+  pill row underneath mirrors the selection (`Use this device` /
+  `Use from sync`, plus `Edit & merge…` on desktop), and a sticky
+  glass footer holds Cancel + Apply with helper copy that reads back
+  the chosen consequence in plain English. Below 768 px the cards
+  stack vertically, the picker drops to two pills, and the footer
+  surfaces `Edit & merge…` as a left-side text link. Apply commits
+  via `PersistenceLogic.updateJournalEntity` only when a side is
+  picked; Cancel beams back without writing. The diff itself is a
+  pure-Dart word-level LCS helper so it carries unit tests for
+  identical / additions-only / replacements / mixed cases.
+- New design-system color tokens for the picker: `colors.conflict.*`
+  carry the local / remote / diverged accent + tinted surface pairs,
+  and `colors.diff.*` cover the added / removed / replaced highlight
+  pairs. Both are wired through `tokens.json` and the generator so
+  light and dark variants are emitted from one source.
 ### Fixed
+- Conflict detail page now opens correctly on desktop. The Settings
+  V2 panel for `sync-conflicts` was registered as a list-only body,
+  so a row tap updated the URL but the right-hand pane kept
+  rendering the list — only the mobile Beamer stack was wiring the
+  detail. The panel now uses `DetailIdDispatch(idParamKey:
+  'conflictId')` so the desktop pane swaps to `ConflictDetailRoute`
+  when the URL gains an id, matching the categories / labels /
+  dashboards / measurables flows.
 - Linked-entries activity log on a task now sorts entries by each
   entry's `dateFrom` instead of the link's own `createdAt`, so the
   "Newest first" / "Oldest first" toggle reflects the timestamps
@@ -18,20 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   loading.
 
 ### Changed
-- Sync Conflicts list page restyled to match the agents listing visual
-  language. The legacy card chrome is gone; each row is now a hover-aware
-  inline strip that pairs a tone-driven status badge (success for
-  resolved, danger for unresolved) with an entity-type badge, the
-  creation timestamp as the row title, and an 8-character mono prefix of
-  the conflict id on the trailing edge with the full id revealed via
-  tooltip. The full vector clock — previously wrapping two lines of
-  monospace text inside every row — is no longer surfaced in the list
-  and stays available on the conflict detail page where the merge view
-  actually needs it. Below 600 px the row collapses to a two-line
-  stacked layout so phone-width viewports stay legible. The shared
-  `monoMetaStyle` helper that used to live inside the agents feature was
-  also lifted into the design system so any feature that needs an
-  Inconsolata mono cell pulls from a single source.
 - AI summary card header (the `AI summary / Task Laura` row) keeps its
   wake / refresh affordances and Read more pill inline alongside the
   title on every viewport instead of stacking them underneath on
@@ -57,6 +80,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.997]
 ### Changed
+- Sync Conflicts list page restyled to match the agents listing visual
+  language. The legacy card chrome is gone; each row is now a hover-aware
+  inline strip that pairs a tone-driven status badge (success for
+  resolved, danger for unresolved) with an entity-type badge, the
+  creation timestamp as the row title, and an 8-character mono prefix of
+  the conflict id on the trailing edge with the full id revealed via
+  tooltip. The full vector clock — previously wrapping two lines of
+  monospace text inside every row — is no longer surfaced in the list
+  and stays available on the conflict detail page where the merge view
+  actually needs it. Below 600 px the row collapses to a two-line
+  stacked layout so phone-width viewports stay legible. The shared
+  `monoMetaStyle` helper that used to live inside the agents feature was
+  also lifted into the design system so any feature that needs an
+  Inconsolata mono cell pulls from a single source.
 - Sidebar running-timer card now hides itself only when the timer's
   parent task is the same task currently open in the desktop task-
   details pane *and* the user is actually on a `/tasks/<uuid>` route.

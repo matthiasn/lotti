@@ -1074,6 +1074,87 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.",
   "configFlagUseOutboxBundling": "Bundle outbox messages",
   "configFlagUseOutboxBundlingDescription": "Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.",
+  "conflictApplyButton": "Apply",
+  "conflictBannerAgoDays": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@conflictBannerAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "conflictBannerAgoHours": "{count, plural, =1{1 h ago} other{{count} h ago}}",
+  "@conflictBannerAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "conflictBannerAgoJustNow": "just now",
+  "conflictBannerAgoMinutes": "{count, plural, =1{1 min ago} other{{count} min ago}}",
+  "@conflictBannerAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "conflictBannerDivergedAgo": "{entity} · diverged {ago}",
+  "@conflictBannerDivergedAgo": {
+    "description": "Conflict summary banner first line.",
+    "placeholders": {
+      "entity": {
+        "type": "String",
+        "example": "Audio note"
+      },
+      "ago": {
+        "type": "String",
+        "example": "2 min ago"
+      }
+    }
+  },
+  "conflictBannerFieldsDifferList": "{fields} differ",
+  "@conflictBannerFieldsDifferList": {
+    "description": "Conflict summary banner subline listing differing fields, e.g. 'Title · word count differ'.",
+    "placeholders": {
+      "fields": {
+        "type": "String",
+        "example": "Title · word count"
+      }
+    }
+  },
+  "conflictDetailEntryNotFoundTitle": "Entry not found",
+  "conflictDetailLoadErrorTitle": "Couldn't load conflict",
+  "conflictDetailNotFoundTitle": "Conflict not found",
+  "conflictFieldCategory": "category",
+  "conflictFieldDuration": "duration",
+  "conflictFieldTitle": "Title",
+  "conflictFieldWordCount": "word count",
+  "conflictFooterHelperLocalSelected": "Will keep your local edit and discard the synced version.",
+  "conflictFooterHelperPickASide": "Pick a side to apply.",
+  "conflictFooterHelperRemoteSelected": "Will accept the synced version and discard your local edit.",
+  "conflictHeaderPillEntries": "{count, plural, =1{1 entry} other{{count} entries}}",
+  "@conflictHeaderPillEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "conflictHeaderPillFieldsDiffer": "{count, plural, =1{1 field differs} other{{count} fields differ}}",
+  "@conflictHeaderPillFieldsDiffer": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, conflict {id}",
   "@conflictListItemSemanticsLabel": {
     "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
@@ -1106,13 +1187,34 @@
       }
     }
   },
+  "conflictMetaLocalEdit": "local edit",
+  "conflictMetaVecPrefix": "vec",
+  "conflictMetaViaSync": "via sync",
+  "conflictPageLeadDesktop": "Differences highlighted inline. Click a side to use that version, or open Edit & merge to combine them.",
+  "conflictPageLeadMobile": "Differences highlighted inline. Tap a side to use that version.",
+  "conflictPageTitle": "Sync conflict",
+  "conflictPickerEditMerge": "Edit & merge…",
+  "conflictPickerUseFromSync": "Use from sync",
+  "conflictPickerUseThisDevice": "Use this device",
   "conflictsCopyTextFromSync": "Copy Text from Sync",
   "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
   "conflictsEmptyTitle": "No conflicts detected",
+  "conflictSideFromSync": "FROM SYNC",
+  "conflictSideThisDevice": "THIS DEVICE",
   "conflictsResolved": "resolved",
   "conflictsResolveLocalVersion": "Resolve with local version",
   "conflictsResolveRemoteVersion": "Resolve with remote version",
   "conflictsUnresolved": "unresolved",
+  "conflictWordCount": "{count, plural, one{{count} word} other{{count} words}}",
+  "@conflictWordCount": {
+    "description": "Word count shown on the conflict detail meta row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
   "copyAsMarkdown": "Copy as Markdown",
   "copyAsText": "Copy as text",
   "correctionExampleCancel": "CANCEL",
