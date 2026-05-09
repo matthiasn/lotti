@@ -1,10 +1,12 @@
 //ignore_for_file: avoid_redundant_argument_values
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
@@ -14,6 +16,366 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+
+enum _GeneratedFeedbackDecisionTimeSlot { before, since, inside, until, after }
+
+enum _GeneratedFeedbackDecisionToolSlot {
+  estimate,
+  title,
+  addChecklist,
+  updateChecklist,
+  migrateChecklist,
+}
+
+enum _GeneratedFeedbackDecisionContextSlot {
+  none,
+  rejectionReason,
+  snakeReason,
+  kebabReason,
+  nestedFeedback,
+  notesList,
+  nonExplanatoryArgs,
+  shortReason,
+}
+
+enum _GeneratedFeedbackDecisionSummarySlot {
+  decisionSummary,
+  changeSetSummary,
+  toolNameFallback,
+}
+
+class _GeneratedFeedbackDecisionSpec {
+  const _GeneratedFeedbackDecisionSpec({
+    required this.timeSlot,
+    required this.verdict,
+    required this.toolSlot,
+    required this.contextSlot,
+    required this.summarySlot,
+  });
+
+  final _GeneratedFeedbackDecisionTimeSlot timeSlot;
+  final ChangeDecisionVerdict verdict;
+  final _GeneratedFeedbackDecisionToolSlot toolSlot;
+  final _GeneratedFeedbackDecisionContextSlot contextSlot;
+  final _GeneratedFeedbackDecisionSummarySlot summarySlot;
+
+  bool get isChecklistTool => switch (toolSlot) {
+    _GeneratedFeedbackDecisionToolSlot.addChecklist ||
+    _GeneratedFeedbackDecisionToolSlot.updateChecklist ||
+    _GeneratedFeedbackDecisionToolSlot.migrateChecklist => true,
+    _ => false,
+  };
+
+  bool get hasExplanatoryContext => switch (contextSlot) {
+    _GeneratedFeedbackDecisionContextSlot.rejectionReason ||
+    _GeneratedFeedbackDecisionContextSlot.snakeReason ||
+    _GeneratedFeedbackDecisionContextSlot.kebabReason ||
+    _GeneratedFeedbackDecisionContextSlot.nestedFeedback ||
+    _GeneratedFeedbackDecisionContextSlot.notesList => true,
+    _ => false,
+  };
+
+  bool get suppressesAsBareChecklistRejection =>
+      verdict == ChangeDecisionVerdict.rejected &&
+      isChecklistTool &&
+      !hasExplanatoryContext;
+
+  String get toolName => switch (toolSlot) {
+    _GeneratedFeedbackDecisionToolSlot.estimate => 'update_task_estimate',
+    _GeneratedFeedbackDecisionToolSlot.title => 'update_task_title',
+    _GeneratedFeedbackDecisionToolSlot.addChecklist =>
+      TaskAgentToolNames.addChecklistItem,
+    _GeneratedFeedbackDecisionToolSlot.updateChecklist =>
+      TaskAgentToolNames.updateChecklistItems,
+    _GeneratedFeedbackDecisionToolSlot.migrateChecklist =>
+      TaskAgentToolNames.migrateChecklistItems,
+  };
+
+  FeedbackSentiment get expectedSentiment => switch (verdict) {
+    ChangeDecisionVerdict.confirmed => FeedbackSentiment.positive,
+    ChangeDecisionVerdict.rejected => FeedbackSentiment.negative,
+    ChangeDecisionVerdict.deferred => FeedbackSentiment.neutral,
+    ChangeDecisionVerdict.retracted => FeedbackSentiment.neutral,
+  };
+
+  DateTime createdAt({
+    required DateTime since,
+    required DateTime until,
+  }) {
+    return switch (timeSlot) {
+      _GeneratedFeedbackDecisionTimeSlot.before => since.subtract(
+        const Duration(microseconds: 1),
+      ),
+      _GeneratedFeedbackDecisionTimeSlot.since => since,
+      _GeneratedFeedbackDecisionTimeSlot.inside => since.add(
+        const Duration(days: 2, hours: 3),
+      ),
+      _GeneratedFeedbackDecisionTimeSlot.until => until,
+      _GeneratedFeedbackDecisionTimeSlot.after => until.add(
+        const Duration(microseconds: 1),
+      ),
+    };
+  }
+
+  bool isInWindow({
+    required DateTime since,
+    required DateTime until,
+  }) {
+    final created = createdAt(since: since, until: until);
+    return !created.isBefore(since) && !created.isAfter(until);
+  }
+
+  ChangeDecisionEntity decision({
+    required int index,
+    required DateTime since,
+    required DateTime until,
+  }) {
+    return makeTestChangeDecision(
+      id: _decisionId(index),
+      agentId: _agentId(index),
+      changeSetId: _changeSetId(index),
+      itemIndex: 0,
+      toolName: toolName,
+      verdict: verdict,
+      createdAt: createdAt(since: since, until: until),
+      rejectionReason: rejectionReason(index),
+      humanSummary: decisionSummary(index),
+      args: args(index),
+    );
+  }
+
+  ChangeSetEntity? changeSet({
+    required int index,
+    required DateTime since,
+    required DateTime until,
+  }) {
+    if (summarySlot != _GeneratedFeedbackDecisionSummarySlot.changeSetSummary) {
+      return null;
+    }
+
+    return makeTestChangeSet(
+      id: _changeSetId(index),
+      agentId: _agentId(index),
+      createdAt: createdAt(since: since, until: until),
+      items: [
+        ChangeItem(
+          toolName: toolName,
+          args: args(index) ?? const {},
+          humanSummary: changeSetSummary(index),
+        ),
+      ],
+    );
+  }
+
+  _ExpectedFeedbackDecisionItem expectedItem(int index) {
+    return _ExpectedFeedbackDecisionItem(
+      id: _decisionId(index),
+      agentId: _agentId(index),
+      sentiment: expectedSentiment,
+      detail: expectedDetail(index),
+    );
+  }
+
+  String expectedDetail(int index) {
+    final reason = rejectionReason(index);
+    final suffix = reason == null ? '' : ' — $reason';
+    return '${verdict.name}: ${expectedSummary(index)}$suffix';
+  }
+
+  String expectedSummary(int index) {
+    return switch (summarySlot) {
+      _GeneratedFeedbackDecisionSummarySlot.decisionSummary => decisionSummary(
+        index,
+      )!,
+      _GeneratedFeedbackDecisionSummarySlot.changeSetSummary =>
+        changeSetSummary(index),
+      _GeneratedFeedbackDecisionSummarySlot.toolNameFallback => toolName,
+    };
+  }
+
+  String? decisionSummary(int index) {
+    return switch (summarySlot) {
+      _GeneratedFeedbackDecisionSummarySlot.decisionSummary =>
+        'Generated decision summary $index',
+      _ => null,
+    };
+  }
+
+  String changeSetSummary(int index) => 'Generated change-set summary $index';
+
+  String? rejectionReason(int index) {
+    return switch (contextSlot) {
+      _GeneratedFeedbackDecisionContextSlot.rejectionReason =>
+        'Generated rejection reason $index',
+      _ => null,
+    };
+  }
+
+  Map<String, dynamic>? args(int index) {
+    return switch (contextSlot) {
+      _GeneratedFeedbackDecisionContextSlot.snakeReason => {
+        'rejection_reason': 'Generated snake reason $index',
+      },
+      _GeneratedFeedbackDecisionContextSlot.kebabReason => {
+        'rejection-reason': 'Generated kebab reason $index',
+      },
+      _GeneratedFeedbackDecisionContextSlot.nestedFeedback => {
+        'feedback': {'text': 'Generated nested feedback $index'},
+      },
+      _GeneratedFeedbackDecisionContextSlot.notesList => {
+        'notes': ['Generated note $index', 'Generated follow-up $index'],
+      },
+      _GeneratedFeedbackDecisionContextSlot.nonExplanatoryArgs => {
+        'title': 'Generated checklist item $index',
+        'status': 'open',
+      },
+      _GeneratedFeedbackDecisionContextSlot.shortReason => {'reason': 'ok'},
+      _ => null,
+    };
+  }
+
+  String _decisionId(int index) => 'generated-decision-$index';
+
+  String _agentId(int index) => 'generated-agent-$index';
+
+  String _changeSetId(int index) => 'generated-change-set-$index';
+
+  @override
+  String toString() {
+    return '_GeneratedFeedbackDecisionSpec('
+        'timeSlot: $timeSlot, verdict: $verdict, toolSlot: $toolSlot, '
+        'contextSlot: $contextSlot, summarySlot: $summarySlot)';
+  }
+}
+
+class _GeneratedFeedbackDecisionScenario {
+  const _GeneratedFeedbackDecisionScenario({required this.decisions});
+
+  final List<_GeneratedFeedbackDecisionSpec> decisions;
+
+  _ExpectedFeedbackDecisionModel expectedModel({
+    required DateTime since,
+    required DateTime until,
+  }) {
+    final classifiedItems = <_ExpectedFeedbackDecisionItem>[];
+    var totalDecisionsScanned = 0;
+    var suppressedChecklistRejectionCount = 0;
+
+    for (var index = 0; index < decisions.length; index += 1) {
+      final decision = decisions[index];
+      if (!decision.isInWindow(since: since, until: until)) {
+        continue;
+      }
+
+      totalDecisionsScanned += 1;
+      if (decision.suppressesAsBareChecklistRejection) {
+        suppressedChecklistRejectionCount += 1;
+        continue;
+      }
+
+      classifiedItems.add(decision.expectedItem(index));
+    }
+
+    return _ExpectedFeedbackDecisionModel(
+      classifiedItems: classifiedItems,
+      totalDecisionsScanned: totalDecisionsScanned,
+      suppressedChecklistRejectionCount: suppressedChecklistRejectionCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedFeedbackDecisionScenario(decisions: $decisions)';
+  }
+}
+
+class _ExpectedFeedbackDecisionModel {
+  const _ExpectedFeedbackDecisionModel({
+    required this.classifiedItems,
+    required this.totalDecisionsScanned,
+    required this.suppressedChecklistRejectionCount,
+  });
+
+  final List<_ExpectedFeedbackDecisionItem> classifiedItems;
+  final int totalDecisionsScanned;
+  final int suppressedChecklistRejectionCount;
+
+  bool get hasAggregateSuppressionItem =>
+      suppressedChecklistRejectionCount >= 2;
+
+  int get totalItemCount =>
+      classifiedItems.length + (hasAggregateSuppressionItem ? 1 : 0);
+}
+
+class _ExpectedFeedbackDecisionItem {
+  const _ExpectedFeedbackDecisionItem({
+    required this.id,
+    required this.agentId,
+    required this.sentiment,
+    required this.detail,
+  });
+
+  final String id;
+  final String agentId;
+  final FeedbackSentiment sentiment;
+  final String detail;
+}
+
+extension _AnyGeneratedFeedbackDecisionScenario on glados.Any {
+  glados.Generator<_GeneratedFeedbackDecisionTimeSlot>
+  get feedbackDecisionTimeSlot =>
+      glados.AnyUtils(this).choose(_GeneratedFeedbackDecisionTimeSlot.values);
+
+  glados.Generator<ChangeDecisionVerdict> get feedbackDecisionVerdict =>
+      glados.AnyUtils(this).choose(ChangeDecisionVerdict.values);
+
+  glados.Generator<_GeneratedFeedbackDecisionToolSlot>
+  get feedbackDecisionToolSlot =>
+      glados.AnyUtils(this).choose(_GeneratedFeedbackDecisionToolSlot.values);
+
+  glados.Generator<_GeneratedFeedbackDecisionContextSlot>
+  get feedbackDecisionContextSlot => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedFeedbackDecisionContextSlot.values);
+
+  glados.Generator<_GeneratedFeedbackDecisionSummarySlot>
+  get feedbackDecisionSummarySlot => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedFeedbackDecisionSummarySlot.values);
+
+  glados.Generator<_GeneratedFeedbackDecisionSpec> get feedbackDecisionSpec =>
+      glados.CombinableAny(this).combine5(
+        feedbackDecisionTimeSlot,
+        feedbackDecisionVerdict,
+        feedbackDecisionToolSlot,
+        feedbackDecisionContextSlot,
+        feedbackDecisionSummarySlot,
+        (
+          _GeneratedFeedbackDecisionTimeSlot timeSlot,
+          ChangeDecisionVerdict verdict,
+          _GeneratedFeedbackDecisionToolSlot toolSlot,
+          _GeneratedFeedbackDecisionContextSlot contextSlot,
+          _GeneratedFeedbackDecisionSummarySlot summarySlot,
+        ) => _GeneratedFeedbackDecisionSpec(
+          timeSlot: timeSlot,
+          verdict: verdict,
+          toolSlot: toolSlot,
+          contextSlot: contextSlot,
+          summarySlot: summarySlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedFeedbackDecisionScenario>
+  get feedbackDecisionScenario =>
+      glados.ListAnys(
+            this,
+          )
+          .listWithLengthInRange(0, 14, feedbackDecisionSpec)
+          .map(
+            (decisions) =>
+                _GeneratedFeedbackDecisionScenario(decisions: decisions),
+          );
+}
 
 void main() {
   late MockAgentRepository mockRepo;
@@ -484,6 +846,101 @@ void main() {
       expect(result.items.first.sourceEntityId, 'cd-inside');
       expect(result.totalDecisionsScanned, 1);
     });
+
+    glados.Glados(
+      glados.any.feedbackDecisionScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'generated decision extraction preserves window, suppression, '
+      'and fallback semantics',
+      (scenario) async {
+        final decisions = <ChangeDecisionEntity>[];
+        for (var index = 0; index < scenario.decisions.length; index += 1) {
+          decisions.add(
+            scenario.decisions[index].decision(
+              index: index,
+              since: windowStart,
+              until: windowEnd,
+            ),
+          );
+        }
+        stubDecisions(decisions);
+
+        for (var index = 0; index < scenario.decisions.length; index += 1) {
+          final changeSet = scenario.decisions[index].changeSet(
+            index: index,
+            since: windowStart,
+            until: windowEnd,
+          );
+          if (changeSet == null) {
+            continue;
+          }
+          when(() => mockRepo.getEntity(changeSet.id)).thenAnswer(
+            (_) async => changeSet,
+          );
+        }
+
+        final expected = scenario.expectedModel(
+          since: windowStart,
+          until: windowEnd,
+        );
+
+        final result = await service.extract(
+          templateId: kTestTemplateId,
+          since: windowStart,
+          until: windowEnd,
+        );
+
+        expect(result.windowStart, windowStart);
+        expect(result.windowEnd, windowEnd);
+        expect(result.totalObservationsScanned, 0);
+        expect(result.totalDecisionsScanned, expected.totalDecisionsScanned);
+        expect(result.items, hasLength(expected.totalItemCount));
+
+        final decisionItems = result.items
+            .where((item) => item.sourceEntityId != null)
+            .toList();
+        expect(decisionItems, hasLength(expected.classifiedItems.length));
+        for (var index = 0; index < decisionItems.length; index += 1) {
+          final actual = decisionItems[index];
+          final expectedItem = expected.classifiedItems[index];
+
+          expect(actual.source, FeedbackSources.decision);
+          expect(actual.category, FeedbackCategory.accuracy);
+          expect(actual.confidence, 1);
+          expect(actual.sourceEntityId, expectedItem.id);
+          expect(actual.agentId, expectedItem.agentId);
+          expect(actual.sentiment, expectedItem.sentiment);
+          expect(actual.detail, expectedItem.detail);
+        }
+
+        final aggregateItems = result.items
+            .where((item) => item.sourceEntityId == null)
+            .toList();
+        if (expected.hasAggregateSuppressionItem) {
+          expect(aggregateItems, hasLength(1));
+          final aggregate = aggregateItems.single;
+          expect(aggregate.source, FeedbackSources.decision);
+          expect(aggregate.category, FeedbackCategory.prioritization);
+          expect(aggregate.sentiment, FeedbackSentiment.negative);
+          expect(aggregate.agentId, kTestTemplateId);
+          expect(aggregate.confidence, 1);
+          expect(
+            aggregate.detail,
+            contains('Repeated rejected checklist proposals'),
+          );
+          expect(
+            aggregate.detail,
+            contains(
+              '${expected.suppressedChecklistRejectionCount} '
+              'checklist changes',
+            ),
+          );
+        } else {
+          expect(aggregateItems, isEmpty);
+        }
+      },
+    );
 
     test('classifies observations as neutral with default detail', () async {
       stubEmptyData();
