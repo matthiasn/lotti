@@ -10,6 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
+import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -149,6 +150,169 @@ extension _AnyGeneratedEmbeddingScenario on glados.Any {
           storedCategoryShape: storedCategoryShape,
           hashMatches: hashMatches,
           useLabelResolver: useLabelResolver,
+          seed: seed,
+        ),
+      );
+}
+
+enum _GeneratedAgentReportContentShape {
+  whitespaceOnly,
+  tooShort,
+  singleChunk,
+  multiChunk,
+}
+
+enum _GeneratedAgentReportFailureShape {
+  none,
+  firstChunk,
+  secondChunk,
+}
+
+enum _GeneratedAgentReportMetadataSlot {
+  current,
+  previous,
+  defaultCategory,
+}
+
+class _GeneratedAgentReportScenario {
+  const _GeneratedAgentReportScenario({
+    required this.contentShape,
+    required this.failureShape,
+    required this.metadataSlot,
+    required this.hashMatches,
+    required this.seed,
+  });
+
+  final _GeneratedAgentReportContentShape contentShape;
+  final _GeneratedAgentReportFailureShape failureShape;
+  final _GeneratedAgentReportMetadataSlot metadataSlot;
+  final bool hashMatches;
+  final int seed;
+
+  String get reportId => 'generated-report-$seed';
+
+  String get taskId => switch (metadataSlot) {
+    _GeneratedAgentReportMetadataSlot.current => 'task-current-$seed',
+    _GeneratedAgentReportMetadataSlot.previous => 'task-previous-$seed',
+    _GeneratedAgentReportMetadataSlot.defaultCategory => 'task-default-$seed',
+  };
+
+  String get categoryId => switch (metadataSlot) {
+    _GeneratedAgentReportMetadataSlot.current => 'cat-current',
+    _GeneratedAgentReportMetadataSlot.previous => 'cat-previous',
+    _GeneratedAgentReportMetadataSlot.defaultCategory => '',
+  };
+
+  String get subtype => switch (metadataSlot) {
+    _GeneratedAgentReportMetadataSlot.current => 'current',
+    _GeneratedAgentReportMetadataSlot.previous => 'previous',
+    _GeneratedAgentReportMetadataSlot.defaultCategory => 'default',
+  };
+
+  String get reportContent => switch (contentShape) {
+    _GeneratedAgentReportContentShape.whitespaceOnly => '   \n\t   ',
+    _GeneratedAgentReportContentShape.tooShort => '  short $seed  ',
+    _GeneratedAgentReportContentShape.singleChunk =>
+      '  Generated report $seed has enough content for embedding.  ',
+    _GeneratedAgentReportContentShape.multiChunk => _longReport(seed),
+  };
+
+  String get trimmedContent => reportContent.trim();
+
+  bool get hasEnoughContent => trimmedContent.length >= kMinEmbeddingTextLength;
+
+  List<String> get chunks {
+    if (!hasEnoughContent || hashMatches) return const [];
+    return TextChunker.chunk(trimmedContent);
+  }
+
+  int? get failureIndex {
+    if (chunks.isEmpty) return null;
+    return switch (failureShape) {
+      _GeneratedAgentReportFailureShape.none => null,
+      _GeneratedAgentReportFailureShape.firstChunk => 0,
+      _GeneratedAgentReportFailureShape.secondChunk =>
+        chunks.length > 1 ? 1 : null,
+    };
+  }
+
+  bool get shouldThrow => failureIndex != null;
+
+  bool get shouldStore =>
+      hasEnoughContent && !hashMatches && failureIndex == null;
+
+  static String _longReport(int seed) {
+    final words = List.generate(
+      260,
+      (index) => 'report_${seed}_word_$index',
+    ).join(' ');
+    return '\n  $words  \n';
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedAgentReportScenario('
+        'contentShape: $contentShape, '
+        'failureShape: $failureShape, '
+        'metadataSlot: $metadataSlot, '
+        'hashMatches: $hashMatches, '
+        'seed: $seed)';
+  }
+}
+
+class _CapturedAgentReportWrite {
+  const _CapturedAgentReportWrite({
+    required this.entityId,
+    required this.entityType,
+    required this.modelId,
+    required this.contentHash,
+    required this.embeddingCount,
+    required this.categoryId,
+    required this.taskId,
+    required this.subtype,
+  });
+
+  final String entityId;
+  final String entityType;
+  final String modelId;
+  final String contentHash;
+  final int embeddingCount;
+  final String categoryId;
+  final String taskId;
+  final String subtype;
+}
+
+extension _AnyGeneratedAgentReportScenario on glados.Any {
+  glados.Generator<_GeneratedAgentReportContentShape>
+  get agentReportContentShape =>
+      glados.AnyUtils(this).choose(_GeneratedAgentReportContentShape.values);
+
+  glados.Generator<_GeneratedAgentReportFailureShape>
+  get agentReportFailureShape =>
+      glados.AnyUtils(this).choose(_GeneratedAgentReportFailureShape.values);
+
+  glados.Generator<_GeneratedAgentReportMetadataSlot>
+  get agentReportMetadataSlot =>
+      glados.AnyUtils(this).choose(_GeneratedAgentReportMetadataSlot.values);
+
+  glados.Generator<_GeneratedAgentReportScenario> get agentReportScenario =>
+      glados.CombinableAny(this).combine5(
+        agentReportContentShape,
+        agentReportFailureShape,
+        agentReportMetadataSlot,
+        glados.AnyUtils(this).choose([false, true]),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedAgentReportContentShape contentShape,
+          _GeneratedAgentReportFailureShape failureShape,
+          _GeneratedAgentReportMetadataSlot metadataSlot,
+          bool hashMatches,
+          int seed,
+        ) => _GeneratedAgentReportScenario(
+          contentShape: contentShape,
+          failureShape: failureShape,
+          metadataSlot: metadataSlot,
+          hashMatches: hashMatches,
           seed: seed,
         ),
       );
@@ -1059,5 +1223,118 @@ void main() {
         ),
       ).called(1);
     });
+
+    glados.Glados(
+      glados.any.agentReportScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'matches generated agent report embedding semantics',
+      (scenario) async {
+        final localEmbeddingStore = MockEmbeddingStore();
+        final localEmbeddingRepo = MockOllamaEmbeddingRepository();
+        final actualEmbedInputs = <String>[];
+        final writes = <_CapturedAgentReportWrite>[];
+        var embedCallIndex = 0;
+
+        when(
+          () => localEmbeddingStore.getContentHash(scenario.reportId),
+        ).thenReturn(
+          scenario.hashMatches
+              ? _hashOf(scenario.trimmedContent)
+              : 'old-generated-hash',
+        );
+        when(
+          () => localEmbeddingStore.replaceEntityEmbeddings(
+            entityId: any(named: 'entityId'),
+            entityType: any(named: 'entityType'),
+            modelId: any(named: 'modelId'),
+            contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
+            categoryId: any(named: 'categoryId'),
+            taskId: any(named: 'taskId'),
+            subtype: any(named: 'subtype'),
+          ),
+        ).thenAnswer((invocation) {
+          writes.add(
+            _CapturedAgentReportWrite(
+              entityId: invocation.namedArguments[#entityId] as String,
+              entityType: invocation.namedArguments[#entityType] as String,
+              modelId: invocation.namedArguments[#modelId] as String,
+              contentHash: invocation.namedArguments[#contentHash] as String,
+              embeddingCount:
+                  (invocation.namedArguments[#embeddings] as List<Float32List>)
+                      .length,
+              categoryId: invocation.namedArguments[#categoryId] as String,
+              taskId: invocation.namedArguments[#taskId] as String,
+              subtype: invocation.namedArguments[#subtype] as String,
+            ),
+          );
+        });
+        when(
+          () => localEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+            model: any(named: 'model'),
+          ),
+        ).thenAnswer((invocation) async {
+          final input = invocation.namedArguments[#input] as String;
+          actualEmbedInputs.add(input);
+          final currentIndex = embedCallIndex++;
+          if (scenario.failureIndex == currentIndex) {
+            throw StateError('generated report embedding failure');
+          }
+          return _fakeEmbedding();
+        });
+
+        final run = EmbeddingProcessor.processAgentReport(
+          reportId: scenario.reportId,
+          reportContent: scenario.reportContent,
+          taskId: scenario.taskId,
+          categoryId: scenario.categoryId,
+          subtype: scenario.subtype,
+          embeddingStore: localEmbeddingStore,
+          embeddingRepository: localEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+
+        if (scenario.shouldThrow) {
+          await expectLater(
+            run,
+            throwsA(isA<StateError>()),
+            reason: '$scenario',
+          );
+        } else {
+          expect(await run, scenario.shouldStore, reason: '$scenario');
+        }
+
+        final expectedInputs = scenario.shouldThrow
+            ? scenario.chunks.take(scenario.failureIndex! + 1).toList()
+            : scenario.chunks;
+        expect(actualEmbedInputs, expectedInputs, reason: '$scenario');
+
+        if (scenario.shouldStore) {
+          expect(writes, hasLength(1), reason: '$scenario');
+          final write = writes.single;
+          expect(write.entityId, scenario.reportId, reason: '$scenario');
+          expect(write.entityType, kEntityTypeAgentReport, reason: '$scenario');
+          expect(write.modelId, ollamaEmbedDefaultModel, reason: '$scenario');
+          expect(
+            write.contentHash,
+            _hashOf(scenario.trimmedContent),
+            reason: '$scenario',
+          );
+          expect(
+            write.embeddingCount,
+            scenario.chunks.length,
+            reason: '$scenario',
+          );
+          expect(write.categoryId, scenario.categoryId, reason: '$scenario');
+          expect(write.taskId, scenario.taskId, reason: '$scenario');
+          expect(write.subtype, scenario.subtype, reason: '$scenario');
+        } else {
+          expect(writes, isEmpty, reason: '$scenario');
+        }
+      },
+    );
   });
 }
