@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
+import 'package:lotti/features/projects/ui/pages/project_create_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/get_it.dart';
@@ -38,7 +39,11 @@ void main() {
         RouteInformation(uri: Uri.parse('/projects')),
       );
 
-      expect(location.pathPatterns, ['/projects', '/projects/:projectId']);
+      expect(location.pathPatterns, [
+        '/projects',
+        '/projects/create',
+        '/projects/:projectId',
+      ]);
     });
 
     test('buildPages builds the projects tab root page', () {
@@ -94,6 +99,82 @@ void main() {
 
         expect(pages, hasLength(1));
         expect(pages.first.child, isA<ProjectsTabPage>());
+      },
+    );
+
+    test('buildPages stacks the create page on top of the projects tab', () {
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/projects/create?categoryId=cat-1'),
+      );
+      final location = ProjectsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(
+        routeInformation,
+      ).copyWith(pathParameters: {'projectId': 'create'});
+
+      final pages = location.buildPages(mockBuildContext, beamState);
+
+      expect(pages, hasLength(2));
+      expect(pages.first.child, isA<ProjectsTabPage>());
+      expect(pages.last.child, isA<ProjectCreatePage>());
+
+      final createPage = pages.last.child as ProjectCreatePage;
+      expect(createPage.categoryId, 'cat-1');
+    });
+
+    test(
+      'normalizes empty / whitespace categoryId query values to null so a '
+      'stale `?categoryId=` link does not pin the new project to an '
+      'unresolvable category id',
+      () {
+        for (final raw in const ['', '   ', '\t']) {
+          final routeInformation = RouteInformation(
+            uri: Uri.parse('/projects/create?categoryId=$raw'),
+          );
+          final location = ProjectsLocation(routeInformation);
+          final beamState = BeamState.fromRouteInformation(
+            routeInformation,
+          ).copyWith(pathParameters: {'projectId': 'create'});
+
+          final pages = location.buildPages(mockBuildContext, beamState);
+          final createPage = pages.last.child as ProjectCreatePage;
+
+          expect(
+            createPage.categoryId,
+            isNull,
+            reason: 'expected `?categoryId=$raw` to map to null',
+          );
+        }
+      },
+    );
+
+    test(
+      'in desktop mode, /projects/create skips desktop project selection',
+      () {
+        final desktopSelectedProjectId = ValueNotifier<String?>('existing-id');
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedProjectId,
+        ).thenReturn(desktopSelectedProjectId);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/projects/create'),
+        );
+        final location = ProjectsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'projectId': 'create'});
+
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        expect(pages, hasLength(2));
+        expect(pages.first.child, isA<ProjectsTabPage>());
+        expect(pages.last.child, isA<ProjectCreatePage>());
+        // Selection notifier must not be touched on the create route —
+        // 'create' is not a real project id and overwriting the
+        // notifier would break the right-pane detail when the user
+        // bounces back to the list.
+        expect(desktopSelectedProjectId.value, 'existing-id');
       },
     );
 

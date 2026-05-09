@@ -15,7 +15,6 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
-import 'package:lotti/features/projects/ui/pages/project_create_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
@@ -62,7 +61,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/categories/:categoryId',
     '/settings/categories/create',
     '/settings/projects/:projectId',
-    '/settings/projects/create',
     '/settings/labels',
     '/settings/labels/create',
     '/settings/labels/:labelId',
@@ -260,18 +258,17 @@ class SettingsLocation extends BeamLocation<BeamState> {
           ),
         ),
 
-      // Projects
-      if (pathContains('projects/create'))
-        BeamPage(
-          key: const ValueKey('settings-projects-create'),
-          child: ProjectCreatePage(
-            categoryId: state.uri.queryParameters['categoryId'],
-          ),
-        ),
-
+      // Projects (per-project drill-down from category pages). The create
+      // flow lives under `ProjectsLocation` so it doesn't get trapped in
+      // the Settings V2 panel registry, which has no `projects` entry.
+      // Explicitly exclude the reserved `create` slug so a stale
+      // `/settings/projects/create` deep link (the URL has been moved
+      // out of `pathPatterns`, but the `:projectId` pattern would still
+      // greedily match it) cannot render `ProjectDetailPage` against a
+      // non-id slug.
       if (pathContains('projects') &&
-          !pathContains('projects/create') &&
-          pathContainsKey('projectId'))
+          pathContainsKey('projectId') &&
+          state.pathParameters['projectId'] != 'create')
         BeamPage(
           key: ValueKey(
             'settings-projects-${state.pathParameters['projectId']}',

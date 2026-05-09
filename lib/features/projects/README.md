@@ -237,7 +237,9 @@ It is responsible for:
 - search
 - filter modal
 - navigation into project details
-- floating create action that still hands off to `/settings/projects/create`
+- floating create action that beams to `/projects/create` so creation
+  stays inside the Projects tab and the form can prefill a category
+  via the `?categoryId=` query parameter
 
 ### Project Detail Pages
 

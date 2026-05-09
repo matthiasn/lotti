@@ -130,7 +130,7 @@ void main() {
 
       verify(
         () => mockNavService.beamToNamed(
-          '/settings/projects/create?categoryId=$categoryId',
+          '/projects/create?categoryId=$categoryId',
         ),
       ).called(1);
     });

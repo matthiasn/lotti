@@ -4,6 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
+import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Embeddable body alias for the Settings V2 detail pane (plan
@@ -33,8 +35,10 @@ class CategoriesListBody extends StatelessWidget {
 /// Each category row shows an icon badge, category name, task count subtitle,
 /// optional status icons (lock, visibility_off, star), and a chevron.
 /// Above the list sits a [DesignSystemSearch] field that filters rows by
-/// name (case-insensitive substring); the trailing FAB opens the
-/// `/settings/categories/create` route.
+/// name (case-insensitive substring); the trailing FAB opens
+/// [CategoryCreateModal] in a single-page modal so the create flow stays
+/// inside the active tab instead of beaming through `SettingsLocation`
+/// (which has no `projects`-style panel for the create route on desktop).
 class CategoriesListPage extends ConsumerStatefulWidget {
   const CategoriesListPage({super.key});
 
@@ -77,8 +81,22 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
         child: DesignSystemFloatingActionButton(
           semanticLabel: context.messages.settingsCategoriesCreateTitle,
-          onPressed: () => beamToNamed('/settings/categories/create'),
+          onPressed: () => _showCreateCategoryModal(context),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showCreateCategoryModal(BuildContext context) {
+    return ModalUtils.showSinglePageModal<void>(
+      context: context,
+      title: context.messages.createCategoryTitle,
+      builder: (modalContext) => CategoryCreateModal(
+        initialName: '',
+        onCategoryCreated: (_) {
+          // Stream provider refreshes the list automatically once the
+          // category is persisted; the modal pops itself on success.
+        },
       ),
     );
   }

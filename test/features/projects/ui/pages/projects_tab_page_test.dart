@@ -230,7 +230,7 @@ void main() {
 
     expect(
       navigatedPath,
-      '/settings/projects/create',
+      '/projects/create',
     );
   });
 

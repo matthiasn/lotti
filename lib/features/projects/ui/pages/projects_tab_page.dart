@@ -120,7 +120,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
     final floatingActionButton = visibleGroupsAsync.maybeWhen(
       data: (_) => DesignSystemFloatingActionButton(
         semanticLabel: context.messages.projectCreateButton,
-        onPressed: () => beamToNamed('/settings/projects/create'),
+        onPressed: () => beamToNamed('/projects/create'),
       ),
       orElse: () => null,
     );
