@@ -228,7 +228,7 @@ extension _AnyGeneratedScheduledWakeScenario on glados.Any {
 
   glados.Generator<_GeneratedScheduledWakeManagerLifecycleScenario>
   get scheduledWakeManagerLifecycleScenario => glados.ListAnys(this)
-      .listWithLengthInRange(0, 24, scheduledWakeManagerOperation)
+      .listWithLengthInRange(1, 24, scheduledWakeManagerOperation)
       .map(
         (operations) => _GeneratedScheduledWakeManagerLifecycleScenario(
           operations: operations,

@@ -18,8 +18,8 @@ class WakeRunner {
 
   /// Stream that emits the current set of active agent IDs whenever it changes.
   ///
-  /// Emits after every [tryAcquire] and [release] call. Consumers can filter
-  /// for a specific agent ID using `.map((ids) => ids.contains(agentId))`.
+  /// Consumers can filter for a specific agent ID using
+  /// `.map((ids) => ids.contains(agentId))`.
   Stream<Set<String>> get runningAgentIds => _runningController.stream;
 
   /// Attempt to acquire the single-flight lock for [agentId].
@@ -39,7 +39,10 @@ class WakeRunner {
   /// Must be called in a `finally` block after the run finishes (or fails)
   /// to prevent the lock from leaking.
   void release(String agentId) {
-    _activeLocks.remove(agentId)?.complete();
+    final lock = _activeLocks.remove(agentId);
+    if (lock == null) return;
+
+    lock.complete();
     _activeStartedAt.remove(agentId);
     _runningController.add(activeAgentIds);
   }

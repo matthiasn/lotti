@@ -78,7 +78,7 @@ extension _AnyGeneratedWakeRunnerScenario on glados.Any {
 
   glados.Generator<_GeneratedWakeRunnerScenario> get wakeRunnerScenario =>
       glados.ListAnys(this)
-          .listWithLengthInRange(0, 45, wakeRunnerOperation)
+          .listWithLengthInRange(1, 45, wakeRunnerOperation)
           .map(
             (operations) => _GeneratedWakeRunnerScenario(
               operations: operations,
@@ -133,12 +133,14 @@ void main() {
                   }
 
                 case _GeneratedWakeRunnerOperationKind.release:
+                  final removed = expectedActive.remove(agentId) != null;
                   generatedRunner.release(agentId);
-                  expectedActive.remove(agentId);
-                  expectedEmissions.add(expectedActive.keys.toSet());
-                  waiters
-                      .where((waiter) => waiter.agentId == agentId)
-                      .forEach((waiter) => waiter.expectedCompleted = true);
+                  if (removed) {
+                    expectedEmissions.add(expectedActive.keys.toSet());
+                    waiters
+                        .where((waiter) => waiter.agentId == agentId)
+                        .forEach((waiter) => waiter.expectedCompleted = true);
+                  }
                   async.flushMicrotasks();
 
                 case _GeneratedWakeRunnerOperationKind.waitForCompletion:
@@ -263,10 +265,16 @@ void main() {
       });
 
       test('release on non-locked agent is safe (no-op)', () {
-        // Should not throw
-        runner.release('agent-nonexistent');
+        fakeAsync((async) {
+          final emissions = <Set<String>>[];
+          runner.runningAgentIds.listen(emissions.add);
 
-        expect(runner.isRunning('agent-nonexistent'), isFalse);
+          runner.release('agent-nonexistent');
+          async.flushMicrotasks();
+
+          expect(runner.isRunning('agent-nonexistent'), isFalse);
+          expect(emissions, isEmpty);
+        });
       });
     });
 

@@ -200,12 +200,26 @@ class _GeneratedProjectActivityScenario {
   }
 
   Set<String> get resolvedProjectIds {
-    if (affectedSlot == _GeneratedProjectActivityAffectedSlot.empty) {
-      return const <String>{};
-    }
-    return {
-      for (var i = 0; i < specs.length; i++) specs[i].projectId(i),
+    return switch (affectedSlot) {
+      _GeneratedProjectActivityAffectedSlot.empty => const <String>{},
+      _GeneratedProjectActivityAffectedSlot.directProjectToken => {
+        if (specs.isEmpty) 'project-unmapped' else specs[0].projectId(0),
+      },
+      _GeneratedProjectActivityAffectedSlot.taskToken => {
+        if (specs.length > 1) specs[1].projectId(1) else 'generated-project-1',
+      },
+      _GeneratedProjectActivityAffectedSlot.mixedTokens => {
+        if (specs.isEmpty) 'generated-project-0' else specs[0].projectId(0),
+        if (specs.length > 1) specs[1].projectId(1) else 'generated-project-1',
+      },
     };
+  }
+
+  int indexForAgentId(String agentId) {
+    return Iterable<int>.generate(specs.length).firstWhere(
+      (index) => specs[index].primaryAgentId(index) == agentId,
+      orElse: () => -1,
+    );
   }
 
   @override
@@ -279,6 +293,118 @@ extension _AnyGeneratedProjectActivityScenario on glados.Any {
   );
 }
 
+class _GeneratedProjectActivityBench {
+  factory _GeneratedProjectActivityBench(
+    _GeneratedProjectActivityScenario scenario,
+  ) {
+    final notifications = MockUpdateNotifications();
+    final repository = MockAgentRepository();
+    final projectRepository = MockProjectRepository();
+    final syncService = MockAgentSyncService();
+    final controller = StreamController<Set<String>>.broadcast();
+    final writtenStates = <AgentStateEntity>[];
+    final uiNotifications = <Set<String>>[];
+
+    when(
+      () => notifications.localUpdateStream,
+    ).thenAnswer((_) => controller.stream);
+    when(() => notifications.notifyUiOnly(any())).thenAnswer((invocation) {
+      uiNotifications.add(
+        Set<String>.from(invocation.positionalArguments.single as Set),
+      );
+    });
+    when(
+      () => projectRepository.resolveAffectedProjectIds(any()),
+    ).thenAnswer((_) async => scenario.resolvedProjectIds);
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      final entity = invocation.positionalArguments.single as AgentStateEntity;
+      writtenStates.add(entity);
+      final index = scenario.indexForAgentId(entity.agentId);
+      if (index >= 0 &&
+          scenario.specs[index].failureSlot ==
+              _GeneratedProjectActivityFailureSlot.upsertThrow) {
+        throw StateError('generated upsert failure');
+      }
+    });
+    when(
+      () => repository.getLinksTo(
+        any(),
+        type: AgentLinkTypes.agentProject,
+      ),
+    ).thenAnswer((_) async => const <AgentLink>[]);
+    when(() => repository.getAgentState(any())).thenAnswer((_) async => null);
+
+    for (final (index, spec) in scenario.specs.indexed) {
+      final projectId = spec.projectId(index);
+      when(
+        () => repository.getLinksTo(
+          projectId,
+          type: AgentLinkTypes.agentProject,
+        ),
+      ).thenAnswer((_) async {
+        if (spec.failureSlot ==
+            _GeneratedProjectActivityFailureSlot.linksThrow) {
+          throw StateError('generated links failure');
+        }
+        return spec.links(index);
+      });
+
+      final agentId = spec.primaryAgentId(index);
+      when(() => repository.getAgentState(agentId)).thenAnswer((_) async {
+        if (spec.failureSlot ==
+            _GeneratedProjectActivityFailureSlot.stateThrow) {
+          throw StateError('generated state failure');
+        }
+        return spec.state(index);
+      });
+    }
+
+    final monitor = ProjectActivityMonitor(
+      notifications: notifications,
+      agentRepository: repository,
+      projectRepository: projectRepository,
+      syncService: syncService,
+      clock: Clock.fixed(_generatedProjectActivityNow),
+    );
+
+    return _GeneratedProjectActivityBench._(
+      notifications: notifications,
+      repository: repository,
+      projectRepository: projectRepository,
+      syncService: syncService,
+      controller: controller,
+      monitor: monitor,
+      writtenStates: writtenStates,
+      uiNotifications: uiNotifications,
+    );
+  }
+
+  _GeneratedProjectActivityBench._({
+    required this.notifications,
+    required this.repository,
+    required this.projectRepository,
+    required this.syncService,
+    required this.controller,
+    required this.monitor,
+    required this.writtenStates,
+    required this.uiNotifications,
+  });
+
+  final MockUpdateNotifications notifications;
+  final MockAgentRepository repository;
+  final MockProjectRepository projectRepository;
+  final MockAgentSyncService syncService;
+  final StreamController<Set<String>> controller;
+  final ProjectActivityMonitor monitor;
+  final List<AgentStateEntity> writtenStates;
+  final List<Set<String>> uiNotifications;
+
+  Future<void> dispose() async {
+    await monitor.stop();
+    await controller.close();
+  }
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -335,112 +461,29 @@ void main() {
     ).test('matches generated project activity marking semantics', (
       scenario,
     ) async {
-      final generatedNotifications = MockUpdateNotifications();
-      final generatedRepository = MockAgentRepository();
-      final generatedProjectRepository = MockProjectRepository();
-      final generatedSyncService = MockAgentSyncService();
-      final generatedController = StreamController<Set<String>>.broadcast();
-      final writtenStates = <AgentStateEntity>[];
-      final uiNotifications = <Set<String>>[];
-
-      when(
-        () => generatedNotifications.localUpdateStream,
-      ).thenAnswer((_) => generatedController.stream);
-      when(() => generatedNotifications.notifyUiOnly(any())).thenAnswer((
-        invocation,
-      ) {
-        uiNotifications.add(
-          Set<String>.from(invocation.positionalArguments.single as Set),
-        );
-      });
-      when(
-        () => generatedProjectRepository.resolveAffectedProjectIds(any()),
-      ).thenAnswer((_) async => scenario.resolvedProjectIds);
-      when(() => generatedSyncService.upsertEntity(any())).thenAnswer((
-        invocation,
-      ) async {
-        final entity =
-            invocation.positionalArguments.single as AgentStateEntity;
-        writtenStates.add(entity);
-        final index = scenario.specs.indexWhere(
-          (spec) =>
-              spec.primaryAgentId(scenario.specs.indexOf(spec)) ==
-              entity.agentId,
-        );
-        if (index >= 0 &&
-            scenario.specs[index].failureSlot ==
-                _GeneratedProjectActivityFailureSlot.upsertThrow) {
-          throw StateError('generated upsert failure');
-        }
-      });
-      when(
-        () => generatedRepository.getLinksTo(
-          any(),
-          type: AgentLinkTypes.agentProject,
-        ),
-      ).thenAnswer((_) async => const <AgentLink>[]);
-      when(
-        () => generatedRepository.getAgentState(any()),
-      ).thenAnswer((_) async => null);
-
-      for (final (index, spec) in scenario.specs.indexed) {
-        final projectId = spec.projectId(index);
-        when(
-          () => generatedRepository.getLinksTo(
-            projectId,
-            type: AgentLinkTypes.agentProject,
-          ),
-        ).thenAnswer((_) async {
-          if (spec.failureSlot ==
-              _GeneratedProjectActivityFailureSlot.linksThrow) {
-            throw StateError('generated links failure');
-          }
-          return spec.links(index);
-        });
-
-        final agentId = spec.primaryAgentId(index);
-        when(() => generatedRepository.getAgentState(agentId)).thenAnswer((
-          _,
-        ) async {
-          if (spec.failureSlot ==
-              _GeneratedProjectActivityFailureSlot.stateThrow) {
-            throw StateError('generated state failure');
-          }
-          return spec.state(index);
-        });
-      }
-
-      final generatedMonitor = ProjectActivityMonitor(
-        notifications: generatedNotifications,
-        agentRepository: generatedRepository,
-        projectRepository: generatedProjectRepository,
-        syncService: generatedSyncService,
-        clock: Clock.fixed(_generatedProjectActivityNow),
-      );
+      final bench = _GeneratedProjectActivityBench(scenario);
 
       try {
-        generatedMonitor.start();
-        generatedController.add(scenario.affectedIds);
+        bench.monitor.start();
+        bench.controller.add(scenario.affectedIds);
         await pumpEventQueue(times: 4);
 
         final expectedWrittenAgentIds = <String>[
           for (var i = 0; i < scenario.specs.length; i++)
-            if (scenario.affectedIds.isNotEmpty &&
+            if (scenario.resolvedProjectIds.contains(
+                  scenario.specs[i].projectId(i),
+                ) &&
                 scenario.specs[i].hasWritableState)
               scenario.specs[i].primaryAgentId(i),
         ];
         expect(
-          writtenStates.map((state) => state.agentId).toList(),
+          bench.writtenStates.map((state) => state.agentId).toList(),
           expectedWrittenAgentIds,
           reason: '$scenario',
         );
 
-        for (final state in writtenStates) {
-          final index = scenario.specs.indexWhere(
-            (spec) =>
-                spec.primaryAgentId(scenario.specs.indexOf(spec)) ==
-                state.agentId,
-          );
+        for (final state in bench.writtenStates) {
+          final index = scenario.indexForAgentId(state.agentId);
           expect(index, isNonNegative, reason: '$scenario');
           final original = scenario.specs[index].state(index)!;
           expect(state.revision, original.revision + 1, reason: '$scenario');
@@ -459,26 +502,31 @@ void main() {
 
         final expectedUiNotifications = <Set<String>>[
           for (var i = 0; i < scenario.specs.length; i++)
-            if (scenario.affectedIds.isNotEmpty &&
+            if (scenario.resolvedProjectIds.contains(
+                  scenario.specs[i].projectId(i),
+                ) &&
                 scenario.specs[i].expectsUiNotification)
               {scenario.specs[i].primaryAgentId(i), agentNotification},
         ];
-        expect(uiNotifications, expectedUiNotifications, reason: '$scenario');
+        expect(
+          bench.uiNotifications,
+          expectedUiNotifications,
+          reason: '$scenario',
+        );
 
         if (scenario.affectedIds.isEmpty) {
           verifyNever(
-            () => generatedProjectRepository.resolveAffectedProjectIds(any()),
+            () => bench.projectRepository.resolveAffectedProjectIds(any()),
           );
         } else {
           verify(
-            () => generatedProjectRepository.resolveAffectedProjectIds(
+            () => bench.projectRepository.resolveAffectedProjectIds(
               scenario.affectedIds,
             ),
           ).called(1);
         }
       } finally {
-        await generatedMonitor.stop();
-        await generatedController.close();
+        await bench.dispose();
       }
     });
 
