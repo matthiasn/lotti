@@ -8,6 +8,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -113,6 +114,177 @@ void expectDelayCloseTo(
   expect(actual, isNotNull);
   final deltaMs = (actual!.inMilliseconds - expected.inMilliseconds).abs();
   expect(deltaMs, lessThanOrEqualTo(tolerance.inMilliseconds));
+}
+
+enum _GeneratedPriorityMessageKind {
+  journalEntity,
+  entityDefinition,
+  entryLink,
+  aiConfig,
+  aiConfigDelete,
+  themingSelection,
+  backfillRequest,
+  backfillResponse,
+  agentEntity,
+  agentLink,
+  agentBundle,
+  outboxBundle,
+}
+
+class _GeneratedPriorityScenario {
+  const _GeneratedPriorityScenario({
+    required this.kind,
+    required this.statusIsUpdate,
+    required this.counterSlot,
+    required this.deleted,
+  });
+
+  final _GeneratedPriorityMessageKind kind;
+  final bool statusIsUpdate;
+  final int counterSlot;
+  final bool deleted;
+
+  SyncEntryStatus get status =>
+      statusIsUpdate ? SyncEntryStatus.update : SyncEntryStatus.initial;
+
+  SyncMessage get message {
+    final id = 'generated-$counterSlot';
+    return switch (kind) {
+      _GeneratedPriorityMessageKind.journalEntity => SyncMessage.journalEntity(
+        id: id,
+        jsonPath: '/entries/$id.json',
+        vectorClock: VectorClock({'hostA': counterSlot}),
+        status: status,
+      ),
+      _GeneratedPriorityMessageKind.entityDefinition =>
+        SyncMessage.entityDefinition(
+          entityDefinition: EntityDefinition.measurableDataType(
+            id: id,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            displayName: 'Generated',
+            description: 'Generated definition',
+            unitName: 'count',
+            version: 1,
+            vectorClock: VectorClock({'hostA': counterSlot}),
+          ),
+          status: status,
+        ),
+      _GeneratedPriorityMessageKind.entryLink => SyncMessage.entryLink(
+        entryLink: EntryLink.basic(
+          id: id,
+          fromId: 'from-$counterSlot',
+          toId: 'to-$counterSlot',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: VectorClock({'hostA': counterSlot}),
+        ),
+        status: status,
+      ),
+      _GeneratedPriorityMessageKind.aiConfig => SyncMessage.aiConfig(
+        aiConfig: AiConfig.inferenceProvider(
+          id: id,
+          name: 'Generated provider',
+          apiKey: 'key-$counterSlot',
+          baseUrl: 'https://example.invalid/v1',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        ),
+        status: status,
+      ),
+      _GeneratedPriorityMessageKind.aiConfigDelete =>
+        SyncMessage.aiConfigDelete(id: id),
+      _GeneratedPriorityMessageKind.themingSelection =>
+        SyncMessage.themingSelection(
+          lightThemeName: 'light-$counterSlot',
+          darkThemeName: 'dark-$counterSlot',
+          themeMode: statusIsUpdate ? 'dark' : 'light',
+          updatedAt: counterSlot,
+          status: status,
+        ),
+      _GeneratedPriorityMessageKind.backfillRequest =>
+        SyncMessage.backfillRequest(
+          entries: [
+            for (var index = 0; index < counterSlot; index++)
+              BackfillRequestEntry(hostId: 'host-$index', counter: index),
+          ],
+          requesterId: 'requester-$counterSlot',
+        ),
+      _GeneratedPriorityMessageKind.backfillResponse =>
+        SyncMessage.backfillResponse(
+          hostId: 'host-$counterSlot',
+          counter: counterSlot,
+          deleted: deleted,
+          entryId: deleted ? null : id,
+        ),
+      _GeneratedPriorityMessageKind.agentEntity => SyncMessage.agentEntity(
+        status: status,
+        jsonPath: '/agents/entities/$id.json',
+      ),
+      _GeneratedPriorityMessageKind.agentLink => SyncMessage.agentLink(
+        status: status,
+        jsonPath: '/agents/links/$id.json',
+      ),
+      _GeneratedPriorityMessageKind.agentBundle => SyncMessage.agentBundle(
+        agentId: 'agent-$counterSlot',
+        wakeRunKey: 'wake-$counterSlot',
+      ),
+      _GeneratedPriorityMessageKind.outboxBundle => SyncMessage.outboxBundle(
+        children: [SyncMessage.aiConfigDelete(id: id)],
+      ),
+    };
+  }
+
+  int get expectedPriority {
+    return switch (kind) {
+      _GeneratedPriorityMessageKind.journalEntity ||
+      _GeneratedPriorityMessageKind.entryLink => OutboxPriority.high.index,
+      _GeneratedPriorityMessageKind.backfillRequest ||
+      _GeneratedPriorityMessageKind.backfillResponse ||
+      _GeneratedPriorityMessageKind.agentEntity ||
+      _GeneratedPriorityMessageKind.agentLink ||
+      _GeneratedPriorityMessageKind.agentBundle ||
+      _GeneratedPriorityMessageKind.themingSelection ||
+      _GeneratedPriorityMessageKind.outboxBundle => OutboxPriority.normal.index,
+      _GeneratedPriorityMessageKind.entityDefinition ||
+      _GeneratedPriorityMessageKind.aiConfig ||
+      _GeneratedPriorityMessageKind.aiConfigDelete => OutboxPriority.low.index,
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedPriorityScenario('
+        'kind: $kind, '
+        'statusIsUpdate: $statusIsUpdate, '
+        'counterSlot: $counterSlot, '
+        'deleted: $deleted'
+        ')';
+  }
+}
+
+extension _AnyGeneratedPriorityScenario on glados.Any {
+  glados.Generator<_GeneratedPriorityMessageKind> get priorityMessageKind =>
+      glados.AnyUtils(this).choose(_GeneratedPriorityMessageKind.values);
+
+  glados.Generator<_GeneratedPriorityScenario> get priorityScenario =>
+      glados.CombinableAny(this).combine4(
+        priorityMessageKind,
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.BoolAny(this).bool,
+        (
+          _GeneratedPriorityMessageKind kind,
+          bool statusIsUpdate,
+          int counterSlot,
+          bool deleted,
+        ) => _GeneratedPriorityScenario(
+          kind: kind,
+          statusIsUpdate: statusIsUpdate,
+          counterSlot: counterSlot,
+          deleted: deleted,
+        ),
+      );
 }
 
 void main() {
@@ -5383,6 +5555,28 @@ void main() {
   });
 
   group('outbox bundling wiring', () {
+    glados.Glados(
+      glados.any.priorityScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'generated priority classification is stable across sync message shapes',
+      (scenario) {
+        final message = scenario.message;
+        final roundTrip = SyncMessage.fromJson(
+          jsonDecode(jsonEncode(message)) as Map<String, dynamic>,
+        );
+
+        expect(
+          OutboxService.priorityForMessageForTesting(message),
+          scenario.expectedPriority,
+        );
+        expect(
+          OutboxService.priorityForMessageForTesting(roundTrip),
+          scenario.expectedPriority,
+        );
+      },
+    );
+
     test(
       'priorityForMessageForTesting maps SyncOutboxBundle to normal priority '
       '— bundles never reach this path in production (the enqueue dispatch '

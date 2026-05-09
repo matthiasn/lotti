@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -7,6 +8,120 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
+
+enum _GeneratedRepositoryBatchOperation {
+  markSent,
+  markRetry,
+}
+
+class _GeneratedRepositoryBatchRow {
+  const _GeneratedRepositoryBatchRow({
+    required this.selected,
+    required this.unselectedStatus,
+    required this.retries,
+  });
+
+  final bool selected;
+  final OutboxStatus unselectedStatus;
+  final int retries;
+
+  OutboxStatus get initialStatus =>
+      selected ? OutboxStatus.sending : unselectedStatus;
+
+  @override
+  String toString() {
+    return '_GeneratedRepositoryBatchRow('
+        'selected: $selected, '
+        'unselectedStatus: $unselectedStatus, '
+        'retries: $retries'
+        ')';
+  }
+}
+
+class _GeneratedRepositoryBatchScenario {
+  const _GeneratedRepositoryBatchScenario({
+    required this.operation,
+    required this.maxRetries,
+    required this.rows,
+  });
+
+  final _GeneratedRepositoryBatchOperation operation;
+  final int maxRetries;
+  final List<_GeneratedRepositoryBatchRow> rows;
+
+  bool get hasSelectedRows => rows.any((row) => row.selected);
+
+  OutboxStatus expectedStatus(_GeneratedRepositoryBatchRow row) {
+    if (!row.selected) {
+      return row.initialStatus;
+    }
+    return switch (operation) {
+      _GeneratedRepositoryBatchOperation.markSent => OutboxStatus.sent,
+      _GeneratedRepositoryBatchOperation.markRetry =>
+        row.retries + 1 < maxRetries
+            ? OutboxStatus.pending
+            : OutboxStatus.error,
+    };
+  }
+
+  int expectedRetries(_GeneratedRepositoryBatchRow row) {
+    if (!row.selected ||
+        operation == _GeneratedRepositoryBatchOperation.markSent) {
+      return row.retries;
+    }
+    return row.retries + 1;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedRepositoryBatchScenario('
+        'operation: $operation, '
+        'maxRetries: $maxRetries, '
+        'rows: $rows'
+        ')';
+  }
+}
+
+extension _AnyGeneratedRepositoryBatchScenario on glados.Any {
+  glados.Generator<_GeneratedRepositoryBatchOperation>
+  get repositoryBatchOperation =>
+      glados.AnyUtils(this).choose(_GeneratedRepositoryBatchOperation.values);
+
+  glados.Generator<OutboxStatus> get outboxStatus =>
+      glados.AnyUtils(this).choose(OutboxStatus.values);
+
+  glados.Generator<_GeneratedRepositoryBatchRow> get repositoryBatchRow =>
+      glados.CombinableAny(this).combine3(
+        glados.BoolAny(this).bool,
+        outboxStatus,
+        glados.IntAnys(this).intInRange(0, 6),
+        (
+          bool selected,
+          OutboxStatus unselectedStatus,
+          int retries,
+        ) => _GeneratedRepositoryBatchRow(
+          selected: selected,
+          unselectedStatus: unselectedStatus,
+          retries: retries,
+        ),
+      );
+
+  glados.Generator<_GeneratedRepositoryBatchScenario>
+  get repositoryBatchScenario => glados.CombinableAny(this).combine3(
+    repositoryBatchOperation,
+    glados.IntAnys(this).intInRange(1, 6),
+    glados.ListAnys(this).listWithLengthInRange(0, 10, repositoryBatchRow),
+    (
+      _GeneratedRepositoryBatchOperation operation,
+      int maxRetries,
+      List<_GeneratedRepositoryBatchRow> rows,
+    ) => _GeneratedRepositoryBatchScenario(
+      operation: operation,
+      maxRetries: maxRetries,
+      rows: rows,
+    ),
+  );
+}
 
 void main() {
   group('DatabaseOutboxRepository', () {
@@ -421,6 +536,56 @@ void main() {
       test('markRetryBatch is a no-op for an empty list', () async {
         await realRepo.markRetryBatch(<OutboxItem>[]);
       });
+
+      glados.Glados(
+        glados.any.repositoryBatchScenario,
+        glados.ExploreConfig(numRuns: 140),
+      ).test(
+        'generated batch marking updates only selected rows with cap semantics',
+        (scenario) async {
+          realRepo = DatabaseOutboxRepository(
+            realDb,
+            maxRetries: scenario.maxRetries,
+          );
+
+          final ids = <int>[];
+          for (var index = 0; index < scenario.rows.length; index++) {
+            final row = scenario.rows[index];
+            ids.add(
+              await insertRow(
+                status: row.initialStatus,
+                retries: row.retries,
+                createdAt: DateTime(2024).add(Duration(minutes: index)),
+              ),
+            );
+          }
+
+          final selectedItems = <OutboxItem>[];
+          for (var index = 0; index < scenario.rows.length; index++) {
+            if (!scenario.rows[index].selected) {
+              continue;
+            }
+            final item = await realDb.getOutboxItemById(ids[index]);
+            expect(item, isNotNull);
+            selectedItems.add(item!);
+          }
+
+          switch (scenario.operation) {
+            case _GeneratedRepositoryBatchOperation.markSent:
+              await realRepo.markSentBatch(selectedItems);
+            case _GeneratedRepositoryBatchOperation.markRetry:
+              await realRepo.markRetryBatch(selectedItems);
+          }
+
+          for (var index = 0; index < scenario.rows.length; index++) {
+            final row = scenario.rows[index];
+            final refreshed = await realDb.getOutboxItemById(ids[index]);
+            expect(refreshed, isNotNull);
+            expect(refreshed!.status, scenario.expectedStatus(row).index);
+            expect(refreshed.retries, scenario.expectedRetries(row));
+          }
+        },
+      );
     });
 
     group('pruneSentOutboxItems', () {
