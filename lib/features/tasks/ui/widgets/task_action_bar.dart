@@ -98,6 +98,36 @@ class TaskActionBar extends ConsumerStatefulWidget {
   ConsumerState<TaskActionBar> createState() => _TaskActionBarState();
 }
 
+/// Shared "glass chip" styling values used by both [_TrackTimePill] (idle
+/// state) and [_RoundActionButton] (when no caller override is supplied).
+///
+/// These exist as file-level constants so the alpha bumps and shadow
+/// stack stay in sync across the action bar — no `surface.*` token
+/// covers "chip on glass over arbitrary underlying content", so the
+/// values are intentionally hard-coded here rather than fragmenting
+/// across widgets.
+
+/// Alpha applied to the chip fill on top of `surface.focusPressed`. Sits
+/// above any `surface.*` token so the chip silhouette stays opaque
+/// enough to contrast the foreground against bright content (e.g. white
+/// chat bubbles bleeding through the glass blur).
+const double _glassFillAlpha = 0.4;
+
+/// Alpha for the hairline outline drawn over the chip fill. Painted via
+/// `foregroundDecoration` so it doesn't widen the chip and trip the
+/// action-row layout thresholds.
+const double _glassBorderAlpha = 0.3;
+
+/// Stacked icon/text shadows: a sharp inner shadow for crisp edge
+/// legibility against bright backgrounds, plus a soft outer halo for
+/// gentle separation from darker backgrounds. Skipped when the chip
+/// has its own solid fill (recording red, tracking red) — those carry
+/// their own contrast.
+const List<Shadow> _glassForegroundShadows = <Shadow>[
+  Shadow(color: Color(0xB3000000), blurRadius: 2),
+  Shadow(color: Color(0x4D000000), blurRadius: 8),
+];
+
 class _TaskActionBarState extends ConsumerState<TaskActionBar> {
   final TimeService _timeService = getIt<TimeService>();
   StreamSubscription<JournalEntity?>? _subscription;
@@ -363,9 +393,17 @@ class _TrackTimePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
+    // Idle pill is translucent and floats over a backdrop-blurred glass
+    // strip. Boosted alpha + hairline outline + stacked foreground
+    // shadows keep contrast over bright underlying content without
+    // losing the glass aesthetic. See `_glassFillAlpha` /
+    // `_glassBorderAlpha` / `_glassForegroundShadows` for the rationale
+    // behind the hard-coded values.
     final fillColor = isTracking
         ? tokens.colors.alert.error.defaultColor
-        : tokens.colors.surface.hover;
+        : tokens.colors.surface.focusPressed.withValues(
+            alpha: _glassFillAlpha,
+          );
     // The error palette has no dedicated on-color token — its
     // defaultColor is a vivid red across both themes, so a fixed white
     // foreground stays legible on top.
@@ -373,6 +411,9 @@ class _TrackTimePill extends StatelessWidget {
         ? Colors.white
         : tokens.colors.text.highEmphasis;
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
+    final foregroundShadows = isTracking
+        ? const <Shadow>[]
+        : _glassForegroundShadows;
 
     return Semantics(
       button: true,
@@ -390,6 +431,21 @@ class _TrackTimePill extends StatelessWidget {
               color: fillColor,
               borderRadius: pillRadius,
             ),
+            // foregroundDecoration paints on top of the child without
+            // contributing to the Container's padding, so the hairline
+            // outline stays a hairline and doesn't widen the pill (which
+            // would otherwise push the action row past the layout
+            // thresholds).
+            foregroundDecoration: isTracking
+                ? null
+                : BoxDecoration(
+                    borderRadius: pillRadius,
+                    border: Border.all(
+                      color: tokens.colors.decorative.level01.withValues(
+                        alpha: _glassBorderAlpha,
+                      ),
+                    ),
+                  ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -403,6 +459,7 @@ class _TrackTimePill extends StatelessWidget {
                     Icons.timer_outlined,
                     size: TaskActionBar.iconSize,
                     color: foreground,
+                    shadows: foregroundShadows,
                   ),
                 SizedBox(width: spacing.step2),
                 Padding(
@@ -416,6 +473,7 @@ class _TrackTimePill extends StatelessWidget {
                       // the elapsed digits don't shift width as they
                       // tick.
                       fontFeatures: numericBadgeFontFeatures,
+                      shadows: foregroundShadows,
                     ),
                   ),
                 ),
@@ -493,6 +551,17 @@ class _RoundActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // Round buttons sit on a translucent glass strip; when no caller
+    // override is supplied the chip uses the shared "glass chip"
+    // styling (`_glassFillAlpha`, `_glassBorderAlpha`,
+    // `_glassForegroundShadows`) so the silhouette and glyph stay
+    // visible regardless of what's behind the bar. Caller overrides
+    // (e.g. recording = solid red) skip these crutches because they
+    // already carry their own contrast.
+    final isTranslucent = backgroundColor == null;
+    final defaultFill = tokens.colors.surface.focusPressed.withValues(
+      alpha: _glassFillAlpha,
+    );
     return Semantics(
       button: true,
       label: semanticLabel,
@@ -507,13 +576,27 @@ class _RoundActionButton extends StatelessWidget {
             width: TaskActionBar.buttonSize,
             height: TaskActionBar.buttonSize,
             decoration: BoxDecoration(
-              color: backgroundColor ?? tokens.colors.surface.hover,
+              color: backgroundColor ?? defaultFill,
               shape: BoxShape.circle,
             ),
+            // foregroundDecoration so the hairline outline doesn't eat
+            // into the icon's content rect — keeps the icon centered
+            // exactly the same as before the outline was added.
+            foregroundDecoration: isTranslucent
+                ? BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: tokens.colors.decorative.level01.withValues(
+                        alpha: _glassBorderAlpha,
+                      ),
+                    ),
+                  )
+                : null,
             child: Icon(
               icon,
               size: TaskActionBar.iconSize,
               color: iconColor ?? tokens.colors.text.highEmphasis,
+              shadows: isTranslucent ? _glassForegroundShadows : null,
             ),
           ),
         ),
