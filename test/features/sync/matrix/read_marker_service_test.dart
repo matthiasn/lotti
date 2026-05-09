@@ -594,27 +594,30 @@ void main() {
         }
 
         if (timeline != null) {
+          final hasRemoteMarker = scenario.remoteId.isNotEmpty;
           switch (scenario.timelineKind) {
             case _GeneratedReadMarkerTimelineKind.absent:
               throw StateError('absent timeline should not be instantiated');
             case _GeneratedReadMarkerTimelineKind.candidateNewer:
-              final remote = buildEvent(scenario.remoteId, 100);
               final candidate = buildEvent(scenario.eventId, 200);
-              when(
-                () => timeline.events,
-              ).thenReturn(<Event>[remote, candidate]);
+              final events = hasRemoteMarker
+                  ? <Event>[buildEvent(scenario.remoteId, 100), candidate]
+                  : <Event>[candidate];
+              when(() => timeline.events).thenReturn(events);
             case _GeneratedReadMarkerTimelineKind.remoteNewer:
               final candidate = buildEvent(scenario.eventId, 100);
-              final remote = buildEvent(scenario.remoteId, 200);
-              when(
-                () => timeline.events,
-              ).thenReturn(<Event>[candidate, remote]);
+              final events = hasRemoteMarker
+                  ? <Event>[candidate, buildEvent(scenario.remoteId, 200)]
+                  : <Event>[candidate];
+              when(() => timeline.events).thenReturn(events);
             case _GeneratedReadMarkerTimelineKind.candidateOnly:
               final candidate = buildEvent(scenario.eventId, 100);
               when(() => timeline.events).thenReturn(<Event>[candidate]);
             case _GeneratedReadMarkerTimelineKind.remoteOnly:
-              final remote = buildEvent(scenario.remoteId, 100);
-              when(() => timeline.events).thenReturn(<Event>[remote]);
+              final events = hasRemoteMarker
+                  ? <Event>[buildEvent(scenario.remoteId, 100)]
+                  : <Event>[];
+              when(() => timeline.events).thenReturn(events);
             case _GeneratedReadMarkerTimelineKind.throwsOnEvents:
               when(() => timeline.events).thenThrow(Exception('events failed'));
           }
@@ -686,6 +689,14 @@ void main() {
               subDomain: 'setReadMarker',
             ),
           ).called(1);
+        } else {
+          verifyNever(
+            () => log.captureEvent(
+              any<String>(that: contains('marker.remote.missingEvent')),
+              domain: 'MATRIX_SERVICE',
+              subDomain: 'setReadMarker',
+            ),
+          );
         }
 
         if (scenario.logsRoomFailure) {
@@ -700,6 +711,15 @@ void main() {
               stackTrace: any<dynamic>(named: 'stackTrace'),
             ),
           ).called(1);
+        } else {
+          verifyNever(
+            () => log.captureException(
+              any<Object>(),
+              domain: 'MATRIX_SERVICE',
+              subDomain: any<String>(named: 'subDomain'),
+              stackTrace: any<dynamic>(named: 'stackTrace'),
+            ),
+          );
         }
       },
     );
