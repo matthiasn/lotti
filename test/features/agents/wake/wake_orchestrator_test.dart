@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -18,6 +20,320 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 import 'wake_orchestrator_test_helpers.dart';
+
+enum _GeneratedWakeReplacementSlot {
+  none,
+  tokenB,
+  agentB,
+  predicateFalse,
+  expanded,
+}
+
+enum _GeneratedWakeExtraSubscriptionSlot {
+  none,
+  sameAgentTrue,
+  sameAgentFalse,
+  otherAgentTrue,
+  otherAgentFalse,
+  agentCTrue,
+}
+
+enum _GeneratedWakeRemovalSlot {
+  none,
+  agentA,
+  agentB,
+  agentC,
+  agentAAndB,
+}
+
+enum _GeneratedWakeBatchSlot {
+  empty,
+  entityA,
+  entityB,
+  shared,
+  extraA,
+  extraB,
+  entityC,
+  mixedAExtraA,
+  sharedExtraB,
+  noiseOnly,
+  all,
+}
+
+enum _GeneratedWakeBusySlot { none, agentA, agentB, agentC }
+
+class _GeneratedWakeSubscriptionSpec {
+  const _GeneratedWakeSubscriptionSpec({
+    required this.id,
+    required this.agentId,
+    required this.matchEntityIds,
+    required this.predicateAllows,
+  });
+
+  final String id;
+  final String agentId;
+  final Set<String> matchEntityIds;
+  final bool predicateAllows;
+
+  AgentSubscription toSubscription() {
+    return AgentSubscription(
+      id: id,
+      agentId: agentId,
+      matchEntityIds: matchEntityIds,
+      predicate: predicateAllows ? null : (_) => false,
+    );
+  }
+}
+
+class _ExpectedWakeJob {
+  _ExpectedWakeJob({
+    required this.agentId,
+    required this.reasonId,
+    required Set<String> triggerTokens,
+  }) : triggerTokens = Set<String>.from(triggerTokens);
+
+  final String agentId;
+  final String reasonId;
+  final Set<String> triggerTokens;
+}
+
+class _GeneratedWakeRoutingScenario {
+  const _GeneratedWakeRoutingScenario({
+    required this.replacementSlot,
+    required this.extraSubscriptionSlot,
+    required this.removalSlot,
+    required this.batchSlot,
+    required this.busySlot,
+  });
+
+  final _GeneratedWakeReplacementSlot replacementSlot;
+  final _GeneratedWakeExtraSubscriptionSlot extraSubscriptionSlot;
+  final _GeneratedWakeRemovalSlot removalSlot;
+  final _GeneratedWakeBatchSlot batchSlot;
+  final _GeneratedWakeBusySlot busySlot;
+
+  List<_GeneratedWakeSubscriptionSpec> get subscriptionSpecs {
+    final specs = <_GeneratedWakeSubscriptionSpec>[
+      const _GeneratedWakeSubscriptionSpec(
+        id: 'sub-a',
+        agentId: 'agent-a',
+        matchEntityIds: {'entity-a', 'shared'},
+        predicateAllows: true,
+      ),
+    ];
+
+    final replacement = switch (replacementSlot) {
+      _GeneratedWakeReplacementSlot.none => null,
+      _GeneratedWakeReplacementSlot.tokenB =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-a',
+          agentId: 'agent-a',
+          matchEntityIds: {'entity-b'},
+          predicateAllows: true,
+        ),
+      _GeneratedWakeReplacementSlot.agentB =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-a',
+          agentId: 'agent-b',
+          matchEntityIds: {'entity-b', 'shared'},
+          predicateAllows: true,
+        ),
+      _GeneratedWakeReplacementSlot.predicateFalse =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-a',
+          agentId: 'agent-a',
+          matchEntityIds: {'entity-a', 'entity-b'},
+          predicateAllows: false,
+        ),
+      _GeneratedWakeReplacementSlot.expanded =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-a',
+          agentId: 'agent-a',
+          matchEntityIds: {'entity-a', 'entity-b', 'shared'},
+          predicateAllows: true,
+        ),
+    };
+    if (replacement != null) specs.add(replacement);
+
+    final extra = switch (extraSubscriptionSlot) {
+      _GeneratedWakeExtraSubscriptionSlot.none => null,
+      _GeneratedWakeExtraSubscriptionSlot.sameAgentTrue =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-extra-a',
+          agentId: 'agent-a',
+          matchEntityIds: {'entity-extra-a', 'shared'},
+          predicateAllows: true,
+        ),
+      _GeneratedWakeExtraSubscriptionSlot.sameAgentFalse =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-extra-a',
+          agentId: 'agent-a',
+          matchEntityIds: {'entity-extra-a', 'shared'},
+          predicateAllows: false,
+        ),
+      _GeneratedWakeExtraSubscriptionSlot.otherAgentTrue =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-extra-b',
+          agentId: 'agent-b',
+          matchEntityIds: {'entity-extra-b', 'shared'},
+          predicateAllows: true,
+        ),
+      _GeneratedWakeExtraSubscriptionSlot.otherAgentFalse =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-extra-b',
+          agentId: 'agent-b',
+          matchEntityIds: {'entity-extra-b', 'shared'},
+          predicateAllows: false,
+        ),
+      _GeneratedWakeExtraSubscriptionSlot.agentCTrue =>
+        const _GeneratedWakeSubscriptionSpec(
+          id: 'sub-extra-c',
+          agentId: 'agent-c',
+          matchEntityIds: {'entity-c'},
+          predicateAllows: true,
+        ),
+    };
+    if (extra != null) specs.add(extra);
+
+    return specs;
+  }
+
+  Set<String> get removedAgentIds {
+    return switch (removalSlot) {
+      _GeneratedWakeRemovalSlot.none => const <String>{},
+      _GeneratedWakeRemovalSlot.agentA => {'agent-a'},
+      _GeneratedWakeRemovalSlot.agentB => {'agent-b'},
+      _GeneratedWakeRemovalSlot.agentC => {'agent-c'},
+      _GeneratedWakeRemovalSlot.agentAAndB => {'agent-a', 'agent-b'},
+    };
+  }
+
+  Set<String> get batchTokens {
+    return switch (batchSlot) {
+      _GeneratedWakeBatchSlot.empty => const <String>{},
+      _GeneratedWakeBatchSlot.entityA => {'entity-a'},
+      _GeneratedWakeBatchSlot.entityB => {'entity-b'},
+      _GeneratedWakeBatchSlot.shared => {'shared'},
+      _GeneratedWakeBatchSlot.extraA => {'entity-extra-a'},
+      _GeneratedWakeBatchSlot.extraB => {'entity-extra-b'},
+      _GeneratedWakeBatchSlot.entityC => {'entity-c'},
+      _GeneratedWakeBatchSlot.mixedAExtraA => {
+        'entity-a',
+        'entity-extra-a',
+        'noise',
+      },
+      _GeneratedWakeBatchSlot.sharedExtraB => {
+        'shared',
+        'entity-extra-b',
+        'noise',
+      },
+      _GeneratedWakeBatchSlot.noiseOnly => {'noise'},
+      _GeneratedWakeBatchSlot.all => {
+        'entity-a',
+        'entity-b',
+        'entity-extra-a',
+        'entity-extra-b',
+        'entity-c',
+        'shared',
+        'noise',
+      },
+    };
+  }
+
+  String? get busyAgentId {
+    return switch (busySlot) {
+      _GeneratedWakeBusySlot.none => null,
+      _GeneratedWakeBusySlot.agentA => 'agent-a',
+      _GeneratedWakeBusySlot.agentB => 'agent-b',
+      _GeneratedWakeBusySlot.agentC => 'agent-c',
+    };
+  }
+
+  List<_GeneratedWakeSubscriptionSpec> get effectiveSubscriptions {
+    final idsInOrder = <String>[];
+    final byId = <String, _GeneratedWakeSubscriptionSpec>{};
+    for (final spec in subscriptionSpecs) {
+      if (!byId.containsKey(spec.id)) idsInOrder.add(spec.id);
+      byId[spec.id] = spec;
+    }
+    return [
+      for (final id in idsInOrder)
+        if (!removedAgentIds.contains(byId[id]!.agentId)) byId[id]!,
+    ];
+  }
+
+  List<_ExpectedWakeJob> get expectedJobs {
+    final byAgent = <String, _ExpectedWakeJob>{};
+    final tokens = batchTokens;
+
+    for (final spec in effectiveSubscriptions) {
+      final matched = tokens.intersection(spec.matchEntityIds);
+      if (matched.isEmpty || !spec.predicateAllows) continue;
+
+      final existing = byAgent[spec.agentId];
+      if (existing == null) {
+        byAgent[spec.agentId] = _ExpectedWakeJob(
+          agentId: spec.agentId,
+          reasonId: spec.id,
+          triggerTokens: matched,
+        );
+      } else {
+        existing.triggerTokens.addAll(matched);
+      }
+    }
+
+    return byAgent.values.toList();
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedWakeRoutingScenario('
+        'replacementSlot: $replacementSlot, '
+        'extraSubscriptionSlot: $extraSubscriptionSlot, '
+        'removalSlot: $removalSlot, batchSlot: $batchSlot, '
+        'busySlot: $busySlot)';
+  }
+}
+
+extension _AnyGeneratedWakeOrchestratorScenario on glados.Any {
+  glados.Generator<_GeneratedWakeReplacementSlot> get wakeReplacementSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeReplacementSlot.values);
+
+  glados.Generator<_GeneratedWakeExtraSubscriptionSlot>
+  get wakeExtraSubscriptionSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeExtraSubscriptionSlot.values);
+
+  glados.Generator<_GeneratedWakeRemovalSlot> get wakeRemovalSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeRemovalSlot.values);
+
+  glados.Generator<_GeneratedWakeBatchSlot> get wakeBatchSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeBatchSlot.values);
+
+  glados.Generator<_GeneratedWakeBusySlot> get wakeBusySlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeBusySlot.values);
+
+  glados.Generator<_GeneratedWakeRoutingScenario> get wakeRoutingScenario =>
+      glados.CombinableAny(this).combine5(
+        wakeReplacementSlot,
+        wakeExtraSubscriptionSlot,
+        wakeRemovalSlot,
+        wakeBatchSlot,
+        wakeBusySlot,
+        (
+          _GeneratedWakeReplacementSlot replacementSlot,
+          _GeneratedWakeExtraSubscriptionSlot extraSubscriptionSlot,
+          _GeneratedWakeRemovalSlot removalSlot,
+          _GeneratedWakeBatchSlot batchSlot,
+          _GeneratedWakeBusySlot busySlot,
+        ) => _GeneratedWakeRoutingScenario(
+          replacementSlot: replacementSlot,
+          extraSubscriptionSlot: extraSubscriptionSlot,
+          removalSlot: removalSlot,
+          batchSlot: batchSlot,
+          busySlot: busySlot,
+        ),
+      );
+}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -92,6 +408,93 @@ void main() {
 
   group('WakeOrchestrator', () {
     group('subscription management', () {
+      glados.Glados(
+        glados.any.wakeRoutingScenario,
+        glados.ExploreConfig(numRuns: 240),
+      ).test(
+        'matches generated subscription routing, replacement, and removal',
+        (scenario) {
+          fakeAsync((async) {
+            final generatedRepository = MockAgentRepository();
+            final generatedQueue = WakeQueue();
+            final generatedRunner = WakeRunner();
+            final generatedOrchestrator = WakeOrchestrator(
+              repository: generatedRepository,
+              queue: generatedQueue,
+              runner: generatedRunner,
+            );
+            final controller = StreamController<Set<String>>.broadcast();
+
+            when(
+              () => generatedRepository.insertWakeRun(
+                entry: any(named: 'entry'),
+              ),
+            ).thenAnswer((_) async {});
+            when(
+              () => generatedRepository.updateWakeRunStatus(
+                any(),
+                any(),
+                completedAt: any(named: 'completedAt'),
+                errorMessage: any(named: 'errorMessage'),
+              ),
+            ).thenAnswer((_) async {});
+            when(
+              () => generatedRepository.getAgentState(any()),
+            ).thenAnswer((_) async => null);
+            when(
+              () => generatedRepository.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+
+            for (final spec in scenario.subscriptionSpecs) {
+              generatedOrchestrator.addSubscription(spec.toSubscription());
+            }
+            scenario.removedAgentIds.forEach(
+              generatedOrchestrator.removeSubscriptions,
+            );
+
+            final busyAgentId = scenario.busyAgentId;
+            if (busyAgentId != null) {
+              generatedRunner.tryAcquire(busyAgentId);
+              async.flushMicrotasks();
+            }
+
+            generatedOrchestrator.start(controller.stream);
+            emitTokens(async, controller, scenario.batchTokens);
+
+            final actualJobs = <WakeJob>[];
+            while (!generatedQueue.isEmpty) {
+              actualJobs.add(generatedQueue.dequeue()!);
+            }
+            final expectedJobs = scenario.expectedJobs;
+
+            expect(actualJobs, hasLength(expectedJobs.length));
+            for (var i = 0; i < expectedJobs.length; i++) {
+              final actual = actualJobs[i];
+              final expected = expectedJobs[i];
+
+              expect(actual.agentId, expected.agentId, reason: '$scenario');
+              expect(actual.reason, WakeReason.subscription.name);
+              expect(actual.reasonId, expected.reasonId, reason: '$scenario');
+              expect(
+                actual.triggerTokens,
+                expected.triggerTokens,
+                reason: '$scenario',
+              );
+            }
+
+            verifyNever(
+              () => generatedRepository.insertWakeRun(
+                entry: any(named: 'entry'),
+              ),
+            );
+
+            if (busyAgentId != null) generatedRunner.release(busyAgentId);
+            generatedOrchestrator.stop();
+            controller.close();
+          });
+        },
+      );
+
       test('addSubscription registers a subscription', () {
         fakeAsync((async) {
           orchestrator.addSubscription(makeSub());
