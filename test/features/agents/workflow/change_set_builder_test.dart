@@ -265,6 +265,342 @@ extension _AnyGeneratedChecklistBatchScenario on glados.Any {
   );
 }
 
+typedef _GeneratedChecklistItemState = ({String? title, bool? isChecked});
+
+enum _GeneratedChecklistUpdateElementShape {
+  nonMap,
+  missingId,
+  checkAlreadyChecked,
+  checkUnchecked,
+  uncheckAlreadyUnchecked,
+  uncheckChecked,
+  titleSame,
+  titleDifferent,
+  bothSame,
+  checkedSameTitleDifferent,
+  checkedDifferentTitleSame,
+  idOnly,
+  emptyTitle,
+  unknownItem,
+  duplicateExact,
+}
+
+class _GeneratedChecklistUpdateElement {
+  const _GeneratedChecklistUpdateElement({
+    required this.shape,
+    required this.seed,
+  });
+
+  static const duplicateId = 'duplicate-update-id';
+
+  final _GeneratedChecklistUpdateElementShape shape;
+  final int seed;
+
+  int get _slot => seed % 7;
+
+  String get _checkedId => 'checked-update-$_slot';
+  String get _uncheckedId => 'unchecked-update-$_slot';
+  String get _titleId => 'title-update-$_slot';
+  String get _unknownId => 'unknown-update-$_slot';
+
+  String get _currentTitle => 'Current checklist title $_slot';
+  String get _replacementTitle => 'Replacement checklist title $_slot';
+
+  Object value() => switch (shape) {
+    _GeneratedChecklistUpdateElementShape.nonMap => 'not-a-map-$seed',
+    _GeneratedChecklistUpdateElementShape.missingId => <String, dynamic>{
+      'isChecked': seed.isEven,
+    },
+    _GeneratedChecklistUpdateElementShape.checkAlreadyChecked =>
+      <String, dynamic>{
+        'id': _checkedId,
+        'isChecked': true,
+      },
+    _GeneratedChecklistUpdateElementShape.checkUnchecked => <String, dynamic>{
+      'id': _uncheckedId,
+      'isChecked': true,
+    },
+    _GeneratedChecklistUpdateElementShape.uncheckAlreadyUnchecked =>
+      <String, dynamic>{
+        'id': _uncheckedId,
+        'isChecked': false,
+      },
+    _GeneratedChecklistUpdateElementShape.uncheckChecked => <String, dynamic>{
+      'id': _checkedId,
+      'isChecked': false,
+    },
+    _GeneratedChecklistUpdateElementShape.titleSame => <String, dynamic>{
+      'id': _titleId,
+      'title': _currentTitle,
+    },
+    _GeneratedChecklistUpdateElementShape.titleDifferent => <String, dynamic>{
+      'id': _titleId,
+      'title': _replacementTitle,
+    },
+    _GeneratedChecklistUpdateElementShape.bothSame => <String, dynamic>{
+      'id': _checkedId,
+      'isChecked': true,
+      'title': _currentTitle,
+    },
+    _GeneratedChecklistUpdateElementShape.checkedSameTitleDifferent =>
+      <String, dynamic>{
+        'id': _checkedId,
+        'isChecked': true,
+        'title': _replacementTitle,
+      },
+    _GeneratedChecklistUpdateElementShape.checkedDifferentTitleSame =>
+      <String, dynamic>{
+        'id': _uncheckedId,
+        'isChecked': true,
+        'title': _currentTitle,
+      },
+    _GeneratedChecklistUpdateElementShape.idOnly => <String, dynamic>{
+      'id': _titleId,
+    },
+    _GeneratedChecklistUpdateElementShape.emptyTitle => <String, dynamic>{
+      'id': _titleId,
+      'title': '',
+    },
+    _GeneratedChecklistUpdateElementShape.unknownItem => <String, dynamic>{
+      'id': _unknownId,
+      'isChecked': seed.isEven,
+    },
+    _GeneratedChecklistUpdateElementShape.duplicateExact => <String, dynamic>{
+      'id': duplicateId,
+      'isChecked': true,
+      'title': 'Duplicate title',
+    },
+  };
+
+  String? get itemId {
+    final currentValue = value();
+    if (currentValue is! Map<String, dynamic>) return null;
+    final id = currentValue['id'];
+    return id is String ? id : null;
+  }
+
+  _GeneratedChecklistItemState? get resolvedState {
+    return switch (shape) {
+      _GeneratedChecklistUpdateElementShape.nonMap ||
+      _GeneratedChecklistUpdateElementShape.missingId ||
+      _GeneratedChecklistUpdateElementShape.unknownItem => null,
+      _GeneratedChecklistUpdateElementShape.checkAlreadyChecked ||
+      _GeneratedChecklistUpdateElementShape.uncheckChecked ||
+      _GeneratedChecklistUpdateElementShape.bothSame ||
+      _GeneratedChecklistUpdateElementShape.checkedSameTitleDifferent => (
+        title: _currentTitle,
+        isChecked: true,
+      ),
+      _GeneratedChecklistUpdateElementShape.checkUnchecked ||
+      _GeneratedChecklistUpdateElementShape.uncheckAlreadyUnchecked ||
+      _GeneratedChecklistUpdateElementShape.checkedDifferentTitleSame => (
+        title: _currentTitle,
+        isChecked: false,
+      ),
+      _GeneratedChecklistUpdateElementShape.titleSame ||
+      _GeneratedChecklistUpdateElementShape.titleDifferent ||
+      _GeneratedChecklistUpdateElementShape.idOnly ||
+      _GeneratedChecklistUpdateElementShape.emptyTitle => (
+        title: _currentTitle,
+        isChecked: null,
+      ),
+      _GeneratedChecklistUpdateElementShape.duplicateExact => (
+        title: 'Duplicate current',
+        isChecked: false,
+      ),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedChecklistUpdateElement('
+        'shape: $shape, seed: $seed, value: ${value()})';
+  }
+}
+
+class _GeneratedChecklistUpdateScenario {
+  const _GeneratedChecklistUpdateScenario({
+    required this.elements,
+  });
+
+  final List<_GeneratedChecklistUpdateElement> elements;
+
+  List<Object> get values => [
+    for (final element in elements) element.value(),
+  ];
+
+  Map<String, _GeneratedChecklistItemState?> get stateById {
+    final states = <String, _GeneratedChecklistItemState?>{};
+    for (final element in elements) {
+      final id = element.itemId;
+      if (id != null) states[id] = element.resolvedState;
+    }
+    return states;
+  }
+
+  _ExpectedChecklistUpdateBatch expected() {
+    final queuedFingerprints = <String>{};
+    final kept = <_ExpectedChecklistUpdateItem>[];
+    var skipped = 0;
+    var redundant = 0;
+
+    for (final element in elements) {
+      final value = element.value();
+      if (value is! Map<String, dynamic>) {
+        skipped++;
+        continue;
+      }
+
+      final state = element.resolvedState;
+      if (_isRedundant(value, state)) {
+        redundant++;
+        continue;
+      }
+
+      final fingerprint = ChangeItem.fingerprintFromParts(
+        TaskAgentToolNames.updateChecklistItem,
+        value,
+      );
+      if (!queuedFingerprints.add(fingerprint)) {
+        redundant++;
+        continue;
+      }
+
+      kept.add(
+        _ExpectedChecklistUpdateItem(
+          args: value,
+          summary: _summary(value, state),
+        ),
+      );
+    }
+
+    return _ExpectedChecklistUpdateBatch(
+      added: kept.length,
+      skipped: skipped,
+      redundant: redundant,
+      kept: kept,
+    );
+  }
+
+  bool _isRedundant(
+    Map<String, dynamic> args,
+    _GeneratedChecklistItemState? state,
+  ) {
+    final itemId = args['id'];
+    if (itemId is! String || state == null) return false;
+
+    final proposedIsChecked = args['isChecked'];
+    final proposedTitle = args['title'];
+    final isCheckedChanging =
+        proposedIsChecked is bool &&
+        (state.isChecked == null || proposedIsChecked != state.isChecked);
+    final isTitleChanging =
+        proposedTitle is String &&
+        proposedTitle.isNotEmpty &&
+        proposedTitle != state.title;
+
+    if (isCheckedChanging || isTitleChanging) return false;
+
+    return proposedIsChecked is bool ||
+        (proposedTitle is String && proposedTitle.isNotEmpty);
+  }
+
+  String _summary(
+    Map<String, dynamic> args,
+    _GeneratedChecklistItemState? state,
+  ) {
+    final title = args['title'];
+    if (title is String && title.isNotEmpty) {
+      final isChecked = args['isChecked'];
+      if (isChecked is bool) {
+        return '${isChecked ? 'Check' : 'Uncheck'}: "$title"';
+      }
+      return 'Update: "$title"';
+    }
+
+    final id = args['id'];
+    if (id is String) {
+      final isChecked = args['isChecked'];
+      final resolvedTitle = state?.title;
+      if (isChecked is bool) {
+        final action = isChecked ? 'Check off' : 'Uncheck';
+        if (resolvedTitle != null) return '$action: "$resolvedTitle"';
+        return '$action item ${_truncateGeneratedId(id)}';
+      }
+      if (resolvedTitle != null) return 'Checklist update: "$resolvedTitle"';
+      return 'Checklist update item ${_truncateGeneratedId(id)}';
+    }
+
+    return 'Checklist update item';
+  }
+
+  String _truncateGeneratedId(String id) =>
+      id.length > 8 ? '${id.substring(0, 8)}…' : id;
+
+  @override
+  String toString() {
+    return '_GeneratedChecklistUpdateScenario(values: $values)';
+  }
+}
+
+class _ExpectedChecklistUpdateBatch {
+  const _ExpectedChecklistUpdateBatch({
+    required this.added,
+    required this.skipped,
+    required this.redundant,
+    required this.kept,
+  });
+
+  final int added;
+  final int skipped;
+  final int redundant;
+  final List<_ExpectedChecklistUpdateItem> kept;
+}
+
+class _ExpectedChecklistUpdateItem {
+  const _ExpectedChecklistUpdateItem({
+    required this.args,
+    required this.summary,
+  });
+
+  final Map<String, dynamic> args;
+  final String summary;
+}
+
+extension _AnyGeneratedChecklistUpdateScenario on glados.Any {
+  glados.Generator<_GeneratedChecklistUpdateElementShape>
+  get checklistUpdateElementShape => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedChecklistUpdateElementShape.values);
+
+  glados.Generator<_GeneratedChecklistUpdateElement>
+  get checklistUpdateElement => glados.CombinableAny(this).combine2(
+    checklistUpdateElementShape,
+    glados.IntAnys(this).intInRange(0, 1000),
+    (
+      _GeneratedChecklistUpdateElementShape shape,
+      int seed,
+    ) => _GeneratedChecklistUpdateElement(
+      shape: shape,
+      seed: seed,
+    ),
+  );
+
+  glados.Generator<_GeneratedChecklistUpdateScenario>
+  get checklistUpdateScenario => glados.CombinableAny(this).combine2(
+    glados.ListAnys(
+      this,
+    ).listWithLengthInRange(0, 12, checklistUpdateElement),
+    glados.AnyUtils(this).choose([false, true]),
+    (
+      List<_GeneratedChecklistUpdateElement> elements,
+      bool reverse,
+    ) => _GeneratedChecklistUpdateScenario(
+      elements: reverse ? elements.reversed.toList() : elements,
+    ),
+  );
+}
+
 void main() {
   late ChangeSetBuilder builder;
   late MockAgentSyncService mockSyncService;
@@ -1545,6 +1881,47 @@ void main() {
           } else {
             expect(item.humanSummary, 'Checklist item', reason: '$scenario');
           }
+        }
+      },
+    );
+
+    glados.Glados(
+      glados.any.checklistUpdateScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'matches generated update-checklist batch semantics',
+      (scenario) async {
+        final stateById = scenario.stateById;
+        final generatedBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async => stateById[id],
+        );
+        final expected = scenario.expected();
+
+        final result = await generatedBuilder.addBatchItem(
+          toolName: TaskAgentToolNames.updateChecklistItems,
+          args: {'items': scenario.values},
+          summaryPrefix: 'Checklist update',
+        );
+
+        expect(result.added, expected.added, reason: '$scenario');
+        expect(result.skipped, expected.skipped, reason: '$scenario');
+        expect(result.redundant, expected.redundant, reason: '$scenario');
+        expect(generatedBuilder.items, hasLength(expected.added));
+
+        for (var index = 0; index < expected.kept.length; index++) {
+          final item = generatedBuilder.items[index];
+          final expectedItem = expected.kept[index];
+          expect(item.toolName, TaskAgentToolNames.updateChecklistItem);
+          expect(item.args, expectedItem.args, reason: '$scenario');
+          expect(
+            item.humanSummary,
+            expectedItem.summary,
+            reason: '$scenario',
+          );
         }
       },
     );
