@@ -857,20 +857,97 @@ class SyncDatabase extends _$SyncDatabase {
         .go();
   }
 
+  /// Same retention semantics as [pruneSentOutboxItems], but deletes in
+  /// bounded chunks so the writer lock is released between batches and
+  /// concurrent enqueue/claim/watch can interleave. Required for one-shot
+  /// cleanup on devices where the table has accumulated hundreds of
+  /// thousands of `sent` rows — a single unbounded DELETE on that volume
+  /// holds the writer for many seconds and stalls the whole sync pipeline.
+  ///
+  /// Each pass deletes up to [chunkSize] rows, then awaits a microtask
+  /// (or the supplied [yieldDelay]) to let other queued statements run.
+  /// Loop terminates when a pass deletes fewer than [chunkSize] rows.
+  ///
+  /// When [vacuumWhenDone] is true and at least one row was deleted, runs
+  /// `VACUUM` after the loop to reclaim disk space — VACUUM rewrites the
+  /// whole DB file, so it is opt-in and only worth running after a large
+  /// purge.
+  ///
+  /// [onProgress] receives the running deletion total after each chunk;
+  /// callers (UI, periodic timer) can emit traces or update progress UI.
+  Future<int> pruneSentOutboxItemsChunked({
+    required Duration retention,
+    int chunkSize = 5000,
+    Duration yieldDelay = Duration.zero,
+    bool vacuumWhenDone = false,
+    DateTime? now,
+    void Function(int deletedSoFar)? onProgress,
+  }) async {
+    final effectiveNow = now ?? DateTime.now();
+    final cutoff = effectiveNow.subtract(retention);
+    final sentStatus = OutboxStatus.sent.index;
+    var total = 0;
+    while (true) {
+      // Subquery on `id` lets us bound a single statement's row count via
+      // LIMIT — drift's `delete(...).where(...)` does not expose LIMIT
+      // directly. The inner SELECT walks
+      // `idx_outbox_status_priority_created_at` (status leading column) so
+      // it is index-bounded, not a scan.
+      final n = await customUpdate(
+        'DELETE FROM outbox WHERE id IN '
+        '(SELECT id FROM outbox '
+        'WHERE status = ? AND updated_at < ? '
+        'LIMIT ?)',
+        variables: [
+          Variable.withInt(sentStatus),
+          Variable.withDateTime(cutoff),
+          Variable.withInt(chunkSize),
+        ],
+        updates: {outbox},
+      );
+      total += n;
+      onProgress?.call(total);
+      if (n < chunkSize) break;
+      // Yield the writer so other statements queued behind the chunk can
+      // run before we ask for another delete batch.
+      await Future<void>.delayed(yieldDelay);
+    }
+    if (vacuumWhenDone && total > 0) {
+      await customStatement('VACUUM');
+    }
+    return total;
+  }
+
   /// Get (hostId, counter) pairs from queued or in-flight backfill request
   /// messages in outbox.
   ///
   /// Used to avoid enqueuing duplicate backfill requests while an older request
   /// is still pending or leased in `sending`.
+  ///
+  /// Two filters applied at SQL level keep this cheap on devices where the
+  /// outbox has accumulated hundreds of thousands of rows:
+  /// 1. `status IN (pending, sending)` — drift renders this as
+  ///    `status IN (?, ?)`, which the SQLite planner can satisfy from
+  ///    `idx_outbox_status_priority_created_at` (two index seeks). The
+  ///    earlier `status = ? OR status = ?` form (drift's `|` operator)
+  ///    refused to use that index and forced a full SCAN — observed at
+  ///    700–850 ms per call on a ~1M-row outbox.
+  /// 2. `subject LIKE 'backfillRequest:%'` — `_enqueueBackfillRequest`
+  ///    sets `subject` to `'backfillRequest:batch:N'` for every backfill
+  ///    request enqueue, so the prefix is a reliable marker. Without
+  ///    this filter we materialise every actionable row and JSON-decode
+  ///    each one to find the tiny subset of backfill requests; with it,
+  ///    only the matching rows are decoded.
   Future<Set<({String hostId, int counter})>>
   getPendingBackfillEntries() async {
     final pendingItems =
-        await (select(
-              outbox,
-            )..where(
+        await (select(outbox)..where(
               (t) =>
-                  t.status.equals(OutboxStatus.pending.index) |
-                  t.status.equals(_outboxSendingStatus),
+                  t.status.isIn([
+                    OutboxStatus.pending.index,
+                    _outboxSendingStatus,
+                  ]) &
+                  t.subject.like('backfillRequest:%'),
             ))
             .get();
 
@@ -879,18 +956,20 @@ class SyncDatabase extends _$SyncDatabase {
     for (final item in pendingItems) {
       try {
         final json = jsonDecode(item.message) as Map<String, dynamic>;
-        // Check if this is a backfillRequest message
-        if (json['runtimeType'] == 'backfillRequest') {
-          final entriesList = json['entries'] as List<dynamic>?;
-          if (entriesList != null) {
-            for (final entry in entriesList) {
-              if (entry is Map<String, dynamic>) {
-                final hostId = entry['hostId'] as String?;
-                final counter = entry['counter'] as int?;
-                if (hostId != null && counter != null) {
-                  entries.add((hostId: hostId, counter: counter));
-                }
-              }
+        // Defensive: a row whose subject starts with `backfillRequest:`
+        // but whose message is some other shape would still be filtered
+        // out here. The subject is set adjacent to the JSON encode in
+        // `_enqueueBackfillRequest`, so this check is just belt and
+        // braces.
+        if (json['runtimeType'] != 'backfillRequest') continue;
+        final entriesList = json['entries'] as List<dynamic>?;
+        if (entriesList == null) continue;
+        for (final entry in entriesList) {
+          if (entry is Map<String, dynamic>) {
+            final hostId = entry['hostId'] as String?;
+            final counter = entry['counter'] as int?;
+            if (hostId != null && counter != null) {
+              entries.add((hostId: hostId, counter: counter));
             }
           }
         }
@@ -1341,9 +1420,22 @@ class SyncDatabase extends _$SyncDatabase {
     // bounded result set below.
     final baseQuery = select(syncSequenceLog)
       ..where((t) {
+        // `status IN (1, 2)` is inlined as a literal SQL fragment via
+        // `CustomExpression` so the SQLite planner can prove it implies
+        // the partial index's WHERE
+        // (`idx_sync_sequence_log_actionable_status_created_at`,
+        // declared with `WHERE status IN (1, 2)`). Drift's
+        // `t.status.equals(?) | t.status.equals(?)` and
+        // `t.status.isIn([?, ?])` both bind the values as parameters
+        // unknown at plan time; the partial-index match fails and the
+        // predicate falls back to a full table scan. The 2026-05-09
+        // desktop slow_queries log captured this shape at 399 hits/day
+        // in the 200–999 ms band before the rewrite. Literal values
+        // mirror `SyncSequenceStatus.missing.index = 1` and
+        // `.requested.index = 2`, matching the migration's enum-order
+        // assumption.
         var predicate =
-            (t.status.equals(SyncSequenceStatus.missing.index) |
-                t.status.equals(SyncSequenceStatus.requested.index)) &
+            const CustomExpression<bool>('status IN (1, 2)') &
             t.requestCount.isSmallerThanValue(maxRequestCount) &
             t.createdAt.isSmallerOrEqualValue(minAgeCutoff);
         if (maxAge != null) {
@@ -1413,24 +1505,31 @@ class SyncDatabase extends _$SyncDatabase {
     DateTime? now,
     int pageSize = 500,
   }) async {
-    final missing = SyncSequenceStatus.missing.index;
-    final requested = SyncSequenceStatus.requested.index;
     final unresolvable = SyncSequenceStatus.unresolvable.index;
     final effectiveNow = now ?? DateTime.now();
     final cutoff = effectiveNow.subtract(grace);
 
+    // `status IN (1, 2)` is inlined as a literal so the SQLite planner
+    // can prove this query's WHERE is implied by the partial index's
+    // WHERE (`idx_sync_sequence_log_actionable_status_last_requested_at`,
+    // declared with the same literal `WHERE status IN (1, 2)`). The
+    // earlier `(status = ? OR status = ?)` form bound the status values
+    // as parameters; the planner couldn't see them at plan time, the
+    // partial index match failed, and the predicate fell back to a full
+    // table scan (slow_queries log on the 2026-05-09 desktop: 403 hits
+    // in the 200–999 ms band, sum 122 s/day). The literals here mirror
+    // `SyncSequenceStatus.missing.index = 1` and `.requested.index = 2`
+    // — same enum-order assumption already baked into the migrations.
     return _retireInPages(
       pageSize: pageSize,
       selectKeysSql:
           'SELECT host_id, counter FROM sync_sequence_log '
-          'WHERE (status = ? OR status = ?) '
+          'WHERE status IN (1, 2) '
           '  AND request_count >= ? '
           '  AND last_requested_at IS NOT NULL '
           '  AND last_requested_at < ? '
           'LIMIT ?',
       selectVariables: [
-        Variable.withInt(missing),
-        Variable.withInt(requested),
         Variable.withInt(maxRequestCount),
         Variable.withDateTime(cutoff),
       ],
@@ -1480,22 +1579,25 @@ class SyncDatabase extends _$SyncDatabase {
     DateTime? now,
     int pageSize = 500,
   }) async {
-    final missing = SyncSequenceStatus.missing.index;
-    final requested = SyncSequenceStatus.requested.index;
     final unresolvable = SyncSequenceStatus.unresolvable.index;
     final effectiveNow = now ?? DateTime.now();
     final cutoff = effectiveNow.subtract(amnestyWindow);
 
+    // Same `IN (1, 2)` literal trick as
+    // [retireExhaustedRequestedEntries] — needed so the planner can
+    // match the partial index
+    // `idx_sync_sequence_log_actionable_status_updated_at` (declared
+    // `WHERE status IN (1, 2)`). 2026-05-09 desktop slow_queries log
+    // showed this shape at 406 hits/day in the 200–999 ms band before
+    // the rewrite.
     return _retireInPages(
       pageSize: pageSize,
       selectKeysSql:
           'SELECT host_id, counter FROM sync_sequence_log '
-          'WHERE (status = ? OR status = ?) '
+          'WHERE status IN (1, 2) '
           '  AND updated_at < ? '
           'LIMIT ?',
       selectVariables: [
-        Variable.withInt(missing),
-        Variable.withInt(requested),
         Variable.withDateTime(cutoff),
       ],
       newStatus: unresolvable,

@@ -3596,6 +3596,21 @@ class AppLocalizationsCs extends AppLocalizations {
       'Jste si jistý, že chcete vymazat všechny smazané položky? Tuto akci nelze vzít zpět.';
 
   @override
+  String get maintenancePurgeSentOutbox =>
+      'Vyčistit staré odeslané položky outboxu';
+
+  @override
+  String get maintenancePurgeSentOutboxConfirm => 'ANO, VYČISTIT';
+
+  @override
+  String get maintenancePurgeSentOutboxDescription =>
+      'Smazat řádky outboxu odeslané před více než 7 dny a uvolnit místo na disku';
+
+  @override
+  String get maintenancePurgeSentOutboxQuestion =>
+      'Vyčistit položky outboxu odeslané před více než 7 dny? Tato akce smaže již odeslané řádky po blocích a spustí VACUUM pro uvolnění místa na disku. Čekající a chybové položky zůstanou zachovány.';
+
+  @override
   String get maintenanceRecreateFts5 => 'Znovu vytvořit index plného textu';
 
   @override

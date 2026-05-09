@@ -6413,6 +6413,30 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to purge all deleted items? This action cannot be undone.'**
   String get maintenancePurgeDeletedMessage;
 
+  /// No description provided for @maintenancePurgeSentOutbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Purge old sent outbox items'**
+  String get maintenancePurgeSentOutbox;
+
+  /// No description provided for @maintenancePurgeSentOutboxConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'YES, PURGE'**
+  String get maintenancePurgeSentOutboxConfirm;
+
+  /// No description provided for @maintenancePurgeSentOutboxDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete sent outbox rows older than 7 days and reclaim disk'**
+  String get maintenancePurgeSentOutboxDescription;
+
+  /// No description provided for @maintenancePurgeSentOutboxQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Purge sent outbox items older than 7 days? This deletes already-sent rows in chunks and runs VACUUM to reclaim disk. Pending and error items are kept.'**
+  String get maintenancePurgeSentOutboxQuestion;
+
   /// No description provided for @maintenanceRecreateFts5.
   ///
   /// In en, this message translates to:

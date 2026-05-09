@@ -3619,6 +3619,21 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Estás seguro de que quieres purgar todos los elementos eliminados? Esta acción no se puede deshacer.';
 
   @override
+  String get maintenancePurgeSentOutbox =>
+      'Purgar elementos enviados antiguos del outbox';
+
+  @override
+  String get maintenancePurgeSentOutboxConfirm => 'SÍ, PURGAR';
+
+  @override
+  String get maintenancePurgeSentOutboxDescription =>
+      'Eliminar filas del outbox enviadas hace más de 7 días y liberar disco';
+
+  @override
+  String get maintenancePurgeSentOutboxQuestion =>
+      '¿Purgar elementos del outbox enviados hace más de 7 días? Esto elimina las filas ya enviadas por bloques y ejecuta VACUUM para liberar disco. Los elementos pendientes y con error se conservan.';
+
+  @override
   String get maintenanceRecreateFts5 => 'Recrear el índice de texto completo';
 
   @override

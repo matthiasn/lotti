@@ -3587,6 +3587,21 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du wirklich alle gelöschten Einträge endgültig entfernen? Diese Aktion kann nicht rückgängig gemacht werden.';
 
   @override
+  String get maintenancePurgeSentOutbox =>
+      'Alte gesendete Outbox-Einträge löschen';
+
+  @override
+  String get maintenancePurgeSentOutboxConfirm => 'JA, LÖSCHEN';
+
+  @override
+  String get maintenancePurgeSentOutboxDescription =>
+      'Gesendete Outbox-Zeilen, die älter als 7 Tage sind, löschen und Speicherplatz freigeben';
+
+  @override
+  String get maintenancePurgeSentOutboxQuestion =>
+      'Gesendete Outbox-Einträge löschen, die älter als 7 Tage sind? Bereits gesendete Zeilen werden in Blöcken gelöscht und VACUUM gibt Speicherplatz frei. Ausstehende und fehlerhafte Einträge bleiben erhalten.';
+
+  @override
   String get maintenanceRecreateFts5 => 'Volltextindex neu erstellen';
 
   @override

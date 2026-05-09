@@ -62,6 +62,26 @@ abstract class OutboxRepository {
   Future<int> pruneSentOutboxItems({
     required Duration retention,
   });
+
+  /// Same retention semantics as [pruneSentOutboxItems], but the DELETE
+  /// is split into chunks so the writer lock is released between
+  /// batches. Required for one-shot maintenance on devices where the
+  /// outbox has accumulated hundreds of thousands of `sent` rows — a
+  /// single unbounded DELETE on that volume holds the writer for many
+  /// seconds and stalls the whole sync pipeline.
+  ///
+  /// Used by both the periodic background prune and the user-triggered
+  /// "Purge old sent outbox items" maintenance action. Pass
+  /// [vacuumWhenDone] = true (typically only from the user-triggered
+  /// path) to reclaim disk after a large purge.
+  ///
+  /// [onProgress] receives the running deletion total after each chunk.
+  Future<int> pruneSentOutboxItemsChunked({
+    required Duration retention,
+    int chunkSize = 5000,
+    bool vacuumWhenDone = false,
+    void Function(int deletedSoFar)? onProgress,
+  });
 }
 
 class DatabaseOutboxRepository implements OutboxRepository {
@@ -172,5 +192,20 @@ class DatabaseOutboxRepository implements OutboxRepository {
     required Duration retention,
   }) {
     return _database.pruneSentOutboxItems(retention: retention);
+  }
+
+  @override
+  Future<int> pruneSentOutboxItemsChunked({
+    required Duration retention,
+    int chunkSize = 5000,
+    bool vacuumWhenDone = false,
+    void Function(int deletedSoFar)? onProgress,
+  }) {
+    return _database.pruneSentOutboxItemsChunked(
+      retention: retention,
+      chunkSize: chunkSize,
+      vacuumWhenDone: vacuumWhenDone,
+      onProgress: onProgress,
+    );
   }
 }

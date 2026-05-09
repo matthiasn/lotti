@@ -373,10 +373,21 @@ void main() {
       () => syncDatabase.findPendingByEntryId(any()),
     ).thenAnswer((_) async => null);
     // Default stub so the periodic prune sweep fires without NSM errors
-    // if a test happens to elapse past the 30s startup grace.
+    // if a test happens to elapse past the 30s startup grace. Both the
+    // unbounded and chunked variants are stubbed because tests that
+    // existed before the chunked switch still call the unbounded
+    // method directly via repository helpers.
     when(
       () => repository.pruneSentOutboxItems(
         retention: any(named: 'retention'),
+      ),
+    ).thenAnswer((_) async => 0);
+    when(
+      () => repository.pruneSentOutboxItemsChunked(
+        retention: any(named: 'retention'),
+        chunkSize: any(named: 'chunkSize'),
+        vacuumWhenDone: any(named: 'vacuumWhenDone'),
+        onProgress: any(named: 'onProgress'),
       ),
     ).thenAnswer((_) async => 0);
     when(
@@ -5347,12 +5358,17 @@ void main() {
     test(
       'startup prune fires after the 30-second grace and logs the removed '
       'count when rows are deleted — uses the SyncTuning retention so both '
-      'desktop and mobile agree on the cutoff window',
+      'desktop and mobile agree on the cutoff window. Calls the chunked '
+      'variant so the writer lock is released between batches even on '
+      'devices with hundreds of thousands of stale sent rows',
       () {
         fakeAsync((async) {
           when(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: SyncTuning.outboxSentRetention,
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           ).thenAnswer((_) async => 42);
 
@@ -5379,8 +5395,11 @@ void main() {
             ..elapse(const Duration(seconds: 20))
             ..flushMicrotasks();
           verifyNever(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           );
 
@@ -5390,8 +5409,11 @@ void main() {
             ..flushMicrotasks();
 
           verify(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: SyncTuning.outboxSentRetention,
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           ).called(1);
           verify(
@@ -5408,13 +5430,65 @@ void main() {
     );
 
     test(
+      'periodic background prune passes vacuumWhenDone=false — VACUUM '
+      'rewrites the whole DB file and would dominate the daily sweep cost '
+      'long after the backlog has settled. The user-triggered Maintenance '
+      'action is the place that pays for VACUUM',
+      () {
+        fakeAsync((async) {
+          bool? capturedVacuum;
+          when(
+            () => repository.pruneSentOutboxItemsChunked(
+              retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            capturedVacuum =
+                invocation.namedArguments[#vacuumWhenDone] as bool?;
+            return 0;
+          });
+
+          final svc = TestableOutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: createGate(),
+            ownsActivityGate: false,
+          );
+          addTearDown(() async {
+            await svc.dispose();
+            async.flushMicrotasks();
+          });
+
+          async
+            ..elapse(const Duration(seconds: 31))
+            ..flushMicrotasks();
+
+          // Default of `false` reaches the repository.
+          expect(capturedVacuum, isFalse);
+        });
+      },
+    );
+
+    test(
       'no log emission when the prune deletes zero rows — prevents the '
       'daily sweep from spamming the log once the backlog is drained',
       () {
         fakeAsync((async) {
           when(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           ).thenAnswer((_) async => 0);
 
@@ -5441,8 +5515,11 @@ void main() {
             ..flushMicrotasks();
 
           verify(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           ).called(1);
           verifyNever(
@@ -5463,8 +5540,11 @@ void main() {
       () {
         fakeAsync((async) {
           when(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           ).thenAnswer((_) async => throw StateError('db gone'));
 
@@ -5508,8 +5588,11 @@ void main() {
       () {
         fakeAsync((async) {
           when(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           ).thenAnswer((_) async => 0);
 
@@ -5532,8 +5615,11 @@ void main() {
             ..flushMicrotasks();
           // Startup prune fired once.
           verify(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           ).called(1);
 
@@ -5545,8 +5631,11 @@ void main() {
             ..elapse(SyncTuning.outboxPruneInterval + const Duration(hours: 1))
             ..flushMicrotasks();
           verifyNever(
-            () => repository.pruneSentOutboxItems(
+            () => repository.pruneSentOutboxItemsChunked(
               retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
             ),
           );
         });

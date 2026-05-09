@@ -3617,6 +3617,21 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur doriți să ștergeți definitiv toate elementele șterse? Această acțiune nu poate fi anulată.';
 
   @override
+  String get maintenancePurgeSentOutbox =>
+      'Eliminați elementele vechi trimise din outbox';
+
+  @override
+  String get maintenancePurgeSentOutboxConfirm => 'DA, ELIMINĂ';
+
+  @override
+  String get maintenancePurgeSentOutboxDescription =>
+      'Ștergeți rândurile din outbox trimise cu mai mult de 7 zile în urmă și recuperați spațiul pe disc';
+
+  @override
+  String get maintenancePurgeSentOutboxQuestion =>
+      'Ștergeți elementele din outbox trimise cu mai mult de 7 zile în urmă? Această operațiune șterge rândurile deja trimise în blocuri și rulează VACUUM pentru a recupera spațiul pe disc. Elementele în așteptare și cu erori sunt păstrate.';
+
+  @override
   String get maintenanceRecreateFts5 => 'Recreați indexul full-text';
 
   @override

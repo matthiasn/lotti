@@ -75,6 +75,102 @@ class _OutboxClaimScenario {
   final List<_OutboxClaimRowSpec> rows;
 }
 
+/// Position of a row's `updated_at` relative to the prune cutoff.
+/// `pruneSentOutboxItemsChunked` deletes rows where
+/// `updated_at < cutoff`, so `atCutoff` rows are intentionally kept —
+/// the strict-less-than is the bit the property test exercises.
+enum _GeneratedOutboxAge { fresh, atCutoff, old }
+
+class _PruneRowSpec {
+  const _PruneRowSpec({
+    required this.status,
+    required this.age,
+  });
+
+  final _GeneratedOutboxStatus status;
+  final _GeneratedOutboxAge age;
+
+  /// Only `(sent, old)` rows are eligible for pruning. Live state
+  /// (pending / sending) is never touched regardless of age, error
+  /// rows are forensic and kept forever, fresh/atCutoff sent rows are
+  /// inside the retention window.
+  bool isPrunable({required Duration retention, required DateTime now}) {
+    return status == _GeneratedOutboxStatus.sent &&
+        age == _GeneratedOutboxAge.old;
+  }
+
+  /// `expiredSending` and `activeSending` both map to the
+  /// `OutboxStatus.sending` literal in the table — the prune predicate
+  /// only inspects `status` and `updated_at`, so this collapse loses no
+  /// information.
+  OutboxStatus get dbStatus => switch (status) {
+    _GeneratedOutboxStatus.pending => OutboxStatus.pending,
+    _GeneratedOutboxStatus.expiredSending => OutboxStatus.sending,
+    _GeneratedOutboxStatus.activeSending => OutboxStatus.sending,
+    _GeneratedOutboxStatus.sent => OutboxStatus.sent,
+    _GeneratedOutboxStatus.error => OutboxStatus.error,
+  };
+
+  DateTime updatedAtValue({
+    required Duration retention,
+    required DateTime now,
+  }) {
+    final cutoff = now.subtract(retention);
+    return switch (age) {
+      _GeneratedOutboxAge.fresh => now.subtract(const Duration(hours: 1)),
+      _GeneratedOutboxAge.atCutoff => cutoff,
+      _GeneratedOutboxAge.old => cutoff.subtract(const Duration(days: 1)),
+    };
+  }
+
+  @override
+  String toString() => '_PruneRowSpec(status: $status, age: $age)';
+}
+
+class _PruneScenario {
+  const _PruneScenario({
+    required this.rows,
+    required this.chunkSize,
+    required this.retentionDays,
+  });
+
+  static final now = DateTime(2026, 5, 9, 12);
+
+  final List<_PruneRowSpec> rows;
+  final int chunkSize;
+  final int retentionDays;
+
+  Duration get retention => Duration(days: retentionDays);
+
+  int get expectedDeleted => rows
+      .where((row) => row.isPrunable(retention: retention, now: now))
+      .length;
+
+  /// `pruneSentOutboxItemsChunked` calls `onProgress` exactly once per
+  /// loop iteration — including the terminating pass whose chunk
+  /// returns `< chunkSize`. So the number of emissions is
+  /// `(deleted ~/ chunkSize) + 1`, and emission `i` carries
+  /// `min((i + 1) * chunkSize, deleted)` as the running total.
+  List<int> get expectedProgress {
+    final emissions = (expectedDeleted ~/ chunkSize) + 1;
+    return [
+      for (var i = 0; i < emissions; i++)
+        if ((i + 1) * chunkSize < expectedDeleted)
+          (i + 1) * chunkSize
+        else
+          expectedDeleted,
+    ];
+  }
+
+  @override
+  String toString() =>
+      '_PruneScenario('
+      'rows: $rows, '
+      'chunkSize: $chunkSize, '
+      'retentionDays: $retentionDays'
+      ')';
+}
+
 enum _GeneratedSequenceLifecycleOperation {
   resetKnown,
   resetAll,
@@ -384,6 +480,34 @@ extension _AnyOutboxClaimScenario on Any {
       maxSize: maxSize,
       rows: rows,
     ),
+  );
+
+  Generator<_GeneratedOutboxAge> get generatedOutboxAge =>
+      choose(_GeneratedOutboxAge.values);
+
+  Generator<_PruneRowSpec> get pruneRowSpec => combine2(
+    generatedOutboxStatus,
+    generatedOutboxAge,
+    (_GeneratedOutboxStatus status, _GeneratedOutboxAge age) =>
+        _PruneRowSpec(status: status, age: age),
+  );
+
+  /// Scenario space for `pruneSentOutboxItemsChunked`. `chunkSize`
+  /// stays small (1–6) so generated row counts realistically straddle
+  /// chunk boundaries — the loop's terminator condition (`n < chunkSize`)
+  /// is the bit most likely to harbor an off-by-one. `retentionDays`
+  /// covers the realistic configured-retention window from
+  /// `SyncTuning.outboxSentRetention` and a few neighbours.
+  Generator<_PruneScenario> get pruneScenario => combine3(
+    listWithLengthInRange(0, 14, pruneRowSpec),
+    intInRange(1, 6),
+    intInRange(1, 7),
+    (List<_PruneRowSpec> rows, int chunkSize, int retentionDays) =>
+        _PruneScenario(
+          rows: rows,
+          chunkSize: chunkSize,
+          retentionDays: retentionDays,
+        ),
   );
 
   Generator<_SequenceLifecycleRowSpec> get sequenceLifecycleRowSpec => combine6(
@@ -1553,6 +1677,234 @@ void main() {
         expect(await database.allOutboxItems, hasLength(1));
       },
     );
+
+    test(
+      'pruneSentOutboxItemsChunked deletes the same rows as the unbounded '
+      'variant but in bounded passes — onProgress reports the running total '
+      'after each chunk and the loop terminates when a pass deletes fewer '
+      'rows than chunkSize',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 5, 9, 12);
+        // 12 stale `sent` rows + 1 fresh `sent` + 1 `pending` + 1 `error`.
+        // With chunkSize = 5 the chunked loop must run 3 passes
+        // (5 + 5 + 2); the third pass is the natural terminator (n <
+        // chunkSize), so progress should be [5, 10, 12].
+        for (var i = 0; i < 12; i++) {
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.sent,
+              createdAt: now.subtract(const Duration(days: 30)),
+              subject: 'stale-sent-$i',
+            ),
+          );
+        }
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: now,
+            subject: 'fresh-sent',
+          ),
+        );
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: now.subtract(const Duration(days: 30)),
+            subject: 'old-pending',
+          ),
+        );
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.error,
+            createdAt: now.subtract(const Duration(days: 30)),
+            subject: 'old-error',
+          ),
+        );
+
+        final progress = <int>[];
+        final deleted = await database.pruneSentOutboxItemsChunked(
+          retention: const Duration(days: 7),
+          chunkSize: 5,
+          now: now,
+          onProgress: progress.add,
+        );
+
+        expect(deleted, 12);
+        expect(progress, [5, 10, 12]);
+        final remaining = await database.allOutboxItems;
+        expect(
+          remaining.map((e) => e.subject).toSet(),
+          {'fresh-sent', 'old-pending', 'old-error'},
+        );
+      },
+    );
+
+    test(
+      'pruneSentOutboxItemsChunked stops on the first pass when the eligible '
+      'set fits in one chunk',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 5, 9);
+        for (var i = 0; i < 3; i++) {
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.sent,
+              createdAt: now.subtract(const Duration(days: 30)),
+              subject: 'stale-$i',
+            ),
+          );
+        }
+
+        final progress = <int>[];
+        final deleted = await database.pruneSentOutboxItemsChunked(
+          retention: const Duration(days: 7),
+          chunkSize: 100,
+          now: now,
+          onProgress: progress.add,
+        );
+
+        expect(deleted, 3);
+        expect(progress, [3]);
+        expect(await database.allOutboxItems, isEmpty);
+      },
+    );
+
+    Glados(any.pruneScenario, ExploreConfig(numRuns: 80)).test(
+      'pruneSentOutboxItemsChunked invariants — for any (rows, chunkSize, '
+      'retention): only (sent, old) rows are deleted; live state and forensic '
+      'rows survive; progress is monotonic non-decreasing, ends at the return '
+      'value, and the emission count obeys (deleted ~/ chunkSize) + 1',
+      (scenario) async {
+        final database = SyncDatabase(inMemoryDatabase: true);
+        try {
+          // Seed in scenario order so the auto-increment id's encode the
+          // generator's row index — makes failing-shrink scenarios easier
+          // to reason about by row.
+          for (final row in scenario.rows) {
+            await database.addOutboxItem(
+              OutboxCompanion(
+                status: Value(row.dbStatus.index),
+                subject: const Value('s'),
+                message: const Value('{}'),
+                createdAt: Value(
+                  row.updatedAtValue(
+                    retention: scenario.retention,
+                    now: _PruneScenario.now,
+                  ),
+                ),
+                updatedAt: Value(
+                  row.updatedAtValue(
+                    retention: scenario.retention,
+                    now: _PruneScenario.now,
+                  ),
+                ),
+                retries: const Value(0),
+              ),
+            );
+          }
+
+          final progress = <int>[];
+          final deleted = await database.pruneSentOutboxItemsChunked(
+            retention: scenario.retention,
+            chunkSize: scenario.chunkSize,
+            now: _PruneScenario.now,
+            onProgress: progress.add,
+          );
+
+          // Return value matches the model.
+          expect(deleted, scenario.expectedDeleted);
+
+          // Surviving rows are exactly the non-prunable subset, in any
+          // order. Compare a sorted (status, updatedAt) projection so
+          // the assertion is independent of insertion order.
+          final remaining = await database.allOutboxItems;
+          List<(int, int)> projection(Iterable<OutboxItem> items) =>
+              [
+                for (final item in items)
+                  (item.status, item.updatedAt.microsecondsSinceEpoch),
+              ]..sort((a, b) {
+                final s = a.$1.compareTo(b.$1);
+                return s != 0 ? s : a.$2.compareTo(b.$2);
+              });
+          final expectedSurvivors = scenario.rows.where(
+            (r) => !r.isPrunable(
+              retention: scenario.retention,
+              now: _PruneScenario.now,
+            ),
+          );
+          expect(
+            projection(remaining),
+            projection([
+              for (final r in expectedSurvivors)
+                OutboxItem(
+                  id: 0,
+                  status: r.dbStatus.index,
+                  subject: 's',
+                  message: '{}',
+                  createdAt: r.updatedAtValue(
+                    retention: scenario.retention,
+                    now: _PruneScenario.now,
+                  ),
+                  updatedAt: r.updatedAtValue(
+                    retention: scenario.retention,
+                    now: _PruneScenario.now,
+                  ),
+                  retries: 0,
+                  priority: OutboxPriority.low.index,
+                ),
+            ]),
+          );
+
+          // Progress sequence matches the model: monotonic non-decreasing,
+          // terminates at `deleted`, with `(deleted ~/ chunkSize) + 1`
+          // emissions including the terminator pass.
+          expect(progress, scenario.expectedProgress);
+          expect(progress.last, deleted);
+          for (var i = 1; i < progress.length; i++) {
+            expect(
+              progress[i] >= progress[i - 1],
+              isTrue,
+              reason: 'progress must be monotonic non-decreasing',
+            );
+          }
+        } finally {
+          await database.close();
+        }
+      },
+    );
+
+    test(
+      'pruneSentOutboxItemsChunked returns 0 and never invokes onProgress '
+      'when there is nothing to prune',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 5, 9);
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: now.subtract(const Duration(days: 1)),
+            subject: 'recent-sent',
+          ),
+        );
+
+        final progress = <int>[];
+        final deleted = await database.pruneSentOutboxItemsChunked(
+          retention: const Duration(days: 7),
+          chunkSize: 10,
+          now: now,
+          onProgress: progress.add,
+        );
+
+        // The first pass deletes 0 rows (nothing eligible) and that is
+        // already < chunkSize, so the loop exits after one iteration.
+        // The progress callback fires exactly once with the running
+        // total of zero — callers can rely on the final progress value
+        // matching the return value.
+        expect(deleted, 0);
+        expect(progress, [0]);
+        expect(await database.allOutboxItems, hasLength(1));
+      },
+    );
   });
 
   group('SyncSequenceLog Tests', () {
@@ -2528,6 +2880,12 @@ void main() {
   });
 
   group('getPendingBackfillEntries Tests', () {
+    // Subject prefix that production `_enqueueBackfillRequest` stamps on
+    // every backfill outbox row. `getPendingBackfillEntries` filters on
+    // `subject LIKE 'backfillRequest:%'` at the SQL level so it can skip
+    // JSON-decoding unrelated pending rows on a million-row outbox.
+    const backfillSubject = 'backfillRequest:batch:1';
+
     setUp(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
@@ -2549,6 +2907,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.pending,
           createdAt: DateTime(2024, 1, 1),
+          subject: 'journalEntity',
           message: '{"runtimeType":"journalEntity","id":"test-1"}',
         ),
       );
@@ -2556,6 +2915,38 @@ void main() {
       final entries = await database.getPendingBackfillEntries();
       expect(entries, isEmpty);
     });
+
+    test(
+      'excludes pending rows whose subject does not match the backfill prefix',
+      () async {
+        final database = db!;
+
+        // Backfill-shaped JSON but a non-backfill subject — the SQL
+        // prefilter must drop this row before it ever reaches JSON
+        // decode. Production has no path that produces this combination
+        // (`_enqueueBackfillRequest` is the only writer of this JSON
+        // shape and it always stamps the matching subject), but the
+        // filter is what makes the rewritten query cheap on huge
+        // outboxes, so verify it is doing real work.
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: DateTime(2024, 1, 1),
+            subject: 'something-else',
+            message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [{"hostId": "host-1", "counter": 5}],
+  "requesterId": "req-1"
+}
+''',
+          ),
+        );
+
+        final entries = await database.getPendingBackfillEntries();
+        expect(entries, isEmpty);
+      },
+    );
 
     test('extracts entries from pending backfill request messages', () async {
       final database = db!;
@@ -2565,6 +2956,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.pending,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: '''
 {
   "runtimeType": "backfillRequest",
@@ -2600,6 +2992,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.sent,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: '''
 {
   "runtimeType": "backfillRequest",
@@ -2621,6 +3014,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.sending,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: '''
 {
   "runtimeType": "backfillRequest",
@@ -2643,6 +3037,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.error,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: '''
 {
   "runtimeType": "backfillRequest",
@@ -2660,11 +3055,14 @@ void main() {
     test('handles malformed JSON gracefully', () async {
       final database = db!;
 
-      // Add a malformed message
+      // Add a malformed message — but with the backfill subject so the
+      // SQL prefilter does not exclude it. The Dart-side try/catch is
+      // what guards against a bad message body slipping past.
       await database.addOutboxItem(
         _buildOutbox(
           status: OutboxStatus.pending,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: 'not valid json',
         ),
       );
@@ -2682,6 +3080,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.pending,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: '{"runtimeType": "backfillRequest", "requesterId": "req-1"}',
         ),
       );
@@ -2698,6 +3097,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.pending,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: '''
 {
   "runtimeType": "backfillRequest",
@@ -2729,6 +3129,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.pending,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: '''
 {
   "runtimeType": "backfillRequest",
@@ -2744,6 +3145,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.pending,
           createdAt: DateTime(2024, 1, 2),
+          subject: 'backfillRequest:batch:2',
           message: '''
 {
   "runtimeType": "backfillRequest",
@@ -2774,6 +3176,7 @@ void main() {
         _buildOutbox(
           status: OutboxStatus.pending,
           createdAt: DateTime(2024, 1, 1),
+          subject: backfillSubject,
           message: '''
 {
   "runtimeType": "backfillRequest",

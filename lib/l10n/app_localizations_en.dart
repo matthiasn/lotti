@@ -3537,6 +3537,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to purge all deleted items? This action cannot be undone.';
 
   @override
+  String get maintenancePurgeSentOutbox => 'Purge old sent outbox items';
+
+  @override
+  String get maintenancePurgeSentOutboxConfirm => 'YES, PURGE';
+
+  @override
+  String get maintenancePurgeSentOutboxDescription =>
+      'Delete sent outbox rows older than 7 days and reclaim disk';
+
+  @override
+  String get maintenancePurgeSentOutboxQuestion =>
+      'Purge sent outbox items older than 7 days? This deletes already-sent rows in chunks and runs VACUUM to reclaim disk. Pending and error items are kept.';
+
+  @override
   String get maintenanceRecreateFts5 => 'Recreate full-text index';
 
   @override
