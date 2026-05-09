@@ -90,10 +90,12 @@ class CircuitBreaker {
   /// Records [count] failures, opening the circuit if the threshold is reached.
   /// Returns true if the circuit transitioned to open.
   bool recordFailures(int count, DateTime now) {
+    if (count <= 0) return false;
+    final wasOpen = isOpen(now);
     _consecutiveFailures += count;
     if (_consecutiveFailures >= failureThreshold) {
       _openUntil = now.add(cooldown);
-      return true;
+      return !wasOpen;
     }
     return false;
   }

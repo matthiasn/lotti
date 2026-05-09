@@ -8,6 +8,7 @@ class SyncMetrics {
     required this.skippedByRetryLimit,
     required this.retriesScheduled,
     required this.circuitOpens,
+    this.processedPerAppliedPct = 0,
     this.processedByType = const <String, int>{},
     this.droppedByType = const <String, int>{},
     this.dbApplied = 0,
@@ -16,9 +17,20 @@ class SyncMetrics {
     this.dbMissingBase = 0,
     this.dbEntryLinkNoop = 0,
     this.staleAttachmentPurges = 0,
+    this.selfEventsSuppressed = 0,
     // Signal-driven ingestion observability
     this.signalClientStream = 0,
     this.signalTimelineCallbacks = 0,
+    this.signalTimelineNewEvent = 0,
+    this.signalTimelineInsert = 0,
+    this.signalFirstStreamCatchupTriggers = 0,
+    this.signalCatchupDeferredCount = 0,
+    this.signalCatchupCoalesceCount = 0,
+    this.signalLiveScanDeferredInitialCatchupIncomplete = 0,
+    this.signalLiveScanDeferredCatchupInFlight = 0,
+    this.signalLiveScanDeferredInFlight = 0,
+    this.signalNoTimelineCount = 0,
+    this.wakeDetections = 0,
     this.signalConnectivity = 0,
     this.signalLatencyLastMs = 0,
     this.signalLatencyMinMs = 0,
@@ -57,14 +69,32 @@ class SyncMetrics {
       skippedByRetryLimit: (map['skippedByRetryLimit'] ?? 0) as int,
       retriesScheduled: (map['retriesScheduled'] ?? 0) as int,
       circuitOpens: (map['circuitOpens'] ?? 0) as int,
+      processedPerAppliedPct: (map['processedPerAppliedPct'] ?? 0) as int,
       dbApplied: (map['dbApplied'] ?? 0) as int,
       dbIgnoredByVectorClock: (map['dbIgnoredByVectorClock'] ?? 0) as int,
       conflictsCreated: (map['conflictsCreated'] ?? 0) as int,
       dbMissingBase: (map['dbMissingBase'] ?? 0) as int,
       dbEntryLinkNoop: (map['dbEntryLinkNoop'] ?? 0) as int,
       staleAttachmentPurges: (map['staleAttachmentPurges'] ?? 0) as int,
+      selfEventsSuppressed: (map['selfEventsSuppressed'] ?? 0) as int,
       signalClientStream: (map['signalClientStream'] ?? 0) as int,
       signalTimelineCallbacks: (map['signalTimelineCallbacks'] ?? 0) as int,
+      signalTimelineNewEvent: (map['signalTimelineNewEvent'] ?? 0) as int,
+      signalTimelineInsert: (map['signalTimelineInsert'] ?? 0) as int,
+      signalFirstStreamCatchupTriggers:
+          (map['signalFirstStreamCatchupTriggers'] ?? 0) as int,
+      signalCatchupDeferredCount:
+          (map['signalCatchupDeferredCount'] ?? 0) as int,
+      signalCatchupCoalesceCount:
+          (map['signalCatchupCoalesceCount'] ?? 0) as int,
+      signalLiveScanDeferredInitialCatchupIncomplete:
+          (map['signalLiveScanDeferredInitialCatchupIncomplete'] ?? 0) as int,
+      signalLiveScanDeferredCatchupInFlight:
+          (map['signalLiveScanDeferredCatchupInFlight'] ?? 0) as int,
+      signalLiveScanDeferredInFlight:
+          (map['signalLiveScanDeferredInFlight'] ?? 0) as int,
+      signalNoTimelineCount: (map['signalNoTimelineCount'] ?? 0) as int,
+      wakeDetections: (map['wakeDetections'] ?? 0) as int,
       signalConnectivity: (map['signalConnectivity'] ?? 0) as int,
       signalLatencyLastMs: (map['signalLatencyLastMs'] ?? 0) as int,
       signalLatencyMinMs: (map['signalLatencyMinMs'] ?? 0) as int,
@@ -90,6 +120,7 @@ class SyncMetrics {
   final int skippedByRetryLimit;
   final int retriesScheduled;
   final int circuitOpens;
+  final int processedPerAppliedPct;
   final Map<String, int> processedByType;
   final Map<String, int> droppedByType;
   final int dbApplied;
@@ -98,9 +129,20 @@ class SyncMetrics {
   final int dbMissingBase;
   final int dbEntryLinkNoop;
   final int staleAttachmentPurges;
+  final int selfEventsSuppressed;
   // Signal-driven ingestion observability
   final int signalClientStream;
   final int signalTimelineCallbacks;
+  final int signalTimelineNewEvent;
+  final int signalTimelineInsert;
+  final int signalFirstStreamCatchupTriggers;
+  final int signalCatchupDeferredCount;
+  final int signalCatchupCoalesceCount;
+  final int signalLiveScanDeferredInitialCatchupIncomplete;
+  final int signalLiveScanDeferredCatchupInFlight;
+  final int signalLiveScanDeferredInFlight;
+  final int signalNoTimelineCount;
+  final int wakeDetections;
   final int signalConnectivity;
   final int signalLatencyLastMs;
   final int signalLatencyMinMs;
@@ -137,6 +179,7 @@ class SyncMetrics {
           'skippedByRetryLimit': skippedByRetryLimit,
           'retriesScheduled': retriesScheduled,
           'circuitOpens': circuitOpens,
+          'processedPerAppliedPct': processedPerAppliedPct,
         }
         ..addEntries(
           processedByType.entries.map(
@@ -155,9 +198,32 @@ class SyncMetrics {
           MapEntry('dbMissingBase', dbMissingBase),
           MapEntry('dbEntryLinkNoop', dbEntryLinkNoop),
           MapEntry('staleAttachmentPurges', staleAttachmentPurges),
+          MapEntry('selfEventsSuppressed', selfEventsSuppressed),
           // Signals
           MapEntry('signalClientStream', signalClientStream),
           MapEntry('signalTimelineCallbacks', signalTimelineCallbacks),
+          MapEntry('signalTimelineNewEvent', signalTimelineNewEvent),
+          MapEntry('signalTimelineInsert', signalTimelineInsert),
+          MapEntry(
+            'signalFirstStreamCatchupTriggers',
+            signalFirstStreamCatchupTriggers,
+          ),
+          MapEntry('signalCatchupDeferredCount', signalCatchupDeferredCount),
+          MapEntry('signalCatchupCoalesceCount', signalCatchupCoalesceCount),
+          MapEntry(
+            'signalLiveScanDeferredInitialCatchupIncomplete',
+            signalLiveScanDeferredInitialCatchupIncomplete,
+          ),
+          MapEntry(
+            'signalLiveScanDeferredCatchupInFlight',
+            signalLiveScanDeferredCatchupInFlight,
+          ),
+          MapEntry(
+            'signalLiveScanDeferredInFlight',
+            signalLiveScanDeferredInFlight,
+          ),
+          MapEntry('signalNoTimelineCount', signalNoTimelineCount),
+          MapEntry('wakeDetections', wakeDetections),
           MapEntry('signalConnectivity', signalConnectivity),
           MapEntry('signalLatencyLastMs', signalLatencyLastMs),
           MapEntry('signalLatencyMinMs', signalLatencyMinMs),

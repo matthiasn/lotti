@@ -80,6 +80,114 @@ class _GeneratedRetryPruneScenario {
   }
 }
 
+enum _GeneratedCircuitOperationKind {
+  recordFailures,
+  reset,
+  observe,
+}
+
+enum _GeneratedCircuitAdvance {
+  none,
+  beforeCooldown,
+  atCooldown,
+  afterCooldown,
+}
+
+class _GeneratedCircuitOperation {
+  const _GeneratedCircuitOperation({
+    required this.kind,
+    required this.count,
+    required this.advance,
+  });
+
+  final _GeneratedCircuitOperationKind kind;
+  final int count;
+  final _GeneratedCircuitAdvance advance;
+
+  Duration elapsed(Duration cooldown) {
+    switch (advance) {
+      case _GeneratedCircuitAdvance.none:
+        return Duration.zero;
+      case _GeneratedCircuitAdvance.beforeCooldown:
+        return cooldown > const Duration(milliseconds: 1)
+            ? cooldown - const Duration(milliseconds: 1)
+            : Duration.zero;
+      case _GeneratedCircuitAdvance.atCooldown:
+        return cooldown;
+      case _GeneratedCircuitAdvance.afterCooldown:
+        return cooldown + const Duration(milliseconds: 1);
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedCircuitOperation('
+        'kind: $kind, '
+        'count: $count, '
+        'advance: $advance'
+        ')';
+  }
+}
+
+class _GeneratedCircuitScenario {
+  const _GeneratedCircuitScenario({
+    required this.failureThreshold,
+    required this.cooldownMs,
+    required this.operations,
+  });
+
+  final int failureThreshold;
+  final int cooldownMs;
+  final List<_GeneratedCircuitOperation> operations;
+
+  Duration get cooldown => Duration(milliseconds: cooldownMs);
+
+  @override
+  String toString() {
+    return '_GeneratedCircuitScenario('
+        'failureThreshold: $failureThreshold, '
+        'cooldownMs: $cooldownMs, '
+        'operations: $operations'
+        ')';
+  }
+}
+
+class _ExpectedCircuitBreakerModel {
+  _ExpectedCircuitBreakerModel({
+    required this.failureThreshold,
+    required this.cooldown,
+  });
+
+  final int failureThreshold;
+  final Duration cooldown;
+
+  DateTime? _openUntil;
+  int _consecutiveFailures = 0;
+
+  Duration? remainingCooldown(DateTime now) {
+    final openUntil = _openUntil;
+    if (openUntil == null || !now.isBefore(openUntil)) return null;
+    return openUntil.difference(now);
+  }
+
+  bool getIsOpen(DateTime now) => remainingCooldown(now) != null;
+
+  bool recordFailures(int count, DateTime now) {
+    if (count <= 0) return false;
+    final wasOpen = getIsOpen(now);
+    _consecutiveFailures += count;
+    if (_consecutiveFailures >= failureThreshold) {
+      _openUntil = now.add(cooldown);
+      return !wasOpen;
+    }
+    return false;
+  }
+
+  void reset() {
+    _consecutiveFailures = 0;
+  }
+}
+
 extension _AnyRetryAndCircuitScenario on glados.Any {
   glados.Generator<_GeneratedRetryEntry> get retryEntry =>
       glados.CombinableAny(this).combine2(
@@ -107,6 +215,44 @@ extension _AnyRetryAndCircuitScenario on glados.Any {
           maxEntries: maxEntries,
           nowOffsetMs: nowOffsetMs,
           entries: entries,
+        ),
+      );
+
+  glados.Generator<_GeneratedCircuitOperationKind> get circuitOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedCircuitOperationKind.values);
+
+  glados.Generator<_GeneratedCircuitAdvance> get circuitAdvance =>
+      glados.AnyUtils(this).choose(_GeneratedCircuitAdvance.values);
+
+  glados.Generator<_GeneratedCircuitOperation> get circuitOperation =>
+      glados.CombinableAny(this).combine3(
+        circuitOperationKind,
+        glados.IntAnys(this).intInRange(0, 5),
+        circuitAdvance,
+        (
+          _GeneratedCircuitOperationKind kind,
+          int count,
+          _GeneratedCircuitAdvance advance,
+        ) => _GeneratedCircuitOperation(
+          kind: kind,
+          count: count,
+          advance: advance,
+        ),
+      );
+
+  glados.Generator<_GeneratedCircuitScenario> get circuitScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(1, 6),
+        glados.IntAnys(this).intInRange(1, 13),
+        glados.ListAnys(this).listWithLengthInRange(1, 28, circuitOperation),
+        (
+          int failureThreshold,
+          int cooldownMs,
+          List<_GeneratedCircuitOperation> operations,
+        ) => _GeneratedCircuitScenario(
+          failureThreshold: failureThreshold,
+          cooldownMs: cooldownMs,
+          operations: operations,
         ),
       );
 }
@@ -226,5 +372,59 @@ void main() {
       cb.reset();
       expect(cb.isOpen(t1), isFalse);
     });
+
+    glados.Glados(
+      glados.any.circuitScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'generated sequences honor threshold, cooldown, reset, and transitions',
+      (scenario) {
+        final cb = CircuitBreaker(
+          failureThreshold: scenario.failureThreshold,
+          cooldown: scenario.cooldown,
+        );
+        final model = _ExpectedCircuitBreakerModel(
+          failureThreshold: scenario.failureThreshold,
+          cooldown: scenario.cooldown,
+        );
+        var now = DateTime(2024, 3, 15);
+
+        expect(cb.remainingCooldown(now), isNull);
+        expect(cb.isOpen(now), isFalse);
+
+        for (final operation in scenario.operations) {
+          now = now.add(operation.elapsed(scenario.cooldown));
+
+          switch (operation.kind) {
+            case _GeneratedCircuitOperationKind.recordFailures:
+              final expectedOpened = model.recordFailures(
+                operation.count,
+                now,
+              );
+              expect(
+                cb.recordFailures(operation.count, now),
+                expectedOpened,
+                reason: '$scenario\n$operation',
+              );
+            case _GeneratedCircuitOperationKind.reset:
+              model.reset();
+              cb.reset();
+            case _GeneratedCircuitOperationKind.observe:
+              break;
+          }
+
+          expect(
+            cb.remainingCooldown(now),
+            model.remainingCooldown(now),
+            reason: '$scenario\n$operation',
+          );
+          expect(
+            cb.isOpen(now),
+            model.getIsOpen(now),
+            reason: '$scenario\n$operation',
+          );
+        }
+      },
+    );
   });
 }

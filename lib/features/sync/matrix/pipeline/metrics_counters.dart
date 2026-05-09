@@ -61,6 +61,7 @@ class MetricsCounters {
   int signalLatencyLastMs = 0;
   int signalLatencyMinMs = 0;
   int signalLatencyMaxMs = 0;
+  bool _hasSignalLatency = false;
 
   // Coalescing/trailing metrics
   int trailingCatchups = 0;
@@ -185,12 +186,13 @@ class MetricsCounters {
   void recordSignalLatencyMs(int ms) {
     if (!collect) return;
     signalLatencyLastMs = ms;
-    if (signalLatencyMinMs == 0 || ms < signalLatencyMinMs) {
+    if (!_hasSignalLatency || ms < signalLatencyMinMs) {
       signalLatencyMinMs = ms;
     }
-    if (ms > signalLatencyMaxMs) {
+    if (!_hasSignalLatency || ms > signalLatencyMaxMs) {
       signalLatencyMaxMs = ms;
     }
+    _hasSignalLatency = true;
   }
 
   void incTrailingCatchups() {
