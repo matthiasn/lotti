@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -86,6 +87,192 @@ class _FakeAttachmentIngestor implements AttachmentIngestor {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+enum _GeneratedLiveRoomKind { current, foreign, noCurrentRoom }
+
+enum _GeneratedLiveStatusKind { synced, sending, sent, error }
+
+enum _GeneratedLiveEventKind { message, encrypted }
+
+enum _GeneratedLiveSelfEchoKind { absent, present }
+
+enum _GeneratedLivePenKind { passes, holds }
+
+enum _GeneratedLiveIngestorKind { succeeds, throwsError }
+
+class _GeneratedLiveIngressOperation {
+  const _GeneratedLiveIngressOperation({
+    required this.roomKind,
+    required this.statusKind,
+    required this.eventKind,
+    required this.selfEchoKind,
+    required this.penKind,
+    required this.slot,
+  });
+
+  final _GeneratedLiveRoomKind roomKind;
+  final _GeneratedLiveStatusKind statusKind;
+  final _GeneratedLiveEventKind eventKind;
+  final _GeneratedLiveSelfEchoKind selfEchoKind;
+  final _GeneratedLivePenKind penKind;
+  final int slot;
+
+  EventStatus get status {
+    switch (statusKind) {
+      case _GeneratedLiveStatusKind.synced:
+        return EventStatus.synced;
+      case _GeneratedLiveStatusKind.sending:
+        return EventStatus.sending;
+      case _GeneratedLiveStatusKind.sent:
+        return EventStatus.sent;
+      case _GeneratedLiveStatusKind.error:
+        return EventStatus.error;
+    }
+  }
+
+  String get type {
+    switch (eventKind) {
+      case _GeneratedLiveEventKind.message:
+        return EventTypes.Message;
+      case _GeneratedLiveEventKind.encrypted:
+        return EventTypes.Encrypted;
+    }
+  }
+
+  bool get hasCurrentRoom => roomKind != _GeneratedLiveRoomKind.noCurrentRoom;
+
+  bool get eventMatchesCurrentRoom =>
+      roomKind != _GeneratedLiveRoomKind.foreign;
+
+  bool get synced => statusKind == _GeneratedLiveStatusKind.synced;
+
+  bool get selfEcho => selfEchoKind == _GeneratedLiveSelfEchoKind.present;
+
+  bool get penHolds => penKind == _GeneratedLivePenKind.holds;
+
+  bool get reachesDownstream =>
+      hasCurrentRoom && eventMatchesCurrentRoom && synced && !selfEcho;
+
+  @override
+  String toString() {
+    return '_GeneratedLiveIngressOperation('
+        'roomKind: $roomKind, '
+        'statusKind: $statusKind, '
+        'eventKind: $eventKind, '
+        'selfEchoKind: $selfEchoKind, '
+        'penKind: $penKind, '
+        'slot: $slot'
+        ')';
+  }
+}
+
+class _GeneratedLiveIngressScenario {
+  const _GeneratedLiveIngressScenario({
+    required this.operations,
+    required this.ingestorKind,
+  });
+
+  final List<_GeneratedLiveIngressOperation> operations;
+  final _GeneratedLiveIngestorKind ingestorKind;
+
+  String get currentRoomId => '!generated-live:example.org';
+
+  String eventIdAt(int index) {
+    return '\$generated-live-$index-${operations[index].slot}';
+  }
+
+  String eventRoomIdAt(int index) {
+    final operation = operations[index];
+    switch (operation.roomKind) {
+      case _GeneratedLiveRoomKind.current:
+      case _GeneratedLiveRoomKind.noCurrentRoom:
+        return currentRoomId;
+      case _GeneratedLiveRoomKind.foreign:
+        return '!generated-foreign-${operation.slot}:example.org';
+    }
+  }
+
+  int get expectedIngestorCalls => _downstreamOperations.length;
+
+  int get expectedPenCalls => _downstreamOperations.length;
+
+  int get expectedQueueCalls =>
+      _downstreamOperations.where((operation) => !operation.penHolds).length;
+
+  Iterable<_GeneratedLiveIngressOperation> get _downstreamOperations sync* {
+    for (final operation in operations) {
+      if (operation.reachesDownstream) yield operation;
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedLiveIngressScenario('
+        'operations: $operations, '
+        'ingestorKind: $ingestorKind'
+        ')';
+  }
+}
+
+extension _AnyGeneratedLiveIngressScenario on glados.Any {
+  glados.Generator<_GeneratedLiveRoomKind> get liveRoomKind =>
+      glados.AnyUtils(this).choose(_GeneratedLiveRoomKind.values);
+
+  glados.Generator<_GeneratedLiveStatusKind> get liveStatusKind =>
+      glados.AnyUtils(this).choose(_GeneratedLiveStatusKind.values);
+
+  glados.Generator<_GeneratedLiveEventKind> get liveEventKind =>
+      glados.AnyUtils(this).choose(_GeneratedLiveEventKind.values);
+
+  glados.Generator<_GeneratedLiveSelfEchoKind> get liveSelfEchoKind =>
+      glados.AnyUtils(this).choose(_GeneratedLiveSelfEchoKind.values);
+
+  glados.Generator<_GeneratedLivePenKind> get livePenKind =>
+      glados.AnyUtils(this).choose(_GeneratedLivePenKind.values);
+
+  glados.Generator<_GeneratedLiveIngestorKind> get liveIngestorKind =>
+      glados.AnyUtils(this).choose(_GeneratedLiveIngestorKind.values);
+
+  glados.Generator<_GeneratedLiveIngressOperation> get liveIngressOperation =>
+      glados.CombinableAny(this).combine6(
+        liveRoomKind,
+        liveStatusKind,
+        liveEventKind,
+        liveSelfEchoKind,
+        livePenKind,
+        glados.IntAnys(this).intInRange(0, 8),
+        (
+          _GeneratedLiveRoomKind roomKind,
+          _GeneratedLiveStatusKind statusKind,
+          _GeneratedLiveEventKind eventKind,
+          _GeneratedLiveSelfEchoKind selfEchoKind,
+          _GeneratedLivePenKind penKind,
+          int slot,
+        ) => _GeneratedLiveIngressOperation(
+          roomKind: roomKind,
+          statusKind: statusKind,
+          eventKind: eventKind,
+          selfEchoKind: selfEchoKind,
+          penKind: penKind,
+          slot: slot,
+        ),
+      );
+
+  glados.Generator<_GeneratedLiveIngressScenario> get liveIngressScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(1, 24, liveIngressOperation),
+        liveIngestorKind,
+        (
+          List<_GeneratedLiveIngressOperation> operations,
+          _GeneratedLiveIngestorKind ingestorKind,
+        ) => _GeneratedLiveIngressScenario(
+          operations: operations,
+          ingestorKind: ingestorKind,
+        ),
+      );
 }
 
 void main() {
@@ -254,6 +441,158 @@ void main() {
       verifyNever(() => pen.hold(any()));
       verifyNever(() => queue.enqueueLive(any()));
       await coordinator.stop();
+    },
+  );
+
+  glados.Glados(
+    glados.any.liveIngressScenario,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'generated live ingress filters room/status/self-echo before queueing',
+    (scenario) async {
+      final localSyncDb = SyncDatabase(inMemoryDatabase: true);
+      final localJournalDb = JournalDb(inMemoryDatabase: true);
+      final localSettingsDb = MockSettingsDb();
+      final localSessionManager = _MockSessionManager();
+      final localRoomManager = _MockRoomManager();
+      final localProcessor = _MockEventProcessor();
+      final localSequenceLog = _MockSequenceLogService();
+      final localLogging = MockLoggingService();
+      final localQueue = _MockQueue();
+      final localWorker = _MockWorker();
+      final localBridge = _MockBridge();
+      final localPen = _MockPen();
+      final localSeeder = _MockSeeder();
+      final localClient = _MockClient();
+      final localTimelineCtl = StreamController<Event>.broadcast(sync: true);
+      final localSyncCtl = CachedStreamController<SyncUpdate>();
+      final sentEventRegistry = SentEventRegistry();
+      final ingestor = _FakeAttachmentIngestor(
+        shouldThrow:
+            scenario.ingestorKind == _GeneratedLiveIngestorKind.throwsError,
+      );
+      final penEvents = <Event>[];
+      final enqueuedEvents = <Event>[];
+      final penHoldsByEventId = <String, bool>{};
+      String? currentRoomId = scenario.currentRoomId;
+
+      when(
+        () => localSessionManager.timelineEvents,
+      ).thenAnswer((_) => localTimelineCtl.stream);
+      when(() => localSessionManager.client).thenReturn(localClient);
+      when(() => localClient.onSync).thenReturn(localSyncCtl);
+      when(() => localRoomManager.currentRoomId).thenAnswer(
+        (_) => currentRoomId,
+      );
+      when(() => localRoomManager.currentRoom).thenReturn(null);
+      when(
+        () => localSettingsDb.itemByKey(any<String>()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => localSettingsDb.saveSettingsItem(any<String>(), any<String>()),
+      ).thenAnswer((_) async => 1);
+      when(() => localSeeder.seedIfAbsent(any())).thenAnswer((_) async => true);
+      when(
+        () => localQueue.pruneStrandedEntries(any()),
+      ).thenAnswer((_) async => 0);
+      when(localWorker.start).thenAnswer((_) async {});
+      when(localWorker.stop).thenAnswer((_) async {});
+      when(localWorker.drainToCompletion).thenAnswer((_) async => 0);
+      when(localBridge.start).thenReturn(null);
+      when(localBridge.stop).thenAnswer((_) async {});
+      when(localBridge.bridgeNow).thenAnswer((_) async {});
+      when(localPen.stop).thenAnswer((_) async {});
+      when(() => localPen.size).thenReturn(0);
+      when(localQueue.dispose).thenAnswer((_) async {});
+      when(() => localQueue.enqueueLive(any())).thenAnswer((invocation) async {
+        enqueuedEvents.add(invocation.positionalArguments.single as Event);
+        return EnqueueResult.empty;
+      });
+      when(localQueue.stats).thenAnswer(
+        (_) async => const QueueStats(
+          total: 0,
+          byProducer: {},
+          readyNow: 0,
+          oldestEnqueuedAt: null,
+        ),
+      );
+      when(localQueue.earliestReadyAt).thenAnswer((_) async => null);
+      when(() => localPen.hold(any())).thenAnswer((invocation) {
+        final event = invocation.positionalArguments.single as Event;
+        penEvents.add(event);
+        return penHoldsByEventId[event.eventId] ?? false;
+      });
+      when(
+        () => localLogging.captureException(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final coordinator = QueuePipelineCoordinator(
+        syncDb: localSyncDb,
+        settingsDb: localSettingsDb,
+        journalDb: localJournalDb,
+        sessionManager: localSessionManager,
+        roomManager: localRoomManager,
+        eventProcessor: localProcessor,
+        sequenceLogService: localSequenceLog,
+        activityGate: null,
+        logging: localLogging,
+        attachmentIngestor: ingestor,
+        sentEventRegistry: sentEventRegistry,
+        queueOverride: localQueue,
+        workerOverride: localWorker,
+        bridgeOverride: localBridge,
+        penOverride: localPen,
+        seederOverride: localSeeder,
+      );
+
+      try {
+        await coordinator.start();
+        for (var i = 0; i < scenario.operations.length; i++) {
+          final operation = scenario.operations[i];
+          final eventId = scenario.eventIdAt(i);
+          currentRoomId = operation.hasCurrentRoom
+              ? scenario.currentRoomId
+              : null;
+          penHoldsByEventId[eventId] = operation.penHolds;
+          if (operation.selfEcho) {
+            sentEventRegistry.register(eventId);
+          }
+
+          final event = _MockEvent();
+          when(() => event.eventId).thenReturn(eventId);
+          when(() => event.roomId).thenReturn(scenario.eventRoomIdAt(i));
+          when(() => event.type).thenReturn(operation.type);
+          when(() => event.status).thenReturn(operation.status);
+          localTimelineCtl.add(event);
+        }
+        await coordinator.stop();
+
+        expect(
+          ingestor.processCalls,
+          hasLength(scenario.expectedIngestorCalls),
+          reason: '$scenario',
+        );
+        expect(
+          penEvents,
+          hasLength(scenario.expectedPenCalls),
+          reason: '$scenario',
+        );
+        expect(
+          enqueuedEvents,
+          hasLength(scenario.expectedQueueCalls),
+          reason: '$scenario',
+        );
+      } finally {
+        await localTimelineCtl.close();
+        await localSyncCtl.close();
+        await localSyncDb.close();
+        await localJournalDb.close();
+      }
     },
   );
 

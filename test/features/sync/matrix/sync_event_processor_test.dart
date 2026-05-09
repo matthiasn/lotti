@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -52,6 +53,130 @@ class MockBackfillResponseHandler extends Mock
 
 class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
+
+enum _GeneratedVcValidatorOperationKind {
+  staleFirstAttempt,
+  staleRetryAttempt,
+  localDominates,
+  equal,
+  missingVectorClock,
+}
+
+class _GeneratedVcValidatorOperation {
+  const _GeneratedVcValidatorOperation({
+    required this.kind,
+    required this.pathSlot,
+  });
+
+  final _GeneratedVcValidatorOperationKind kind;
+  final int pathSlot;
+
+  String get jsonPath => '/generated-validator-$pathSlot.json';
+
+  int get attempt {
+    switch (kind) {
+      case _GeneratedVcValidatorOperationKind.staleRetryAttempt:
+        return 1;
+      case _GeneratedVcValidatorOperationKind.staleFirstAttempt:
+      case _GeneratedVcValidatorOperationKind.localDominates:
+      case _GeneratedVcValidatorOperationKind.equal:
+      case _GeneratedVcValidatorOperationKind.missingVectorClock:
+        return 0;
+    }
+  }
+
+  VectorClock? get candidateVectorClock {
+    switch (kind) {
+      case _GeneratedVcValidatorOperationKind.staleFirstAttempt:
+      case _GeneratedVcValidatorOperationKind.staleRetryAttempt:
+        return const VectorClock({'host': 1});
+      case _GeneratedVcValidatorOperationKind.localDominates:
+        return const VectorClock({'host': 4});
+      case _GeneratedVcValidatorOperationKind.equal:
+        return const VectorClock({'host': 3});
+      case _GeneratedVcValidatorOperationKind.missingVectorClock:
+        return null;
+    }
+  }
+
+  VectorClockDecision expectedDecision(Map<String, int> failuresByPath) {
+    switch (kind) {
+      case _GeneratedVcValidatorOperationKind.staleFirstAttempt:
+      case _GeneratedVcValidatorOperationKind.staleRetryAttempt:
+        final failures = (failuresByPath[jsonPath] ?? 0) + 1;
+        failuresByPath[jsonPath] = failures;
+        if (failures >= VectorClockValidator.maxStaleDescriptorFailures) {
+          return VectorClockDecision.circuitBreaker;
+        }
+        return attempt == 0
+            ? VectorClockDecision.retryAfterPurge
+            : VectorClockDecision.staleAfterRefresh;
+      case _GeneratedVcValidatorOperationKind.localDominates:
+      case _GeneratedVcValidatorOperationKind.equal:
+        failuresByPath.remove(jsonPath);
+        return VectorClockDecision.accept;
+      case _GeneratedVcValidatorOperationKind.missingVectorClock:
+        failuresByPath.remove(jsonPath);
+        return VectorClockDecision.missingVectorClock;
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedVcValidatorOperation('
+        'kind: $kind, '
+        'pathSlot: $pathSlot'
+        ')';
+  }
+}
+
+class _GeneratedVcValidatorScenario {
+  const _GeneratedVcValidatorScenario({required this.operations});
+
+  final List<_GeneratedVcValidatorOperation> operations;
+
+  List<VectorClockDecision> expectedDecisions() {
+    final failuresByPath = <String, int>{};
+    return [
+      for (final operation in operations)
+        operation.expectedDecision(failuresByPath),
+    ];
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedVcValidatorScenario(operations: $operations)';
+  }
+}
+
+extension _AnyGeneratedVcValidatorScenario on glados.Any {
+  glados.Generator<_GeneratedVcValidatorOperationKind>
+  get vcValidatorOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedVcValidatorOperationKind.values);
+
+  glados.Generator<_GeneratedVcValidatorOperation> get vcValidatorOperation =>
+      glados.CombinableAny(this).combine2(
+        vcValidatorOperationKind,
+        glados.IntAnys(this).intInRange(0, 5),
+        (
+          _GeneratedVcValidatorOperationKind kind,
+          int pathSlot,
+        ) => _GeneratedVcValidatorOperation(
+          kind: kind,
+          pathSlot: pathSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedVcValidatorScenario> get vcValidatorScenario =>
+      glados.ListAnys(
+            this,
+          )
+          .listWithLengthInRange(1, 48, vcValidatorOperation)
+          .map(
+            (operations) =>
+                _GeneratedVcValidatorScenario(operations: operations),
+          );
+}
 
 void main() {
   setUpAll(() {
@@ -289,6 +414,38 @@ void main() {
       );
       expect(retryDecision, VectorClockDecision.retryAfterPurge);
     });
+
+    glados.Glados(
+      glados.any.vcValidatorScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'generated interleaved descriptor checks keep stale counters path-scoped',
+      (scenario) {
+        final localLogging = MockLoggingService();
+        stubLoggingService(localLogging);
+        final localValidator = VectorClockValidator(
+          loggingService: localLogging,
+        );
+        final decisions = <VectorClockDecision>[];
+
+        for (final operation in scenario.operations) {
+          decisions.add(
+            localValidator.evaluate(
+              jsonPath: operation.jsonPath,
+              incomingVectorClock: const VectorClock({'host': 3}),
+              candidate: buildEntry(operation.candidateVectorClock),
+              attempt: operation.attempt,
+            ),
+          );
+        }
+
+        expect(
+          decisions,
+          scenario.expectedDecisions(),
+          reason: '$scenario',
+        );
+      },
+    );
   });
 
   group('DescriptorDownloader', () {
