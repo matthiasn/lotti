@@ -62,6 +62,26 @@ enum _GeneratedWakeBatchSlot {
 
 enum _GeneratedWakeBusySlot { none, agentA, agentB, agentC }
 
+enum _GeneratedWakeDrainAgentSlot { agentA, agentB, agentC }
+
+enum _GeneratedWakeDrainReasonSlot { subscription, reanalysis, scheduled }
+
+enum _GeneratedWakeDrainContentSlot {
+  notAwaiting,
+  awaitingNoContent,
+  awaitingHasContent,
+  awaitingNoTask,
+  checkerThrows,
+}
+
+enum _GeneratedWakeDrainInsertSlot { succeeds, throwsException }
+
+enum _GeneratedWakeDrainExecutorSlot {
+  succeedsEmpty,
+  succeedsWithMutation,
+  throwsException,
+}
+
 class _GeneratedWakeSubscriptionSpec {
   const _GeneratedWakeSubscriptionSpec({
     required this.id,
@@ -295,6 +315,253 @@ class _GeneratedWakeRoutingScenario {
   }
 }
 
+String _generatedWakeDrainAgentId(_GeneratedWakeDrainAgentSlot slot) {
+  return switch (slot) {
+    _GeneratedWakeDrainAgentSlot.agentA => 'generated-drain-agent-a',
+    _GeneratedWakeDrainAgentSlot.agentB => 'generated-drain-agent-b',
+    _GeneratedWakeDrainAgentSlot.agentC => 'generated-drain-agent-c',
+  };
+}
+
+String _generatedWakeDrainTaskId(_GeneratedWakeDrainAgentSlot slot) {
+  return 'generated-drain-task-${slot.name}';
+}
+
+class _GeneratedWakeDrainJobSpec {
+  const _GeneratedWakeDrainJobSpec({
+    required this.agentSlot,
+    required this.reasonSlot,
+    required this.insertSlot,
+    required this.executorSlot,
+  });
+
+  final _GeneratedWakeDrainAgentSlot agentSlot;
+  final _GeneratedWakeDrainReasonSlot reasonSlot;
+  final _GeneratedWakeDrainInsertSlot insertSlot;
+  final _GeneratedWakeDrainExecutorSlot executorSlot;
+
+  String get agentId => _generatedWakeDrainAgentId(agentSlot);
+
+  String get reason => switch (reasonSlot) {
+    _GeneratedWakeDrainReasonSlot.subscription => WakeReason.subscription.name,
+    _GeneratedWakeDrainReasonSlot.reanalysis => WakeReason.reanalysis.name,
+    _GeneratedWakeDrainReasonSlot.scheduled => WakeReason.scheduled.name,
+  };
+
+  bool get insertThrows =>
+      insertSlot == _GeneratedWakeDrainInsertSlot.throwsException;
+
+  bool get executorThrows =>
+      executorSlot == _GeneratedWakeDrainExecutorSlot.throwsException;
+
+  bool get executorMutates =>
+      executorSlot == _GeneratedWakeDrainExecutorSlot.succeedsWithMutation;
+
+  WakeJob job(int index) {
+    return WakeJob(
+      runKey: runKey(index),
+      agentId: agentId,
+      reason: reason,
+      triggerTokens: {
+        'generated-trigger-$index',
+        'generated-trigger-${agentSlot.name}',
+      },
+      reasonId: reasonSlot == _GeneratedWakeDrainReasonSlot.subscription
+          ? 'generated-subscription-$index'
+          : null,
+      createdAt: _generatedWakeDrainCreatedAt(index),
+    );
+  }
+
+  String runKey(int index) => 'generated-drain-run-$index';
+
+  @override
+  String toString() {
+    return '_GeneratedWakeDrainJobSpec('
+        'agentSlot: $agentSlot, reasonSlot: $reasonSlot, '
+        'insertSlot: $insertSlot, executorSlot: $executorSlot)';
+  }
+}
+
+class _GeneratedWakeDrainScenario {
+  const _GeneratedWakeDrainScenario({
+    required this.jobs,
+    required this.agentAContent,
+    required this.agentBContent,
+    required this.agentCContent,
+    required this.busySlot,
+  });
+
+  final List<_GeneratedWakeDrainJobSpec> jobs;
+  final _GeneratedWakeDrainContentSlot agentAContent;
+  final _GeneratedWakeDrainContentSlot agentBContent;
+  final _GeneratedWakeDrainContentSlot agentCContent;
+  final _GeneratedWakeBusySlot busySlot;
+
+  String? get busyAgentId {
+    return switch (busySlot) {
+      _GeneratedWakeBusySlot.none => null,
+      _GeneratedWakeBusySlot.agentA => _generatedWakeDrainAgentId(
+        _GeneratedWakeDrainAgentSlot.agentA,
+      ),
+      _GeneratedWakeBusySlot.agentB => _generatedWakeDrainAgentId(
+        _GeneratedWakeDrainAgentSlot.agentB,
+      ),
+      _GeneratedWakeBusySlot.agentC => _generatedWakeDrainAgentId(
+        _GeneratedWakeDrainAgentSlot.agentC,
+      ),
+    };
+  }
+
+  _GeneratedWakeDrainContentSlot contentFor(
+    _GeneratedWakeDrainAgentSlot slot,
+  ) {
+    return switch (slot) {
+      _GeneratedWakeDrainAgentSlot.agentA => agentAContent,
+      _GeneratedWakeDrainAgentSlot.agentB => agentBContent,
+      _GeneratedWakeDrainAgentSlot.agentC => agentCContent,
+    };
+  }
+
+  _GeneratedWakeDrainJobSpec? specForRunKey(String runKey) {
+    for (var index = 0; index < jobs.length; index += 1) {
+      if (jobs[index].runKey(index) == runKey) return jobs[index];
+    }
+    return null;
+  }
+
+  _ExpectedWakeDrainModel expectedModel() {
+    final agentAwaiting = {
+      for (final slot in _GeneratedWakeDrainAgentSlot.values)
+        _generatedWakeDrainAgentId(slot):
+            contentFor(slot) != _GeneratedWakeDrainContentSlot.notAwaiting,
+    };
+    final insertRunKeys = <String>[];
+    final executedRunKeys = <String>[];
+    final statusUpdates = <_ExpectedWakeDrainStatusUpdate>[];
+    final requeuedRunKeys = <String>[];
+    final clearedAgentIds = <String>{};
+    final throttledAgentIds = <String>{};
+
+    for (var index = 0; index < jobs.length; index += 1) {
+      final spec = jobs[index];
+      final runKey = spec.runKey(index);
+      if (spec.agentId == busyAgentId) {
+        requeuedRunKeys.add(runKey);
+        continue;
+      }
+
+      if (spec.reason == WakeReason.subscription.name &&
+          throttledAgentIds.contains(spec.agentId)) {
+        requeuedRunKeys.add(runKey);
+        continue;
+      }
+
+      final contentSlot = contentFor(spec.agentSlot);
+      final awaiting = agentAwaiting[spec.agentId] ?? false;
+      if (awaiting) {
+        if (contentSlot == _GeneratedWakeDrainContentSlot.awaitingNoContent) {
+          continue;
+        }
+        if (contentSlot == _GeneratedWakeDrainContentSlot.awaitingHasContent) {
+          agentAwaiting[spec.agentId] = false;
+          clearedAgentIds.add(spec.agentId);
+        }
+      }
+
+      insertRunKeys.add(runKey);
+      if (spec.insertThrows) {
+        continue;
+      }
+
+      executedRunKeys.add(runKey);
+      statusUpdates.add(
+        _ExpectedWakeDrainStatusUpdate(
+          runKey: runKey,
+          status: spec.executorThrows
+              ? WakeRunStatus.failed.name
+              : WakeRunStatus.completed.name,
+        ),
+      );
+      if (!spec.executorThrows && spec.reason == WakeReason.subscription.name) {
+        throttledAgentIds.add(spec.agentId);
+      }
+    }
+
+    return _ExpectedWakeDrainModel(
+      insertRunKeys: insertRunKeys,
+      executedRunKeys: executedRunKeys,
+      statusUpdates: statusUpdates,
+      requeuedRunKeys: requeuedRunKeys,
+      clearedAgentIds: clearedAgentIds,
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedWakeDrainScenario('
+        'jobs: $jobs, agentAContent: $agentAContent, '
+        'agentBContent: $agentBContent, agentCContent: $agentCContent, '
+        'busySlot: $busySlot)';
+  }
+}
+
+class _ExpectedWakeDrainModel {
+  const _ExpectedWakeDrainModel({
+    required this.insertRunKeys,
+    required this.executedRunKeys,
+    required this.statusUpdates,
+    required this.requeuedRunKeys,
+    required this.clearedAgentIds,
+  });
+
+  final List<String> insertRunKeys;
+  final List<String> executedRunKeys;
+  final List<_ExpectedWakeDrainStatusUpdate> statusUpdates;
+  final List<String> requeuedRunKeys;
+  final Set<String> clearedAgentIds;
+}
+
+class _ExpectedWakeDrainStatusUpdate {
+  const _ExpectedWakeDrainStatusUpdate({
+    required this.runKey,
+    required this.status,
+  });
+
+  final String runKey;
+  final String status;
+}
+
+class _ObservedWakeDrainExecution {
+  const _ObservedWakeDrainExecution({
+    required this.agentId,
+    required this.runKey,
+    required this.triggers,
+    required this.threadId,
+  });
+
+  final String agentId;
+  final String runKey;
+  final Set<String> triggers;
+  final String threadId;
+}
+
+class _ObservedWakeDrainStatusUpdate {
+  const _ObservedWakeDrainStatusUpdate({
+    required this.runKey,
+    required this.status,
+    required this.errorMessage,
+  });
+
+  final String runKey;
+  final String status;
+  final String? errorMessage;
+}
+
+DateTime _generatedWakeDrainCreatedAt(int index) {
+  return DateTime(2026, 5, 20, 8).add(Duration(minutes: index));
+}
+
 extension _AnyGeneratedWakeOrchestratorScenario on glados.Any {
   glados.Generator<_GeneratedWakeReplacementSlot> get wakeReplacementSlot =>
       glados.AnyUtils(this).choose(_GeneratedWakeReplacementSlot.values);
@@ -330,6 +597,62 @@ extension _AnyGeneratedWakeOrchestratorScenario on glados.Any {
           extraSubscriptionSlot: extraSubscriptionSlot,
           removalSlot: removalSlot,
           batchSlot: batchSlot,
+          busySlot: busySlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedWakeDrainAgentSlot> get wakeDrainAgentSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeDrainAgentSlot.values);
+
+  glados.Generator<_GeneratedWakeDrainReasonSlot> get wakeDrainReasonSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeDrainReasonSlot.values);
+
+  glados.Generator<_GeneratedWakeDrainContentSlot> get wakeDrainContentSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeDrainContentSlot.values);
+
+  glados.Generator<_GeneratedWakeDrainInsertSlot> get wakeDrainInsertSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeDrainInsertSlot.values);
+
+  glados.Generator<_GeneratedWakeDrainExecutorSlot> get wakeDrainExecutorSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeDrainExecutorSlot.values);
+
+  glados.Generator<_GeneratedWakeDrainJobSpec> get wakeDrainJobSpec =>
+      glados.CombinableAny(this).combine4(
+        wakeDrainAgentSlot,
+        wakeDrainReasonSlot,
+        wakeDrainInsertSlot,
+        wakeDrainExecutorSlot,
+        (
+          _GeneratedWakeDrainAgentSlot agentSlot,
+          _GeneratedWakeDrainReasonSlot reasonSlot,
+          _GeneratedWakeDrainInsertSlot insertSlot,
+          _GeneratedWakeDrainExecutorSlot executorSlot,
+        ) => _GeneratedWakeDrainJobSpec(
+          agentSlot: agentSlot,
+          reasonSlot: reasonSlot,
+          insertSlot: insertSlot,
+          executorSlot: executorSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedWakeDrainScenario> get wakeDrainScenario =>
+      glados.CombinableAny(this).combine5(
+        glados.ListAnys(this).listWithLengthInRange(1, 7, wakeDrainJobSpec),
+        wakeDrainContentSlot,
+        wakeDrainContentSlot,
+        wakeDrainContentSlot,
+        wakeBusySlot,
+        (
+          List<_GeneratedWakeDrainJobSpec> jobs,
+          _GeneratedWakeDrainContentSlot agentAContent,
+          _GeneratedWakeDrainContentSlot agentBContent,
+          _GeneratedWakeDrainContentSlot agentCContent,
+          _GeneratedWakeBusySlot busySlot,
+        ) => _GeneratedWakeDrainScenario(
+          jobs: jobs,
+          agentAContent: agentAContent,
+          agentBContent: agentBContent,
+          agentCContent: agentCContent,
           busySlot: busySlot,
         ),
       );
@@ -992,6 +1315,235 @@ void main() {
     });
 
     group('processNext', () {
+      glados.Glados(
+        glados.any.wakeDrainScenario,
+        glados.ExploreConfig(numRuns: 220),
+      ).test(
+        'matches generated drain persistence, content gates, and requeueing',
+        (scenario) {
+          fakeAsync((async) {
+            final generatedRepository = MockAgentRepository();
+            final generatedQueue = WakeQueue();
+            final generatedRunner = WakeRunner();
+            final entries = <WakeRunLogData>[];
+            final statusUpdates = <_ObservedWakeDrainStatusUpdate>[];
+            final executions = <_ObservedWakeDrainExecution>[];
+            final upsertedStates = <AgentStateEntity>[];
+            final stateByAgent = <String, AgentStateEntity>{};
+            final contentSlotByTaskId =
+                <String, _GeneratedWakeDrainContentSlot>{};
+
+            for (final slot in _GeneratedWakeDrainAgentSlot.values) {
+              final contentSlot = scenario.contentFor(slot);
+              if (contentSlot == _GeneratedWakeDrainContentSlot.notAwaiting) {
+                continue;
+              }
+
+              final taskId =
+                  contentSlot == _GeneratedWakeDrainContentSlot.awaitingNoTask
+                  ? null
+                  : _generatedWakeDrainTaskId(slot);
+              if (taskId != null) {
+                contentSlotByTaskId[taskId] = contentSlot;
+              }
+              final agentId = _generatedWakeDrainAgentId(slot);
+              stateByAgent[agentId] = makeTestState(
+                id: 'generated-drain-state-${slot.name}',
+                agentId: agentId,
+                awaitingContent: true,
+                slots: AgentSlots(activeTaskId: taskId),
+              );
+            }
+
+            when(
+              () => generatedRepository.getAgentState(any()),
+            ).thenAnswer((invocation) async {
+              final agentId = invocation.positionalArguments.single as String;
+              return stateByAgent[agentId];
+            });
+            when(
+              () => generatedRepository.upsertEntity(any()),
+            ).thenAnswer((invocation) async {
+              final entity =
+                  invocation.positionalArguments.single as AgentDomainEntity;
+              if (entity is AgentStateEntity) {
+                stateByAgent[entity.agentId] = entity;
+                upsertedStates.add(entity);
+              }
+            });
+            when(
+              () => generatedRepository.insertWakeRun(
+                entry: any(named: 'entry'),
+              ),
+            ).thenAnswer((invocation) async {
+              final entry = invocation.namedArguments[#entry] as WakeRunLogData;
+              entries.add(entry);
+              final spec = scenario.specForRunKey(entry.runKey)!;
+              if (spec.insertThrows) {
+                throw StateError('generated insert failure');
+              }
+            });
+            when(
+              () => generatedRepository.updateWakeRunStatus(
+                any(),
+                any(),
+                completedAt: any(named: 'completedAt'),
+                errorMessage: any(named: 'errorMessage'),
+              ),
+            ).thenAnswer((invocation) async {
+              statusUpdates.add(
+                _ObservedWakeDrainStatusUpdate(
+                  runKey: invocation.positionalArguments[0] as String,
+                  status: invocation.positionalArguments[1] as String,
+                  errorMessage:
+                      invocation.namedArguments[#errorMessage] as String?,
+                ),
+              );
+            });
+
+            final generatedOrchestrator = WakeOrchestrator(
+              repository: generatedRepository,
+              queue: generatedQueue,
+              runner: generatedRunner,
+              taskContentChecker: (taskId) async {
+                final contentSlot = contentSlotByTaskId[taskId];
+                if (contentSlot ==
+                    _GeneratedWakeDrainContentSlot.checkerThrows) {
+                  throw StateError('generated content check failure');
+                }
+                return contentSlot ==
+                    _GeneratedWakeDrainContentSlot.awaitingHasContent;
+              },
+              wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                executions.add(
+                  _ObservedWakeDrainExecution(
+                    agentId: agentId,
+                    runKey: runKey,
+                    triggers: Set<String>.from(triggers),
+                    threadId: threadId,
+                  ),
+                );
+                final spec = scenario.specForRunKey(runKey)!;
+                if (spec.executorThrows) {
+                  throw StateError('generated executor failure');
+                }
+                if (spec.executorMutates) {
+                  return {
+                    'generated-mutation-$runKey': const VectorClock({
+                      'generated-node': 1,
+                    }),
+                  };
+                }
+                return null;
+              },
+            );
+
+            for (var index = 0; index < scenario.jobs.length; index += 1) {
+              generatedQueue.enqueue(scenario.jobs[index].job(index));
+            }
+
+            final busyAgentId = scenario.busyAgentId;
+            if (busyAgentId != null) {
+              generatedRunner.tryAcquire(busyAgentId);
+              async.flushMicrotasks();
+            }
+
+            generatedOrchestrator.processNext();
+            async.flushMicrotasks();
+
+            final expected = scenario.expectedModel();
+            expect(
+              entries.map((entry) => entry.runKey).toList(),
+              expected.insertRunKeys,
+              reason: '$scenario',
+            );
+            for (final entry in entries) {
+              final spec = scenario.specForRunKey(entry.runKey)!;
+              final index = int.parse(entry.runKey.split('-').last);
+              expect(entry.agentId, spec.agentId, reason: '$scenario');
+              expect(entry.reason, spec.reason, reason: '$scenario');
+              expect(entry.threadId, entry.runKey, reason: '$scenario');
+              expect(
+                entry.createdAt,
+                _generatedWakeDrainCreatedAt(index),
+                reason: '$scenario',
+              );
+              expect(entry.status, WakeRunStatus.running.name);
+            }
+
+            expect(
+              executions.map((execution) => execution.runKey).toList(),
+              expected.executedRunKeys,
+              reason: '$scenario',
+            );
+            for (final execution in executions) {
+              final spec = scenario.specForRunKey(execution.runKey)!;
+              final index = int.parse(execution.runKey.split('-').last);
+              expect(execution.agentId, spec.agentId, reason: '$scenario');
+              expect(execution.threadId, execution.runKey, reason: '$scenario');
+              expect(
+                execution.triggers,
+                spec.job(index).triggerTokens,
+                reason: '$scenario',
+              );
+            }
+
+            expect(statusUpdates, hasLength(expected.statusUpdates.length));
+            for (var index = 0; index < statusUpdates.length; index += 1) {
+              final actual = statusUpdates[index];
+              final expectedUpdate = expected.statusUpdates[index];
+              expect(actual.runKey, expectedUpdate.runKey, reason: '$scenario');
+              expect(actual.status, expectedUpdate.status, reason: '$scenario');
+              if (expectedUpdate.status == WakeRunStatus.failed.name) {
+                expect(actual.errorMessage, isNotNull, reason: '$scenario');
+              } else {
+                expect(actual.errorMessage, isNull, reason: '$scenario');
+              }
+            }
+
+            final remainingRunKeys = <String>[];
+            while (!generatedQueue.isEmpty) {
+              remainingRunKeys.add(generatedQueue.dequeue()!.runKey);
+            }
+            expect(
+              remainingRunKeys,
+              expected.requeuedRunKeys,
+              reason: '$scenario',
+            );
+
+            for (final agentId in expected.clearedAgentIds) {
+              expect(
+                stateByAgent[agentId]?.awaitingContent,
+                isFalse,
+                reason: '$scenario',
+              );
+              expect(
+                upsertedStates.any(
+                  (state) => state.agentId == agentId && !state.awaitingContent,
+                ),
+                isTrue,
+                reason: '$scenario',
+              );
+            }
+
+            for (final slot in _GeneratedWakeDrainAgentSlot.values) {
+              final agentId = _generatedWakeDrainAgentId(slot);
+              expect(
+                generatedRunner.isRunning(agentId),
+                agentId == busyAgentId,
+                reason: '$scenario',
+              );
+            }
+
+            generatedOrchestrator.stop();
+            async.flushMicrotasks();
+            if (busyAgentId != null) {
+              generatedRunner.release(busyAgentId);
+            }
+          });
+        },
+      );
+
       test('does nothing when queue is empty', () {
         fakeAsync((async) {
           orchestrator.processNext();
