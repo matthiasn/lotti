@@ -781,10 +781,25 @@ class InboundQueue {
 
     // Collect the target rows first so the bump of `resurrection_count`
     // and the log line reflect the rows that actually changed.
+    //
+    // `status = 'abandoned'` is inlined as a literal SQL fragment via
+    // `CustomExpression` so the SQLite planner can prove this query's
+    // WHERE implies the partial indices'
+    // (`idx_inbound_event_queue_abandoned_path`,
+    // `idx_inbound_event_queue_abandoned_reason`,
+    // `idx_inbound_event_queue_abandoned_reason_resurrection`),
+    // each declared with the literal `WHERE status = 'abandoned'`.
+    // Drift's `t.status.equals(_statusAbandoned)` binds the value as a
+    // parameter; the planner can't see it at plan time, the
+    // partial-index match fails, and resurrectByReason / resurrectByPath
+    // fall back to scanning the full append-only ledger. The
+    // 2026-05-09 desktop slow_queries log captured this shape at
+    // 107 hits/day in the 200–877 ms band even with the v17 partial
+    // index in place.
     final selectQuery = _db.select(table)
       ..where(
         (t) =>
-            t.status.equals(_statusAbandoned) &
+            const CustomExpression<bool>("status = 'abandoned'") &
             t.resurrectionCount.isSmallerThanValue(hardCap),
       );
     if (extraWhere != null) {

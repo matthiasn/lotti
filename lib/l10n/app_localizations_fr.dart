@@ -3627,6 +3627,21 @@ class AppLocalizationsFr extends AppLocalizations {
       'Es-tu sûr de vouloir purger tous les éléments supprimés ? Cette action est irréversible.';
 
   @override
+  String get maintenancePurgeSentOutbox =>
+      'Purger les anciens éléments envoyés de l\'outbox';
+
+  @override
+  String get maintenancePurgeSentOutboxConfirm => 'OUI, PURGER';
+
+  @override
+  String get maintenancePurgeSentOutboxDescription =>
+      'Supprimer les lignes de l\'outbox envoyées il y a plus de 7 jours et récupérer l\'espace disque';
+
+  @override
+  String get maintenancePurgeSentOutboxQuestion =>
+      'Purger les éléments de l\'outbox envoyés il y a plus de 7 jours ? Cela supprime les lignes déjà envoyées par lots et exécute VACUUM pour récupérer l\'espace disque. Les éléments en attente et en erreur sont conservés.';
+
+  @override
   String get maintenanceRecreateFts5 => 'Recréer l\'index de texte intégral';
 
   @override

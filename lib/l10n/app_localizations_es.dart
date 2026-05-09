@@ -3619,6 +3619,21 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Estás seguro de que quieres purgar todos los elementos eliminados? Esta acción no se puede deshacer.';
 
   @override
+  String get maintenancePurgeSentOutbox =>
+      'Purgar elementos enviados antiguos de la bandeja de salida';
+
+  @override
+  String get maintenancePurgeSentOutboxConfirm => 'SÍ, PURGAR';
+
+  @override
+  String get maintenancePurgeSentOutboxDescription =>
+      'Eliminar filas de la bandeja de salida enviadas hace más de 7 días y liberar disco';
+
+  @override
+  String get maintenancePurgeSentOutboxQuestion =>
+      '¿Purgar elementos de la bandeja de salida enviados hace más de 7 días? Esto elimina las filas ya enviadas por bloques y ejecuta VACUUM para liberar disco. Los elementos pendientes y con error se conservan.';
+
+  @override
   String get maintenanceRecreateFts5 => 'Recrear el índice de texto completo';
 
   @override

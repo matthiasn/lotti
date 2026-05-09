@@ -316,7 +316,16 @@ class OutboxService {
     Future<void> runPrune() async {
       if (_isDisposed) return;
       try {
-        final deleted = await _repository.pruneSentOutboxItems(
+        // Chunked DELETE so the writer lock is released between batches.
+        // The unbounded variant held the writer for many seconds on
+        // devices where the table had grown to hundreds of thousands of
+        // sent rows (observed up to ~1M), stalling concurrent enqueue
+        // and claim work for the duration of the delete. VACUUM is
+        // skipped here because it rewrites the whole DB file on every
+        // run and the periodic prune typically only releases a day's
+        // worth of rows; the user-triggered Maintenance action enables
+        // VACUUM for one-shot cleanup of large backlogs.
+        final deleted = await _repository.pruneSentOutboxItemsChunked(
           retention: SyncTuning.outboxSentRetention,
         );
         if (deleted > 0) {

@@ -614,5 +614,80 @@ void main() {
         },
       );
     });
+
+    group('pruneSentOutboxItemsChunked', () {
+      test(
+        'forwards every parameter (retention, chunkSize, vacuumWhenDone, '
+        'onProgress) to the database call so the chunked path is wired '
+        'through end-to-end',
+        () async {
+          Duration? capturedRetention;
+          int? capturedChunkSize;
+          bool? capturedVacuum;
+          void Function(int)? capturedProgress;
+          when(
+            () => database.pruneSentOutboxItemsChunked(
+              retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            capturedRetention =
+                invocation.namedArguments[#retention] as Duration?;
+            capturedChunkSize = invocation.namedArguments[#chunkSize] as int?;
+            capturedVacuum =
+                invocation.namedArguments[#vacuumWhenDone] as bool?;
+            capturedProgress =
+                invocation.namedArguments[#onProgress] as void Function(int)?;
+            // Simulate two chunks landing — caller's onProgress should
+            // receive both totals as the chunked loop reports.
+            capturedProgress?.call(5);
+            capturedProgress?.call(7);
+            return 7;
+          });
+
+          final reported = <int>[];
+          final deleted = await repository.pruneSentOutboxItemsChunked(
+            retention: const Duration(days: 14),
+            chunkSize: 2500,
+            vacuumWhenDone: true,
+            onProgress: reported.add,
+          );
+
+          expect(deleted, 7);
+          expect(capturedRetention, const Duration(days: 14));
+          expect(capturedChunkSize, 2500);
+          expect(capturedVacuum, isTrue);
+          expect(reported, [5, 7]);
+        },
+      );
+
+      test(
+        'defaults vacuumWhenDone to false so the periodic background '
+        'sweep does not pay the VACUUM cost on every tick',
+        () async {
+          bool? capturedVacuum;
+          when(
+            () => database.pruneSentOutboxItemsChunked(
+              retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            capturedVacuum =
+                invocation.namedArguments[#vacuumWhenDone] as bool?;
+            return 0;
+          });
+
+          await repository.pruneSentOutboxItemsChunked(
+            retention: const Duration(days: 7),
+          );
+
+          expect(capturedVacuum, isFalse);
+        },
+      );
+    });
   });
 }

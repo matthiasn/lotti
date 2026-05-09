@@ -213,6 +213,47 @@ class Maintenance {
     }
   }
 
+  /// One-shot purge of `sent` outbox rows older than [retention].
+  ///
+  /// Deletes in chunks of [chunkSize] so the writer lock is released
+  /// between batches and concurrent enqueue/claim/watch can interleave.
+  /// Runs `VACUUM` after a non-empty purge to reclaim disk — this is
+  /// the user-triggered Maintenance path; the periodic background prune
+  /// in `OutboxService.runPrune` skips VACUUM because it typically
+  /// releases only a day's worth of rows.
+  ///
+  /// Surfaces progress via [onProgress] (running deletion total). The
+  /// final count is also logged under domain `MAINTENANCE`,
+  /// subDomain `purgeSentOutbox` so a single purge run is easy to find
+  /// in the log later.
+  ///
+  /// [now] is forwarded to the underlying chunked prune so tests can
+  /// pin the cutoff to a deterministic instant. Production callers
+  /// leave it null and pay the real-clock cutoff.
+  Future<int> purgeSentOutboxItems({
+    Duration retention = const Duration(days: 7),
+    int chunkSize = 5000,
+    void Function(int deletedSoFar)? onProgress,
+    DateTime? now,
+  }) async {
+    final syncDb = getIt<SyncDatabase>();
+    final deleted = await syncDb.pruneSentOutboxItemsChunked(
+      retention: retention,
+      chunkSize: chunkSize,
+      vacuumWhenDone: true,
+      onProgress: onProgress,
+      now: now,
+    );
+    getIt<LoggingService>().captureEvent(
+      'purgeSentOutbox removed=$deleted '
+      'retentionDays=${retention.inDays} '
+      'chunkSize=$chunkSize',
+      domain: 'MAINTENANCE',
+      subDomain: 'purgeSentOutbox',
+    );
+    return deleted;
+  }
+
   Future<void> deleteFts5Db() async {
     final file = await getDatabaseFile(fts5DbFileName);
     var deleted = false;

@@ -86,6 +86,22 @@ class MatrixSyncMaintenanceBody extends StatelessWidget {
             icon: Icons.playlist_add_check_rounded,
             onTap: () => SequenceLogPopulateModal.show(context),
           ),
+          (
+            title: context.messages.maintenancePurgeSentOutbox,
+            subtitle: context.messages.maintenancePurgeSentOutboxDescription,
+            icon: Icons.delete_sweep_rounded,
+            onTap: () async {
+              final confirmed = await showConfirmationModal(
+                context: context,
+                message: context.messages.maintenancePurgeSentOutboxQuestion,
+                confirmLabel:
+                    context.messages.maintenancePurgeSentOutboxConfirm,
+              );
+              if (confirmed && context.mounted) {
+                await maintenance.purgeSentOutboxItems();
+              }
+            },
+          ),
         ];
 
     return DesignSystemGroupedList(

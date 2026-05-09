@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' show InsertMode;
+import 'package:drift/drift.dart' show InsertMode, Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -21,6 +21,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart'
+    show OutboxStatus;
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -984,6 +986,106 @@ void main() {
             .first;
         expect(matches, contains('fts-error'));
       });
+    });
+
+    group('purgeSentOutboxItems', () {
+      late SyncDatabase syncDb;
+
+      setUp(() {
+        syncDb = SyncDatabase(inMemoryDatabase: true);
+        getIt.registerSingleton<SyncDatabase>(syncDb);
+      });
+
+      tearDown(() async {
+        await syncDb.close();
+      });
+
+      OutboxCompanion buildSent({
+        required DateTime updatedAt,
+      }) {
+        return OutboxCompanion(
+          status: Value(OutboxStatus.sent.index),
+          subject: const Value('s'),
+          message: const Value('{}'),
+          createdAt: Value(updatedAt),
+          updatedAt: Value(updatedAt),
+          retries: const Value(0),
+        );
+      }
+
+      test(
+        'deletes only sent rows older than retention and reports the count via '
+        'onProgress + log event',
+        () async {
+          final now = DateTime(2026, 5, 9, 12);
+          // 12 sent rows older than retention → with chunkSize=5 the
+          // chunked path must run 3 passes (5 + 5 + 2). The progress
+          // callback receives the running total after each pass, so the
+          // sequence is the assertion that the chunked loop did its job.
+          for (var i = 0; i < 12; i++) {
+            await syncDb.addOutboxItem(
+              buildSent(updatedAt: now.subtract(const Duration(days: 30))),
+            );
+          }
+          // Fresh sent row — retention keeps it.
+          await syncDb.addOutboxItem(buildSent(updatedAt: now));
+          // Pending row — never pruned.
+          await syncDb.addOutboxItem(
+            OutboxCompanion(
+              status: Value(OutboxStatus.pending.index),
+              subject: const Value('p'),
+              message: const Value('{}'),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+              retries: const Value(0),
+            ),
+          );
+
+          final progress = <int>[];
+          final deleted = await maintenance.purgeSentOutboxItems(
+            chunkSize: 5,
+            onProgress: progress.add,
+            // Pin the cutoff so the assertion below is not a time bomb:
+            // without this, `purgeSentOutboxItems` falls back to
+            // `DateTime.now()` and the "fresh" sent row becomes
+            // prunable once wall-clock crosses ~`now + 7d`, deleting
+            // 13 rows instead of 12.
+            now: now,
+          );
+
+          expect(deleted, 12);
+          expect(progress, [5, 10, 12]);
+          // Live state survived.
+          expect(await syncDb.allOutboxItems, hasLength(2));
+
+          verify(
+            () => loggingService.captureEvent(
+              'purgeSentOutbox removed=12 retentionDays=7 chunkSize=5',
+              domain: 'MAINTENANCE',
+              subDomain: 'purgeSentOutbox',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'returns 0 and still logs a single event when there is nothing to '
+        'purge',
+        () async {
+          final deleted = await maintenance.purgeSentOutboxItems(
+            chunkSize: 5,
+          );
+
+          expect(deleted, 0);
+          verify(
+            () => loggingService.captureEvent(
+              'purgeSentOutbox removed=0 retentionDays=7 chunkSize=5',
+              domain: 'MAINTENANCE',
+              subDomain: 'purgeSentOutbox',
+            ),
+          ).called(1);
+        },
+      );
     });
   });
 }

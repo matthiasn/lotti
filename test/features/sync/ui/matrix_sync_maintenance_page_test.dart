@@ -48,6 +48,13 @@ void main() {
           agentRepository: any(named: 'agentRepository'),
         ),
       ).thenAnswer((_) async {});
+      when(
+        () => mockMaintenance.purgeSentOutboxItems(
+          retention: any(named: 'retention'),
+          chunkSize: any(named: 'chunkSize'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async => 0);
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -173,20 +180,78 @@ void main() {
       );
     });
 
+    testWidgets('purge sent outbox card shows confirmation dialog', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(MatrixSyncMaintenancePage));
+      await tester.tap(
+        find.text(context.messages.maintenancePurgeSentOutbox),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.maintenancePurgeSentOutboxQuestion),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.maintenancePurgeSentOutboxConfirm),
+        findsOneWidget,
+      );
+      // Maintenance.purgeSentOutboxItems must NOT have been called yet —
+      // the chunked DELETE + VACUUM is destructive and should only fire
+      // after the user explicitly confirms.
+      verifyNever(
+        () => mockMaintenance.purgeSentOutboxItems(
+          retention: any(named: 'retention'),
+          chunkSize: any(named: 'chunkSize'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      );
+    });
+
+    testWidgets('purge sent outbox card calls Maintenance when confirmed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildPage());
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(MatrixSyncMaintenancePage));
+      await tester.tap(
+        find.text(context.messages.maintenancePurgeSentOutbox),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.text(context.messages.maintenancePurgeSentOutboxConfirm),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockMaintenance.purgeSentOutboxItems(
+          retention: any(named: 'retention'),
+          chunkSize: any(named: 'chunkSize'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
+    });
+
     testWidgets('uses design system grouped list layout', (tester) async {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
-      expect(find.byType(DesignSystemListItem), findsNWidgets(4));
-      expect(find.byType(SettingsIcon), findsNWidgets(4));
+      expect(find.byType(DesignSystemListItem), findsNWidgets(5));
+      expect(find.byType(SettingsIcon), findsNWidgets(5));
     });
 
     testWidgets('shows chevron trailing icon on each item', (tester) async {
       await tester.pumpWidget(buildPage());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(4));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(5));
     });
 
     testWidgets('shows correct settings icons', (tester) async {
@@ -197,6 +262,7 @@ void main() {
       expect(find.byIcon(Icons.sync_alt_rounded), findsOneWidget);
       expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
       expect(find.byIcon(Icons.playlist_add_check_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.delete_sweep_rounded), findsOneWidget);
     });
 
     testWidgets('shows dividers between items but not after last', (
