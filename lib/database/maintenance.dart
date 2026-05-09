@@ -226,10 +226,15 @@ class Maintenance {
   /// final count is also logged under domain `MAINTENANCE`,
   /// subDomain `purgeSentOutbox` so a single purge run is easy to find
   /// in the log later.
+  ///
+  /// [now] is forwarded to the underlying chunked prune so tests can
+  /// pin the cutoff to a deterministic instant. Production callers
+  /// leave it null and pay the real-clock cutoff.
   Future<int> purgeSentOutboxItems({
     Duration retention = const Duration(days: 7),
     int chunkSize = 5000,
     void Function(int deletedSoFar)? onProgress,
+    DateTime? now,
   }) async {
     final syncDb = getIt<SyncDatabase>();
     final deleted = await syncDb.pruneSentOutboxItemsChunked(
@@ -237,6 +242,7 @@ class Maintenance {
       chunkSize: chunkSize,
       vacuumWhenDone: true,
       onProgress: onProgress,
+      now: now,
     );
     getIt<LoggingService>().captureEvent(
       'purgeSentOutbox removed=$deleted '

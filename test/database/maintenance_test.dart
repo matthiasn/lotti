@@ -1045,6 +1045,12 @@ void main() {
           final deleted = await maintenance.purgeSentOutboxItems(
             chunkSize: 5,
             onProgress: progress.add,
+            // Pin the cutoff so the assertion below is not a time bomb:
+            // without this, `purgeSentOutboxItems` falls back to
+            // `DateTime.now()` and the "fresh" sent row becomes
+            // prunable once wall-clock crosses ~`now + 7d`, deleting
+            // 13 rows instead of 12.
+            now: now,
           );
 
           expect(deleted, 12);

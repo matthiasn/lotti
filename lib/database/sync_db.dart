@@ -883,6 +883,16 @@ class SyncDatabase extends _$SyncDatabase {
     DateTime? now,
     void Function(int deletedSoFar)? onProgress,
   }) async {
+    // A non-positive `chunkSize` would wedge the loop:
+    // - `chunkSize == 0` → `LIMIT 0` deletes nothing, `n == 0`,
+    //   `n < chunkSize` is `0 < 0` → false → infinite spin.
+    // - `chunkSize < 0` → SQLite treats `LIMIT -1` as "no limit"
+    //   so the first pass deletes every eligible row, but the
+    //   termination check still fails (e.g. `n < -1`).
+    // Mirror the same short-circuit `_retireInPages` uses for
+    // `pageSize <= 0` so a misconfigured caller cannot stall the
+    // writer.
+    if (chunkSize <= 0) return 0;
     final effectiveNow = now ?? DateTime.now();
     final cutoff = effectiveNow.subtract(retention);
     final sentStatus = OutboxStatus.sent.index;

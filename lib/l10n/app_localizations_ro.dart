@@ -3621,7 +3621,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Eliminați elementele vechi trimise din outbox';
 
   @override
-  String get maintenancePurgeSentOutboxConfirm => 'DA, ELIMINĂ';
+  String get maintenancePurgeSentOutboxConfirm => 'DA, ELIMINAȚI';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>

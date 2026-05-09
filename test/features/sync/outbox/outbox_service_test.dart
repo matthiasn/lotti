@@ -5468,11 +5468,36 @@ void main() {
             async.flushMicrotasks();
           });
 
+          // Step past the 30s startup grace so the one-shot startup
+          // prune fires and returns. Reset the captured value + the
+          // mock interaction log so the assertion below proves the
+          // periodic timer (not the startup timer) called the
+          // repository — without this clear the test could pass on
+          // the startup invocation alone, which says nothing about
+          // the periodic path.
           async
             ..elapse(const Duration(seconds: 31))
             ..flushMicrotasks();
+          capturedVacuum = null;
+          clearInteractions(repository);
 
-          // Default of `false` reaches the repository.
+          // Now advance one full periodic interval. Only the periodic
+          // timer can fire here, so the captured `vacuumWhenDone`
+          // value belongs to it.
+          async
+            ..elapse(
+              SyncTuning.outboxPruneInterval + const Duration(seconds: 1),
+            )
+            ..flushMicrotasks();
+
+          verify(
+            () => repository.pruneSentOutboxItemsChunked(
+              retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).called(1);
           expect(capturedVacuum, isFalse);
         });
       },

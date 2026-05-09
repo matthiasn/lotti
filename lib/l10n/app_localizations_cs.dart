@@ -3597,18 +3597,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get maintenancePurgeSentOutbox =>
-      'Vyčistit staré odeslané položky outboxu';
+      'Vyčistit staré odeslané položky odchozí pošty';
 
   @override
   String get maintenancePurgeSentOutboxConfirm => 'ANO, VYČISTIT';
 
   @override
   String get maintenancePurgeSentOutboxDescription =>
-      'Smazat řádky outboxu odeslané před více než 7 dny a uvolnit místo na disku';
+      'Smazat řádky odchozí pošty odeslané před více než 7 dny a uvolnit místo na disku';
 
   @override
   String get maintenancePurgeSentOutboxQuestion =>
-      'Vyčistit položky outboxu odeslané před více než 7 dny? Tato akce smaže již odeslané řádky po blocích a spustí VACUUM pro uvolnění místa na disku. Čekající a chybové položky zůstanou zachovány.';
+      'Vyčistit položky odchozí pošty odeslané před více než 7 dny? Tato akce smaže již odeslané řádky po blocích a spustí VACUUM pro uvolnění místa na disku. Čekající a chybové položky zůstanou zachovány.';
 
   @override
   String get maintenanceRecreateFts5 => 'Znovu vytvořit index plného textu';

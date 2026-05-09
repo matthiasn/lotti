@@ -1874,8 +1874,10 @@ void main() {
     );
 
     test(
-      'pruneSentOutboxItemsChunked returns 0 and never invokes onProgress '
-      'when there is nothing to prune',
+      'pruneSentOutboxItemsChunked returns 0 and invokes onProgress once '
+      'with 0 when there is nothing to prune — the terminator pass still '
+      'reports its (zero) running total so callers can rely on the final '
+      'progress value matching the return value',
       () async {
         final database = db!;
         final now = DateTime(2026, 5, 9);
@@ -1902,6 +1904,47 @@ void main() {
         // matching the return value.
         expect(deleted, 0);
         expect(progress, [0]);
+        expect(await database.allOutboxItems, hasLength(1));
+      },
+    );
+
+    test(
+      'pruneSentOutboxItemsChunked short-circuits with 0 when chunkSize is '
+      'non-positive — guards the writer against a misconfigured caller that '
+      'would otherwise wedge the loop on LIMIT 0 / negative LIMIT semantics',
+      () async {
+        final database = db!;
+        final now = DateTime(2026, 5, 9);
+        // Seed an eligible row so the assertion proves the early
+        // short-circuit fired BEFORE the DELETE; if the guard regressed,
+        // the row would be deleted instead.
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.sent,
+            createdAt: now.subtract(const Duration(days: 30)),
+            subject: 'stale-sent',
+          ),
+        );
+
+        final progress = <int>[];
+        final zeroDeleted = await database.pruneSentOutboxItemsChunked(
+          retention: const Duration(days: 7),
+          chunkSize: 0,
+          now: now,
+          onProgress: progress.add,
+        );
+        final negDeleted = await database.pruneSentOutboxItemsChunked(
+          retention: const Duration(days: 7),
+          chunkSize: -1,
+          now: now,
+          onProgress: progress.add,
+        );
+
+        expect(zeroDeleted, 0);
+        expect(negDeleted, 0);
+        // onProgress is never invoked when the guard fires — the loop
+        // body (and therefore the progress emit) is skipped entirely.
+        expect(progress, isEmpty);
         expect(await database.allOutboxItems, hasLength(1));
       },
     );

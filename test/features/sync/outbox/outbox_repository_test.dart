@@ -621,6 +621,7 @@ void main() {
         'onProgress) to the database call so the chunked path is wired '
         'through end-to-end',
         () async {
+          Duration? capturedRetention;
           int? capturedChunkSize;
           bool? capturedVacuum;
           void Function(int)? capturedProgress;
@@ -632,6 +633,8 @@ void main() {
               onProgress: any(named: 'onProgress'),
             ),
           ).thenAnswer((invocation) async {
+            capturedRetention =
+                invocation.namedArguments[#retention] as Duration?;
             capturedChunkSize = invocation.namedArguments[#chunkSize] as int?;
             capturedVacuum =
                 invocation.namedArguments[#vacuumWhenDone] as bool?;
@@ -653,6 +656,7 @@ void main() {
           );
 
           expect(deleted, 7);
+          expect(capturedRetention, const Duration(days: 14));
           expect(capturedChunkSize, 2500);
           expect(capturedVacuum, isTrue);
           expect(reported, [5, 7]);
