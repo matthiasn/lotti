@@ -122,6 +122,32 @@ void main() {
     });
 
     test(
+      'normalizes empty / whitespace categoryId query values to null so a '
+      'stale `?categoryId=` link does not pin the new project to an '
+      'unresolvable category id',
+      () {
+        for (final raw in const ['', '   ', '\t']) {
+          final routeInformation = RouteInformation(
+            uri: Uri.parse('/projects/create?categoryId=$raw'),
+          );
+          final location = ProjectsLocation(routeInformation);
+          final beamState = BeamState.fromRouteInformation(
+            routeInformation,
+          ).copyWith(pathParameters: {'projectId': 'create'});
+
+          final pages = location.buildPages(mockBuildContext, beamState);
+          final createPage = pages.last.child as ProjectCreatePage;
+
+          expect(
+            createPage.categoryId,
+            isNull,
+            reason: 'expected `?categoryId=$raw` to map to null',
+          );
+        }
+      },
+    );
+
+    test(
       'in desktop mode, /projects/create skips desktop project selection',
       () {
         final desktopSelectedProjectId = ValueNotifier<String?>('existing-id');

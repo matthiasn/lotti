@@ -42,7 +42,13 @@ class ProjectsLocation extends BeamLocation<BeamState> {
           key: const ValueKey('project-create'),
           title: 'New Project',
           child: ProjectCreatePage(
-            categoryId: state.uri.queryParameters['categoryId'],
+            // Treat `?categoryId=` (and any whitespace-only variant) as
+            // "no category" rather than letting an empty string flow
+            // into `createMetadata` and create a project pinned to an
+            // unresolvable category id.
+            categoryId: _normalizeCategoryId(
+              state.uri.queryParameters['categoryId'],
+            ),
           ),
         ),
       if (!isDesktop && !isCreate && projectId != null)
@@ -53,4 +59,10 @@ class ProjectsLocation extends BeamLocation<BeamState> {
         ),
     ];
   }
+}
+
+String? _normalizeCategoryId(String? raw) {
+  if (raw == null) return null;
+  final trimmed = raw.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }

@@ -176,6 +176,72 @@ void main() {
     );
 
     testWidgets(
+      'didUpdateWidget re-seeds _categoryId when the same State sees a '
+      'new widget.categoryId — without it, swapping the route query '
+      'param would silently keep the original prefill on save',
+      (tester) async {
+        const oldCategoryId = 'cat-old';
+        const newCategoryId = 'cat-new';
+        for (final id in const [oldCategoryId, newCategoryId]) {
+          when(
+            () => mockEntitiesCacheService.getCategoryById(id),
+          ).thenReturn(
+            CategoryTestUtils.createTestCategory(id: id, name: id),
+          );
+        }
+        stubCreateMetadata(categoryId: newCategoryId);
+        stubCreateProject();
+
+        // Drive the same Navigator route through two builds with
+        // different categoryId inputs — wrapping in a StatefulBuilder
+        // gives the test a setState handle to swap the widget input
+        // without disposing the page state.
+        var currentCategoryId = oldCategoryId;
+        late void Function(void Function()) setOuterState;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            StatefulBuilder(
+              builder: (context, setState) {
+                setOuterState = setState;
+                return ProjectCreatePage(categoryId: currentCategoryId);
+              },
+            ),
+            overrides: [
+              projectRepositoryProvider.overrideWithValue(mockProjectRepo),
+              agentTemplateServiceProvider.overrideWithValue(
+                mockTemplateService,
+              ),
+              projectAgentServiceProvider.overrideWithValue(mockAgentService),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Swap the input. didUpdateWidget should observe this and
+        // refresh `_categoryId`.
+        setOuterState(() => currentCategoryId = newCategoryId);
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byType(LottiTextField),
+          'Reseeded Project',
+        );
+        await tester.pump();
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => mockPersistenceLogic.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: newCategoryId,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
       'CategoryField onSave clearing the selection nulls categoryId again',
       (tester) async {
         const seededCategoryId = 'cat-seed';
@@ -333,6 +399,13 @@ void main() {
       // After successful creation the page pops, so the create page is gone.
       expect(find.text('Create Project'), findsNothing);
       expect(find.text('Open'), findsOneWidget);
+
+      // No success SnackBar — the freshly-created project showing up in
+      // the projects list is the success signal, and a Material
+      // floating SnackBar would push the list's FAB up to fit, which
+      // reads as more disruptive than informative for a one-shot
+      // create flow.
+      expect(find.text('Saved successfully'), findsNothing);
     });
 
     testWidgets('passes categoryId to createMetadata when provided', (

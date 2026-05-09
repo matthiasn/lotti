@@ -170,47 +170,12 @@ void main() {
     expect(findRichTextContaining('5 tasks'), findsOneWidget);
     expect(findRichTextContaining('Due Mar 27'), findsOneWidget);
     expect(find.bySemanticsLabel('New Project'), findsOneWidget);
+    expect(find.byType(DesignSystemBottomNavigationFabPadding), findsOneWidget);
     expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
-    // The FAB no longer needs an explicit `DesignSystemBottomNavigationFabPadding`
-    // wrapper — the page's Scaffold now reserves a same-height
-    // bottomNavigationBar slot, which already lifts the FAB above the
-    // app shell's nav pill (and gives toasts somewhere to dock above).
-    expect(find.byType(DesignSystemBottomNavigationFabPadding), findsNothing);
 
     final textField = tester.widget<TextField>(find.byType(TextField));
     expect(textField.enabled, isTrue);
   });
-
-  testWidgets(
-    'wraps the projects list in a nested ScaffoldMessenger so toasts dock '
-    'above the bottomNavigationBar slot reserved for the app nav pill',
-    (tester) async {
-      await pumpPage(
-        tester,
-        groups: [buildWorkGroup()],
-      );
-
-      // The nested messenger lives inside the projects-tab subtree so
-      // `context.showToast` calls fired from any descendant widget
-      // attach to the page's own Scaffold (which has the bottom-nav
-      // sized slot) instead of the app-root Scaffold (which is flush
-      // with the screen edge).
-      expect(find.byType(ScaffoldMessenger), findsAtLeastNWidgets(1));
-
-      // The reserved slot is the SizedBox we set as bottomNavigationBar
-      // on mobile widths. On desktop widths `occupiedHeight` collapses
-      // to zero and the slot is omitted entirely; this test runs at the
-      // default mobile viewport so the slot must be present.
-      final scaffold = tester.widget<Scaffold>(
-        find.descendant(
-          of: find.byType(ProjectsTabPage),
-          matching: find.byType(Scaffold),
-        ),
-      );
-      expect(scaffold.extendBody, isTrue);
-      expect(scaffold.bottomNavigationBar, isA<SizedBox>());
-    },
-  );
 
   testWidgets('renders the grouped projects page in light theme', (
     tester,

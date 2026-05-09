@@ -366,6 +366,33 @@ void main() {
       expect(detailPage.projectId, 'proj-123');
     });
 
+    test(
+      'buildPages does NOT render ProjectDetailPage for the legacy '
+      '/settings/projects/create slug — the `:projectId` pattern would '
+      'greedily match `create`, but the create flow now lives under '
+      'ProjectsLocation, so this branch must skip the reserved slug',
+      () {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/projects/create'),
+        );
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'projectId': 'create'});
+
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        // Only the SettingsPage shell — no ProjectDetailPage in the
+        // stack, even though `pathContains('projects')` is true.
+        expect(pages.length, 1);
+        expect(pages[0].child, isA<SettingsPage>());
+        expect(
+          pages.where((p) => p.child is ProjectDetailPage),
+          isEmpty,
+        );
+      },
+    );
+
     test('buildPages builds DashboardSettingsPage', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/dashboards'),

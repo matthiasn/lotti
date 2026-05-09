@@ -53,6 +53,19 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
   }
 
   @override
+  void didUpdateWidget(covariant ProjectCreatePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-seed `_categoryId` if the route hands the same State a new
+    // `categoryId` (e.g. a parent rebuild that swaps the query param
+    // without disposing the page). Without this, the user's earlier
+    // selection — or the original prefill — would silently override
+    // the updated route input on save.
+    if (oldWidget.categoryId != widget.categoryId) {
+      _categoryId = widget.categoryId;
+    }
+  }
+
+  @override
   void dispose() {
     _titleController.dispose();
     super.dispose();
@@ -118,10 +131,11 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
         );
 
         if (mounted) {
-          context.showToast(
-            tone: DesignSystemToastTone.success,
-            title: context.messages.saveSuccessful,
-          );
+          // The freshly-created project appears in the projects list
+          // immediately on pop (the list watches `projectsOverviewProvider`),
+          // which is enough confirmation on its own — a success SnackBar
+          // would have to push the list's FAB up to fit, and the
+          // motion read as more disruptive than informative.
           Navigator.of(context).pop();
         }
       } else if (mounted) {

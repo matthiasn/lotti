@@ -26,13 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `DesignSystemBottomNavigationBar.occupiedHeight`, so it docks above
   the pill on phones and remains flush at the bottom on desktop where
   the helper returns 0.
-- Toast notifications fired from inside the Projects tab now float
-  above the app shell's bottom navigation pill on mobile / narrow
-  widths instead of being clipped behind it. The Projects list scaffold
-  reserves a same-height transparent `bottomNavigationBar` slot and
-  is wrapped in a nested `ScaffoldMessenger`, mirroring the pattern
-  already in use on the task details page. On desktop the helper
-  returns 0 so the slot collapses and the layout stays unchanged.
+- Project create no longer publishes a "Saved successfully" toast on
+  the projects tab. The freshly-created project shows up in the list
+  immediately on pop (the list watches `projectsOverviewProvider`),
+  which is sufficient confirmation for a one-shot create flow — and
+  avoids the disruptive Material FAB lift that a floating SnackBar
+  would otherwise trigger on the projects list. Error toasts on the
+  create page itself are unchanged and still dock above the form's
+  bottom action bar.
 - Linked-entries activity log on a task now sorts entries by each
   entry's `dateFrom` instead of the link's own `createdAt`, so the
   "Newest first" / "Oldest first" toggle reflects the timestamps
