@@ -1,7 +1,90 @@
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/wake/wake_runner.dart';
+
+enum _GeneratedWakeRunnerOperationKind {
+  acquire,
+  release,
+  waitForCompletion,
+}
+
+enum _GeneratedWakeRunnerAgentSlot { first, second, third, fourth }
+
+final _generatedWakeRunnerBase = DateTime(2026, 5, 19, 9);
+
+String _generatedWakeRunnerAgentId(_GeneratedWakeRunnerAgentSlot slot) =>
+    'generated-runner-agent-${slot.name}';
+
+class _GeneratedWakeRunnerOperation {
+  const _GeneratedWakeRunnerOperation({
+    required this.kind,
+    required this.agentSlot,
+  });
+
+  final _GeneratedWakeRunnerOperationKind kind;
+  final _GeneratedWakeRunnerAgentSlot agentSlot;
+
+  String get agentId => _generatedWakeRunnerAgentId(agentSlot);
+
+  @override
+  String toString() {
+    return '_GeneratedWakeRunnerOperation('
+        'kind: $kind, agentSlot: $agentSlot)';
+  }
+}
+
+class _GeneratedWakeRunnerScenario {
+  const _GeneratedWakeRunnerScenario({required this.operations});
+
+  final List<_GeneratedWakeRunnerOperation> operations;
+
+  @override
+  String toString() {
+    return '_GeneratedWakeRunnerScenario(operations: $operations)';
+  }
+}
+
+class _GeneratedWakeRunnerWaiter {
+  _GeneratedWakeRunnerWaiter({
+    required this.agentId,
+    required this.actualCompleted,
+    required this.expectedCompleted,
+  });
+
+  final String agentId;
+  bool actualCompleted;
+  bool expectedCompleted;
+}
+
+extension _AnyGeneratedWakeRunnerScenario on glados.Any {
+  glados.Generator<_GeneratedWakeRunnerOperationKind>
+  get wakeRunnerOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedWakeRunnerOperationKind.values);
+
+  glados.Generator<_GeneratedWakeRunnerAgentSlot> get wakeRunnerAgentSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeRunnerAgentSlot.values);
+
+  glados.Generator<_GeneratedWakeRunnerOperation> get wakeRunnerOperation =>
+      glados.CombinableAny(this).combine2(
+        wakeRunnerOperationKind,
+        wakeRunnerAgentSlot,
+        (
+          _GeneratedWakeRunnerOperationKind kind,
+          _GeneratedWakeRunnerAgentSlot agentSlot,
+        ) => _GeneratedWakeRunnerOperation(kind: kind, agentSlot: agentSlot),
+      );
+
+  glados.Generator<_GeneratedWakeRunnerScenario> get wakeRunnerScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 45, wakeRunnerOperation)
+          .map(
+            (operations) => _GeneratedWakeRunnerScenario(
+              operations: operations,
+            ),
+          );
+}
 
 void main() {
   late WakeRunner runner;
@@ -11,6 +94,114 @@ void main() {
   });
 
   group('WakeRunner', () {
+    glados.Glados(
+      glados.any.wakeRunnerScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('matches generated single-flight operation semantics', (scenario) {
+      final generatedRunner = WakeRunner();
+      final expectedActive = <String, DateTime>{};
+      final expectedEmissions = <Set<String>>[];
+      final emissions = <Set<String>>[];
+      final waiters = <_GeneratedWakeRunnerWaiter>[];
+      var currentTick = 0;
+
+      withClock(
+        Clock(
+          () => _generatedWakeRunnerBase.add(Duration(seconds: currentTick)),
+        ),
+        () {
+          fakeAsync((async) {
+            generatedRunner.runningAgentIds.listen(emissions.add);
+
+            for (final (index, operation) in scenario.operations.indexed) {
+              currentTick = index;
+              final agentId = operation.agentId;
+
+              switch (operation.kind) {
+                case _GeneratedWakeRunnerOperationKind.acquire:
+                  late bool acquired;
+                  generatedRunner
+                      .tryAcquire(agentId)
+                      .then((value) => acquired = value);
+                  async.flushMicrotasks();
+
+                  final expectedAcquired = !expectedActive.containsKey(agentId);
+                  expect(acquired, expectedAcquired, reason: '$scenario');
+                  if (expectedAcquired) {
+                    expectedActive[agentId] = clock.now();
+                    expectedEmissions.add(expectedActive.keys.toSet());
+                  }
+
+                case _GeneratedWakeRunnerOperationKind.release:
+                  generatedRunner.release(agentId);
+                  expectedActive.remove(agentId);
+                  expectedEmissions.add(expectedActive.keys.toSet());
+                  waiters
+                      .where((waiter) => waiter.agentId == agentId)
+                      .forEach((waiter) => waiter.expectedCompleted = true);
+                  async.flushMicrotasks();
+
+                case _GeneratedWakeRunnerOperationKind.waitForCompletion:
+                  final waiter = _GeneratedWakeRunnerWaiter(
+                    agentId: agentId,
+                    actualCompleted: false,
+                    expectedCompleted: !expectedActive.containsKey(agentId),
+                  );
+                  generatedRunner.waitForCompletion(agentId).then((_) {
+                    waiter.actualCompleted = true;
+                  });
+                  async.flushMicrotasks();
+
+                  if (!expectedActive.containsKey(agentId)) {
+                    expect(
+                      waiter.actualCompleted,
+                      isTrue,
+                      reason: '$scenario',
+                    );
+                  } else {
+                    expect(
+                      waiter.actualCompleted,
+                      isFalse,
+                      reason: '$scenario',
+                    );
+                    waiters.add(waiter);
+                  }
+              }
+
+              expect(
+                generatedRunner.activeAgentIds,
+                expectedActive.keys.toSet(),
+                reason: '$scenario',
+              );
+              expect(
+                generatedRunner.activeStartedAtById,
+                expectedActive,
+                reason: '$scenario',
+              );
+              for (final slot in _GeneratedWakeRunnerAgentSlot.values) {
+                final id = _generatedWakeRunnerAgentId(slot);
+                expect(
+                  generatedRunner.startedAt(id),
+                  expectedActive[id],
+                  reason: '$scenario',
+                );
+              }
+              expect(emissions, expectedEmissions, reason: '$scenario');
+              for (final waiter in waiters) {
+                expect(
+                  waiter.actualCompleted,
+                  waiter.expectedCompleted,
+                  reason: '$scenario',
+                );
+              }
+            }
+
+            generatedRunner.dispose();
+          });
+        },
+      );
+    });
+
     group('tryAcquire', () {
       test('returns true and acquires lock when no run is active', () {
         fakeAsync((async) {
