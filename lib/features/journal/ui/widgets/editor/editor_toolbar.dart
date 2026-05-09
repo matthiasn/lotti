@@ -1,3 +1,4 @@
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 
 class ToolbarWidget extends ConsumerWidget {
   const ToolbarWidget({
@@ -32,10 +34,19 @@ class ToolbarWidget extends ConsumerWidget {
           afterButtonPressed: notifier.focusNode.requestFocus,
         );
 
+    // QuillSimpleToolbar paints its own Container background defaulting
+    // to Theme.canvasColor (near-black in our dark theme), which would
+    // sit on top of any Material color wrapping the toolbar. The entry
+    // card uses `surface.brighten()` (≈10pt lightness bump); brighten(15)
+    // sits a tad lighter than the card without jumping into mid-gray
+    // territory.
+    final toolbarColor = context.colorScheme.surface.brighten(15);
+
     final toolbarConfig = QuillSimpleToolbarConfig(
       toolbarSize: height,
       toolbarSectionSpacing: 0,
       toolbarIconAlignment: WrapAlignment.start,
+      color: toolbarColor,
       showUndo: false,
       showRedo: false,
       multiRowsDisplay: false,
@@ -62,6 +73,8 @@ class ToolbarWidget extends ConsumerWidget {
 
     final toolbar = Material(
       elevation: 1,
+      color: toolbarColor,
+      surfaceTintColor: Colors.transparent,
       child: QuillSimpleToolbar(
         controller: controller,
         config: toolbarConfig,

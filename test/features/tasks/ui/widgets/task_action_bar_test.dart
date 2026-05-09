@@ -475,7 +475,10 @@ void main() {
       final tokens = tester
           .element(find.byKey(TaskActionBar.audioKey))
           .designTokens;
-      expect(audioButtonFill(tester), tokens.colors.surface.hover);
+      expect(
+        audioButtonFill(tester),
+        tokens.colors.surface.focusPressed.withValues(alpha: 0.4),
+      );
       expect(
         audioButtonFill(tester),
         isNot(tokens.colors.alert.error.defaultColor),
@@ -491,7 +494,10 @@ void main() {
       final tokens = tester
           .element(find.byKey(TaskActionBar.audioKey))
           .designTokens;
-      expect(audioButtonFill(tester), tokens.colors.surface.hover);
+      expect(
+        audioButtonFill(tester),
+        tokens.colors.surface.focusPressed.withValues(alpha: 0.4),
+      );
     },
   );
 
