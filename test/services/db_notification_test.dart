@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/services/db_notification.dart';
 
 import '../test_utils/fake_time.dart';
@@ -67,6 +68,125 @@ class _TestHelpers {
       _TestConstants.testId2,
     ]);
   }
+}
+
+enum _GeneratedNotificationKind {
+  local,
+  sync,
+  uiOnly,
+  emptyLocal,
+  emptySync,
+  emptyUiOnly,
+}
+
+class _GeneratedNotificationOperation {
+  const _GeneratedNotificationOperation({
+    required this.kind,
+    required this.seed,
+  });
+
+  final _GeneratedNotificationKind kind;
+  final int seed;
+
+  bool get isLocal => kind == _GeneratedNotificationKind.local;
+
+  bool get isSync => kind == _GeneratedNotificationKind.sync;
+
+  bool get isUiOnly => kind == _GeneratedNotificationKind.uiOnly;
+
+  Set<String> get ids {
+    if (kind == _GeneratedNotificationKind.emptyLocal ||
+        kind == _GeneratedNotificationKind.emptySync ||
+        kind == _GeneratedNotificationKind.emptyUiOnly) {
+      return const {};
+    }
+
+    return {
+      'generated-${seed % 7}',
+      if (seed.isEven) 'generated-${(seed + 1) % 7}',
+    };
+  }
+
+  void apply(UpdateNotifications notifications) {
+    switch (kind) {
+      case _GeneratedNotificationKind.local:
+      case _GeneratedNotificationKind.emptyLocal:
+        notifications.notify(ids);
+      case _GeneratedNotificationKind.sync:
+      case _GeneratedNotificationKind.emptySync:
+        notifications.notify(ids, fromSync: true);
+      case _GeneratedNotificationKind.uiOnly:
+      case _GeneratedNotificationKind.emptyUiOnly:
+        notifications.notifyUiOnly(ids);
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedNotificationOperation(kind: $kind, ids: $ids)';
+  }
+}
+
+class _GeneratedNotificationScenario {
+  const _GeneratedNotificationScenario({required this.operations});
+
+  final List<_GeneratedNotificationOperation> operations;
+
+  Set<String> get localIds => _idsWhere((operation) => operation.isLocal);
+
+  Set<String> get syncIds => _idsWhere((operation) => operation.isSync);
+
+  Set<String> get uiOnlyIds => _idsWhere((operation) => operation.isUiOnly);
+
+  Set<String> get allIds => {...localIds, ...syncIds, ...uiOnlyIds};
+
+  int get expectedAllEmissionCount =>
+      (localIds.isEmpty ? 0 : 1) +
+      (syncIds.isEmpty ? 0 : 1) +
+      (uiOnlyIds.isEmpty ? 0 : 1);
+
+  int get expectedLocalEmissionCount => localIds.isEmpty ? 0 : 1;
+
+  Set<String> _idsWhere(
+    bool Function(_GeneratedNotificationOperation operation) predicate,
+  ) {
+    return {
+      for (final operation in operations)
+        if (predicate(operation)) ...operation.ids,
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedNotificationScenario(operations: $operations)';
+  }
+}
+
+extension _AnyGeneratedNotificationScenario on glados.Any {
+  glados.Generator<_GeneratedNotificationKind> get notificationKind =>
+      glados.AnyUtils(this).choose(_GeneratedNotificationKind.values);
+
+  glados.Generator<_GeneratedNotificationOperation> get notificationOperation =>
+      glados.CombinableAny(this).combine2(
+        notificationKind,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedNotificationKind kind,
+          int seed,
+        ) => _GeneratedNotificationOperation(
+          kind: kind,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedNotificationScenario> get notificationScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 12, notificationOperation)
+          .map(
+            (operations) => _GeneratedNotificationScenario(
+              operations: operations,
+            ),
+          );
 }
 
 void main() {
@@ -542,6 +662,64 @@ void main() {
           unawaited(subscription.cancel());
         });
       });
+
+      glados.Glados(
+        glados.any.notificationScenario,
+        glados.ExploreConfig(numRuns: 160),
+      ).test(
+        'batches generated local, sync, and UI-only notifications by stream',
+        (scenario) {
+          fakeAsync((async) {
+            final emittedAll = <Set<String>>[];
+            final emittedLocal = <Set<String>>[];
+
+            final allSubscription = updateNotifications.updateStream.listen(
+              emittedAll.add,
+            );
+            final localSubscription = updateNotifications.localUpdateStream
+                .listen(emittedLocal.add);
+
+            for (final operation in scenario.operations) {
+              operation.apply(updateNotifications);
+            }
+
+            async.elapseAndFlush(
+              const Duration(milliseconds: _TestConstants.regularTimerDelay),
+            );
+            async.elapseAndFlush(
+              const Duration(
+                milliseconds:
+                    _TestConstants.syncTimerDelay -
+                    _TestConstants.regularTimerDelay,
+              ),
+            );
+
+            expect(
+              emittedAll.length,
+              scenario.expectedAllEmissionCount,
+              reason: '$scenario',
+            );
+            expect(
+              emittedAll.expand((ids) => ids).toSet(),
+              scenario.allIds,
+              reason: '$scenario',
+            );
+            expect(
+              emittedLocal.length,
+              scenario.expectedLocalEmissionCount,
+              reason: '$scenario',
+            );
+            expect(
+              emittedLocal.expand((ids) => ids).toSet(),
+              scenario.localIds,
+              reason: '$scenario',
+            );
+
+            unawaited(allSubscription.cancel());
+            unawaited(localSubscription.cancel());
+          });
+        },
+      );
 
       test('should handle complex notification patterns', () {
         fakeAsync((async) {
