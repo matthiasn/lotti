@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:matrix/matrix.dart';
@@ -19,6 +20,115 @@ class MockEvent extends Mock implements Event {}
 class MockRoomSummary extends Mock implements RoomSummary {}
 
 class MockStrippedStateEvent extends Mock implements StrippedStateEvent {}
+
+class _GeneratedRoomDiscoveryCase {
+  const _GeneratedRoomDiscoveryCase({
+    required this.encrypted,
+    required this.publicRoom,
+    required this.hasStateMarker,
+    required this.hasLottiContent,
+    required this.hasName,
+    required this.createdAtSlot,
+    required this.memberCountSlot,
+  });
+
+  final bool encrypted;
+  final bool publicRoom;
+  final bool hasStateMarker;
+  final bool hasLottiContent;
+  final bool hasName;
+  final int createdAtSlot;
+  final int memberCountSlot;
+
+  bool get included =>
+      encrypted && !publicRoom && (hasStateMarker || hasLottiContent);
+
+  int get confidence {
+    var score = 0;
+    if (hasStateMarker) score += 10;
+    if (hasLottiContent) score += 5;
+    return score;
+  }
+
+  int? get memberCount => memberCountSlot == 0 ? null : memberCountSlot;
+
+  int get expectedMemberCount => memberCount ?? 1;
+
+  JoinRules get joinRules => publicRoom ? JoinRules.public : JoinRules.invite;
+
+  String nameAt(int index) => hasName ? 'Generated room $index' : '';
+
+  DateTime? createdAtAt(int index) {
+    if (createdAtSlot == 0) return null;
+    return DateTime.utc(2024).add(
+      Duration(days: createdAtSlot + index * 10),
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedRoomDiscoveryCase('
+        'encrypted: $encrypted, '
+        'publicRoom: $publicRoom, '
+        'hasStateMarker: $hasStateMarker, '
+        'hasLottiContent: $hasLottiContent, '
+        'hasName: $hasName, '
+        'createdAtSlot: $createdAtSlot, '
+        'memberCountSlot: $memberCountSlot'
+        ')';
+  }
+}
+
+class _GeneratedRoomDiscoveryScenario {
+  const _GeneratedRoomDiscoveryScenario(this.rooms);
+
+  final List<_GeneratedRoomDiscoveryCase> rooms;
+
+  String roomIdAt(int index) => '!generated-$index:server';
+
+  Set<String> get expectedRoomIds => {
+    for (var i = 0; i < rooms.length; i++)
+      if (rooms[i].included) roomIdAt(i),
+  };
+
+  @override
+  String toString() => '_GeneratedRoomDiscoveryScenario($rooms)';
+}
+
+extension _AnyGeneratedRoomDiscoveryScenario on glados.Any {
+  glados.Generator<_GeneratedRoomDiscoveryCase> get roomDiscoveryCase =>
+      glados.CombinableAny(this).combine7(
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(0, 6),
+        glados.IntAnys(this).intInRange(0, 5),
+        (
+          bool encrypted,
+          bool publicRoom,
+          bool hasStateMarker,
+          bool hasLottiContent,
+          bool hasName,
+          int createdAtSlot,
+          int memberCountSlot,
+        ) => _GeneratedRoomDiscoveryCase(
+          encrypted: encrypted,
+          publicRoom: publicRoom,
+          hasStateMarker: hasStateMarker,
+          hasLottiContent: hasLottiContent,
+          hasName: hasName,
+          createdAtSlot: createdAtSlot,
+          memberCountSlot: memberCountSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedRoomDiscoveryScenario> get roomDiscoveryScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(1, 13, roomDiscoveryCase)
+          .map(_GeneratedRoomDiscoveryScenario.new);
+}
 
 void main() {
   late MockLoggingService loggingService;
@@ -164,6 +274,78 @@ void main() {
 
       expect(results, isEmpty);
     });
+
+    glados.Glados(
+      glados.any.roomDiscoveryScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'generated room discovery filters candidates and preserves sort order',
+      (scenario) async {
+        final client = MockClient();
+        final casesByRoomId = <String, _GeneratedRoomDiscoveryCase>{};
+        final rooms = <Room>[];
+
+        for (var i = 0; i < scenario.rooms.length; i++) {
+          final roomCase = scenario.rooms[i];
+          final roomId = scenario.roomIdAt(i);
+          casesByRoomId[roomId] = roomCase;
+          rooms.add(
+            _createMockRoom(
+              id: roomId,
+              name: roomCase.nameAt(i),
+              encrypted: roomCase.encrypted,
+              joinRules: roomCase.joinRules,
+              hasLottiStateMarker: roomCase.hasStateMarker,
+              hasLottiContent: roomCase.hasLottiContent,
+              createdAt: roomCase.createdAtAt(i),
+              memberCount: roomCase.memberCount,
+            ),
+          );
+        }
+        when(() => client.rooms).thenReturn(rooms);
+
+        final results = await service.discoverSyncRooms(client);
+
+        expect(
+          results.map((candidate) => candidate.roomId).toSet(),
+          scenario.expectedRoomIds,
+          reason: '$scenario',
+        );
+        for (final candidate in results) {
+          final roomCase = casesByRoomId[candidate.roomId]!;
+          expect(candidate.confidence, roomCase.confidence);
+          expect(candidate.hasStateMarker, roomCase.hasStateMarker);
+          expect(candidate.hasLottiContent, roomCase.hasLottiContent);
+          expect(candidate.memberCount, roomCase.expectedMemberCount);
+          expect(
+            candidate.roomName,
+            roomCase.hasName ? startsWith('Generated room') : isNull,
+          );
+        }
+        for (var i = 1; i < results.length; i++) {
+          final previous = results[i - 1];
+          final current = results[i];
+          expect(
+            previous.confidence,
+            greaterThanOrEqualTo(current.confidence),
+            reason: '$scenario',
+          );
+          if (previous.confidence == current.confidence) {
+            final previousCreated = previous.createdAt;
+            final currentCreated = current.createdAt;
+            if (previousCreated == null) {
+              expect(currentCreated, isNull, reason: '$scenario');
+            } else if (currentCreated != null) {
+              expect(
+                previousCreated.isBefore(currentCreated),
+                isFalse,
+                reason: '$scenario',
+              );
+            }
+          }
+        }
+      },
+    );
 
     test('includes rooms with Lotti state marker', () async {
       final client = MockClient();
