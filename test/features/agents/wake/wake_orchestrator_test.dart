@@ -4721,8 +4721,8 @@ void main() {
             fakeAsync((async) {
               final gate = Completer<Map<String, VectorClock>?>();
               orchestrator
-                ..wakeExecutor =
-                    ((agentId, runKey, triggers, threadId) => gate.future)
+                ..wakeExecutor = ((agentId, runKey, triggers, threadId) =>
+                    gate.future)
                 ..addSubscription(
                   makeSub(matchEntityIds: {'task-postexec'}),
                 );

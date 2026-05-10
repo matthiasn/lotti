@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -177,10 +178,29 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
     );
   }
 
-  /// Tracking-state stop-button handler: stops the live timer. Only
+  /// Tracking-state stop-button handler: persists the running timer's
+  /// `dateTo` as the moment of the tap, then stops the live timer. Only
   /// fires when the inset stop circle is tapped, never when the
   /// surrounding pill body is tapped.
-  Future<void> _onStopTimer() => _timeService.stop();
+  ///
+  /// Routing through `EntryController.save(stopRecording: true)` keeps
+  /// the action-bar stop path in lockstep with the entry-editor stop
+  /// button (`duration_widget.dart`): the controller writes
+  /// `dateTo: DateTime.now()` and then calls `TimeService.stop()` after
+  /// `stopRecordingDelay`. Calling `_timeService.stop()` here directly
+  /// would clear in-memory state without persisting, leaving the DB row
+  /// at whatever `dateTo` was last written and shaving the trailing
+  /// minute or two off the recorded session.
+  Future<void> _onStopTimer() async {
+    final running = _running ?? _timeService.getCurrent();
+    if (running == null) {
+      await _timeService.stop();
+      return;
+    }
+    await ref
+        .read(entryControllerProvider(id: running.meta.id).notifier)
+        .save(stopRecording: true);
+  }
 
   Future<void> _onChecklistPressed() async {
     await ref

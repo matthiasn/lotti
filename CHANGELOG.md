@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.998]
 ### Fixed
+- The Task action bar's inset stop circle now persists the running
+  timer entry's `dateTo` to `DateTime.now()` before the timer service
+  is cleared, instead of only clearing in-memory state. Previously
+  `_onStopTimer` called `TimeService.stop()` directly, which left
+  whatever `dateTo` was last written on disk — typically minutes
+  behind the actual stop tap — so the recorded session was short by
+  the elapsed-but-unsaved tail. The handler now routes through
+  `EntryController.save(stopRecording: true)` for the running timer
+  entry, mirroring the entry-editor stop button.
 - The Projects tab "+" FAB now opens the project create page directly
   inside the Projects tab via `/projects/create` instead of beaming
   through `/settings/projects/create`. On desktop the old route landed
