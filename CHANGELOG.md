@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.998]
+### Fixed
+- Tasks Filter sticky footer no longer renders the Clear all / Save
+  pills as floating text labels on dark mode. The button's inner box
+  was 44 tall while its slot enforced a 56 minimum, so under the
+  glass-blur footer the painted pill drifted out of alignment with
+  the centered text and at low alpha against the dark sheet the
+  silhouette washed out entirely. Both heights now share a single
+  `DesignSystemFilterMetrics.actionMinHeight` token and the
+  non-highlighted variant carries a 1 px border so the pill stays
+  visible against the gradient overlay; Apply keeps its solid
+  accent.
+
 ### Added
 - Sync conflict resolution screen rebuilt as an inline-diff picker.
   Tapping a conflict row now opens a dedicated page with a back chip

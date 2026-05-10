@@ -1019,10 +1019,14 @@ class _DesignSystemTaskFilterActionBarState
 /// Footer-bar button slot widths from the Figma "Apply filter" footer
 /// frame. Treated as minimums so long localized labels can grow past
 /// the spec — the visual match holds for English / German / French.
+/// Slot height is shared with the button itself via
+/// `DesignSystemFilterMetrics.actionMinHeight` so the painted pill,
+/// hit area, and slot all agree.
 const double _kClearButtonMinWidth = 115;
 const double _kSaveButtonMinWidth = 115;
 const double _kApplyButtonMinWidth = 159;
-const double _kFooterButtonMinHeight = 56;
+const double _kFooterButtonMinHeight =
+    DesignSystemFilterMetrics.actionMinHeight;
 
 /// Backdrop blur strength for the glass footer. Sits at the top of the
 /// codebase's existing glass-surface range (10–20) since this surface is
