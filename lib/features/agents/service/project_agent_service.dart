@@ -196,6 +196,21 @@ class ProjectAgentService {
     );
   }
 
+  /// Cancel a scheduled wake for [agentId].
+  ///
+  /// Clears the throttle deadline, cancels the deferred drain timer, and
+  /// removes any queued subscription jobs — so no automatic wake will fire.
+  /// Mirrors `TaskAgentService.cancelScheduledWake` so the project AI Report
+  /// header's cancel × has the same semantics as the task AI summary one.
+  void cancelScheduledWake(String agentId) {
+    domainLogger?.log(
+      LogDomains.agentRuntime,
+      'scheduled wake cancelled for ${DomainLogger.sanitizeId(agentId)}',
+      subDomain: 'lifecycle',
+    );
+    agentService.cancelPendingWake(agentId);
+  }
+
   /// Restore project-agent runtime state after app startup.
   ///
   /// Project agents restore short-delay subscriptions for direct project edits

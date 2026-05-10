@@ -99,6 +99,10 @@ enum WakeRunStatus {
 
   /// The wake was found in `running` state on startup (orphaned).
   abandoned,
+
+  /// The wake was aborted — either by the user (cancel button) or by the
+  /// global per-cycle timeout (wakeRunMaxDuration).
+  aborted,
 }
 
 /// Reason a wake was triggered.

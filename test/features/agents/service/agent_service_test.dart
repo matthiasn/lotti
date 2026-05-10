@@ -579,6 +579,39 @@ void main() {
       });
     });
 
+    group('abortRunningWake', () {
+      test(
+        'returns true when the orchestrator signals an in-flight run',
+        () {
+          when(
+            () => mockOrchestrator.abortRunningWake('agent-1'),
+          ).thenReturn(true);
+
+          final aborted = service.abortRunningWake('agent-1');
+
+          expect(aborted, isTrue);
+          verify(() => mockOrchestrator.abortRunningWake('agent-1')).called(1);
+        },
+      );
+
+      test(
+        'returns false when the agent is not currently running '
+        '(orchestrator returns false on a no-op abort)',
+        () {
+          when(
+            () => mockOrchestrator.abortRunningWake('agent-cold'),
+          ).thenReturn(false);
+
+          final aborted = service.abortRunningWake('agent-cold');
+
+          expect(aborted, isFalse);
+          verify(
+            () => mockOrchestrator.abortRunningWake('agent-cold'),
+          ).called(1);
+        },
+      );
+    });
+
     group('clearScheduledWake', () {
       test('persists state with scheduledWakeAt cleared', () async {
         final state = makeTestState(

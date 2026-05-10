@@ -141,6 +141,14 @@ class AgentService {
     orchestrator.queue.removeByAgent(agentId);
   }
 
+  /// Abort the in-flight wake for [agentId], if any.
+  ///
+  /// Returns `true` when an active run was signalled to abort. The runner
+  /// lock is released by the orchestrator after the abort is observed and
+  /// the wake-run row is marked `aborted`.
+  bool abortRunningWake(String agentId) =>
+      orchestrator.abortRunningWake(agentId);
+
   /// Remove a persisted scheduled wake from the agent state.
   Future<void> clearScheduledWake(String agentId) async {
     final state = await repository.getAgentState(agentId);

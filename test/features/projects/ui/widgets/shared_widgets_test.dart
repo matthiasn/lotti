@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -656,6 +657,103 @@ Longer report content.
         expect(find.text('0:30'), findsNothing);
       });
     });
+
+    testWidgets(
+      'cancel × is rendered next to the countdown pill when '
+      'onCancelScheduledWake is provided and tapping it fires the callback',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+        var cancelCount = 0;
+
+        await withClock(Clock.fixed(start), () async {
+          await tester.pumpWidget(
+            wrap(
+              ExpandableReportSection(
+                title: 'AI Report',
+                body: 'TLDR only.',
+                fullContent: 'TLDR only.',
+                recommendations: const [],
+                nextWakeAt: start.add(const Duration(seconds: 90)),
+                onRefresh: () {},
+                onCancelScheduledWake: () => cancelCount++,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          // Sanity: countdown pill renders the remaining time.
+          expect(find.text('1:30'), findsOneWidget);
+
+          final element = tester.element(find.byType(ExpandableReportSection));
+          await tester.tap(
+            find.byTooltip(element.messages.taskAgentCancelTimerTooltip),
+          );
+          await tester.pump();
+
+          expect(cancelCount, 1);
+        });
+      },
+    );
+
+    testWidgets(
+      'cancel × is hidden while isRefreshing is true',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+
+        await withClock(Clock.fixed(start), () async {
+          await tester.pumpWidget(
+            wrap(
+              ExpandableReportSection(
+                title: 'AI Report',
+                body: 'TLDR only.',
+                fullContent: 'TLDR only.',
+                recommendations: const [],
+                nextWakeAt: start.add(const Duration(seconds: 30)),
+                onRefresh: () {},
+                onCancelScheduledWake: () {},
+                isRefreshing: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final element = tester.element(find.byType(ExpandableReportSection));
+          expect(
+            find.byTooltip(element.messages.taskAgentCancelTimerTooltip),
+            findsNothing,
+          );
+        });
+      },
+    );
+
+    testWidgets(
+      'cancel × is hidden when onCancelScheduledWake is omitted',
+      (tester) async {
+        final start = DateTime(2024, 3, 15, 12);
+
+        await withClock(Clock.fixed(start), () async {
+          await tester.pumpWidget(
+            wrap(
+              ExpandableReportSection(
+                title: 'AI Report',
+                body: 'TLDR only.',
+                fullContent: 'TLDR only.',
+                recommendations: const [],
+                nextWakeAt: start.add(const Duration(seconds: 30)),
+                onRefresh: () {},
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final element = tester.element(find.byType(ExpandableReportSection));
+          expect(
+            find.byTooltip(element.messages.taskAgentCancelTimerTooltip),
+            findsNothing,
+          );
+        });
+      },
+    );
 
     testWidgets(
       'countdown pill hides itself once nextWakeAt has already passed',

@@ -12,6 +12,7 @@ import 'package:clock/clock.dart';
 class WakeRunner {
   final _activeLocks = <String, Completer<void>>{};
   final _activeStartedAt = <String, DateTime>{};
+  final _abortSignals = <String, Completer<void>>{};
   late final UnmodifiableMapView<String, DateTime> _activeStartedAtView =
       UnmodifiableMapView(_activeStartedAt);
   final _runningController = StreamController<Set<String>>.broadcast();
@@ -29,6 +30,7 @@ class WakeRunner {
   Future<bool> tryAcquire(String agentId) async {
     if (_activeLocks.containsKey(agentId)) return false;
     _activeLocks[agentId] = Completer<void>();
+    _abortSignals[agentId] = Completer<void>();
     _activeStartedAt[agentId] = clock.now();
     _runningController.add(activeAgentIds);
     return true;
@@ -44,8 +46,37 @@ class WakeRunner {
 
     lock.complete();
     _activeStartedAt.remove(agentId);
+    final abort = _abortSignals.remove(agentId);
+    if (abort != null && !abort.isCompleted) abort.complete();
     _runningController.add(activeAgentIds);
   }
+
+  /// Signal an abort for the in-flight run for [agentId].
+  ///
+  /// Returns `true` when an active run was signalled, `false` when the agent
+  /// is not currently running (or was already aborted). The actual lock is
+  /// released by the orchestrator after it observes the abort signal and
+  /// finalises the wake-run status.
+  bool abort(String agentId) {
+    final abort = _abortSignals[agentId];
+    if (abort == null || abort.isCompleted) return false;
+    abort.complete();
+    return true;
+  }
+
+  /// Future that completes when [agentId]'s in-flight run ends — either
+  /// because [abort] was signalled or because [release] finalised the run
+  /// without an abort. Both paths complete the same completer so a caller
+  /// awaiting this future never deadlocks on a quiet release.
+  ///
+  /// Consumers that need to distinguish the two outcomes (e.g. the
+  /// orchestrator deciding whether to mark the run `aborted` vs
+  /// `completed`) must use a separate signal — the orchestrator races this
+  /// against the executor future and tags the abort branch with a sentinel
+  /// so a normal release-on-success doesn't misclassify the run.
+  ///
+  /// Returns `null` when the agent is not currently running.
+  Future<void>? abortFuture(String agentId) => _abortSignals[agentId]?.future;
 
   /// Suspend until the currently active run for [agentId] finishes.
   ///

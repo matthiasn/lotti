@@ -635,6 +635,230 @@ void main() {
   );
 
   testWidgets(
+    'tapping the trailing × on an ongoing wake calls abortRunningWake on '
+    'the agent service',
+    (tester) async {
+      final agentService = MockAgentService();
+      when(() => agentService.abortRunningWake(any())).thenReturn(true);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            const [],
+            agentService: agentService,
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Refine sidebar',
+                startedAt: fixedNow.subtract(const Duration(seconds: 5)),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      await tester.tap(
+        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+      );
+      await tester.pump();
+
+      verify(() => agentService.abortRunningWake('agent-running')).called(1);
+      verifyNever(() => agentService.cancelPendingWake(any()));
+      verifyNever(() => agentService.clearScheduledWake(any()));
+    },
+  );
+
+  testWidgets(
+    'when abortRunningWake returns false (agent already stopped) the row '
+    'leaves the × in place — covers the `didSignal == false` branch where '
+    'no spinner should appear because there is nothing in flight',
+    (tester) async {
+      final agentService = MockAgentService();
+      when(() => agentService.abortRunningWake(any())).thenReturn(false);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            const [],
+            agentService: agentService,
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-already-stopped',
+                title: 'Idle row',
+                startedAt: fixedNow,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      final cancelTooltip = element.messages.sidebarWakesCancelTooltip;
+
+      await tester.tap(find.byTooltip(cancelTooltip));
+      await tester.pump();
+
+      verify(
+        () => agentService.abortRunningWake('agent-already-stopped'),
+      ).called(1);
+
+      // didSignal=false → _cancelling stays false → no spinner, the ×
+      // remains tappable so the user can retry once the running-set
+      // stream catches up.
+      expect(find.byTooltip(cancelTooltip), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'after the × is tapped on an ongoing wake the row swaps the cancel '
+    'button for an in-progress spinner, so the user gets feedback while '
+    'the abort is in flight and a rapid second tap on the same widget '
+    'cannot fire a second abort before the orchestrator releases the lock',
+    (tester) async {
+      final agentService = MockAgentService();
+      when(() => agentService.abortRunningWake(any())).thenReturn(true);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            const [],
+            agentService: agentService,
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Stuck wake',
+                startedAt: fixedNow,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      final cancelTooltip = element.messages.sidebarWakesCancelTooltip;
+
+      // First tap fires abort + flips _cancelling → spinner replaces ×.
+      await tester.tap(find.byTooltip(cancelTooltip));
+      await tester.pump();
+
+      verify(() => agentService.abortRunningWake('agent-running')).called(1);
+
+      // The cancel × is gone (replaced by the spinner), so any further
+      // taps on the cancel control are physically impossible until the
+      // running-set stream emits and the row is rebuilt or torn down.
+      // Belt-and-braces: try to tap the tooltip and verify nothing
+      // additional reaches the service.
+      expect(find.byTooltip(cancelTooltip), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      verifyNoMoreInteractions(agentService);
+    },
+  );
+
+  testWidgets(
+    'ongoing-wake row updates its title live when '
+    'pendingWakeTargetTitleProvider re-emits — covers the rename '
+    'staleness case where renaming the task left the WAKES widget '
+    'showing the old title until the agent stopped',
+    (tester) async {
+      final startedAt = fixedNow.subtract(const Duration(seconds: 4));
+      final controller = StreamController<String?>();
+      addTearDown(controller.close);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SidebarWakeQueue(),
+            theme: DesignSystemTheme.dark(),
+            overrides: [
+              pendingWakeRecordsProvider.overrideWith(
+                (ref) async => const <PendingWakeRecord>[],
+              ),
+              ongoingWakeRecordsProvider.overrideWith(
+                (ref) async => [
+                  OngoingWakeRecord(
+                    agentId: 'agent-rename',
+                    title: 'snapshot fallback',
+                    subjectId: 'task-rename',
+                    startedAt: startedAt,
+                  ),
+                ],
+              ),
+              pendingWakeTargetTitleProvider(
+                'task-rename',
+              ).overrideWith((ref) => controller.stream.first),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        controller.add('GLaDOS');
+        await tester.pump();
+        expect(find.text('GLaDOS'), findsOneWidget);
+        expect(find.text('snapshot fallback'), findsNothing);
+      });
+    },
+  );
+
+  testWidgets(
+    'ongoing-wake row falls back to record.title when '
+    'pendingWakeTargetTitleProvider yields null or empty — covers both '
+    'the production "no usable title" path (provider returns null) and '
+    'the defence-in-depth check the widget keeps in case a provider '
+    'override slips through with a trimmed-to-empty value',
+    (tester) async {
+      final startedAt = fixedNow.subtract(const Duration(seconds: 4));
+
+      Future<void> pumpWithProviderResult(FutureOr<String?> result) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              const SidebarWakeQueue(),
+              theme: DesignSystemTheme.dark(),
+              overrides: [
+                pendingWakeRecordsProvider.overrideWith(
+                  (ref) async => const <PendingWakeRecord>[],
+                ),
+                ongoingWakeRecordsProvider.overrideWith(
+                  (ref) async => [
+                    OngoingWakeRecord(
+                      agentId: 'agent-stale',
+                      title: 'agent-stale',
+                      subjectId: 'task-blank',
+                      startedAt: startedAt,
+                    ),
+                  ],
+                ),
+                pendingWakeTargetTitleProvider(
+                  'task-blank',
+                ).overrideWith((ref) async => result),
+              ],
+            ),
+          );
+          await tester.pump();
+        });
+      }
+
+      // 1. Provider returns null — the production case: empty/whitespace
+      // titles are normalised to null inside pendingWakeTargetTitleProvider.
+      await pumpWithProviderResult(null);
+      expect(find.text('agent-stale'), findsOneWidget);
+
+      // 2. Provider returns an empty string — the widget's own
+      // `liveSubjectTitle.isNotEmpty` guard must still fall through to the
+      // snapshot fallback even if a future change to the provider lets an
+      // empty string escape its trim/normalise path.
+      await pumpWithProviderResult('');
+      expect(find.text('agent-stale'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     "tapping an ongoing wake routes to that agent's instance page",
     (tester) async {
       String? captured;

@@ -176,14 +176,45 @@ class _Header extends StatelessWidget {
 /// task / project title. Driven by the page-scoped 1Hz
 /// [wakeCountdownTickerProvider] — one timer feeds every row across
 /// the app, so the sidebar's ongoing block doesn't allocate its own.
-class _OngoingWakeRow extends ConsumerWidget {
+///
+/// The trailing cancel button signals the orchestrator's abort hook so a
+/// stuck wake cycle can be unstuck without restarting the app. The runner
+/// observes the abort, marks the wake-run row as `aborted`, and releases
+/// the lock; the underlying executor future is left to settle on its own.
+class _OngoingWakeRow extends ConsumerStatefulWidget {
   const _OngoingWakeRow({required this.record});
 
   final OngoingWakeRecord record;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_OngoingWakeRow> createState() => _OngoingWakeRowState();
+}
+
+class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
+  bool _cancelling = false;
+
+  Future<void> _abortWake() async {
+    if (_cancelling) return;
+    // `abortRunningWake` is synchronous, so a finally that resets
+    // `_cancelling` would clear the spinner state in the same stack frame —
+    // the user would never see the indicator and the early-return guard
+    // above would not actually persist across rapid double taps. Once the
+    // abort signal is delivered, the orchestrator releases the runner lock
+    // and the row falls out of `ongoingWakeRecordsProvider`, which tears
+    // this widget down. While that's in flight we keep `_cancelling` set
+    // so the trailing × is replaced by the in-progress spinner.
+    final didSignal = ref
+        .read(agentServiceProvider)
+        .abortRunningWake(widget.record.agentId);
+    if (mounted && didSignal) {
+      setState(() => _cancelling = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final record = widget.record;
     final accent = tokens.colors.alert.success.defaultColor;
     final titleStyle = AppFonts.inconsolata(
       fontSize: 11,
@@ -203,38 +234,62 @@ class _OngoingWakeRow extends ConsumerWidget {
       }),
     );
 
-    return InkWell(
-      onTap: () => _navigateToAgentRoute(agentInstanceRoute(record.agentId)),
-      borderRadius: BorderRadius.circular(tokens.radii.xs),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step2,
-          vertical: tokens.spacing.step1,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: accent,
-                shape: BoxShape.circle,
+    // Live title: re-watch the linked task/project title so a rename
+    // refreshes the row without waiting for the agent to stop and
+    // restart. Falls back to the snapshot title on the record (which
+    // already encodes the agent.displayName / agentId fallback) when
+    // the provider has no usable title.
+    final liveSubjectTitle = record.subjectId == null
+        ? null
+        : ref
+              .watch(pendingWakeTargetTitleProvider(record.subjectId))
+              .value
+              ?.trim();
+    final title = liveSubjectTitle != null && liveSubjectTitle.isNotEmpty
+        ? liveSubjectTitle
+        : record.title;
+
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            onTap: () => _navigateToAgentRoute(
+              agentInstanceRoute(record.agentId),
+            ),
+            borderRadius: BorderRadius.circular(tokens.radii.xs),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step2,
+                vertical: tokens.spacing.step1,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: titleStyle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Text(elapsed, style: durationStyle),
+                ],
               ),
             ),
-            SizedBox(width: tokens.spacing.step2),
-            Expanded(
-              child: Text(
-                record.title,
-                style: titleStyle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Text(elapsed, style: durationStyle),
-          ],
+          ),
         ),
-      ),
+        _CancelWakeButton(onPressed: _abortWake, cancelling: _cancelling),
+      ],
     );
   }
 }
