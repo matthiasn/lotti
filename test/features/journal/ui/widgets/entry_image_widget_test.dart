@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
@@ -74,11 +73,10 @@ void main() {
     });
 
     Widget makeSubject(JournalImage image) {
-      return ProviderScope(
+      return makeTestableWidget(
+        EntryImageWidget(image),
         overrides: [createEntryControllerOverride(image)],
-        child: MaterialApp(
-          home: Scaffold(body: EntryImageWidget(image)),
-        ),
+        mediaQueryData: phoneMediaQueryData.copyWith(devicePixelRatio: 3),
       );
     }
 

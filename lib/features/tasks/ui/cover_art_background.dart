@@ -62,6 +62,9 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
               File(path),
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
+              cacheWidth: constraints.hasBoundedWidth
+                  ? (constraints.maxWidth * devicePixelRatio).round()
+                  : null,
               cacheHeight: constraints.hasBoundedHeight
                   ? (constraints.maxHeight * devicePixelRatio).round()
                   : null,

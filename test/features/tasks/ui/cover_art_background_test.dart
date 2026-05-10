@@ -86,57 +86,54 @@ void main() {
         }
       });
 
+      Widget buildSubject(
+        JournalImage image, {
+        double height = 100,
+        double width = 100,
+      }) {
+        // Align gives the SizedBox loose constraints so it keeps its
+        // specified dimensions, and the SizedBox bounds CoverArtBackground's
+        // Stack(StackFit.expand) — without explicit bounds, the surrounding
+        // SingleChildScrollView would leave the Stack with an unbounded
+        // vertical constraint.
+        return makeTestableWidget(
+          Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              height: height,
+              width: width,
+              child: CoverArtBackground(imageId: image.meta.id),
+            ),
+          ),
+          overrides: [createEntryControllerOverride(image)],
+          mediaQueryData: phoneMediaQueryData.copyWith(devicePixelRatio: 3),
+        );
+      }
+
       testWidgets('errorBuilder triggers when image file is invalid', (
         tester,
       ) async {
         final image = buildJournalImage();
         final filePath = createInvalidImageFile(image);
 
-        // Verify file exists before test
         expect(File(filePath).existsSync(), isTrue);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtBackground(imageId: 'image-1'),
-              ),
-            ),
-          ),
-        );
-
-        // Pump multiple times to allow error handling
+        await tester.pumpWidget(buildSubject(image));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
 
-        // The errorBuilder should have triggered and returned SizedBox.shrink
-        // The widget tree should still contain the CoverArtBackground
         expect(find.byType(CoverArtBackground), findsOneWidget);
       });
 
       testWidgets(
-        'renders Image.file with a positive LayoutBuilder-derived cacheHeight',
+        'renders Image.file with LayoutBuilder-derived cacheWidth/cacheHeight',
         (tester) async {
           final image = buildJournalImage();
           createInvalidImageFile(image);
 
           await tester.pumpWidget(
-            ProviderScope(
-              overrides: [createEntryControllerOverride(image)],
-              child: const MaterialApp(
-                home: Scaffold(
-                  body: SizedBox(
-                    height: 240,
-                    width: 360,
-                    child: CoverArtBackground(imageId: 'image-1'),
-                  ),
-                ),
-              ),
-            ),
+            buildSubject(image, height: 240, width: 360),
           );
           await tester.pump();
 
@@ -144,11 +141,11 @@ void main() {
           expect(imageWidget.fit, BoxFit.cover);
           expect(imageWidget.errorBuilder, isNotNull);
 
-          // The cacheHeight cap is applied by ResizeImage wrapping FileImage,
-          // sized from `constraints.maxHeight * 3` inside the LayoutBuilder.
-          // 240 logical px × 3 = 720 physical px ceiling on decoded bitmap.
+          // Both axes are capped: maxWidth × DPR and maxHeight × DPR.
+          // 360 × 3 = 1080 width; 240 × 3 = 720 height.
           expect(imageWidget.image, isA<ResizeImage>());
           final resize = imageWidget.image as ResizeImage;
+          expect(resize.width, 1080);
           expect(resize.height, 720);
           expect(resize.imageProvider, isA<FileImage>());
         },
@@ -161,18 +158,7 @@ void main() {
           createInvalidImageFile(image);
 
           await tester.pumpWidget(
-            ProviderScope(
-              overrides: [createEntryControllerOverride(image)],
-              child: const MaterialApp(
-                home: Scaffold(
-                  body: SizedBox(
-                    height: 200,
-                    width: 320,
-                    child: CoverArtBackground(imageId: 'image-1'),
-                  ),
-                ),
-              ),
-            ),
+            buildSubject(image, height: 200, width: 320),
           );
           await tester.pump();
 
