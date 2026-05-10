@@ -601,6 +601,377 @@ extension _AnyGeneratedChecklistUpdateScenario on glados.Any {
   );
 }
 
+enum _GeneratedBuildItemSlot {
+  titleA,
+  titleB,
+  estimateA,
+  estimateB,
+  statusOpen,
+  statusDone,
+  nestedA,
+  nestedB,
+}
+
+enum _GeneratedBuildSetSlot { alpha, beta, gamma }
+
+enum _GeneratedBuildStatusSlot {
+  pending,
+  confirmed,
+  rejected,
+  deferred,
+  retracted,
+}
+
+class _GeneratedBuildExistingItemSpec {
+  const _GeneratedBuildExistingItemSpec({
+    required this.itemSlot,
+    required this.staleStatus,
+    required this.freshStatus,
+  });
+
+  final _GeneratedBuildItemSlot itemSlot;
+  final _GeneratedBuildStatusSlot staleStatus;
+  final _GeneratedBuildStatusSlot freshStatus;
+
+  ChangeItem get staleItem => _generatedBuildItem(
+    itemSlot,
+    status: _generatedBuildStatus(staleStatus),
+  );
+
+  ChangeItem get freshItem => _generatedBuildItem(
+    itemSlot,
+    status: _generatedBuildStatus(freshStatus),
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedBuildExistingItemSpec('
+        'itemSlot: $itemSlot, '
+        'staleStatus: $staleStatus, '
+        'freshStatus: $freshStatus)';
+  }
+}
+
+class _GeneratedBuildExistingSetSpec {
+  const _GeneratedBuildExistingSetSpec({
+    required this.setSlot,
+    required this.included,
+    required this.createdAtOffset,
+    required this.returnsFresh,
+    required this.items,
+  });
+
+  final _GeneratedBuildSetSlot setSlot;
+  final bool included;
+  final int createdAtOffset;
+  final bool returnsFresh;
+  final List<_GeneratedBuildExistingItemSpec> items;
+
+  String get id => 'generated-build-set-${setSlot.name}';
+
+  DateTime get createdAt => DateTime(2024, 3, 15, 9 + createdAtOffset);
+
+  ChangeSetEntity get staleSet => makeTestChangeSet(
+    id: id,
+    createdAt: createdAt,
+    items: [for (final item in items) item.staleItem],
+  );
+
+  ChangeSetEntity get freshSet => staleSet.copyWith(
+    items: [for (final item in items) item.freshItem],
+  );
+
+  ChangeSetEntity get currentSet => returnsFresh ? freshSet : staleSet;
+
+  @override
+  String toString() {
+    return '_GeneratedBuildExistingSetSpec('
+        'setSlot: $setSlot, '
+        'included: $included, '
+        'createdAtOffset: $createdAtOffset, '
+        'returnsFresh: $returnsFresh, '
+        'items: $items)';
+  }
+}
+
+class _GeneratedBuildScenario {
+  const _GeneratedBuildScenario({
+    required this.alpha,
+    required this.beta,
+    required this.gamma,
+    required this.proposedSlots,
+    required this.rejectedSlots,
+  });
+
+  final _GeneratedBuildExistingSetSpec alpha;
+  final _GeneratedBuildExistingSetSpec beta;
+  final _GeneratedBuildExistingSetSpec gamma;
+  final List<_GeneratedBuildItemSlot> proposedSlots;
+  final List<_GeneratedBuildItemSlot> rejectedSlots;
+
+  List<_GeneratedBuildExistingSetSpec> get includedSetSpecs => [
+    if (alpha.included) alpha,
+    if (beta.included) beta,
+    if (gamma.included) gamma,
+  ];
+
+  List<ChangeSetEntity> get staleSets => [
+    for (final spec in includedSetSpecs) spec.staleSet,
+  ];
+
+  Map<String, ChangeSetEntity> get freshById => {
+    for (final spec in includedSetSpecs)
+      if (spec.returnsFresh) spec.id: spec.freshSet,
+  };
+
+  Set<String> get rejectedFingerprints => {
+    for (final slot in rejectedSlots)
+      ChangeItem.fingerprint(_generatedBuildItem(slot)),
+  };
+
+  List<ChangeItem> get proposedItems {
+    final fingerprints = <String>{};
+    final items = <ChangeItem>[];
+    for (final slot in proposedSlots) {
+      final item = _generatedBuildItem(slot);
+      if (fingerprints.add(ChangeItem.fingerprint(item))) {
+        items.add(item);
+      }
+    }
+    return items;
+  }
+
+  _ExpectedBuildResult expected() {
+    final existingSets = includedSetSpecs;
+    final proposed = proposedItems;
+    if (proposed.isEmpty) {
+      return const _ExpectedBuildResult();
+    }
+
+    final blockingFingerprints = {
+      ...rejectedFingerprints,
+      for (final spec in existingSets)
+        for (final item in spec.currentSet.items)
+          if (_blocksReproposal(item)) ChangeItem.fingerprint(item),
+    };
+    final deduped = proposed
+        .where(
+          (item) =>
+              !blockingFingerprints.contains(ChangeItem.fingerprint(item)),
+        )
+        .toList();
+    if (deduped.isEmpty) {
+      return const _ExpectedBuildResult();
+    }
+
+    if (existingSets.isEmpty) {
+      return _ExpectedBuildResult(resultItems: deduped);
+    }
+
+    final survivorSpec = _survivorSpec(existingSets);
+    final survivor = survivorSpec.currentSet;
+    final knownFingerprints = {
+      ...survivor.items.map(ChangeItem.fingerprint),
+      ...deduped.map(ChangeItem.fingerprint),
+    };
+    final otherItems = <ChangeItem>[];
+    for (final spec in existingSets) {
+      if (spec.id == survivorSpec.id) continue;
+      for (final item in spec.currentSet.items) {
+        if (knownFingerprints.add(ChangeItem.fingerprint(item))) {
+          otherItems.add(item);
+        }
+      }
+    }
+
+    return _ExpectedBuildResult(
+      survivorId: survivor.id,
+      resultItems: [...survivor.items, ...otherItems, ...deduped],
+      resolvedSets: [
+        for (final spec in existingSets)
+          if (spec.id != survivorSpec.id) spec.currentSet,
+      ],
+    );
+  }
+
+  bool _blocksReproposal(ChangeItem item) {
+    return item.status != ChangeItemStatus.confirmed &&
+        item.status != ChangeItemStatus.retracted;
+  }
+
+  _GeneratedBuildExistingSetSpec _survivorSpec(
+    List<_GeneratedBuildExistingSetSpec> specs,
+  ) {
+    return specs.reduce(
+      (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedBuildScenario('
+        'sets: $includedSetSpecs, '
+        'proposedSlots: $proposedSlots, '
+        'rejectedSlots: $rejectedSlots)';
+  }
+}
+
+class _ExpectedBuildResult {
+  const _ExpectedBuildResult({
+    this.survivorId,
+    this.resultItems = const [],
+    this.resolvedSets = const [],
+  });
+
+  final String? survivorId;
+  final List<ChangeItem> resultItems;
+  final List<ChangeSetEntity> resolvedSets;
+
+  bool get shouldBuild => resultItems.isNotEmpty;
+  bool get createsNewSet => shouldBuild && survivorId == null;
+}
+
+ChangeItem _generatedBuildItem(
+  _GeneratedBuildItemSlot slot, {
+  ChangeItemStatus status = ChangeItemStatus.pending,
+}) {
+  final (toolName, args, summary) = switch (slot) {
+    _GeneratedBuildItemSlot.titleA => (
+      TaskAgentToolNames.setTaskTitle,
+      <String, dynamic>{'title': 'Generated title A'},
+      'Set title to A',
+    ),
+    _GeneratedBuildItemSlot.titleB => (
+      TaskAgentToolNames.setTaskTitle,
+      <String, dynamic>{'title': 'Generated title B'},
+      'Set title to B',
+    ),
+    _GeneratedBuildItemSlot.estimateA => (
+      TaskAgentToolNames.updateTaskEstimate,
+      <String, dynamic>{'minutes': 15},
+      'Set estimate to 15 minutes',
+    ),
+    _GeneratedBuildItemSlot.estimateB => (
+      TaskAgentToolNames.updateTaskEstimate,
+      <String, dynamic>{'minutes': 45},
+      'Set estimate to 45 minutes',
+    ),
+    _GeneratedBuildItemSlot.statusOpen => (
+      TaskAgentToolNames.setTaskStatus,
+      <String, dynamic>{'status': 'OPEN'},
+      'Set status to open',
+    ),
+    _GeneratedBuildItemSlot.statusDone => (
+      TaskAgentToolNames.setTaskStatus,
+      <String, dynamic>{'status': 'DONE'},
+      'Set status to done',
+    ),
+    _GeneratedBuildItemSlot.nestedA => (
+      TaskAgentToolNames.addChecklistItem,
+      <String, dynamic>{
+        'title': 'Generated checklist A',
+        'metadata': <String, dynamic>{'priority': 'high', 'source': 'A'},
+      },
+      'Add generated checklist A',
+    ),
+    _GeneratedBuildItemSlot.nestedB => (
+      TaskAgentToolNames.addChecklistItem,
+      <String, dynamic>{
+        'title': 'Generated checklist B',
+        'metadata': <String, dynamic>{'priority': 'low', 'source': 'B'},
+      },
+      'Add generated checklist B',
+    ),
+  };
+  return ChangeItem(
+    toolName: toolName,
+    args: args,
+    humanSummary: summary,
+    status: status,
+  );
+}
+
+ChangeItemStatus _generatedBuildStatus(_GeneratedBuildStatusSlot slot) {
+  return switch (slot) {
+    _GeneratedBuildStatusSlot.pending => ChangeItemStatus.pending,
+    _GeneratedBuildStatusSlot.confirmed => ChangeItemStatus.confirmed,
+    _GeneratedBuildStatusSlot.rejected => ChangeItemStatus.rejected,
+    _GeneratedBuildStatusSlot.deferred => ChangeItemStatus.deferred,
+    _GeneratedBuildStatusSlot.retracted => ChangeItemStatus.retracted,
+  };
+}
+
+extension _AnyGeneratedBuildScenario on glados.Any {
+  glados.Generator<_GeneratedBuildItemSlot> get buildItemSlot =>
+      glados.AnyUtils(this).choose(_GeneratedBuildItemSlot.values);
+
+  glados.Generator<_GeneratedBuildStatusSlot> get buildStatusSlot =>
+      glados.AnyUtils(this).choose(_GeneratedBuildStatusSlot.values);
+
+  glados.Generator<_GeneratedBuildExistingItemSpec> get buildExistingItemSpec =>
+      glados.CombinableAny(this).combine3(
+        buildItemSlot,
+        buildStatusSlot,
+        buildStatusSlot,
+        (
+          _GeneratedBuildItemSlot itemSlot,
+          _GeneratedBuildStatusSlot staleStatus,
+          _GeneratedBuildStatusSlot freshStatus,
+        ) => _GeneratedBuildExistingItemSpec(
+          itemSlot: itemSlot,
+          staleStatus: staleStatus,
+          freshStatus: freshStatus,
+        ),
+      );
+
+  glados.Generator<_GeneratedBuildExistingSetSpec> buildExistingSetSpec(
+    _GeneratedBuildSetSlot setSlot,
+  ) {
+    return glados.CombinableAny(this).combine4(
+      glados.AnyUtils(this).choose([false, true]),
+      glados.IntAnys(this).intInRange(0, 3),
+      glados.AnyUtils(this).choose([false, true]),
+      glados.ListAnys(
+        this,
+      ).listWithLengthInRange(0, 4, buildExistingItemSpec),
+      (
+        bool included,
+        int createdAtOffset,
+        bool returnsFresh,
+        List<_GeneratedBuildExistingItemSpec> items,
+      ) => _GeneratedBuildExistingSetSpec(
+        setSlot: setSlot,
+        included: included,
+        createdAtOffset: createdAtOffset,
+        returnsFresh: returnsFresh,
+        items: items,
+      ),
+    );
+  }
+
+  glados.Generator<_GeneratedBuildScenario> get buildScenario =>
+      glados.CombinableAny(this).combine5(
+        buildExistingSetSpec(_GeneratedBuildSetSlot.alpha),
+        buildExistingSetSpec(_GeneratedBuildSetSlot.beta),
+        buildExistingSetSpec(_GeneratedBuildSetSlot.gamma),
+        glados.ListAnys(this).listWithLengthInRange(0, 6, buildItemSlot),
+        glados.ListAnys(this).listWithLengthInRange(0, 4, buildItemSlot),
+        (
+          _GeneratedBuildExistingSetSpec alpha,
+          _GeneratedBuildExistingSetSpec beta,
+          _GeneratedBuildExistingSetSpec gamma,
+          List<_GeneratedBuildItemSlot> proposedSlots,
+          List<_GeneratedBuildItemSlot> rejectedSlots,
+        ) => _GeneratedBuildScenario(
+          alpha: alpha,
+          beta: beta,
+          gamma: gamma,
+          proposedSlots: proposedSlots,
+          rejectedSlots: rejectedSlots,
+        ),
+      );
+}
+
 void main() {
   late ChangeSetBuilder builder;
   late MockAgentSyncService mockSyncService;
@@ -1842,6 +2213,220 @@ void main() {
       },
     );
 
+    test(
+      'build uses fresh entities where available and stale fallback otherwise',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 45},
+          humanSummary: 'Set estimate to 45 min',
+        );
+
+        final staleOlder = makeTestChangeSet(
+          id: 'cs-older',
+          createdAt: DateTime(2024, 3, 15, 10),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'stale older title'},
+              humanSummary: 'Stale title',
+            ),
+          ],
+        );
+        final freshOlder = staleOlder.copyWith(
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'fresh older title'},
+              humanSummary: 'Fresh title',
+              status: ChangeItemStatus.rejected,
+            ),
+          ],
+          status: ChangeSetStatus.partiallyResolved,
+        );
+        final staleNewer = makeTestChangeSet(
+          id: 'cs-newer',
+          createdAt: DateTime(2024, 3, 15, 11),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'OPEN'},
+              humanSummary: 'Set status',
+            ),
+          ],
+        );
+
+        when(
+          () => mockRepository.getEntity('cs-older'),
+        ).thenAnswer((_) async => freshOlder);
+        when(
+          () => mockRepository.getEntity('cs-newer'),
+        ).thenAnswer((_) async => null);
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [staleOlder, staleNewer],
+        );
+
+        expect(result, isNotNull);
+        expect(result!.id, 'cs-newer');
+        expect(
+          result.items.map((item) => item.args).toList(),
+          [
+            {'status': 'OPEN'},
+            {'title': 'fresh older title'},
+            {'minutes': 45},
+          ],
+        );
+        expect(result.items[1].status, ChangeItemStatus.rejected);
+        expect(
+          result.items.any(
+            (item) => item.args['title'] == 'stale older title',
+          ),
+          isFalse,
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        expect(captured, hasLength(2));
+        expect(captured[0].id, 'cs-newer');
+        expect(captured[1].id, 'cs-older');
+        expect(captured[1].status, ChangeSetStatus.resolved);
+        expect(captured[1].items, freshOlder.items);
+      },
+    );
+
+    test(
+      'build preserves fresh survivor replacement during consolidation',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 120 min',
+        );
+
+        final older = makeTestChangeSet(
+          id: 'cs-older',
+          createdAt: DateTime(2024, 3, 15, 10),
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P2'},
+              humanSummary: 'Set priority',
+            ),
+          ],
+        );
+        final staleNewer = makeTestChangeSet(
+          id: 'cs-newer',
+          createdAt: DateTime(2024, 3, 15, 11),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'Original title'},
+              humanSummary: 'Set title',
+            ),
+          ],
+        );
+        final freshNewer = staleNewer.copyWith(
+          items: [
+            staleNewer.items.first.copyWith(
+              status: ChangeItemStatus.confirmed,
+            ),
+            const ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN_PROGRESS'},
+              humanSummary: 'Set status',
+            ),
+          ],
+          status: ChangeSetStatus.partiallyResolved,
+        );
+
+        when(
+          () => mockRepository.getEntity('cs-newer'),
+        ).thenAnswer((_) async => freshNewer);
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [older, staleNewer],
+        );
+
+        expect(result, isNotNull);
+        expect(result!.id, 'cs-newer');
+        expect(result.status, ChangeSetStatus.partiallyResolved);
+        expect(
+          result.items.map((item) => item.args).toList(),
+          [
+            {'title': 'Original title'},
+            {'status': 'IN_PROGRESS'},
+            {'priority': 'P2'},
+            {'minutes': 120},
+          ],
+        );
+        expect(result.items.first.status, ChangeItemStatus.confirmed);
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        expect(captured, hasLength(2));
+        expect(captured.first, result);
+        expect(captured.first.items.take(2).toList(), freshNewer.items);
+      },
+    );
+
+    test('build re-reads every existing pending set before merging', () async {
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 30},
+        humanSummary: 'Set estimate to 30 min',
+      );
+
+      final first = makeTestChangeSet(
+        id: 'cs-first',
+        createdAt: DateTime(2024, 3, 15, 9),
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'First'},
+            humanSummary: 'Set first title',
+          ),
+        ],
+      );
+      final second = makeTestChangeSet(
+        id: 'cs-second',
+        createdAt: DateTime(2024, 3, 15, 10),
+        items: const [
+          ChangeItem(
+            toolName: 'set_task_status',
+            args: {'status': 'OPEN'},
+            humanSummary: 'Set status',
+          ),
+        ],
+      );
+      final third = makeTestChangeSet(
+        id: 'cs-third',
+        createdAt: DateTime(2024, 3, 15, 11),
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_priority',
+            args: {'priority': 'P1'},
+            humanSummary: 'Set priority',
+          ),
+        ],
+      );
+
+      final result = await builder.build(
+        mockSyncService,
+        existingPendingSets: [first, second, third],
+      );
+
+      expect(result, isNotNull);
+      expect(result!.id, 'cs-third');
+      verify(() => mockRepository.getEntity('cs-first')).called(1);
+      verify(() => mockRepository.getEntity('cs-second')).called(1);
+      verify(() => mockRepository.getEntity('cs-third')).called(1);
+    });
+
     glados.Glados(
       glados.any.checklistBatchScenario,
       glados.ExploreConfig(numRuns: 180),
@@ -1920,6 +2505,103 @@ void main() {
           expect(
             item.humanSummary,
             expectedItem.summary,
+            reason: '$scenario',
+          );
+        }
+      },
+    );
+
+    glados.Glados(
+      glados.any.buildScenario,
+      glados.ExploreConfig(numRuns: 220),
+    ).test(
+      'matches generated build consolidation semantics',
+      (scenario) async {
+        final generatedSyncService = MockAgentSyncService();
+        final generatedRepository = MockAgentRepository();
+        final upserts = <ChangeSetEntity>[];
+        final expected = scenario.expected();
+
+        when(
+          () => generatedSyncService.repository,
+        ).thenReturn(generatedRepository);
+        when(
+          () => generatedRepository.getEntity(any()),
+        ).thenAnswer((invocation) async {
+          final id = invocation.positionalArguments.single as String;
+          return scenario.freshById[id];
+        });
+        when(
+          () => generatedSyncService.upsertEntity(any()),
+        ).thenAnswer((invocation) async {
+          upserts.add(invocation.positionalArguments.single as ChangeSetEntity);
+        });
+
+        final generatedBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+        );
+        for (final slot in scenario.proposedSlots) {
+          await generatedBuilder.addItem(
+            toolName: _generatedBuildItem(slot).toolName,
+            args: _generatedBuildItem(slot).args,
+            humanSummary: _generatedBuildItem(slot).humanSummary,
+          );
+        }
+
+        final result = await generatedBuilder.build(
+          generatedSyncService,
+          existingPendingSets: scenario.staleSets,
+          rejectedFingerprints: scenario.rejectedFingerprints,
+        );
+
+        if (!expected.shouldBuild) {
+          expect(result, isNull, reason: '$scenario');
+          expect(upserts, isEmpty, reason: '$scenario');
+          return;
+        }
+
+        expect(result, isNotNull, reason: '$scenario');
+        expect(result!.items, expected.resultItems, reason: '$scenario');
+
+        if (expected.createsNewSet) {
+          expect(result.agentId, 'agent-001', reason: '$scenario');
+          expect(result.taskId, 'task-001', reason: '$scenario');
+          expect(result.threadId, 'thread-001', reason: '$scenario');
+          expect(result.runKey, 'run-key-001', reason: '$scenario');
+          expect(result.status, ChangeSetStatus.pending, reason: '$scenario');
+          expect(upserts, [result], reason: '$scenario');
+          return;
+        }
+
+        expect(result.id, expected.survivorId, reason: '$scenario');
+        expect(
+          upserts,
+          hasLength(1 + expected.resolvedSets.length),
+          reason: '$scenario',
+        );
+        expect(upserts.first, result, reason: '$scenario');
+
+        final resolvedUpserts = upserts.skip(1).toList();
+        expect(
+          resolvedUpserts.map((set) => set.id).toList(),
+          expected.resolvedSets.map((set) => set.id).toList(),
+          reason: '$scenario',
+        );
+        for (var index = 0; index < expected.resolvedSets.length; index++) {
+          final expectedResolved = expected.resolvedSets[index];
+          final actualResolved = resolvedUpserts[index];
+          expect(
+            actualResolved.status,
+            ChangeSetStatus.resolved,
+            reason: '$scenario',
+          );
+          expect(actualResolved.resolvedAt, isNotNull, reason: '$scenario');
+          expect(
+            actualResolved.items,
+            expectedResolved.items,
             reason: '$scenario',
           );
         }

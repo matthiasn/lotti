@@ -372,6 +372,8 @@ class ChangeSetBuilder {
   /// excluded — confirmed items were already applied, and retracted items
   /// are agent self-corrections that should not block a later, intentional
   /// re-proposal after the task context has changed.
+  /// Existing sets are re-read from the repository before this check so
+  /// mid-wake confirmations or retractions are honored during deduplication.
   ///
   /// [rejectedFingerprints] contains fingerprints reconstructed from
   /// persisted [ChangeDecisionEntity] records whose verdict was `rejected`.
@@ -391,11 +393,21 @@ class ChangeSetBuilder {
   }) async {
     if (!hasItems) return null;
 
+    final currentExistingSets = await Future.wait(
+      existingPendingSets.map((cs) async {
+        final freshEntity = await syncService.repository.getEntity(cs.id);
+        return freshEntity is ChangeSetEntity ? freshEntity : cs;
+      }),
+    );
+    final currentExistingSetsById = {
+      for (final cs in currentExistingSets) cs.id: cs,
+    };
+
     // Extract items from existing change sets that should block a new
     // identical proposal. Confirmed items were applied; retracted items
     // are agent self-corrections that must not block re-proposal after
     // material change.
-    final existingItems = existingPendingSets
+    final existingItems = currentExistingSets
         .expand(
           (cs) => cs.items.where(
             (i) =>
@@ -420,14 +432,7 @@ class ChangeSetBuilder {
         (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
       );
 
-      // Re-read the survivor from DB so we pick up any mid-wake
-      // confirmations (user tapping items while the agent is running).
-      final freshEntity = await syncService.repository.getEntity(
-        staleWinner.id,
-      );
-      final survivor = freshEntity is ChangeSetEntity
-          ? freshEntity
-          : staleWinner;
+      final survivor = currentExistingSetsById[staleWinner.id] ?? staleWinner;
 
       // Gather items from non-survivor sets that aren't already in the
       // survivor or in the new deduped items.
@@ -439,9 +444,7 @@ class ChangeSetBuilder {
       final otherItems = <ChangeItem>[];
       for (final cs in existingPendingSets) {
         if (cs.id != survivor.id) {
-          // Re-read each non-survivor to preserve mid-wake confirmations.
-          final freshCs = await syncService.repository.getEntity(cs.id);
-          final current = freshCs is ChangeSetEntity ? freshCs : cs;
+          final current = currentExistingSetsById[cs.id] ?? cs;
           for (final item in current.items) {
             if (knownFingerprints.add(ChangeItem.fingerprint(item))) {
               otherItems.add(item);
@@ -459,10 +462,7 @@ class ChangeSetBuilder {
       // pending queries and the UI.
       for (final cs in existingPendingSets) {
         if (cs.id != survivor.id) {
-          // Re-read before marking resolved to avoid overwriting
-          // mid-wake status changes.
-          final freshCs = await syncService.repository.getEntity(cs.id);
-          final current = freshCs is ChangeSetEntity ? freshCs : cs;
+          final current = currentExistingSetsById[cs.id] ?? cs;
           await syncService.upsertEntity(
             current.copyWith(
               status: ChangeSetStatus.resolved,
