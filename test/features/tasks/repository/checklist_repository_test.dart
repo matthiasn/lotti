@@ -1313,5 +1313,62 @@ void main() {
         ).called(1);
       },
     );
+
+    test(
+      'logs and skips a parent checklist row whose serialized JSON is '
+      'malformed instead of propagating the throw — a corrupt persisted '
+      'row should not poison the entire fetch',
+      () async {
+        when(
+          () => mockLoggingService.captureException(
+            any(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final corruptRow = JournalDbEntity(
+          id: 'checklist-corrupt',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          deleted: false,
+          starred: false,
+          private: false,
+          task: false,
+          flag: 0,
+          type: 'Checklist',
+          serialized: 'this is not json',
+          schemaVersion: 0,
+          category: '',
+        );
+        when(
+          () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).thenAnswer((_) {
+          final selectable = _MockSelectable<JournalDbEntity>();
+          when(selectable.get).thenAnswer((_) async => [corruptRow]);
+          return selectable;
+        });
+
+        final task = buildTaskWithChecklists(const ['checklist-corrupt']);
+        final result = await repository.getChecklistItemsForTask(task: task);
+
+        expect(result, isEmpty);
+        verify(
+          () => mockLoggingService.captureException(
+            any(),
+            domain: any(named: 'domain'),
+            subDomain: 'getChecklistItemsForTask',
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+        // No items recovered means the second bulk read is skipped.
+        verify(
+          () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).called(1);
+      },
+    );
   });
 }

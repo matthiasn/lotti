@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -5524,6 +5525,92 @@ void main() {
     );
 
     test(
+      'per-host TTL evicts only the expired host on natural wall-clock '
+      'expiry — a second host queried within its own window stays cached '
+      'and does not re-hit the DB',
+      () async {
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 9);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockDb.getEntryByHostAndCounter(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        final t0 = DateTime(2026, 5, 10, 12);
+        // T0 — populate the cache for bob.
+        await withClock(Clock.fixed(t0), () async {
+          await service.recordReceivedEntry(
+            entryId: 'entry-1',
+            vectorClock: const VectorClock({
+              aliceHostId: 10,
+              bobHostId: 6,
+            }),
+            originatingHostId: aliceHostId,
+          );
+        });
+        verify(() => mockDb.getHostLastSeen(bobHostId)).called(1);
+
+        // T0 + 6 min — bob's per-host expiry has elapsed. The next
+        // record routed through bob must trigger `_evictHost(bob)` and
+        // re-query the DB. Carol is queried for the first time at the
+        // same moment and must hit the DB once (cold cache).
+        when(
+          () => mockDb.getLastCounterForHost('carol'),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getHostLastSeen('carol'),
+        ).thenAnswer((_) async => t0);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 6);
+
+        await withClock(
+          Clock.fixed(t0.add(const Duration(minutes: 6))),
+          () async {
+            await service.recordReceivedEntry(
+              entryId: 'entry-2',
+              vectorClock: const VectorClock({
+                aliceHostId: 11,
+                bobHostId: 7,
+                'carol': 1,
+              }),
+              originatingHostId: aliceHostId,
+            );
+          },
+        );
+        verify(() => mockDb.getHostLastSeen(bobHostId)).called(1);
+        verify(() => mockDb.getHostLastSeen('carol')).called(1);
+
+        // T0 + 8 min — carol is still inside her freshly opened window
+        // (refreshed on the previous miss). Recording another entry
+        // that touches carol must not re-hit the DB; bob's freshly
+        // refreshed window also keeps him cached.
+        await withClock(
+          Clock.fixed(t0.add(const Duration(minutes: 8))),
+          () async {
+            await service.recordReceivedEntry(
+              entryId: 'entry-3',
+              vectorClock: const VectorClock({
+                aliceHostId: 12,
+                bobHostId: 8,
+                'carol': 2,
+              }),
+              originatingHostId: aliceHostId,
+            );
+          },
+        );
+        verifyNever(() => mockDb.getHostLastSeen('carol'));
+        verifyNever(() => mockDb.getHostLastSeen(bobHostId));
+      },
+    );
+
+    test(
       'advances the last-counter cache incrementally on contiguous '
       'records instead of re-querying the slow watermark CTE — under '
       'heavy backfill (50 children per outbox bundle from one host), '
@@ -5693,6 +5780,34 @@ void main() {
 
         verify(
           () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-ttl'),
+        ).called(2);
+      },
+    );
+
+    test(
+      'last-sent cache wipes the entry-keyed LRU when the wall-clock TTL '
+      'elapses naturally — second call after >5 min re-queries the DB',
+      () async {
+        when(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-natural'),
+        ).thenAnswer((_) async => 9);
+
+        final start = DateTime(2026, 5, 10, 12);
+        await withClock(Clock.fixed(start), () async {
+          await service.getLastSentVectorClockForEntry('entry-natural');
+        });
+        // Step the clock past _cacheTtl (5 minutes) so the next call's
+        // `_invalidateLastSentCacheIfExpired` clears the LRU and the
+        // subsequent `_ensureLastSentCacheWindow` opens a fresh window.
+        await withClock(
+          Clock.fixed(start.add(const Duration(minutes: 6))),
+          () async {
+            await service.getLastSentVectorClockForEntry('entry-natural');
+          },
+        );
+
+        verify(
+          () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-natural'),
         ).called(2);
       },
     );

@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -236,11 +237,11 @@ class SyncSequenceLogService {
   }
 
   void _refreshHostCacheWindow(String hostId) {
-    _hostCacheExpiry[hostId] = DateTime.now().add(_cacheTtl);
+    _hostCacheExpiry[hostId] = clock.now().add(_cacheTtl);
   }
 
   void _invalidateLastSentCacheIfExpired() {
-    final now = DateTime.now();
+    final now = clock.now();
     if (_lastSentCacheExpiry != null && now.isAfter(_lastSentCacheExpiry!)) {
       _lastSentCounterByEntry.clear();
       _lastSentCacheExpiry = null;
@@ -248,7 +249,7 @@ class SyncSequenceLogService {
   }
 
   void _ensureLastSentCacheWindow() {
-    _lastSentCacheExpiry ??= DateTime.now().add(_cacheTtl);
+    _lastSentCacheExpiry ??= clock.now().add(_cacheTtl);
   }
 
   String _lastSentCacheKey(String hostId, String entryId) =>
@@ -264,7 +265,7 @@ class SyncSequenceLogService {
   }
 
   Future<DateTime?> _getCachedHostLastSeen(String hostId) async {
-    if (_isHostCacheExpired(hostId, DateTime.now())) {
+    if (_isHostCacheExpired(hostId, clock.now())) {
       _evictHost(hostId);
     }
     if (_hostActivityCache.containsKey(hostId)) {
@@ -277,7 +278,7 @@ class SyncSequenceLogService {
   }
 
   Future<int?> _getCachedLastCounterForHost(String hostId) async {
-    if (_isHostCacheExpired(hostId, DateTime.now())) {
+    if (_isHostCacheExpired(hostId, clock.now())) {
       _evictHost(hostId);
     }
     if (_lastCounterCache.containsKey(hostId)) {
