@@ -423,5 +423,6 @@ void main() {
         await index.dispose();
       }
     },
+    tags: 'glados',
   );
 }

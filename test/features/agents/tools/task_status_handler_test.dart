@@ -654,6 +654,7 @@ void main() {
                   as Task;
           expect(captured, result.updatedTask, reason: '$scenario');
         },
+        tags: 'glados',
       );
 
       glados.Glados(
@@ -681,6 +682,7 @@ void main() {
           );
           verifyNever(() => repo.updateJournalEntity(any()));
         },
+        tags: 'glados',
       );
     });
 

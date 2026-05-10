@@ -604,5 +604,6 @@ void main() {
         await localDb.close();
       }
     },
+    tags: 'glados',
   );
 }

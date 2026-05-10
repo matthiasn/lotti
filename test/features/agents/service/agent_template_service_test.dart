@@ -1850,7 +1850,7 @@ void main() {
       } else {
         expect(head.id, isNotEmpty, reason: '$scenario');
       }
-    });
+    }, tags: 'glados');
 
     test('updates display name and model ID', () async {
       stubTemplateExists();
@@ -2519,7 +2519,7 @@ void main() {
       for (final version in versionWrites) {
         expect(version.deletedAt, testDate, reason: '$scenario');
       }
-    });
+    }, tags: 'glados');
 
     test('fails when active instances exist', () async {
       final activeAgent = makeTestIdentity(id: 'agent-a', agentId: 'agent-a');
@@ -2814,7 +2814,7 @@ void main() {
         reason: '$scenario',
       );
       expect(updatedHead.updatedAt, testDate, reason: '$scenario');
-    });
+    }, tags: 'glados');
 
     test('archives current, reactivates target, updates head', () async {
       final currentVersion = makeTestTemplateVersion(
@@ -3049,7 +3049,7 @@ void main() {
         expect(head.versionId, version.id, reason: '$scenario');
         expect(head.updatedAt, testDate, reason: '$scenario');
       }
-    });
+    }, tags: 'glados');
 
     test('creates all default templates when none are seeded', () async {
       when(
@@ -3312,7 +3312,7 @@ void main() {
         );
         expect(actual.status, expected.status, reason: '$scenario');
       }
-    });
+    }, tags: 'glados');
 
     test('seeds empty directive fields for task agent template', () async {
       final template = makeTestTemplate(
@@ -4065,7 +4065,7 @@ void main() {
           ).called(lookupCount);
         }
       }
-    });
+    }, tags: 'glados');
 
     test('returns bundle with all fields populated', () async {
       final report = makeTestReport();
@@ -4269,7 +4269,7 @@ void main() {
       } else {
         verify(generatedRepository.getAllAgentIdentities).called(1);
       }
-    });
+    }, tags: 'glados');
 
     test('returns true when a template references the profile', () async {
       when(() => mockRepo.getAllTemplates()).thenAnswer(

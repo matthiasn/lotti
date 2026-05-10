@@ -588,6 +588,7 @@ void main() {
             );
           }
         },
+        tags: 'glados',
       );
 
       Glados(any.longSentence).test(
@@ -621,6 +622,7 @@ void main() {
             );
           }
         },
+        tags: 'glados',
       );
 
       Glados(any.longToken, ExploreConfig(numRuns: 120)).test(
@@ -642,6 +644,7 @@ void main() {
           expect(chunks.first, startsWith(scenario.character));
           expect(chunks.last, endsWith(scenario.character));
         },
+        tags: 'glados',
       );
     });
   });

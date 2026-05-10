@@ -187,6 +187,7 @@ void main() {
 
         expect(checklistItemsToMarkdown(items), expectedLines.join('\n'));
       },
+      tags: 'glados',
     );
   });
 }

@@ -369,20 +369,24 @@ void main() {
       glados.Glados(
         glados.any.geminiThinkingScenario,
         glados.ExploreConfig(numRuns: 160),
-      ).test('matches generated model and budget serialization semantics', (
-        scenario,
-      ) {
-        final config = GeminiThinkingConfig(
-          thinkingBudget: scenario.budget,
-          includeThoughts: scenario.includeThoughts,
-        );
+      ).test(
+        'matches generated model and budget serialization semantics',
+        (
+          scenario,
+        ) {
+          final config = GeminiThinkingConfig(
+            thinkingBudget: scenario.budget,
+            includeThoughts: scenario.includeThoughts,
+          );
 
-        expect(
-          config.toJson(modelId: scenario.modelId),
-          scenario.expectedJson,
-          reason: '$scenario',
-        );
-      });
+          expect(
+            config.toJson(modelId: scenario.modelId),
+            scenario.expectedJson,
+            reason: '$scenario',
+          );
+        },
+        tags: 'glados',
+      );
     });
 
     group('thinking capability check', () {

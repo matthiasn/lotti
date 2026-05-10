@@ -334,6 +334,6 @@ void main() {
       } else {
         verifyNever(() => generatedRepository.getConfigById(any()));
       }
-    });
+    }, tags: 'glados');
   });
 }

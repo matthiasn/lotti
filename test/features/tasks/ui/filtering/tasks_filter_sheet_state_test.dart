@@ -24,6 +24,7 @@ void main() {
           option,
         );
       },
+      tags: 'glados',
     );
 
     test('maps TaskSortOption to string IDs', () {
@@ -70,6 +71,7 @@ void main() {
           filter,
         );
       },
+      tags: 'glados',
     );
 
     test('maps AgentAssignmentFilter to string IDs', () {
@@ -115,6 +117,7 @@ void main() {
           mode,
         );
       },
+      tags: 'glados',
     );
 
     test('maps SearchMode to string IDs', () {
@@ -155,6 +158,7 @@ void main() {
           internalId,
         );
       },
+      tags: 'glados',
     );
 
     test('maps internal priority to display ID', () {

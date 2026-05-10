@@ -521,7 +521,7 @@ void main() {
             triggerTokens: {taskId},
           ),
         ).called(1);
-      });
+      }, tags: 'glados');
 
       test('creates agent via service, updates state, creates link, '
           'and registers subscription', () async {

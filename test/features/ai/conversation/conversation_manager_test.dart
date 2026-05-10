@@ -991,86 +991,92 @@ void main() {
 
           generatedManager.dispose();
         });
-      });
+      }, tags: 'glados');
 
       glados.Glados(
         glados.any.conversationHistoryScenario,
         glados.ExploreConfig(numRuns: 180),
-      ).test('preserve latest generated history with one truncation notice', (
-        scenario,
-      ) {
-        final generatedManager = ConversationManager(
-          conversationId: 'generated-history',
-          maxHistorySize: scenario.maxHistorySize,
-        );
+      ).test(
+        'preserve latest generated history with one truncation notice',
+        (
+          scenario,
+        ) {
+          final generatedManager = ConversationManager(
+            conversationId: 'generated-history',
+            maxHistorySize: scenario.maxHistorySize,
+          );
 
-        if (scenario.hasSystemMessage) {
-          generatedManager.initialize(systemMessage: 'generated system');
-        }
-        for (var i = 0; i < scenario.userMessageCount; i++) {
-          generatedManager.addUserMessage('generated user $i');
-        }
+          if (scenario.hasSystemMessage) {
+            generatedManager.initialize(systemMessage: 'generated system');
+          }
+          for (var i = 0; i < scenario.userMessageCount; i++) {
+            generatedManager.addUserMessage('generated user $i');
+          }
 
-        final messages = generatedManager.messages;
-        final truncationNoticeCount = messages
-            .where(_isGeneratedTruncationNotice)
-            .length;
-        final retainedUserMessages = messages
-            .where((message) => message.role == ChatCompletionMessageRole.user)
-            .toList();
+          final messages = generatedManager.messages;
+          final truncationNoticeCount = messages
+              .where(_isGeneratedTruncationNotice)
+              .length;
+          final retainedUserMessages = messages
+              .where(
+                (message) => message.role == ChatCompletionMessageRole.user,
+              )
+              .toList();
 
-        expect(
-          truncationNoticeCount,
-          lessThanOrEqualTo(1),
-          reason: '$scenario',
-        );
-        expect(
-          messages.length,
-          lessThanOrEqualTo(scenario.retainedMessageLimit),
-          reason: '$scenario',
-        );
-        expect(
-          generatedManager.turnCount,
-          retainedUserMessages.length,
-          reason: '$scenario',
-        );
-
-        if (scenario.hasSystemMessage) {
-          expect(messages.first.content, 'generated system');
-        } else {
           expect(
-            messages
-                .where(
-                  (message) =>
-                      message.role == ChatCompletionMessageRole.system &&
-                      !_isGeneratedTruncationNotice(message),
-                )
-                .toList(),
-            isEmpty,
+            truncationNoticeCount,
+            lessThanOrEqualTo(1),
             reason: '$scenario',
           );
-        }
-
-        if (scenario.userMessageCount > 0) {
           expect(
-            messages.last.content?.toString(),
-            contains('generated user ${scenario.userMessageCount - 1}'),
+            messages.length,
+            lessThanOrEqualTo(scenario.retainedMessageLimit),
             reason: '$scenario',
           );
-        }
-
-        if (truncationNoticeCount == 1) {
-          final noticeIndex = scenario.hasSystemMessage ? 1 : 0;
           expect(
-            _isGeneratedTruncationNotice(messages[noticeIndex]),
-            true,
+            generatedManager.turnCount,
+            retainedUserMessages.length,
             reason: '$scenario',
           );
-          expect(retainedUserMessages, isNotEmpty, reason: '$scenario');
-        }
 
-        generatedManager.dispose();
-      });
+          if (scenario.hasSystemMessage) {
+            expect(messages.first.content, 'generated system');
+          } else {
+            expect(
+              messages
+                  .where(
+                    (message) =>
+                        message.role == ChatCompletionMessageRole.system &&
+                        !_isGeneratedTruncationNotice(message),
+                  )
+                  .toList(),
+              isEmpty,
+              reason: '$scenario',
+            );
+          }
+
+          if (scenario.userMessageCount > 0) {
+            expect(
+              messages.last.content?.toString(),
+              contains('generated user ${scenario.userMessageCount - 1}'),
+              reason: '$scenario',
+            );
+          }
+
+          if (truncationNoticeCount == 1) {
+            final noticeIndex = scenario.hasSystemMessage ? 1 : 0;
+            expect(
+              _isGeneratedTruncationNotice(messages[noticeIndex]),
+              true,
+              reason: '$scenario',
+            );
+            expect(retainedUserMessages, isNotEmpty, reason: '$scenario');
+          }
+
+          generatedManager.dispose();
+        },
+        tags: 'glados',
+      );
     });
 
     group('Event Classes', () {

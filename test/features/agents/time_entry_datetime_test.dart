@@ -320,7 +320,7 @@ void main() {
         scenario.expected,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
 
     glados.Glados(
       glados.any.invalidLocalTimestamp,
@@ -331,7 +331,7 @@ void main() {
         isNull,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
 
     glados.Glados(
       glados.any.timezoneTimestamp,
@@ -342,7 +342,7 @@ void main() {
         isNull,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
   });
 
   group('formatTimeEntryHhMm', () {
@@ -377,6 +377,6 @@ void main() {
         scenario.expected,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
   });
 }

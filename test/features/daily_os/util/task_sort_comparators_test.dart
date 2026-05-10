@@ -447,6 +447,7 @@ void main() {
               'model: $specs',
         );
       },
+      tags: 'glados',
     );
   });
 
@@ -619,6 +620,7 @@ void main() {
               'model: $specs',
         );
       },
+      tags: 'glados',
     );
   });
 }

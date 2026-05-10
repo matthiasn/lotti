@@ -201,6 +201,6 @@ void main() {
         closeTo(scenario.expectedSuccessRate, 0.000000000001),
       );
       expect(stats.averageDuration, scenario.expectedAverageDuration);
-    });
+    }, tags: 'glados');
   });
 }

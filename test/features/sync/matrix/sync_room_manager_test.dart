@@ -253,6 +253,7 @@ void main() {
         async.flushMicrotasks();
       });
     },
+    tags: 'glados',
   );
 
   test('inviteUser throws when no active room configured', () {

@@ -1314,6 +1314,7 @@ void main() {
             await database.close();
           }
         },
+        tags: 'glados',
       );
     });
 
@@ -1871,6 +1872,7 @@ void main() {
           await database.close();
         }
       },
+      tags: 'glados',
     );
 
     test(
@@ -5756,6 +5758,7 @@ void main() {
           await database.close();
         }
       },
+      tags: 'glados',
     );
   });
 

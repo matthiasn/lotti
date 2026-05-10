@@ -720,6 +720,7 @@ void main() {
         }
       }
     },
+    tags: 'glados',
   );
 
   test('fills originatingHostId for entry links when missing', () async {
@@ -2862,6 +2863,7 @@ void main() {
           }
         }
       },
+      tags: 'glados',
     );
 
     test(

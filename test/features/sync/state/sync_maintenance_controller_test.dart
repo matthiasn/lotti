@@ -486,6 +486,7 @@ void main() {
           expect(state.progress, 100);
         }
       },
+      tags: 'glados',
     );
 
     test('syncAll handles errors and updates state', () async {

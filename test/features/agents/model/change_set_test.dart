@@ -102,7 +102,7 @@ void main() {
       final result = ChangeItem.deriveSetStatus(scenario.items);
 
       expect(result, scenario.expectedSetStatus, reason: '$scenario');
-    });
+    }, tags: 'glados');
 
     glados.Glados(
       glados.any.resolvedAtScenario,
@@ -117,6 +117,6 @@ void main() {
       );
 
       expect(result, scenario.expected, reason: '$scenario');
-    });
+    }, tags: 'glados');
   });
 }

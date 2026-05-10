@@ -940,6 +940,7 @@ void main() {
           expect(aggregateItems, isEmpty);
         }
       },
+      tags: 'glados',
     );
 
     test('classifies observations as neutral with default detail', () async {

@@ -718,6 +718,7 @@ void main() {
         expect(handler.task, captured, reason: '$scenario');
         expect(callbackTask, captured, reason: '$scenario');
       },
+      tags: 'glados',
     );
 
     group('TaskEstimateResult', () {

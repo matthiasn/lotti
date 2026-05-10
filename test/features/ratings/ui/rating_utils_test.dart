@@ -220,6 +220,7 @@ void main() {
           reason: 'Lookup should match modeled position for $lookup',
         );
       },
+      tags: 'glados',
     );
 
     Glados(any.ratingLookup, ExploreConfig(numRuns: 160)).test(
@@ -235,6 +236,7 @@ void main() {
           reason: 'Fallback lookup should match modeled position for $lookup',
         );
       },
+      tags: 'glados',
     );
   });
 }

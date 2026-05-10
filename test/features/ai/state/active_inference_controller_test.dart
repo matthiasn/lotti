@@ -589,6 +589,6 @@ void main() {
           generatedContainer.dispose();
         }
       });
-    });
+    }, tags: 'glados');
   });
 }

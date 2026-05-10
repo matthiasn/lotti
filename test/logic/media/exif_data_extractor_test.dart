@@ -230,7 +230,7 @@ void main() {
           closeTo(scenario.expected, 0.0000000001),
           reason: '$scenario',
         );
-      });
+      }, tags: 'glados');
     });
 
     group('parseGpsCoordinate', () {
@@ -410,7 +410,7 @@ void main() {
           closeTo(scenario.expected, 0.0000000001),
           reason: '$scenario',
         );
-      });
+      }, tags: 'glados');
     });
 
     group('parseExifDateString', () {
@@ -516,7 +516,7 @@ void main() {
           scenario.expected,
           reason: '$scenario',
         );
-      });
+      }, tags: 'glados');
     });
 
     group('extractTimestamp', () {

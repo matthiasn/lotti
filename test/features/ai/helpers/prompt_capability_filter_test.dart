@@ -657,7 +657,7 @@ void main() {
           PromptCapabilityFilter.isLocalOnlyProviderType(providerType),
           expected,
         );
-      });
+      }, tags: 'glados');
     });
 
     group('Mobile platform simulation', () {
@@ -800,7 +800,7 @@ void main() {
           platform.isDesktop = originalIsDesktop;
           platform.isMobile = originalIsMobile;
         }
-      });
+      }, tags: 'glados');
     });
 
     group('Edge Cases and Performance', () {

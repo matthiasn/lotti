@@ -349,7 +349,7 @@ void main() {
         expect(stateLink.createdAt, testDate, reason: '$scenario');
         expect(stateLink.updatedAt, testDate, reason: '$scenario');
         expect(stateLink.vectorClock, isNull, reason: '$scenario');
-      });
+      }, tags: 'glados');
 
       test(
         'creates identity, state, and link, then returns identity',
@@ -688,7 +688,7 @@ void main() {
         } else {
           verifyNever(() => generatedRepository.hardDeleteAgent(agentId));
         }
-      });
+      }, tags: 'glados');
 
       test('sets lifecycle to dormant and unregisters subscriptions', () async {
         final identity = makeTestIdentity(id: 'agent-1', agentId: 'agent-1');

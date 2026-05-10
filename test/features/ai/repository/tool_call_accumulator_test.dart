@@ -615,6 +615,7 @@ void main() {
             );
           }
         },
+        tags: 'glados',
       );
 
       Glados(any.toolCallStream).test(
@@ -643,6 +644,7 @@ void main() {
             );
           }
         },
+        tags: 'glados',
       );
 
       Glados(any.completeToolCallBatch).test(
@@ -667,6 +669,7 @@ void main() {
             );
           }
         },
+        tags: 'glados',
       );
     });
 

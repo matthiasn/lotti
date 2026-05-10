@@ -4696,6 +4696,7 @@ void main() {
             expect(conflict, isNull);
           }
         },
+        tags: 'glados',
       );
 
       test('resolves existing conflict when applying newer update', () async {

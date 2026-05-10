@@ -5689,6 +5689,7 @@ void main() {
           scenario.expectedPriority,
         );
       },
+      tags: 'glados',
     );
 
     test(

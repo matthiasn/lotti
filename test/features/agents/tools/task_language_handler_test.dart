@@ -466,6 +466,7 @@ void main() {
                   as Task;
           expect(captured, result.updatedTask, reason: '$scenario');
         },
+        tags: 'glados',
       );
     });
 

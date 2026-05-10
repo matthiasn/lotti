@@ -96,6 +96,7 @@ void main() {
         );
         expect(volume.toString(), contains('itemCount: ${scenario.itemCount}'));
       },
+      tags: 'glados',
     );
 
     test('totalMegabytes computes correctly for exact MB', () {

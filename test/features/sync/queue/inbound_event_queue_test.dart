@@ -828,6 +828,7 @@ void main() {
           expect(stats.abandoned, expectedAbandoned);
         });
       },
+      tags: 'glados',
     );
 
     glados.Glados(
@@ -881,6 +882,7 @@ void main() {
           );
         });
       },
+      tags: 'glados',
     );
 
     glados.Glados(
@@ -922,6 +924,7 @@ void main() {
           }
         });
       },
+      tags: 'glados',
     );
   });
 

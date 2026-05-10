@@ -438,6 +438,7 @@ void main() {
         await localOnSyncCtl.close();
       }
     },
+    tags: 'glados',
   );
 
   group('MatrixStreamConsumer disposal & metrics', () {

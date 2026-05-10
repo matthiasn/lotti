@@ -692,6 +692,7 @@ void main() {
           final request = parsedMessage['request'] as Map<String, dynamic>;
           expect(request['labelIds'], parseResult.selectedIds);
         },
+        tags: 'glados',
       );
     });
 

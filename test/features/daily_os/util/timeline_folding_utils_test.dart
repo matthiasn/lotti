@@ -629,6 +629,7 @@ void main() {
           );
         }
       },
+      tags: 'glados',
     );
   });
 
@@ -829,6 +830,7 @@ void main() {
               '$scenario',
         );
       },
+      tags: 'glados',
     );
   });
 

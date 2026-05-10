@@ -2070,6 +2070,7 @@ void main() {
             localContainer.dispose();
           }
         },
+        tags: 'glados',
       );
 
       glados.Glados(
@@ -2261,6 +2262,7 @@ void main() {
             bench.dispose();
           }
         },
+        tags: 'glados',
       );
 
       test('logs exception on failure', () async {

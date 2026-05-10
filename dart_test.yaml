@@ -1,0 +1,3 @@
+tags:
+  glados:
+    description: Property-based tests powered by the `glados` package.

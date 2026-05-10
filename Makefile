@@ -1,13 +1,16 @@
 OS := $(shell uname -s)
 FLUTTER_CMD :=
 DART_CMD :=
+VERY_GOOD_CMD :=
 
 ifeq ($(OS), Darwin)
 	FLUTTER_CMD := fvm flutter
 	DART_CMD := fvm dart
+	VERY_GOOD_CMD := fvm dart pub global run very_good_cli:very_good
 else
 	FLUTTER_CMD := flutter
 	DART_CMD := dart
+	VERY_GOOD_CMD := dart pub global run very_good_cli:very_good
 endif
 
 IOS_ARCHIVE_PATH = ./build/ios/archive/Runner.xcarchive
@@ -19,7 +22,17 @@ THRESH ?= 1000
 
 .PHONY: test
 test:
-	$(FLUTTER_CMD) test --coverage
+	$(VERY_GOOD_CMD) test --coverage
+
+.PHONY: test_standard
+test_standard:
+	rm -rf coverage
+	$(VERY_GOOD_CMD) test --coverage --exclude-tags glados
+
+.PHONY: test_glados
+test_glados:
+	rm -rf coverage
+	$(VERY_GOOD_CMD) test --coverage --tags glados
 
 .PHONY: analyze
 analyze:
@@ -76,6 +89,12 @@ coverage_report:
 .PHONY: coverage
 coverage: test coverage_report
 
+.PHONY: coverage_standard
+coverage_standard: test_standard coverage_report
+
+.PHONY: coverage_glados
+coverage_glados: test_glados coverage_report
+
 .PHONY: build_runner
 build_runner: deps
 	$(DART_CMD) run build_runner build --delete-conflicting-outputs
@@ -92,6 +111,10 @@ watch: l10n
 .PHONY: activate_fluttium
 activate_fluttium:
 	$(FLUTTER_CMD) pub global activate fluttium_cli
+
+.PHONY: activate_very_good
+activate_very_good:
+	$(DART_CMD) pub global activate very_good_cli
 
 .PHONY: fluttium_linux
 fluttium_linux:

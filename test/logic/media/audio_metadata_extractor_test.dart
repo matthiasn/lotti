@@ -192,7 +192,7 @@ void main() {
           scenario.parsedLocalTimestamp,
           reason: '$scenario',
         );
-      });
+      }, tags: 'glados');
     });
 
     group('computeRelativePath', () {
@@ -237,7 +237,7 @@ void main() {
           scenario.expectedRelativePath,
           reason: '$scenario',
         );
-      });
+      }, tags: 'glados');
     });
 
     group('computeTargetFileName', () {
@@ -317,7 +317,7 @@ void main() {
           scenario.expectedTargetFileName,
           reason: '$scenario',
         );
-      });
+      }, tags: 'glados');
     });
 
     group('isSupported', () {
@@ -349,16 +349,25 @@ void main() {
       glados.Glados(
         glados.any.audioFilenameScenario,
         glados.ExploreConfig(numRuns: 180),
-      ).test('accepts generated supported extensions case-insensitively', (
-        scenario,
-      ) {
-        expect(AudioMetadataExtractor.isSupported(scenario.extension), isTrue);
-        expect(
-          AudioMetadataExtractor.isSupported(scenario.extension.toUpperCase()),
-          isTrue,
-          reason: '$scenario',
-        );
-      });
+      ).test(
+        'accepts generated supported extensions case-insensitively',
+        (
+          scenario,
+        ) {
+          expect(
+            AudioMetadataExtractor.isSupported(scenario.extension),
+            isTrue,
+          );
+          expect(
+            AudioMetadataExtractor.isSupported(
+              scenario.extension.toUpperCase(),
+            ),
+            isTrue,
+            reason: '$scenario',
+          );
+        },
+        tags: 'glados',
+      );
     });
 
     group('extractDuration', () {

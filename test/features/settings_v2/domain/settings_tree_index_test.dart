@@ -382,6 +382,7 @@ void main() {
         );
         expect(pathToBeamUrl(path), scenario.entry.value);
       },
+      tags: 'glados',
     );
   });
 
@@ -444,6 +445,7 @@ void main() {
           );
         }
       },
+      tags: 'glados',
     );
   });
 

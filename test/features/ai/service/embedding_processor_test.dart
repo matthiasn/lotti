@@ -803,6 +803,7 @@ void main() {
           () => localEmbeddingStore.moveEntityToShard(any(), any()),
         );
       },
+      tags: 'glados',
     );
 
     group('category-change detection', () {
@@ -1335,6 +1336,7 @@ void main() {
           expect(writes, isEmpty, reason: '$scenario');
         }
       },
+      tags: 'glados',
     );
   });
 }

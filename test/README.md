@@ -1,5 +1,67 @@
 # Test Guidelines
 
+## Property-Based Tests with Glados
+
+We use [`package:glados`](https://pub.dev/packages/glados) for property-based ("generative") testing of pure logic. Going forward, **any new code with non-trivial pure logic should reach for Glados first** — it explores far more inputs than hand-rolled examples and shrinks failing cases automatically. Reach for Glados when you have:
+
+- Pure functions with structured input (parsers, comparators, encoders, math)
+- Algebraic invariants (idempotence, commutativity, associativity, round-trips)
+- State machines or queues whose invariants must hold across any input sequence
+
+Glados is a poor fit for UI/widget tests, code that touches real I/O, or anything whose correctness depends on a single concrete fixture.
+
+### Tagging is mandatory
+
+Every Glados test **must** carry the `glados` tag so CI can run it on a separate runner from the standard suite:
+
+```dart
+import 'package:glados/glados.dart';
+
+Glados(any.myInput, ExploreConfig(numRuns: 120))
+    .test('round-trip preserves value', (input) {
+  expect(decode(encode(input)), equals(input));
+}, tags: 'glados'); //  ← required
+```
+
+The `tags` argument is a passthrough to `package:test`'s `test()`. It works the same for `Glados.testWithRandom`, `Glados2`, `Glados3`. The tag is declared in `dart_test.yaml` at the repo root.
+
+### Why the tag matters for CI
+
+CI runs two parallel jobs:
+- **Unit & Widget Tests** — `very_good test --exclude-tags glados` (fast feedback, all non-property tests)
+- **Glados Property Tests** — `very_good test --tags glados` (CPU-bound, runs longer in parallel)
+
+A new Glados test without `tags: 'glados'` will run in the standard suite, slowing fast feedback for everyone. The split also lets us upload separate codecov flags (`standard`, `glados`) while still merging both into the project total.
+
+### Local commands
+
+```bash
+make test_standard      # everything except glados (wipes coverage/ first)
+make test_glados        # only glados property tests (wipes coverage/ first)
+make coverage_standard  # test_standard + HTML report
+make coverage_glados    # test_glados   + HTML report
+make test               # full suite, no filtering — same as before
+```
+
+All Make targets use `very_good test` to match CI behavior. Run `make activate_very_good` once on a fresh checkout.
+
+### Picking `numRuns`
+
+`ExploreConfig(numRuns: N)` controls how many random inputs are explored per property. Existing tests use 80–180. Pick the smallest number that still surfaces regressions in your domain — every run is CPU time on every CI build. If you find yourself going above 200, ask whether the property is actually generative or whether a few targeted examples would do better.
+
+### Custom generators
+
+Define generators as private extensions on `Any` in the test file:
+
+```dart
+extension _AnyMyType on Any {
+  Generator<MyType> get myType =>
+      AnyUtils(this).choose(MyType.values);
+}
+```
+
+Combine via `combine2`/`combine3` for tuples, and prefer using existing generators (`any.int`, `any.dateTime`, etc.) over hand-rolled ones.
+
 ## Fake Time Policy
 
 All tests in this codebase must use **deterministic time control** instead of real waits. This ensures:

@@ -210,7 +210,7 @@ void main() {
       expect(summary.totalTokens, scenario.expectedTotalTokens);
       expect(summary.cachedInputTokens, scenario.cachedInputTokens);
       expect(summary.wakeCount, scenario.wakeCount);
-    });
+    }, tags: 'glados');
   });
 
   group('InstanceTokenBreakdown', () {
@@ -346,6 +346,6 @@ void main() {
         scenario.expectedTotalTokens,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
   });
 }

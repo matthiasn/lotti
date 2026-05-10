@@ -307,6 +307,7 @@ void main() {
         );
         verify(timeline.cancelSubscriptions).called(1);
       },
+      tags: 'glados',
     );
 
     test(
@@ -1488,6 +1489,7 @@ void main() {
         expect(historyCalls, scenario.expectedHistoryCalls);
         verify(timeline.cancelSubscriptions).called(1);
       },
+      tags: 'glados',
     );
 
     test(
@@ -1988,6 +1990,7 @@ void main() {
         }
         verify(timeline.cancelSubscriptions).called(1);
       },
+      tags: 'glados',
     );
 
     test(

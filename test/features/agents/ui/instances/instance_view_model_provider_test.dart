@@ -215,7 +215,7 @@ void main() {
       equals(_expectedInstanceType(kindSlot)),
       reason: '$kindSlot',
     );
-  });
+  }, tags: 'glados');
 
   glados.Glados(
     glados.any.evolutionStatusScenario,
@@ -253,5 +253,5 @@ void main() {
       expect(vm.searchKey, contains('${index + 1}'));
       expect(vm.searchKey, contains('evo-$index'));
     }
-  });
+  }, tags: 'glados');
 }

@@ -543,6 +543,7 @@ void main() {
           );
           expect(result.mutatedEntityId, isNull, reason: '$scenario');
         },
+        tags: 'glados',
       );
     });
 
@@ -707,6 +708,7 @@ void main() {
           expect(captured.id, taskId, reason: '$scenario');
           scenario.expectMutation(captured);
         },
+        tags: 'glados',
       );
     });
 

@@ -585,6 +585,7 @@ void main() {
             expect(refreshed.retries, scenario.expectedRetries(row));
           }
         },
+        tags: 'glados',
       );
     });
 

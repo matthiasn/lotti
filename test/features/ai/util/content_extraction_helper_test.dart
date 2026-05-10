@@ -273,7 +273,7 @@ void main() {
           scenario.expected,
           reason: '$scenario',
         );
-      });
+      }, tags: 'glados');
     });
   });
 }

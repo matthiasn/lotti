@@ -553,5 +553,6 @@ void main() {
       expect(skippedTelemetry['over_cap'], scenario.overCap.length);
       expect(skippedTelemetry['duplicate'], scenario.duplicateIds.length);
     },
+    tags: 'glados',
   );
 }

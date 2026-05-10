@@ -499,6 +499,7 @@ void main() {
           }
         }
       },
+      tags: 'glados',
     );
 
     group('ping', () {

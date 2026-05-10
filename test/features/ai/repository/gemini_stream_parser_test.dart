@@ -162,6 +162,7 @@ void main() {
         expect(chunked, whole);
         expect(chunkedParser.remainder(), wholeParser.remainder());
       },
+      tags: 'glados',
     );
   });
 }

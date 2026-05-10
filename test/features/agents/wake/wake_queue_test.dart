@@ -531,6 +531,6 @@ void main() {
         model.queue.map((job) => job.triggerTokens).toList(),
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
   });
 }

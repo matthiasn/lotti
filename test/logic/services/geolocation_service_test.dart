@@ -550,7 +550,7 @@ void main() {
           reason: '$scenario',
         );
         expect(geolocationService.pendingCount, 0, reason: '$scenario');
-      });
+      }, tags: 'glados');
     });
   });
 }

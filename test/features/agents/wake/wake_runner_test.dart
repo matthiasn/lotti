@@ -202,7 +202,7 @@ void main() {
           });
         },
       );
-    });
+    }, tags: 'glados');
 
     group('tryAcquire', () {
       test('returns true and acquires lock when no run is active', () {

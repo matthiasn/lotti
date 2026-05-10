@@ -719,6 +719,7 @@ void main() {
             unawaited(localSubscription.cancel());
           });
         },
+        tags: 'glados',
       );
 
       test('should handle complex notification patterns', () {

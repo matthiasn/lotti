@@ -530,6 +530,7 @@ void main() {
           );
         }
       },
+      tags: 'glados',
     );
 
     Glados(any.timeRanges).testWithRandom(
@@ -542,6 +543,7 @@ void main() {
           mergeOverlappingRanges(ranges),
         );
       },
+      tags: 'glados',
     );
 
     Glados(any.timeRanges).test(
@@ -557,6 +559,7 @@ void main() {
         expect(union, _minuteGridUnionDuration(ranges));
         expect(union <= simpleSum, isTrue);
       },
+      tags: 'glados',
     );
   });
 }
