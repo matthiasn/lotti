@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -43,6 +44,243 @@ class TestNotifications implements UpdateNotifications {
   Future<void> dispose() async {
     await _controller.close();
   }
+}
+
+enum _GeneratedLabelScope {
+  globalNull,
+  globalEmpty,
+  cat0,
+  cat1,
+  cat2,
+  cat3,
+  cats01,
+  cats13,
+  orphan,
+  cat2AndOrphan,
+}
+
+enum _GeneratedIncludePrivateOverride {
+  useConfig,
+  include,
+  exclude,
+}
+
+class _GeneratedLabelSpec {
+  const _GeneratedLabelSpec({
+    required this.seed,
+    required this.scope,
+    required this.isPrivate,
+    required this.isDeleted,
+  });
+
+  final int seed;
+  final _GeneratedLabelScope scope;
+  final bool isPrivate;
+  final bool isDeleted;
+
+  LabelDefinition build(int index) {
+    final namePrefix = switch (seed % 5) {
+      0 => 'Alpha',
+      1 => 'bravo',
+      2 => 'Charlie',
+      3 => 'delta',
+      _ => 'Echo',
+    };
+
+    return testLabelDefinition1.copyWith(
+      id: 'generated-label-$index',
+      name: '$namePrefix ${seed.toString().padLeft(5, '0')} $index',
+      private: isPrivate,
+      deletedAt: isDeleted ? testEpochDateTime : null,
+      applicableCategoryIds: categoryIds,
+    );
+  }
+
+  List<String>? get categoryIds {
+    return switch (scope) {
+      _GeneratedLabelScope.globalNull => null,
+      _GeneratedLabelScope.globalEmpty => const <String>[],
+      _GeneratedLabelScope.cat0 => const ['cat-0'],
+      _GeneratedLabelScope.cat1 => const ['cat-1'],
+      _GeneratedLabelScope.cat2 => const ['cat-2'],
+      _GeneratedLabelScope.cat3 => const ['cat-3'],
+      _GeneratedLabelScope.cats01 => const ['cat-0', 'cat-1'],
+      _GeneratedLabelScope.cats13 => const ['cat-1', 'cat-3'],
+      _GeneratedLabelScope.orphan => const ['orphan'],
+      _GeneratedLabelScope.cat2AndOrphan => const ['cat-2', 'orphan'],
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedLabelSpec(seed: $seed, scope: $scope, '
+        'isPrivate: $isPrivate, isDeleted: $isDeleted)';
+  }
+}
+
+class _GeneratedEntitiesCacheScenario {
+  const _GeneratedEntitiesCacheScenario({
+    required this.labelSpecs,
+    required this.privateFlag,
+    required this.includePrivateOverride,
+    required this.categorySlot,
+  });
+
+  final List<_GeneratedLabelSpec> labelSpecs;
+  final bool privateFlag;
+  final _GeneratedIncludePrivateOverride includePrivateOverride;
+  final int categorySlot;
+
+  List<CategoryDefinition> get categories {
+    return List<CategoryDefinition>.generate(
+      4,
+      (index) => CategoryDefinition(
+        id: 'cat-$index',
+        name: 'Category ${3 - index}',
+        color: '#000000',
+        createdAt: testEpochDateTime,
+        updatedAt: testEpochDateTime,
+        vectorClock: null,
+        active: true,
+        private: false,
+      ),
+    );
+  }
+
+  List<LabelDefinition> get labels {
+    return [
+      for (final indexed in labelSpecs.indexed) indexed.$2.build(indexed.$1),
+    ];
+  }
+
+  String? get categoryId {
+    return switch (categorySlot % 6) {
+      0 => null,
+      1 => 'orphan',
+      2 => 'cat-0',
+      3 => 'cat-1',
+      4 => 'cat-2',
+      _ => 'cat-3',
+    };
+  }
+
+  bool? get includePrivate {
+    return switch (includePrivateOverride) {
+      _GeneratedIncludePrivateOverride.useConfig => null,
+      _GeneratedIncludePrivateOverride.include => true,
+      _GeneratedIncludePrivateOverride.exclude => false,
+    };
+  }
+
+  bool get effectiveIncludePrivate => includePrivate ?? privateFlag;
+
+  List<String> expectedAvailableIds() {
+    final scoped =
+        labels
+            .where((label) => _isVisible(label, includePrivate: true))
+            .where(_appliesToCategory)
+            .where(
+              (label) => effectiveIncludePrivate || !(label.private ?? false),
+            )
+            .toList()
+          ..sort(_compareLabelsByName);
+    return scoped.map((label) => label.id).toList();
+  }
+
+  List<String> expectedFilteredIds() {
+    final scoped =
+        labels
+            .where((label) => _isVisible(label, includePrivate: true))
+            .where(_appliesToCategory)
+            .toList()
+          ..sort(_compareLabelsByName);
+    return scoped.map((label) => label.id).toList();
+  }
+
+  List<String> expectedSortedLabelIds() {
+    final sorted =
+        labels
+            .where((label) => _isVisible(label, includePrivate: privateFlag))
+            .toList()
+          ..sort(_compareLabelsByName);
+    return sorted.map((label) => label.id).toList();
+  }
+
+  bool _isVisible(LabelDefinition label, {required bool includePrivate}) {
+    return label.deletedAt == null &&
+        (includePrivate || !(label.private ?? false));
+  }
+
+  bool _appliesToCategory(LabelDefinition label) {
+    final applicableCategoryIds = label.applicableCategoryIds;
+    if (applicableCategoryIds == null || applicableCategoryIds.isEmpty) {
+      return true;
+    }
+    final selectedCategoryId = categoryId;
+    return selectedCategoryId != null &&
+        applicableCategoryIds.contains(selectedCategoryId);
+  }
+
+  static int _compareLabelsByName(LabelDefinition a, LabelDefinition b) {
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedEntitiesCacheScenario('
+        'labelSpecs: $labelSpecs, privateFlag: $privateFlag, '
+        'includePrivateOverride: $includePrivateOverride, '
+        'categorySlot: $categorySlot)';
+  }
+}
+
+extension _AnyGeneratedEntitiesCacheScenario on glados.Any {
+  glados.Generator<_GeneratedLabelScope> get entitiesCacheLabelScope =>
+      glados.AnyUtils(this).choose(_GeneratedLabelScope.values);
+
+  glados.Generator<_GeneratedIncludePrivateOverride>
+  get entitiesCacheIncludePrivateOverride =>
+      glados.AnyUtils(this).choose(_GeneratedIncludePrivateOverride.values);
+
+  glados.Generator<_GeneratedLabelSpec> get entitiesCacheLabelSpec =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 100000),
+        entitiesCacheLabelScope,
+        glados.AnyUtils(this).choose([false, true]),
+        glados.AnyUtils(this).choose([false, true]),
+        (
+          int seed,
+          _GeneratedLabelScope scope,
+          bool isPrivate,
+          bool isDeleted,
+        ) => _GeneratedLabelSpec(
+          seed: seed,
+          scope: scope,
+          isPrivate: isPrivate,
+          isDeleted: isDeleted,
+        ),
+      );
+
+  glados.Generator<_GeneratedEntitiesCacheScenario> get entitiesCacheScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(0, 30, entitiesCacheLabelSpec),
+        glados.AnyUtils(this).choose([false, true]),
+        entitiesCacheIncludePrivateOverride,
+        glados.IntAnys(this).intInRange(0, 1000),
+        (
+          List<_GeneratedLabelSpec> labelSpecs,
+          bool privateFlag,
+          _GeneratedIncludePrivateOverride includePrivateOverride,
+          int categorySlot,
+        ) => _GeneratedEntitiesCacheScenario(
+          labelSpecs: labelSpecs,
+          privateFlag: privateFlag,
+          includePrivateOverride: includePrivateOverride,
+          categorySlot: categorySlot,
+        ),
+      );
 }
 
 void main() {
@@ -132,6 +370,47 @@ void main() {
     async.flushMicrotasks();
     return cache;
   }
+
+  glados.Glados(
+    glados.any.entitiesCacheScenario,
+    glados.ExploreConfig(numRuns: 160),
+  ).test('matches generated label visibility invariants', (scenario) async {
+    final cache = await createCache(
+      categories: scenario.categories,
+      labels: scenario.labels,
+      privateFlag: scenario.privateFlag,
+    );
+
+    final available = cache.availableLabelsForCategory(
+      scenario.categoryId,
+      includePrivate: scenario.includePrivate,
+    );
+    final filtered = cache.filterLabelsForCategory(
+      scenario.labels,
+      scenario.categoryId,
+    );
+
+    expect(
+      available.map((label) => label.id).toList(),
+      scenario.expectedAvailableIds(),
+      reason: scenario.toString(),
+    );
+    expect(
+      filtered.map((label) => label.id).toList(),
+      scenario.expectedFilteredIds(),
+      reason: scenario.toString(),
+    );
+    expect(
+      cache.sortedLabels.map((label) => label.id).toList(),
+      scenario.expectedSortedLabelIds(),
+      reason: scenario.toString(),
+    );
+    expect(
+      available.map((label) => label.id).toSet(),
+      hasLength(available.length),
+      reason: 'availableLabelsForCategory must not duplicate label IDs',
+    );
+  }, tags: 'glados');
 
   test('availableLabelsForCategory returns union of global + bucket', () async {
     final work = CategoryDefinition(

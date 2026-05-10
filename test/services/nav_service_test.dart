@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -10,6 +11,148 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
+
+enum _GeneratedNavPathKind {
+  tasksRoot,
+  tasksChild,
+  projectsRoot,
+  projectsChild,
+  calendarRoot,
+  calendarChild,
+  habitsRoot,
+  habitsChild,
+  dashboardsRoot,
+  dashboardsChild,
+  journalRoot,
+  journalChild,
+  settingsRoot,
+  settingsChild,
+  unknown,
+}
+
+class _GeneratedNavPath {
+  const _GeneratedNavPath({
+    required this.kind,
+    required this.seed,
+  });
+
+  final _GeneratedNavPathKind kind;
+  final int seed;
+
+  String get path {
+    final suffix = 'generated-$seed';
+    return switch (kind) {
+      _GeneratedNavPathKind.tasksRoot => '/tasks',
+      _GeneratedNavPathKind.tasksChild => '/tasks/$suffix',
+      _GeneratedNavPathKind.projectsRoot => '/projects',
+      _GeneratedNavPathKind.projectsChild => '/projects/$suffix',
+      _GeneratedNavPathKind.calendarRoot => '/calendar',
+      _GeneratedNavPathKind.calendarChild => '/calendar/$suffix',
+      _GeneratedNavPathKind.habitsRoot => '/habits',
+      _GeneratedNavPathKind.habitsChild => '/habits/$suffix',
+      _GeneratedNavPathKind.dashboardsRoot => '/dashboards',
+      _GeneratedNavPathKind.dashboardsChild => '/dashboards/$suffix',
+      _GeneratedNavPathKind.journalRoot => '/journal',
+      _GeneratedNavPathKind.journalChild => '/journal/$suffix',
+      _GeneratedNavPathKind.settingsRoot => '/settings',
+      _GeneratedNavPathKind.settingsChild => '/settings/$suffix',
+      _GeneratedNavPathKind.unknown => '/unknown/$suffix',
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedNavPath(kind: $kind, seed: $seed)';
+  }
+}
+
+class _GeneratedNavScenario {
+  const _GeneratedNavScenario({
+    required this.projects,
+    required this.dailyOs,
+    required this.habits,
+    required this.dashboards,
+    required this.paths,
+  });
+
+  final bool projects;
+  final bool dailyOs;
+  final bool habits;
+  final bool dashboards;
+  final List<_GeneratedNavPath> paths;
+
+  List<String> get enabledRoots => [
+    '/tasks',
+    if (projects) '/projects',
+    if (dailyOs) '/calendar',
+    if (habits) '/habits',
+    if (dashboards) '/dashboards',
+    '/journal',
+    '/settings',
+  ];
+
+  String normalize(String path) {
+    return _rootForPath(path) == null ? '/tasks' : path;
+  }
+
+  int expectedIndexForPath(String path) {
+    final normalizedPath = normalize(path);
+    final root = _rootForPath(normalizedPath);
+    return enabledRoots.indexOf(root!);
+  }
+
+  String? _rootForPath(String path) {
+    for (final root in enabledRoots) {
+      if (path == root || path.startsWith('$root/')) {
+        return root;
+      }
+    }
+    return null;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedNavScenario(projects: $projects, dailyOs: $dailyOs, '
+        'habits: $habits, dashboards: $dashboards, paths: $paths)';
+  }
+}
+
+extension _AnyGeneratedNavScenario on glados.Any {
+  glados.Generator<_GeneratedNavPathKind> get navPathKind =>
+      glados.AnyUtils(this).choose(_GeneratedNavPathKind.values);
+
+  glados.Generator<_GeneratedNavPath> get navPath =>
+      glados.CombinableAny(this).combine2(
+        navPathKind,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (_GeneratedNavPathKind kind, int seed) => _GeneratedNavPath(
+          kind: kind,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedNavScenario> get navScenario =>
+      glados.CombinableAny(this).combine5(
+        glados.AnyUtils(this).choose([false, true]),
+        glados.AnyUtils(this).choose([false, true]),
+        glados.AnyUtils(this).choose([false, true]),
+        glados.AnyUtils(this).choose([false, true]),
+        glados.ListAnys(this).listWithLengthInRange(0, 35, navPath),
+        (
+          bool projects,
+          bool dailyOs,
+          bool habits,
+          bool dashboards,
+          List<_GeneratedNavPath> paths,
+        ) => _GeneratedNavScenario(
+          projects: projects,
+          dailyOs: dailyOs,
+          habits: habits,
+          dashboards: dashboards,
+          paths: paths,
+        ),
+      );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -155,6 +298,83 @@ void main() {
         ],
       );
     });
+
+    glados.Glados(
+      glados.any.navScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('matches generated enabled-tab navigation invariants', (
+      scenario,
+    ) async {
+      final settingsDb = SettingsDb(inMemoryDatabase: true);
+      final journalDb = mockJournalDbWithMeasurableTypes([]);
+      final projectsController = StreamController<bool>.broadcast(sync: true);
+      final dailyOsController = StreamController<bool>.broadcast(sync: true);
+      final habitsController = StreamController<bool>.broadcast(sync: true);
+      final dashboardsController = StreamController<bool>.broadcast(sync: true);
+
+      when(() => journalDb.watchConfigFlag(any())).thenAnswer((invocation) {
+        final flagName = invocation.positionalArguments.first as String;
+        return switch (flagName) {
+          enableProjectsFlag => projectsController.stream,
+          enableDailyOsPageFlag => dailyOsController.stream,
+          enableHabitsPageFlag => habitsController.stream,
+          enableDashboardsPageFlag => dashboardsController.stream,
+          _ => Stream<bool>.value(false),
+        };
+      });
+
+      final navService = NavService(
+        journalDb: journalDb,
+        settingsDb: settingsDb,
+      );
+
+      try {
+        projectsController.add(scenario.projects);
+        dailyOsController.add(scenario.dailyOs);
+        habitsController.add(scenario.habits);
+        dashboardsController.add(scenario.dashboards);
+        await pumpEventQueue();
+
+        final expectedDelegates = [
+          navService.tasksDelegate,
+          if (scenario.projects) navService.projectsDelegate,
+          if (scenario.dailyOs) navService.calendarDelegate,
+          if (scenario.habits) navService.habitsDelegate,
+          if (scenario.dashboards) navService.dashboardsDelegate,
+          navService.journalDelegate,
+          navService.settingsDelegate,
+        ];
+        expect(
+          navService.beamerDelegates,
+          expectedDelegates,
+          reason: scenario.toString(),
+        );
+
+        for (final generatedPath in scenario.paths) {
+          final path = generatedPath.path;
+          navService.setPath(path);
+
+          expect(
+            navService.currentPath,
+            scenario.normalize(path),
+            reason: '$scenario for $generatedPath',
+          );
+          expect(
+            navService.index,
+            scenario.expectedIndexForPath(path),
+            reason: '$scenario for $generatedPath',
+          );
+        }
+      } finally {
+        await navService.dispose();
+        await Future.wait([
+          projectsController.close(),
+          dailyOsController.close(),
+          habitsController.close(),
+          dashboardsController.close(),
+        ]);
+      }
+    }, tags: 'glados');
 
     test('hides Projects when the projects flag is disabled', () async {
       final settingsDb = SettingsDb(inMemoryDatabase: true);
