@@ -624,6 +624,7 @@ class ExpandableReportSection extends StatefulWidget {
     this.initiallyExpanded = false,
     this.nextWakeAt,
     this.onRefresh,
+    this.onCancelScheduledWake,
     this.isRefreshing = false,
     super.key,
   });
@@ -636,6 +637,12 @@ class ExpandableReportSection extends StatefulWidget {
   final bool initiallyExpanded;
   final DateTime? nextWakeAt;
   final VoidCallback? onRefresh;
+
+  /// Cancels the scheduled wake whose countdown is rendered next to the
+  /// title. When provided alongside a non-null [nextWakeAt] (and the
+  /// section is not currently refreshing), an `×` button is shown directly
+  /// after the countdown pill — mirroring the task AI-summary cluster.
+  final VoidCallback? onCancelScheduledWake;
   final bool isRefreshing;
 
   @override
@@ -770,6 +777,27 @@ class _ExpandableReportSectionState extends State<ExpandableReportSection> {
                         padding: EdgeInsets.only(right: tokens.spacing.step2),
                         child: _ReportCountdownPill(
                           nextWakeAt: widget.nextWakeAt!,
+                        ),
+                      ),
+                    if (!widget.isRefreshing &&
+                        widget.nextWakeAt != null &&
+                        widget.onCancelScheduledWake != null)
+                      Padding(
+                        padding: EdgeInsets.only(right: tokens.spacing.step1),
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: tokens.typography.lineHeight.subtitle2,
+                            color: ShowcasePalette.mediumText(context),
+                          ),
+                          tooltip: context.messages.taskAgentCancelTimerTooltip,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(
+                            minWidth: tokens.spacing.step6,
+                            minHeight: tokens.spacing.step6,
+                          ),
+                          onPressed: widget.onCancelScheduledWake,
                         ),
                       ),
                     if (widget.onRefresh != null)

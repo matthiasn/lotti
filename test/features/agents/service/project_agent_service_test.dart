@@ -902,6 +902,23 @@ void main() {
       });
     });
 
+    group('cancelScheduledWake', () {
+      test(
+        'delegates to AgentService.cancelPendingWake for the given agent so '
+        'the project AI Report cancel × clears the throttle and drops queued '
+        'subscription jobs',
+        () {
+          when(
+            () => mockAgentService.cancelPendingWake(any()),
+          ).thenReturn(null);
+
+          service.cancelScheduledWake('agent-1');
+
+          verify(() => mockAgentService.cancelPendingWake('agent-1')).called(1);
+        },
+      );
+    });
+
     group('restoreSubscriptions', () {
       test('skips non-project_agent agents', () async {
         final taskAgent = makeIdentity(

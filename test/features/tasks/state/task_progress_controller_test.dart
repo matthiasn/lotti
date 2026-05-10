@@ -321,6 +321,144 @@ void main() {
     });
   });
 
+  test(
+    'preserves the in-memory live timer range across an UpdateNotification '
+    're-fetch — checklist item toggle no longer "resets" the running timer',
+    () async {
+      // Arrange: bootstrap the controller with the initial DB ranges.
+      await container.read(
+        taskProgressControllerProvider(id: testTaskId).future,
+      );
+
+      // The timer is running, linked to this task. Its DB row reflects the
+      // creation snapshot (dateTo == dateFrom) since no save has flushed a
+      // fresh dateTo yet — this is the realistic shape of the bug.
+      const liveEntryId = 'live-timer';
+      final dateFrom = DateTime(2022, 7, 7, 16);
+      final live = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: liveEntryId,
+          createdAt: dateFrom,
+          updatedAt: dateFrom,
+          dateFrom: dateFrom,
+          dateTo: dateFrom,
+        ),
+      );
+      final mockTask = MockTask(testTaskId);
+      when(() => mockTimeService.linkedFrom).thenReturn(mockTask);
+      when(() => mockTimeService.getCurrent()).thenReturn(live);
+
+      // The 1Hz ticker has been running for 60s, so the in-memory range
+      // for the live entry has dateTo = dateFrom + 60s.
+      final livenessTick = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: liveEntryId,
+          createdAt: dateFrom,
+          updatedAt: dateFrom,
+          dateFrom: dateFrom,
+          dateTo: dateFrom.add(const Duration(seconds: 60)),
+        ),
+      );
+      final tickedRange = TimeRange(
+        start: dateFrom,
+        end: dateFrom.add(const Duration(seconds: 60)),
+      );
+
+      // The DB-snapshot ranges that a re-fetch would return: same as initial
+      // ranges + the live entry's stale (dateFrom, dateFrom) snapshot.
+      final dbRanges = <String, TimeRange>{
+        ...testTimeRanges,
+        liveEntryId: TimeRange(start: dateFrom, end: dateFrom),
+      };
+
+      // The expected ranges after _fetch must keep the live range from the
+      // ticker, not the DB snapshot. We seed both `getTaskProgress`
+      // responses so the test fails loudly if the controller calls through
+      // with the wrong map.
+      when(
+        () => mockRepository.getTaskProgressData(id: testTaskId),
+      ).thenAnswer((_) async => (testEstimate, dbRanges));
+
+      const preservedProgress = TaskProgressState(
+        progress: Duration(minutes: 76),
+        estimate: testEstimate,
+      );
+      const stalebackProgress = TaskProgressState(
+        progress: Duration(minutes: 75),
+        estimate: testEstimate,
+      );
+      when(
+        () => mockRepository.getTaskProgress(
+          timeRanges: {
+            ...testTimeRanges,
+            liveEntryId: tickedRange,
+          },
+          estimate: testEstimate,
+        ),
+      ).thenReturn(preservedProgress);
+      when(
+        () => mockRepository.getTaskProgress(
+          timeRanges: dbRanges,
+          estimate: testEstimate,
+        ),
+      ).thenReturn(stalebackProgress);
+
+      // Drive a single ticker emission so the in-memory range gets seeded
+      // to the (dateFrom, dateFrom + 60s) window.
+      final tickerSeen = Completer<void>();
+      final tickerSub = container.listen(
+        taskProgressControllerProvider(id: testTaskId),
+        (_, next) {
+          if (!tickerSeen.isCompleted && next.value == preservedProgress) {
+            tickerSeen.complete();
+          }
+        },
+      );
+      timeServiceStreamController.add(livenessTick);
+      await tickerSeen.future.timeout(const Duration(seconds: 1));
+      tickerSub.close();
+      clearInteractions(mockRepository);
+
+      // Re-stub `getTaskProgressData` after the clear so the post-update
+      // _fetch still sees the DB-stale snapshot.
+      when(
+        () => mockRepository.getTaskProgressData(id: testTaskId),
+      ).thenAnswer((_) async => (testEstimate, dbRanges));
+
+      // Act: a checklist toggle puts the parent taskId into the
+      // UpdateNotifications batch, which kicks the controller's _fetch.
+      updateStreamController.add({testTaskId});
+      // Allow the async _fetch to complete.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Assert: the controller computed progress against the *preserved*
+      // map (live range intact), not the DB-stale map. Without the fix
+      // this verify() would fail because `getTaskProgress` would be
+      // called with `dbRanges` (live entry's dateTo == dateFrom).
+      verify(
+        () => mockRepository.getTaskProgress(
+          timeRanges: {
+            ...testTimeRanges,
+            liveEntryId: tickedRange,
+          },
+          estimate: testEstimate,
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockRepository.getTaskProgress(
+          timeRanges: dbRanges,
+          estimate: testEstimate,
+        ),
+      );
+
+      // And the published state still reads the cumulative-with-live value.
+      final state = container.read(
+        taskProgressControllerProvider(id: testTaskId),
+      );
+      expect(state.value, equals(preservedProgress));
+    },
+  );
+
   test('disposes subscriptions when disposed', () async {
     // Create a separate repository for this test to avoid interference
     final testRepository = MockTaskProgressRepository();

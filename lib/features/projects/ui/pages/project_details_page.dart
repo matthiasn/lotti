@@ -86,6 +86,11 @@ class ProjectDetailsPage extends ConsumerWidget {
                   : () => ref
                         .read(projectAgentServiceProvider)
                         .triggerReanalysis(identity.agentId),
+              onCancelScheduledReportWake: identity == null
+                  ? null
+                  : () => ref
+                        .read(projectAgentServiceProvider)
+                        .cancelScheduledWake(identity.agentId),
               isRefreshingReport: isRefreshingReport,
               onTaskTap: (summary) => beamToNamed(
                 '/tasks/${summary.task.meta.id}',

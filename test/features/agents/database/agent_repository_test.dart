@@ -1025,7 +1025,8 @@ class _GeneratedWakeLifecycleSpec {
   DateTime? completedAt(int index) {
     return switch (status) {
       WakeRunStatus.completed ||
-      WakeRunStatus.failed => startedAt(index).add(duration),
+      WakeRunStatus.failed ||
+      WakeRunStatus.aborted => startedAt(index).add(duration),
       WakeRunStatus.running || WakeRunStatus.abandoned => null,
     };
   }

@@ -8,6 +8,7 @@ enum _GeneratedWakeRunnerOperationKind {
   acquire,
   release,
   waitForCompletion,
+  abort,
 }
 
 enum _GeneratedWakeRunnerAgentSlot { first, second, third, fourth }
@@ -103,6 +104,13 @@ void main() {
       final expectedEmissions = <Set<String>>[];
       final emissions = <Set<String>>[];
       final waiters = <_GeneratedWakeRunnerWaiter>[];
+      // Set of agentIds whose abort signal has already been fired in the
+      // current run. Cleared on release so a fresh acquire starts un-aborted.
+      final firedAborts = <String>{};
+      // Per-acquire abort waiters: each acquire registers a fresh waiter on
+      // the new abort future so we can assert that release (or an explicit
+      // abort) completes it.
+      final abortWaiters = <_GeneratedWakeRunnerWaiter>[];
       var currentTick = 0;
 
       withClock(
@@ -130,6 +138,18 @@ void main() {
                   if (expectedAcquired) {
                     expectedActive[agentId] = clock.now();
                     expectedEmissions.add(expectedActive.keys.toSet());
+                    // Subscribe to the freshly-allocated abort future so we
+                    // can assert it completes when this run ends (either via
+                    // explicit abort or via release).
+                    final waiter = _GeneratedWakeRunnerWaiter(
+                      agentId: agentId,
+                      actualCompleted: false,
+                      expectedCompleted: false,
+                    );
+                    generatedRunner.abortFuture(agentId)!.then((_) {
+                      waiter.actualCompleted = true;
+                    });
+                    abortWaiters.add(waiter);
                   }
 
                 case _GeneratedWakeRunnerOperationKind.release:
@@ -140,6 +160,15 @@ void main() {
                     waiters
                         .where((waiter) => waiter.agentId == agentId)
                         .forEach((waiter) => waiter.expectedCompleted = true);
+                    // Release fires any pending abort signal and clears the
+                    // fired-abort bookkeeping so the next acquire starts
+                    // fresh.
+                    abortWaiters
+                        .where(
+                          (w) => w.agentId == agentId && !w.expectedCompleted,
+                        )
+                        .forEach((w) => w.expectedCompleted = true);
+                    firedAborts.remove(agentId);
                   }
                   async.flushMicrotasks();
 
@@ -168,6 +197,34 @@ void main() {
                     );
                     waiters.add(waiter);
                   }
+
+                case _GeneratedWakeRunnerOperationKind.abort:
+                  final isActive = expectedActive.containsKey(agentId);
+                  final alreadyFired = firedAborts.contains(agentId);
+                  final expectedReturn = isActive && !alreadyFired;
+                  final actualReturn = generatedRunner.abort(agentId);
+                  expect(actualReturn, expectedReturn, reason: '$scenario');
+
+                  if (expectedReturn) {
+                    firedAborts.add(agentId);
+                    // The most-recent un-completed abort waiter for this
+                    // agent — i.e. the one tied to the current acquire —
+                    // should now resolve. Older waiters were already marked
+                    // completed by the corresponding release.
+                    abortWaiters
+                        .where(
+                          (w) => w.agentId == agentId && !w.expectedCompleted,
+                        )
+                        .forEach((w) => w.expectedCompleted = true);
+                  }
+                  async.flushMicrotasks();
+
+                  // abortFuture(id) is null iff the agent is not running.
+                  expect(
+                    generatedRunner.abortFuture(agentId) == null,
+                    !isActive,
+                    reason: '$scenario',
+                  );
               }
 
               expect(
@@ -190,6 +247,13 @@ void main() {
               }
               expect(emissions, expectedEmissions, reason: '$scenario');
               for (final waiter in waiters) {
+                expect(
+                  waiter.actualCompleted,
+                  waiter.expectedCompleted,
+                  reason: '$scenario',
+                );
+              }
+              for (final waiter in abortWaiters) {
                 expect(
                   waiter.actualCompleted,
                   waiter.expectedCompleted,
@@ -532,6 +596,92 @@ void main() {
 
           expect(done, isTrue);
         });
+      });
+    });
+
+    group('abort', () {
+      test('returns false for an agent that is not running', () {
+        expect(runner.abort('agent-cold'), isFalse);
+      });
+
+      test('returns true and completes the abort future for a running run', () {
+        fakeAsync((async) {
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+
+          var aborted = false;
+          runner.abortFuture('agent-1')!.then((_) => aborted = true);
+          async.flushMicrotasks();
+          expect(aborted, isFalse);
+
+          expect(runner.abort('agent-1'), isTrue);
+          async.flushMicrotasks();
+          expect(aborted, isTrue);
+        });
+      });
+
+      test('returns false on second call (already completed)', () {
+        fakeAsync((async) {
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+
+          expect(runner.abort('agent-1'), isTrue);
+          expect(runner.abort('agent-1'), isFalse);
+        });
+      });
+
+      test('release after abort does not throw and clears state', () {
+        fakeAsync((async) {
+          runner.tryAcquire('agent-1');
+          async.flushMicrotasks();
+
+          runner
+            ..abort('agent-1')
+            ..release('agent-1');
+
+          expect(runner.isRunning('agent-1'), isFalse);
+          expect(runner.abortFuture('agent-1'), isNull);
+        });
+      });
+
+      test(
+        'release without abort still completes any pending abort future',
+        () {
+          fakeAsync((async) {
+            runner.tryAcquire('agent-1');
+            async.flushMicrotasks();
+
+            var aborted = false;
+            runner.abortFuture('agent-1')!.then((_) => aborted = true);
+
+            runner.release('agent-1');
+            async.flushMicrotasks();
+            expect(aborted, isTrue);
+          });
+        },
+      );
+
+      test('abort signals are scoped per agent', () {
+        fakeAsync((async) {
+          runner
+            ..tryAcquire('agent-1')
+            ..tryAcquire('agent-2');
+          async.flushMicrotasks();
+
+          var a1 = false;
+          var a2 = false;
+          runner.abortFuture('agent-1')!.then((_) => a1 = true);
+          runner.abortFuture('agent-2')!.then((_) => a2 = true);
+
+          runner.abort('agent-1');
+          async.flushMicrotasks();
+          expect(a1, isTrue);
+          expect(a2, isFalse);
+        });
+      });
+
+      test('abortFuture returns null when no run is active', () {
+        expect(runner.abortFuture('agent-cold'), isNull);
       });
     });
   });

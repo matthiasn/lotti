@@ -73,9 +73,25 @@ class TaskProgressController extends _$TaskProgressController {
       return null;
     }
 
+    // The DB snapshot's `dateTo` for the currently-running timer is stale
+    // (it equals `dateFrom` until a stop or save flushes a fresh `dateTo`
+    // back to the row), so re-fetching unconditionally would clobber the
+    // in-memory range that the 1Hz `TimeService` ticker owns. That made the
+    // cumulative recorded time blip back to 0 every time an unrelated
+    // notification (checklist item toggle, sub-entry edit, …) arrived for
+    // this task — until the next tick caught the display back up. Preserve
+    // the live range across the re-fetch so the running timer never
+    // "resets" on incidental task-scoped notifications.
+    final live = _timeService.getCurrent();
+    final isLiveForThisTask = live != null && _timeService.linkedFrom?.id == id;
+    final liveRange = isLiveForThisTask ? _timeRanges[live.meta.id] : null;
+
     _timeRanges
       ..clear()
       ..addAll(timeRanges);
+    if (isLiveForThisTask && liveRange != null) {
+      _timeRanges[live.meta.id] = liveRange;
+    }
 
     _subscribedIds.addAll(timeRanges.keys);
 

@@ -635,6 +635,79 @@ void main() {
   );
 
   testWidgets(
+    'tapping the trailing × on an ongoing wake calls abortRunningWake on '
+    'the agent service',
+    (tester) async {
+      final agentService = MockAgentService();
+      when(() => agentService.abortRunningWake(any())).thenReturn(true);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            const [],
+            agentService: agentService,
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Refine sidebar',
+                startedAt: fixedNow.subtract(const Duration(seconds: 5)),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      await tester.tap(
+        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+      );
+      await tester.pump();
+
+      verify(() => agentService.abortRunningWake('agent-running')).called(1);
+      verifyNever(() => agentService.cancelPendingWake(any()));
+      verifyNever(() => agentService.clearScheduledWake(any()));
+    },
+  );
+
+  testWidgets(
+    'a second × tap on an ongoing wake while the first is still in flight '
+    'is a no-op (covers the early-return guard in `_abortWake`)',
+    (tester) async {
+      final agentService = MockAgentService();
+      when(() => agentService.abortRunningWake(any())).thenReturn(true);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            const [],
+            agentService: agentService,
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Stuck wake',
+                startedAt: fixedNow,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      final cancelTooltip = element.messages.sidebarWakesCancelTooltip;
+
+      // First tap fires abort + flips _cancelling → spinner replaces ×.
+      await tester.tap(find.byTooltip(cancelTooltip));
+      await tester.pump();
+
+      verify(() => agentService.abortRunningWake('agent-running')).called(1);
+
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
     "tapping an ongoing wake routes to that agent's instance page",
     (tester) async {
       String? captured;

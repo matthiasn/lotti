@@ -149,6 +149,15 @@ class WakeOrchestrator {
   /// drain after this duration, allowing bursty edits to coalesce.
   static const throttleWindow = Duration(seconds: 120);
 
+  /// Hard upper bound for a single wake cycle. If the executor has not
+  /// returned within this window the run is signalled to abort, the
+  /// wake-run row is marked `aborted`, and the runner lock is released so
+  /// the agent can be re-triggered. The executor future may still complete
+  /// in the background (Dart cannot cancel arbitrary futures), but its
+  /// result is ignored and its mutations are treated like any other DB
+  /// write — i.e. they may surface as new notifications.
+  static const wakeRunMaxDuration = Duration(minutes: 2);
+
   // Post-execution drain is handled by [WakeThrottleCoordinator]'s deferred
   // drain timer. After a subscription wake completes, a drain is scheduled at
   // `now + throttleWindow`, which picks up signals that arrived during
@@ -877,6 +886,7 @@ class WakeOrchestrator {
       }
 
       final startTime = clock.now();
+      Timer? timeoutTimer;
       try {
         // Pre-register suppression for the trigger tokens BEFORE executing.
         // This prevents a race where the executor writes to the DB, the
@@ -884,19 +894,87 @@ class WakeOrchestrator {
         // before the executor returns and recordMutatedEntities is called.
         _preRegisterSuppression(job.agentId, job.triggerTokens);
 
-        // Run the executor inside an agent-execution zone so that any
-        // DB writes made by agent tools are tagged.  PersistenceLogic
-        // checks this zone value and routes notifications through
-        // notifyUiOnly instead of notify, preventing self-wake.
-        final mutated = await runZoned(
-          () => executor(
-            job.agentId,
-            job.runKey,
-            job.triggerTokens,
-            threadId,
+        // Hard cap: arm the timeout before we start the executor so the
+        // run cannot exceed [wakeRunMaxDuration]. The timer fires the same
+        // abort signal the user-initiated cancel button triggers, so both
+        // paths take the same shutdown branch below.
+        timeoutTimer = Timer(wakeRunMaxDuration, () {
+          if (runner.abort(job.agentId)) {
+            _log(
+              'wake timed out after ${wakeRunMaxDuration.inSeconds}s '
+              'for ${DomainLogger.sanitizeId(job.agentId)} — aborting',
+              subDomain: 'timeout',
+            );
+          }
+        });
+
+        // Race the executor against the abort signal. The executor future
+        // cannot actually be cancelled in Dart — when abort wins we simply
+        // stop awaiting it and let it run to completion in the background.
+        // Its mutations land via the normal DB path; the pre-registered
+        // suppression is cleared below so the agent can re-trigger on its
+        // next legitimate notification.
+        final abortFuture = runner.abortFuture(job.agentId);
+        final completed = Completer<Map<String, VectorClock>?>();
+        final aborted = Completer<void>();
+
+        unawaited(
+          runZoned(
+            () => executor(
+              job.agentId,
+              job.runKey,
+              job.triggerTokens,
+              threadId,
+            ),
+            zoneValues: {agentExecutionZoneKey: true},
+          ).then(
+            (value) {
+              if (!completed.isCompleted) completed.complete(value);
+            },
+            onError: (Object e, StackTrace s) {
+              if (!completed.isCompleted) completed.completeError(e, s);
+            },
           ),
-          zoneValues: {agentExecutionZoneKey: true},
         );
+
+        if (abortFuture != null) {
+          unawaited(
+            abortFuture.then((_) {
+              if (!aborted.isCompleted) aborted.complete();
+            }),
+          );
+        }
+
+        final winner = await Future.any<Object?>([
+          completed.future,
+          aborted.future,
+        ]);
+        timeoutTimer.cancel();
+
+        final wasAborted = aborted.isCompleted && !completed.isCompleted;
+        if (wasAborted) {
+          _suppression.clearPreRegistered(job.agentId);
+          final elapsed = clock.now().difference(startTime);
+          _log(
+            'wake aborted after ${elapsed.inMilliseconds}ms '
+            'for ${DomainLogger.sanitizeId(job.agentId)}',
+            subDomain: 'execute',
+          );
+          await _safeUpdateStatus(
+            job.runKey,
+            WakeRunStatus.aborted.name,
+            completedAt: clock.now(),
+            errorMessage: elapsed >= wakeRunMaxDuration
+                ? 'timeout'
+                : 'cancelled',
+          );
+          // Aborted wakes do not arm the throttle deadline — re-allowing
+          // the agent to wake on the next notification keeps the system
+          // responsive after an unstuck cycle.
+          return;
+        }
+
+        final mutated = winner as Map<String, VectorClock>?;
 
         // Clear pre-registered suppression and record only the actual
         // mutations.  The zone-based isAgentExecution in PersistenceLogic
@@ -940,11 +1018,20 @@ class WakeOrchestrator {
           WakeRunStatus.failed.name,
           errorMessage: e.toString(),
         );
+      } finally {
+        timeoutTimer?.cancel();
       }
     } finally {
       runner.release(job.agentId);
     }
   }
+
+  /// Abort the in-flight wake for [agentId], if any.
+  ///
+  /// Used by the user-initiated cancel button on the ongoing wake row.
+  /// Returns `true` when an active run was signalled, `false` when the
+  /// agent is not currently running.
+  bool abortRunningWake(String agentId) => runner.abort(agentId);
 
   /// Update wake run status, swallowing any DB errors so they don't escape
   /// `_executeJob` / `_drain` / `processNext`.

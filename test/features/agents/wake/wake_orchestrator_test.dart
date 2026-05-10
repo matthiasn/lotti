@@ -3649,8 +3649,10 @@ void main() {
           emitAndDrain(async, controller, {'entity-stuck'});
           expect(executionCount, 1);
 
-          // Advance only 2 minutes (within 5-minute timeout).
-          async.elapse(const Duration(minutes: 2));
+          // Advance 60 seconds — well within both the 5-minute drain
+          // stale-lock window and the per-cycle wakeRunMaxDuration cap, so
+          // the stuck executor is still in flight.
+          async.elapse(const Duration(seconds: 60));
 
           // Enqueue a manual wake — should set _drainRequested, not
           // force-reset.
@@ -4351,6 +4353,112 @@ void main() {
         // Verify that outside the executor context, the zone flag is false.
         expect(isAgentExecution, isFalse);
       });
+    });
+
+    group('abort and timeout', () {
+      test(
+        'abortRunningWake signals an in-flight executor and marks the run aborted',
+        () {
+          fakeAsync((async) {
+            final gate = Completer<Map<String, VectorClock>?>();
+            orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) =>
+                gate.future;
+
+            queue.enqueue(makeJob());
+            unawaited(orchestrator.processNext());
+            async.flushMicrotasks();
+
+            expect(runner.isRunning('agent-1'), isTrue);
+
+            final aborted = orchestrator.abortRunningWake('agent-1');
+            async.flushMicrotasks();
+
+            expect(aborted, isTrue);
+            expect(runner.isRunning('agent-1'), isFalse);
+
+            // The wake-run row was finalised with status `aborted` and the
+            // 'cancelled' error message (timeout would set 'timeout').
+            verify(
+              () => mockRepository.updateWakeRunStatus(
+                any(),
+                WakeRunStatus.aborted.name,
+                completedAt: any(named: 'completedAt'),
+                errorMessage: 'cancelled',
+              ),
+            ).called(1);
+
+            // Even though we stopped awaiting it, the underlying future is
+            // still pending — completing it now must not throw or re-mutate
+            // suppression state.
+            gate.complete(const {});
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'wakeRunMaxDuration fires an automatic abort when the executor stalls',
+        () {
+          fakeAsync((async) {
+            final gate = Completer<Map<String, VectorClock>?>();
+            orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) =>
+                gate.future;
+
+            queue.enqueue(makeJob());
+            unawaited(orchestrator.processNext());
+            async.flushMicrotasks();
+            expect(runner.isRunning('agent-1'), isTrue);
+
+            // Advance just under the cap — still running.
+            async
+              ..elapse(
+                WakeOrchestrator.wakeRunMaxDuration -
+                    const Duration(seconds: 1),
+              )
+              ..flushMicrotasks();
+            expect(runner.isRunning('agent-1'), isTrue);
+
+            // Cross the cap — timer fires the abort signal.
+            async
+              ..elapse(const Duration(seconds: 2))
+              ..flushMicrotasks();
+
+            expect(runner.isRunning('agent-1'), isFalse);
+            verify(
+              () => mockRepository.updateWakeRunStatus(
+                any(),
+                WakeRunStatus.aborted.name,
+                completedAt: any(named: 'completedAt'),
+                errorMessage: 'timeout',
+              ),
+            ).called(1);
+
+            gate.complete(const {});
+            async.flushMicrotasks();
+          });
+        },
+      );
+
+      test(
+        'abortRunningWake on an idle agent returns false and does not '
+        'persist a wake-run row',
+        () {
+          fakeAsync((async) {
+            final aborted = orchestrator.abortRunningWake('agent-cold');
+            async.flushMicrotasks();
+
+            expect(aborted, isFalse);
+            verifyNever(
+              () => mockRepository.updateWakeRunStatus(
+                any(),
+                any(),
+                completedAt: any(named: 'completedAt'),
+                errorMessage: any(named: 'errorMessage'),
+              ),
+            );
+          });
+        },
+      );
     });
   });
 }

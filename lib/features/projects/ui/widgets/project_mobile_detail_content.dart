@@ -23,6 +23,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
     this.onTargetDateTap,
     this.onStatusTap,
     this.onRefreshReport,
+    this.onCancelScheduledReportWake,
     this.isRefreshingReport = false,
     this.onTaskTap,
     super.key,
@@ -35,6 +36,7 @@ class ProjectMobileDetailContent extends StatefulWidget {
   final VoidCallback? onTargetDateTap;
   final VoidCallback? onStatusTap;
   final VoidCallback? onRefreshReport;
+  final VoidCallback? onCancelScheduledReportWake;
   final bool isRefreshingReport;
   final ValueChanged<TaskSummary>? onTaskTap;
 
@@ -124,6 +126,8 @@ class _ProjectMobileDetailContentState
                             ),
                             nextWakeAt: widget.record.reportNextWakeAt,
                             onRefresh: widget.onRefreshReport,
+                            onCancelScheduledWake:
+                                widget.onCancelScheduledReportWake,
                             isRefreshing: widget.isRefreshingReport,
                           ),
                         ),
