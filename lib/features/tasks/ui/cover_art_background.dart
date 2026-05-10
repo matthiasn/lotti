@@ -56,16 +56,21 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
       fit: StackFit.expand,
       children: [
         LayoutBuilder(
-          builder: (context, constraints) => Image.file(
-            File(path),
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
-            cacheHeight: (constraints.maxHeight * 3).toInt(),
-            errorBuilder: (context, error, stackTrace) {
-              imageCache.evict(FileImage(File(path)));
-              return const SizedBox.shrink();
-            },
-          ),
+          builder: (context, constraints) {
+            final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+            return Image.file(
+              File(path),
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              cacheHeight: constraints.hasBoundedHeight
+                  ? (constraints.maxHeight * devicePixelRatio).round()
+                  : null,
+              errorBuilder: (context, error, stackTrace) {
+                imageCache.evict(FileImage(File(path)));
+                return const SizedBox.shrink();
+              },
+            );
+          },
         ),
         const DecoratedBox(
           decoration: BoxDecoration(

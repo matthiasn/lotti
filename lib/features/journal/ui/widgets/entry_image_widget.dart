@@ -21,6 +21,7 @@ class EntryImageWidget extends ConsumerWidget {
     final file = File(getFullImagePath(journalImage));
     final focusNode = notifier.focusNode;
     final screenWidth = MediaQuery.sizeOf(context).width;
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final maxHeight = isMobile ? 400.0 : screenWidth;
 
     return GestureDetector(
@@ -44,7 +45,8 @@ class EntryImageWidget extends ConsumerWidget {
               file,
               width: screenWidth,
               fit: BoxFit.contain,
-              cacheHeight: (maxHeight * 3).toInt(),
+              cacheWidth: (screenWidth * devicePixelRatio).round(),
+              cacheHeight: (maxHeight * devicePixelRatio).round(),
               errorBuilder: (context, error, stackTrace) {
                 imageCache.evict(FileImage(file));
                 return const SizedBox.shrink();
