@@ -1116,6 +1116,126 @@ void main() {
       },
     );
 
+    test(
+      'falls through to the project title when the task title is empty — '
+      'recovers the row from the generic "Task Agent" displayName fallback',
+      () async {
+        final fixed = DateTime(2026, 5, 5, 21);
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
+        final mockRepository = MockAgentRepository();
+        final mockAgentService = MockAgentService();
+        final mockJournalDb = MockJournalDb();
+        final notifications = UpdateNotifications();
+        addTearDown(notifications.dispose);
+
+        when(
+          () => mockRepository.getAgentState('agent-fallthrough'),
+        ).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-fallthrough',
+            slots: const AgentSlots(
+              activeTaskId: 'task-empty',
+              activeProjectId: 'project-named',
+            ),
+          ),
+        );
+        // The task exists but its title is whitespace — without the
+        // task→project fall-through, this collapses straight to the
+        // agent's displayName ("Task Agent").
+        when(() => mockJournalDb.journalEntityById('task-empty')).thenAnswer(
+          (_) async => makeTestTask(id: 'task-empty', title: '   '),
+        );
+        when(() => mockJournalDb.journalEntityById('project-named')).thenAnswer(
+          (_) async => makeTestProject(
+            id: 'project-named',
+            title: 'Platform refresh',
+          ),
+        );
+        when(
+          () => mockAgentService.getAgent('agent-fallthrough'),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(
+            agentId: 'agent-fallthrough',
+            displayName: 'Task Agent',
+          ),
+        );
+
+        await withClock(Clock.fixed(fixed), () async {
+          await runner.tryAcquire('agent-fallthrough');
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            wakeRunnerProvider.overrideWithValue(runner),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final records = await container.read(
+          ongoingWakeRecordsProvider.future,
+        );
+        expect(records, hasLength(1));
+        expect(records.single.title, 'Platform refresh');
+        // The renderer should re-watch the project ID — not the empty
+        // task ID — so future renames of the project propagate live.
+        expect(records.single.subjectId, 'project-named');
+      },
+    );
+
+    test(
+      'records the active task subjectId so a renderer can watch '
+      'pendingWakeTargetTitleProvider for live rename updates',
+      () async {
+        final fixed = DateTime(2026, 5, 5, 21);
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
+        final mockRepository = MockAgentRepository();
+        final mockAgentService = MockAgentService();
+        final mockJournalDb = MockJournalDb();
+        final notifications = UpdateNotifications();
+        addTearDown(notifications.dispose);
+
+        when(
+          () => mockRepository.getAgentState('agent-rename'),
+        ).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-rename',
+            slots: const AgentSlots(activeTaskId: 'task-rename'),
+          ),
+        );
+        when(() => mockJournalDb.journalEntityById('task-rename')).thenAnswer(
+          (_) async => makeTestTask(id: 'task-rename', title: 'GLaDOS'),
+        );
+
+        await withClock(Clock.fixed(fixed), () async {
+          await runner.tryAcquire('agent-rename');
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            wakeRunnerProvider.overrideWithValue(runner),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final records = await container.read(
+          ongoingWakeRecordsProvider.future,
+        );
+        expect(records, hasLength(1));
+        expect(records.single.title, 'GLaDOS');
+        expect(records.single.subjectId, 'task-rename');
+      },
+    );
+
     test('sorts results by startedAt ascending', () async {
       final earlier = DateTime(2026, 5, 5, 20);
       final later = DateTime(2026, 5, 5, 21);
@@ -1267,6 +1387,50 @@ void main() {
         );
       },
     );
+
+    test(
+      'returns null when the title is empty or whitespace so callers fall '
+      'through to the agent display-name fallback rather than rendering blank',
+      () async {
+        when(() => mockJournalDb.journalEntityById('task-blank')).thenAnswer(
+          (_) async => makeTestTask(id: 'task-blank', title: '   '),
+        );
+        when(() => mockJournalDb.journalEntityById('project-blank')).thenAnswer(
+          (_) async => makeTestProject(id: 'project-blank', title: ''),
+        );
+
+        final container = createContainer();
+
+        expect(
+          await container.read(
+            pendingWakeTargetTitleProvider('task-blank').future,
+          ),
+          isNull,
+        );
+        expect(
+          await container.read(
+            pendingWakeTargetTitleProvider('project-blank').future,
+          ),
+          isNull,
+        );
+      },
+    );
+
+    test('trims surrounding whitespace from non-empty titles', () async {
+      when(() => mockJournalDb.journalEntityById('task-padded')).thenAnswer(
+        (_) async =>
+            makeTestTask(id: 'task-padded', title: '  Refine sidebar  '),
+      );
+
+      final container = createContainer();
+
+      expect(
+        await container.read(
+          pendingWakeTargetTitleProvider('task-padded').future,
+        ),
+        'Refine sidebar',
+      );
+    });
   });
 
   group('hourlyWakeActivityProvider', () {

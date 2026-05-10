@@ -229,6 +229,21 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
       }),
     );
 
+    // Live title: re-watch the linked task/project title so a rename
+    // refreshes the row without waiting for the agent to stop and
+    // restart. Falls back to the snapshot title on the record (which
+    // already encodes the agent.displayName / agentId fallback) when
+    // the provider has no usable title.
+    final liveSubjectTitle = record.subjectId == null
+        ? null
+        : ref
+              .watch(pendingWakeTargetTitleProvider(record.subjectId))
+              .value
+              ?.trim();
+    final title = liveSubjectTitle != null && liveSubjectTitle.isNotEmpty
+        ? liveSubjectTitle
+        : record.title;
+
     return Row(
       children: [
         Expanded(
@@ -255,7 +270,7 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
                   SizedBox(width: tokens.spacing.step2),
                   Expanded(
                     child: Text(
-                      record.title,
+                      title,
                       style: titleStyle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

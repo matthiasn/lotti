@@ -708,6 +708,89 @@ void main() {
   );
 
   testWidgets(
+    'ongoing-wake row updates its title live when '
+    'pendingWakeTargetTitleProvider re-emits — covers the rename '
+    'staleness case where renaming the task left the WAKES widget '
+    'showing the old title until the agent stopped',
+    (tester) async {
+      final startedAt = fixedNow.subtract(const Duration(seconds: 4));
+      final controller = StreamController<String?>();
+      addTearDown(controller.close);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SidebarWakeQueue(),
+            theme: DesignSystemTheme.dark(),
+            overrides: [
+              pendingWakeRecordsProvider.overrideWith(
+                (ref) async => const <PendingWakeRecord>[],
+              ),
+              ongoingWakeRecordsProvider.overrideWith(
+                (ref) async => [
+                  OngoingWakeRecord(
+                    agentId: 'agent-rename',
+                    title: 'snapshot fallback',
+                    subjectId: 'task-rename',
+                    startedAt: startedAt,
+                  ),
+                ],
+              ),
+              pendingWakeTargetTitleProvider(
+                'task-rename',
+              ).overrideWith((ref) => controller.stream.first),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        controller.add('GLaDOS');
+        await tester.pump();
+        expect(find.text('GLaDOS'), findsOneWidget);
+        expect(find.text('snapshot fallback'), findsNothing);
+      });
+    },
+  );
+
+  testWidgets(
+    'ongoing-wake row falls back to record.title when '
+    'pendingWakeTargetTitleProvider yields null/empty',
+    (tester) async {
+      final startedAt = fixedNow.subtract(const Duration(seconds: 4));
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SidebarWakeQueue(),
+            theme: DesignSystemTheme.dark(),
+            overrides: [
+              pendingWakeRecordsProvider.overrideWith(
+                (ref) async => const <PendingWakeRecord>[],
+              ),
+              ongoingWakeRecordsProvider.overrideWith(
+                (ref) async => [
+                  OngoingWakeRecord(
+                    agentId: 'agent-stale',
+                    title: 'agent-stale',
+                    subjectId: 'task-blank',
+                    startedAt: startedAt,
+                  ),
+                ],
+              ),
+              pendingWakeTargetTitleProvider(
+                'task-blank',
+              ).overrideWith((ref) async => null),
+            ],
+          ),
+        );
+        await tester.pump();
+      });
+
+      expect(find.text('agent-stale'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     "tapping an ongoing wake routes to that agent's instance page",
     (tester) async {
       String? captured;
