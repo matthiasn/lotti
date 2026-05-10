@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
@@ -8,6 +9,188 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
+
+enum _GeneratedAutomationOperation {
+  transcribeDefault,
+  transcribeOptIn,
+  transcribeOptOut,
+  analyzeImage,
+}
+
+enum _GeneratedAutomationAssignmentShape {
+  nonAutomatedTarget,
+  automatedMissingConfig,
+  automatedWrongConfigType,
+  automatedMismatchedSkill,
+  automatedMatchingSkill,
+}
+
+class _GeneratedAutomationAssignmentSpec {
+  const _GeneratedAutomationAssignmentSpec({
+    required this.shape,
+    required this.seed,
+  });
+
+  final _GeneratedAutomationAssignmentShape shape;
+  final int seed;
+
+  bool get automate =>
+      shape != _GeneratedAutomationAssignmentShape.nonAutomatedTarget;
+
+  String skillIdAt(int index) => 'generated-skill-$index-$seed-${shape.name}';
+
+  @override
+  String toString() {
+    return '_GeneratedAutomationAssignmentSpec('
+        'shape: $shape, seed: $seed)';
+  }
+}
+
+class _GeneratedAutomationServiceScenario {
+  const _GeneratedAutomationServiceScenario({
+    required this.operation,
+    required this.profileMissing,
+    required this.modelSlotPresent,
+    required this.assignmentSpecs,
+  });
+
+  final _GeneratedAutomationOperation operation;
+  final bool profileMissing;
+  final bool modelSlotPresent;
+  final List<_GeneratedAutomationAssignmentSpec> assignmentSpecs;
+
+  SkillType get targetSkillType => switch (operation) {
+    _GeneratedAutomationOperation.transcribeDefault ||
+    _GeneratedAutomationOperation.transcribeOptIn ||
+    _GeneratedAutomationOperation.transcribeOptOut => SkillType.transcription,
+    _GeneratedAutomationOperation.analyzeImage => SkillType.imageAnalysis,
+  };
+
+  bool get speechOptedOut =>
+      operation == _GeneratedAutomationOperation.transcribeOptOut;
+
+  List<SkillAssignment> get assignments => [
+    for (var index = 0; index < assignmentSpecs.length; index++)
+      SkillAssignment(
+        skillId: assignmentSpecs[index].skillIdAt(index),
+        automate: assignmentSpecs[index].automate,
+      ),
+  ];
+
+  List<String> get expectedLookupIds {
+    if (profileMissing || speechOptedOut) return const [];
+    return [
+      for (var index = 0; index < assignmentSpecs.length; index++)
+        if (assignmentSpecs[index].automate)
+          assignmentSpecs[index].skillIdAt(index),
+    ];
+  }
+
+  bool get expectedHandled {
+    if (profileMissing || speechOptedOut || !modelSlotPresent) {
+      return false;
+    }
+    return matchingAssignmentIndices.length == 1;
+  }
+
+  List<int> get matchingAssignmentIndices => [
+    for (var index = 0; index < assignmentSpecs.length; index++)
+      if (assignmentSpecs[index].shape ==
+          _GeneratedAutomationAssignmentShape.automatedMatchingSkill)
+        index,
+  ];
+
+  int? get handledIndex =>
+      expectedHandled ? matchingAssignmentIndices.single : null;
+
+  SkillType skillTypeFor(String skillId) {
+    final index = _indexFromSkillId(skillId);
+    final shape = assignmentSpecs[index].shape;
+    if (shape == _GeneratedAutomationAssignmentShape.automatedMatchingSkill ||
+        shape == _GeneratedAutomationAssignmentShape.nonAutomatedTarget) {
+      return targetSkillType;
+    }
+    return targetSkillType == SkillType.transcription
+        ? SkillType.imageAnalysis
+        : SkillType.transcription;
+  }
+
+  AiConfig? configFor(
+    String skillId,
+    AiConfigSkill Function({
+      required String id,
+      required SkillType skillType,
+    })
+    makeGeneratedSkill,
+  ) {
+    final index = _indexFromSkillId(skillId);
+    final shape = assignmentSpecs[index].shape;
+    return switch (shape) {
+      _GeneratedAutomationAssignmentShape.nonAutomatedTarget =>
+        makeGeneratedSkill(id: skillId, skillType: targetSkillType),
+      _GeneratedAutomationAssignmentShape.automatedMissingConfig => null,
+      _GeneratedAutomationAssignmentShape.automatedWrongConfigType =>
+        testInferenceProvider(id: 'generated-provider-$index'),
+      _GeneratedAutomationAssignmentShape.automatedMismatchedSkill ||
+      _GeneratedAutomationAssignmentShape.automatedMatchingSkill =>
+        makeGeneratedSkill(id: skillId, skillType: skillTypeFor(skillId)),
+    };
+  }
+
+  int _indexFromSkillId(String skillId) {
+    final parts = skillId.split('-');
+    return int.parse(parts[2]);
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedAutomationServiceScenario('
+        'operation: $operation, '
+        'profileMissing: $profileMissing, '
+        'modelSlotPresent: $modelSlotPresent, '
+        'assignmentSpecs: $assignmentSpecs)';
+  }
+}
+
+extension _AnyGeneratedAutomationServiceScenario on glados.Any {
+  glados.Generator<_GeneratedAutomationOperation> get automationOperation =>
+      glados.AnyUtils(this).choose(_GeneratedAutomationOperation.values);
+
+  glados.Generator<_GeneratedAutomationAssignmentShape>
+  get automationAssignmentShape =>
+      glados.AnyUtils(this).choose(_GeneratedAutomationAssignmentShape.values);
+
+  glados.Generator<_GeneratedAutomationAssignmentSpec>
+  get automationAssignmentSpec => glados.CombinableAny(this).combine2(
+    automationAssignmentShape,
+    glados.IntAnys(this).intInRange(0, 1000),
+    (
+      _GeneratedAutomationAssignmentShape shape,
+      int seed,
+    ) => _GeneratedAutomationAssignmentSpec(shape: shape, seed: seed),
+  );
+
+  glados.Generator<_GeneratedAutomationServiceScenario>
+  get automationServiceScenario => glados.CombinableAny(this).combine4(
+    automationOperation,
+    glados.AnyUtils(this).choose([false, true]),
+    glados.AnyUtils(this).choose([false, true]),
+    glados.ListAnys(
+      this,
+    ).listWithLengthInRange(0, 6, automationAssignmentSpec),
+    (
+      _GeneratedAutomationOperation operation,
+      bool profileMissing,
+      bool modelSlotPresent,
+      List<_GeneratedAutomationAssignmentSpec> assignmentSpecs,
+    ) => _GeneratedAutomationServiceScenario(
+      operation: operation,
+      profileMissing: profileMissing,
+      modelSlotPresent: modelSlotPresent,
+      assignmentSpecs: assignmentSpecs,
+    ),
+  );
+}
 
 void main() {
   late MockProfileAutomationResolver mockResolver;
@@ -448,6 +631,102 @@ void main() {
         },
       );
     });
+
+    glados.Glados(
+      glados.any.automationServiceScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'matches generated automation assignment filtering semantics',
+      (scenario) async {
+        final localResolver = MockProfileAutomationResolver();
+        final localAiConfig = MockAiConfigRepository();
+        final localService = ProfileAutomationService(
+          resolver: localResolver,
+          aiConfigRepository: localAiConfig,
+        );
+        final actualLookupIds = <String>[];
+        var resolverCalls = 0;
+
+        AiConfigSkill makeGeneratedSkill({
+          required String id,
+          required SkillType skillType,
+        }) {
+          return makeSkill(
+            id: id,
+            name: 'Generated $id',
+            skillType: skillType,
+          );
+        }
+
+        final profile = makeProfile(
+          skillAssignments: scenario.assignments,
+          withTranscription:
+              scenario.targetSkillType == SkillType.transcription &&
+              scenario.modelSlotPresent,
+          withImageRecognition:
+              scenario.targetSkillType == SkillType.imageAnalysis &&
+              scenario.modelSlotPresent,
+        );
+
+        when(
+          () => localResolver.resolveForTask('generated-task'),
+        ).thenAnswer((_) async {
+          resolverCalls++;
+          return scenario.profileMissing ? null : profile;
+        });
+        when(
+          () => localAiConfig.getConfigById(any()),
+        ).thenAnswer((invocation) async {
+          final skillId = invocation.positionalArguments.single as String;
+          actualLookupIds.add(skillId);
+          return scenario.configFor(skillId, makeGeneratedSkill);
+        });
+
+        final result = switch (scenario.operation) {
+          _GeneratedAutomationOperation.transcribeDefault =>
+            await localService.tryTranscribe(taskId: 'generated-task'),
+          _GeneratedAutomationOperation.transcribeOptIn =>
+            await localService.tryTranscribe(
+              taskId: 'generated-task',
+              enableSpeechRecognition: true,
+            ),
+          _GeneratedAutomationOperation.transcribeOptOut =>
+            await localService.tryTranscribe(
+              taskId: 'generated-task',
+              enableSpeechRecognition: false,
+            ),
+          _GeneratedAutomationOperation.analyzeImage =>
+            await localService.tryAnalyzeImage(taskId: 'generated-task'),
+        };
+
+        expect(
+          resolverCalls,
+          scenario.speechOptedOut ? 0 : 1,
+          reason: '$scenario',
+        );
+        expect(
+          actualLookupIds,
+          scenario.expectedLookupIds,
+          reason: '$scenario',
+        );
+        expect(result.handled, scenario.expectedHandled, reason: '$scenario');
+
+        if (!scenario.expectedHandled) {
+          expect(result.resolvedProfile, isNull, reason: '$scenario');
+          expect(result.skill, isNull, reason: '$scenario');
+          expect(result.skillAssignment, isNull, reason: '$scenario');
+          return;
+        }
+
+        final handledIndex = scenario.handledIndex!;
+        final expectedAssignment = scenario.assignments[handledIndex];
+        expect(result.resolvedProfile, profile, reason: '$scenario');
+        expect(result.skillAssignment, expectedAssignment, reason: '$scenario');
+        expect(result.skill, isA<AiConfigSkill>(), reason: '$scenario');
+        expect(result.skill!.id, expectedAssignment.skillId);
+        expect(result.skill!.skillType, scenario.targetSkillType);
+      },
+    );
 
     group('hasAutomatedSkillType', () {
       test('returns true when skill type is available', () async {
