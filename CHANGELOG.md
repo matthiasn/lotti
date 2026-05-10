@@ -44,6 +44,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the elapsed-but-unsaved tail. The handler now routes through
   `EntryController.save(stopRecording: true)` for the running timer
   entry, mirroring the entry-editor stop button.
+- Slow-query log on the 2026-05-10 desktop super-slow trace flagged
+  four hot paths that all stemmed from query/index mismatches:
+  - `InboundQueue.stats()` ran four separate `selectOnly` aggregates
+    (three of them full SCANs of `inbound_event_queue` with a TEMP
+    B-TREE for GROUP BY) on every `_emitDepth` tick — captured at
+    1014 ms and 2244 ms in the slow log because no index covered
+    `(status, producer)`. Collapsed to one
+    `GROUP BY status, producer` query and added a v20
+    `idx_inbound_event_queue_status_producer_enqueued` composite so
+    the pivot is index-only over a tight key range.
+  - `getProjectTaskRollups` (`database.dart`) fell back to
+    `idx_journal_browse + USE TEMP B-TREE FOR GROUP BY` (327 ms)
+    because the query omitted `task = 1` even though every Task
+    write sets it. Adding the redundant predicate lets the planner
+    match the v40 `idx_journal_project_task_status` partial index
+    and stream the aggregate directly.
+  - `ChecklistRepository.getChecklistItemsForTask` materialised every
+    `ChecklistItem` the device had ever seen, JSON-decoded each one
+    and filtered in Dart (558 ms on the agent hot path). Replaced
+    with two indexed bulk-by-id lookups via
+    `journalEntitiesByIdsUnorderedAllPrivate`: first the parent
+    Checklists (whose `data.linkedChecklistItems` already lists
+    their children), then the items themselves. The unused
+    `deletedOnly` parameter was dropped because no caller passes
+    `true`.
+  - `SyncSequenceLogService` cache cleared every cached host
+    watermark, last-seen timestamp and materialised upper bound the
+    moment a single global 5-minute timer ticked over, regardless of
+    which host had been active. That produced the 200–500 ms
+    `getLastCounterForHost` waves visible in the slow log: a quiet
+    host's watermark got wiped just because some unrelated host had
+    been queried 5 minutes earlier. Replaced with a per-host
+    expiry map and a separate global TTL for the entry-keyed
+    last-sent-counter LRU; `_advanceLastCounterCache` now refreshes
+    the host's window so a host being actively backfilled does not
+    expire mid-run.
 - The Projects tab "+" FAB now opens the project create page directly
   inside the Projects tab via `/projects/create` instead of beaming
   through `/settings/projects/create`. On desktop the old route landed

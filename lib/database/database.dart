@@ -833,6 +833,15 @@ class JournalDb extends _$JournalDb {
         ? ''
         : ' AND private IN (${List.filled(privateStatuses.length, '?').join(', ')})';
 
+    // `task = 1` is logically implied by `type = 'Task'` and is set on
+    // every Task write, but the planner cannot deduce that from the
+    // schema. The v40 covering partial `idx_journal_project_task_status`
+    // declares `WHERE type = 'Task' AND task = 1 AND deleted = FALSE
+    // AND project_id IS NOT NULL`; without `task = 1` in this query's
+    // WHERE the planner falls back to `idx_journal_browse` plus a
+    // TEMP B-TREE for the GROUP BY (327 ms in the 2026-05-10 super-slow
+    // log). Adding the redundant `task = 1` lets the planner match the
+    // partial and stream the aggregate directly from index entries.
     final rows = await customSelect(
       '''
         SELECT
@@ -844,6 +853,7 @@ class JournalDb extends _$JournalDb {
         WHERE project_id IN ($projectPlaceholders)
           AND deleted = FALSE
           AND type = 'Task'
+          AND task = 1
           $privateClause
         GROUP BY project_id
       ''',

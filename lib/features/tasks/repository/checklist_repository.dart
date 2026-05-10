@@ -313,26 +313,53 @@ class ChecklistRepository {
 
   Future<List<ChecklistItem>> getChecklistItemsForTask({
     required Task task,
-    required bool deletedOnly,
   }) async {
     final checklistIds = task.data.checklistIds ?? const <String>[];
     if (checklistIds.isEmpty) {
       return const [];
     }
 
-    final query = _journalDb.select(_journalDb.journal)
-      ..where((tbl) => tbl.type.equals('ChecklistItem'))
-      ..where((tbl) => tbl.deleted.equals(deletedOnly));
-    final dbEntities = await query.get();
+    // The previous shape filtered only on `type='ChecklistItem'` and
+    // `deleted=false`, materialised every ChecklistItem the device
+    // had ever seen, JSON-decoded each one, and matched by
+    // `linkedChecklists` in Dart — 558 ms in the 2026-05-10
+    // super-slow log on the agent hot path. The Checklist entity
+    // already lists its child ChecklistItem ids in
+    // `data.linkedChecklistItems`, so two indexed bulk-by-id lookups
+    // give us exactly the items we need.
+    final checklistDbRows = await _journalDb
+        .journalEntitiesByIdsUnorderedAllPrivate(checklistIds)
+        .get();
 
-    final items = <ChecklistItem>[];
-    for (final dbEntity in dbEntities) {
+    final itemIds = <String>{};
+    for (final dbEntity in checklistDbRows) {
       try {
         final entity = fromDbEntity(dbEntity);
-        if (entity is! ChecklistItem) continue;
-        final matches = entity.data.linkedChecklists.any(checklistIds.contains);
-        final isDeleted = entity.meta.deletedAt != null;
-        if (matches && deletedOnly == isDeleted) {
+        if (entity is Checklist) {
+          itemIds.addAll(entity.data.linkedChecklistItems);
+        }
+      } catch (error, stackTrace) {
+        _loggingService.captureException(
+          error,
+          domain: _callingDomain,
+          subDomain: 'getChecklistItemsForTask',
+          stackTrace: stackTrace,
+        );
+      }
+    }
+    if (itemIds.isEmpty) return const [];
+
+    final itemDbRows = await _journalDb
+        .journalEntitiesByIdsUnorderedAllPrivate(
+          itemIds.toList(growable: false),
+        )
+        .get();
+
+    final items = <ChecklistItem>[];
+    for (final dbEntity in itemDbRows) {
+      try {
+        final entity = fromDbEntity(dbEntity);
+        if (entity is ChecklistItem && entity.meta.deletedAt == null) {
           items.add(entity);
         }
       } catch (error, stackTrace) {

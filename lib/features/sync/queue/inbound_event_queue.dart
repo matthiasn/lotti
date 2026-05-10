@@ -676,6 +676,13 @@ class InboundQueue {
       domain: _logDomain,
       subDomain: _logSubRetry,
     );
+    // The retrying count is part of `QueueStats` and is observed by
+    // diagnostics + tests; without an emit here, a leased→retrying
+    // transition is invisible to depth subscribers until the next
+    // unrelated mutation. `_scheduleDepthEmit` is batch-aware, so a
+    // retry inside `runInTransaction` defers to the post-commit
+    // emission instead of firing mid-transaction.
+    _scheduleDepthEmit();
   }
 
   /// Flips [entry] to `status='abandoned'` when the worker gives up
@@ -921,69 +928,75 @@ class InboundQueue {
   /// Aggregate snapshot of queue state. `total` is the *active*
   /// depth (drainable rows); `applied` / `abandoned` / `retrying`
   /// carry the ledger breakdown for UI + diagnostics.
+  ///
+  /// Implementation note: a single `GROUP BY status, producer`
+  /// aggregate replaces the prior four selectOnly aggregates. The
+  /// previous shape did three full-table scans plus a TEMP B-TREE on
+  /// every poll because no index covered `(status, producer)` —
+  /// production slow-query log captured 1014 ms / 2244 ms hits at
+  /// `_emitDepth` cadence. The v20 partial index
+  /// `idx_inbound_event_queue_status_producer_enqueued` makes the
+  /// pivot index-only over a tight key range, and Dart pivots the
+  /// (≤ statuses × producers) result rows into the existing
+  /// `QueueStats` shape.
   Future<QueueStats> stats() async {
     final nowMs = clock.now().millisecondsSinceEpoch;
     final table = _db.inboundEventQueue;
     final countCol = table.queueId.count();
     final oldestCol = table.enqueuedAt.min();
 
-    // Aggregate over the active subset only — applied/abandoned
-    // rows are the ledger and must not inflate "total" for
-    // back-pressure or the depth card.
-    final totalRow =
+    // One aggregate scan: per (status, producer), get COUNT and
+    // MIN(enqueued_at). Pivots into total/byProducer/oldest plus
+    // applied/abandoned/retrying counts on the Dart side.
+    final pivotRows =
         await (_db.selectOnly(table)
-              ..addColumns([countCol, oldestCol])
-              ..where(table.status.isIn(_activeStatuses)))
-            .getSingle();
-    final total = totalRow.read(countCol) ?? 0;
-    final oldest = totalRow.read(oldestCol);
+              ..addColumns([
+                table.status,
+                table.producer,
+                countCol,
+                oldestCol,
+              ])
+              ..groupBy([table.status, table.producer]))
+            .get();
 
-    // Group-by aggregate for per-producer counts within the active
-    // subset so the UI breakdown matches the active total.
-    final byProducer = <InboundEventProducer, int>{};
-    if (total > 0) {
-      final producerRows =
-          await (_db.selectOnly(table)
-                ..addColumns([table.producer, countCol])
-                ..where(table.status.isIn(_activeStatuses))
-                ..groupBy([table.producer]))
-              .get();
-      for (final row in producerRows) {
-        final name = row.read(table.producer);
-        final c = row.read(countCol) ?? 0;
-        if (name != null && c > 0) {
-          byProducer[_producerFromName(name)] = c;
-        }
-      }
-    }
-
-    // Group-by status gives us applied/abandoned/retrying in a
-    // single scan; enqueued/leased contribute to `total` but are
-    // not individually surfaced.
+    var total = 0;
     var applied = 0;
     var abandoned = 0;
     var retrying = 0;
-    final statusRows =
-        await (_db.selectOnly(table)
-              ..addColumns([table.status, countCol])
-              ..groupBy([table.status]))
-            .get();
-    for (final row in statusRows) {
+    int? oldest;
+    final byProducer = <InboundEventProducer, int>{};
+
+    for (final row in pivotRows) {
       final status = row.read(table.status);
-      final c = row.read(countCol) ?? 0;
+      final producerName = row.read(table.producer);
+      final cnt = row.read(countCol) ?? 0;
+      if (cnt <= 0 || status == null || producerName == null) continue;
+      final rowOldest = row.read(oldestCol);
+
+      if (_activeStatuses.contains(status)) {
+        total += cnt;
+        final p = _producerFromName(producerName);
+        byProducer[p] = (byProducer[p] ?? 0) + cnt;
+        if (rowOldest != null && (oldest == null || rowOldest < oldest)) {
+          oldest = rowOldest;
+        }
+      }
       switch (status) {
         case _statusApplied:
-          applied = c;
+          applied += cnt;
         case _statusAbandoned:
-          abandoned = c;
+          abandoned += cnt;
         case _statusRetrying:
-          retrying = c;
+          retrying += cnt;
       }
     }
 
-    // Aggregate for the ready-now counter; mirrors peekBatchReady's
-    // predicate so the UI "ready" number matches what the worker
-    // would pick up.
+    // Ready-now keeps its own probe: the predicate is
+    // `status IN _peekStatuses AND next_due_at <= now AND
+    // lease_until <= now`, which the (status, next_due_at,
+    // lease_until) index satisfies as a per-status range scan and
+    // does not align with the (status, producer, enqueued_at)
+    // pivot's grouping.
     final readyRow =
         await (_db.selectOnly(table)
               ..addColumns([countCol])

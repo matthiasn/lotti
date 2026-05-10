@@ -366,7 +366,6 @@ class TaskAgentWorkflow {
           if (entity is! Task) return {};
           final items = await checklistRepository.getChecklistItemsForTask(
             task: entity,
-            deletedOnly: false,
           );
           return items
               .map((item) => item.data.title.toLowerCase().trim())

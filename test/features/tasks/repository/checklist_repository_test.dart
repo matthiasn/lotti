@@ -1160,4 +1160,215 @@ void main() {
       ).called(1);
     });
   });
+
+  group('getChecklistItemsForTask', () {
+    // Verifies the post-558ms-slow-query rewrite: the function used to
+    // scan every ChecklistItem in the journal and filter in Dart. The
+    // new shape issues two indexed bulk-by-id lookups: first the
+    // parent Checklists, then their `linkedChecklistItems` ids.
+    final taskMeta = Metadata(
+      id: 'task-1',
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: testDate,
+      dateTo: testDate,
+    );
+
+    Task buildTaskWithChecklists(List<String> checklistIds) => Task(
+      meta: taskMeta,
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: testDate,
+          utcOffset: 0,
+        ),
+        title: 'Task',
+        statusHistory: const [],
+        dateFrom: testDate,
+        dateTo: testDate,
+        checklistIds: checklistIds,
+      ),
+    );
+
+    Checklist buildChecklist(String id, List<String> linkedItemIds) =>
+        Checklist(
+          meta: Metadata(
+            id: id,
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+          data: ChecklistData(
+            title: 'cl-$id',
+            linkedChecklistItems: linkedItemIds,
+            linkedTasks: const [],
+          ),
+        );
+
+    ChecklistItem buildItem({
+      required String id,
+      required DateTime dateFrom,
+      DateTime? deletedAt,
+      List<String> linkedChecklists = const ['checklist-1'],
+    }) {
+      return ChecklistItem(
+        meta: Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: dateFrom,
+          dateTo: dateFrom,
+          deletedAt: deletedAt,
+        ),
+        data: ChecklistItemData(
+          title: 'item-$id',
+          isChecked: false,
+          linkedChecklists: linkedChecklists,
+        ),
+      );
+    }
+
+    void stubByIds(Map<String, JournalEntity> byId) {
+      when(
+        () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+      ).thenAnswer((invocation) {
+        final ids = invocation.positionalArguments.first as List<String>;
+        final rows = ids
+            .map((id) => byId[id])
+            .whereType<JournalEntity>()
+            .map(toDbEntity)
+            .toList();
+        final selectable = _MockSelectable<JournalDbEntity>();
+        when(selectable.get).thenAnswer((_) async => rows);
+        return selectable;
+      });
+    }
+
+    test('returns empty list when the task has no checklist ids', () async {
+      final task = buildTaskWithChecklists(const []);
+
+      final result = await repository.getChecklistItemsForTask(task: task);
+
+      expect(result, isEmpty);
+      verifyNever(
+        () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+      );
+    });
+
+    test(
+      'fetches parent checklists then their items via two bulk lookups, '
+      'filtering soft-deleted items and sorting by dateFrom desc',
+      () async {
+        final checklist = buildChecklist('checklist-1', [
+          'item-old',
+          'item-new',
+          'item-deleted',
+        ]);
+        final newer = buildItem(
+          id: 'item-new',
+          dateFrom: DateTime(2024, 6, 15),
+        );
+        final older = buildItem(
+          id: 'item-old',
+          dateFrom: DateTime(2024, 1, 15),
+        );
+        final deleted = buildItem(
+          id: 'item-deleted',
+          dateFrom: DateTime(2024, 5, 15),
+          deletedAt: DateTime(2024, 5, 16),
+        );
+        stubByIds({
+          'checklist-1': checklist,
+          'item-new': newer,
+          'item-old': older,
+          'item-deleted': deleted,
+        });
+
+        final task = buildTaskWithChecklists(const ['checklist-1']);
+        final result = await repository.getChecklistItemsForTask(task: task);
+
+        expect(result.map((i) => i.meta.id), ['item-new', 'item-old']);
+        // Two indexed bulk-by-id lookups (parent checklists, then
+        // their items) — the prior shape did one global type-scan.
+        verify(
+          () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).called(2);
+      },
+    );
+
+    test(
+      'returns empty list when none of the parent checklists are found',
+      () async {
+        stubByIds(const <String, JournalEntity>{});
+        final task = buildTaskWithChecklists(const ['missing-checklist']);
+
+        final result = await repository.getChecklistItemsForTask(task: task);
+
+        expect(result, isEmpty);
+        // Only the parent checklists were looked up — without item
+        // ids to fetch, the second bulk read is skipped.
+        verify(
+          () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs and skips a parent checklist row whose serialized JSON is '
+      'malformed instead of propagating the throw — a corrupt persisted '
+      'row should not poison the entire fetch',
+      () async {
+        when(
+          () => mockLoggingService.captureException(
+            any(),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final corruptRow = JournalDbEntity(
+          id: 'checklist-corrupt',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          deleted: false,
+          starred: false,
+          private: false,
+          task: false,
+          flag: 0,
+          type: 'Checklist',
+          serialized: 'this is not json',
+          schemaVersion: 0,
+          category: '',
+        );
+        when(
+          () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).thenAnswer((_) {
+          final selectable = _MockSelectable<JournalDbEntity>();
+          when(selectable.get).thenAnswer((_) async => [corruptRow]);
+          return selectable;
+        });
+
+        final task = buildTaskWithChecklists(const ['checklist-corrupt']);
+        final result = await repository.getChecklistItemsForTask(task: task);
+
+        expect(result, isEmpty);
+        verify(
+          () => mockLoggingService.captureException(
+            any(),
+            domain: any(named: 'domain'),
+            subDomain: 'getChecklistItemsForTask',
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
+        // No items recovered means the second bulk read is skipped.
+        verify(
+          () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).called(1);
+      },
+    );
+  });
 }

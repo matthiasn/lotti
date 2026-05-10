@@ -1196,6 +1196,39 @@ void main() {
         expect(depths.length, greaterThanOrEqualTo(3));
       },
     );
+
+    test(
+      'scheduleRetry emits a depth signal so subscribers waiting on '
+      'leased→retrying transitions wake up without polling',
+      () async {
+        await queue.enqueueLive(
+          _buildSyncEvent(eventId: r'$retry', roomId: roomA, originTsMs: 1),
+        );
+        final batch = await queue.peekBatchReady();
+        // Drain the enqueue emission so the assertion below isolates the
+        // signal triggered by scheduleRetry alone.
+        await pumpEventQueue();
+
+        var signalCount = 0;
+        final sub = queue.depthChanges.listen((_) => signalCount++);
+
+        await queue.scheduleRetry(
+          batch.single,
+          const Duration(seconds: 30),
+          reason: RetryReason.pendingAttachment,
+        );
+        await pumpEventQueue();
+        await sub.cancel();
+
+        // The depth signal itself does not carry the retrying count, so
+        // assert that a signal fired and that stats() now reflects the
+        // transition — together that is the contract the worker pipeline
+        // relies on (signal-then-poll).
+        expect(signalCount, greaterThanOrEqualTo(1));
+        final stats = await queue.stats();
+        expect(stats.retrying, 1);
+      },
+    );
   });
 
   group('ledger lifecycle (v13)', () {

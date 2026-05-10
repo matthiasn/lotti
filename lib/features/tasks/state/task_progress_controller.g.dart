@@ -52,7 +52,7 @@ final class TaskProgressControllerProvider
 }
 
 String _$taskProgressControllerHash() =>
-    r'd45adab30ed6d32300f82b4fb748750876990279';
+    r'4e831bc4e71f2bea3fdae70284c63154165ef0dc';
 
 final class TaskProgressControllerFamily extends $Family
     with
