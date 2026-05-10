@@ -59,6 +59,10 @@ class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail>
     }
 
     final alignmentX = (widget.cropX * 2) - 1;
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cap = widget.size > 0
+        ? (widget.size * devicePixelRatio).round().clamp(1, 10000)
+        : null;
 
     return SizedBox(
       width: widget.size,
@@ -69,7 +73,8 @@ class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail>
           alignment: Alignment(alignmentX, 0),
           child: Image.file(
             File(path),
-            cacheHeight: (widget.size * 3).toInt(),
+            cacheWidth: cap,
+            cacheHeight: cap,
           ),
         ),
       ),

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
@@ -74,11 +73,10 @@ void main() {
     });
 
     Widget makeSubject(JournalImage image) {
-      return ProviderScope(
+      return makeTestableWidget(
+        EntryImageWidget(image),
         overrides: [createEntryControllerOverride(image)],
-        child: MaterialApp(
-          home: Scaffold(body: EntryImageWidget(image)),
-        ),
+        mediaQueryData: phoneMediaQueryData.copyWith(devicePixelRatio: 3),
       );
     }
 
@@ -95,12 +93,14 @@ void main() {
       expect(imageWidget.fit, BoxFit.contain);
       expect(imageWidget.errorBuilder, isNotNull);
 
-      // The cacheHeight cap is applied by wrapping the FileImage in a
-      // ResizeImage. A bounded height ensures the decoded bitmap stays
-      // proportional to display size instead of the source resolution
-      // (which can be 10000×10000 per image_utils.compressAndSave limits).
+      // Both cacheWidth and cacheHeight cap the decoded bitmap (via
+      // ResizeImage) so extreme aspect ratios — e.g. panoramas — can't
+      // balloon along the unconstrained axis. Source images can be up to
+      // 10000×10000 per image_utils.compressAndSave limits.
       expect(imageWidget.image, isA<ResizeImage>());
       final resize = imageWidget.image as ResizeImage;
+      expect(resize.width, isNotNull);
+      expect(resize.width, greaterThan(0));
       expect(resize.height, isNotNull);
       expect(resize.height, greaterThan(0));
       expect(resize.imageProvider, isA<FileImage>());
