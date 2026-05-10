@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -24,6 +26,190 @@ import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
+
+enum _GeneratedPersistenceEntityKind {
+  journalEntry,
+  event,
+  task,
+  measurement,
+  habitCompletion,
+  image,
+  audio,
+}
+
+class _GeneratedUpdateDbEntityScenario {
+  const _GeneratedUpdateDbEntityScenario({
+    required this.kind,
+    required this.seed,
+    required this.applied,
+    required this.enqueueSync,
+    required this.hasLinkedId,
+    required this.parentCount,
+  });
+
+  final _GeneratedPersistenceEntityKind kind;
+  final int seed;
+  final bool applied;
+  final bool enqueueSync;
+  final bool hasLinkedId;
+  final int parentCount;
+
+  String? get linkedId => hasLinkedId ? 'linked-$seed' : null;
+
+  List<String> get parentIds => [
+    for (var index = 0; index < parentCount; index++) 'parent-$seed-$index',
+  ];
+
+  JournalEntity get entity => _buildGeneratedEntity(kind, seed);
+
+  Set<String> get expectedNotificationIds => {
+    ..._expectedAffectedIds(kind, 'entity-$seed'),
+    ?linkedId,
+    ...parentIds,
+    labelUsageNotification,
+  };
+
+  bool get shouldEnqueueSync => applied && enqueueSync;
+
+  @override
+  String toString() {
+    return '_GeneratedUpdateDbEntityScenario('
+        'kind: $kind, '
+        'seed: $seed, '
+        'applied: $applied, '
+        'enqueueSync: $enqueueSync, '
+        'linkedId: $linkedId, '
+        'parentIds: $parentIds)';
+  }
+}
+
+class _GeneratedCreateDbEntityScenario {
+  const _GeneratedCreateDbEntityScenario({
+    required this.seed,
+    required this.saved,
+    required this.enqueueSync,
+    required this.hasLinkedEntity,
+    required this.hasExplicitCategory,
+    required this.linkedPrivate,
+  });
+
+  final int seed;
+  final bool saved;
+  final bool enqueueSync;
+  final bool hasLinkedEntity;
+  final bool hasExplicitCategory;
+  final bool linkedPrivate;
+
+  String get entityId => 'created-$seed';
+
+  String? get linkedId => hasLinkedEntity ? 'linked-$seed' : null;
+
+  String? get explicitCategoryId =>
+      hasExplicitCategory ? 'entity-category-$seed' : null;
+
+  String? get linkedCategoryId =>
+      hasLinkedEntity ? 'linked-category-$seed' : null;
+
+  JournalEntity get entity => JournalEntity.journalEntry(
+    meta: _metadata(
+      id: entityId,
+      categoryId: explicitCategoryId,
+      private: !linkedPrivate,
+    ),
+    entryText: EntryText(plainText: 'created text $seed'),
+  );
+
+  JournalEntity? get linkedEntity {
+    if (!hasLinkedEntity) return null;
+    return JournalEntity.journalEntry(
+      meta: _metadata(
+        id: linkedId!,
+        categoryId: linkedCategoryId,
+        private: linkedPrivate,
+      ),
+      entryText: EntryText(plainText: 'linked text $seed'),
+    );
+  }
+
+  String? get expectedCategoryId => explicitCategoryId ?? linkedCategoryId;
+
+  bool? get expectedPrivate => hasLinkedEntity ? linkedPrivate : null;
+
+  bool get shouldEnqueueSync => saved && enqueueSync;
+
+  Set<String> get expectedCreateNotificationIds => {
+    entityId,
+    textEntryNotification,
+    ?linkedId,
+    labelUsageNotification,
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedCreateDbEntityScenario('
+        'seed: $seed, '
+        'saved: $saved, '
+        'enqueueSync: $enqueueSync, '
+        'linkedId: $linkedId, '
+        'explicitCategoryId: $explicitCategoryId, '
+        'linkedPrivate: $linkedPrivate)';
+  }
+}
+
+extension _AnyGeneratedPersistenceScenario on glados.Any {
+  glados.Generator<_GeneratedPersistenceEntityKind> get persistenceEntityKind =>
+      glados.AnyUtils(this).choose(_GeneratedPersistenceEntityKind.values);
+
+  glados.Generator<_GeneratedUpdateDbEntityScenario>
+  get updateDbEntityScenario => glados.CombinableAny(this).combine6(
+    persistenceEntityKind,
+    glados.IntAnys(this).intInRange(0, 10000),
+    glados.AnyUtils(this).choose([false, true]),
+    glados.AnyUtils(this).choose([false, true]),
+    glados.AnyUtils(this).choose([false, true]),
+    glados.IntAnys(this).intInRange(0, 4),
+    (
+      _GeneratedPersistenceEntityKind kind,
+      int seed,
+      bool applied,
+      bool enqueueSync,
+      bool hasLinkedId,
+      int parentCount,
+    ) => _GeneratedUpdateDbEntityScenario(
+      kind: kind,
+      seed: seed,
+      applied: applied,
+      enqueueSync: enqueueSync,
+      hasLinkedId: hasLinkedId,
+      parentCount: parentCount,
+    ),
+  );
+
+  glados.Generator<_GeneratedCreateDbEntityScenario>
+  get createDbEntityScenario => glados.CombinableAny(this).combine6(
+    glados.IntAnys(this).intInRange(0, 10000),
+    glados.AnyUtils(this).choose([false, true]),
+    glados.AnyUtils(this).choose([false, true]),
+    glados.AnyUtils(this).choose([false, true]),
+    glados.AnyUtils(this).choose([false, true]),
+    glados.AnyUtils(this).choose([false, true]),
+    (
+      int seed,
+      bool saved,
+      bool enqueueSync,
+      bool hasLinkedEntity,
+      bool hasExplicitCategory,
+      bool linkedPrivate,
+    ) => _GeneratedCreateDbEntityScenario(
+      seed: seed,
+      saved: saved,
+      enqueueSync: enqueueSync,
+      hasLinkedEntity: hasLinkedEntity,
+      hasExplicitCategory: hasExplicitCategory,
+      linkedPrivate: linkedPrivate,
+    ),
+  );
+}
 
 class TestPersistenceLogic extends PersistenceLogic {
   TestPersistenceLogic({this.updateDbEntityHandler});
@@ -91,6 +277,130 @@ class TestPersistenceLogic extends PersistenceLogic {
   }
 }
 
+Metadata _metadata({
+  required String id,
+  String? categoryId,
+  bool? private,
+}) {
+  final testDate = DateTime(2024, 3, 15, 10, 30);
+  return Metadata(
+    id: id,
+    createdAt: testDate,
+    updatedAt: testDate,
+    dateFrom: testDate,
+    dateTo: testDate,
+    categoryId: categoryId,
+    private: private,
+    vectorClock: const VectorClock({'host': 1}),
+  );
+}
+
+JournalEntity _buildGeneratedEntity(
+  _GeneratedPersistenceEntityKind kind,
+  int seed,
+) {
+  final id = 'entity-$seed';
+  final meta = _metadata(id: id);
+  final testDate = DateTime(2024, 3, 15, 10, seed % 60);
+
+  return switch (kind) {
+    _GeneratedPersistenceEntityKind.journalEntry => JournalEntity.journalEntry(
+      meta: meta,
+      entryText: EntryText(plainText: 'generated text $seed'),
+    ),
+    _GeneratedPersistenceEntityKind.event => JournalEntity.event(
+      meta: meta,
+      data: EventData(
+        status: EventStatus.tentative,
+        title: 'event $seed',
+        stars: seed % 5,
+      ),
+      entryText: EntryText(plainText: 'event text $seed'),
+    ),
+    _GeneratedPersistenceEntityKind.task => JournalEntity.task(
+      meta: meta,
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status-$seed',
+          createdAt: testDate,
+          utcOffset: 60,
+        ),
+        title: 'task $seed',
+        statusHistory: const [],
+        dateFrom: testDate,
+        dateTo: testDate,
+      ),
+      entryText: EntryText(plainText: 'task text $seed'),
+    ),
+    _GeneratedPersistenceEntityKind.measurement => JournalEntity.measurement(
+      meta: meta,
+      data: MeasurementData(
+        dateFrom: testDate,
+        dateTo: testDate,
+        value: seed,
+        dataTypeId: 'measurement-type-$seed',
+      ),
+      entryText: EntryText(plainText: 'measurement text $seed'),
+    ),
+    _GeneratedPersistenceEntityKind.habitCompletion =>
+      JournalEntity.habitCompletion(
+        meta: meta,
+        data: HabitCompletionData(
+          dateFrom: testDate,
+          dateTo: testDate,
+          habitId: 'habit-$seed',
+        ),
+        entryText: EntryText(plainText: 'habit text $seed'),
+      ),
+    _GeneratedPersistenceEntityKind.image => JournalEntity.journalImage(
+      meta: meta,
+      data: ImageData(
+        capturedAt: testDate,
+        imageId: 'image-$seed',
+        imageFile: 'image-$seed.jpg',
+        imageDirectory: '/images/2024-03-15/',
+      ),
+      entryText: EntryText(plainText: 'image text $seed'),
+    ),
+    _GeneratedPersistenceEntityKind.audio => JournalEntity.journalAudio(
+      meta: meta,
+      data: AudioData(
+        dateFrom: testDate,
+        dateTo: testDate,
+        audioFile: 'audio-$seed.m4a',
+        audioDirectory: '/audio/2024-03-15/',
+        duration: Duration(seconds: seed % 3600),
+      ),
+      entryText: EntryText(plainText: 'audio text $seed'),
+    ),
+  };
+}
+
+Set<String> _expectedAffectedIds(
+  _GeneratedPersistenceEntityKind kind,
+  String id,
+) {
+  return switch (kind) {
+    _GeneratedPersistenceEntityKind.journalEntry => {
+      id,
+      textEntryNotification,
+    },
+    _GeneratedPersistenceEntityKind.event => {id, eventNotification},
+    _GeneratedPersistenceEntityKind.task => {id, taskNotification},
+    _GeneratedPersistenceEntityKind.measurement => {
+      id,
+      'measurement-type-${id.split('-').last}',
+    },
+    _GeneratedPersistenceEntityKind.habitCompletion => {
+      id,
+      'habit-${id.split('-').last}',
+      habitCompletionNotification,
+    },
+    _GeneratedPersistenceEntityKind.image => {id, imageNotification},
+    _GeneratedPersistenceEntityKind.audio => {id, audioNotification},
+  };
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(
@@ -102,6 +412,16 @@ void main() {
       ),
     );
     registerFallbackValue(fallbackJournalEntity);
+    registerFallbackValue(
+      EntryLink.basic(
+        id: 'fallback-link',
+        fromId: 'fallback-from',
+        toId: 'fallback-to',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: const VectorClock({'host': 1}),
+      ),
+    );
   });
 
   late MockJournalDb journalDb;
@@ -290,6 +610,58 @@ void main() {
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
   });
 
+  glados.Glados(
+    glados.any.updateDbEntityScenario,
+    glados.ExploreConfig(numRuns: 120),
+  ).test('updateDbEntity matches generated notification and sync invariants', (
+    scenario,
+  ) async {
+    clearInteractions(updateNotifications);
+    clearInteractions(outboxService);
+    clearInteractions(fts5Db);
+    clearInteractions(notificationService);
+
+    stubUpdateResult(
+      scenario.applied
+          ? JournalUpdateResult.applied()
+          : JournalUpdateResult.skipped(
+              reason: JournalUpdateSkipReason.olderOrEqual,
+            ),
+    );
+    when(
+      () => journalDb.parentLinkedEntityIds(scenario.entity.id),
+    ).thenReturn(MockSelectable<String>(scenario.parentIds));
+
+    final result = await logic.updateDbEntity(
+      scenario.entity,
+      linkedId: scenario.linkedId,
+      enqueueSync: scenario.enqueueSync,
+    );
+
+    expect(result, scenario.applied, reason: '$scenario');
+
+    final notificationIds =
+        verify(
+              () => updateNotifications.notify(captureAny<Set<String>>()),
+            ).captured.single
+            as Set<String>;
+    expect(notificationIds, scenario.expectedNotificationIds);
+
+    verify(
+      () => fts5Db.insertText(
+        scenario.entity,
+        removePrevious: true,
+      ),
+    ).called(1);
+    verify(notificationService.updateBadge).called(1);
+
+    if (scenario.shouldEnqueueSync) {
+      verify(() => outboxService.enqueueMessage(any<SyncMessage>())).called(1);
+    } else {
+      verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+    }
+  });
+
   test('createDbEntity skips addLabeled when update skipped', () async {
     stubUpdateResult(
       JournalUpdateResult.skipped(
@@ -306,6 +678,84 @@ void main() {
     expect(saved, isFalse);
     verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+  });
+
+  glados.Glados(
+    glados.any.createDbEntityScenario,
+    glados.ExploreConfig(numRuns: 120),
+  ).test('createDbEntity matches generated context and sync invariants', (
+    scenario,
+  ) async {
+    clearInteractions(updateNotifications);
+    clearInteractions(outboxService);
+    clearInteractions(notificationService);
+    clearInteractions(journalDb);
+
+    JournalEntity? persistedEntity;
+    when(
+      () => journalDb.updateJournalEntity(
+        any<JournalEntity>(),
+        overrideComparison: any<bool>(named: 'overrideComparison'),
+        overwrite: any<bool>(named: 'overwrite'),
+      ),
+    ).thenAnswer((invocation) async {
+      persistedEntity = invocation.positionalArguments.first as JournalEntity;
+      return scenario.saved
+          ? JournalUpdateResult.applied()
+          : JournalUpdateResult.skipped(
+              reason: JournalUpdateSkipReason.overwritePrevented,
+            );
+    });
+    when(
+      () => journalDb.parentLinkedEntityIds(any<String>()),
+    ).thenReturn(MockSelectable<String>([]));
+    when(
+      () => journalDb.upsertEntryLink(any<EntryLink>()),
+    ).thenAnswer((_) async => 1);
+
+    final linked = scenario.linkedEntity;
+    if (linked != null) {
+      when(
+        () => journalDb.journalEntityById(scenario.linkedId!),
+      ).thenAnswer((_) async => linked);
+    }
+
+    final result = await logic.createDbEntity(
+      scenario.entity,
+      linkedId: scenario.linkedId,
+      enqueueSync: scenario.enqueueSync,
+      shouldAddGeolocation: false,
+    );
+
+    expect(result, scenario.saved, reason: '$scenario');
+    expect(persistedEntity, isNotNull, reason: '$scenario');
+    expect(persistedEntity!.meta.categoryId, scenario.expectedCategoryId);
+    expect(persistedEntity!.meta.private, scenario.expectedPrivate);
+
+    final expectedOutboxMessages =
+        (scenario.shouldEnqueueSync ? 1 : 0) +
+        (scenario.hasLinkedEntity ? 1 : 0);
+    if (expectedOutboxMessages == 0) {
+      verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+    } else {
+      verify(
+        () => outboxService.enqueueMessage(any<SyncMessage>()),
+      ).called(expectedOutboxMessages);
+    }
+
+    final notifications = verify(
+      () => updateNotifications.notify(captureAny<Set<String>>()),
+    ).captured.cast<Set<String>>().toList();
+    expect(notifications.last, scenario.expectedCreateNotificationIds);
+
+    if (scenario.hasLinkedEntity) {
+      expect(notifications.first, {scenario.linkedId, scenario.entityId});
+      verify(() => journalDb.upsertEntryLink(any<EntryLink>())).called(1);
+    } else {
+      verifyNever(() => journalDb.upsertEntryLink(any<EntryLink>()));
+    }
+
+    verify(notificationService.updateBadge).called(1);
   });
 
   group('updateJournalEntity', () {

@@ -1,6 +1,159 @@
 import 'package:exif/exif.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/logic/media/exif_data_extractor.dart';
+
+class _GeneratedRationalScenario {
+  const _GeneratedRationalScenario({
+    required this.numerator,
+    required this.denominator,
+  });
+
+  final int numerator;
+  final int denominator;
+
+  String get input => '$numerator/$denominator';
+
+  double get expected => numerator / denominator;
+
+  @override
+  String toString() {
+    return '_GeneratedRationalScenario('
+        'numerator: $numerator, '
+        'denominator: $denominator)';
+  }
+}
+
+class _GeneratedGpsCoordinateScenario {
+  const _GeneratedGpsCoordinateScenario({
+    required this.degrees,
+    required this.minutes,
+    required this.secondsMillis,
+    required this.refIndex,
+  });
+
+  final int degrees;
+  final int minutes;
+  final int secondsMillis;
+  final int refIndex;
+
+  String get ref => const ['N', 'S', 'E', 'W'][refIndex % 4];
+
+  String get input => '[$degrees/1, $minutes/1, $secondsMillis/1000]';
+
+  double get expected {
+    final unsigned = degrees + (minutes / 60) + (secondsMillis / 1000 / 3600);
+    return ref == 'S' || ref == 'W' ? -unsigned : unsigned;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedGpsCoordinateScenario('
+        'degrees: $degrees, '
+        'minutes: $minutes, '
+        'secondsMillis: $secondsMillis, '
+        'ref: $ref)';
+  }
+}
+
+class _GeneratedExifDateScenario {
+  const _GeneratedExifDateScenario({
+    required this.year,
+    required this.monthSeed,
+    required this.daySeed,
+    required this.hourSeed,
+    required this.minuteSeed,
+    required this.secondSeed,
+  });
+
+  final int year;
+  final int monthSeed;
+  final int daySeed;
+  final int hourSeed;
+  final int minuteSeed;
+  final int secondSeed;
+
+  int get month => (monthSeed % 12) + 1;
+
+  int get day => (daySeed % 28) + 1;
+
+  int get hour => hourSeed % 24;
+
+  int get minute => minuteSeed % 60;
+
+  int get second => secondSeed % 60;
+
+  String get input =>
+      '${_fourDigits(year)}:${_twoDigits(month)}:${_twoDigits(day)} '
+      '${_twoDigits(hour)}:${_twoDigits(minute)}:${_twoDigits(second)}';
+
+  DateTime get expected => DateTime(year, month, day, hour, minute, second);
+
+  @override
+  String toString() {
+    return '_GeneratedExifDateScenario(input: $input)';
+  }
+}
+
+extension _AnyGeneratedExifScenario on glados.Any {
+  glados.Generator<_GeneratedRationalScenario> get rationalScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(-1000000, 1000000),
+        glados.IntAnys(this).intInRange(1, 1000000),
+        (int numerator, int denominator) => _GeneratedRationalScenario(
+          numerator: numerator,
+          denominator: denominator,
+        ),
+      );
+
+  glados.Generator<_GeneratedGpsCoordinateScenario> get gpsCoordinateScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.IntAnys(this).intInRange(0, 181),
+        glados.IntAnys(this).intInRange(0, 60),
+        glados.IntAnys(this).intInRange(0, 60000),
+        glados.IntAnys(this).intInRange(0, 4),
+        (
+          int degrees,
+          int minutes,
+          int secondsMillis,
+          int refIndex,
+        ) => _GeneratedGpsCoordinateScenario(
+          degrees: degrees,
+          minutes: minutes,
+          secondsMillis: secondsMillis,
+          refIndex: refIndex,
+        ),
+      );
+
+  glados.Generator<_GeneratedExifDateScenario> get exifDateScenario =>
+      glados.CombinableAny(this).combine6(
+        glados.IntAnys(this).intInRange(1970, 2100),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          int year,
+          int monthSeed,
+          int daySeed,
+          int hourSeed,
+          int minuteSeed,
+          int secondSeed,
+        ) => _GeneratedExifDateScenario(
+          year: year,
+          monthSeed: monthSeed,
+          daySeed: daySeed,
+          hourSeed: hourSeed,
+          minuteSeed: minuteSeed,
+          secondSeed: secondSeed,
+        ),
+      );
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
+
+String _fourDigits(int value) => value.toString().padLeft(4, '0');
 
 void main() {
   group('ExifDataExtractor', () {
@@ -66,6 +219,17 @@ void main() {
 
       test('handles large numerator', () {
         expect(ExifDataExtractor.parseRational('999999/1'), equals(999999.0));
+      });
+
+      glados.Glados(
+        glados.any.rationalScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('parses generated non-zero rational fractions', (scenario) {
+        expect(
+          ExifDataExtractor.parseRational(scenario.input),
+          closeTo(scenario.expected, 0.0000000001),
+          reason: '$scenario',
+        );
       });
     });
 
@@ -234,6 +398,19 @@ void main() {
       test('handles malformed input gracefully', () {
         expect(ExifDataExtractor.parseGpsCoordinate('[error', 'N'), isNull);
       });
+
+      glados.Glados(
+        glados.any.gpsCoordinateScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('converts generated DMS coordinates to signed decimals', (
+        scenario,
+      ) {
+        expect(
+          ExifDataExtractor.parseGpsCoordinate(scenario.input, scenario.ref),
+          closeTo(scenario.expected, 0.0000000001),
+          reason: '$scenario',
+        );
+      });
     });
 
     group('parseExifDateString', () {
@@ -328,6 +505,17 @@ void main() {
           '2023-12-25 14:30:45',
         );
         expect(result, DateTime(2023, 12, 25, 14, 30, 45));
+      });
+
+      glados.Glados(
+        glados.any.exifDateScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('parses generated EXIF timestamp strings', (scenario) {
+        expect(
+          ExifDataExtractor.parseExifDateString(scenario.input),
+          scenario.expected,
+          reason: '$scenario',
+        );
       });
     });
 

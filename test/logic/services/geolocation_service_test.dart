@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,6 +16,34 @@ import '../../mocks/mocks.dart';
 class MockMetadataService extends Mock implements MetadataService {}
 
 class MockDeviceLocation extends Mock implements DeviceLocation {}
+
+class _GeneratedGeolocationPendingScenario {
+  const _GeneratedGeolocationPendingScenario({required this.idSlots});
+
+  final List<int> idSlots;
+
+  List<String> get ids => [
+    for (final slot in idSlots) 'generated-entry-${slot % 5}',
+  ];
+
+  Set<String> get uniqueIds => ids.toSet();
+
+  @override
+  String toString() {
+    return '_GeneratedGeolocationPendingScenario(ids: $ids)';
+  }
+}
+
+extension _AnyGeneratedGeolocationPendingScenario on glados.Any {
+  glados.Generator<_GeneratedGeolocationPendingScenario>
+  get geolocationPendingScenario => glados.ListAnys(this)
+      .listWithLengthInRange(
+        1,
+        12,
+        glados.IntAnys(this).intInRange(0, 1000),
+      )
+      .map((idSlots) => _GeneratedGeolocationPendingScenario(idSlots: idSlots));
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -480,6 +509,47 @@ void main() {
           (_) async => true,
         );
         expect(callCount, equals(2));
+      });
+
+      glados.Glados(
+        glados.any.geolocationPendingScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test('coalesces generated duplicate pending entity ids', (
+        scenario,
+      ) async {
+        clearInteractions(mockDeviceLocation);
+
+        final locationCompleter = Completer<Geolocation?>();
+        var locationCallCount = 0;
+        when(() => mockDeviceLocation.getCurrentGeoLocation()).thenAnswer((_) {
+          locationCallCount++;
+          return locationCompleter.future;
+        });
+
+        final futures = [
+          for (final id in scenario.ids)
+            geolocationService.addGeolocationAsync(id, (_) async => true),
+        ];
+
+        expect(
+          geolocationService.pendingCount,
+          scenario.uniqueIds.length,
+          reason: '$scenario',
+        );
+        for (final id in scenario.uniqueIds) {
+          expect(geolocationService.isPending(id), isTrue, reason: '$scenario');
+        }
+
+        locationCompleter.complete(null);
+        final results = await Future.wait(futures);
+
+        expect(results, everyElement(isNull), reason: '$scenario');
+        expect(
+          locationCallCount,
+          scenario.uniqueIds.length,
+          reason: '$scenario',
+        );
+        expect(geolocationService.pendingCount, 0, reason: '$scenario');
       });
     });
   });

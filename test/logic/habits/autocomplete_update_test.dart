@@ -1,6 +1,215 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/logic/habits/autocomplete_update.dart';
+
+class _GeneratedAutoCompleteRuleScenario {
+  const _GeneratedAutoCompleteRuleScenario({
+    required this.depth,
+    required this.seed,
+    required this.pathIndex,
+    required this.replacementSeed,
+  });
+
+  final int depth;
+  final int seed;
+  final int pathIndex;
+  final int replacementSeed;
+
+  AutoCompleteRule get rule => _buildRule(depth: depth, seed: seed);
+
+  AutoCompleteRule get replacement => _leafRule(replacementSeed + 100000);
+
+  List<List<int>> get validPaths => _rulePaths(rule);
+
+  List<int> get targetPath => validPaths[pathIndex % validPaths.length];
+
+  AutoCompleteRule? get expectedReplacement =>
+      _replaceExpected(rule, targetPath, replacement);
+
+  AutoCompleteRule? get expectedRemoval =>
+      _replaceExpected(rule, targetPath, null);
+
+  List<int> get missingPath => const [0, 99];
+
+  @override
+  String toString() {
+    return '_GeneratedAutoCompleteRuleScenario('
+        'depth: $depth, '
+        'seed: $seed, '
+        'targetPath: $targetPath, '
+        'replacementSeed: $replacementSeed)';
+  }
+}
+
+extension _AnyGeneratedAutoCompleteRuleScenario on glados.Any {
+  glados.Generator<_GeneratedAutoCompleteRuleScenario>
+  get autoCompleteRuleScenario => glados.CombinableAny(this).combine4(
+    glados.IntAnys(this).intInRange(0, 4),
+    glados.IntAnys(this).intInRange(0, 10000),
+    glados.IntAnys(this).intInRange(0, 10000),
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      int depth,
+      int seed,
+      int pathIndex,
+      int replacementSeed,
+    ) => _GeneratedAutoCompleteRuleScenario(
+      depth: depth,
+      seed: seed,
+      pathIndex: pathIndex,
+      replacementSeed: replacementSeed,
+    ),
+  );
+}
+
+AutoCompleteRule _buildRule({
+  required int depth,
+  required int seed,
+}) {
+  if (depth == 0) return _leafRule(seed);
+
+  return switch (seed % 7) {
+    0 || 1 || 2 || 3 => _leafRule(seed),
+    4 => AutoCompleteRule.and(
+      rules: _childRules(depth: depth, seed: seed),
+      title: 'and-$seed',
+    ),
+    5 => AutoCompleteRule.or(
+      rules: _childRules(depth: depth, seed: seed),
+      title: 'or-$seed',
+    ),
+    _ => AutoCompleteRule.multiple(
+      rules: _childRules(depth: depth, seed: seed),
+      successes: (seed % 3) + 1,
+      title: 'multiple-$seed',
+    ),
+  };
+}
+
+List<AutoCompleteRule> _childRules({
+  required int depth,
+  required int seed,
+}) {
+  final childCount = seed % 4;
+  return [
+    for (var index = 0; index < childCount; index++)
+      _buildRule(depth: depth - 1, seed: seed * 31 + index + 1),
+  ];
+}
+
+AutoCompleteRule _leafRule(int seed) {
+  return switch (seed % 4) {
+    0 => AutoCompleteRule.health(
+      dataType: 'health-$seed',
+      minimum: seed % 100,
+      title: 'health-title-$seed',
+    ),
+    1 => AutoCompleteRule.workout(
+      dataType: 'workout-$seed',
+      maximum: seed % 200,
+      title: 'workout-title-$seed',
+    ),
+    2 => AutoCompleteRule.measurable(
+      dataTypeId: 'measurable-$seed',
+      minimum: seed % 300,
+      maximum: (seed % 300) + 10,
+      title: 'measurable-title-$seed',
+    ),
+    _ => AutoCompleteRule.habit(
+      habitId: 'habit-$seed',
+      title: 'habit-title-$seed',
+    ),
+  };
+}
+
+List<List<int>> _rulePaths(AutoCompleteRule rule) {
+  final paths = <List<int>>[
+    [0],
+  ];
+
+  void visit(AutoCompleteRule current, List<int> prefix) {
+    final children = _childrenOf(current);
+    if (children == null) return;
+
+    for (final (index, child) in children.indexed) {
+      final childPath = [...prefix, index];
+      paths.add(childPath);
+      visit(child, childPath);
+    }
+  }
+
+  visit(rule, [0]);
+  return paths;
+}
+
+List<AutoCompleteRule>? _childrenOf(AutoCompleteRule rule) {
+  if (rule is AutoCompleteRuleAnd) return rule.rules;
+  if (rule is AutoCompleteRuleOr) return rule.rules;
+  if (rule is AutoCompleteRuleMultiple) return rule.rules;
+  return null;
+}
+
+AutoCompleteRule _copyWithChildren(
+  AutoCompleteRule rule,
+  List<AutoCompleteRule> children,
+) {
+  if (rule is AutoCompleteRuleAnd) {
+    return AutoCompleteRule.and(rules: children, title: rule.title);
+  }
+  if (rule is AutoCompleteRuleOr) {
+    return AutoCompleteRule.or(rules: children, title: rule.title);
+  }
+  final multiple = rule as AutoCompleteRuleMultiple;
+  return AutoCompleteRule.multiple(
+    rules: children,
+    successes: multiple.successes,
+    title: multiple.title,
+  );
+}
+
+AutoCompleteRule? _replaceExpected(
+  AutoCompleteRule rule,
+  List<int> path,
+  AutoCompleteRule? replacement,
+) {
+  if (path.length == 1 && path.first == 0) return replacement;
+  if (path.isEmpty || path.first != 0) return rule;
+  return _replaceDescendant(rule, path.sublist(1), replacement);
+}
+
+AutoCompleteRule _replaceDescendant(
+  AutoCompleteRule rule,
+  List<int> descendantPath,
+  AutoCompleteRule? replacement,
+) {
+  if (descendantPath.isEmpty) return replacement ?? rule;
+
+  final children = _childrenOf(rule);
+  final childIndex = descendantPath.first;
+  if (children == null || childIndex < 0 || childIndex >= children.length) {
+    return rule;
+  }
+
+  final updatedChild = descendantPath.length == 1
+      ? replacement
+      : _replaceDescendant(
+          children[childIndex],
+          descendantPath.sublist(1),
+          replacement,
+        );
+  final updatedChildren = <AutoCompleteRule>[];
+
+  for (final (index, child) in children.indexed) {
+    if (index == childIndex) {
+      if (updatedChild != null) updatedChildren.add(updatedChild);
+    } else {
+      updatedChildren.add(child);
+    }
+  }
+
+  return _copyWithChildren(rule, updatedChildren);
+}
 
 void main() {
   group('AutoComplete Rule Manipulation Tests - ', () {
@@ -314,6 +523,41 @@ void main() {
       );
 
       expect(result, healthRule);
+    });
+
+    glados.Glados(
+      glados.any.autoCompleteRuleScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('matches generated replacement and removal tree invariants', (
+      scenario,
+    ) {
+      final rule = scenario.rule;
+
+      expect(
+        replaceAt(
+          rule,
+          replaceAtPath: scenario.targetPath,
+          replaceWith: scenario.replacement,
+        ),
+        scenario.expectedReplacement,
+        reason: '$scenario',
+      );
+
+      expect(
+        removeAt(rule, path: scenario.targetPath),
+        scenario.expectedRemoval,
+        reason: '$scenario',
+      );
+
+      expect(
+        replaceAt(
+          rule,
+          replaceAtPath: scenario.missingPath,
+          replaceWith: scenario.replacement,
+        ),
+        rule,
+        reason: '$scenario',
+      );
     });
 
     test('removeAt with null rule input', () {

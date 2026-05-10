@@ -1,5 +1,110 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/logic/media/audio_metadata_extractor.dart';
+
+class _GeneratedAudioFilenameScenario {
+  const _GeneratedAudioFilenameScenario({
+    required this.year,
+    required this.monthSeed,
+    required this.daySeed,
+    required this.hourSeed,
+    required this.minuteSeed,
+    required this.secondSeed,
+    required this.millisecondSeed,
+  });
+
+  final int year;
+  final int monthSeed;
+  final int daySeed;
+  final int hourSeed;
+  final int minuteSeed;
+  final int secondSeed;
+  final int millisecondSeed;
+
+  int get month => (monthSeed % 12) + 1;
+
+  int get day => (daySeed % 28) + 1;
+
+  int get hour => hourSeed % 24;
+
+  int get minute => minuteSeed % 60;
+
+  int get second => secondSeed % 60;
+
+  int get millisecond => millisecondSeed % 1000;
+
+  String get extension =>
+      AudioMetadataExtractor.supportedExtensions[millisecondSeed %
+          AudioMetadataExtractor.supportedExtensions.length];
+
+  DateTime get utcTimestamp =>
+      DateTime.utc(year, month, day, hour, minute, second, millisecond);
+
+  DateTime get parsedLocalTimestamp => utcTimestamp.toLocal();
+
+  String get filename => '${_formatAudioDateTime(utcTimestamp)}.$extension';
+
+  String get expectedRelativePath =>
+      '/audio/${_formatAudioDate(parsedLocalTimestamp)}/';
+
+  String get expectedTargetFileName =>
+      '${_formatAudioDateTime(parsedLocalTimestamp)}.$extension';
+
+  @override
+  String toString() {
+    return '_GeneratedAudioFilenameScenario('
+        'filename: $filename, '
+        'parsedLocalTimestamp: $parsedLocalTimestamp)';
+  }
+}
+
+extension _AnyGeneratedAudioFilenameScenario on glados.Any {
+  glados.Generator<_GeneratedAudioFilenameScenario> get audioFilenameScenario =>
+      glados.CombinableAny(this).combine7(
+        glados.IntAnys(this).intInRange(2020, 2031),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          int year,
+          int monthSeed,
+          int daySeed,
+          int hourSeed,
+          int minuteSeed,
+          int secondSeed,
+          int millisecondSeed,
+        ) => _GeneratedAudioFilenameScenario(
+          year: year,
+          monthSeed: monthSeed,
+          daySeed: daySeed,
+          hourSeed: hourSeed,
+          minuteSeed: minuteSeed,
+          secondSeed: secondSeed,
+          millisecondSeed: millisecondSeed,
+        ),
+      );
+}
+
+String _formatAudioDate(DateTime timestamp) {
+  return '${_fourDigits(timestamp.year)}-'
+      '${_twoDigits(timestamp.month)}-'
+      '${_twoDigits(timestamp.day)}';
+}
+
+String _formatAudioDateTime(DateTime timestamp) {
+  return '${_formatAudioDate(timestamp)}_'
+      '${_twoDigits(timestamp.hour)}-'
+      '${_twoDigits(timestamp.minute)}-'
+      '${_twoDigits(timestamp.second)}-'
+      '${timestamp.millisecond.toString().padLeft(3, '0')}';
+}
+
+String _twoDigits(int value) => value.toString().padLeft(2, '0');
+
+String _fourDigits(int value) => value.toString().padLeft(4, '0');
 
 void main() {
   group('AudioMetadataExtractor', () {
@@ -75,6 +180,19 @@ void main() {
         );
         expect(result, isNotNull);
       });
+
+      glados.Glados(
+        glados.any.audioFilenameScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('parses generated UTC filenames into local timestamps', (
+        scenario,
+      ) {
+        expect(
+          AudioMetadataExtractor.parseFilenameTimestamp(scenario.filename),
+          scenario.parsedLocalTimestamp,
+          reason: '$scenario',
+        );
+      });
     });
 
     group('computeRelativePath', () {
@@ -106,6 +224,19 @@ void main() {
         final timestamp = DateTime(2024);
         final path = AudioMetadataExtractor.computeRelativePath(timestamp);
         expect(path, equals('/audio/2024-01-01/'));
+      });
+
+      glados.Glados(
+        glados.any.audioFilenameScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('formats generated local dates into relative paths', (scenario) {
+        expect(
+          AudioMetadataExtractor.computeRelativePath(
+            scenario.parsedLocalTimestamp,
+          ),
+          scenario.expectedRelativePath,
+          reason: '$scenario',
+        );
       });
     });
 
@@ -171,6 +302,22 @@ void main() {
         );
         expect(filename, equals('2024-01-15_23-59-59-999.m4a'));
       });
+
+      glados.Glados(
+        glados.any.audioFilenameScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('formats generated local timestamps into target filenames', (
+        scenario,
+      ) {
+        expect(
+          AudioMetadataExtractor.computeTargetFileName(
+            scenario.parsedLocalTimestamp,
+            scenario.extension,
+          ),
+          scenario.expectedTargetFileName,
+          reason: '$scenario',
+        );
+      });
     });
 
     group('isSupported', () {
@@ -197,6 +344,20 @@ void main() {
 
       test('returns false for empty string', () {
         expect(AudioMetadataExtractor.isSupported(''), isFalse);
+      });
+
+      glados.Glados(
+        glados.any.audioFilenameScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test('accepts generated supported extensions case-insensitively', (
+        scenario,
+      ) {
+        expect(AudioMetadataExtractor.isSupported(scenario.extension), isTrue);
+        expect(
+          AudioMetadataExtractor.isSupported(scenario.extension.toUpperCase()),
+          isTrue,
+          reason: '$scenario',
+        );
       });
     });
 

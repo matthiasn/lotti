@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cross_file/cross_file.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
@@ -36,6 +37,105 @@ class FakeDropItem extends Fake implements DropItem {
 
   @override
   Future<DateTime> lastModified() => _xFile.lastModified();
+}
+
+enum _GeneratedMediaKind {
+  jpg,
+  jpeg,
+  png,
+  m4a,
+  txt,
+  markdown,
+  noExtension,
+}
+
+class _GeneratedMediaFile {
+  const _GeneratedMediaFile({
+    required this.kind,
+    required this.seed,
+    required this.uppercaseExtension,
+  });
+
+  final _GeneratedMediaKind kind;
+  final int seed;
+  final bool uppercaseExtension;
+
+  bool get isImage => switch (kind) {
+    _GeneratedMediaKind.jpg ||
+    _GeneratedMediaKind.jpeg ||
+    _GeneratedMediaKind.png => true,
+    _ => false,
+  };
+
+  bool get isAudio => kind == _GeneratedMediaKind.m4a;
+
+  String get filename {
+    final extension = _extension;
+    if (extension == null) return 'generated_$seed';
+    final normalizedExtension = uppercaseExtension
+        ? extension.toUpperCase()
+        : extension;
+    return 'generated_$seed.$normalizedExtension';
+  }
+
+  String? get _extension => switch (kind) {
+    _GeneratedMediaKind.jpg => 'jpg',
+    _GeneratedMediaKind.jpeg => 'jpeg',
+    _GeneratedMediaKind.png => 'png',
+    _GeneratedMediaKind.m4a => 'm4a',
+    _GeneratedMediaKind.txt => 'txt',
+    _GeneratedMediaKind.markdown => 'md',
+    _GeneratedMediaKind.noExtension => null,
+  };
+
+  @override
+  String toString() {
+    return '_GeneratedMediaFile('
+        'kind: $kind, '
+        'seed: $seed, '
+        'uppercaseExtension: $uppercaseExtension)';
+  }
+}
+
+class _GeneratedMediaDropScenario {
+  const _GeneratedMediaDropScenario({required this.files});
+
+  final List<_GeneratedMediaFile> files;
+
+  int get expectedImageCount => files.where((file) => file.isImage).length;
+
+  int get expectedAudioCount => files.where((file) => file.isAudio).length;
+
+  @override
+  String toString() {
+    return '_GeneratedMediaDropScenario(files: $files)';
+  }
+}
+
+extension _AnyGeneratedMediaDropScenario on glados.Any {
+  glados.Generator<_GeneratedMediaKind> get mediaKind =>
+      glados.AnyUtils(this).choose(_GeneratedMediaKind.values);
+
+  glados.Generator<_GeneratedMediaFile> get mediaFile =>
+      glados.CombinableAny(this).combine3(
+        mediaKind,
+        glados.IntAnys(this).intInRange(0, 100000),
+        glados.AnyUtils(this).choose([false, true]),
+        (
+          _GeneratedMediaKind kind,
+          int seed,
+          bool uppercaseExtension,
+        ) => _GeneratedMediaFile(
+          kind: kind,
+          seed: seed,
+          uppercaseExtension: uppercaseExtension,
+        ),
+      );
+
+  glados.Generator<_GeneratedMediaDropScenario> get mediaDropScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 8, mediaFile)
+          .map((files) => _GeneratedMediaDropScenario(files: files));
 }
 
 void main() {
@@ -301,6 +401,70 @@ void main() {
         AudioImportConstants.supportedExtensions,
         contains('m4a'),
       );
+    });
+
+    glados.Glados(
+      glados.any.mediaDropScenario,
+      glados.ExploreConfig(),
+    ).test('routes generated dropped media by supported extensions', (
+      scenario,
+    ) async {
+      clearInteractions(mockPersistenceLogic);
+
+      final xFiles = <XFile>[];
+      for (final (index, generatedFile) in scenario.files.indexed) {
+        final file = await createTestFile(
+          '$index-${generatedFile.filename}',
+          128,
+        );
+        xFiles.add(XFile(file.path));
+      }
+
+      await handleDroppedMedia(
+        data: createDropDetails(xFiles),
+        linkedId: 'linked-generated',
+        categoryId: 'category-generated',
+      );
+
+      if (scenario.expectedImageCount == 0) {
+        verifyNever(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        );
+      } else {
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(scenario.expectedImageCount);
+      }
+
+      if (scenario.expectedAudioCount == 0) {
+        verifyNever(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalAudio>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        );
+      } else {
+        verify(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalAudio>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        ).called(scenario.expectedAudioCount);
+      }
     });
   });
 }
