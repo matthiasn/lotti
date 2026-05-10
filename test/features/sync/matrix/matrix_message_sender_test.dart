@@ -54,6 +54,19 @@ enum _GeneratedTextSendKind {
 
 enum _GeneratedCoveredClockKind { absent, present }
 
+enum _GeneratedBundleChildKind {
+  aiConfigDelete,
+  backfillRequest,
+  entryLink,
+  journalPresent,
+  journalMissing,
+  agentLink,
+}
+
+enum _GeneratedBundlePathKind { absent, safe, unsafe }
+
+enum _GeneratedBundleUploadKind { succeeds, returnsNull }
+
 class _GeneratedSendScenario {
   const _GeneratedSendScenario({
     required this.messageKind,
@@ -171,6 +184,176 @@ class _GeneratedSendScenario {
   }
 }
 
+class _GeneratedBundleChild {
+  const _GeneratedBundleChild({
+    required this.kind,
+    required this.coveredClockKind,
+    required this.slot,
+  });
+
+  final _GeneratedBundleChildKind kind;
+  final _GeneratedCoveredClockKind coveredClockKind;
+  final int slot;
+
+  bool get isJournal =>
+      kind == _GeneratedBundleChildKind.journalPresent ||
+      kind == _GeneratedBundleChildKind.journalMissing;
+
+  bool get isMissingJournal => kind == _GeneratedBundleChildKind.journalMissing;
+
+  String idAt(int index) => '${kind.name}-$slot-$index';
+
+  String jsonPathAt(int index) => '/journal/2026-01-02/${idAt(index)}.json';
+
+  VectorClock messageVectorClockAt(int index) =>
+      VectorClock({'host-A': slot + index + 1});
+
+  VectorClock dbVectorClockAt(int index) =>
+      VectorClock({'host-A': slot + index + 50});
+
+  VectorClock coveredVectorClockAt(int index) =>
+      VectorClock({'host-B': slot + index + 100});
+
+  SyncMessage buildMessageAt(int index) {
+    switch (kind) {
+      case _GeneratedBundleChildKind.aiConfigDelete:
+        return SyncMessage.aiConfigDelete(id: idAt(index));
+      case _GeneratedBundleChildKind.backfillRequest:
+        return SyncMessage.backfillRequest(
+          entries: [
+            BackfillRequestEntry(
+              hostId: 'host-$slot',
+              counter: index + 1,
+            ),
+          ],
+          requesterId: 'requester-${idAt(index)}',
+        );
+      case _GeneratedBundleChildKind.entryLink:
+        return SyncMessage.entryLink(
+          entryLink: EntryLink.basic(
+            id: idAt(index),
+            fromId: 'from-${idAt(index)}',
+            toId: 'to-${idAt(index)}',
+            createdAt: DateTime.utc(2026, 1, 2),
+            updatedAt: DateTime.utc(2026, 1, 2),
+            vectorClock: messageVectorClockAt(index),
+          ),
+          status: SyncEntryStatus.update,
+          coveredVectorClocks:
+              coveredClockKind == _GeneratedCoveredClockKind.present
+              ? [coveredVectorClockAt(index)]
+              : null,
+        );
+      case _GeneratedBundleChildKind.journalPresent:
+      case _GeneratedBundleChildKind.journalMissing:
+        return SyncMessage.journalEntity(
+          id: idAt(index),
+          jsonPath: jsonPathAt(index),
+          vectorClock: messageVectorClockAt(index),
+          status: SyncEntryStatus.update,
+          coveredVectorClocks:
+              coveredClockKind == _GeneratedCoveredClockKind.present
+              ? [coveredVectorClockAt(index)]
+              : null,
+        );
+      case _GeneratedBundleChildKind.agentLink:
+        return SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+          agentLink: AgentLink.basic(
+            id: idAt(index),
+            fromId: 'agent-${idAt(index)}',
+            toId: 'state-${idAt(index)}',
+            createdAt: DateTime.utc(2026, 1, 2),
+            updatedAt: DateTime.utc(2026, 1, 2),
+            vectorClock: messageVectorClockAt(index),
+          ),
+        );
+    }
+  }
+
+  JournalEntity buildJournalEntityAt(int index) {
+    return JournalEntry(
+      meta: Metadata(
+        id: idAt(index),
+        createdAt: DateTime.utc(2026, 1, 2),
+        updatedAt: DateTime.utc(2026, 1, 2),
+        dateFrom: DateTime.utc(2026, 1, 2),
+        dateTo: DateTime.utc(2026, 1, 2),
+        vectorClock: dbVectorClockAt(index),
+      ),
+      entryText: EntryText(plainText: 'db body ${idAt(index)}'),
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedBundleChild('
+        'kind: $kind, '
+        'coveredClockKind: $coveredClockKind, '
+        'slot: $slot'
+        ')';
+  }
+}
+
+class _GeneratedBundleScenario {
+  const _GeneratedBundleScenario({
+    required this.children,
+    required this.pathKind,
+    required this.uploadKind,
+    required this.slot,
+  });
+
+  final List<_GeneratedBundleChild> children;
+  final _GeneratedBundlePathKind pathKind;
+  final _GeneratedBundleUploadKind uploadKind;
+  final int slot;
+
+  String? get jsonPath {
+    switch (pathKind) {
+      case _GeneratedBundlePathKind.absent:
+        return null;
+      case _GeneratedBundlePathKind.safe:
+        return '/outbox_bundles/generated-$slot.json';
+      case _GeneratedBundlePathKind.unsafe:
+        return '../outside/generated-$slot.json';
+    }
+  }
+
+  bool get hasMissingJournal => children.any((child) => child.isMissingJournal);
+
+  bool get expectsUpload => children.isNotEmpty && !hasMissingJournal;
+
+  bool get succeeds =>
+      expectsUpload && uploadKind == _GeneratedBundleUploadKind.succeeds;
+
+  List<SyncMessage> buildMessages() => [
+    for (var i = 0; i < children.length; i++) children[i].buildMessageAt(i),
+  ];
+
+  Set<String> get journalIds => {
+    for (var i = 0; i < children.length; i++)
+      if (children[i].isJournal) children[i].idAt(i),
+  };
+
+  Map<String, JournalEntity> buildJournalEntityMap() {
+    return {
+      for (var i = 0; i < children.length; i++)
+        if (children[i].kind == _GeneratedBundleChildKind.journalPresent)
+          children[i].idAt(i): children[i].buildJournalEntityAt(i),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedBundleScenario('
+        'children: $children, '
+        'pathKind: $pathKind, '
+        'uploadKind: $uploadKind, '
+        'slot: $slot'
+        ')';
+  }
+}
+
 extension _AnyGeneratedSendScenario on glados.Any {
   glados.Generator<_GeneratedSendMessageKind> get sendMessageKind =>
       glados.AnyUtils(this).choose(_GeneratedSendMessageKind.values);
@@ -202,6 +385,52 @@ extension _AnyGeneratedSendScenario on glados.Any {
           contextKind: contextKind,
           textSendKind: textSendKind,
           coveredClockKind: coveredClockKind,
+          slot: slot,
+        ),
+      );
+}
+
+extension _AnyGeneratedBundleScenario on glados.Any {
+  glados.Generator<_GeneratedBundleChildKind> get bundleChildKind =>
+      glados.AnyUtils(this).choose(_GeneratedBundleChildKind.values);
+
+  glados.Generator<_GeneratedBundlePathKind> get bundlePathKind =>
+      glados.AnyUtils(this).choose(_GeneratedBundlePathKind.values);
+
+  glados.Generator<_GeneratedBundleUploadKind> get bundleUploadKind =>
+      glados.AnyUtils(this).choose(_GeneratedBundleUploadKind.values);
+
+  glados.Generator<_GeneratedBundleChild> get bundleChild =>
+      glados.CombinableAny(this).combine3(
+        bundleChildKind,
+        coveredClockKind,
+        glados.IntAnys(this).intInRange(0, 16),
+        (
+          _GeneratedBundleChildKind kind,
+          _GeneratedCoveredClockKind coveredClockKind,
+          int slot,
+        ) => _GeneratedBundleChild(
+          kind: kind,
+          coveredClockKind: coveredClockKind,
+          slot: slot,
+        ),
+      );
+
+  glados.Generator<_GeneratedBundleScenario> get bundleScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.ListAnys(this).listWithLengthInRange(0, 8, bundleChild),
+        bundlePathKind,
+        bundleUploadKind,
+        glados.IntAnys(this).intInRange(0, 16),
+        (
+          List<_GeneratedBundleChild> children,
+          _GeneratedBundlePathKind pathKind,
+          _GeneratedBundleUploadKind uploadKind,
+          int slot,
+        ) => _GeneratedBundleScenario(
+          children: children,
+          pathKind: pathKind,
+          uploadKind: uploadKind,
           slot: slot,
         ),
       );
@@ -2471,6 +2700,169 @@ void main() {
       final raw = gzip.decode(uploaded.bytes);
       return json.decode(utf8.decode(raw)) as Map<String, dynamic>;
     }
+
+    glados.Glados(
+      glados.any.bundleScenario,
+      glados.ExploreConfig(numRuns: 140),
+    ).test(
+      'generated outbox bundles either abort before upload or emit one '
+      'normalized manifest with every child represented',
+      (scenario) async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-A');
+        final localRegistry = SentEventRegistry();
+        final localSender = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: localRegistry,
+          vectorClockService: vectorClockService,
+        );
+
+        var journalLookupCalls = 0;
+        when(
+          () => journalDb.journalEntityMapForIds(any<Iterable<String>>()),
+        ).thenAnswer((inv) async {
+          journalLookupCalls++;
+          final ids = (inv.positionalArguments.single as Iterable<String>)
+              .toSet();
+          expect(ids, scenario.journalIds, reason: '$scenario');
+          return scenario.buildJournalEntityMap();
+        });
+
+        var uploadCalls = 0;
+        MatrixFile? capturedFile;
+        Map<String, dynamic>? capturedExtra;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          uploadCalls++;
+          capturedFile = inv.positionalArguments.single as MatrixFile;
+          capturedExtra =
+              inv.namedArguments[#extraContent] as Map<String, dynamic>?;
+          switch (scenario.uploadKind) {
+            case _GeneratedBundleUploadKind.succeeds:
+              return r'$generated-bundle-file-id';
+            case _GeneratedBundleUploadKind.returnsNull:
+              return null;
+          }
+        });
+
+        final stripped = await localSender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: SyncOutboxBundle(
+            children: scenario.buildMessages(),
+            jsonPath: scenario.jsonPath,
+          ),
+        );
+
+        expect(stripped != null, scenario.succeeds, reason: '$scenario');
+        expect(
+          journalLookupCalls,
+          scenario.journalIds.isEmpty ? 0 : 1,
+          reason: '$scenario',
+        );
+        expect(uploadCalls, scenario.expectsUpload ? 1 : 0);
+
+        if (!scenario.succeeds) {
+          if (scenario.expectsUpload) {
+            expect(capturedFile, isNotNull, reason: '$scenario');
+          } else {
+            expect(capturedFile, isNull, reason: '$scenario');
+          }
+          return;
+        }
+
+        expect(stripped!.children, isEmpty);
+        expect(stripped.jsonPath, startsWith('/outbox_bundles/'));
+        expect(stripped.jsonPath, endsWith('.json'));
+        if (scenario.pathKind == _GeneratedBundlePathKind.safe) {
+          expect(stripped.jsonPath, scenario.jsonPath);
+        } else {
+          expect(stripped.jsonPath, isNot(scenario.jsonPath));
+        }
+        expect(capturedExtra?['relativePath'], stripped.jsonPath);
+        expect(capturedExtra?[attachmentEncodingKey], attachmentEncodingGzip);
+        expect(localRegistry.consume(r'$generated-bundle-file-id'), isTrue);
+
+        final manifest = decodeManifestFromUpload(capturedFile!);
+        expect(manifest['version'], 1);
+        final entries = manifest['entries'] as List;
+        expect(entries, hasLength(scenario.children.length));
+
+        for (var i = 0; i < scenario.children.length; i++) {
+          final child = scenario.children[i];
+          final record = entries[i] as Map<String, dynamic>;
+          final envelope = SyncMessage.fromJson(
+            record['envelope'] as Map<String, dynamic>,
+          );
+
+          switch (child.kind) {
+            case _GeneratedBundleChildKind.aiConfigDelete:
+              expect(envelope, isA<SyncAiConfigDelete>());
+              expect((envelope as SyncAiConfigDelete).id, child.idAt(i));
+              expect(record.containsKey('payload'), isFalse);
+            case _GeneratedBundleChildKind.backfillRequest:
+              expect(envelope, isA<SyncBackfillRequest>());
+              expect(record.containsKey('payload'), isFalse);
+            case _GeneratedBundleChildKind.entryLink:
+              expect(envelope, isA<SyncEntryLink>());
+              final link = envelope as SyncEntryLink;
+              expect(link.originatingHostId, 'host-A');
+              expect(
+                link.coveredVectorClocks,
+                contains(link.entryLink.vectorClock),
+              );
+              if (child.coveredClockKind ==
+                  _GeneratedCoveredClockKind.present) {
+                expect(
+                  link.coveredVectorClocks,
+                  contains(child.coveredVectorClockAt(i)),
+                );
+              }
+              expect(record.containsKey('payload'), isFalse);
+            case _GeneratedBundleChildKind.journalPresent:
+              expect(envelope, isA<SyncJournalEntity>());
+              final journal = envelope as SyncJournalEntity;
+              expect(journal.originatingHostId, 'host-A');
+              expect(journal.vectorClock, child.dbVectorClockAt(i));
+              expect(
+                journal.coveredVectorClocks,
+                contains(child.messageVectorClockAt(i)),
+              );
+              expect(
+                journal.coveredVectorClocks,
+                contains(child.dbVectorClockAt(i)),
+              );
+              if (child.coveredClockKind ==
+                  _GeneratedCoveredClockKind.present) {
+                expect(
+                  journal.coveredVectorClocks,
+                  contains(child.coveredVectorClockAt(i)),
+                );
+              }
+              final payload = JournalEntity.fromJson(
+                record['payload'] as Map<String, dynamic>,
+              );
+              expect(payload.meta.id, child.idAt(i));
+              expect(payload.meta.vectorClock, child.dbVectorClockAt(i));
+            case _GeneratedBundleChildKind.journalMissing:
+              fail(
+                'missing journal children must abort before manifest upload',
+              );
+            case _GeneratedBundleChildKind.agentLink:
+              expect(envelope, isA<SyncAgentLink>());
+              final agentLink = envelope as SyncAgentLink;
+              expect(agentLink.originatingHostId, 'host-A');
+              expect(agentLink.agentLink?.id, child.idAt(i));
+              expect(record.containsKey('payload'), isFalse);
+          }
+        }
+      },
+    );
 
     test(
       'sendOutboxBundlePayloadForTesting uploads a single gzipped manifest '
