@@ -7,9 +7,12 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -58,20 +61,24 @@ void main() {
   group('CoverArtBackground', () {
     group('with mock file system', () {
       setUp(() async {
-        await getIt.reset();
-        getIt.allowReassignment = true;
-
-        // Create a temp directory to simulate the documents directory
         mockDocumentsDirectory = Directory.systemTemp.createTempSync(
           'cover_art_background_test_',
         );
-
-        // Register temp directory for getDocumentsDirectory()
-        getIt.registerSingleton<Directory>(mockDocumentsDirectory);
+        // Register the services EntryController constructs against so the
+        // provider returns a real value instead of an error state — without
+        // this the widget short-circuits at `entry is! JournalImage` before
+        // reaching the Image.file render path.
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..registerSingleton<EditorStateService>(MockEditorStateService())
+              ..registerSingleton<Directory>(mockDocumentsDirectory);
+          },
+        );
       });
 
       tearDown(() async {
-        await getIt.reset();
+        await tearDownTestGetIt();
         try {
           mockDocumentsDirectory.deleteSync(recursive: true);
         } catch (_) {
@@ -110,6 +117,78 @@ void main() {
         // The widget tree should still contain the CoverArtBackground
         expect(find.byType(CoverArtBackground), findsOneWidget);
       });
+
+      testWidgets(
+        'renders Image.file with a positive LayoutBuilder-derived cacheHeight',
+        (tester) async {
+          final image = buildJournalImage();
+          createInvalidImageFile(image);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [createEntryControllerOverride(image)],
+              child: const MaterialApp(
+                home: Scaffold(
+                  body: SizedBox(
+                    height: 240,
+                    width: 360,
+                    child: CoverArtBackground(imageId: 'image-1'),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final imageWidget = tester.widget<Image>(find.byType(Image));
+          expect(imageWidget.fit, BoxFit.cover);
+          expect(imageWidget.errorBuilder, isNotNull);
+
+          // The cacheHeight cap is applied by ResizeImage wrapping FileImage,
+          // sized from `constraints.maxHeight * 3` inside the LayoutBuilder.
+          // 240 logical px × 3 = 720 physical px ceiling on decoded bitmap.
+          expect(imageWidget.image, isA<ResizeImage>());
+          final resize = imageWidget.image as ResizeImage;
+          expect(resize.height, 720);
+          expect(resize.imageProvider, isA<FileImage>());
+        },
+      );
+
+      testWidgets(
+        'errorBuilder returns SizedBox.shrink and exercises cache eviction',
+        (tester) async {
+          final image = buildJournalImage();
+          createInvalidImageFile(image);
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [createEntryControllerOverride(image)],
+              child: const MaterialApp(
+                home: Scaffold(
+                  body: SizedBox(
+                    height: 200,
+                    width: 320,
+                    child: CoverArtBackground(imageId: 'image-1'),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final imageWidget = tester.widget<Image>(find.byType(Image));
+          final builder = imageWidget.errorBuilder!;
+
+          final element = tester.element(find.byType(Image));
+          final result = builder(element, Object(), StackTrace.current);
+
+          // SizedBox.shrink() is a const SizedBox with 0 width/height.
+          expect(result, isA<SizedBox>());
+          final shrink = result as SizedBox;
+          expect(shrink.width, 0.0);
+          expect(shrink.height, 0.0);
+        },
+      );
     });
 
     testWidgets('renders SizedBox.shrink when entry is not JournalImage', (

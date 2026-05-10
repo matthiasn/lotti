@@ -20,6 +20,8 @@ class EntryImageWidget extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
     final file = File(getFullImagePath(journalImage));
     final focusNode = notifier.focusNode;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxHeight = isMobile ? 400.0 : screenWidth;
 
     return GestureDetector(
       onTap: () {
@@ -37,13 +39,16 @@ class EntryImageWidget extends ConsumerWidget {
         child: Hero(
           tag: 'entry_img',
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: isMobile ? 400 : MediaQuery.of(context).size.width,
-            ),
+            constraints: BoxConstraints(maxHeight: maxHeight),
             child: Image.file(
               file,
-              width: MediaQuery.of(context).size.width,
+              width: screenWidth,
               fit: BoxFit.contain,
+              cacheHeight: (maxHeight * 3).toInt(),
+              errorBuilder: (context, error, stackTrace) {
+                imageCache.evict(FileImage(file));
+                return const SizedBox.shrink();
+              },
             ),
           ),
         ),
