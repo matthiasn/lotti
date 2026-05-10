@@ -278,9 +278,11 @@ class SyncSequenceLogService {
   }
 
   Future<int?> _getCachedLastCounterForHost(String hostId) async {
-    if (_isHostCacheExpired(hostId, clock.now())) {
-      _evictHost(hostId);
-    }
+    // Per-host expiry is enforced by `_getCachedHostLastSeen`, which
+    // every caller of this helper invokes first for the same hostId
+    // (see `recordReceivedEntry`). `_evictHost` clears every per-host
+    // map together, so by the time we get here the cache is either
+    // fresh or absent — no need to re-check the window.
     if (_lastCounterCache.containsKey(hostId)) {
       return _lastCounterCache[hostId];
     }
