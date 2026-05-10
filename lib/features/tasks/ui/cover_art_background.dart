@@ -58,15 +58,26 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
         LayoutBuilder(
           builder: (context, constraints) {
             final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+            // ResizeImage asserts width/height > 0; SliverAppBar collapse
+            // can briefly drive the constraint to 0 mid-animation, so guard
+            // and clamp the rounded value to a sensible band.
             return Image.file(
               File(path),
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
-              cacheWidth: constraints.hasBoundedWidth
-                  ? (constraints.maxWidth * devicePixelRatio).round()
+              cacheWidth:
+                  constraints.hasBoundedWidth && constraints.maxWidth > 0
+                  ? (constraints.maxWidth * devicePixelRatio).round().clamp(
+                      1,
+                      10000,
+                    )
                   : null,
-              cacheHeight: constraints.hasBoundedHeight
-                  ? (constraints.maxHeight * devicePixelRatio).round()
+              cacheHeight:
+                  constraints.hasBoundedHeight && constraints.maxHeight > 0
+                  ? (constraints.maxHeight * devicePixelRatio).round().clamp(
+                      1,
+                      10000,
+                    )
                   : null,
               errorBuilder: (context, error, stackTrace) {
                 imageCache.evict(FileImage(File(path)));

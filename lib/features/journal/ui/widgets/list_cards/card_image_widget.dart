@@ -48,12 +48,16 @@ class _CardImageWidgetState extends State<CardImageWidget>
 
     final size = widget.height.toDouble();
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cap = size > 0
+        ? (size * devicePixelRatio).round().clamp(1, 10000)
+        : null;
     return SizedBox(
       width: size,
       height: size,
       child: Image.file(
         File(path),
-        cacheHeight: (size * devicePixelRatio).round(),
+        cacheWidth: cap,
+        cacheHeight: cap,
         fit: widget.fit,
       ),
     );

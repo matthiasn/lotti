@@ -45,8 +45,14 @@ class EntryImageWidget extends ConsumerWidget {
               file,
               width: screenWidth,
               fit: BoxFit.contain,
-              cacheWidth: (screenWidth * devicePixelRatio).round(),
-              cacheHeight: (maxHeight * devicePixelRatio).round(),
+              cacheWidth: (screenWidth * devicePixelRatio).round().clamp(
+                1,
+                10000,
+              ),
+              cacheHeight: (maxHeight * devicePixelRatio).round().clamp(
+                1,
+                10000,
+              ),
               errorBuilder: (context, error, stackTrace) {
                 imageCache.evict(FileImage(file));
                 return const SizedBox.shrink();

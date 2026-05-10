@@ -110,7 +110,7 @@ void main() {
         );
       }
 
-      testWidgets('errorBuilder triggers when image file is invalid', (
+      testWidgets('configures errorBuilder when image file is invalid', (
         tester,
       ) async {
         final image = buildJournalImage();
@@ -123,7 +123,12 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
 
-        expect(find.byType(CoverArtBackground), findsOneWidget);
+        // The integration assertion: the rendered Image.file is wired with
+        // an errorBuilder callback so a decode failure on this invalid file
+        // can fall back without tearing down the widget. The callback's
+        // body itself is exercised in the dedicated white-box test below.
+        final imageWidget = tester.widget<Image>(find.byType(Image));
+        expect(imageWidget.errorBuilder, isNotNull);
       });
 
       testWidgets(
