@@ -329,12 +329,30 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final record = widget.record;
-    final subjectId =
-        record.state.slots.activeTaskId ?? record.state.slots.activeProjectId;
-    final subjectTitle = ref
-        .watch(pendingWakeTargetTitleProvider(subjectId))
-        .value
-        ?.trim();
+
+    // Try task first, then project — `??` would short-circuit on the
+    // task ID even when the task's title is blank, which is exactly the
+    // case that surfaced "Task Agent" instead of the project name on
+    // the scheduled (120 s countdown) row. The ongoing-wake row was
+    // already fixed via `_resolveOngoingRecord`; this is the matching
+    // fix for the pending-wake row.
+    final taskId = record.state.slots.activeTaskId;
+    final projectId = record.state.slots.activeProjectId;
+    String? subjectTitle;
+    if (taskId != null && taskId.isNotEmpty) {
+      subjectTitle = ref
+          .watch(pendingWakeTargetTitleProvider(taskId))
+          .value
+          ?.trim();
+    }
+    if ((subjectTitle == null || subjectTitle.isEmpty) &&
+        projectId != null &&
+        projectId.isNotEmpty) {
+      subjectTitle = ref
+          .watch(pendingWakeTargetTitleProvider(projectId))
+          .value
+          ?.trim();
+    }
     final title = subjectTitle != null && subjectTitle.isNotEmpty
         ? subjectTitle
         : record.agent.displayName;

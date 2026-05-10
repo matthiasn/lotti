@@ -4539,8 +4539,7 @@ void main() {
 
       test(
         'a direct match keeps the existing 120 s throttle window even when '
-        'the propagated form is also present (the wrapper is just legacy '
-        'bookkeeping for UI listeners)',
+        'an unrelated propagated token sits alongside it in the same batch',
         () {
           final now = DateTime(2026, 5, 10, 21, 30);
           withClock(Clock.fixed(now), () {
@@ -4570,9 +4569,13 @@ void main() {
               orchestrator.start(controller.stream);
               addTearDown(controller.close);
 
-              // Only the bare token is in the batch — direct edit, not
-              // propagated. nextWakeAt should be the 120 s default.
-              emitTokens(async, controller, {'task-direct'});
+              // Direct token matches this subscription; the unrelated
+              // propagated token must not switch deferral to morning mode
+              // for the matched subscription.
+              emitTokens(async, controller, {
+                'task-direct',
+                propagatedNotification('task-unrelated'),
+              });
 
               final captured = verify(
                 () => mockRepository.upsertEntity(captureAny()),
@@ -4632,6 +4635,150 @@ void main() {
               ).captured;
               final state = captured.last as AgentStateEntity;
               expect(state.nextWakeAt, DateTime(2026, 5, 10, 6));
+            });
+          });
+        },
+      );
+
+      test(
+        'a direct edit arriving on top of a propagated-only morning '
+        'deferral escalates the throttle deadline back to now+120s — '
+        "the user's edit must not sit waiting until 06:00",
+        () {
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-escalate'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // 1. Propagated-only batch arms a morning-deferred deadline.
+              emitTokens(async, controller, {
+                propagatedNotification('task-escalate'),
+              });
+
+              final firstCapture =
+                  verify(
+                        () => mockRepository.upsertEntity(captureAny()),
+                      ).captured.last
+                      as AgentStateEntity;
+              expect(firstCapture.nextWakeAt, DateTime(2026, 5, 11, 6));
+
+              // 2. Direct edit arrives while still deferred — must
+              //    escalate to now + 120 s.
+              emitTokens(async, controller, {'task-escalate'});
+
+              final escalated =
+                  verify(
+                        () => mockRepository.upsertEntity(captureAny()),
+                      ).captured.last
+                      as AgentStateEntity;
+              expect(
+                escalated.nextWakeAt,
+                now.add(const Duration(seconds: 120)),
+                reason:
+                    'a direct match coalescing onto a morning-deferred '
+                    'job must reset the throttle to the 120 s window',
+              );
+
+              // The queued job's provenance must also flip to direct so
+              // the post-execution throttle and any later drain pick the
+              // immediate path.
+              expect(queue.hasDirectQueuedJobFor('agent-1'), isTrue);
+            });
+          });
+        },
+      );
+
+      test(
+        'post-execution throttle defers to next 06:00 when only '
+        'propagated-only jobs are queued during the run — a fan-out that '
+        'arrives mid-execution must not coast in on a 120 s drain',
+        () {
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              final gate = Completer<Map<String, VectorClock>?>();
+              orchestrator
+                ..wakeExecutor =
+                    ((agentId, runKey, triggers, threadId) => gate.future)
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-postexec'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              // Drive the executor mid-flight by direct-enqueuing a job
+              // (bypasses the _onBatch deferral) so the running flag is
+              // set before our propagated batch arrives.
+              queue.enqueue(
+                makeJob(
+                  triggerTokens: {'task-postexec'},
+                  // ignore: avoid_redundant_argument_values
+                  runKey: 'rk-1',
+                ),
+              );
+              unawaited(orchestrator.processNext());
+              async.flushMicrotasks();
+              expect(runner.isRunning('agent-1'), isTrue);
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // Propagated-only batch arrives during execution → queued
+              // with hasDirectMatch=false.
+              emitTokens(async, controller, {
+                propagatedNotification('task-postexec'),
+              });
+              expect(queue.hasDirectQueuedJobFor('agent-1'), isFalse);
+
+              // Finish execution. The post-execution throttle must use
+              // morning, not 120 s.
+              gate.complete(const {});
+              async.flushMicrotasks();
+
+              final captured =
+                  verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.whereType<AgentStateEntity>().lastWhere(
+                    (s) => s.nextWakeAt != null,
+                  );
+              expect(captured.nextWakeAt, DateTime(2026, 5, 11, 6));
             });
           });
         },

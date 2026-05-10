@@ -486,6 +486,10 @@ class WakeOrchestrator {
       final predicate = sub.predicate;
       if (predicate != null && !predicate(allMatched)) continue;
 
+      // The provenance bit drives both the queued job's [hasDirectMatch]
+      // flag and the throttle-gate escalation below.
+      final isDirect = trueDirect.isNotEmpty;
+
       // 4. During-execution gate: when the agent is actively executing,
       //    silently queue the notification for the drain re-check instead
       //    of going through the throttle/defer path. The drain re-check
@@ -496,7 +500,11 @@ class WakeOrchestrator {
       //    the double-run race where the safety-net dequeues a job during
       //    its async gap.
       if (runner.isRunning(sub.agentId)) {
-        final merged = queue.mergeTokens(sub.agentId, allMatched);
+        final merged = queue.mergeTokens(
+          sub.agentId,
+          allMatched,
+          isDirect: isDirect,
+        );
         if (!merged) {
           final counter = _wakeCounters[sub.agentId] ?? 0;
           _wakeCounters[sub.agentId] = counter + 1;
@@ -514,12 +522,14 @@ class WakeOrchestrator {
               triggerTokens: Set<String>.from(allMatched),
               reasonId: sub.id,
               createdAt: clock.now(),
+              hasDirectMatch: isDirect,
             ),
           );
         }
         _log(
           '${DomainLogger.sanitizeId(sub.agentId)} executing — '
-          '${merged ? 'merged tokens into queued job' : 'queued for drain re-check'}',
+          '${merged ? 'merged tokens into queued job' : 'queued for drain re-check'} '
+          '(direct=$isDirect)',
           subDomain: 'running',
         );
         continue;
@@ -530,7 +540,27 @@ class WakeOrchestrator {
       //    deferred drain timer can pick it up.
       if (_isThrottled(sub.agentId)) {
         final deadline = _throttle.deadlineFor(sub.agentId);
-        final merged = queue.mergeTokens(sub.agentId, allMatched);
+        final merged = queue.mergeTokens(
+          sub.agentId,
+          allMatched,
+          isDirect: isDirect,
+        );
+        // Escalate the deadline when a direct match arrives on top of a
+        // morning-deferred slot — leaving the user's edit waiting until
+        // 06:00 because earlier propagation already armed a long timer
+        // would defeat the entire policy.
+        if (isDirect && deadline != null) {
+          final immediate = clock.now().add(throttleWindow);
+          if (immediate.isBefore(deadline)) {
+            _log(
+              'escalating ${DomainLogger.sanitizeId(sub.agentId)} '
+              'deadline from $deadline to $immediate '
+              '(direct match arrived during propagated deferral)',
+              subDomain: 'throttle',
+            );
+            unawaited(_setThrottleDeadline(sub.agentId));
+          }
+        }
         _log(
           '${DomainLogger.sanitizeId(sub.agentId)} throttled until $deadline — '
           '${merged ? 'merged tokens' : 'enqueuing for deferred drain'}',
@@ -560,11 +590,12 @@ class WakeOrchestrator {
         triggerTokens: Set<String>.from(allMatched),
         reasonId: sub.id,
         createdAt: clock.now(),
+        hasDirectMatch: isDirect,
       );
 
       // Attempt to merge tokens into an existing queued job for this agent
       // before enqueuing a new one; this coalesces rapid-fire notifications.
-      if (!queue.mergeTokens(sub.agentId, allMatched)) {
+      if (!queue.mergeTokens(sub.agentId, allMatched, isDirect: isDirect)) {
         queue.enqueue(job);
       }
 
@@ -1045,8 +1076,27 @@ class WakeOrchestrator {
 
         // Set the throttle deadline for subscription-triggered wakes so
         // that rapid-fire mutations don't cause excessive LLM calls.
+        //
+        // If the queue holds only propagated-only jobs for this agent
+        // (e.g. fan-outs that arrived while the executor was running),
+        // honour the morning policy for the drain instead of bouncing
+        // them into a 120 s post-throttle that would force them to fire
+        // at the next minute mark. A direct-bearing queued job — or an
+        // empty queue — keeps the standard 120 s cooldown so subsequent
+        // user edits land within the throttle window.
         if (job.reason == WakeReason.subscription.name) {
-          await _setThrottleDeadline(job.agentId);
+          final hasDirectQueued = queue.hasDirectQueuedJobFor(job.agentId);
+          final hasAnyQueued = queue.hasQueuedJobFor(job.agentId);
+          final morningDeadline = hasAnyQueued && !hasDirectQueued
+              ? nextOccurrenceOf(
+                  clock.now(),
+                  hour: AgentSchedules.projectDailyDigestHour,
+                )
+              : null;
+          await _setThrottleDeadline(
+            job.agentId,
+            customDeadline: morningDeadline,
+          );
         }
       } catch (e) {
         _suppression.clearPreRegistered(job.agentId);
