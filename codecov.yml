@@ -1,3 +1,17 @@
+codecov:
+  notify:
+    # CI uploads two coverage reports for each commit: standard and glados.
+    # Wait for both before publishing Codecov statuses/comments.
+    after_n_builds: 2
+    wait_for_ci: true
+
+flag_management:
+  default_rules:
+    # Keep branch/project coverage stable while one of the split reports is
+    # still running. The current commit replaces the carried-forward flag as
+    # soon as that flag's real upload arrives.
+    carryforward: true
+
 coverage:
   status:
     project:
