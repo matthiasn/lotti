@@ -4,6 +4,7 @@ import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/actor/sync_actor.dart';
@@ -207,6 +208,218 @@ Map<String, Object?> _initPayload({
   };
 }
 
+enum _GeneratedActorCommandKind {
+  ping,
+  getHealth,
+  initValid,
+  initMissingUser,
+  startSync,
+  stopSync,
+  kickOutbox,
+  connectivityTrue,
+  connectivityInvalid,
+  stop,
+  unknown,
+}
+
+class _GeneratedActorExpectation {
+  const _GeneratedActorExpectation({
+    required this.ok,
+    required this.nextState,
+    this.errorCode,
+  });
+
+  final bool ok;
+  final SyncActorState nextState;
+  final String? errorCode;
+}
+
+class _GeneratedActorCommand {
+  const _GeneratedActorCommand({
+    required this.kind,
+    required this.slot,
+  });
+
+  final _GeneratedActorCommandKind kind;
+  final int slot;
+
+  String requestIdAt(int index) => 'generated-$index-$slot';
+
+  Map<String, Object?> commandAt({
+    required int index,
+    required String dbRootPath,
+  }) {
+    final requestId = requestIdAt(index);
+    switch (kind) {
+      case _GeneratedActorCommandKind.ping:
+        return _cmd('ping', {'requestId': requestId});
+      case _GeneratedActorCommandKind.getHealth:
+        return _cmd('getHealth', {'requestId': requestId});
+      case _GeneratedActorCommandKind.initValid:
+        return {
+          ..._initPayload(
+            dbRootPath: dbRootPath,
+            deviceDisplayName: 'GeneratedDevice$slot',
+          ),
+          'requestId': requestId,
+        };
+      case _GeneratedActorCommandKind.initMissingUser:
+        final payload = {
+          ..._initPayload(
+            dbRootPath: dbRootPath,
+            deviceDisplayName: 'GeneratedDevice$slot',
+          ),
+          'requestId': requestId,
+        }..remove('user');
+        return payload;
+      case _GeneratedActorCommandKind.startSync:
+        return _cmd('startSync', {'requestId': requestId});
+      case _GeneratedActorCommandKind.stopSync:
+        return _cmd('stopSync', {'requestId': requestId});
+      case _GeneratedActorCommandKind.kickOutbox:
+        return _cmd('kickOutbox', {'requestId': requestId});
+      case _GeneratedActorCommandKind.connectivityTrue:
+        return _cmd(
+          'connectivityChanged',
+          {'requestId': requestId, 'connected': true},
+        );
+      case _GeneratedActorCommandKind.connectivityInvalid:
+        return _cmd(
+          'connectivityChanged',
+          {'requestId': requestId, 'connected': 'yes'},
+        );
+      case _GeneratedActorCommandKind.stop:
+        return _cmd('stop', {'requestId': requestId});
+      case _GeneratedActorCommandKind.unknown:
+        return _cmd('unknown-$slot', {'requestId': requestId});
+    }
+  }
+
+  _GeneratedActorExpectation expectation(SyncActorState state) {
+    switch (kind) {
+      case _GeneratedActorCommandKind.ping:
+      case _GeneratedActorCommandKind.getHealth:
+        return _GeneratedActorExpectation(ok: true, nextState: state);
+      case _GeneratedActorCommandKind.initValid:
+        if (state == SyncActorState.uninitialized) {
+          return const _GeneratedActorExpectation(
+            ok: true,
+            nextState: SyncActorState.syncing,
+          );
+        }
+        return _invalidStateExpectation(state);
+      case _GeneratedActorCommandKind.initMissingUser:
+        if (state == SyncActorState.uninitialized) {
+          return const _GeneratedActorExpectation(
+            ok: false,
+            nextState: SyncActorState.uninitialized,
+            errorCode: 'MISSING_PARAMETER',
+          );
+        }
+        return _invalidStateExpectation(state);
+      case _GeneratedActorCommandKind.startSync:
+        if (state == SyncActorState.syncing) {
+          return const _GeneratedActorExpectation(
+            ok: true,
+            nextState: SyncActorState.syncing,
+          );
+        }
+        if (state == SyncActorState.idle) {
+          return const _GeneratedActorExpectation(
+            ok: true,
+            nextState: SyncActorState.syncing,
+          );
+        }
+        return _invalidStateExpectation(state);
+      case _GeneratedActorCommandKind.stopSync:
+        if (state == SyncActorState.syncing) {
+          return const _GeneratedActorExpectation(
+            ok: true,
+            nextState: SyncActorState.idle,
+          );
+        }
+        if (state == SyncActorState.idle) {
+          return const _GeneratedActorExpectation(
+            ok: true,
+            nextState: SyncActorState.idle,
+          );
+        }
+        return _invalidStateExpectation(state);
+      case _GeneratedActorCommandKind.kickOutbox:
+      case _GeneratedActorCommandKind.connectivityTrue:
+        if (state == SyncActorState.idle || state == SyncActorState.syncing) {
+          return _GeneratedActorExpectation(ok: true, nextState: state);
+        }
+        return _invalidStateExpectation(state);
+      case _GeneratedActorCommandKind.connectivityInvalid:
+        if (state == SyncActorState.idle || state == SyncActorState.syncing) {
+          return _GeneratedActorExpectation(
+            ok: false,
+            nextState: state,
+            errorCode: 'INVALID_PARAMETER',
+          );
+        }
+        return _invalidStateExpectation(state);
+      case _GeneratedActorCommandKind.stop:
+        if (state == SyncActorState.disposed) {
+          return _invalidStateExpectation(state);
+        }
+        return const _GeneratedActorExpectation(
+          ok: true,
+          nextState: SyncActorState.disposed,
+        );
+      case _GeneratedActorCommandKind.unknown:
+        return _GeneratedActorExpectation(
+          ok: false,
+          nextState: state,
+          errorCode: 'UNKNOWN_COMMAND',
+        );
+    }
+  }
+
+  _GeneratedActorExpectation _invalidStateExpectation(SyncActorState state) {
+    return _GeneratedActorExpectation(
+      ok: false,
+      nextState: state,
+      errorCode: 'INVALID_STATE',
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedActorCommand(kind: $kind, slot: $slot)';
+  }
+}
+
+class _GeneratedActorCommandScenario {
+  const _GeneratedActorCommandScenario(this.commands);
+
+  final List<_GeneratedActorCommand> commands;
+
+  @override
+  String toString() => '_GeneratedActorCommandScenario($commands)';
+}
+
+extension _AnyGeneratedActorCommandScenario on glados.Any {
+  glados.Generator<_GeneratedActorCommandKind> get actorCommandKind =>
+      glados.AnyUtils(this).choose(_GeneratedActorCommandKind.values);
+
+  glados.Generator<_GeneratedActorCommand> get actorCommand =>
+      glados.CombinableAny(this).combine2(
+        actorCommandKind,
+        glados.IntAnys(this).intInRange(0, 12),
+        (
+          _GeneratedActorCommandKind kind,
+          int slot,
+        ) => _GeneratedActorCommand(kind: kind, slot: slot),
+      );
+
+  glados.Generator<_GeneratedActorCommandScenario> get actorCommandScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(1, 20, actorCommand)
+          .map(_GeneratedActorCommandScenario.new);
+}
+
 void main() {
   late SyncActorCommandHandler handler;
   late DebugPrintCallback originalDebugPrint;
@@ -236,6 +449,57 @@ void main() {
         expect(handler.state, SyncActorState.uninitialized);
       });
     });
+
+    glados.Glados(
+      glados.any.actorCommandScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'generated command sequences respect actor state transitions',
+      (scenario) async {
+        handler = createTestHandler();
+        final dbRoot = Directory.systemTemp.createTempSync(
+          'sync_actor_generated',
+        );
+        var modeledState = SyncActorState.uninitialized;
+
+        try {
+          for (var i = 0; i < scenario.commands.length; i++) {
+            final command = scenario.commands[i];
+            final expectation = command.expectation(modeledState);
+            final response = await handler.handleCommand(
+              command.commandAt(index: i, dbRootPath: dbRoot.path),
+            );
+
+            expect(
+              response['requestId'],
+              command.requestIdAt(i),
+              reason: '$scenario',
+            );
+            expect(response['ok'], expectation.ok, reason: '$scenario');
+            if (!expectation.ok) {
+              expect(
+                response['errorCode'],
+                expectation.errorCode,
+                reason: '$scenario',
+              );
+            }
+
+            modeledState = expectation.nextState;
+            expect(handler.state, modeledState, reason: '$scenario');
+            if (command.kind == _GeneratedActorCommandKind.getHealth) {
+              expect(response['state'], modeledState.name, reason: '$scenario');
+            }
+          }
+        } finally {
+          if (handler.state != SyncActorState.disposed) {
+            await handler.handleCommand(_cmd('stop'));
+          }
+          if (dbRoot.existsSync()) {
+            dbRoot.deleteSync(recursive: true);
+          }
+        }
+      },
+    );
 
     group('ping', () {
       test('works in uninitialized state', () async {

@@ -275,6 +275,166 @@ extension _AnyGeneratedLiveIngressScenario on glados.Any {
       );
 }
 
+enum _GeneratedDrainRoomKind { absent, present }
+
+enum _GeneratedDrainFailureKind { none, penThrows, workerThrows, bothThrow }
+
+enum _GeneratedDrainReadyAtKind { none, now, soon }
+
+enum _GeneratedDrainTerminationKind { completes, timesOut }
+
+class _GeneratedDrainStep {
+  const _GeneratedDrainStep({
+    required this.total,
+    required this.penSize,
+    required this.readyAtKind,
+  });
+
+  final int total;
+  final int penSize;
+  final _GeneratedDrainReadyAtKind readyAtKind;
+
+  bool get isEmpty => total == 0 && penSize == 0;
+
+  _GeneratedDrainStep asNonEmpty() {
+    if (!isEmpty) return this;
+    return _GeneratedDrainStep(
+      total: 1,
+      penSize: 0,
+      readyAtKind: readyAtKind,
+    );
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedDrainStep('
+        'total: $total, '
+        'penSize: $penSize, '
+        'readyAtKind: $readyAtKind'
+        ')';
+  }
+}
+
+class _GeneratedDrainScenario {
+  const _GeneratedDrainScenario({
+    required this.rawSteps,
+    required this.roomKind,
+    required this.failureKind,
+    required this.terminationKind,
+  });
+
+  final List<_GeneratedDrainStep> rawSteps;
+  final _GeneratedDrainRoomKind roomKind;
+  final _GeneratedDrainFailureKind failureKind;
+  final _GeneratedDrainTerminationKind terminationKind;
+
+  bool get hasRoom => roomKind == _GeneratedDrainRoomKind.present;
+
+  bool get penThrows =>
+      failureKind == _GeneratedDrainFailureKind.penThrows ||
+      failureKind == _GeneratedDrainFailureKind.bothThrow;
+
+  bool get workerThrows =>
+      failureKind == _GeneratedDrainFailureKind.workerThrows ||
+      failureKind == _GeneratedDrainFailureKind.bothThrow;
+
+  bool get timesOut =>
+      terminationKind == _GeneratedDrainTerminationKind.timesOut;
+
+  Duration get timeout =>
+      timesOut ? const Duration(milliseconds: 20) : const Duration(seconds: 3);
+
+  Duration get advanceBy =>
+      timesOut ? const Duration(milliseconds: 25) : const Duration(seconds: 3);
+
+  List<_GeneratedDrainStep> get steps {
+    if (timesOut) {
+      return const [
+        _GeneratedDrainStep(
+          total: 1,
+          penSize: 0,
+          readyAtKind: _GeneratedDrainReadyAtKind.none,
+        ),
+      ];
+    }
+    return [
+      for (final step in rawSteps) step.asNonEmpty(),
+      const _GeneratedDrainStep(
+        total: 0,
+        penSize: 0,
+        readyAtKind: _GeneratedDrainReadyAtKind.now,
+      ),
+    ];
+  }
+
+  int get expectedIterations => steps.length;
+
+  _GeneratedDrainStep stepAt(int index) {
+    final materialized = steps;
+    if (index < materialized.length) return materialized[index];
+    return materialized.last;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedDrainScenario('
+        'rawSteps: $rawSteps, '
+        'roomKind: $roomKind, '
+        'failureKind: $failureKind, '
+        'terminationKind: $terminationKind'
+        ')';
+  }
+}
+
+extension _AnyGeneratedDrainScenario on glados.Any {
+  glados.Generator<_GeneratedDrainRoomKind> get drainRoomKind =>
+      glados.AnyUtils(this).choose(_GeneratedDrainRoomKind.values);
+
+  glados.Generator<_GeneratedDrainFailureKind> get drainFailureKind =>
+      glados.AnyUtils(this).choose(_GeneratedDrainFailureKind.values);
+
+  glados.Generator<_GeneratedDrainReadyAtKind> get drainReadyAtKind =>
+      glados.AnyUtils(this).choose(_GeneratedDrainReadyAtKind.values);
+
+  glados.Generator<_GeneratedDrainTerminationKind> get drainTerminationKind =>
+      glados.AnyUtils(this).choose(_GeneratedDrainTerminationKind.values);
+
+  glados.Generator<_GeneratedDrainStep> get drainStep =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(0, 3),
+        drainReadyAtKind,
+        (
+          int total,
+          int penSize,
+          _GeneratedDrainReadyAtKind readyAtKind,
+        ) => _GeneratedDrainStep(
+          total: total,
+          penSize: penSize,
+          readyAtKind: readyAtKind,
+        ),
+      );
+
+  glados.Generator<_GeneratedDrainScenario> get drainScenario =>
+      glados.CombinableAny(this).combine4(
+        glados.ListAnys(this).listWithLengthInRange(0, 4, drainStep),
+        drainRoomKind,
+        drainFailureKind,
+        drainTerminationKind,
+        (
+          List<_GeneratedDrainStep> rawSteps,
+          _GeneratedDrainRoomKind roomKind,
+          _GeneratedDrainFailureKind failureKind,
+          _GeneratedDrainTerminationKind terminationKind,
+        ) => _GeneratedDrainScenario(
+          rawSteps: rawSteps,
+          roomKind: roomKind,
+          failureKind: failureKind,
+          terminationKind: terminationKind,
+        ),
+      );
+}
+
 void main() {
   late SyncDatabase syncDb;
   late JournalDb journalDb;
@@ -1192,6 +1352,236 @@ void main() {
         verify(
           () => pen.flushInto(queue: queue, room: room),
         ).called(greaterThanOrEqualTo(1));
+      },
+    );
+
+    glados.Glados(
+      glados.any.drainScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'generated drainUntilEmpty follows queue, pen, ready-at and timeout model',
+      (scenario) async {
+        final localSyncDb = SyncDatabase(inMemoryDatabase: true);
+        final localJournalDb = JournalDb(inMemoryDatabase: true);
+        final localSettingsDb = MockSettingsDb();
+        final localSessionManager = _MockSessionManager();
+        final localRoomManager = _MockRoomManager();
+        final localProcessor = _MockEventProcessor();
+        final localSequenceLog = _MockSequenceLogService();
+        final localLogging = MockLoggingService();
+        final localQueue = _MockQueue();
+        final localWorker = _MockWorker();
+        final localBridge = _MockBridge();
+        final localPen = _MockPen();
+        final localSeeder = _MockSeeder();
+        final localClient = _MockClient();
+        final localRoom = _MockRoom();
+        final localTimelineCtl = StreamController<Event>.broadcast(sync: true);
+        final localSyncCtl = CachedStreamController<SyncUpdate>();
+        final events = <String>[];
+        final exceptionSubDomains = <String>[];
+        var statsCalls = 0;
+        var drainCalls = 0;
+        var flushCalls = 0;
+        var readyAtCalls = 0;
+
+        when(
+          () => localSessionManager.timelineEvents,
+        ).thenAnswer((_) => localTimelineCtl.stream);
+        when(() => localSessionManager.client).thenReturn(localClient);
+        when(() => localClient.onSync).thenReturn(localSyncCtl);
+        when(() => localRoomManager.currentRoomId).thenReturn(roomId);
+        when(() => localRoomManager.currentRoom).thenReturn(
+          scenario.hasRoom ? localRoom : null,
+        );
+        when(() => localSeeder.seedIfAbsent(any())).thenAnswer(
+          (_) async => true,
+        );
+        when(
+          () => localQueue.pruneStrandedEntries(any()),
+        ).thenAnswer((_) async => 0);
+        when(localWorker.start).thenAnswer((_) async {});
+        when(localWorker.stop).thenAnswer((_) async {});
+        when(localWorker.drainToCompletion).thenAnswer((_) async {
+          drainCalls++;
+          if (scenario.workerThrows) {
+            throw StateError('generated drain failure');
+          }
+          return 0;
+        });
+        when(localBridge.start).thenReturn(null);
+        when(localBridge.stop).thenAnswer((_) async {});
+        when(localBridge.bridgeNow).thenAnswer((_) async {});
+        when(localPen.stop).thenAnswer((_) async {});
+        when(
+          () => localPen.flushInto(queue: localQueue, room: localRoom),
+        ).thenAnswer((_) async {
+          flushCalls++;
+          if (scenario.penThrows) {
+            throw StateError('generated pen failure');
+          }
+          return const PenFlushOutcome(
+            enqueued: 0,
+            stillEncrypted: 0,
+            dropped: 0,
+          );
+        });
+        when(localQueue.dispose).thenAnswer((_) async {});
+        when(localQueue.stats).thenAnswer((_) async {
+          final step = scenario.stepAt(statsCalls);
+          statsCalls++;
+          return QueueStats(
+            total: step.total,
+            byProducer: const {},
+            readyNow: step.total,
+            oldestEnqueuedAt: null,
+          );
+        });
+        when(() => localPen.size).thenAnswer((_) {
+          final index = statsCalls <= 0 ? 0 : statsCalls - 1;
+          return scenario.stepAt(index).penSize;
+        });
+        when(localQueue.earliestReadyAt).thenAnswer((_) async {
+          readyAtCalls++;
+          final index = statsCalls <= 0 ? 0 : statsCalls - 1;
+          final step = scenario.stepAt(index);
+          switch (step.readyAtKind) {
+            case _GeneratedDrainReadyAtKind.none:
+              return null;
+            case _GeneratedDrainReadyAtKind.now:
+              return clock.now().millisecondsSinceEpoch;
+            case _GeneratedDrainReadyAtKind.soon:
+              return clock
+                  .now()
+                  .add(const Duration(milliseconds: 15))
+                  .millisecondsSinceEpoch;
+          }
+        });
+        when(
+          () => localLogging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((invocation) {
+          events.add(invocation.positionalArguments.single as String);
+        });
+        when(
+          () => localLogging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((invocation) async {
+          exceptionSubDomains.add(
+            invocation.namedArguments[#subDomain] as String,
+          );
+        });
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: localSyncDb,
+          settingsDb: localSettingsDb,
+          journalDb: localJournalDb,
+          sessionManager: localSessionManager,
+          roomManager: localRoomManager,
+          eventProcessor: localProcessor,
+          sequenceLogService: localSequenceLog,
+          activityGate: null,
+          logging: localLogging,
+          queueOverride: localQueue,
+          workerOverride: localWorker,
+          bridgeOverride: localBridge,
+          penOverride: localPen,
+          seederOverride: localSeeder,
+        );
+
+        try {
+          fakeAsync((async) {
+            var completed = false;
+            Object? error;
+            withClock(
+              Clock(
+                () => DateTime.utc(2026).add(async.elapsed),
+              ),
+              () {
+                unawaited(
+                  coordinator
+                      .drainUntilEmpty(timeout: scenario.timeout)
+                      .then<void>((_) {
+                        completed = true;
+                      })
+                      .catchError((Object e) {
+                        error = e;
+                      }),
+                );
+              },
+            );
+
+            async
+              ..flushMicrotasks()
+              ..elapse(scenario.advanceBy)
+              ..flushMicrotasks();
+
+            expect(error, isNull, reason: '$scenario');
+            expect(completed, isTrue, reason: '$scenario');
+          });
+
+          expect(statsCalls, scenario.expectedIterations, reason: '$scenario');
+          expect(drainCalls, scenario.expectedIterations, reason: '$scenario');
+          expect(
+            flushCalls,
+            scenario.hasRoom ? scenario.expectedIterations : 0,
+            reason: '$scenario',
+          );
+          if (scenario.timesOut) {
+            expect(
+              events,
+              contains(
+                contains('queue.coordinator.drainUntilEmpty.timeout'),
+              ),
+              reason: '$scenario',
+            );
+          } else {
+            expect(
+              events,
+              contains(contains('queue.coordinator.drainUntilEmpty.done')),
+              reason: '$scenario',
+            );
+          }
+          if (scenario.hasRoom && scenario.penThrows) {
+            expect(
+              exceptionSubDomains.where(
+                (subDomain) => subDomain.endsWith('.pen'),
+              ),
+              hasLength(scenario.expectedIterations),
+              reason: '$scenario',
+            );
+          }
+          if (scenario.workerThrows) {
+            expect(
+              exceptionSubDomains.where(
+                (subDomain) => subDomain.endsWith('.drain'),
+              ),
+              hasLength(scenario.expectedIterations),
+              reason: '$scenario',
+            );
+          }
+          expect(
+            readyAtCalls,
+            scenario.timesOut
+                ? 1
+                : scenario.expectedIterations == 0
+                ? 0
+                : scenario.expectedIterations - 1,
+            reason: '$scenario',
+          );
+        } finally {
+          await localTimelineCtl.close();
+          await localSyncCtl.close();
+          await localSyncDb.close();
+          await localJournalDb.close();
+        }
       },
     );
   });

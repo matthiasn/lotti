@@ -6,6 +6,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -29,6 +30,182 @@ import '../../../mocks/mocks.dart';
 class MockRoom extends Mock implements Room {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+enum _GeneratedSendMessageKind {
+  aiConfigDelete,
+  themingSelection,
+  backfillRequest,
+  backfillResponse,
+  entryLink,
+}
+
+enum _GeneratedSendContextKind {
+  ready,
+  unverifiedDevice,
+  noRoomId,
+  noRoomInstance,
+}
+
+enum _GeneratedTextSendKind {
+  succeeds,
+  returnsNull,
+  throwsError,
+}
+
+enum _GeneratedCoveredClockKind { absent, present }
+
+class _GeneratedSendScenario {
+  const _GeneratedSendScenario({
+    required this.messageKind,
+    required this.contextKind,
+    required this.textSendKind,
+    required this.coveredClockKind,
+    required this.slot,
+  });
+
+  final _GeneratedSendMessageKind messageKind;
+  final _GeneratedSendContextKind contextKind;
+  final _GeneratedTextSendKind textSendKind;
+  final _GeneratedCoveredClockKind coveredClockKind;
+  final int slot;
+
+  bool get reachesTextSend => contextKind == _GeneratedSendContextKind.ready;
+
+  bool get succeeds =>
+      reachesTextSend && textSendKind == _GeneratedTextSendKind.succeeds;
+
+  String get eventId => '\$generated-matrix-send-$slot';
+
+  VectorClock get linkVectorClock => VectorClock({'host-A': slot + 1});
+
+  VectorClock get coveredVectorClock => VectorClock({'host-A': slot + 50});
+
+  SyncMessage buildMessage() {
+    switch (messageKind) {
+      case _GeneratedSendMessageKind.aiConfigDelete:
+        return SyncMessage.aiConfigDelete(id: 'cfg-$slot');
+      case _GeneratedSendMessageKind.themingSelection:
+        return SyncMessage.themingSelection(
+          lightThemeName: 'light-$slot',
+          darkThemeName: 'dark-$slot',
+          themeMode: slot.isEven ? 'light' : 'dark',
+          updatedAt: 1700000000 + slot,
+          status: SyncEntryStatus.update,
+        );
+      case _GeneratedSendMessageKind.backfillRequest:
+        return SyncMessage.backfillRequest(
+          entries: [
+            BackfillRequestEntry(
+              hostId: 'host-$slot',
+              counter: slot + 1,
+            ),
+          ],
+          requesterId: 'requester-$slot',
+        );
+      case _GeneratedSendMessageKind.backfillResponse:
+        return SyncMessage.backfillResponse(
+          hostId: 'host-$slot',
+          counter: slot + 1,
+          deleted: slot.isEven,
+          unresolvable: slot.isOdd,
+          entryId: slot.isEven ? null : 'entry-$slot',
+          payloadId: slot.isEven ? null : 'entry-$slot',
+        );
+      case _GeneratedSendMessageKind.entryLink:
+        return SyncMessage.entryLink(
+          entryLink: EntryLink.basic(
+            id: 'link-$slot',
+            fromId: 'from-$slot',
+            toId: 'to-$slot',
+            createdAt: DateTime.utc(2024, 1, 1),
+            updatedAt: DateTime.utc(2024, 1, 2),
+            vectorClock: linkVectorClock,
+          ),
+          status: SyncEntryStatus.update,
+          coveredVectorClocks:
+              coveredClockKind == _GeneratedCoveredClockKind.present
+              ? [coveredVectorClock]
+              : null,
+        );
+    }
+  }
+
+  MatrixMessageContext buildContext(Room room) {
+    switch (contextKind) {
+      case _GeneratedSendContextKind.ready:
+        return MatrixMessageContext(
+          syncRoomId: '!room:test',
+          syncRoom: room,
+          unverifiedDevices: const <DeviceKeys>[],
+        );
+      case _GeneratedSendContextKind.unverifiedDevice:
+        return MatrixMessageContext(
+          syncRoomId: '!room:test',
+          syncRoom: room,
+          unverifiedDevices: [MockDeviceKeys()],
+        );
+      case _GeneratedSendContextKind.noRoomId:
+        return const MatrixMessageContext(
+          syncRoomId: null,
+          syncRoom: null,
+          unverifiedDevices: <DeviceKeys>[],
+        );
+      case _GeneratedSendContextKind.noRoomInstance:
+        return const MatrixMessageContext(
+          syncRoomId: '!room:test',
+          syncRoom: null,
+          unverifiedDevices: <DeviceKeys>[],
+        );
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedSendScenario('
+        'messageKind: $messageKind, '
+        'contextKind: $contextKind, '
+        'textSendKind: $textSendKind, '
+        'coveredClockKind: $coveredClockKind, '
+        'slot: $slot'
+        ')';
+  }
+}
+
+extension _AnyGeneratedSendScenario on glados.Any {
+  glados.Generator<_GeneratedSendMessageKind> get sendMessageKind =>
+      glados.AnyUtils(this).choose(_GeneratedSendMessageKind.values);
+
+  glados.Generator<_GeneratedSendContextKind> get sendContextKind =>
+      glados.AnyUtils(this).choose(_GeneratedSendContextKind.values);
+
+  glados.Generator<_GeneratedTextSendKind> get textSendKind =>
+      glados.AnyUtils(this).choose(_GeneratedTextSendKind.values);
+
+  glados.Generator<_GeneratedCoveredClockKind> get coveredClockKind =>
+      glados.AnyUtils(this).choose(_GeneratedCoveredClockKind.values);
+
+  glados.Generator<_GeneratedSendScenario> get sendScenario =>
+      glados.CombinableAny(this).combine5(
+        sendMessageKind,
+        sendContextKind,
+        textSendKind,
+        coveredClockKind,
+        glados.IntAnys(this).intInRange(0, 16),
+        (
+          _GeneratedSendMessageKind messageKind,
+          _GeneratedSendContextKind contextKind,
+          _GeneratedTextSendKind textSendKind,
+          _GeneratedCoveredClockKind coveredClockKind,
+          int slot,
+        ) => _GeneratedSendScenario(
+          messageKind: messageKind,
+          contextKind: contextKind,
+          textSendKind: textSendKind,
+          coveredClockKind: coveredClockKind,
+          slot: slot,
+        ),
+      );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -224,6 +401,97 @@ void main() {
     expect(result, isTrue);
     expect(sentEventRegistry.consume(r'$text-event-id'), isTrue);
   });
+
+  glados.Glados(
+    glados.any.sendScenario,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'generated lightweight message sends honor context gates and normalization',
+    (scenario) async {
+      final vectorClockService = MockVectorClockService();
+      final localRoom = MockRoom();
+      when(vectorClockService.getHost).thenAnswer((_) async => 'host-A');
+      when(() => localRoom.id).thenReturn('!room:test');
+      final localRegistry = SentEventRegistry();
+      final localSender = MatrixMessageSender(
+        loggingService: loggingService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        sentEventRegistry: localRegistry,
+        vectorClockService: vectorClockService,
+      );
+      final sentMessages = <SyncMessage>[];
+      var capturedPayload = '';
+
+      when(
+        () => localRoom.sendTextEvent(
+          any<String>(),
+          msgtype: any<String>(named: 'msgtype'),
+          parseCommands: any<bool>(named: 'parseCommands'),
+          parseMarkdown: any<bool>(named: 'parseMarkdown'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedPayload = invocation.positionalArguments.single as String;
+        switch (scenario.textSendKind) {
+          case _GeneratedTextSendKind.succeeds:
+            return scenario.eventId;
+          case _GeneratedTextSendKind.returnsNull:
+            return null;
+          case _GeneratedTextSendKind.throwsError:
+            throw StateError('generated send failure');
+        }
+      });
+
+      final result = await localSender.sendMatrixMessage(
+        message: scenario.buildMessage(),
+        context: scenario.buildContext(localRoom),
+        onSent: (_, message) => sentMessages.add(message),
+      );
+
+      expect(result, scenario.succeeds, reason: '$scenario');
+      expect(sentMessages, hasLength(scenario.succeeds ? 1 : 0));
+
+      if (!scenario.reachesTextSend) {
+        verifyNever(
+          () => localRoom.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        );
+      }
+
+      if (!scenario.succeeds) {
+        expect(localRegistry.consume(scenario.eventId), isFalse);
+        return;
+      }
+
+      expect(localRegistry.consume(scenario.eventId), isTrue);
+      final decodedPayload =
+          json.decode(utf8.decode(base64.decode(capturedPayload)))
+              as Map<String, dynamic>;
+      final roundTripped = SyncMessage.fromJson(decodedPayload);
+      expect(roundTripped, sentMessages.single);
+
+      final sent = sentMessages.single;
+      if (sent is SyncEntryLink) {
+        expect(sent.originatingHostId, 'host-A', reason: '$scenario');
+        expect(
+          sent.coveredVectorClocks,
+          contains(sent.entryLink.vectorClock),
+          reason: '$scenario',
+        );
+        if (scenario.coveredClockKind == _GeneratedCoveredClockKind.present) {
+          expect(
+            sent.coveredVectorClocks,
+            contains(scenario.coveredVectorClock),
+            reason: '$scenario',
+          );
+        }
+      }
+    },
+  );
 
   test('fills originatingHostId for entry links when missing', () async {
     final vectorClockService = MockVectorClockService();
