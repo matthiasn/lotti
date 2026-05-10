@@ -38,8 +38,9 @@ class KeyVerificationRunner {
   void Function()? _previousOnUpdate;
 
   void _handleSdkUpdate() {
+    final previousOnUpdate = _previousOnUpdate;
     _pollState();
-    _previousOnUpdate?.call();
+    previousOnUpdate?.call();
   }
 
   void _pollState() {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -17,6 +18,124 @@ class MockSyncSequenceLogService extends Mock
 // Fake types for mocktail fallback
 class FakeEntryStream extends Fake
     implements Stream<List<({String id, Map<String, int>? vectorClock})>> {}
+
+enum _GeneratedSequenceFailureTarget {
+  none,
+  journal,
+  links,
+  agentEntities,
+  agentLinks,
+}
+
+const _generatedPopulatePhases = <SequenceLogPopulatePhase>[
+  SequenceLogPopulatePhase.populatingJournal,
+  SequenceLogPopulatePhase.populatingLinks,
+  SequenceLogPopulatePhase.populatingAgentEntities,
+  SequenceLogPopulatePhase.populatingAgentLinks,
+];
+
+class _GeneratedSequenceLogScenario {
+  const _GeneratedSequenceLogScenario({
+    required this.counts,
+    required this.progressSlots,
+    required this.failureTarget,
+  });
+
+  final List<int> counts;
+  final List<int> progressSlots;
+  final _GeneratedSequenceFailureTarget failureTarget;
+
+  SequenceLogPopulatePhase? get failurePhase {
+    switch (failureTarget) {
+      case _GeneratedSequenceFailureTarget.none:
+        return null;
+      case _GeneratedSequenceFailureTarget.journal:
+        return SequenceLogPopulatePhase.populatingJournal;
+      case _GeneratedSequenceFailureTarget.links:
+        return SequenceLogPopulatePhase.populatingLinks;
+      case _GeneratedSequenceFailureTarget.agentEntities:
+        return SequenceLogPopulatePhase.populatingAgentEntities;
+      case _GeneratedSequenceFailureTarget.agentLinks:
+        return SequenceLogPopulatePhase.populatingAgentLinks;
+    }
+  }
+
+  int countFor(SequenceLogPopulatePhase phase) => counts[_phaseIndex(phase)];
+
+  double progressFor(SequenceLogPopulatePhase phase) =>
+      progressSlots[_phaseIndex(phase)] / 100;
+
+  double weightedProgressFor(SequenceLogPopulatePhase phase) {
+    final index = _phaseIndex(phase);
+    return (index * 0.25) + (progressFor(phase) * 0.25);
+  }
+
+  List<SequenceLogPopulatePhase> get expectedCalls {
+    final failure = failurePhase;
+    if (failure == null) return _generatedPopulatePhases;
+    return _generatedPopulatePhases.take(_phaseIndex(failure) + 1).toList();
+  }
+
+  bool completed(SequenceLogPopulatePhase phase) {
+    final failure = failurePhase;
+    if (failure == null) return true;
+    return _phaseIndex(phase) < _phaseIndex(failure);
+  }
+
+  int _phaseIndex(SequenceLogPopulatePhase phase) {
+    switch (phase) {
+      case SequenceLogPopulatePhase.populatingJournal:
+        return 0;
+      case SequenceLogPopulatePhase.populatingLinks:
+        return 1;
+      case SequenceLogPopulatePhase.populatingAgentEntities:
+        return 2;
+      case SequenceLogPopulatePhase.populatingAgentLinks:
+        return 3;
+      case SequenceLogPopulatePhase.idle:
+      case SequenceLogPopulatePhase.done:
+        throw ArgumentError.value(phase, 'phase', 'not a populate phase');
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedSequenceLogScenario('
+        'counts: $counts, '
+        'progressSlots: $progressSlots, '
+        'failureTarget: $failureTarget'
+        ')';
+  }
+}
+
+extension _AnyGeneratedSequenceLogScenario on glados.Any {
+  glados.Generator<_GeneratedSequenceFailureTarget> get sequenceFailureTarget =>
+      glados.AnyUtils(this).choose(_GeneratedSequenceFailureTarget.values);
+
+  glados.Generator<_GeneratedSequenceLogScenario> get sequenceLogScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.ListAnys(this).listWithLengthInRange(
+          _generatedPopulatePhases.length,
+          _generatedPopulatePhases.length,
+          glados.IntAnys(this).intInRange(0, 21),
+        ),
+        glados.ListAnys(this).listWithLengthInRange(
+          _generatedPopulatePhases.length,
+          _generatedPopulatePhases.length,
+          glados.IntAnys(this).intInRange(0, 101),
+        ),
+        sequenceFailureTarget,
+        (
+          List<int> counts,
+          List<int> progressSlots,
+          _GeneratedSequenceFailureTarget failureTarget,
+        ) => _GeneratedSequenceLogScenario(
+          counts: counts,
+          progressSlots: progressSlots,
+          failureTarget: failureTarget,
+        ),
+      );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -166,6 +285,8 @@ void main() {
         ..registerSingleton<SyncSequenceLogService>(mockSequenceLogService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<AgentDatabase>(mockAgentDb);
+
+      container = ProviderContainer();
     });
 
     tearDown(() async {
@@ -254,8 +375,6 @@ void main() {
     }
 
     test('initial state is not running with zero progress', () {
-      container = ProviderContainer();
-
       final state = container.read(sequenceLogPopulateControllerProvider);
 
       expect(state.progress, 0);
@@ -267,8 +386,6 @@ void main() {
     });
 
     test('populateSequenceLog completes all four phases', () async {
-      container = ProviderContainer();
-
       stubAllPopulateMethods(
         journalCount: 10,
         linksCount: 5,
@@ -316,9 +433,181 @@ void main() {
       expect(phasesSeen, contains(SequenceLogPopulatePhase.done));
     });
 
-    test('populateSequenceLog calls all four service methods', () async {
-      container = ProviderContainer();
+    glados.Glados(
+      glados.any.sequenceLogScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'generated phase outcomes keep weighted progress, counts, and failure '
+      'state aligned with the populate sequence',
+      (scenario) async {
+        container.dispose();
+        container = ProviderContainer();
 
+        when(() => mockJournalDb.streamEntriesWithVectorClock()).thenAnswer(
+          (_) => Stream.fromIterable([]),
+        );
+        when(
+          () => mockJournalDb.countAllJournalEntries(),
+        ).thenAnswer(
+          (_) async =>
+              scenario.countFor(SequenceLogPopulatePhase.populatingJournal),
+        );
+        when(() => mockJournalDb.streamEntryLinksWithVectorClock()).thenAnswer(
+          (_) => Stream.fromIterable([]),
+        );
+        when(() => mockJournalDb.countAllEntryLinks()).thenAnswer(
+          (_) async =>
+              scenario.countFor(SequenceLogPopulatePhase.populatingLinks),
+        );
+        when(() => mockAgentDb.streamAgentEntitiesWithVectorClock()).thenAnswer(
+          (_) => Stream.fromIterable([]),
+        );
+        when(
+          () => mockAgentDb.countAllAgentEntities(),
+        ).thenAnswer(
+          (_) async => scenario.countFor(
+            SequenceLogPopulatePhase.populatingAgentEntities,
+          ),
+        );
+        when(() => mockAgentDb.streamAgentLinksWithVectorClock()).thenAnswer(
+          (_) => Stream.fromIterable([]),
+        );
+        when(() => mockAgentDb.countAllAgentLinks()).thenAnswer(
+          (_) async =>
+              scenario.countFor(SequenceLogPopulatePhase.populatingAgentLinks),
+        );
+
+        final calls = <SequenceLogPopulatePhase>[];
+        final failure = StateError(
+          'generated populate failure at ${scenario.failurePhase}',
+        );
+
+        Future<int> runPhase(
+          Invocation invocation,
+          SequenceLogPopulatePhase phase,
+        ) {
+          calls.add(phase);
+          final onProgress =
+              invocation.namedArguments[#onProgress] as void Function(double)?;
+          onProgress?.call(scenario.progressFor(phase));
+          if (scenario.failurePhase == phase) {
+            return Future<int>.error(failure);
+          }
+          return Future<int>.value(scenario.countFor(phase));
+        }
+
+        when(
+          () => mockSequenceLogService.populateFromJournal(
+            entryStream: any(named: 'entryStream'),
+            getTotalCount: any(named: 'getTotalCount'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (invocation) => runPhase(
+            invocation,
+            SequenceLogPopulatePhase.populatingJournal,
+          ),
+        );
+        when(
+          () => mockSequenceLogService.populateFromEntryLinks(
+            linkStream: any(named: 'linkStream'),
+            getTotalCount: any(named: 'getTotalCount'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (invocation) => runPhase(
+            invocation,
+            SequenceLogPopulatePhase.populatingLinks,
+          ),
+        );
+        when(
+          () => mockSequenceLogService.populateFromAgentEntities(
+            entityStream: any(named: 'entityStream'),
+            getTotalCount: any(named: 'getTotalCount'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (invocation) => runPhase(
+            invocation,
+            SequenceLogPopulatePhase.populatingAgentEntities,
+          ),
+        );
+        when(
+          () => mockSequenceLogService.populateFromAgentLinks(
+            linkStream: any(named: 'linkStream'),
+            getTotalCount: any(named: 'getTotalCount'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer(
+          (invocation) => runPhase(
+            invocation,
+            SequenceLogPopulatePhase.populatingAgentLinks,
+          ),
+        );
+
+        final states = <SequenceLogPopulateState>[];
+        final sub = container.listen<SequenceLogPopulateState>(
+          sequenceLogPopulateControllerProvider,
+          (previous, next) => states.add(next),
+          fireImmediately: true,
+        );
+        addTearDown(sub.close);
+        final controller = container.read(
+          sequenceLogPopulateControllerProvider.notifier,
+        );
+
+        await controller.populateSequenceLog();
+
+        expect(calls, scenario.expectedCalls, reason: '$scenario');
+        for (final phase in scenario.expectedCalls) {
+          final expectedProgress = scenario.weightedProgressFor(phase);
+          final sawProgress = states.any(
+            (state) =>
+                state.phase == phase &&
+                (state.progress - expectedProgress).abs() < 0.0000001,
+          );
+          expect(sawProgress, isTrue, reason: '$scenario phase=$phase');
+        }
+
+        final finalState = container.read(
+          sequenceLogPopulateControllerProvider,
+        );
+        expect(finalState.isRunning, isFalse);
+
+        Object expectedCount(SequenceLogPopulatePhase phase) {
+          return scenario.completed(phase) ? scenario.countFor(phase) : isNull;
+        }
+
+        expect(
+          finalState.populatedCount,
+          expectedCount(SequenceLogPopulatePhase.populatingJournal),
+        );
+        expect(
+          finalState.populatedLinksCount,
+          expectedCount(SequenceLogPopulatePhase.populatingLinks),
+        );
+        expect(
+          finalState.populatedAgentEntitiesCount,
+          expectedCount(SequenceLogPopulatePhase.populatingAgentEntities),
+        );
+        expect(
+          finalState.populatedAgentLinksCount,
+          expectedCount(SequenceLogPopulatePhase.populatingAgentLinks),
+        );
+
+        if (scenario.failurePhase == null) {
+          expect(finalState.progress, 1);
+          expect(finalState.phase, SequenceLogPopulatePhase.done);
+          expect(finalState.error, isNull);
+        } else {
+          expect(finalState.progress, 0);
+          expect(finalState.phase, SequenceLogPopulatePhase.idle);
+          expect(finalState.error, contains('generated populate failure'));
+        }
+      },
+    );
+
+    test('populateSequenceLog calls all four service methods', () async {
       stubAllPopulateMethods();
 
       final controller = container.read(
@@ -360,8 +649,6 @@ void main() {
     });
 
     test('populateSequenceLog handles errors', () async {
-      container = ProviderContainer();
-
       when(() => mockJournalDb.streamEntriesWithVectorClock()).thenAnswer(
         (_) => Stream.fromIterable([]),
       );

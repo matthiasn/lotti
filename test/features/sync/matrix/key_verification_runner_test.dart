@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
@@ -21,6 +22,94 @@ class _MockMatrixService extends Mock implements MatrixService {}
 class _MockClient extends Mock implements Client {}
 
 class _MockDeviceKeys extends Mock implements DeviceKeys {}
+
+enum _GeneratedVerificationStepKind {
+  ready,
+  key,
+  doneStep,
+  cancelStep,
+  customStep,
+}
+
+class _GeneratedVerificationTransition {
+  const _GeneratedVerificationTransition({
+    required this.kind,
+    required this.isDone,
+    required this.slot,
+  });
+
+  final _GeneratedVerificationStepKind kind;
+  final bool isDone;
+  final int slot;
+
+  String? get sdkStep {
+    switch (kind) {
+      case _GeneratedVerificationStepKind.ready:
+        return null;
+      case _GeneratedVerificationStepKind.key:
+        return 'm.key.verification.key';
+      case _GeneratedVerificationStepKind.doneStep:
+        return EventTypes.KeyVerificationDone;
+      case _GeneratedVerificationStepKind.cancelStep:
+        return 'm.key.verification.cancel';
+      case _GeneratedVerificationStepKind.customStep:
+        return 'generated.verification.step.$slot';
+    }
+  }
+
+  String get runnerStep => sdkStep ?? '';
+
+  bool get isTerminal =>
+      isDone ||
+      sdkStep == EventTypes.KeyVerificationDone ||
+      sdkStep == 'm.key.verification.cancel';
+
+  KeyVerificationEmoji get emoji => KeyVerificationEmoji((slot % 6) + 1);
+
+  @override
+  String toString() {
+    return '_GeneratedVerificationTransition('
+        'kind: $kind, '
+        'isDone: $isDone, '
+        'slot: $slot'
+        ')';
+  }
+}
+
+class _GeneratedVerificationScenario {
+  const _GeneratedVerificationScenario(this.transitions);
+
+  final List<_GeneratedVerificationTransition> transitions;
+
+  @override
+  String toString() => '_GeneratedVerificationScenario($transitions)';
+}
+
+extension _AnyGeneratedVerificationScenario on glados.Any {
+  glados.Generator<_GeneratedVerificationStepKind> get verificationStepKind =>
+      glados.AnyUtils(this).choose(_GeneratedVerificationStepKind.values);
+
+  glados.Generator<_GeneratedVerificationTransition>
+  get verificationTransition => glados.CombinableAny(this).combine3(
+    verificationStepKind,
+    glados.BoolAny(this).bool,
+    glados.IntAnys(this).intInRange(0, 24),
+    (
+      _GeneratedVerificationStepKind kind,
+      bool isDone,
+      int slot,
+    ) => _GeneratedVerificationTransition(
+      kind: kind,
+      isDone: isDone,
+      slot: slot,
+    ),
+  );
+
+  glados.Generator<_GeneratedVerificationScenario> get verificationScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(1, 12, verificationTransition)
+          .map(_GeneratedVerificationScenario.new);
+}
 
 void main() {
   group('KeyVerificationRunner', () {
@@ -127,6 +216,123 @@ void main() {
           expect(callbackCount, 1);
 
           runner.stopTimer();
+        });
+      },
+    );
+
+    glados.Glados(
+      glados.any.verificationScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'generated SDK updates publish only real state changes and restore '
+      'the previous handler at terminal states',
+      (scenario) {
+        final controller = StreamController<KeyVerificationRunner>.broadcast(
+          sync: true,
+        );
+        addTearDown(controller.close);
+
+        fakeAsync((async) {
+          final verification = _MockKeyVerification();
+          String? currentStep;
+          var currentDone = false;
+          var currentEmojis = [KeyVerificationEmoji(1)];
+          void Function()? assignedOnUpdate;
+          var previousCalls = 0;
+          void previousOnUpdate() {
+            previousCalls++;
+          }
+
+          assignedOnUpdate = previousOnUpdate;
+          when(() => verification.lastStep).thenAnswer((_) => currentStep);
+          when(() => verification.isDone).thenAnswer((_) => currentDone);
+          when(() => verification.sasEmojis).thenAnswer((_) => currentEmojis);
+          when(() => verification.onUpdate).thenAnswer((_) => assignedOnUpdate);
+          when(() => verification.onUpdate = any()).thenAnswer((invocation) {
+            assignedOnUpdate =
+                invocation.positionalArguments.first as void Function()?;
+            return null;
+          });
+
+          final emittedSteps = <String>[];
+          controller.stream.listen(
+            (runner) => emittedSteps.add(runner.lastStep),
+          );
+          final completions = <String>[];
+          final runner = KeyVerificationRunner(
+            verification,
+            controller: controller,
+            name: 'Generated runner',
+            onCompleted: (source) {
+              completions.add(source);
+              return Future<void>.value();
+            },
+          );
+
+          final expectedSteps = <String>[''];
+          var modelStep = '';
+          var modelDone = false;
+          var stopped = false;
+          KeyVerificationEmoji? expectedEmoji;
+          var expectedPreviousCalls = 0;
+          var expectedCompletions = 0;
+
+          for (final transition in scenario.transitions) {
+            if (stopped) break;
+
+            currentStep = transition.sdkStep;
+            currentDone = transition.isDone;
+            currentEmojis = [transition.emoji];
+
+            final oldStep = modelStep;
+            assignedOnUpdate?.call();
+            expectedPreviousCalls++;
+
+            final changed =
+                transition.runnerStep != modelStep ||
+                transition.isDone != modelDone;
+            if (changed) {
+              modelStep = transition.runnerStep;
+              modelDone = transition.isDone;
+              expectedSteps.add(modelStep);
+              if (oldStep != modelStep &&
+                  modelStep == 'm.key.verification.key') {
+                expectedEmoji = transition.emoji;
+              }
+            }
+
+            if (modelDone && expectedCompletions == 0) {
+              expectedCompletions = 1;
+            }
+
+            if (transition.isTerminal) {
+              stopped = true;
+            }
+          }
+
+          expect(emittedSteps, expectedSteps, reason: '$scenario');
+          expect(runner.lastStep, modelStep, reason: '$scenario');
+          expect(previousCalls, expectedPreviousCalls, reason: '$scenario');
+          expect(completions, hasLength(expectedCompletions));
+          if (expectedCompletions == 1) {
+            expect(completions.single, 'Generated runner');
+          }
+
+          if (expectedEmoji != null) {
+            expect(runner.emojis, hasLength(1));
+            expect(runner.emojis!.single.number, expectedEmoji.number);
+          } else {
+            expect(runner.emojis, isNull);
+          }
+
+          if (stopped) {
+            expect(identical(assignedOnUpdate, previousOnUpdate), isTrue);
+          } else {
+            expect(identical(assignedOnUpdate, previousOnUpdate), isFalse);
+            runner.stopTimer();
+          }
+
+          async.flushMicrotasks();
         });
       },
     );
