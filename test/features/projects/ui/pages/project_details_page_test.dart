@@ -23,6 +23,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../../agents/test_data/entity_factories.dart';
 import '../../test_utils.dart';
 
 /// Test controller that allows direct state manipulation without a repository.
@@ -412,7 +413,95 @@ void main() {
             reason:
                 'onRefreshReport should be null when no agent identity exists',
           );
+          expect(
+            content.onCancelScheduledReportWake,
+            isNull,
+            reason:
+                'onCancelScheduledReportWake should be null when no agent '
+                'identity exists — there is nothing to cancel without an agent',
+          );
           expect(content.isRefreshingReport, isFalse);
+        },
+      );
+
+      testWidgets(
+        'wires onRefreshReport to projectAgentService.triggerReanalysis and '
+        'onCancelScheduledReportWake to cancelScheduledWake when an agent '
+        'identity is present',
+        (tester) async {
+          final agentService = MockProjectAgentService();
+          when(
+            () => agentService.triggerReanalysis(any()),
+          ).thenReturn(null);
+          when(
+            () => agentService.cancelScheduledWake(any()),
+          ).thenReturn(null);
+
+          final identity = makeTestIdentity(agentId: 'agent-project-1');
+
+          // Build overrides inline rather than via `_baseOverrides` —
+          // Riverpod 3 rejects overriding the same provider twice within
+          // a container, and the helper already overrides
+          // `projectAgentProvider(_projectId)` to null.
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                projectDetailControllerProvider(_projectId).overrideWith(
+                  () => _TestProjectDetailController(
+                    ProjectDetailState(
+                      project: testProject,
+                      linkedTasks: const [],
+                      isLoading: false,
+                      isSaving: false,
+                      hasChanges: false,
+                    ),
+                  ),
+                ),
+                projectDetailRecordProvider(_projectId).overrideWith(
+                  (ref) => testRecord,
+                ),
+                projectDetailNowProvider.overrideWithValue(
+                  () => DateTime(2026, 3, 28, 9, 30),
+                ),
+                projectAgentProvider(_projectId).overrideWith(
+                  (ref) async => identity,
+                ),
+                agentIsRunningProvider.overrideWith(
+                  (ref, agentId) => Stream.value(false),
+                ),
+                projectAgentServiceProvider.overrideWithValue(agentService),
+              ],
+              child: makeTestableWidget2(
+                Theme(
+                  data: DesignSystemTheme.dark(),
+                  child: const ProjectDetailsPage(projectId: _projectId),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+          expect(content.onRefreshReport, isNotNull);
+          expect(content.onCancelScheduledReportWake, isNotNull);
+
+          // Invoking the wired callbacks must dispatch to the project
+          // agent service for the resolved agent ID, with the cancel path
+          // landing on cancelScheduledWake (not the manual reanalysis or
+          // any other lifecycle method).
+          content.onRefreshReport!();
+          verify(
+            () => agentService.triggerReanalysis('agent-project-1'),
+          ).called(1);
+          verifyNever(() => agentService.cancelScheduledWake(any()));
+
+          content.onCancelScheduledReportWake!();
+          verify(
+            () => agentService.cancelScheduledWake('agent-project-1'),
+          ).called(1);
         },
       );
 
