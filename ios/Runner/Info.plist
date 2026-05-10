@@ -10,6 +10,8 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>$(APP_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,8 +28,6 @@
 		<string>ro</string>
 	</array>
 	<key>CFBundleName</key>
-	<string>$(APP_NAME)</string>
-	<key>CFBundleDisplayName</key>
 	<string>$(APP_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>

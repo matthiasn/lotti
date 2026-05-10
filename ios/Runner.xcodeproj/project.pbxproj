@@ -408,8 +408,7 @@
 					"-O3",
 					"-DNDEBUG",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.matthiasn.lotti.profile-";
-				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.matthiasn.lotti.profile;
+				PRODUCT_BUNDLE_IDENTIFIER = com.matthiasn.lotti;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
