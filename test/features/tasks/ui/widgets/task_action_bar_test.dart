@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -11,10 +12,12 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -145,7 +148,13 @@ void main() {
 
     await setUpTestGetIt(
       additionalSetup: () {
-        getIt.registerSingleton<TimeService>(fakeTimeService);
+        getIt
+          ..registerSingleton<TimeService>(fakeTimeService)
+          // EntryController's field initializer reads
+          // `getIt<EditorStateService>()`, so we need this registered
+          // even when overriding the controller with a fake — the parent
+          // class's initializers still run.
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
       },
     );
 
@@ -189,6 +198,7 @@ void main() {
   Future<void> pumpBar(
     WidgetTester tester, {
     AudioRecorderState? recorderState,
+    List<Override> extraOverrides = const [],
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -196,6 +206,7 @@ void main() {
           child: TaskActionBar(task: testTask),
         ),
         overrides: [
+          ...extraOverrides,
           entryCreationServiceProvider.overrideWithValue(mockCreationService),
           audioRecorderControllerProvider.overrideWith(
             () => _StubAudioRecorderController(
@@ -304,24 +315,37 @@ void main() {
   );
 
   testWidgets(
-    'tapping the inset stop button stops the timer; the body does not',
+    'tapping the inset stop button persists dateTo via the running '
+    'timer entry controller and routes through save(stopRecording: true)',
     (tester) async {
-      await pumpBar(tester);
+      // Override the running timer entry's controller with a tracked
+      // fake. The fake's `save()` records the call instead of writing
+      // through to PersistenceLogic. Asserting on this proves the
+      // action-bar stop path no longer just calls `_timeService.stop()`
+      // (which would leave the DB row's stale dateTo intact); it goes
+      // through the same controller path the entry-editor stop button
+      // uses, where `dateTo: DateTime.now()` is persisted before the
+      // timer service is cleared.
+      final timerEntry = _runningTimerEntry(
+        id: 'timer-1',
+        elapsed: const Duration(seconds: 5),
+      );
+      final (override, tracker) = createEntryControllerOverrideWithTracker(
+        timerEntry,
+      );
+
+      await pumpBar(tester, extraOverrides: [override]);
 
       fakeTimeService
         ..linkedFrom = testTask
-        ..emit(
-          _runningTimerEntry(
-            id: 'timer-1',
-            elapsed: const Duration(seconds: 5),
-          ),
-        );
+        ..emit(timerEntry);
       await _settleStream(tester);
 
       await tester.tap(find.byKey(TaskActionBar.trackTimeStopKey));
       await tester.pump();
 
-      expect(fakeTimeService.stopCount, 1);
+      expect(tracker.saveCalls, hasLength(1));
+      expect(tracker.saveCalls.single['stopRecording'], isTrue);
       verifyNever(
         () =>
             mockCreationService.createTimerEntry(linked: any(named: 'linked')),
