@@ -202,18 +202,53 @@ class SyncSequenceLogService {
       LinkedHashMap<String, int?>();
   static const int _lastSentCounterCacheCapacity = 2048;
 
-  DateTime? _cacheExpiry;
+  // Per-host TTL for `_hostActivityCache`, `_lastCounterCache`, and
+  // `_materializedUpperBound` (all keyed by hostId). The earlier shape
+  // tracked a single global `_cacheExpiry` and dropped every host's
+  // entry when the wall-clock timer ticked over — which produced the
+  // 200–500 ms `getLastCounterForHost` waves visible in the
+  // 2026-05-10 super-slow log: a quiet host's cached watermark got
+  // wiped just because some unrelated host had been active 5 minutes
+  // earlier. With per-host expiry, an inactive host stays cached
+  // until it's actually queried again.
+  final Map<String, DateTime> _hostCacheExpiry = <String, DateTime>{};
+
+  // Separate global TTL for the entry-keyed `_lastSentCounterByEntry`
+  // LRU. It is keyed by `host::entryId` and is also size-bounded by
+  // [_lastSentCounterCacheCapacity], so eviction is dominated by LRU
+  // pressure under normal load. The TTL stays as a belt-and-braces
+  // guard against rare cross-process drift and matches the semantics
+  // a test in this file pins (`expireCacheForTesting()` re-queries on
+  // the next call).
+  DateTime? _lastSentCacheExpiry;
   static const _cacheTtl = Duration(minutes: 5);
 
-  void _invalidateCacheIfExpired() {
+  bool _isHostCacheExpired(String hostId, DateTime now) {
+    final expiry = _hostCacheExpiry[hostId];
+    return expiry != null && now.isAfter(expiry);
+  }
+
+  void _evictHost(String hostId) {
+    _hostActivityCache.remove(hostId);
+    _lastCounterCache.remove(hostId);
+    _materializedUpperBound.remove(hostId);
+    _hostCacheExpiry.remove(hostId);
+  }
+
+  void _refreshHostCacheWindow(String hostId) {
+    _hostCacheExpiry[hostId] = DateTime.now().add(_cacheTtl);
+  }
+
+  void _invalidateLastSentCacheIfExpired() {
     final now = DateTime.now();
-    if (_cacheExpiry != null && now.isAfter(_cacheExpiry!)) {
-      _hostActivityCache.clear();
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
+    if (_lastSentCacheExpiry != null && now.isAfter(_lastSentCacheExpiry!)) {
       _lastSentCounterByEntry.clear();
-      _cacheExpiry = null;
+      _lastSentCacheExpiry = null;
     }
+  }
+
+  void _ensureLastSentCacheWindow() {
+    _lastSentCacheExpiry ??= DateTime.now().add(_cacheTtl);
   }
 
   String _lastSentCacheKey(String hostId, String entryId) =>
@@ -228,29 +263,29 @@ class SyncSequenceLogService {
     }
   }
 
-  void _ensureCacheWindow() {
-    _cacheExpiry ??= DateTime.now().add(_cacheTtl);
-  }
-
   Future<DateTime?> _getCachedHostLastSeen(String hostId) async {
-    _invalidateCacheIfExpired();
-    _ensureCacheWindow();
+    if (_isHostCacheExpired(hostId, DateTime.now())) {
+      _evictHost(hostId);
+    }
     if (_hostActivityCache.containsKey(hostId)) {
       return _hostActivityCache[hostId];
     }
     final result = await _syncDatabase.getHostLastSeen(hostId);
     _hostActivityCache[hostId] = result;
+    _refreshHostCacheWindow(hostId);
     return result;
   }
 
   Future<int?> _getCachedLastCounterForHost(String hostId) async {
-    _invalidateCacheIfExpired();
-    _ensureCacheWindow();
+    if (_isHostCacheExpired(hostId, DateTime.now())) {
+      _evictHost(hostId);
+    }
     if (_lastCounterCache.containsKey(hostId)) {
       return _lastCounterCache[hostId];
     }
     final result = await _syncDatabase.getLastCounterForHost(hostId);
     _lastCounterCache[hostId] = result;
+    _refreshHostCacheWindow(hostId);
     return result;
   }
 
@@ -295,6 +330,9 @@ class SyncSequenceLogService {
     if (current == null) {
       if (counter == 1) {
         _lastCounterCache[hostId] = 1;
+        // Active host — push the per-host TTL out so a long backfill
+        // does not expire the cache mid-run.
+        _refreshHostCacheWindow(hostId);
       }
       return;
     }
@@ -304,18 +342,29 @@ class SyncSequenceLogService {
     }
     if (counter == current + 1) {
       _lastCounterCache[hostId] = counter;
+      _refreshHostCacheWindow(hostId);
     }
     // counter > current + 1: gap (truth might extend further if other
     // counters were resolved out-of-order, but we cannot prove it without
     // a query). Leave the cache at its safe lower-bound value.
   }
 
-  /// Force-expire the host activity cache. Used in tests to verify
-  /// that expired caches are cleared and DB is re-queried.
+  /// Force-expire every cache. Used in tests to verify that expired
+  /// caches are cleared and the DB is re-queried.
+  ///
+  /// Wipes both the per-host caches (host activity, last counter,
+  /// materialized upper bound) and the entry-keyed last-sent counter
+  /// LRU so existing tests that assert re-query behaviour after
+  /// expiry see a fully cold cache regardless of which lookup
+  /// surface they exercise.
   @visibleForTesting
   void expireCacheForTesting() {
-    // Set expiry to the past so the next cache access triggers invalidation.
-    _cacheExpiry = DateTime.now().subtract(const Duration(seconds: 1));
+    _hostActivityCache.clear();
+    _lastCounterCache.clear();
+    _materializedUpperBound.clear();
+    _hostCacheExpiry.clear();
+    _lastSentCounterByEntry.clear();
+    _lastSentCacheExpiry = null;
   }
 
   /// Record an entry being sent by this device.
@@ -381,8 +430,8 @@ class SyncSequenceLogService {
   Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) async {
     final myHost = await _vectorClockService.getHost();
     if (myHost == null) return null;
-    _invalidateCacheIfExpired();
-    _ensureCacheWindow();
+    _invalidateLastSentCacheIfExpired();
+    _ensureLastSentCacheWindow();
     final cacheKey = _lastSentCacheKey(myHost, entryId);
     int? counter;
     if (_lastSentCounterByEntry.containsKey(cacheKey)) {

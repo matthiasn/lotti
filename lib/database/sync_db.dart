@@ -361,6 +361,20 @@ class HostActivity extends Table {
   'CREATE INDEX idx_inbound_event_queue_status_enqueued '
   'ON inbound_event_queue (status, enqueued_at)',
 )
+// `QueueStats.stats()` issues a single `GROUP BY status, producer`
+// aggregate to populate `total`, `byProducer`, `applied`, `abandoned`,
+// `retrying`, and `oldestEnqueuedAt` in one pass. The v19 index above
+// covers `(status, enqueued_at)` but does not include `producer`, so
+// the planner had to read every matching row from the heap to bucket
+// by producer — captured as 1014–2244 ms SCAN+TEMP B-TREE hits in the
+// 2026-05-10 super-slow log on a real desktop device. Stacking
+// `producer` as the second column lets the planner walk the index
+// once per status partition, emit one (status, producer, cnt,
+// MIN(enqueued_at)) row per partition, and skip the temp B-tree.
+@TableIndex.sql(
+  'CREATE INDEX idx_inbound_event_queue_status_producer_enqueued '
+  'ON inbound_event_queue (status, producer, enqueued_at)',
+)
 class InboundEventQueue extends Table {
   IntColumn get queueId => integer().autoIncrement().named('queue_id')();
 
@@ -1847,7 +1861,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration {
@@ -2182,6 +2196,23 @@ class SyncDatabase extends _$SyncDatabase {
             'CREATE INDEX IF NOT EXISTS '
             'idx_inbound_event_queue_status_enqueued '
             'ON inbound_event_queue (status, enqueued_at)',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 20) {
+          // `QueueStats.stats()` was rewritten as a single
+          // `GROUP BY status, producer` aggregate. The v19 index keys
+          // on `(status, enqueued_at)` but does not include
+          // `producer`, so the planner had to read every matching row
+          // from the heap to bucket by producer — 1014–2244 ms SCAN
+          // hits on the 2026-05-10 super-slow log. Stacking
+          // `(status, producer, enqueued_at)` makes the pivot
+          // index-only over a tight key range and removes the TEMP
+          // B-TREE for GROUP BY.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_inbound_event_queue_status_producer_enqueued '
+            'ON inbound_event_queue (status, producer, enqueued_at)',
           );
           await customStatement('ANALYZE');
         }

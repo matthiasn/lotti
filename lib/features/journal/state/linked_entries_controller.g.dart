@@ -642,7 +642,7 @@ final class SortedLinkedEntriesProvider
 }
 
 String _$sortedLinkedEntriesHash() =>
-    r'34ad98185c3a688d8d72ad755150845cd5ea9a44';
+    r'289942c4f7695a693597e113f32bfba9b0564849';
 
 /// Returns the linked entries for [id] sorted by the linked entity's
 /// `meta.dateFrom`, applying the user's selected [LinkedEntriesSortOrder].
