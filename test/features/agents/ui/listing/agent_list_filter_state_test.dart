@@ -521,47 +521,51 @@ void main() {
     glados.Glados(
       glados.any.pipelineScenario,
       glados.ExploreConfig(numRuns: 180),
-    ).test('matches generated filter, sort, and group pipeline semantics', (
-      scenario,
-    ) {
-      final rows = _generatedPipelineRows();
-      final result = buildGroupedAgentList(
-        all: rows,
-        state: scenario.state,
-        filterAxes: [
-          _typeAxis(counts: const {'task': 2, 'project': 2}),
-          _typeAxis(counts: const {'active': 2, 'dormant': 2}, id: 'status'),
-        ],
-        groupAxes: [
-          _flatAxis('all', 'All'),
-          _typeGroupAxis(_generatedTypesById),
-        ],
-        sortAxes: [_recentAxis(), _nameAxis()],
-        axisMatcher: (axisId, selected, row) {
-          return switch (axisId) {
-            'type' => selected.contains(_generatedTypesById[row.id]),
-            'status' => selected.contains(_generatedStatusesById[row.id]),
-            _ => true,
-          };
-        },
-      );
+    ).test(
+      'matches generated filter, sort, and group pipeline semantics',
+      (
+        scenario,
+      ) {
+        final rows = _generatedPipelineRows();
+        final result = buildGroupedAgentList(
+          all: rows,
+          state: scenario.state,
+          filterAxes: [
+            _typeAxis(counts: const {'task': 2, 'project': 2}),
+            _typeAxis(counts: const {'active': 2, 'dormant': 2}, id: 'status'),
+          ],
+          groupAxes: [
+            _flatAxis('all', 'All'),
+            _typeGroupAxis(_generatedTypesById),
+          ],
+          sortAxes: [_recentAxis(), _nameAxis()],
+          axisMatcher: (axisId, selected, row) {
+            return switch (axisId) {
+              'type' => selected.contains(_generatedTypesById[row.id]),
+              'status' => selected.contains(_generatedStatusesById[row.id]),
+              _ => true,
+            };
+          },
+        );
 
-      final actualIds = result.groups
-          .expand((group) => group.items)
-          .map((row) => row.id)
-          .toList();
+        final actualIds = result.groups
+            .expand((group) => group.items)
+            .map((row) => row.id)
+            .toList();
 
-      expect(result.totalBeforeFilter, rows.length);
-      expect(
-        result.totalAfterFilter,
-        _expectedPipelineIds(scenario, rows).length,
-      );
-      expect(
-        actualIds,
-        _expectedPipelineIds(scenario, rows),
-        reason: '$scenario',
-      );
-    });
+        expect(result.totalBeforeFilter, rows.length);
+        expect(
+          result.totalAfterFilter,
+          _expectedPipelineIds(scenario, rows).length,
+        );
+        expect(
+          actualIds,
+          _expectedPipelineIds(scenario, rows),
+          reason: '$scenario',
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('AgentListFilterState', () {
@@ -683,7 +687,7 @@ void main() {
       expect(state.hasSearch, expectedHasSearch);
       expect(state.activeFilterCount, expectedFilterCount);
       expect(state.isAnyFilterActive, expectedFilterCount > 0);
-    });
+    }, tags: 'glados');
   });
 
   group('hueForSeed', () {

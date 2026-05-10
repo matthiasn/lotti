@@ -525,6 +525,7 @@ void main() {
           await notifications.dispose();
         }
       },
+      tags: 'glados',
     );
 
     test('returns empty list when the task has no agent', () async {

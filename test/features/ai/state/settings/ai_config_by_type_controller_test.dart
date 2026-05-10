@@ -295,7 +295,7 @@ void main() {
       verify(
         () => generatedRepository.watchConfigsByType(scenario.configType),
       ).called(1);
-    });
+    }, tags: 'glados');
   });
 
   group('aiConfigById Tests', () {

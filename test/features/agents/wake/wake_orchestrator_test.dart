@@ -816,6 +816,7 @@ void main() {
             controller.close();
           });
         },
+        tags: 'glados',
       );
 
       test('addSubscription registers a subscription', () {
@@ -1542,6 +1543,7 @@ void main() {
             }
           });
         },
+        tags: 'glados',
       );
 
       test('does nothing when queue is empty', () {

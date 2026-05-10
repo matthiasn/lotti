@@ -726,6 +726,7 @@ void main() {
         expect(result.skill!.id, expectedAssignment.skillId);
         expect(result.skill!.skillType, scenario.targetSkillType);
       },
+      tags: 'glados',
     );
 
     group('hasAutomatedSkillType', () {

@@ -243,6 +243,7 @@ void main() {
           scenario.expectedStableSortedIds(),
         );
       },
+      tags: 'glados',
     );
   });
 
@@ -299,6 +300,7 @@ void main() {
         expect(stats.eventCount, expected.eventCount);
         expect(stats.sample, hasLength(lessThanOrEqualTo(stats.groupCount)));
       },
+      tags: 'glados',
     );
   });
 
@@ -376,6 +378,7 @@ void main() {
           scenario.expected,
         );
       },
+      tags: 'glados',
     );
   });
 }

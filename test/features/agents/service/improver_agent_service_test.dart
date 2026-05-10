@@ -570,7 +570,7 @@ void main() {
         );
         expect(templateLink.toId, agentId, reason: '$scenario');
         expect(generatedNotifiedAgentIds, [agentId], reason: '$scenario');
-      });
+      }, tags: 'glados');
 
       test('creates agent identity, updates state slots, '
           'and creates both links', () async {

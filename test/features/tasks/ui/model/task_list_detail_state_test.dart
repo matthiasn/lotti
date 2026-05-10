@@ -387,6 +387,7 @@ void main() {
             expected.firstOrNull;
         expect(state.selectedTask, expectedSelected);
       },
+      tags: 'glados',
     );
   });
 }

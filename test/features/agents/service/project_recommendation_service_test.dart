@@ -510,7 +510,7 @@ void main() {
     expect(uiNotifications, [
       {'generated-agent', 'generated-project', agentNotification},
     ]);
-  });
+  }, tags: 'glados');
 
   glados.Glados(
     glados.any.recommendationTransitionScenario,
@@ -580,7 +580,7 @@ void main() {
     expect(uiNotifications, [
       {'generated-agent', 'generated-project', agentNotification},
     ]);
-  });
+  }, tags: 'glados');
 
   test(
     'records active recommendations and supersedes previous active ones',

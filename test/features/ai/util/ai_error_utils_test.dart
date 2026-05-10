@@ -366,7 +366,7 @@ void main() {
         );
         expect(result.originalError, scenario.raw, reason: '$scenario');
         expect(result.stackTrace, stackTrace, reason: '$scenario');
-      });
+      }, tags: 'glados');
 
       test('handles Ollama model not found error', () {
         const error = '''

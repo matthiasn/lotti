@@ -594,6 +594,7 @@ void main() {
         await generatedSyncCtl.close();
       }
     },
+    tags: 'glados',
   );
 
   group('retry outcomes', () {

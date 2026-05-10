@@ -181,80 +181,89 @@ void main() {
     glados.Glados(
       glados.any.pendingWakeRowsScenario,
       glados.ExploreConfig(numRuns: 180),
-    ).test('maps generated pending wake rows with title fallback semantics', (
-      scenario,
-    ) async {
-      final records = <PendingWakeRecord>[];
-      final subjectTitles = <String?, String?>{};
+    ).test(
+      'maps generated pending wake rows with title fallback semantics',
+      (
+        scenario,
+      ) async {
+        final records = <PendingWakeRecord>[];
+        final subjectTitles = <String?, String?>{};
 
-      for (final (index, spec) in scenario.specs.indexed) {
-        final agentId = 'agent-$index';
-        final agentName = 'Agent $index';
-        final type = _generatedPendingWakeType(spec.typeSlot);
-        final dueAt = DateTime(2026, 4, 3, index % 24, index % 60);
-        final subjectId = _expectedSubjectId(spec.subjectSlot, index);
-        subjectTitles[subjectId] = _rawSubjectTitle(
-          slot: spec.titleSlot,
-          agentName: agentName,
-          index: index,
-        );
+        for (final (index, spec) in scenario.specs.indexed) {
+          final agentId = 'agent-$index';
+          final agentName = 'Agent $index';
+          final type = _generatedPendingWakeType(spec.typeSlot);
+          final dueAt = DateTime(2026, 4, 3, index % 24, index % 60);
+          final subjectId = _expectedSubjectId(spec.subjectSlot, index);
+          subjectTitles[subjectId] = _rawSubjectTitle(
+            slot: spec.titleSlot,
+            agentName: agentName,
+            index: index,
+          );
 
-        records.add(
-          PendingWakeRecord(
-            agent: makeTestIdentity(
-              id: agentId,
-              agentId: agentId,
-              kind: _generatedPendingWakeKind(spec.kindSlot),
-              displayName: agentName,
-              lifecycle: spec.lifecycle,
+          records.add(
+            PendingWakeRecord(
+              agent: makeTestIdentity(
+                id: agentId,
+                agentId: agentId,
+                kind: _generatedPendingWakeKind(spec.kindSlot),
+                displayName: agentName,
+                lifecycle: spec.lifecycle,
+              ),
+              state: makeTestState(
+                id: 'state-$index',
+                agentId: agentId,
+                slots: _generatedPendingWakeSlots(spec.subjectSlot, index),
+              ),
+              type: type,
+              dueAt: dueAt,
             ),
-            state: makeTestState(
-              id: 'state-$index',
-              agentId: agentId,
-              slots: _generatedPendingWakeSlots(spec.subjectSlot, index),
-            ),
-            type: type,
-            dueAt: dueAt,
-          ),
-        );
-      }
+          );
+        }
 
-      final vms = await _readPendingWakeVms(
-        records: records,
-        subjectTitles: subjectTitles,
-      );
-
-      expect(vms, hasLength(records.length), reason: '$scenario');
-      for (final (index, vm) in vms.indexed) {
-        final spec = scenario.specs[index];
-        final record = records[index];
-        final reason = '$scenario (index $index)';
-        final agentName = 'Agent $index';
-        final subjectTitle =
-            subjectTitles[_expectedSubjectId(spec.subjectSlot, index)]?.trim();
-        final hasSubject =
-            subjectTitle != null &&
-            subjectTitle.isNotEmpty &&
-            subjectTitle != agentName;
-
-        expect(vm.id, record.id, reason: reason);
-        expect(vm.agentId, 'agent-$index', reason: reason);
-        expect(vm.title, hasSubject ? subjectTitle : agentName, reason: reason);
-        expect(vm.subtitle, hasSubject ? agentName : null, reason: reason);
-        expect(
-          vm.kind,
-          _generatedPendingWakeKind(spec.kindSlot),
-          reason: reason,
+        final vms = await _readPendingWakeVms(
+          records: records,
+          subjectTitles: subjectTitles,
         );
-        expect(vm.lifecycle, spec.lifecycle, reason: reason);
-        expect(
-          vm.type,
-          _generatedPendingWakeType(spec.typeSlot),
-          reason: reason,
-        );
-        expect(vm.dueAt, record.dueAt, reason: reason);
-      }
-    });
+
+        expect(vms, hasLength(records.length), reason: '$scenario');
+        for (final (index, vm) in vms.indexed) {
+          final spec = scenario.specs[index];
+          final record = records[index];
+          final reason = '$scenario (index $index)';
+          final agentName = 'Agent $index';
+          final subjectTitle =
+              subjectTitles[_expectedSubjectId(spec.subjectSlot, index)]
+                  ?.trim();
+          final hasSubject =
+              subjectTitle != null &&
+              subjectTitle.isNotEmpty &&
+              subjectTitle != agentName;
+
+          expect(vm.id, record.id, reason: reason);
+          expect(vm.agentId, 'agent-$index', reason: reason);
+          expect(
+            vm.title,
+            hasSubject ? subjectTitle : agentName,
+            reason: reason,
+          );
+          expect(vm.subtitle, hasSubject ? agentName : null, reason: reason);
+          expect(
+            vm.kind,
+            _generatedPendingWakeKind(spec.kindSlot),
+            reason: reason,
+          );
+          expect(vm.lifecycle, spec.lifecycle, reason: reason);
+          expect(
+            vm.type,
+            _generatedPendingWakeType(spec.typeSlot),
+            reason: reason,
+          );
+          expect(vm.dueAt, record.dueAt, reason: reason);
+        }
+      },
+      tags: 'glados',
+    );
 
     test('returns an empty list when no pending wake records exist', () async {
       final vms = await _readPendingWakeVms(

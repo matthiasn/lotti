@@ -480,6 +480,7 @@ void main() {
           async.flushMicrotasks();
         });
       },
+      tags: 'glados',
     );
   });
 }

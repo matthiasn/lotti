@@ -532,6 +532,6 @@ void main() {
           reason: '$scenario',
         );
       }
-    });
+    }, tags: 'glados');
   });
 }

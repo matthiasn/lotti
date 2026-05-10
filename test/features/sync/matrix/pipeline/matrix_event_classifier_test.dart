@@ -125,6 +125,7 @@ void main() {
           scenario.expectedAttachment,
         );
       },
+      tags: 'glados',
     );
   });
 }

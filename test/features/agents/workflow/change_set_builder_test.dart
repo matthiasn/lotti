@@ -2468,6 +2468,7 @@ void main() {
           }
         }
       },
+      tags: 'glados',
     );
 
     glados.Glados(
@@ -2509,6 +2510,7 @@ void main() {
           );
         }
       },
+      tags: 'glados',
     );
 
     glados.Glados(
@@ -2606,6 +2608,7 @@ void main() {
           );
         }
       },
+      tags: 'glados',
     );
   });
 
@@ -3372,6 +3375,7 @@ void main() {
         expect(args['_placeholderTaskId'], firstPlaceholder);
         expect(generatedBuilder.items.single.groupId, firstPlaceholder);
       },
+      tags: 'glados',
     );
   });
 

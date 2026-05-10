@@ -945,7 +945,7 @@ void main() {
           expectedLocalWriteAttempts,
           reason: '$scenario',
         );
-      });
+      }, tags: 'glados');
 
       test('delegates to repository', () async {
         var called = false;

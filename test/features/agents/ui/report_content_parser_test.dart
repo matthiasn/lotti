@@ -306,6 +306,7 @@ void main() {
           );
           expect(result.tldr, isNot(contains('# Generated Report')));
         },
+        tags: 'glados',
       );
     });
 
@@ -350,6 +351,7 @@ void main() {
           );
           expect(result.tldr, isNot(contains('# Generated Report')));
         },
+        tags: 'glados',
       );
     });
 
@@ -392,6 +394,7 @@ void main() {
           );
           expect(result.tldr, isNot(contains('# Generated Report')));
         },
+        tags: 'glados',
       );
     });
 

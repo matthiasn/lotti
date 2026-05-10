@@ -254,7 +254,7 @@ void main() {
 
         expect(config.thinkingBudget, expected.thinkingBudget);
         expect(config.includeThoughts, expected.includeThoughts);
-      });
+      }, tags: 'glados');
     });
   });
 }

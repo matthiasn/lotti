@@ -825,6 +825,7 @@ void main() {
         await notifications.dispose();
       }
     },
+    tags: 'glados',
   );
 
   group('ongoingWakeRecordsProvider', () {
@@ -935,6 +936,7 @@ void main() {
           await notifications.dispose();
         }
       },
+      tags: 'glados',
     );
 
     test('uses linked task title when slots point at a task', () async {
@@ -1356,7 +1358,7 @@ void main() {
         container.dispose();
         await notifications.dispose();
       }
-    });
+    }, tags: 'glados');
 
     test('groups wake runs by hour with reason breakdown', () async {
       final now = DateTime(2026, 4, 4, 14);

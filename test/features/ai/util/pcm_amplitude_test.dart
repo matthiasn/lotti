@@ -193,6 +193,7 @@ void main() {
         expect(dbfs, greaterThanOrEqualTo(scenario.floorDbfs));
         expect(dbfs, lessThanOrEqualTo(0));
       },
+      tags: 'glados',
     );
 
     Glados(any.pcmScenario, ExploreConfig(numRuns: 200)).test(
@@ -209,6 +210,7 @@ void main() {
           ),
         );
       },
+      tags: 'glados',
     );
   });
 }

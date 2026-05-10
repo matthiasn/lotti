@@ -1,4 +1,4 @@
-name: Flutter Test
+name: Flutter Tests (Unit + Glados Property)
 
 on:
   push:
@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   test:
-    name: Flutter Test on Linux
+    name: Unit & Widget Tests (Linux)
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -32,9 +32,41 @@ jobs:
         run: flutter pub get
       - name: Activate very_good_cli
         run: dart pub global activate very_good_cli
-      - name: Run Flutter tests
-        run: very_good test --coverage
+      - name: Run Flutter tests (standard)
+        run: very_good test --coverage --exclude-tags glados
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
+          flags: standard
+
+  glados:
+    name: Glados Property Tests (Linux)
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+      - name: Get dependencies
+        run: flutter pub get
+      - name: Activate very_good_cli
+        run: dart pub global activate very_good_cli
+      - name: Run Flutter tests (glados)
+        run: very_good test --coverage --tags glados
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti
+          flags: glados

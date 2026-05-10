@@ -1296,6 +1296,7 @@ void main() {
           await bench.close();
         }
       },
+      tags: 'glados',
     );
 
     glados.Glados(
@@ -1369,6 +1370,7 @@ void main() {
           await bench.close();
         }
       },
+      tags: 'glados',
     );
 
     glados.Glados(
@@ -1534,6 +1536,7 @@ void main() {
           await bench.close();
         }
       },
+      tags: 'glados',
     );
 
     glados.Glados(
@@ -1611,6 +1614,7 @@ void main() {
           await bench.close();
         }
       },
+      tags: 'glados',
     );
 
     test('marks previously missing entry as received', () async {
@@ -3029,6 +3033,7 @@ void main() {
           await bench.close();
         }
       },
+      tags: 'glados',
     );
   });
 

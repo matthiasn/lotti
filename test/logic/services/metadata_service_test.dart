@@ -520,39 +520,43 @@ void main() {
       glados.Glados(
         glados.any.metadataUpdateScenario,
         glados.ExploreConfig(numRuns: 160),
-      ).test('matches generated field precedence and preservation semantics', (
-        scenario,
-      ) async {
-        const newVectorClock = VectorClock({'generated-host': 99});
-        when(
-          () => mockVectorClockService.getNextVectorClock(
-            previous: any(named: 'previous'),
-          ),
-        ).thenAnswer((_) async => newVectorClock);
+      ).test(
+        'matches generated field precedence and preservation semantics',
+        (
+          scenario,
+        ) async {
+          const newVectorClock = VectorClock({'generated-host': 99});
+          when(
+            () => mockVectorClockService.getNextVectorClock(
+              previous: any(named: 'previous'),
+            ),
+          ).thenAnswer((_) async => newVectorClock);
 
-        final original = originalMetadata.copyWith(
-          deletedAt: scenario.originalDeletedAt,
-        );
-        final updated = await metadataService.updateMetadata(
-          original,
-          dateFrom: scenario.dateFrom,
-          dateTo: scenario.dateTo,
-          categoryId: scenario.categoryId,
-          clearCategoryId: scenario.clearCategoryId,
-          deletedAt: scenario.deletedAt,
-          labelIds: scenario.labelIds,
-          clearLabelIds: scenario.clearLabelIds,
-        );
+          final original = originalMetadata.copyWith(
+            deletedAt: scenario.originalDeletedAt,
+          );
+          final updated = await metadataService.updateMetadata(
+            original,
+            dateFrom: scenario.dateFrom,
+            dateTo: scenario.dateTo,
+            categoryId: scenario.categoryId,
+            clearCategoryId: scenario.clearCategoryId,
+            deletedAt: scenario.deletedAt,
+            labelIds: scenario.labelIds,
+            clearLabelIds: scenario.clearLabelIds,
+          );
 
-        expect(updated.id, original.id, reason: '$scenario');
-        expect(updated.createdAt, original.createdAt, reason: '$scenario');
-        expect(updated.dateFrom, scenario.expectedDateFrom(original));
-        expect(updated.dateTo, scenario.expectedDateTo(original));
-        expect(updated.categoryId, scenario.expectedCategoryId(original));
-        expect(updated.labelIds, scenario.expectedLabelIds(original));
-        expect(updated.deletedAt, scenario.expectedDeletedAt(original));
-        expect(updated.vectorClock, newVectorClock);
-      });
+          expect(updated.id, original.id, reason: '$scenario');
+          expect(updated.createdAt, original.createdAt, reason: '$scenario');
+          expect(updated.dateFrom, scenario.expectedDateFrom(original));
+          expect(updated.dateTo, scenario.expectedDateTo(original));
+          expect(updated.categoryId, scenario.expectedCategoryId(original));
+          expect(updated.labelIds, scenario.expectedLabelIds(original));
+          expect(updated.deletedAt, scenario.expectedDeletedAt(original));
+          expect(updated.vectorClock, newVectorClock);
+        },
+        tags: 'glados',
+      );
     });
   });
 

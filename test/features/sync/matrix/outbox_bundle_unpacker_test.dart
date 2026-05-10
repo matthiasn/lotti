@@ -389,6 +389,7 @@ void main() {
           );
         }
       },
+      tags: 'glados',
     );
   });
 
@@ -554,6 +555,7 @@ void main() {
         }
         expect(applied, scenario.expectedApplyIdsBeforeIo());
       },
+      tags: 'glados',
     );
   });
 }

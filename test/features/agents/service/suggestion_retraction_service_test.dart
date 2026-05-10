@@ -609,7 +609,7 @@ void main() {
         expect(actual.status, expectedSet.status, reason: '$scenario');
         expect(actual.resolvedAt, expectedSet.resolvedAt, reason: '$scenario');
       }
-    });
+    }, tags: 'glados');
 
     test(
       'retracts a matching open item and persists decision + set update',

@@ -378,5 +378,6 @@ void main() {
         }
       }
     },
+    tags: 'glados',
   );
 }

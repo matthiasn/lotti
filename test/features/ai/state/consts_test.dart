@@ -187,6 +187,6 @@ void main() {
         skillType.toResponseType,
         _expectedResponseTypeForSkill(skillType),
       );
-    });
+    }, tags: 'glados');
   });
 }

@@ -823,6 +823,7 @@ void main() {
         await localDb.close();
       }
     },
+    tags: 'glados',
   );
 
   group('soul assignment link queries', () {

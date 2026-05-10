@@ -266,6 +266,6 @@ void main() {
         subscription.close();
         await streamController.close();
       }
-    });
+    }, tags: 'glados');
   });
 }

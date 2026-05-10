@@ -281,7 +281,7 @@ void main() {
         expect(left.hasData, scenario.left.hasData, reason: '$scenario');
         expect(right.hasData, scenario.right.hasData, reason: '$scenario');
         expect(InferenceUsage.fromJson(merged.toJson()), merged);
-      });
+      }, tags: 'glados');
     });
 
     group('toJson / fromJson', () {

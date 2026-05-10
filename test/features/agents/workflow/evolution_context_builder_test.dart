@@ -522,7 +522,7 @@ void main() {
           reason: '$scenario',
         );
       }
-    });
+    }, tags: 'glados');
   });
 
   group('observation payloads', () {

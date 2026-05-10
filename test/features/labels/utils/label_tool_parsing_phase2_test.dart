@@ -478,6 +478,7 @@ void main() {
         expect(result.confidenceBreakdown, expected.confidenceBreakdown);
         expect(result.totalCandidates, candidates.length);
       },
+      tags: 'glados',
     );
 
     Glados(any.legacyLabelPayload, ExploreConfig(numRuns: 120)).test(
@@ -496,6 +497,7 @@ void main() {
         });
         expect(result.totalCandidates, payload.allIds.length);
       },
+      tags: 'glados',
     );
   });
 }

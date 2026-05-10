@@ -345,6 +345,7 @@ void main() {
           }
         }
       },
+      tags: 'glados',
     );
 
     test('includes rooms with Lotti state marker', () async {

@@ -754,6 +754,7 @@ void main() {
         await localJournalDb.close();
       }
     },
+    tags: 'glados',
   );
 
   test(
@@ -1583,6 +1584,7 @@ void main() {
           await localJournalDb.close();
         }
       },
+      tags: 'glados',
     );
   });
 

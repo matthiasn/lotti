@@ -601,6 +601,6 @@ void main() {
       } finally {
         generatedContainer.dispose();
       }
-    });
+    }, tags: 'glados');
   });
 }

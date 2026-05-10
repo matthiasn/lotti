@@ -465,6 +465,6 @@ void main() {
           ),
         ).called(scenario.expectedAudioCount);
       }
-    });
+    }, tags: 'glados');
   });
 }

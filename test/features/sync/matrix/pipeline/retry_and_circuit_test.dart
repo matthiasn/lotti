@@ -342,6 +342,7 @@ void main() {
           }
         }
       },
+      tags: 'glados',
     );
   });
 
@@ -425,6 +426,7 @@ void main() {
           );
         }
       },
+      tags: 'glados',
     );
   });
 }

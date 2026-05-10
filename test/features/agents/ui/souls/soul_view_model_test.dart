@@ -135,7 +135,7 @@ void main() {
         );
         expect(vm.activeVersion, _expectedSoulVersion(spec.versionSlot));
       }
-    });
+    }, tags: 'glados');
 
     test('returns an empty list when no souls are present', () async {
       final vms = await _readSoulVms(

@@ -379,7 +379,7 @@ void main() {
           );
         }
       }
-    });
+    }, tags: 'glados');
 
     test('preserves standard evolution user message content', () {
       final ctx = buildCtx(

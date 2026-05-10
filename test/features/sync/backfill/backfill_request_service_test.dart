@@ -690,6 +690,7 @@ void main() {
           service.dispose();
         }
       },
+      tags: 'glados',
     );
 
     glados.Glados(
@@ -814,6 +815,7 @@ void main() {
           }
         });
       },
+      tags: 'glados',
     );
 
     test('nudge sends backfill requests immediately', () {

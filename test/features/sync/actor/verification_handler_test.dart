@@ -310,6 +310,7 @@ void main() {
           await handler.dispose();
         }
       },
+      tags: 'glados',
     );
 
     test('tracks incoming verification and emits events', () {

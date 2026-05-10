@@ -364,6 +364,7 @@ void main() {
         await localJournalDb.close();
       }
     },
+    tags: 'glados',
   );
 
   test('undeserialisable rawJson maps to permanentSkip', () async {

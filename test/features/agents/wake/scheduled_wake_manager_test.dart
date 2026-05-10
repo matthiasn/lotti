@@ -264,157 +264,172 @@ void main() {
     glados.Glados(
       glados.any.scheduledWakeBatchScenario,
       glados.ExploreConfig(numRuns: 180),
-    ).test('matches generated due-batch enqueue and fast-forward semantics', (
-      scenario,
-    ) {
-      final states = [
-        for (final (index, spec) in scenario.specs.indexed) spec.toState(index),
-      ];
-      final failingFastForwardIds = scenario.failingFastForwardAgentIds(states);
-      final generatedRepository = MockAgentRepository();
-      final generatedOrchestrator = MockWakeOrchestrator();
-      final generatedSyncService = MockAgentSyncService();
-      final attemptedFastForwardWrites = <AgentStateEntity>[];
-      final notifiedAgentIds = <String>[];
+    ).test(
+      'matches generated due-batch enqueue and fast-forward semantics',
+      (
+        scenario,
+      ) {
+        final states = [
+          for (final (index, spec) in scenario.specs.indexed)
+            spec.toState(index),
+        ];
+        final failingFastForwardIds = scenario.failingFastForwardAgentIds(
+          states,
+        );
+        final generatedRepository = MockAgentRepository();
+        final generatedOrchestrator = MockWakeOrchestrator();
+        final generatedSyncService = MockAgentSyncService();
+        final attemptedFastForwardWrites = <AgentStateEntity>[];
+        final notifiedAgentIds = <String>[];
 
-      fakeAsync((async) {
-        withClock(Clock.fixed(_generatedScheduledWakeNow), () {
-          when(
-            () => generatedRepository.getDueScheduledAgentStates(any()),
-          ).thenAnswer((_) async => states);
-          when(() => generatedSyncService.upsertEntity(any())).thenAnswer((
-            invocation,
-          ) async {
-            final entity =
-                invocation.positionalArguments.single as AgentStateEntity;
-            attemptedFastForwardWrites.add(entity);
-            if (failingFastForwardIds.contains(entity.agentId)) {
-              throw StateError('generated sync failure');
+        fakeAsync((async) {
+          withClock(Clock.fixed(_generatedScheduledWakeNow), () {
+            when(
+              () => generatedRepository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => states);
+            when(() => generatedSyncService.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              final entity =
+                  invocation.positionalArguments.single as AgentStateEntity;
+              attemptedFastForwardWrites.add(entity);
+              if (failingFastForwardIds.contains(entity.agentId)) {
+                throw StateError('generated sync failure');
+              }
+            });
+
+            final manager = ScheduledWakeManager(
+              repository: generatedRepository,
+              orchestrator: generatedOrchestrator,
+              syncService: generatedSyncService,
+              checkInterval: const Duration(minutes: 7),
+              onPersistedStateChanged: notifiedAgentIds.add,
+            )..start();
+            async.flushMicrotasks();
+
+            final expectedEnqueuedIds = <String>[
+              for (var i = 0; i < scenario.specs.length; i++)
+                if (scenario.specs[i].expectsEnqueue) states[i].agentId,
+            ];
+            final expectedFastForwardIds = <String>[
+              for (var i = 0; i < scenario.specs.length; i++)
+                if (scenario.specs[i].expectsFastForward) states[i].agentId,
+            ];
+            final expectedNotifiedIds = expectedFastForwardIds
+                .where((agentId) => !failingFastForwardIds.contains(agentId))
+                .toList();
+
+            if (expectedEnqueuedIds.isEmpty) {
+              verifyNever(
+                () => generatedOrchestrator.enqueueManualWake(
+                  agentId: any(named: 'agentId'),
+                  reason: any(named: 'reason'),
+                ),
+              );
+            } else {
+              final capturedAgentIds = verify(
+                () => generatedOrchestrator.enqueueManualWake(
+                  agentId: captureAny(named: 'agentId'),
+                  reason: WakeReason.scheduled.name,
+                ),
+              ).captured.cast<String>();
+              expect(
+                capturedAgentIds,
+                expectedEnqueuedIds,
+                reason: '$scenario',
+              );
             }
-          });
 
-          final manager = ScheduledWakeManager(
-            repository: generatedRepository,
-            orchestrator: generatedOrchestrator,
-            syncService: generatedSyncService,
-            checkInterval: const Duration(minutes: 7),
-            onPersistedStateChanged: notifiedAgentIds.add,
-          )..start();
-          async.flushMicrotasks();
-
-          final expectedEnqueuedIds = <String>[
-            for (var i = 0; i < scenario.specs.length; i++)
-              if (scenario.specs[i].expectsEnqueue) states[i].agentId,
-          ];
-          final expectedFastForwardIds = <String>[
-            for (var i = 0; i < scenario.specs.length; i++)
-              if (scenario.specs[i].expectsFastForward) states[i].agentId,
-          ];
-          final expectedNotifiedIds = expectedFastForwardIds
-              .where((agentId) => !failingFastForwardIds.contains(agentId))
-              .toList();
-
-          if (expectedEnqueuedIds.isEmpty) {
-            verifyNever(
-              () => generatedOrchestrator.enqueueManualWake(
-                agentId: any(named: 'agentId'),
-                reason: any(named: 'reason'),
-              ),
-            );
-          } else {
-            final capturedAgentIds = verify(
-              () => generatedOrchestrator.enqueueManualWake(
-                agentId: captureAny(named: 'agentId'),
-                reason: WakeReason.scheduled.name,
-              ),
-            ).captured.cast<String>();
-            expect(capturedAgentIds, expectedEnqueuedIds, reason: '$scenario');
-          }
-
-          expect(
-            attemptedFastForwardWrites.map((state) => state.agentId).toList(),
-            expectedFastForwardIds,
-            reason: '$scenario',
-          );
-
-          for (final write in attemptedFastForwardWrites) {
-            final index = states.indexWhere(
-              (state) => state.agentId == write.agentId,
-            );
-            expect(index, isNonNegative, reason: '$scenario');
             expect(
-              write.scheduledWakeAt,
-              scenario.specs[index].expectedFastForwardWakeAt(
-                _generatedScheduledWakeNow,
-              ),
+              attemptedFastForwardWrites.map((state) => state.agentId).toList(),
+              expectedFastForwardIds,
               reason: '$scenario',
             );
-            expect(write.updatedAt, _generatedScheduledWakeNow);
-          }
 
-          expect(notifiedAgentIds, expectedNotifiedIds, reason: '$scenario');
+            for (final write in attemptedFastForwardWrites) {
+              final index = states.indexWhere(
+                (state) => state.agentId == write.agentId,
+              );
+              expect(index, isNonNegative, reason: '$scenario');
+              expect(
+                write.scheduledWakeAt,
+                scenario.specs[index].expectedFastForwardWakeAt(
+                  _generatedScheduledWakeNow,
+                ),
+                reason: '$scenario',
+              );
+              expect(write.updatedAt, _generatedScheduledWakeNow);
+            }
 
-          manager.stop();
+            expect(notifiedAgentIds, expectedNotifiedIds, reason: '$scenario');
+
+            manager.stop();
+          });
         });
-      });
-    });
+      },
+      tags: 'glados',
+    );
 
     glados.Glados(
       glados.any.scheduledWakeManagerLifecycleScenario,
       glados.ExploreConfig(numRuns: 160),
-    ).test('matches generated start stop and timer replacement semantics', (
-      scenario,
-    ) {
-      const checkInterval = Duration(minutes: 11);
-      final generatedRepository = MockAgentRepository();
-      final generatedOrchestrator = MockWakeOrchestrator();
-      final generatedSyncService = MockAgentSyncService();
-      var repositoryChecks = 0;
-      var expectedChecks = 0;
-      var running = false;
+    ).test(
+      'matches generated start stop and timer replacement semantics',
+      (
+        scenario,
+      ) {
+        const checkInterval = Duration(minutes: 11);
+        final generatedRepository = MockAgentRepository();
+        final generatedOrchestrator = MockWakeOrchestrator();
+        final generatedSyncService = MockAgentSyncService();
+        var repositoryChecks = 0;
+        var expectedChecks = 0;
+        var running = false;
 
-      fakeAsync((async) {
-        withClock(Clock.fixed(_generatedScheduledWakeNow), () {
-          when(
-            () => generatedRepository.getDueScheduledAgentStates(any()),
-          ).thenAnswer((_) async {
-            repositoryChecks++;
-            return <AgentStateEntity>[];
-          });
+        fakeAsync((async) {
+          withClock(Clock.fixed(_generatedScheduledWakeNow), () {
+            when(
+              () => generatedRepository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async {
+              repositoryChecks++;
+              return <AgentStateEntity>[];
+            });
 
-          final manager = ScheduledWakeManager(
-            repository: generatedRepository,
-            orchestrator: generatedOrchestrator,
-            syncService: generatedSyncService,
-            checkInterval: checkInterval,
-          );
+            final manager = ScheduledWakeManager(
+              repository: generatedRepository,
+              orchestrator: generatedOrchestrator,
+              syncService: generatedSyncService,
+              checkInterval: checkInterval,
+            );
 
-          for (final operation in scenario.operations) {
-            switch (operation.kind) {
-              case _GeneratedScheduledWakeManagerOperationKind.start:
-                manager.start();
-                running = true;
-                expectedChecks++;
-                async.flushMicrotasks();
+            for (final operation in scenario.operations) {
+              switch (operation.kind) {
+                case _GeneratedScheduledWakeManagerOperationKind.start:
+                  manager.start();
+                  running = true;
+                  expectedChecks++;
+                  async.flushMicrotasks();
 
-              case _GeneratedScheduledWakeManagerOperationKind.stop:
-                manager.stop();
-                running = false;
-                async.flushMicrotasks();
+                case _GeneratedScheduledWakeManagerOperationKind.stop:
+                  manager.stop();
+                  running = false;
+                  async.flushMicrotasks();
 
-              case _GeneratedScheduledWakeManagerOperationKind.tick:
-                async.elapse(checkInterval);
-                if (running) expectedChecks++;
-                async.flushMicrotasks();
+                case _GeneratedScheduledWakeManagerOperationKind.tick:
+                  async.elapse(checkInterval);
+                  if (running) expectedChecks++;
+                  async.flushMicrotasks();
+              }
+
+              expect(repositoryChecks, expectedChecks, reason: '$scenario');
             }
 
-            expect(repositoryChecks, expectedChecks, reason: '$scenario');
-          }
-
-          manager.stop();
+            manager.stop();
+          });
         });
-      });
-    });
+      },
+      tags: 'glados',
+    );
 
     test('enqueues wake for agent with scheduledWakeAt in the past', () {
       final now = DateTime(2024, 3, 15, 10, 30);

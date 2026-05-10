@@ -414,5 +414,6 @@ void main() {
         ).called(scenario.expectedAppendCalls);
       }
     },
+    tags: 'glados',
   );
 }

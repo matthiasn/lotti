@@ -257,5 +257,6 @@ void main() {
         expect(calls, scenario.expectedFlushes(), reason: '$scenario');
       });
     },
+    tags: 'glados',
   );
 }

@@ -2854,6 +2854,7 @@ void main() {
           await localDb.close();
         }
       },
+      tags: 'glados',
     );
 
     group('getLatestProjectReportForProjectId', () {
@@ -3217,6 +3218,7 @@ void main() {
           await localDb.close();
         }
       },
+      tags: 'glados',
     );
   });
 
@@ -3711,6 +3713,7 @@ void main() {
           await localDb.close();
         }
       },
+      tags: 'glados',
     );
 
     group('getLinkById', () {
@@ -4256,6 +4259,7 @@ void main() {
           await localDb.close();
         }
       },
+      tags: 'glados',
     );
   });
 
@@ -5035,6 +5039,7 @@ void main() {
           await localDb.close();
         }
       },
+      tags: 'glados',
     );
 
     group('updateWakeRunTemplate', () {
@@ -5694,6 +5699,7 @@ void main() {
         await localDb.close();
       }
     },
+    tags: 'glados',
   );
 
   // ── Interval queries (re-sync support) ──────────────────────────────────
@@ -5861,6 +5867,7 @@ void main() {
           await localDb.close();
         }
       },
+      tags: 'glados',
     );
 
     test('getEntitiesInInterval includes soft-deleted entities', () async {

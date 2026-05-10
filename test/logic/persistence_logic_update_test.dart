@@ -613,54 +613,60 @@ void main() {
   glados.Glados(
     glados.any.updateDbEntityScenario,
     glados.ExploreConfig(numRuns: 120),
-  ).test('updateDbEntity matches generated notification and sync invariants', (
-    scenario,
-  ) async {
-    clearInteractions(updateNotifications);
-    clearInteractions(outboxService);
-    clearInteractions(fts5Db);
-    clearInteractions(notificationService);
+  ).test(
+    'updateDbEntity matches generated notification and sync invariants',
+    (
+      scenario,
+    ) async {
+      clearInteractions(updateNotifications);
+      clearInteractions(outboxService);
+      clearInteractions(fts5Db);
+      clearInteractions(notificationService);
 
-    stubUpdateResult(
-      scenario.applied
-          ? JournalUpdateResult.applied()
-          : JournalUpdateResult.skipped(
-              reason: JournalUpdateSkipReason.olderOrEqual,
-            ),
-    );
-    when(
-      () => journalDb.parentLinkedEntityIds(scenario.entity.id),
-    ).thenReturn(MockSelectable<String>(scenario.parentIds));
+      stubUpdateResult(
+        scenario.applied
+            ? JournalUpdateResult.applied()
+            : JournalUpdateResult.skipped(
+                reason: JournalUpdateSkipReason.olderOrEqual,
+              ),
+      );
+      when(
+        () => journalDb.parentLinkedEntityIds(scenario.entity.id),
+      ).thenReturn(MockSelectable<String>(scenario.parentIds));
 
-    final result = await logic.updateDbEntity(
-      scenario.entity,
-      linkedId: scenario.linkedId,
-      enqueueSync: scenario.enqueueSync,
-    );
-
-    expect(result, scenario.applied, reason: '$scenario');
-
-    final notificationIds =
-        verify(
-              () => updateNotifications.notify(captureAny<Set<String>>()),
-            ).captured.single
-            as Set<String>;
-    expect(notificationIds, scenario.expectedNotificationIds);
-
-    verify(
-      () => fts5Db.insertText(
+      final result = await logic.updateDbEntity(
         scenario.entity,
-        removePrevious: true,
-      ),
-    ).called(1);
-    verify(notificationService.updateBadge).called(1);
+        linkedId: scenario.linkedId,
+        enqueueSync: scenario.enqueueSync,
+      );
 
-    if (scenario.shouldEnqueueSync) {
-      verify(() => outboxService.enqueueMessage(any<SyncMessage>())).called(1);
-    } else {
-      verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
-    }
-  });
+      expect(result, scenario.applied, reason: '$scenario');
+
+      final notificationIds =
+          verify(
+                () => updateNotifications.notify(captureAny<Set<String>>()),
+              ).captured.single
+              as Set<String>;
+      expect(notificationIds, scenario.expectedNotificationIds);
+
+      verify(
+        () => fts5Db.insertText(
+          scenario.entity,
+          removePrevious: true,
+        ),
+      ).called(1);
+      verify(notificationService.updateBadge).called(1);
+
+      if (scenario.shouldEnqueueSync) {
+        verify(
+          () => outboxService.enqueueMessage(any<SyncMessage>()),
+        ).called(1);
+      } else {
+        verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+      }
+    },
+    tags: 'glados',
+  );
 
   test('createDbEntity skips addLabeled when update skipped', () async {
     stubUpdateResult(
@@ -756,7 +762,7 @@ void main() {
     }
 
     verify(notificationService.updateBadge).called(1);
-  });
+  }, tags: 'glados');
 
   group('updateJournalEntity', () {
     test(

@@ -107,72 +107,81 @@ void main() {
     glados.Glados(
       glados.any.templateRowsScenario,
       glados.ExploreConfig(numRuns: 160),
-    ).test('maps generated template rows with versions and pending flags', (
-      scenario,
-    ) async {
-      final entities = <AgentDomainEntity>[];
-      final versionsByTemplateId = <String, AgentDomainEntity?>{};
-      final pendingTemplateIds = <String>{};
-      final expectedSpecs =
-          <({String id, int originalIndex, _GeneratedTemplateRowSpec spec})>[];
+    ).test(
+      'maps generated template rows with versions and pending flags',
+      (
+        scenario,
+      ) async {
+        final entities = <AgentDomainEntity>[];
+        final versionsByTemplateId = <String, AgentDomainEntity?>{};
+        final pendingTemplateIds = <String>{};
+        final expectedSpecs =
+            <
+              ({String id, int originalIndex, _GeneratedTemplateRowSpec spec})
+            >[];
 
-      for (final (index, spec) in scenario.specs.indexed) {
-        final id = spec.isTemplate
-            ? 'tpl-$index-${spec.entitySlot.name}'
-            : 'non-template-$index';
+        for (final (index, spec) in scenario.specs.indexed) {
+          final id = spec.isTemplate
+              ? 'tpl-$index-${spec.entitySlot.name}'
+              : 'non-template-$index';
 
-        if (spec.isTemplate) {
-          entities.add(
-            makeTestTemplate(
-              id: id,
-              agentId: id,
-              displayName: 'Template $index ${spec.entitySlot.name}',
-              kind: _generatedTemplateKind(spec.kindSlot),
-              modelId: 'model-$index',
-              updatedAt: DateTime(2026, 4, 1, index % 24),
-            ),
-          );
-          versionsByTemplateId[id] = _templateVersionFor(id, spec.versionSlot);
-          if (spec.pendingReview) {
-            pendingTemplateIds.add(id);
+          if (spec.isTemplate) {
+            entities.add(
+              makeTestTemplate(
+                id: id,
+                agentId: id,
+                displayName: 'Template $index ${spec.entitySlot.name}',
+                kind: _generatedTemplateKind(spec.kindSlot),
+                modelId: 'model-$index',
+                updatedAt: DateTime(2026, 4, 1, index % 24),
+              ),
+            );
+            versionsByTemplateId[id] = _templateVersionFor(
+              id,
+              spec.versionSlot,
+            );
+            if (spec.pendingReview) {
+              pendingTemplateIds.add(id);
+            }
+            expectedSpecs.add((id: id, originalIndex: index, spec: spec));
+          } else {
+            entities.add(
+              makeTestSoulDocument(
+                id: id,
+                agentId: id,
+                displayName: 'Not a template $index',
+              ),
+            );
           }
-          expectedSpecs.add((id: id, originalIndex: index, spec: spec));
-        } else {
-          entities.add(
-            makeTestSoulDocument(
-              id: id,
-              agentId: id,
-              displayName: 'Not a template $index',
-            ),
-          );
         }
-      }
 
-      final vms = await _readTemplateVms(
-        entities: entities,
-        versionsByTemplateId: versionsByTemplateId,
-        pendingTemplateIds: pendingTemplateIds,
-      );
+        final vms = await _readTemplateVms(
+          entities: entities,
+          versionsByTemplateId: versionsByTemplateId,
+          pendingTemplateIds: pendingTemplateIds,
+        );
 
-      expect(vms, hasLength(expectedSpecs.length), reason: '$scenario');
-      for (final (rowIndex, expected) in expectedSpecs.indexed) {
-        final vm = vms[rowIndex];
-        final spec = expected.spec;
-        expect(vm.id, expected.id, reason: '$scenario');
-        expect(
-          vm.displayName,
-          'Template ${expected.originalIndex} ${spec.entitySlot.name}',
-        );
-        expect(vm.kind, _generatedTemplateKind(spec.kindSlot));
-        expect(vm.modelId, 'model-${expected.originalIndex}');
-        expect(
-          vm.updatedAt,
-          DateTime(2026, 4, 1, expected.originalIndex % 24),
-        );
-        expect(vm.hasPendingReview, spec.pendingReview);
-        expect(vm.activeVersion, _expectedTemplateVersion(spec.versionSlot));
-      }
-    });
+        expect(vms, hasLength(expectedSpecs.length), reason: '$scenario');
+        for (final (rowIndex, expected) in expectedSpecs.indexed) {
+          final vm = vms[rowIndex];
+          final spec = expected.spec;
+          expect(vm.id, expected.id, reason: '$scenario');
+          expect(
+            vm.displayName,
+            'Template ${expected.originalIndex} ${spec.entitySlot.name}',
+          );
+          expect(vm.kind, _generatedTemplateKind(spec.kindSlot));
+          expect(vm.modelId, 'model-${expected.originalIndex}');
+          expect(
+            vm.updatedAt,
+            DateTime(2026, 4, 1, expected.originalIndex % 24),
+          );
+          expect(vm.hasPendingReview, spec.pendingReview);
+          expect(vm.activeVersion, _expectedTemplateVersion(spec.versionSlot));
+        }
+      },
+      tags: 'glados',
+    );
 
     test('returns an empty list when no templates are present', () async {
       final vms = await _readTemplateVms(

@@ -527,7 +527,7 @@ void main() {
           coordinator.dispose();
         }
       });
-    });
+    }, tags: 'glados');
 
     glados.Glados(
       glados.any.throttlePersistenceScenario,
@@ -792,6 +792,6 @@ void main() {
           coordinator.dispose();
         }
       });
-    });
+    }, tags: 'glados');
   });
 }

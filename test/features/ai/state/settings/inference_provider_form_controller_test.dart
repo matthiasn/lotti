@@ -948,7 +948,7 @@ void main() {
       } finally {
         generatedContainer.dispose();
       }
-    });
+    }, tags: 'glados');
   });
 
   group('Whisper Provider Tests', () {

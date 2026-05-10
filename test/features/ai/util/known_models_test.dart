@@ -414,7 +414,7 @@ void main() {
         expect(id, scenario.expectedId, reason: '$scenario');
         expect(id, isNot(contains(RegExp(r'[/:\-.]'))));
         expect(id, id.toLowerCase());
-      });
+      }, tags: 'glados');
     });
 
     group('toAiConfigModel', () {
@@ -438,7 +438,7 @@ void main() {
         expect(aiConfig.supportsFunctionCalling, model.supportsFunctionCalling);
         expect(aiConfig.description, model.description);
         expect(aiConfig.maxCompletionTokens, model.maxCompletionTokens);
-      });
+      }, tags: 'glados');
     });
 
     group('Image Generation Model (Nano Banana Pro)', () {

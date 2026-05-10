@@ -558,7 +558,7 @@ void main() {
         rule,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
 
     test('removeAt with null rule input', () {
       final result = removeAt(

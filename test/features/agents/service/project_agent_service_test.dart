@@ -424,7 +424,7 @@ void main() {
           ),
         ).called(1);
         expect(generatedNotifiedAgentIds, [agentId], reason: '$scenario');
-      });
+      }, tags: 'glados');
 
       test('creates agent, updates state, creates links, and enqueues '
           'creation wake', () async {

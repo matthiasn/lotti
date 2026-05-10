@@ -699,6 +699,7 @@ void main() {
 
         expect(result, scenario.expectedResult());
       },
+      tags: 'glados',
     );
   });
 }

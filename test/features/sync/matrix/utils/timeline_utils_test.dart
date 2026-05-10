@@ -154,6 +154,7 @@ void main() {
 
         expect(actual.inMilliseconds, scenario.expectedMs);
       },
+      tags: 'glados',
     );
   });
 
@@ -216,5 +217,6 @@ void main() {
         scenario.expectedDedupedIds,
       );
     },
+    tags: 'glados',
   );
 }

@@ -599,6 +599,7 @@ void main() {
           scenario.expectedEventIds(),
         );
       },
+      tags: 'glados',
     );
 
     test(
@@ -690,6 +691,7 @@ void main() {
         );
         expect(skipped, scenario.expectedSkippedCount());
       },
+      tags: 'glados',
     );
   });
 }

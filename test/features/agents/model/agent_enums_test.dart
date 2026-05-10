@@ -150,7 +150,7 @@ void main() {
         equals(scenario.value),
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
 
     glados.Glados(
       glados.any.invalidEnumParseScenario,
@@ -161,7 +161,7 @@ void main() {
         isNull,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
 
     test('resolves every agent enum value from exact and snake-case names', () {
       for (final family in _GeneratedAgentEnumFamily.values) {

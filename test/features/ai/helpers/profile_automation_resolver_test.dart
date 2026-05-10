@@ -522,6 +522,7 @@ void main() {
           );
         }
       },
+      tags: 'glados',
     );
   });
 }

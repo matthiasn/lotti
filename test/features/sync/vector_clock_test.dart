@@ -264,7 +264,7 @@ void main() {
         final b = scenario.b.toClock();
 
         expect(VectorClock.compare(a, b), _invert(VectorClock.compare(b, a)));
-      });
+      }, tags: 'glados');
 
       glados.Glados(
         glados.any.clockPair,
@@ -277,7 +277,7 @@ void main() {
           ),
           VclockStatus.equal,
         );
-      });
+      }, tags: 'glados');
 
       glados.Glados(
         glados.any.clockPair,
@@ -295,7 +295,7 @@ void main() {
           VectorClock.compare(merged, b),
           anyOf(VclockStatus.equal, VclockStatus.a_gt_b),
         );
-      });
+      }, tags: 'glados');
 
       glados.Glados(
         glados.any.clockTriple,
@@ -311,7 +311,7 @@ void main() {
           VectorClock.merge(VectorClock.merge(a, b), c).vclock,
           VectorClock.merge(a, VectorClock.merge(b, c)).vclock,
         );
-      });
+      }, tags: 'glados');
 
       glados.Glados(
         glados.any.invalidClockPair,
@@ -331,7 +331,7 @@ void main() {
           () => VectorClock.compare(valid, invalid),
           throwsA(isA<VclockException>()),
         );
-      });
+      }, tags: 'glados');
     });
 
     group('mergeUniqueClocks', () {

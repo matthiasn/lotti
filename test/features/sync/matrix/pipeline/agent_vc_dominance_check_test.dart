@@ -596,6 +596,7 @@ void main() {
         await generatedDb.close();
       }
     },
+    tags: 'glados',
   );
 }
 

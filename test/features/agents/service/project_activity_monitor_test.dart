@@ -528,7 +528,7 @@ void main() {
       } finally {
         await bench.dispose();
       }
-    });
+    }, tags: 'glados');
 
     test('marks pending activity for linked project agents', () async {
       final link = AgentLink.agentProject(

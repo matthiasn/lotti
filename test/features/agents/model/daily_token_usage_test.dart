@@ -186,7 +186,7 @@ void main() {
         scenario.expectedTokensPerWake,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
   });
 
   group('TokenSourceBreakdown', () {
@@ -345,6 +345,6 @@ void main() {
         scenario.todayTokens == scenario.averageTokensByTimeOfDay,
         reason: '$scenario',
       );
-    });
+    }, tags: 'glados');
   });
 }

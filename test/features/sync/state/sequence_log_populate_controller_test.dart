@@ -605,6 +605,7 @@ void main() {
           expect(finalState.error, contains('generated populate failure'));
         }
       },
+      tags: 'glados',
     );
 
     test('populateSequenceLog calls all four service methods', () async {

@@ -635,6 +635,7 @@ void main() {
         verifyNever(() => repo.markSentBatch(any()));
       }
     },
+    tags: 'glados',
   );
 
   group('retry cap', () {
