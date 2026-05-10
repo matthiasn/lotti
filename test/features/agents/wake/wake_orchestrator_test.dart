@@ -4479,5 +4479,163 @@ void main() {
         },
       );
     });
+
+    group('propagated subscription deferral (next 06:00)', () {
+      test(
+        'a propagated-only match defers nextWakeAt to the next 06:00 '
+        'instead of the standard 120 s throttle window',
+        () {
+          // Pin the wall clock so the next-06:00 calculation is
+          // deterministic regardless of when the test runs.
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-parent'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // Only the propagated form is in the batch — the agent's
+              // entity wasn't directly edited; a child of it was.
+              emitTokens(async, controller, {
+                propagatedNotification('task-parent'),
+              });
+
+              // The persisted nextWakeAt should be tomorrow 06:00 (since
+              // the pinned clock is past 06:00 today), NOT now + 120 s.
+              final captured = verify(
+                () => mockRepository.upsertEntity(captureAny()),
+              ).captured;
+              final state = captured.last as AgentStateEntity;
+              expect(
+                state.nextWakeAt,
+                DateTime(2026, 5, 11, 6),
+                reason: 'propagated-only match must defer to the next 06:00',
+              );
+            });
+          });
+        },
+      );
+
+      test(
+        'a direct match keeps the existing 120 s throttle window even when '
+        'the propagated form is also present (the wrapper is just legacy '
+        'bookkeeping for UI listeners)',
+        () {
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-direct'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // Only the bare token is in the batch — direct edit, not
+              // propagated. nextWakeAt should be the 120 s default.
+              emitTokens(async, controller, {'task-direct'});
+
+              final captured = verify(
+                () => mockRepository.upsertEntity(captureAny()),
+              ).captured;
+              final state = captured.last as AgentStateEntity;
+              expect(
+                state.nextWakeAt,
+                now.add(const Duration(seconds: 120)),
+              );
+            });
+          });
+        },
+      );
+
+      test(
+        'when the same id appears as both bare and propagated, the match '
+        'is treated as propagated (the legacy bare emission accompanies '
+        'the parent fan-out and must not collapse the deferral)',
+        () {
+          final now = DateTime(2026, 5, 10, 3, 15);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-mixed'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              emitTokens(async, controller, {
+                'task-mixed',
+                propagatedNotification('task-mixed'),
+              });
+
+              // Pinned clock is before 06:00 today, so morning deferral
+              // resolves to today's 06:00 (not tomorrow's).
+              final captured = verify(
+                () => mockRepository.upsertEntity(captureAny()),
+              ).captured;
+              final state = captured.last as AgentStateEntity;
+              expect(state.nextWakeAt, DateTime(2026, 5, 10, 6));
+            });
+          });
+        },
+      );
+    });
   });
 }

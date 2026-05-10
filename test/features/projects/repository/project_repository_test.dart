@@ -606,13 +606,19 @@ void main() {
       expect(captured.toId, 'task-001');
       expect(captured.hidden, isNull);
 
-      // Verify notifications include entity IDs and project token
+      // Verify notifications include entity IDs, the project token, and
+      // the propagated form so the wake orchestrator defers the parent
+      // project agent's wake to the next 06:00 instead of firing immediately
+      // on every task link.
       verify(
         () => mockNotifications.notify({
           'project-001',
           'task-001',
           projectNotification,
           projectEntityUpdateNotification('project-001'),
+          propagatedNotification(
+            projectEntityUpdateNotification('project-001'),
+          ),
         }),
       ).called(1);
 
@@ -787,7 +793,11 @@ void main() {
         verify(() => mockDb.upsertEntryLink(any())).called(2);
         // Sync enqueued for both delete and create after commit
         verify(() => mockOutboxService.enqueueMessage(any())).called(2);
-        // Notifications include old project, new project, task, and token
+        // Notifications include the old project, new project, task, and
+        // the bare + propagated forms of each project token so wake
+        // orchestrator subscriptions on the project IDs defer to morning
+        // (relinking is a task-link side-effect, not a direct project
+        // edit).
         verify(
           () => mockNotifications.notify({
             'project-old',
@@ -796,6 +806,12 @@ void main() {
             projectNotification,
             projectEntityUpdateNotification('project-old'),
             projectEntityUpdateNotification('project-001'),
+            propagatedNotification(
+              projectEntityUpdateNotification('project-old'),
+            ),
+            propagatedNotification(
+              projectEntityUpdateNotification('project-001'),
+            ),
           }),
         ).called(1);
       },
@@ -933,6 +949,9 @@ void main() {
           'task-001',
           projectNotification,
           projectEntityUpdateNotification('project-001'),
+          propagatedNotification(
+            projectEntityUpdateNotification('project-001'),
+          ),
         }),
       ).called(1);
       // Verify sync was enqueued

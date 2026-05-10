@@ -315,11 +315,18 @@ class ProjectRepository {
 
         final res = await _journalDb.upsertEntryLink(link);
         if (res == 0) return false;
+        // Wrap the per-project update token with [propagatedNotification]
+        // so the wake orchestrator can tell "a task was linked under this
+        // project" apart from "the project itself was edited" — only
+        // direct project edits should burn LLM tokens immediately. Bare
+        // tokens are kept alongside so UI providers reacting to the
+        // legacy form continue to refresh.
         _updateNotifications.notify({
           projectId,
           taskId,
           projectNotification,
           projectEntityUpdateNotification(projectId),
+          propagatedNotification(projectEntityUpdateNotification(projectId)),
         });
         try {
           await _enqueueLinkSync(link, SyncEntryStatus.initial);
@@ -438,6 +445,8 @@ class ProjectRepository {
 
         if (!success) return false;
 
+        // Same propagation tagging as [linkTaskToProject]: relinking is a
+        // task-link side-effect, not a direct project edit.
         _updateNotifications.notify({
           oldLink.fromId,
           oldLink.toId,
@@ -446,6 +455,10 @@ class ProjectRepository {
           projectNotification,
           projectEntityUpdateNotification(oldLink.fromId),
           projectEntityUpdateNotification(projectId),
+          propagatedNotification(
+            projectEntityUpdateNotification(oldLink.fromId),
+          ),
+          propagatedNotification(projectEntityUpdateNotification(projectId)),
         });
         try {
           await _enqueueLinkSync(deletedLink, SyncEntryStatus.update);
@@ -472,11 +485,14 @@ class ProjectRepository {
         final deleted = await _prepareDeletedLink(link, now);
         final res = await _journalDb.upsertEntryLink(deleted);
         if (res == 0) return false;
+        // Same propagation tagging as [linkTaskToProject]: unlinking is a
+        // task-link side-effect, not a direct project edit.
         _updateNotifications.notify({
           link.fromId,
           link.toId,
           projectNotification,
           projectEntityUpdateNotification(link.fromId),
+          propagatedNotification(projectEntityUpdateNotification(link.fromId)),
         });
         try {
           await _enqueueLinkSync(deleted, SyncEntryStatus.update);

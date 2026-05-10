@@ -66,6 +66,10 @@ class _GeneratedUpdateDbEntityScenario {
     ..._expectedAffectedIds(kind, 'entity-$seed'),
     ?linkedId,
     ...parentIds,
+    // Each parent ID is also emitted in propagated form so the wake
+    // orchestrator can defer parent-fan-out matches to the next 06:00
+    // instead of treating them as direct edits.
+    for (final id in parentIds) propagatedNotification(id),
     labelUsageNotification,
   };
 
