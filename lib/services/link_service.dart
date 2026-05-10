@@ -8,6 +8,8 @@ class LinkService {
   String? _linkToId;
   String? _linkFromId;
 
+  static const linkResetDuration = Duration(minutes: 2);
+
   Future<void> createLink() async {
     if (_linkFromId != null && _linkToId != null) {
       await HapticFeedback.heavyImpact();
@@ -17,7 +19,7 @@ class LinkService {
         toId: _linkToId!,
       );
 
-      await Future<void>.delayed(const Duration(minutes: 2)).then((_) {
+      await Future<void>.delayed(linkResetDuration).then((_) {
         _linkFromId = null;
         _linkToId = null;
       });

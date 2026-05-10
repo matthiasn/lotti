@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 
@@ -39,6 +40,99 @@ class TestNotifications implements UpdateNotifications {
   }
 }
 
+enum _GeneratedNotificationStreamOperationKind {
+  matching,
+  other,
+  mixed,
+  empty,
+}
+
+class _GeneratedNotificationStreamOperation {
+  const _GeneratedNotificationStreamOperation({
+    required this.kind,
+    required this.seed,
+  });
+
+  final _GeneratedNotificationStreamOperationKind kind;
+  final int seed;
+
+  Set<String> get ids {
+    return switch (kind) {
+      _GeneratedNotificationStreamOperationKind.matching => {
+        if (seed.isEven) 'KEY_A' else 'KEY_B',
+      },
+      _GeneratedNotificationStreamOperationKind.other => {
+        'OTHER_${seed % 7}',
+      },
+      _GeneratedNotificationStreamOperationKind.mixed => {
+        'OTHER_${seed % 7}',
+        if (seed.isEven) 'KEY_A' else 'KEY_B',
+      },
+      _GeneratedNotificationStreamOperationKind.empty => const <String>{},
+    };
+  }
+
+  bool get triggersFetch => ids.contains('KEY_A') || ids.contains('KEY_B');
+
+  @override
+  String toString() {
+    return '_GeneratedNotificationStreamOperation(kind: $kind, seed: $seed)';
+  }
+}
+
+class _GeneratedNotificationStreamScenario {
+  const _GeneratedNotificationStreamScenario({
+    required this.operations,
+    required this.cancelAfterSlot,
+  });
+
+  final List<_GeneratedNotificationStreamOperation> operations;
+  final int cancelAfterSlot;
+
+  int get cancelAfter {
+    if (operations.isEmpty) return 0;
+    return cancelAfterSlot % (operations.length + 1);
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedNotificationStreamScenario('
+        'operations: $operations, cancelAfterSlot: $cancelAfterSlot)';
+  }
+}
+
+extension _AnyGeneratedNotificationStreamScenario on glados.Any {
+  glados.Generator<_GeneratedNotificationStreamOperationKind>
+  get notificationStreamOperationKind => glados.AnyUtils(this).choose(
+    _GeneratedNotificationStreamOperationKind.values,
+  );
+
+  glados.Generator<_GeneratedNotificationStreamOperation>
+  get notificationStreamOperation => glados.CombinableAny(this).combine2(
+    notificationStreamOperationKind,
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      _GeneratedNotificationStreamOperationKind kind,
+      int seed,
+    ) => _GeneratedNotificationStreamOperation(kind: kind, seed: seed),
+  );
+
+  glados.Generator<_GeneratedNotificationStreamScenario>
+  get notificationStreamScenario => glados.CombinableAny(this).combine2(
+    glados.ListAnys(
+      this,
+    ).listWithLengthInRange(0, 40, notificationStreamOperation),
+    glados.IntAnys(this).intInRange(0, 10000),
+    (
+      List<_GeneratedNotificationStreamOperation> operations,
+      int cancelAfterSlot,
+    ) => _GeneratedNotificationStreamScenario(
+      operations: operations,
+      cancelAfterSlot: cancelAfterSlot,
+    ),
+  );
+}
+
 void main() {
   late TestNotifications notifications;
 
@@ -51,6 +145,57 @@ void main() {
   });
 
   group('notificationDrivenStream', () {
+    glados.Glados(
+      glados.any.notificationStreamScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('matches generated notification sequence invariants', (scenario) {
+      fakeAsync((async) {
+        var fetchCount = 0;
+        final stream = notificationDrivenStream<String>(
+          notifications: notifications,
+          notificationKeys: {'KEY_A', 'KEY_B'},
+          fetcher: () async {
+            fetchCount++;
+            return ['fetch-$fetchCount'];
+          },
+        );
+
+        final results = <List<String>>[];
+        final sub = stream.listen(results.add);
+        async.flushMicrotasks();
+
+        var expectedFetchCount = 1;
+        final expectedResults = <List<String>>[
+          ['fetch-1'],
+        ];
+        var cancelled = false;
+
+        void cancelIfNeeded(int operationIndex) {
+          if (!cancelled && operationIndex == scenario.cancelAfter) {
+            cancelled = true;
+            unawaited(sub.cancel());
+            async.flushMicrotasks();
+          }
+        }
+
+        for (final indexed in scenario.operations.indexed) {
+          cancelIfNeeded(indexed.$1);
+
+          notifications.emit(indexed.$2.ids);
+          async.flushMicrotasks();
+
+          if (!cancelled && indexed.$2.triggersFetch) {
+            expectedFetchCount++;
+            expectedResults.add(['fetch-$expectedFetchCount']);
+          }
+        }
+        cancelIfNeeded(scenario.operations.length);
+
+        expect(fetchCount, expectedFetchCount, reason: scenario.toString());
+        expect(results, expectedResults, reason: scenario.toString());
+      });
+    }, tags: 'glados');
+
     test('emits initial fetch result on first listen', () {
       fakeAsync((async) {
         var fetchCount = 0;

@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' hide isNotNull, isNull;
+import 'package:easy_debounce/easy_debounce.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/get_it.dart';
@@ -9,6 +14,83 @@ import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
+
+enum _GeneratedEditorStateOperationKind {
+  saveTempState,
+  saveSelection,
+  entryWasSaved,
+}
+
+class _GeneratedEditorStateOperation {
+  const _GeneratedEditorStateOperation({
+    required this.kind,
+    required this.entrySlot,
+    required this.seed,
+  });
+
+  final _GeneratedEditorStateOperationKind kind;
+  final int entrySlot;
+  final int seed;
+
+  String get entryId => 'generated-entry-${entrySlot % 3}';
+
+  DateTime get lastSaved => DateTime(2024, 3, 15, 10, seed % 60);
+
+  String get deltaJson => '{"ops":[{"insert":"generated-$seed"}]}';
+
+  TextSelection get selection => TextSelection.collapsed(
+    offset: seed % 12,
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedEditorStateOperation('
+        'kind: $kind, entrySlot: $entrySlot, seed: $seed)';
+  }
+}
+
+class _GeneratedEditorStateScenario {
+  const _GeneratedEditorStateScenario({required this.operations});
+
+  final List<_GeneratedEditorStateOperation> operations;
+
+  @override
+  String toString() {
+    return '_GeneratedEditorStateScenario(operations: $operations)';
+  }
+}
+
+extension _AnyGeneratedEditorStateScenario on glados.Any {
+  glados.Generator<_GeneratedEditorStateOperationKind>
+  get editorStateOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedEditorStateOperationKind.values);
+
+  glados.Generator<_GeneratedEditorStateOperation> get editorStateOperation =>
+      glados.CombinableAny(this).combine3(
+        editorStateOperationKind,
+        glados.IntAnys(this).intInRange(0, 1000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedEditorStateOperationKind kind,
+          int entrySlot,
+          int seed,
+        ) => _GeneratedEditorStateOperation(
+          kind: kind,
+          entrySlot: entrySlot,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedEditorStateScenario> get editorStateScenario =>
+      glados.ListAnys(
+            this,
+          )
+          .listWithLengthInRange(0, 45, editorStateOperation)
+          .map(
+            (operations) =>
+                _GeneratedEditorStateScenario(operations: operations),
+          );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -65,6 +147,117 @@ void main() {
 
       editorStateService = EditorStateService();
     });
+
+    tearDown(EasyDebounce.cancelAll);
+
+    glados.Glados(
+      glados.any.editorStateScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('matches generated edit and save sequence invariants', (scenario) {
+      fakeAsync((async) {
+        final service = EditorStateService();
+        async.flushMicrotasks();
+
+        when(
+          () => mockEditorDb.getLatestDraft(
+            any(),
+            lastSaved: any(named: 'lastSaved'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        const entryIds = [
+          'generated-entry-0',
+          'generated-entry-1',
+          'generated-entry-2',
+        ];
+        final emissionsById = {
+          for (final id in entryIds) id: <bool>[],
+        };
+        final expectedEmissionsById = {
+          for (final id in entryIds) id: <bool>[false],
+        };
+        final subscriptions = [
+          for (final id in entryIds)
+            service
+                .getUnsavedStream(id, testEpochDateTime)
+                .listen(emissionsById[id]!.add),
+        ];
+        async.flushMicrotasks();
+
+        final expectedDeltaById = <String, String>{};
+        final expectedSelectionById = <String, TextSelection>{};
+
+        for (final operation in scenario.operations) {
+          switch (operation.kind) {
+            case _GeneratedEditorStateOperationKind.saveTempState:
+              service.saveTempState(
+                id: operation.entryId,
+                lastSaved: operation.lastSaved,
+                json: operation.deltaJson,
+              );
+              expectedDeltaById[operation.entryId] = operation.deltaJson;
+              expectedSelectionById.remove(operation.entryId);
+              expectedEmissionsById[operation.entryId]!.add(true);
+              async.elapse(Duration.zero);
+              async.flushMicrotasks();
+            case _GeneratedEditorStateOperationKind.saveSelection:
+              service.saveSelection(
+                operation.entryId,
+                operation.selection,
+              );
+              expectedSelectionById[operation.entryId] = operation.selection;
+            case _GeneratedEditorStateOperationKind.entryWasSaved:
+              unawaited(
+                service.entryWasSaved(
+                  id: operation.entryId,
+                  lastSaved: operation.lastSaved,
+                  controller: FakeQuillController(
+                    selection: operation.selection,
+                  ),
+                ),
+              );
+              expectedDeltaById.remove(operation.entryId);
+              expectedSelectionById[operation.entryId] = operation.selection;
+              expectedEmissionsById[operation.entryId]!.add(false);
+              async.flushMicrotasks();
+          }
+        }
+
+        expect(
+          service.editorStateById,
+          expectedDeltaById,
+          reason: scenario.toString(),
+        );
+        for (final id in entryIds) {
+          expect(
+            service.entryIsUnsaved(id),
+            expectedDeltaById.containsKey(id),
+            reason: '$scenario for $id',
+          );
+          expect(
+            service.getDelta(id),
+            expectedDeltaById[id],
+            reason: '$scenario for $id',
+          );
+          expect(
+            service.getSelection(id),
+            expectedSelectionById[id],
+            reason: '$scenario for $id',
+          );
+          expect(
+            emissionsById[id],
+            expectedEmissionsById[id],
+            reason: '$scenario for $id',
+          );
+        }
+
+        for (final subscription in subscriptions) {
+          unawaited(subscription.cancel());
+        }
+        EasyDebounce.cancelAll();
+        async.flushMicrotasks();
+      });
+    }, tags: 'glados');
 
     test('init populates editorStateById with matching drafts', () async {
       final testTime = DateTime(2024, 3, 15, 10, 30);
