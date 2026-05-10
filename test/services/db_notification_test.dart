@@ -1109,4 +1109,47 @@ void main() {
       expect(innerCapture, isTrue);
     });
   });
+
+  group('propagated notification helpers', () {
+    test(
+      'propagatedNotification round-trips via unwrapPropagatedNotification',
+      () {
+        const inner = 'task-123';
+        final wrapped = propagatedNotification(inner);
+
+        expect(wrapped.startsWith(propagatedNotificationPrefix), isTrue);
+        expect(isPropagatedNotification(wrapped), isTrue);
+        expect(unwrapPropagatedNotification(wrapped), inner);
+      },
+    );
+
+    test('isPropagatedNotification returns false for bare tokens', () {
+      expect(isPropagatedNotification('task-123'), isFalse);
+      expect(isPropagatedNotification(''), isFalse);
+      expect(
+        isPropagatedNotification(projectEntityUpdateNotification('p-1')),
+        isFalse,
+        reason: 'project update tokens use a different prefix',
+      );
+    });
+
+    test(
+      'unwrapPropagatedNotification leaves bare tokens unchanged so callers '
+      'can defensively unwrap without checking the prefix first',
+      () {
+        expect(unwrapPropagatedNotification('task-123'), 'task-123');
+      },
+    );
+
+    test(
+      'wrapping a project-update token survives a round-trip — the wake '
+      'orchestrator relies on this to detect linkTaskToProject side-effects',
+      () {
+        final inner = projectEntityUpdateNotification('project-42');
+        final wrapped = propagatedNotification(inner);
+
+        expect(unwrapPropagatedNotification(wrapped), inner);
+      },
+    );
+  });
 }

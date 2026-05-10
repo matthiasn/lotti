@@ -184,6 +184,61 @@ void main() {
       );
     });
 
+    group('nextOccurrenceOf', () {
+      test(
+        'returns today at the requested time when it has not passed yet',
+        () {
+          // 03:15 today → next 06:00 is today, not tomorrow.
+          expect(
+            nextOccurrenceOf(DateTime(2024, 3, 15, 3, 15), hour: 6),
+            DateTime(2024, 3, 15, 6),
+          );
+        },
+      );
+
+      test("returns tomorrow when today's requested time has passed", () {
+        // 21:30 today → next 06:00 is tomorrow.
+        expect(
+          nextOccurrenceOf(DateTime(2024, 3, 15, 21, 30), hour: 6),
+          DateTime(2024, 3, 16, 6),
+        );
+      });
+
+      test('rolls forward when called exactly at the requested time', () {
+        // Edge: at 06:00 sharp, "next" is tomorrow's 06:00 — the slot
+        // we're standing on doesn't count as "after now".
+        expect(
+          nextOccurrenceOf(DateTime(2024, 3, 15, 6), hour: 6),
+          DateTime(2024, 3, 16, 6),
+        );
+      });
+
+      test('honours non-zero minute parameter', () {
+        expect(
+          nextOccurrenceOf(DateTime(2024, 3, 15, 6, 14), hour: 6, minute: 15),
+          DateTime(2024, 3, 15, 6, 15),
+        );
+        expect(
+          nextOccurrenceOf(DateTime(2024, 3, 15, 6, 16), hour: 6, minute: 15),
+          DateTime(2024, 3, 16, 6, 15),
+        );
+      });
+
+      test('crosses month and year boundaries correctly', () {
+        // 23:59 on the last day of a month → next 06:00 is the 1st of
+        // the following month.
+        expect(
+          nextOccurrenceOf(DateTime(2024, 1, 31, 23, 59), hour: 6),
+          DateTime(2024, 2, 1, 6),
+        );
+        // 23:59 on Dec 31 → next 06:00 is Jan 1 of the next year.
+        expect(
+          nextOccurrenceOf(DateTime(2024, 12, 31, 23, 59), hour: 6),
+          DateTime(2025, 1, 1, 6),
+        );
+      });
+    });
+
     glados.Glados(
       glados.any.runStatsScenario,
       glados.ExploreConfig(numRuns: 180),

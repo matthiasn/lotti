@@ -12,6 +12,25 @@ DateTime nextLocalDayAtTime(
   int minute = 0,
 }) => DateTime(dt.year, dt.month, dt.day + 1, hour, minute);
 
+/// Returns the next local-clock occurrence of [hour]:[minute] strictly
+/// after [dt]. If today's [hour]:[minute] hasn't passed yet, returns
+/// today; otherwise returns the same time tomorrow.
+///
+/// This differs from [nextLocalDayAtTime], which always rolls forward to
+/// the next day even if today's slot is still in the future. Used by the
+/// wake orchestrator to defer subscription-driven wakes to the next
+/// 06:00 — at 03:00 we want today's 06:00, not tomorrow's.
+DateTime nextOccurrenceOf(
+  DateTime dt, {
+  required int hour,
+  int minute = 0,
+}) {
+  final today = DateTime(dt.year, dt.month, dt.day, hour, minute);
+  return today.isAfter(dt)
+      ? today
+      : DateTime(dt.year, dt.month, dt.day + 1, hour, minute);
+}
+
 /// Accumulates success/failure/duration stats from a list of wake runs.
 ///
 /// Returns a record with the computed statistics. The [statusAccessor] and

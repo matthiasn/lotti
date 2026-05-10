@@ -4,8 +4,10 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -308,8 +310,16 @@ class WakeOrchestrator {
 
   /// Set the throttle deadline for [agentId] and persist it to the agent's
   /// state entity via `nextWakeAt`.
-  Future<void> _setThrottleDeadline(String agentId) async {
-    await _throttle.setDeadline(agentId);
+  ///
+  /// [customDeadline], when provided, overrides the default
+  /// `now + throttleWindow`. Used by the propagated-match path in
+  /// [_onBatch] to defer to the next 06:00 instead of the standard
+  /// 120-second cooldown.
+  Future<void> _setThrottleDeadline(
+    String agentId, {
+    DateTime? customDeadline,
+  }) async {
+    await _throttle.setDeadline(agentId, customDeadline: customDeadline);
   }
 
   /// Set a throttle deadline from an external source (e.g. startup hydration).
@@ -429,36 +439,56 @@ class WakeOrchestrator {
     }
     for (final sub in _subscriptions) {
       // 1. Check whether any token matches the subscription's entity IDs.
+      //    A "direct" match means the agent's own entity was edited
+      //    (token in tokens AND propagated::token NOT in tokens). A
+      //    "propagated" match means the token only arrived via parent
+      //    fan-out or a link side-effect (propagated::token in tokens).
+      //    Pure-propagated matches defer the wake to the next 06:00; any
+      //    direct match keeps the existing fast-throttle behaviour.
       final matched = tokens.intersection(sub.matchEntityIds);
-      if (matched.isEmpty) continue;
+      final propagatedMatched = sub.matchEntityIds
+          .where((id) => tokens.contains(propagatedNotification(id)))
+          .toSet();
+      // The same id present in both raw and wrapped form means the raw
+      // emission was just bookkeeping for legacy listeners — treat the
+      // match as propagated for the agent's deferral decision.
+      final trueDirect = matched.difference(propagatedMatched);
+      final allMatched = matched.union(propagatedMatched);
+      if (allMatched.isEmpty) continue;
 
       _log(
-        'matched ${matched.length} token(s) for '
+        'matched ${allMatched.length} token(s) for '
         '${DomainLogger.sanitizeId(sub.agentId)} '
-        '(sub: ${DomainLogger.sanitizeId(sub.id)})',
+        '(sub: ${DomainLogger.sanitizeId(sub.id)}, '
+        'direct=${trueDirect.length}, '
+        'propagated=${propagatedMatched.length})',
         subDomain: 'onBatch',
       );
 
       // 2. Apply post-execution self-notification suppression.
-      if (_isSuppressed(sub.agentId, matched)) {
+      if (_isSuppressed(sub.agentId, allMatched)) {
         _log(
           'suppressed self-notification for '
           '${DomainLogger.sanitizeId(sub.agentId)} '
-          'matched=${matched.map(DomainLogger.sanitizeId)}',
+          'matched=${allMatched.map(DomainLogger.sanitizeId)}',
           subDomain: 'suppression',
         );
         continue;
       }
       _log(
         'not suppressed for ${DomainLogger.sanitizeId(sub.agentId)} '
-        'matched=${matched.map(DomainLogger.sanitizeId)} '
+        'matched=${allMatched.map(DomainLogger.sanitizeId)} '
         'suppression=${_suppression.debugState(sub.agentId)}',
         subDomain: 'suppression',
       );
 
       // 3. Apply optional fine-grained predicate before any queueing path.
       final predicate = sub.predicate;
-      if (predicate != null && !predicate(matched)) continue;
+      if (predicate != null && !predicate(allMatched)) continue;
+
+      // The provenance bit drives both the queued job's [hasDirectMatch]
+      // flag and the throttle-gate escalation below.
+      final isDirect = trueDirect.isNotEmpty;
 
       // 4. During-execution gate: when the agent is actively executing,
       //    silently queue the notification for the drain re-check instead
@@ -470,7 +500,11 @@ class WakeOrchestrator {
       //    the double-run race where the safety-net dequeues a job during
       //    its async gap.
       if (runner.isRunning(sub.agentId)) {
-        final merged = queue.mergeTokens(sub.agentId, matched);
+        final merged = queue.mergeTokens(
+          sub.agentId,
+          allMatched,
+          isDirect: isDirect,
+        );
         if (!merged) {
           final counter = _wakeCounters[sub.agentId] ?? 0;
           _wakeCounters[sub.agentId] = counter + 1;
@@ -479,21 +513,23 @@ class WakeOrchestrator {
               runKey: RunKeyFactory.forSubscription(
                 agentId: sub.agentId,
                 subscriptionId: sub.id,
-                batchTokens: matched,
+                batchTokens: allMatched,
                 wakeCounter: counter,
                 timestamp: clock.now(),
               ),
               agentId: sub.agentId,
               reason: WakeReason.subscription.name,
-              triggerTokens: Set<String>.from(matched),
+              triggerTokens: Set<String>.from(allMatched),
               reasonId: sub.id,
               createdAt: clock.now(),
+              hasDirectMatch: isDirect,
             ),
           );
         }
         _log(
           '${DomainLogger.sanitizeId(sub.agentId)} executing — '
-          '${merged ? 'merged tokens into queued job' : 'queued for drain re-check'}',
+          '${merged ? 'merged tokens into queued job' : 'queued for drain re-check'} '
+          '(direct=$isDirect)',
           subDomain: 'running',
         );
         continue;
@@ -504,7 +540,27 @@ class WakeOrchestrator {
       //    deferred drain timer can pick it up.
       if (_isThrottled(sub.agentId)) {
         final deadline = _throttle.deadlineFor(sub.agentId);
-        final merged = queue.mergeTokens(sub.agentId, matched);
+        final merged = queue.mergeTokens(
+          sub.agentId,
+          allMatched,
+          isDirect: isDirect,
+        );
+        // Escalate the deadline when a direct match arrives on top of a
+        // morning-deferred slot — leaving the user's edit waiting until
+        // 06:00 because earlier propagation already armed a long timer
+        // would defeat the entire policy.
+        if (isDirect && deadline != null) {
+          final immediate = clock.now().add(throttleWindow);
+          if (immediate.isBefore(deadline)) {
+            _log(
+              'escalating ${DomainLogger.sanitizeId(sub.agentId)} '
+              'deadline from $deadline to $immediate '
+              '(direct match arrived during propagated deferral)',
+              subDomain: 'throttle',
+            );
+            unawaited(_setThrottleDeadline(sub.agentId));
+          }
+        }
         _log(
           '${DomainLogger.sanitizeId(sub.agentId)} throttled until $deadline — '
           '${merged ? 'merged tokens' : 'enqueuing for deferred drain'}',
@@ -522,7 +578,7 @@ class WakeOrchestrator {
       final runKey = RunKeyFactory.forSubscription(
         agentId: sub.agentId,
         subscriptionId: sub.id,
-        batchTokens: matched,
+        batchTokens: allMatched,
         wakeCounter: counter,
         timestamp: now,
       );
@@ -531,14 +587,15 @@ class WakeOrchestrator {
         runKey: runKey,
         agentId: sub.agentId,
         reason: WakeReason.subscription.name,
-        triggerTokens: Set<String>.from(matched),
+        triggerTokens: Set<String>.from(allMatched),
         reasonId: sub.id,
         createdAt: clock.now(),
+        hasDirectMatch: isDirect,
       );
 
       // Attempt to merge tokens into an existing queued job for this agent
       // before enqueuing a new one; this coalesces rapid-fire notifications.
-      if (!queue.mergeTokens(sub.agentId, matched)) {
+      if (!queue.mergeTokens(sub.agentId, allMatched, isDirect: isDirect)) {
         queue.enqueue(job);
       }
 
@@ -559,18 +616,27 @@ class WakeOrchestrator {
       }
 
       // Defer-first: instead of dispatching immediately, set a throttle
-      // deadline and schedule a deferred drain. This allows bursty edits
-      // to coalesce into a single wake cycle.
-      // Uses _setThrottleDeadline to persist nextWakeAt so the UI shows a
-      // countdown timer.
-      unawaited(_setThrottleDeadline(sub.agentId));
+      // deadline and schedule a deferred drain. Direct matches use the
+      // standard 120 s coalescing window; pure-propagated matches (e.g.
+      // a parent task's agent waking on a child entry edit, or a project
+      // agent waking on `linkTaskToProject`) defer to the next 06:00 so
+      // the agent doesn't burn LLM tokens on every incidental fan-out.
+      final morningDeadline = trueDirect.isEmpty
+          ? nextOccurrenceOf(
+              now,
+              hour: AgentSchedules.projectDailyDigestHour,
+            )
+          : null;
+      unawaited(
+        _setThrottleDeadline(sub.agentId, customDeadline: morningDeadline),
+      );
 
       _log(
         'deferred wake for ${DomainLogger.sanitizeId(sub.agentId)}: '
-        'drain scheduled in ${throttleWindow.inSeconds}s, '
+        '${morningDeadline == null ? 'drain scheduled in ${throttleWindow.inSeconds}s' : 'drain scheduled at $morningDeadline (morning)'}, '
         'reason=subscription, '
         'sub=${DomainLogger.sanitizeId(sub.id)}, '
-        'triggers=${matched.map(DomainLogger.sanitizeId).join(',')}',
+        'triggers=${allMatched.map(DomainLogger.sanitizeId).join(',')}',
         subDomain: 'defer',
       );
     }
@@ -1010,8 +1076,27 @@ class WakeOrchestrator {
 
         // Set the throttle deadline for subscription-triggered wakes so
         // that rapid-fire mutations don't cause excessive LLM calls.
+        //
+        // If the queue holds only propagated-only jobs for this agent
+        // (e.g. fan-outs that arrived while the executor was running),
+        // honour the morning policy for the drain instead of bouncing
+        // them into a 120 s post-throttle that would force them to fire
+        // at the next minute mark. A direct-bearing queued job — or an
+        // empty queue — keeps the standard 120 s cooldown so subsequent
+        // user edits land within the throttle window.
         if (job.reason == WakeReason.subscription.name) {
-          await _setThrottleDeadline(job.agentId);
+          final hasDirectQueued = queue.hasDirectQueuedJobFor(job.agentId);
+          final hasAnyQueued = queue.hasQueuedJobFor(job.agentId);
+          final morningDeadline = hasAnyQueued && !hasDirectQueued
+              ? nextOccurrenceOf(
+                  clock.now(),
+                  hour: AgentSchedules.projectDailyDigestHour,
+                )
+              : null;
+          await _setThrottleDeadline(
+            job.agentId,
+            customDeadline: morningDeadline,
+          );
         }
       } catch (e) {
         _suppression.clearPreRegistered(job.agentId);

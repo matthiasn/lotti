@@ -368,6 +368,94 @@ void main() {
       });
     });
 
+    test(
+      'setDeadline honours customDeadline and persists that exact timestamp '
+      'instead of now+throttleWindow',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final morning = DateTime(2024, 3, 16, 6);
+
+        fakeAsync((async) {
+          final coordinator = createCoordinator(
+            onDrainRequested: () async {},
+          );
+
+          try {
+            withClock(Clock.fixed(now), () {
+              unawaited(
+                coordinator.setDeadline('agent-1', customDeadline: morning),
+              );
+            });
+            async.flushMicrotasks();
+
+            final captured =
+                verify(
+                      () => repository.upsertEntity(captureAny()),
+                    ).captured.single
+                    as AgentStateEntity;
+
+            expect(
+              captured.nextWakeAt,
+              morning,
+              reason:
+                  'customDeadline must be persisted verbatim — propagated '
+                  'matches need a precise next-06:00 target',
+            );
+            expect(
+              withClock(
+                Clock.fixed(now),
+                () => coordinator.isThrottled('agent-1'),
+              ),
+              isTrue,
+            );
+            expect(coordinator.deadlineFor('agent-1'), morning);
+          } finally {
+            coordinator.dispose();
+          }
+        });
+      },
+    );
+
+    test(
+      'setDeadline silently ignores a customDeadline that is in the past — '
+      'a stale timestamp must not collapse a propagated wake into an '
+      'immediate fire',
+      () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final yesterday = now.subtract(const Duration(days: 1));
+
+        fakeAsync((async) {
+          final coordinator = createCoordinator(
+            onDrainRequested: () async {},
+          );
+
+          try {
+            withClock(Clock.fixed(now), () {
+              unawaited(
+                coordinator.setDeadline(
+                  'agent-1',
+                  customDeadline: yesterday,
+                ),
+              );
+            });
+            async.flushMicrotasks();
+
+            verifyNever(() => repository.upsertEntity(any()));
+            expect(coordinator.deadlineFor('agent-1'), isNull);
+            expect(
+              withClock(
+                Clock.fixed(now),
+                () => coordinator.isThrottled('agent-1'),
+              ),
+              isFalse,
+            );
+          } finally {
+            coordinator.dispose();
+          }
+        });
+      },
+    );
+
     test('drains after throttle window even when persistence fails', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       var drainRequests = 0;

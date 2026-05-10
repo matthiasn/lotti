@@ -141,3 +141,34 @@ const projectEntityUpdatePrefix = 'PROJECT_ENTITY_UPDATE:';
 String projectEntityUpdateNotification(String projectId) {
   return '$projectEntityUpdatePrefix$projectId';
 }
+
+/// Prefix marking a notification token that did not originate from a
+/// direct edit of the entity it references — e.g. a parent ID added by
+/// `parentLinkedEntityIds` fan-out, or a project's update token emitted
+/// as a side-effect of linking a task.
+///
+/// The agent wake orchestrator inspects this prefix when deciding how
+/// quickly to fire a subscription-driven wake: matches on a propagated
+/// token defer to the next morning (so a project agent doesn't burn
+/// tokens every time someone creates a task under it), while direct
+/// matches keep the existing fast-throttle behaviour. Consumers that
+/// only care about reactivity (UI providers, listeners) should match on
+/// either form.
+const propagatedNotificationPrefix = 'PROPAGATED::';
+
+/// Wraps [token] in the [propagatedNotificationPrefix] so consumers can
+/// distinguish a fan-out / link-side-effect emission from a direct-edit
+/// emission. See [propagatedNotificationPrefix] for the intent.
+String propagatedNotification(String token) =>
+    '$propagatedNotificationPrefix$token';
+
+/// Whether [token] was emitted as a propagated (non-direct) effect.
+bool isPropagatedNotification(String token) =>
+    token.startsWith(propagatedNotificationPrefix);
+
+/// Returns the underlying token wrapped by [propagatedNotification], or
+/// [token] itself when it was not wrapped.
+String unwrapPropagatedNotification(String token) =>
+    isPropagatedNotification(token)
+    ? token.substring(propagatedNotificationPrefix.length)
+    : token;

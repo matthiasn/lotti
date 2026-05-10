@@ -7,6 +7,7 @@ class WakeJob {
     required Set<String> triggerTokens,
     required this.createdAt,
     this.reasonId,
+    this.hasDirectMatch = true,
   }) : triggerTokens = Set<String>.of(triggerTokens);
 
   /// Deterministic key derived by `RunKeyFactory`; used for deduplication.
@@ -31,6 +32,19 @@ class WakeJob {
 
   /// Wall-clock time the job was created (not persisted; in-memory only).
   final DateTime createdAt;
+
+  /// `true` when at least one trigger that contributed to this job was a
+  /// direct edit (the agent's own entity changed), `false` when every
+  /// contributing trigger was a propagated fan-out (parent IDs added by
+  /// `parentLinkedEntityIds`, link-side-effect project tokens, …).
+  ///
+  /// Manual / creation / reanalysis wakes are direct by definition and
+  /// keep the default `true`. Subscription wakes carry the orchestrator's
+  /// classification, and [WakeQueue.mergeTokens] upgrades this to `true`
+  /// when a later direct match coalesces into the same queued job — so a
+  /// pending propagated-only job that picks up a fresh direct edit no
+  /// longer fires at next 06:00 as if it were still propagated-only.
+  bool hasDirectMatch;
 }
 
 /// In-memory FIFO queue with run-key deduplication.
@@ -65,17 +79,40 @@ class WakeQueue {
   /// Merge [tokens] into the `triggerTokens` of the first queued job whose
   /// `agentId` matches [agentId].
   ///
+  /// When [isDirect] is `true`, also upgrades the job's
+  /// [WakeJob.hasDirectMatch] to `true` — a direct match coalescing onto a
+  /// previously propagated-only deferred job must not stay deferred to the
+  /// next morning. The upgrade is monotonic: a subsequent propagated-only
+  /// merge cannot downgrade a direct job back to propagated-only.
+  ///
   /// Returns `true` when a matching job was found and updated, `false`
   /// otherwise.
-  bool mergeTokens(String agentId, Set<String> tokens) {
+  bool mergeTokens(
+    String agentId,
+    Set<String> tokens, {
+    bool isDirect = false,
+  }) {
     for (final job in _queue) {
       if (job.agentId == agentId) {
         job.triggerTokens.addAll(tokens);
+        if (isDirect) job.hasDirectMatch = true;
         return true;
       }
     }
     return false;
   }
+
+  /// Whether any queued job for [agentId] carries at least one direct
+  /// match. The orchestrator uses this when picking the post-execution
+  /// throttle deadline: an empty queue or a propagated-only queue defers
+  /// the next drain to the next 06:00; a direct-bearing queue keeps the
+  /// 120 s cooldown so the user sees their edit reflected promptly.
+  bool hasDirectQueuedJobFor(String agentId) =>
+      _queue.any((job) => job.agentId == agentId && job.hasDirectMatch);
+
+  /// Whether any queued job exists for [agentId], regardless of provenance.
+  bool hasQueuedJobFor(String agentId) =>
+      _queue.any((job) => job.agentId == agentId);
 
   /// Remove all queued jobs for [agentId] and return them.
   ///

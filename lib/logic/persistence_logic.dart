@@ -835,6 +835,12 @@ class PersistenceLogic {
 
           // Include parent linked entry IDs so that agents subscribed to a
           // parent (e.g. a task) are notified when a child entry is edited.
+          // Parent IDs are wrapped with [propagatedNotification] so the
+          // wake orchestrator can distinguish "the parent itself was
+          // edited" (direct match → 120 s throttle) from "a child of the
+          // parent was edited" (propagated match → defer to next 06:00).
+          // UI providers continue to react to either form via the parent
+          // ID matching helpers.
           final parentIds = await _journalDb
               .parentLinkedEntityIds(journalEntity.id)
               .get();
@@ -846,6 +852,7 @@ class PersistenceLogic {
             ...journalEntity.affectedIds,
             ?linkedId,
             ...parentIds,
+            for (final id in parentIds) propagatedNotification(id),
             labelUsageNotification,
           };
           if (isAgentExecution) {

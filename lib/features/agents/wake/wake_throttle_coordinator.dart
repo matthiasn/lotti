@@ -66,8 +66,20 @@ class WakeThrottleCoordinator {
   /// If the DB write failed or hung, the timer was never scheduled and the
   /// queued job would sit until the safety net (60s) fired. Now the timer
   /// is scheduled first (synchronous), then the DB write is best-effort.
-  Future<void> setDeadline(String agentId) async {
-    final deadline = clock.now().add(throttleWindow);
+  ///
+  /// [customDeadline], when non-null, overrides the default
+  /// `now + throttleWindow`. Used by the orchestrator to defer
+  /// propagated subscription matches (parent fan-out, link-side-effects)
+  /// to the next 06:00 instead of the standard 120-second cooldown. A
+  /// custom deadline that is in the past is silently ignored — the
+  /// caller's intent was clearly "schedule for later", and a stale
+  /// timestamp would otherwise fire the drain immediately.
+  Future<void> setDeadline(String agentId, {DateTime? customDeadline}) async {
+    final now = clock.now();
+    if (customDeadline != null && !customDeadline.isAfter(now)) {
+      return;
+    }
+    final deadline = customDeadline ?? now.add(throttleWindow);
     _throttleDeadlines[agentId] = deadline;
 
     // Schedule the deferred drain FIRST (synchronous) so the timer is always

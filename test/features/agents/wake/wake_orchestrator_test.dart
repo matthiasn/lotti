@@ -4479,5 +4479,310 @@ void main() {
         },
       );
     });
+
+    group('propagated subscription deferral (next 06:00)', () {
+      test(
+        'a propagated-only match defers nextWakeAt to the next 06:00 '
+        'instead of the standard 120 s throttle window',
+        () {
+          // Pin the wall clock so the next-06:00 calculation is
+          // deterministic regardless of when the test runs.
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-parent'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // Only the propagated form is in the batch — the agent's
+              // entity wasn't directly edited; a child of it was.
+              emitTokens(async, controller, {
+                propagatedNotification('task-parent'),
+              });
+
+              // The persisted nextWakeAt should be tomorrow 06:00 (since
+              // the pinned clock is past 06:00 today), NOT now + 120 s.
+              final captured = verify(
+                () => mockRepository.upsertEntity(captureAny()),
+              ).captured;
+              final state = captured.last as AgentStateEntity;
+              expect(
+                state.nextWakeAt,
+                DateTime(2026, 5, 11, 6),
+                reason: 'propagated-only match must defer to the next 06:00',
+              );
+            });
+          });
+        },
+      );
+
+      test(
+        'a direct match keeps the existing 120 s throttle window even when '
+        'an unrelated propagated token sits alongside it in the same batch',
+        () {
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-direct'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // Direct token matches this subscription; the unrelated
+              // propagated token must not switch deferral to morning mode
+              // for the matched subscription.
+              emitTokens(async, controller, {
+                'task-direct',
+                propagatedNotification('task-unrelated'),
+              });
+
+              final captured = verify(
+                () => mockRepository.upsertEntity(captureAny()),
+              ).captured;
+              final state = captured.last as AgentStateEntity;
+              expect(
+                state.nextWakeAt,
+                now.add(const Duration(seconds: 120)),
+              );
+            });
+          });
+        },
+      );
+
+      test(
+        'when the same id appears as both bare and propagated, the match '
+        'is treated as propagated (the legacy bare emission accompanies '
+        'the parent fan-out and must not collapse the deferral)',
+        () {
+          final now = DateTime(2026, 5, 10, 3, 15);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-mixed'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              emitTokens(async, controller, {
+                'task-mixed',
+                propagatedNotification('task-mixed'),
+              });
+
+              // Pinned clock is before 06:00 today, so morning deferral
+              // resolves to today's 06:00 (not tomorrow's).
+              final captured = verify(
+                () => mockRepository.upsertEntity(captureAny()),
+              ).captured;
+              final state = captured.last as AgentStateEntity;
+              expect(state.nextWakeAt, DateTime(2026, 5, 10, 6));
+            });
+          });
+        },
+      );
+
+      test(
+        'a direct edit arriving on top of a propagated-only morning '
+        'deferral escalates the throttle deadline back to now+120s — '
+        "the user's edit must not sit waiting until 06:00",
+        () {
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-escalate'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // 1. Propagated-only batch arms a morning-deferred deadline.
+              emitTokens(async, controller, {
+                propagatedNotification('task-escalate'),
+              });
+
+              final firstCapture =
+                  verify(
+                        () => mockRepository.upsertEntity(captureAny()),
+                      ).captured.last
+                      as AgentStateEntity;
+              expect(firstCapture.nextWakeAt, DateTime(2026, 5, 11, 6));
+
+              // 2. Direct edit arrives while still deferred — must
+              //    escalate to now + 120 s.
+              emitTokens(async, controller, {'task-escalate'});
+
+              final escalated =
+                  verify(
+                        () => mockRepository.upsertEntity(captureAny()),
+                      ).captured.last
+                      as AgentStateEntity;
+              expect(
+                escalated.nextWakeAt,
+                now.add(const Duration(seconds: 120)),
+                reason:
+                    'a direct match coalescing onto a morning-deferred '
+                    'job must reset the throttle to the 120 s window',
+              );
+
+              // The queued job's provenance must also flip to direct so
+              // the post-execution throttle and any later drain pick the
+              // immediate path.
+              expect(queue.hasDirectQueuedJobFor('agent-1'), isTrue);
+            });
+          });
+        },
+      );
+
+      test(
+        'post-execution throttle defers to next 06:00 when only '
+        'propagated-only jobs are queued during the run — a fan-out that '
+        'arrives mid-execution must not coast in on a 120 s drain',
+        () {
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              final gate = Completer<Map<String, VectorClock>?>();
+              orchestrator
+                ..wakeExecutor =
+                    ((agentId, runKey, triggers, threadId) => gate.future)
+                ..addSubscription(
+                  makeSub(matchEntityIds: {'task-postexec'}),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              // Drive the executor mid-flight by direct-enqueuing a job
+              // (bypasses the _onBatch deferral) so the running flag is
+              // set before our propagated batch arrives.
+              queue.enqueue(
+                makeJob(
+                  triggerTokens: {'task-postexec'},
+                  // ignore: avoid_redundant_argument_values
+                  runKey: 'rk-1',
+                ),
+              );
+              unawaited(orchestrator.processNext());
+              async.flushMicrotasks();
+              expect(runner.isRunning('agent-1'), isTrue);
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // Propagated-only batch arrives during execution → queued
+              // with hasDirectMatch=false.
+              emitTokens(async, controller, {
+                propagatedNotification('task-postexec'),
+              });
+              expect(queue.hasDirectQueuedJobFor('agent-1'), isFalse);
+
+              // Finish execution. The post-execution throttle must use
+              // morning, not 120 s.
+              gate.complete(const {});
+              async.flushMicrotasks();
+
+              final captured =
+                  verify(
+                    () => mockRepository.upsertEntity(captureAny()),
+                  ).captured.whereType<AgentStateEntity>().lastWhere(
+                    (s) => s.nextWakeAt != null,
+                  );
+              expect(captured.nextWakeAt, DateTime(2026, 5, 11, 6));
+            });
+          });
+        },
+      );
+    });
   });
 }

@@ -4,6 +4,7 @@ import 'package:beamer/beamer.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -280,6 +281,112 @@ void main() {
 
       verify(() => agentService.cancelPendingWake('agent-pending')).called(1);
       verifyNever(() => agentService.clearScheduledWake(any()));
+    },
+  );
+
+  testWidgets(
+    'scheduled wake row falls through to the project title when the task '
+    'title is empty — covers the case where slots.activeTaskId points at '
+    'an entry with a blank/whitespace title and the row collapsed to the '
+    'agent.displayName (Task Agent or similar) instead of the project',
+    (tester) async {
+      final identity = makeTestIdentity(
+        agentId: 'agent-fallthrough',
+        id: 'agent-fallthrough',
+        displayName: 'Task Agent',
+      );
+      final state = makeTestState(
+        agentId: 'agent-fallthrough',
+        slots: const AgentSlots(
+          activeTaskId: 'task-empty',
+          activeProjectId: 'project-named',
+        ),
+      );
+      final record = PendingWakeRecord(
+        agent: identity,
+        state: state,
+        type: PendingWakeType.pending,
+        dueAt: fixedNow.add(const Duration(seconds: 30)),
+      );
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SidebarWakeQueue(),
+            theme: DesignSystemTheme.dark(),
+            overrides: [
+              pendingWakeRecordsProvider.overrideWith((ref) async => [record]),
+              ongoingWakeRecordsProvider.overrideWith(
+                (ref) async => const <OngoingWakeRecord>[],
+              ),
+              // Task title resolves to whitespace — would have collapsed
+              // straight to the displayName before the fix.
+              pendingWakeTargetTitleProvider(
+                'task-empty',
+              ).overrideWith((ref) async => null),
+              pendingWakeTargetTitleProvider(
+                'project-named',
+              ).overrideWith((ref) async => 'Platform refresh'),
+            ],
+          ),
+        );
+        // Two pumps: one for the initial build, one for the title
+        // futures to settle and the row to rebuild with the resolved
+        // project title.
+        await tester.pump();
+        await tester.pump();
+      });
+
+      expect(find.text('Platform refresh'), findsOneWidget);
+      expect(find.text('Task Agent'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'scheduled wake row reacts live to a rename of its linked task '
+    'instead of caching the snapshot title until the wake fires',
+    (tester) async {
+      final controller = StreamController<String?>();
+      addTearDown(controller.close);
+      final identity = makeTestIdentity(
+        agentId: 'agent-rename',
+        id: 'agent-rename',
+        displayName: 'Task Agent',
+      );
+      final state = makeTestState(
+        agentId: 'agent-rename',
+        slots: const AgentSlots(activeTaskId: 'task-rename'),
+      );
+      final record = PendingWakeRecord(
+        agent: identity,
+        state: state,
+        type: PendingWakeType.pending,
+        dueAt: fixedNow.add(const Duration(seconds: 30)),
+      );
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SidebarWakeQueue(),
+            theme: DesignSystemTheme.dark(),
+            overrides: [
+              pendingWakeRecordsProvider.overrideWith((ref) async => [record]),
+              ongoingWakeRecordsProvider.overrideWith(
+                (ref) async => const <OngoingWakeRecord>[],
+              ),
+              pendingWakeTargetTitleProvider(
+                'task-rename',
+              ).overrideWith((ref) => controller.stream.first),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        controller.add('GLaDOS');
+        await tester.pump();
+        expect(find.text('GLaDOS'), findsOneWidget);
+        expect(find.text('Task Agent'), findsNothing);
+      });
     },
   );
 
