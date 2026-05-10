@@ -5,16 +5,21 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Visual tone for the status badge. Mapped to a `DesignSystemBadgeTone`
+/// at the widget layer; kept token-free here so the view model stays a
+/// pure data record (no Flutter `Color`/`Icon` baked in).
+enum ConflictStatusTone { resolved, unresolved }
+
+/// View model for a single conflicts-list row. Pure data: no Riverpod, no
+/// Widgets, no theme `Color` lookups. The widget renders from this.
 class ConflictListItemViewModel {
   const ConflictListItemViewModel({
     required this.timestampLabel,
     required this.statusLabel,
-    required this.statusColor,
-    required this.statusIcon,
-    required this.statusChipIcon,
+    required this.statusTone,
     required this.entityLabel,
-    required this.conflictIdValue,
-    required this.vectorClockLabel,
+    required this.conflictIdFull,
+    required this.conflictIdShort,
     required this.semanticsLabel,
   });
 
@@ -24,7 +29,6 @@ class ConflictListItemViewModel {
   }) {
     final locale = Localizations.localeOf(context).toString();
     final messages = context.messages;
-    final theme = Theme.of(context);
     final status = ConflictStatus.values[conflict.status];
 
     final timestamp = df.format(conflict.createdAt);
@@ -34,17 +38,9 @@ class ConflictListItemViewModel {
           : messages.conflictsUnresolved,
       locale,
     );
-
-    final statusColor = status == ConflictStatus.resolved
-        ? theme.colorScheme.primary
-        : theme.colorScheme.error;
-
-    final statusIcon = status == ConflictStatus.resolved
-        ? Icons.verified_user_outlined
-        : Icons.report_problem_outlined;
-    final statusChipIcon = status == ConflictStatus.resolved
-        ? Icons.verified_rounded
-        : Icons.report_rounded;
+    final statusTone = status == ConflictStatus.resolved
+        ? ConflictStatusTone.resolved
+        : ConflictStatusTone.unresolved;
 
     final entity = fromSerialized(conflict.serialized);
     final entityLabel = _entityLabel(
@@ -52,31 +48,35 @@ class ConflictListItemViewModel {
       type: entity.runtimeType.toString(),
     );
 
-    final vectorClockLabel = entity.meta.vectorClock.toString();
+    final conflictIdFull = conflict.id;
+    final conflictIdShort = conflictIdFull.length > 8
+        ? conflictIdFull.substring(0, 8)
+        : conflictIdFull;
 
-    final semantics = '$statusLabel, $timestamp, $entityLabel';
+    final semantics = messages.conflictListItemSemanticsLabel(
+      statusLabel,
+      timestamp,
+      entityLabel,
+      conflictIdFull,
+    );
 
     return ConflictListItemViewModel(
       timestampLabel: timestamp,
       statusLabel: statusLabel,
-      statusColor: statusColor,
-      statusIcon: statusIcon,
-      statusChipIcon: statusChipIcon,
+      statusTone: statusTone,
       entityLabel: entityLabel,
-      conflictIdValue: conflict.id,
-      vectorClockLabel: vectorClockLabel,
+      conflictIdFull: conflictIdFull,
+      conflictIdShort: conflictIdShort,
       semanticsLabel: semantics,
     );
   }
 
   final String timestampLabel;
   final String statusLabel;
-  final Color statusColor;
-  final IconData statusIcon;
-  final IconData statusChipIcon;
+  final ConflictStatusTone statusTone;
   final String entityLabel;
-  final String conflictIdValue;
-  final String vectorClockLabel;
+  final String conflictIdFull;
+  final String conflictIdShort;
   final String semanticsLabel;
 
   static String _entityLabel({

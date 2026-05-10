@@ -889,15 +889,148 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.",
   "configFlagUseOutboxBundling": "Grupează mesajele din căsuța de trimitere",
   "configFlagUseOutboxBundlingDescription": "Împachetează rândurile consecutive doar cu text din căsuța de trimitere într-un singur mesaj de sincronizare, astfel încât rafalele de modificări mici să fie trimise ca un singur mesaj Matrix. Atașamentele media sunt în continuare trimise individual.",
-  "conflictEntityLabel": "Entitate",
-  "conflictIdLabel": "ID",
+  "conflictApplyButton": "Aplică",
+  "conflictApplyFailedTitle": "Rezoluția nu a putut fi aplicată",
+  "conflictBannerAgoDays": "{count, plural, =1{acum 1 zi} other{acum {count} zile}}",
+  "@conflictBannerAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "conflictBannerAgoHours": "{count, plural, =1{acum 1 h} other{acum {count} h}}",
+  "@conflictBannerAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "conflictBannerAgoJustNow": "chiar acum",
+  "conflictBannerAgoMinutes": "{count, plural, =1{acum 1 min} other{acum {count} min}}",
+  "@conflictBannerAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "conflictBannerDivergedAgo": "{entity} · a divergat {ago}",
+  "@conflictBannerDivergedAgo": {
+    "description": "Conflict summary banner first line.",
+    "placeholders": {
+      "entity": {
+        "type": "String",
+        "example": "Audio note"
+      },
+      "ago": {
+        "type": "String",
+        "example": "2 min ago"
+      }
+    }
+  },
+  "conflictBannerFieldsDifferList": "Diferențe: {fields}",
+  "@conflictBannerFieldsDifferList": {
+    "description": "Conflict summary banner subline listing differing fields.",
+    "placeholders": {
+      "fields": {
+        "type": "String",
+        "example": "Title · word count"
+      }
+    }
+  },
+  "conflictDetailEntryNotFoundTitle": "Intrare negăsită",
+  "conflictDetailLoadErrorTitle": "Conflictul nu a putut fi încărcat",
+  "conflictDetailNotFoundTitle": "Conflict negăsit",
+  "conflictFieldCategory": "categorie",
+  "conflictFieldDuration": "durată",
+  "conflictFieldTitle": "Titlu",
+  "conflictFieldWordCount": "număr de cuvinte",
+  "conflictFooterHelperLocalSelected": "Va păstra modificarea locală și va renunța la versiunea sincronizată.",
+  "conflictFooterHelperPickASide": "Alegeți o parte pentru a aplica.",
+  "conflictFooterHelperRemoteSelected": "Va accepta versiunea sincronizată și va renunța la modificarea locală.",
+  "conflictHeaderPillEntries": "{count, plural, =1{1 intrare} other{{count} intrări}}",
+  "@conflictHeaderPillEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "conflictHeaderPillFieldsDiffer": "{count, plural, =1{1 câmp diferă} other{{count} câmpuri diferă}}",
+  "@conflictHeaderPillFieldsDiffer": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, conflict {id}",
+  "@conflictListItemSemanticsLabel": {
+    "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Nerezolvat"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "2024-03-15 12:34:56"
+      },
+      "entityType": {
+        "type": "String",
+        "example": "Sarcină"
+      },
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictListItemTooltipFullId": "ID conflict: {id}",
+  "@conflictListItemTooltipFullId": {
+    "description": "Tooltip on the truncated conflict id in the list row, revealing the full id.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictMetaLocalEdit": "modificare locală",
+  "conflictMetaVecPrefix": "vec",
+  "conflictMetaViaSync": "prin sincronizare",
+  "conflictPageLeadDesktop": "Diferențele sunt evidențiate inline. Faceți clic pe o parte pentru a folosi versiunea respectivă sau deschideți Editare și îmbinare pentru a le combina.",
+  "conflictPageLeadMobile": "Diferențele sunt evidențiate inline. Atingeți o parte pentru a folosi versiunea respectivă.",
+  "conflictPageTitle": "Conflict de sincronizare",
+  "conflictPickerEditMerge": "Editare și îmbinare…",
+  "conflictPickerUseFromSync": "Folosiți din sincronizare",
+  "conflictPickerUseThisDevice": "Folosiți acest dispozitiv",
   "conflictsCopyTextFromSync": "Copiază textul din sincronizare",
   "conflictsEmptyDescription": "Totul este sincronizat. Elementele rezolvate rămân disponibile în celălalt filtru.",
   "conflictsEmptyTitle": "Nu s-au detectat conflicte",
+  "conflictSideFromSync": "DIN SINCRONIZARE",
+  "conflictSideThisDevice": "ACEST DISPOZITIV",
   "conflictsResolved": "rezolvat",
   "conflictsResolveLocalVersion": "Rezolvă cu versiunea locală",
   "conflictsResolveRemoteVersion": "Rezolvă cu versiunea de la distanță",
   "conflictsUnresolved": "nerezolvat",
+  "conflictWordCount": "{count, plural, one{{count} cuvânt} few{{count} cuvinte} other{{count} de cuvinte}}",
+  "@conflictWordCount": {
+    "description": "Word count shown on the conflict detail meta row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
   "copyAsMarkdown": "Copiază ca Markdown",
   "copyAsText": "Copiază ca text",
   "correctionExampleCancel": "ANULEAZĂ",

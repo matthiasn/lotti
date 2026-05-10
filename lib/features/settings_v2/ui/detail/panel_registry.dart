@@ -28,6 +28,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.da
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
@@ -264,7 +265,21 @@ Widget _measurablesPanel(BuildContext context) => DetailIdDispatch(
     measurableId: id,
   ),
 );
-Widget _syncConflictsPanel(BuildContext context) => const ConflictsBody();
+// Conflicts follow the list ↔ detail dispatch pattern shared with the
+// other dynamic-list panels. Without this, a row tap on desktop would
+// only update the URL — the detail pane would keep rendering the list
+// because the V2 surface picks its child from the registered panel,
+// not from the main Beamer location stack. There's no create flow, so
+// the `create` slot just falls through to the list.
+Widget _syncConflictsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'conflictId',
+  list: (_) => const ConflictsBody(),
+  create: (_, _) => const ConflictsBody(),
+  detail: (_, id) => ConflictDetailRoute(
+    key: ValueKey('settings-v2-conflict-$id'),
+    conflictId: id,
+  ),
+);
 
 /// Generic list ↔ detail/create dispatcher for V2 panel bodies.
 ///

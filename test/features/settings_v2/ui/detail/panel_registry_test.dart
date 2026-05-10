@@ -26,6 +26,7 @@ import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
@@ -204,9 +205,11 @@ void main() {
         expect(build('dashboards'), isA<DetailIdDispatch>());
         expect(build('measurables'), isA<DetailIdDispatch>());
         // sync-conflicts moved from `advanced-conflicts` so it could
-        // sit next to the other Sync surfaces in the tree. The
-        // builder still resolves to ConflictsBody.
-        expect(build('sync-conflicts'), isA<ConflictsBody>());
+        // sit next to the other Sync surfaces in the tree, and is now
+        // wrapped in `DetailIdDispatch` so a row tap can swap the
+        // panel from list to detail (the per-closure wiring is
+        // exercised in the dedicated group below).
+        expect(build('sync-conflicts'), isA<DetailIdDispatch>());
 
         // Step 9 — AI + agents. The agents tab variants are wrapped in
         // `DetailIdDispatch` so the FAB ("+") and row taps can swap
@@ -765,6 +768,37 @@ void main() {
           (created as AgentSettingsBody).initialTab,
           AgentSettingsTab.instances,
         );
+      },
+    );
+
+    testWidgets('sync-conflicts panel: list closure returns ConflictsBody', (
+      tester,
+    ) async {
+      final r = await dispatchFor('sync-conflicts', tester);
+      expect(r.dispatch.idParamKey, 'conflictId');
+      expect(r.dispatch.list(r.context), isA<ConflictsBody>());
+    });
+
+    testWidgets(
+      'sync-conflicts panel: create closure falls back to the list — '
+      'there is no create flow for conflicts, the closure exists only '
+      'because `DetailIdDispatch` requires one',
+      (tester) async {
+        final r = await dispatchFor('sync-conflicts', tester);
+        final created = r.dispatch.create(r.context, null);
+        expect(created, isA<ConflictsBody>());
+      },
+    );
+
+    testWidgets(
+      'sync-conflicts panel: detail closure returns '
+      'ConflictDetailRoute(conflictId) with a stable per-id key',
+      (tester) async {
+        final r = await dispatchFor('sync-conflicts', tester);
+        final detail = r.dispatch.detail(r.context, 'conflict-12');
+        expect(detail, isA<ConflictDetailRoute>());
+        expect((detail as ConflictDetailRoute).conflictId, 'conflict-12');
+        expect(detail.key, const ValueKey('settings-v2-conflict-conflict-12'));
       },
     );
   });

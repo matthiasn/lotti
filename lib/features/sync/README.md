@@ -174,6 +174,47 @@ The feature uses vector clocks in three separate ways.
    whether the payload on disk, in memory, or already stored locally is older,
    newer, equal, or concurrent.
 
+   When a `concurrent` result is reached the incoming payload is stored as a
+   `Conflict` row instead of being merged. The user can pick a winner from the
+   **Settings → Advanced → Conflicts** page. The list shows status, entity
+   type, creation timestamp and an 8-char prefix of the conflict id; tapping a
+   row opens the resolution surface.
+
+   The detail page (`ConflictDetailRoute`) renders an inline-diff picker:
+   each side's title is run through a word-level LCS
+   (`computeTitleDiff` in `ui/widgets/conflicts/title_diff.dart`) so tokens
+   unique to local are tinted as `added`, tokens the remote dropped are
+   line-through `removed`, and tokens the remote introduced are tinted as
+   `replaced`. The accent palette comes from the new `colors.conflict.*`
+   token group (local = teal, remote = blue, diverged = amber); the
+   highlight backgrounds come from `colors.diff.*`. Selection lives in
+   widget state — tapping a card or a picker pill (`Use this device`,
+   `Use from sync`) only stages the choice; the sticky footer's Apply
+   button is what commits via `PersistenceLogic.updateJournalEntity`.
+   Cancel beams back without writing. `Edit & merge…` (a third desktop
+   pill, a left-side mobile link) routes to the existing
+   `/settings/advanced/conflicts/<id>/edit` surface for hand merges.
+
+   The desktop V2 panel uses `DetailIdDispatch(idParamKey: 'conflictId')`
+   so the right-hand pane swaps from list to picker when the URL gains an
+   id, matching the categories / labels / dashboards flows.
+
+   ```mermaid
+   stateDiagram-v2
+       [*] --> Detected: incoming clock is concurrent with local
+       Detected: Detected (status = unresolved)
+       Detected --> Picking: user opens conflict detail
+       Picking: Picking (no side staged yet)
+       Picking --> Local: tap This device card / pill
+       Picking --> Remote: tap From sync card / pill
+       Local --> Picking: tap the other side
+       Remote --> Picking: tap the other side
+       Local --> Resolved: tap Apply
+       Remote --> Resolved: tap Apply
+       Picking --> Detected: tap Cancel
+       Resolved --> [*]
+   ```
+
 2. Gap detection
 
    `SyncSequenceLogService.recordReceivedEntry()` iterates every host in the

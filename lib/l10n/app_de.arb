@@ -889,15 +889,148 @@
   "configFlagUseCompressedJsonAttachmentsDescription": "Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.",
   "configFlagUseOutboxBundling": "Outbox-Nachrichten bündeln",
   "configFlagUseOutboxBundlingDescription": "Bündelt aufeinanderfolgende reine Textzeilen aus der Outbox in einer einzigen Sync-Nachricht, damit Bursts kleiner Änderungen als eine Matrix-Nachricht verschickt werden. Medienanhänge werden weiterhin einzeln gesendet.",
-  "conflictEntityLabel": "Entität",
-  "conflictIdLabel": "ID",
+  "conflictApplyButton": "Übernehmen",
+  "conflictApplyFailedTitle": "Konflikt konnte nicht angewendet werden",
+  "conflictBannerAgoDays": "{count, plural, =1{vor 1 Tag} other{vor {count} Tagen}}",
+  "@conflictBannerAgoDays": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "conflictBannerAgoHours": "{count, plural, =1{vor 1 Std.} other{vor {count} Std.}}",
+  "@conflictBannerAgoHours": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "conflictBannerAgoJustNow": "gerade eben",
+  "conflictBannerAgoMinutes": "{count, plural, =1{vor 1 Min.} other{vor {count} Min.}}",
+  "@conflictBannerAgoMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "conflictBannerDivergedAgo": "{entity} · auseinandergegangen {ago}",
+  "@conflictBannerDivergedAgo": {
+    "description": "Conflict summary banner first line.",
+    "placeholders": {
+      "entity": {
+        "type": "String",
+        "example": "Audio note"
+      },
+      "ago": {
+        "type": "String",
+        "example": "2 min ago"
+      }
+    }
+  },
+  "conflictBannerFieldsDifferList": "Unterschiede: {fields}",
+  "@conflictBannerFieldsDifferList": {
+    "description": "Conflict summary banner subline listing differing fields.",
+    "placeholders": {
+      "fields": {
+        "type": "String",
+        "example": "Title · word count"
+      }
+    }
+  },
+  "conflictDetailEntryNotFoundTitle": "Eintrag nicht gefunden",
+  "conflictDetailLoadErrorTitle": "Konflikt konnte nicht geladen werden",
+  "conflictDetailNotFoundTitle": "Konflikt nicht gefunden",
+  "conflictFieldCategory": "Kategorie",
+  "conflictFieldDuration": "Dauer",
+  "conflictFieldTitle": "Titel",
+  "conflictFieldWordCount": "Wortanzahl",
+  "conflictFooterHelperLocalSelected": "Behält deine lokale Bearbeitung und verwirft die synchronisierte Version.",
+  "conflictFooterHelperPickASide": "Wähle eine Seite zum Übernehmen.",
+  "conflictFooterHelperRemoteSelected": "Übernimmt die synchronisierte Version und verwirft deine lokale Bearbeitung.",
+  "conflictHeaderPillEntries": "{count, plural, =1{1 Eintrag} other{{count} Einträge}}",
+  "@conflictHeaderPillEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "conflictHeaderPillFieldsDiffer": "{count, plural, =1{1 Feld unterscheidet sich} other{{count} Felder unterscheiden sich}}",
+  "@conflictHeaderPillFieldsDiffer": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, Konflikt {id}",
+  "@conflictListItemSemanticsLabel": {
+    "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "Ungelöst"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "2024-03-15 12:34:56"
+      },
+      "entityType": {
+        "type": "String",
+        "example": "Aufgabe"
+      },
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictListItemTooltipFullId": "Konflikt-ID: {id}",
+  "@conflictListItemTooltipFullId": {
+    "description": "Tooltip on the truncated conflict id in the list row, revealing the full id.",
+    "placeholders": {
+      "id": {
+        "type": "String",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+    }
+  },
+  "conflictMetaLocalEdit": "lokale Bearbeitung",
+  "conflictMetaVecPrefix": "vec",
+  "conflictMetaViaSync": "via Sync",
+  "conflictPageLeadDesktop": "Unterschiede sind inline hervorgehoben. Klick auf eine Seite, um diese Version zu verwenden, oder öffne Bearbeiten & zusammenführen, um sie zu kombinieren.",
+  "conflictPageLeadMobile": "Unterschiede sind inline hervorgehoben. Tippe auf eine Seite, um diese Version zu verwenden.",
+  "conflictPageTitle": "Sync-Konflikt",
+  "conflictPickerEditMerge": "Bearbeiten & zusammenführen…",
+  "conflictPickerUseFromSync": "Aus Sync verwenden",
+  "conflictPickerUseThisDevice": "Dieses Gerät verwenden",
   "conflictsCopyTextFromSync": "Text aus Synchronisierung kopieren",
   "conflictsEmptyDescription": "Alles ist synchronisiert. Gelöste Einträge bleiben im anderen Filter verfügbar.",
   "conflictsEmptyTitle": "Keine Konflikte erkannt",
+  "conflictSideFromSync": "AUS SYNC",
+  "conflictSideThisDevice": "DIESES GERÄT",
   "conflictsResolved": "gelöst",
   "conflictsResolveLocalVersion": "Mit lokaler Version auflösen",
   "conflictsResolveRemoteVersion": "Mit entfernter Version auflösen",
   "conflictsUnresolved": "ungelöst",
+  "conflictWordCount": "{count, plural, one{{count} Wort} other{{count} Wörter}}",
+  "@conflictWordCount": {
+    "description": "Word count shown on the conflict detail meta row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "8"
+      }
+    }
+  },
   "copyAsMarkdown": "Als Markdown kopieren",
   "copyAsText": "Als Text kopieren",
   "correctionExampleCancel": "ABBRECHEN",
