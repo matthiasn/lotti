@@ -291,7 +291,7 @@ SPEC CHECKSUMS:
   sqlite3_flutter_libs: b3e120efe9a82017e5552a620f696589ed4f62ab
   super_native_extensions: b763c02dc3a8fd078389f410bf15149179020cb4
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
-  video_player_avfoundation: dd410b52df6d2466a42d28550e33e4146928280a
+  video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
 
 PODFILE CHECKSUM: 519d7710f353f74b1312c8bc9d0b0fcd6ecedaf9
 

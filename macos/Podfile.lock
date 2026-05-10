@@ -250,7 +250,7 @@ SPEC CHECKSUMS:
   sqlite3_flutter_libs: b3e120efe9a82017e5552a620f696589ed4f62ab
   super_native_extensions: c2795d6d9aedf4a79fae25cb6160b71b50549189
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
-  video_player_avfoundation: dd410b52df6d2466a42d28550e33e4146928280a
+  video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
   window_manager: b729e31d38fb04905235df9ea896128991cad99e
 
 PODFILE CHECKSUM: fd82b015a70784c6c00dba245aaeda15dd470d06
