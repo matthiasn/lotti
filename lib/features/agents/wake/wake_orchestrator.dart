@@ -898,7 +898,9 @@ class WakeOrchestrator {
         // run cannot exceed [wakeRunMaxDuration]. The timer fires the same
         // abort signal the user-initiated cancel button triggers, so both
         // paths take the same shutdown branch below.
+        var timedOut = false;
         timeoutTimer = Timer(wakeRunMaxDuration, () {
+          timedOut = true;
           if (runner.abort(job.agentId)) {
             _log(
               'wake timed out after ${wakeRunMaxDuration.inSeconds}s '
@@ -914,9 +916,18 @@ class WakeOrchestrator {
         // Its mutations land via the normal DB path; the pre-registered
         // suppression is cleared below so the agent can re-trigger on its
         // next legitimate notification.
+        //
+        // The two race futures are tagged with an explicit sentinel so we
+        // can disambiguate "executor returned null" from "abort fired" —
+        // checking `aborted.isCompleted && !completed.isCompleted` after
+        // the await is racy because the executor can settle in between
+        // microtasks (e.g. `aborted` wins, then the executor finishes its
+        // own then-handler before we reach the branch), which previously
+        // misclassified an aborted run as `completed`.
         final abortFuture = runner.abortFuture(job.agentId);
         final completed = Completer<Map<String, VectorClock>?>();
         final aborted = Completer<void>();
+        final abortSentinel = Object();
 
         unawaited(
           runZoned(
@@ -947,12 +958,11 @@ class WakeOrchestrator {
 
         final winner = await Future.any<Object?>([
           completed.future,
-          aborted.future,
+          aborted.future.then((_) => abortSentinel),
         ]);
         timeoutTimer.cancel();
 
-        final wasAborted = aborted.isCompleted && !completed.isCompleted;
-        if (wasAborted) {
+        if (identical(winner, abortSentinel)) {
           _suppression.clearPreRegistered(job.agentId);
           final elapsed = clock.now().difference(startTime);
           _log(
@@ -964,9 +974,7 @@ class WakeOrchestrator {
             job.runKey,
             WakeRunStatus.aborted.name,
             completedAt: clock.now(),
-            errorMessage: elapsed >= wakeRunMaxDuration
-                ? 'timeout'
-                : 'cancelled',
+            errorMessage: timedOut ? 'timeout' : 'cancelled',
           );
           // Aborted wakes do not arm the throttle deadline — re-allowing
           // the agent to wake on the next notification keeps the system

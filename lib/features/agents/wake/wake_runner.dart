@@ -64,8 +64,18 @@ class WakeRunner {
     return true;
   }
 
-  /// Future that completes when [agentId]'s in-flight run is signalled to
-  /// abort. Returns `null` when the agent is not currently running.
+  /// Future that completes when [agentId]'s in-flight run ends — either
+  /// because [abort] was signalled or because [release] finalised the run
+  /// without an abort. Both paths complete the same completer so a caller
+  /// awaiting this future never deadlocks on a quiet release.
+  ///
+  /// Consumers that need to distinguish the two outcomes (e.g. the
+  /// orchestrator deciding whether to mark the run `aborted` vs
+  /// `completed`) must use a separate signal — the orchestrator races this
+  /// against the executor future and tags the abort branch with a sentinel
+  /// so a normal release-on-success doesn't misclassify the run.
+  ///
+  /// Returns `null` when the agent is not currently running.
   Future<void>? abortFuture(String agentId) => _abortSignals[agentId]?.future;
 
   /// Suspend until the currently active run for [agentId] finishes.

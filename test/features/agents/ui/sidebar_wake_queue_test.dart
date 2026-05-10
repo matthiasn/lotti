@@ -671,8 +671,10 @@ void main() {
   );
 
   testWidgets(
-    'a second × tap on an ongoing wake while the first is still in flight '
-    'is a no-op (covers the early-return guard in `_abortWake`)',
+    'after the × is tapped on an ongoing wake the row swaps the cancel '
+    'button for an in-progress spinner, so the user gets feedback while '
+    'the abort is in flight and a rapid second tap on the same widget '
+    'cannot fire a second abort before the orchestrator releases the lock',
     (tester) async {
       final agentService = MockAgentService();
       when(() => agentService.abortRunningWake(any())).thenReturn(true);
@@ -703,7 +705,15 @@ void main() {
 
       verify(() => agentService.abortRunningWake('agent-running')).called(1);
 
-      await tester.pumpAndSettle();
+      // The cancel × is gone (replaced by the spinner), so any further
+      // taps on the cancel control are physically impossible until the
+      // running-set stream emits and the row is rebuilt or torn down.
+      // Belt-and-braces: try to tap the tooltip and verify nothing
+      // additional reaches the service.
+      expect(find.byTooltip(cancelTooltip), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      verifyNoMoreInteractions(agentService);
     },
   );
 

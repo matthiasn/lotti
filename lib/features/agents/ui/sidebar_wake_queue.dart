@@ -195,14 +195,19 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
 
   Future<void> _abortWake() async {
     if (_cancelling) return;
-    setState(() => _cancelling = true);
-    try {
-      ref.read(agentServiceProvider).abortRunningWake(widget.record.agentId);
-    } catch (_) {
-      // Service swallows; the running-state stream emission reflects
-      // whatever the abort actually did.
-    } finally {
-      if (mounted) setState(() => _cancelling = false);
+    // `abortRunningWake` is synchronous, so a finally that resets
+    // `_cancelling` would clear the spinner state in the same stack frame —
+    // the user would never see the indicator and the early-return guard
+    // above would not actually persist across rapid double taps. Once the
+    // abort signal is delivered, the orchestrator releases the runner lock
+    // and the row falls out of `ongoingWakeRecordsProvider`, which tears
+    // this widget down. While that's in flight we keep `_cancelling` set
+    // so the trailing × is replaced by the in-progress spinner.
+    final didSignal = ref
+        .read(agentServiceProvider)
+        .abortRunningWake(widget.record.agentId);
+    if (mounted && didSignal) {
+      setState(() => _cancelling = true);
     }
   }
 

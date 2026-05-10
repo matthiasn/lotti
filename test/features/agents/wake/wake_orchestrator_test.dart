@@ -4387,11 +4387,30 @@ void main() {
               ),
             ).called(1);
 
+            // Reset the recorded interactions so we can assert that the
+            // late-arriving executor result is fully ignored — no second
+            // `updateWakeRunStatus` call (would re-classify as completed),
+            // no fresh entity writes, no other repository activity.
+            clearInteractions(mockRepository);
+
             // Even though we stopped awaiting it, the underlying future is
             // still pending — completing it now must not throw or re-mutate
             // suppression state.
             gate.complete(const {});
             async.flushMicrotasks();
+
+            verifyNever(
+              () => mockRepository.updateWakeRunStatus(
+                any(),
+                any(),
+                completedAt: any(named: 'completedAt'),
+                errorMessage: any(named: 'errorMessage'),
+              ),
+            );
+            verifyNever(() => mockRepository.upsertEntity(any()));
+            verifyNever(
+              () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+            );
           });
         },
       );
