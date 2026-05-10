@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -6,6 +7,178 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 
 class MockEvent extends Mock implements Event {}
+
+enum _GeneratedAttachmentOperationKind { record, find }
+
+enum _GeneratedAttachmentEventIdMode { valid, empty, throws }
+
+enum _GeneratedAttachmentPathMode {
+  noSlash,
+  withSlash,
+  empty,
+  missing,
+  nonString,
+  contentThrows,
+}
+
+class _GeneratedAttachmentOperation {
+  const _GeneratedAttachmentOperation({
+    required this.kind,
+    required this.eventIdMode,
+    required this.pathMode,
+    required this.slot,
+  });
+
+  final _GeneratedAttachmentOperationKind kind;
+  final _GeneratedAttachmentEventIdMode eventIdMode;
+  final _GeneratedAttachmentPathMode pathMode;
+  final int slot;
+
+  String get eventId => 'event-${slot % 5}';
+
+  String get noSlashPath => 'generated/${slot % 4}.json';
+
+  String get queryPath {
+    switch (pathMode) {
+      case _GeneratedAttachmentPathMode.noSlash:
+        return noSlashPath;
+      case _GeneratedAttachmentPathMode.withSlash:
+        return '/$noSlashPath';
+      case _GeneratedAttachmentPathMode.empty:
+        return '';
+      case _GeneratedAttachmentPathMode.missing:
+      case _GeneratedAttachmentPathMode.nonString:
+      case _GeneratedAttachmentPathMode.contentThrows:
+        return 'missing/${slot % 4}.json';
+    }
+  }
+
+  String? get recordPath {
+    switch (pathMode) {
+      case _GeneratedAttachmentPathMode.noSlash:
+        return noSlashPath;
+      case _GeneratedAttachmentPathMode.withSlash:
+        return '/$noSlashPath';
+      case _GeneratedAttachmentPathMode.empty:
+        return '';
+      case _GeneratedAttachmentPathMode.missing:
+      case _GeneratedAttachmentPathMode.nonString:
+      case _GeneratedAttachmentPathMode.contentThrows:
+        return null;
+    }
+  }
+
+  String? get recordEventId {
+    switch (eventIdMode) {
+      case _GeneratedAttachmentEventIdMode.valid:
+        return eventId;
+      case _GeneratedAttachmentEventIdMode.empty:
+      case _GeneratedAttachmentEventIdMode.throws:
+        return null;
+    }
+  }
+
+  String? get canonicalRecordPath {
+    final path = recordPath;
+    if (path == null || path.isEmpty) return null;
+    return path.startsWith('/') ? path : '/$path';
+  }
+
+  String? get noSlashRecordPath {
+    final path = recordPath;
+    if (path == null || path.isEmpty) return null;
+    return path.startsWith('/') ? path.substring(1) : path;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedAttachmentOperation('
+        'kind: $kind, '
+        'eventIdMode: $eventIdMode, '
+        'pathMode: $pathMode, '
+        'slot: $slot'
+        ')';
+  }
+}
+
+class _GeneratedAttachmentScenario {
+  const _GeneratedAttachmentScenario({required this.operations});
+
+  final List<_GeneratedAttachmentOperation> operations;
+
+  @override
+  String toString() => '_GeneratedAttachmentScenario(operations: $operations)';
+}
+
+class _ExpectedAttachmentIndex {
+  final _byPath = <String, Event>{};
+  final _seenEventIds = <String>{};
+  final emittedPaths = <String>[];
+
+  bool record(_GeneratedAttachmentOperation operation, Event event) {
+    final canonical = operation.canonicalRecordPath;
+    final noSlash = operation.noSlashRecordPath;
+    if (canonical == null || noSlash == null) return false;
+
+    final eventId = operation.recordEventId;
+    if (eventId != null && !_seenEventIds.add(eventId)) {
+      return false;
+    }
+
+    _byPath[canonical] = event;
+    _byPath[noSlash] = event;
+    emittedPaths.add(canonical);
+    return true;
+  }
+
+  Event? find(String relativePath) {
+    final alt = relativePath.startsWith('/')
+        ? relativePath.substring(1)
+        : '/$relativePath';
+    return _byPath[relativePath] ?? _byPath[alt];
+  }
+}
+
+extension _AnyGeneratedAttachmentScenario on glados.Any {
+  glados.Generator<_GeneratedAttachmentOperationKind>
+  get attachmentOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedAttachmentOperationKind.values);
+
+  glados.Generator<_GeneratedAttachmentEventIdMode> get attachmentEventIdMode =>
+      glados.AnyUtils(this).choose(_GeneratedAttachmentEventIdMode.values);
+
+  glados.Generator<_GeneratedAttachmentPathMode> get attachmentPathMode =>
+      glados.AnyUtils(this).choose(_GeneratedAttachmentPathMode.values);
+
+  glados.Generator<_GeneratedAttachmentOperation> get attachmentOperation =>
+      glados.CombinableAny(this).combine4(
+        attachmentOperationKind,
+        attachmentEventIdMode,
+        attachmentPathMode,
+        glados.IntAnys(this).intInRange(0, 8),
+        (
+          _GeneratedAttachmentOperationKind kind,
+          _GeneratedAttachmentEventIdMode eventIdMode,
+          _GeneratedAttachmentPathMode pathMode,
+          int slot,
+        ) => _GeneratedAttachmentOperation(
+          kind: kind,
+          eventIdMode: eventIdMode,
+          pathMode: pathMode,
+          slot: slot,
+        ),
+      );
+
+  glados.Generator<_GeneratedAttachmentScenario> get attachmentScenario =>
+      glados.ListAnys(
+            this,
+          )
+          .listWithLengthInRange(1, 36, attachmentOperation)
+          .map(
+            (operations) =>
+                _GeneratedAttachmentScenario(operations: operations),
+          );
+}
 
 void main() {
   setUpAll(() {
@@ -179,6 +352,76 @@ void main() {
       await index.dispose();
       await sub.cancel();
       expect(done, isTrue);
+    },
+  );
+
+  glados.Glados(
+    glados.any.attachmentScenario,
+    glados.ExploreConfig(numRuns: 160),
+  ).test(
+    'generated record/find sequences preserve idempotency and path aliases',
+    (scenario) async {
+      final index = AttachmentIndex(
+        logging: MockLoggingService(),
+        verboseLogging: false,
+      );
+      final model = _ExpectedAttachmentIndex();
+      final emitted = <String>[];
+      final sub = index.pathRecorded.listen(emitted.add);
+
+      Event makeGeneratedEvent(_GeneratedAttachmentOperation operation) {
+        final event = MockEvent();
+        when(() => event.attachmentMimetype).thenReturn('application/json');
+        switch (operation.eventIdMode) {
+          case _GeneratedAttachmentEventIdMode.valid:
+            when(() => event.eventId).thenReturn(operation.eventId);
+          case _GeneratedAttachmentEventIdMode.empty:
+            when(() => event.eventId).thenReturn('');
+          case _GeneratedAttachmentEventIdMode.throws:
+            when(() => event.eventId).thenThrow(StateError('missing event id'));
+        }
+        switch (operation.pathMode) {
+          case _GeneratedAttachmentPathMode.noSlash:
+          case _GeneratedAttachmentPathMode.withSlash:
+          case _GeneratedAttachmentPathMode.empty:
+            when(
+              () => event.content,
+            ).thenReturn({'relativePath': operation.recordPath});
+          case _GeneratedAttachmentPathMode.missing:
+            when(() => event.content).thenReturn(<String, dynamic>{});
+          case _GeneratedAttachmentPathMode.nonString:
+            when(() => event.content).thenReturn({'relativePath': 42});
+          case _GeneratedAttachmentPathMode.contentThrows:
+            when(() => event.content).thenThrow(StateError('no content'));
+        }
+        return event;
+      }
+
+      try {
+        for (final operation in scenario.operations) {
+          switch (operation.kind) {
+            case _GeneratedAttachmentOperationKind.record:
+              final event = makeGeneratedEvent(operation);
+              expect(
+                index.record(event),
+                model.record(operation, event),
+                reason: '$scenario\n$operation',
+              );
+              await Future<void>.value();
+            case _GeneratedAttachmentOperationKind.find:
+              expect(
+                index.find(operation.queryPath),
+                same(model.find(operation.queryPath)),
+                reason: '$scenario\n$operation',
+              );
+          }
+        }
+        await Future<void>.value();
+        expect(emitted, model.emittedPaths, reason: '$scenario');
+      } finally {
+        await sub.cancel();
+        await index.dispose();
+      }
     },
   );
 }

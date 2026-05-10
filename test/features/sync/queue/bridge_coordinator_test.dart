@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
@@ -78,6 +79,129 @@ class _RunnerCall {
 
   int? get untilTimestamp => marker.lastAppliedTs;
   String? get anchorEventId => marker.lastAppliedEventId;
+}
+
+enum _GeneratedBridgeRoomResolution { noRoom, currentRoom, changedRoom }
+
+enum _GeneratedBridgeMarkerTsKind { absent, zero, present }
+
+enum _GeneratedBridgeAnchorKind { absent, present }
+
+enum _GeneratedBridgeTriggerKind {
+  bridgeNow,
+  limitedCurrentRoom,
+  limitedOtherRoom,
+  nonLimitedCurrentRoom,
+}
+
+extension on _GeneratedBridgeTriggerKind {
+  bool get shouldStartBridge =>
+      this == _GeneratedBridgeTriggerKind.bridgeNow ||
+      this == _GeneratedBridgeTriggerKind.limitedCurrentRoom;
+}
+
+class _GeneratedBridgeScenario {
+  const _GeneratedBridgeScenario({
+    required this.roomResolution,
+    required this.markerTsKind,
+    required this.anchorKind,
+    required this.triggers,
+    required this.slot,
+  });
+
+  final _GeneratedBridgeRoomResolution roomResolution;
+  final _GeneratedBridgeMarkerTsKind markerTsKind;
+  final _GeneratedBridgeAnchorKind anchorKind;
+  final List<_GeneratedBridgeTriggerKind> triggers;
+  final int slot;
+
+  String get expectedRoomId => '!generated-bridge-$slot:example.org';
+  String get actualRoomId =>
+      roomResolution == _GeneratedBridgeRoomResolution.changedRoom
+      ? '!generated-bridge-other-$slot:example.org'
+      : expectedRoomId;
+
+  int? get markerTs {
+    switch (markerTsKind) {
+      case _GeneratedBridgeMarkerTsKind.absent:
+        return null;
+      case _GeneratedBridgeMarkerTsKind.zero:
+        return 0;
+      case _GeneratedBridgeMarkerTsKind.present:
+        return 1000 + slot;
+    }
+  }
+
+  String? get anchorEventId {
+    switch (anchorKind) {
+      case _GeneratedBridgeAnchorKind.absent:
+        return null;
+      case _GeneratedBridgeAnchorKind.present:
+        return '\$generated-anchor-$slot';
+    }
+  }
+
+  int get expectedRunnerCalls {
+    if (roomResolution != _GeneratedBridgeRoomResolution.currentRoom) return 0;
+    return triggers.where((trigger) => trigger.shouldStartBridge).length;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedBridgeScenario('
+        'roomResolution: $roomResolution, '
+        'markerTsKind: $markerTsKind, '
+        'anchorKind: $anchorKind, '
+        'triggers: $triggers, '
+        'slot: $slot'
+        ')';
+  }
+}
+
+extension _AnyGeneratedBridgeScenario on glados.Any {
+  glados.Generator<_GeneratedBridgeRoomResolution> get bridgeRoomResolution =>
+      glados.AnyUtils(
+        this,
+      ).choose(_GeneratedBridgeRoomResolution.values);
+
+  glados.Generator<_GeneratedBridgeMarkerTsKind> get bridgeMarkerTsKind =>
+      glados.AnyUtils(this).choose(_GeneratedBridgeMarkerTsKind.values);
+
+  glados.Generator<_GeneratedBridgeAnchorKind> get bridgeAnchorKind =>
+      glados.AnyUtils(this).choose(_GeneratedBridgeAnchorKind.values);
+
+  glados.Generator<_GeneratedBridgeTriggerKind> get bridgeTriggerKind =>
+      glados.AnyUtils(this).choose(_GeneratedBridgeTriggerKind.values);
+
+  glados.Generator<_GeneratedBridgeScenario> get bridgeScenario =>
+      glados.CombinableAny(this).combine5(
+        bridgeRoomResolution,
+        bridgeMarkerTsKind,
+        bridgeAnchorKind,
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(1, 12, bridgeTriggerKind),
+        glados.IntAnys(this).intInRange(0, 6),
+        (
+          _GeneratedBridgeRoomResolution roomResolution,
+          _GeneratedBridgeMarkerTsKind markerTsKind,
+          _GeneratedBridgeAnchorKind anchorKind,
+          List<_GeneratedBridgeTriggerKind> triggers,
+          int slot,
+        ) => _GeneratedBridgeScenario(
+          roomResolution: roomResolution,
+          markerTsKind: markerTsKind,
+          anchorKind: anchorKind,
+          triggers: triggers,
+          slot: slot,
+        ),
+      );
+}
+
+Future<void> _drainBridgeCoordinatorMicrotasks() async {
+  for (var i = 0; i < 6; i++) {
+    await Future<void>.value();
+  }
 }
 
 void main() {
@@ -397,6 +521,78 @@ void main() {
         ),
       ).called(1);
       expect(runner.calls, isEmpty);
+    },
+  );
+
+  glados.Glados(
+    glados.any.bridgeScenario,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'generated trigger streams only bridge the active room and preserve marker',
+    (scenario) async {
+      final generatedClient = _MockClient();
+      final generatedSyncCtl = CachedStreamController<SyncUpdate>();
+      final generatedLogging = MockLoggingService();
+      final generatedRoom = _MockRoom();
+      final runner = _RecordingRunner();
+      when(() => generatedClient.onSync).thenReturn(generatedSyncCtl);
+      when(() => generatedRoom.id).thenReturn(scenario.actualRoomId);
+
+      final coordinator = BridgeCoordinator(
+        client: generatedClient,
+        currentRoomId: () => scenario.expectedRoomId,
+        resolveRoom: () async {
+          if (scenario.roomResolution ==
+              _GeneratedBridgeRoomResolution.noRoom) {
+            return null;
+          }
+          return generatedRoom;
+        },
+        readMarker: () async => BridgeMarker(
+          lastAppliedTs: scenario.markerTs,
+          lastAppliedEventId: scenario.anchorEventId,
+        ),
+        bootstrapRunner: runner.runner,
+        logging: generatedLogging,
+      )..start();
+
+      try {
+        for (final trigger in scenario.triggers) {
+          switch (trigger) {
+            case _GeneratedBridgeTriggerKind.bridgeNow:
+              await coordinator.bridgeNow();
+            case _GeneratedBridgeTriggerKind.limitedCurrentRoom:
+              generatedSyncCtl.add(_limitedSyncFor(scenario.expectedRoomId));
+            case _GeneratedBridgeTriggerKind.limitedOtherRoom:
+              generatedSyncCtl.add(_limitedSyncFor('!other:example.org'));
+            case _GeneratedBridgeTriggerKind.nonLimitedCurrentRoom:
+              generatedSyncCtl.add(_nonLimitedSyncFor(scenario.expectedRoomId));
+          }
+          await _drainBridgeCoordinatorMicrotasks();
+        }
+
+        expect(
+          runner.calls,
+          hasLength(scenario.expectedRunnerCalls),
+          reason: '$scenario',
+        );
+        for (final call in runner.calls) {
+          expect(call.room, same(generatedRoom), reason: '$scenario');
+          expect(
+            call.untilTimestamp,
+            scenario.markerTs,
+            reason: '$scenario',
+          );
+          expect(
+            call.anchorEventId,
+            scenario.anchorEventId,
+            reason: '$scenario',
+          );
+        }
+      } finally {
+        await coordinator.stop();
+        await generatedSyncCtl.close();
+      }
     },
   );
 

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
@@ -10,6 +13,8 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 class _MockEvent extends Mock implements Event {}
+
+class _MockInboundQueue extends Mock implements InboundQueue {}
 
 Event _buildEvent({
   required String eventId,
@@ -36,6 +41,154 @@ Event _buildEvent({
   return event;
 }
 
+enum _GeneratedBootstrapOperationKind { page, cancel }
+
+enum _GeneratedBootstrapDrainKind { completes, timesOut }
+
+class _GeneratedBootstrapOperation {
+  const _GeneratedBootstrapOperation({
+    required this.kind,
+    required this.drainKind,
+    required this.pageSize,
+    required this.acceptedSlot,
+  });
+
+  final _GeneratedBootstrapOperationKind kind;
+  final _GeneratedBootstrapDrainKind drainKind;
+  final int pageSize;
+  final int acceptedSlot;
+
+  int get acceptedCount => acceptedSlot > pageSize ? pageSize : acceptedSlot;
+
+  bool get timesOut => drainKind == _GeneratedBootstrapDrainKind.timesOut;
+
+  @override
+  String toString() {
+    return '_GeneratedBootstrapOperation('
+        'kind: $kind, '
+        'drainKind: $drainKind, '
+        'pageSize: $pageSize, '
+        'acceptedSlot: $acceptedSlot'
+        ')';
+  }
+}
+
+class _GeneratedBootstrapScenario {
+  const _GeneratedBootstrapScenario({
+    required this.highWater,
+    required this.operations,
+  });
+
+  final int highWater;
+  final List<_GeneratedBootstrapOperation> operations;
+
+  List<_GeneratedBootstrapOperation> get pageOperations =>
+      operations.where((operation) {
+        return operation.kind == _GeneratedBootstrapOperationKind.page;
+      }).toList();
+
+  List<bool> expectedResults() {
+    final results = <bool>[];
+    var cancelled = false;
+    for (final operation in operations) {
+      switch (operation.kind) {
+        case _GeneratedBootstrapOperationKind.cancel:
+          cancelled = true;
+        case _GeneratedBootstrapOperationKind.page:
+          if (cancelled) {
+            results.add(false);
+          } else {
+            results.add(!operation.timesOut);
+          }
+      }
+    }
+    return results;
+  }
+
+  int get expectedAppendCalls {
+    var cancelled = false;
+    var calls = 0;
+    for (final operation in operations) {
+      switch (operation.kind) {
+        case _GeneratedBootstrapOperationKind.cancel:
+          cancelled = true;
+        case _GeneratedBootstrapOperationKind.page:
+          if (!cancelled) calls++;
+      }
+    }
+    return calls;
+  }
+
+  int get expectedLastAccepted {
+    var cancelled = false;
+    var lastAccepted = 0;
+    for (final operation in operations) {
+      switch (operation.kind) {
+        case _GeneratedBootstrapOperationKind.cancel:
+          cancelled = true;
+        case _GeneratedBootstrapOperationKind.page:
+          if (cancelled) {
+            lastAccepted = 0;
+          } else {
+            lastAccepted = operation.acceptedCount;
+          }
+      }
+    }
+    return lastAccepted;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedBootstrapScenario('
+        'highWater: $highWater, '
+        'operations: $operations'
+        ')';
+  }
+}
+
+extension _AnyGeneratedBootstrapScenario on glados.Any {
+  glados.Generator<_GeneratedBootstrapOperationKind>
+  get bootstrapOperationKind =>
+      glados.AnyUtils(this).choose(_GeneratedBootstrapOperationKind.values);
+
+  glados.Generator<_GeneratedBootstrapDrainKind> get bootstrapDrainKind =>
+      glados.AnyUtils(this).choose(_GeneratedBootstrapDrainKind.values);
+
+  glados.Generator<_GeneratedBootstrapOperation> get bootstrapOperation =>
+      glados.CombinableAny(this).combine4(
+        bootstrapOperationKind,
+        bootstrapDrainKind,
+        glados.IntAnys(this).intInRange(0, 6),
+        glados.IntAnys(this).intInRange(0, 6),
+        (
+          _GeneratedBootstrapOperationKind kind,
+          _GeneratedBootstrapDrainKind drainKind,
+          int pageSize,
+          int acceptedSlot,
+        ) => _GeneratedBootstrapOperation(
+          kind: kind,
+          drainKind: drainKind,
+          pageSize: pageSize,
+          acceptedSlot: acceptedSlot,
+        ),
+      );
+
+  glados.Generator<_GeneratedBootstrapScenario> get bootstrapScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 8),
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(1, 24, bootstrapOperation),
+        (
+          int highWater,
+          List<_GeneratedBootstrapOperation> operations,
+        ) => _GeneratedBootstrapScenario(
+          highWater: highWater,
+          operations: operations,
+        ),
+      );
+}
+
 void main() {
   late SyncDatabase db;
   late MockLoggingService logging;
@@ -43,6 +196,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
+    registerFallbackValue(Duration.zero);
   });
 
   setUp(() {
@@ -153,6 +307,112 @@ void main() {
       ];
       final cont = await sink.onPage(page, info(0, 6));
       expect(cont, isFalse);
+    },
+  );
+
+  glados.Glados(
+    glados.any.bootstrapScenario,
+    glados.ExploreConfig(numRuns: 160),
+  ).test(
+    'generated pages preserve accepted counts, cancellation, and timeouts',
+    (scenario) async {
+      final generatedQueue = _MockInboundQueue();
+      final generatedLogging = MockLoggingService();
+      final cancelCompleter = Completer<void>();
+      final appendedPages = <List<String>>[];
+      final drainTimeouts = <bool>[];
+      final expectedPageOperations = <_GeneratedBootstrapOperation>[];
+
+      when(
+        () => generatedLogging.captureEvent(
+          any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+      when(() => generatedQueue.appendBootstrapPage(any())).thenAnswer((
+        invocation,
+      ) async {
+        final events = invocation.positionalArguments.single as List<Event>;
+        final operation = expectedPageOperations.removeAt(0);
+        appendedPages.add(events.map((event) => event.eventId).toList());
+        drainTimeouts.add(operation.timesOut);
+        final accepted = operation.acceptedCount;
+        return EnqueueResult(
+          accepted: accepted,
+          duplicatesDropped: events.length - accepted,
+          filteredOutByType: 0,
+          deferredPendingDecryption: 0,
+          oldestTsAccepted: 0,
+          newestTsAccepted: 0,
+        );
+      });
+      when(
+        () => generatedQueue.waitForDrainAtMostTo(
+          any<int>(),
+          timeout: any<Duration>(named: 'timeout'),
+        ),
+      ).thenAnswer((_) async {
+        if (drainTimeouts.removeAt(0)) {
+          throw TimeoutException('generated drain timeout');
+        }
+      });
+
+      final sink = QueueBootstrapSink(
+        queue: generatedQueue,
+        logging: generatedLogging,
+        highWater: scenario.highWater,
+        backPressureTimeout: const Duration(milliseconds: 25),
+        cancelSignal: cancelCompleter.future,
+      );
+      final observedResults = <bool>[];
+      var pageIndex = 0;
+      var totalEvents = 0;
+
+      for (final operation in scenario.operations) {
+        switch (operation.kind) {
+          case _GeneratedBootstrapOperationKind.cancel:
+            if (!cancelCompleter.isCompleted) {
+              cancelCompleter.complete();
+            }
+            await Future<void>.value();
+          case _GeneratedBootstrapOperationKind.page:
+            if (!cancelCompleter.isCompleted) {
+              expectedPageOperations.add(operation);
+            }
+            final events = [
+              for (var i = 0; i < operation.pageSize; i++)
+                _buildEvent(
+                  eventId: 'generated-$pageIndex-$i',
+                  originTsMs: totalEvents + i,
+                ),
+            ];
+            observedResults.add(
+              await sink.onPage(events, info(pageIndex, totalEvents)),
+            );
+            totalEvents += events.length;
+            pageIndex++;
+        }
+      }
+
+      expect(observedResults, scenario.expectedResults(), reason: '$scenario');
+      expect(appendedPages, hasLength(scenario.expectedAppendCalls));
+      expect(sink.lastAcceptedCount, scenario.expectedLastAccepted);
+      if (scenario.expectedAppendCalls == 0) {
+        verifyNever(
+          () => generatedQueue.waitForDrainAtMostTo(
+            any<int>(),
+            timeout: any<Duration>(named: 'timeout'),
+          ),
+        );
+      } else {
+        verify(
+          () => generatedQueue.waitForDrainAtMostTo(
+            scenario.highWater,
+            timeout: const Duration(milliseconds: 25),
+          ),
+        ).called(scenario.expectedAppendCalls);
+      }
     },
   );
 }

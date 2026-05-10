@@ -44,6 +44,7 @@ class SyncLifecycleCoordinator {
   StreamSubscription<LoginState>? _loginSubscription;
   bool _isActive = false;
   bool _isInitialized = false;
+  bool _isDisposed = false;
   Future<void>? _pendingTransition;
   Future<void>? _initialization;
 
@@ -70,6 +71,9 @@ class SyncLifecycleCoordinator {
   /// Initializes the coordinator by priming the sync pipeline and
   /// establishing the login-state subscription.
   Future<void> initialize() async {
+    if (_isDisposed) {
+      return;
+    }
     if (_isInitialized) {
       return;
     }
@@ -84,13 +88,19 @@ class SyncLifecycleCoordinator {
   }
 
   Future<void> _performInitialization() async {
-    if (_isInitialized) {
+    if (_isInitialized || _isDisposed) {
       return;
     }
 
     try {
       await _pipeline.initialize();
+      if (_isDisposed) {
+        return;
+      }
       await _roomManager.initialize();
+      if (_isDisposed) {
+        return;
+      }
       _loginSubscription ??= _gateway.loginStateChanges.listen(
         _handleLoginState,
       );
@@ -116,6 +126,9 @@ class SyncLifecycleCoordinator {
   /// useful after imperative login/logout operations where the gateway might
   /// not emit a fresh state.
   Future<void> reconcileLifecycleState() async {
+    if (_isDisposed) {
+      return;
+    }
     if (_sessionManager.isLoggedIn()) {
       await _handleLoggedIn();
     } else {
@@ -124,6 +137,9 @@ class SyncLifecycleCoordinator {
   }
 
   Future<void> _handleLoginState(LoginState state) {
+    if (_isDisposed) {
+      return Future<void>.value();
+    }
     if (state == LoginState.loggedIn) {
       return _handleLoggedIn();
     }
@@ -158,6 +174,9 @@ class SyncLifecycleCoordinator {
       await _pipeline.start();
       if (_onLogin != null) {
         await _onLogin!();
+      }
+      if (_isDisposed) {
+        return;
       }
       _isActive = true;
     } catch (error, stackTrace) {
@@ -222,9 +241,10 @@ class SyncLifecycleCoordinator {
   /// Cancels the login-state subscription. Callers remain responsible for
   /// disposing the injected dependencies.
   Future<void> dispose() async {
+    _isDisposed = true;
+    _isActive = false;
+    _pendingTransition = null;
     await _loginSubscription?.cancel();
     _loginSubscription = null;
-    _pendingTransition = null;
-    _isActive = false;
   }
 }

@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
@@ -27,6 +28,55 @@ class MockSyncRoomDiscoveryService extends Mock
     implements SyncRoomDiscoveryService {}
 
 class FakeRoom extends Fake implements Room {}
+
+class _GeneratedHydrateScenario {
+  const _GeneratedHydrateScenario({
+    required this.hasSavedRoom,
+    required this.availabilitySlot,
+  });
+
+  final bool hasSavedRoom;
+  final int availabilitySlot;
+
+  String get roomId => '!generated-hydrate:server';
+
+  int? get availableOnAttempt {
+    if (!hasSavedRoom || availabilitySlot >= kSyncRoomLoadMaxAttempts) {
+      return null;
+    }
+    return availabilitySlot + 1;
+  }
+
+  int get expectedSyncCalls {
+    if (!hasSavedRoom) return 0;
+    return availableOnAttempt ?? kSyncRoomLoadMaxAttempts;
+  }
+
+  bool get resolvesRoom => availableOnAttempt != null;
+
+  @override
+  String toString() {
+    return '_GeneratedHydrateScenario('
+        'hasSavedRoom: $hasSavedRoom, '
+        'availabilitySlot: $availabilitySlot'
+        ')';
+  }
+}
+
+extension _AnyGeneratedHydrateScenario on glados.Any {
+  glados.Generator<_GeneratedHydrateScenario> get hydrateScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.BoolAny(this).bool,
+        glados.IntAnys(this).intInRange(0, 6),
+        (
+          bool hasSavedRoom,
+          int availabilitySlot,
+        ) => _GeneratedHydrateScenario(
+          hasSavedRoom: hasSavedRoom,
+          availabilitySlot: availabilitySlot,
+        ),
+      );
+}
 
 void main() {
   setUpAll(() {
@@ -126,6 +176,84 @@ void main() {
     expect(manager.currentRoom, same(room));
     expect(manager.currentRoomId, '!room:server');
   });
+
+  glados.Glados(
+    glados.any.hydrateScenario,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'generated hydrate retry loop stops when the room snapshot appears',
+    (scenario) {
+      fakeAsync((async) {
+        final gateway = MockMatrixGateway();
+        final settingsDb = MockSettingsDb();
+        final loggingService = MockLoggingService();
+        final inviteController = StreamController<RoomInviteEvent>.broadcast();
+        when(() => gateway.invites).thenAnswer((_) => inviteController.stream);
+        final manager = SyncRoomManager(
+          gateway: gateway,
+          settingsDb: settingsDb,
+          loggingService: loggingService,
+        );
+        final room = MockRoom();
+        final client = MockClient();
+        var syncCalls = 0;
+        var resolveCalls = 0;
+
+        when(
+          () => loggingService.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String?>(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+        when(() => client.sync()).thenAnswer((_) async {
+          syncCalls++;
+          return SyncUpdate(nextBatch: 'generated-$syncCalls');
+        });
+        when(() => settingsDb.itemByKey(matrixRoomKey)).thenAnswer(
+          (_) async => scenario.hasSavedRoom ? scenario.roomId : null,
+        );
+        when(() => gateway.getRoomById(scenario.roomId)).thenAnswer((_) {
+          resolveCalls++;
+          final availableOnAttempt = scenario.availableOnAttempt;
+          if (availableOnAttempt != null && syncCalls >= availableOnAttempt) {
+            return room;
+          }
+          return null;
+        });
+
+        unawaited(manager.hydrateRoomSnapshot(client: client));
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 8))
+          ..flushMicrotasks();
+
+        expect(syncCalls, scenario.expectedSyncCalls, reason: '$scenario');
+        expect(
+          resolveCalls,
+          scenario.expectedSyncCalls,
+          reason: '$scenario',
+        );
+        expect(
+          manager.currentRoom,
+          scenario.resolvesRoom ? same(room) : isNull,
+          reason: '$scenario',
+        );
+        expect(
+          manager.currentRoomId,
+          scenario.resolvesRoom
+              ? scenario.roomId
+              : scenario.hasSavedRoom
+              ? scenario.roomId
+              : isNull,
+          reason: '$scenario',
+        );
+        unawaited(manager.dispose());
+        unawaited(inviteController.close());
+        async.flushMicrotasks();
+      });
+    },
+  );
 
   test('inviteUser throws when no active room configured', () {
     expect(

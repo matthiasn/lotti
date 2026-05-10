@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
@@ -25,6 +26,196 @@ class _MockRoom extends Mock implements Room {}
 class _MockPreparedSyncEvent extends Mock implements PreparedSyncEvent {}
 
 class _MockEvent extends Mock implements Event {}
+
+enum _GeneratedAdapterPrepareOutcome {
+  ready,
+  nullPrepared,
+  pendingDescriptor,
+  pendingPath,
+  retriableIo,
+  permanentThrow,
+}
+
+enum _GeneratedAdapterApplyOutcome {
+  applied,
+  pendingDescriptor,
+  pendingPath,
+  retriableIo,
+  retriableThrow,
+}
+
+enum _GeneratedAdapterMessageKind {
+  journalEntity,
+  entryLink,
+  themingSelection,
+  backfillRequest,
+}
+
+class _GeneratedAdapterScenario {
+  const _GeneratedAdapterScenario({
+    required this.prepareOutcome,
+    required this.applyOutcome,
+    required this.messageKind,
+    required this.usePrepareBatch,
+    required this.slot,
+  });
+
+  final _GeneratedAdapterPrepareOutcome prepareOutcome;
+  final _GeneratedAdapterApplyOutcome applyOutcome;
+  final _GeneratedAdapterMessageKind messageKind;
+  final bool usePrepareBatch;
+  final int slot;
+
+  bool get prepareReady =>
+      prepareOutcome == _GeneratedAdapterPrepareOutcome.ready;
+
+  ApplyOutcome get expectedOutcome {
+    switch (prepareOutcome) {
+      case _GeneratedAdapterPrepareOutcome.ready:
+        return _expectedApplyOutcome;
+      case _GeneratedAdapterPrepareOutcome.nullPrepared:
+      case _GeneratedAdapterPrepareOutcome.permanentThrow:
+        return ApplyOutcome.permanentSkip;
+      case _GeneratedAdapterPrepareOutcome.pendingDescriptor:
+      case _GeneratedAdapterPrepareOutcome.pendingPath:
+        return ApplyOutcome.pendingAttachment;
+      case _GeneratedAdapterPrepareOutcome.retriableIo:
+        return ApplyOutcome.retriable;
+    }
+  }
+
+  ApplyOutcome get _expectedApplyOutcome {
+    switch (applyOutcome) {
+      case _GeneratedAdapterApplyOutcome.applied:
+        return ApplyOutcome.applied;
+      case _GeneratedAdapterApplyOutcome.pendingDescriptor:
+      case _GeneratedAdapterApplyOutcome.pendingPath:
+        return ApplyOutcome.pendingAttachment;
+      case _GeneratedAdapterApplyOutcome.retriableIo:
+      case _GeneratedAdapterApplyOutcome.retriableThrow:
+        return ApplyOutcome.retriable;
+    }
+  }
+
+  Object prepareException() {
+    switch (prepareOutcome) {
+      case _GeneratedAdapterPrepareOutcome.pendingDescriptor:
+        return const FileSystemException(
+          'attachment descriptor not yet available',
+        );
+      case _GeneratedAdapterPrepareOutcome.pendingPath:
+        return FileSystemException(
+          'missing',
+          '/agent_entities/generated-$slot.json',
+        );
+      case _GeneratedAdapterPrepareOutcome.retriableIo:
+        return FileSystemException('disk busy', '/tmp/generated-$slot.json');
+      case _GeneratedAdapterPrepareOutcome.permanentThrow:
+        return StateError('generated prepare failure');
+      case _GeneratedAdapterPrepareOutcome.ready:
+      case _GeneratedAdapterPrepareOutcome.nullPrepared:
+        throw StateError('prepare outcome has no exception: $prepareOutcome');
+    }
+  }
+
+  Object applyException() {
+    switch (applyOutcome) {
+      case _GeneratedAdapterApplyOutcome.pendingDescriptor:
+        return const FileSystemException(
+          'attachment descriptor not yet available',
+        );
+      case _GeneratedAdapterApplyOutcome.pendingPath:
+        return FileSystemException('missing', '/images/generated-$slot.jpg');
+      case _GeneratedAdapterApplyOutcome.retriableIo:
+        return FileSystemException('disk busy', '/tmp/generated-$slot.json');
+      case _GeneratedAdapterApplyOutcome.retriableThrow:
+        return StateError('generated apply failure');
+      case _GeneratedAdapterApplyOutcome.applied:
+        throw StateError('apply outcome has no exception: $applyOutcome');
+    }
+  }
+
+  SyncMessage syncMessage() {
+    switch (messageKind) {
+      case _GeneratedAdapterMessageKind.journalEntity:
+        return SyncMessage.journalEntity(
+          id: 'entity-$slot',
+          jsonPath: '/entities/$slot.json',
+          vectorClock: null,
+          status: SyncEntryStatus.initial,
+        );
+      case _GeneratedAdapterMessageKind.entryLink:
+        return SyncMessage.entryLink(
+          entryLink: EntryLink.basic(
+            id: 'link-$slot',
+            fromId: 'from-$slot',
+            toId: 'to-$slot',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+          status: SyncEntryStatus.initial,
+        );
+      case _GeneratedAdapterMessageKind.themingSelection:
+        return SyncMessage.themingSelection(
+          lightThemeName: 'light-$slot',
+          darkThemeName: 'dark-$slot',
+          themeMode: 'system',
+          updatedAt: slot,
+          status: SyncEntryStatus.update,
+        );
+      case _GeneratedAdapterMessageKind.backfillRequest:
+        return SyncMessage.backfillRequest(
+          entries: const <BackfillRequestEntry>[],
+          requesterId: 'host-$slot',
+        );
+    }
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedAdapterScenario('
+        'prepareOutcome: $prepareOutcome, '
+        'applyOutcome: $applyOutcome, '
+        'messageKind: $messageKind, '
+        'usePrepareBatch: $usePrepareBatch, '
+        'slot: $slot'
+        ')';
+  }
+}
+
+extension _AnyGeneratedAdapterScenario on glados.Any {
+  glados.Generator<_GeneratedAdapterPrepareOutcome> get adapterPrepareOutcome =>
+      glados.AnyUtils(this).choose(_GeneratedAdapterPrepareOutcome.values);
+
+  glados.Generator<_GeneratedAdapterApplyOutcome> get adapterApplyOutcome =>
+      glados.AnyUtils(this).choose(_GeneratedAdapterApplyOutcome.values);
+
+  glados.Generator<_GeneratedAdapterMessageKind> get adapterMessageKind =>
+      glados.AnyUtils(this).choose(_GeneratedAdapterMessageKind.values);
+
+  glados.Generator<_GeneratedAdapterScenario> get adapterScenario =>
+      glados.CombinableAny(this).combine5(
+        adapterPrepareOutcome,
+        adapterApplyOutcome,
+        adapterMessageKind,
+        glados.IntAnys(this).intInRange(0, 2),
+        glados.IntAnys(this).intInRange(0, 8),
+        (
+          _GeneratedAdapterPrepareOutcome prepareOutcome,
+          _GeneratedAdapterApplyOutcome applyOutcome,
+          _GeneratedAdapterMessageKind messageKind,
+          int usePrepareBatchSlot,
+          int slot,
+        ) => _GeneratedAdapterScenario(
+          prepareOutcome: prepareOutcome,
+          applyOutcome: applyOutcome,
+          messageKind: messageKind,
+          usePrepareBatch: usePrepareBatchSlot == 1,
+          slot: slot,
+        ),
+      );
+}
 
 InboundQueueEntry _buildEntry({
   required String eventId,
@@ -81,6 +272,98 @@ void main() {
     processor: processor,
     journalDb: journalDb,
     logging: logging,
+  );
+
+  glados.Glados(
+    glados.any.adapterScenario,
+    glados.ExploreConfig(numRuns: 160),
+  ).test(
+    'generated prepare/apply matrices classify outcomes with or without cache',
+    (scenario) async {
+      final localProcessor = _MockSyncEventProcessor();
+      final localJournalDb = JournalDb(inMemoryDatabase: true);
+      final localLogging = MockLoggingService();
+      final localRoom = _MockRoom();
+      when(() => localRoom.id).thenReturn('!r:example.org');
+      final entry = _buildEntry(
+        eventId: '\$generated-${scenario.slot}',
+        roomId: '!r',
+        originTsMs: scenario.slot + 1,
+      );
+      final prepared = _MockPreparedSyncEvent();
+
+      try {
+        switch (scenario.prepareOutcome) {
+          case _GeneratedAdapterPrepareOutcome.ready:
+            when(
+              () => localProcessor.prepare(event: any(named: 'event')),
+            ).thenAnswer((_) async => prepared);
+            when(() => prepared.syncMessage).thenReturn(scenario.syncMessage());
+            switch (scenario.applyOutcome) {
+              case _GeneratedAdapterApplyOutcome.applied:
+                when(
+                  () => localProcessor.apply(
+                    prepared: prepared,
+                    journalDb: localJournalDb,
+                  ),
+                ).thenAnswer((_) async => null);
+              case _GeneratedAdapterApplyOutcome.pendingDescriptor:
+              case _GeneratedAdapterApplyOutcome.pendingPath:
+              case _GeneratedAdapterApplyOutcome.retriableIo:
+              case _GeneratedAdapterApplyOutcome.retriableThrow:
+                when(
+                  () => localProcessor.apply(
+                    prepared: prepared,
+                    journalDb: localJournalDb,
+                  ),
+                ).thenThrow(scenario.applyException());
+            }
+          case _GeneratedAdapterPrepareOutcome.nullPrepared:
+            when(
+              () => localProcessor.prepare(event: any(named: 'event')),
+            ).thenAnswer((_) async => null);
+          case _GeneratedAdapterPrepareOutcome.pendingDescriptor:
+          case _GeneratedAdapterPrepareOutcome.pendingPath:
+          case _GeneratedAdapterPrepareOutcome.retriableIo:
+          case _GeneratedAdapterPrepareOutcome.permanentThrow:
+            when(
+              () => localProcessor.prepare(event: any(named: 'event')),
+            ).thenThrow(scenario.prepareException());
+        }
+
+        final adapter = QueueApplyAdapter(
+          processor: localProcessor,
+          journalDb: localJournalDb,
+          logging: localLogging,
+        );
+        if (scenario.usePrepareBatch) {
+          await adapter.bindPrepareBatch()([entry], localRoom);
+        }
+
+        final outcome = await adapter.bind()(entry, localRoom);
+        expect(outcome, scenario.expectedOutcome, reason: '$scenario');
+        verify(
+          () => localProcessor.prepare(event: any(named: 'event')),
+        ).called(1);
+        if (scenario.prepareReady) {
+          verify(
+            () => localProcessor.apply(
+              prepared: prepared,
+              journalDb: localJournalDb,
+            ),
+          ).called(1);
+        } else {
+          verifyNever(
+            () => localProcessor.apply(
+              prepared: any(named: 'prepared'),
+              journalDb: localJournalDb,
+            ),
+          );
+        }
+      } finally {
+        await localJournalDb.close();
+      }
+    },
   );
 
   test('undeserialisable rawJson maps to permanentSkip', () async {
