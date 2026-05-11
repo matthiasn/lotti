@@ -59,11 +59,6 @@ class SettingsDb extends _$SettingsDb {
   }
 
   @visibleForTesting
-  Future<SettingsItem?> loadSettingsItem(String configKey) {
-    return settingsItemByKey(configKey).getSingleOrNull();
-  }
-
-  @visibleForTesting
   Future<List<SettingsItem>> loadSettingsItems(Iterable<String> configKeys) {
     final keyList = configKeys.toSet().toList(growable: false);
     if (keyList.isEmpty) {

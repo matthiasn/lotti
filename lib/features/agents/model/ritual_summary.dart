@@ -18,14 +18,12 @@ class RitualSummaryMetrics {
     required this.lifetimeWakeCount,
     required this.wakesSinceLastSession,
     required this.totalTokenUsageSinceLastSession,
-    required this.meanTimeToResolution,
     required this.dailyWakeCounts,
   });
 
   final int lifetimeWakeCount;
   final int wakesSinceLastSession;
   final int totalTokenUsageSinceLastSession;
-  final Duration? meanTimeToResolution;
   final List<DailyWakeCountBucket> dailyWakeCounts;
 }
 

@@ -686,7 +686,7 @@ class TaskAgentStrategy extends ConversationStrategy {
       }
     }
 
-    // New structured format: {text, priority?, category?, target?}.
+    // New structured format: {text, priority?, category?}.
     if (item is Map<String, dynamic>) {
       final rawText = item['text'];
       if (rawText is String) {
@@ -694,7 +694,6 @@ class TaskAgentStrategy extends ConversationStrategy {
         if (text.isEmpty) return null;
         final rawPriority = item['priority'];
         final rawCategory = item['category'];
-        final rawTarget = item['target'];
         return ObservationRecord(
           text: text,
           priority:
@@ -709,12 +708,6 @@ class TaskAgentStrategy extends ConversationStrategy {
                 rawCategory is String ? rawCategory : null,
               ) ??
               ObservationCategory.operational,
-          target:
-              parseEnumByName(
-                ObservationTarget.values,
-                rawTarget is String ? rawTarget : null,
-              ) ??
-              ObservationTarget.template,
         );
       }
     }

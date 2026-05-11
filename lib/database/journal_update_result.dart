@@ -56,7 +56,4 @@ class JournalUpdateResult {
   /// Optional row-count-like signal for instrumentation. When [applied] is
   /// true, this defaults to 1 to indicate one entity persisted.
   final int? rowsWritten;
-
-  /// Convenience getter mirroring existing semantics.
-  bool get skipped => !applied;
 }

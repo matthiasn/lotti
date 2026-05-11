@@ -19,7 +19,6 @@ void main() {
     lifetimeWakeCount: 42,
     wakesSinceLastSession: 7,
     totalTokenUsageSinceLastSession: 1234,
-    meanTimeToResolution: const Duration(hours: 2),
     dailyWakeCounts: List.generate(
       5,
       (index) => DailyWakeCountBucket(

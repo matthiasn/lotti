@@ -1082,7 +1082,7 @@ class AgentRepository {
       await _db.into(_db.agentLinks).insert(companion);
     } on SqliteException catch (e) {
       if (e.resultCode == 19) {
-        throw DuplicateInsertException('agent_links', link.toId, e);
+        throw DuplicateInsertException('agent_links', link.toId);
       }
       rethrow;
     }
@@ -1219,7 +1219,7 @@ class AgentRepository {
       await _db.into(_db.wakeRunLog).insert(entry.toCompanion(true));
     } on SqliteException catch (e) {
       if (e.resultCode == 19) {
-        throw DuplicateInsertException('wake_run_log', entry.runKey, e);
+        throw DuplicateInsertException('wake_run_log', entry.runKey);
       }
       rethrow;
     }
@@ -1412,7 +1412,7 @@ class AgentRepository {
       await _db.into(_db.sagaLog).insert(entry.toCompanion(true));
     } on SqliteException catch (e) {
       if (e.resultCode == 19) {
-        throw DuplicateInsertException('saga_log', entry.operationId, e);
+        throw DuplicateInsertException('saga_log', entry.operationId);
       }
       rethrow;
     }

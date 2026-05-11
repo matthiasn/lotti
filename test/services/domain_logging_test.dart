@@ -102,7 +102,7 @@ void main() {
         LogDomains.agentWorkflow,
         'wake started',
         subDomain: 'execute',
-        level: InsightLevel.trace,
+        level: InsightLevel.warn,
       );
 
       verify(
@@ -110,7 +110,7 @@ void main() {
           'wake started',
           domain: LogDomains.agentWorkflow,
           subDomain: 'execute',
-          level: InsightLevel.trace,
+          level: InsightLevel.warn,
         ),
       ).called(1);
     });
