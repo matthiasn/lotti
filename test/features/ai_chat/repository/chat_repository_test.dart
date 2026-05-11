@@ -62,7 +62,9 @@ void main() {
         cloudInferenceRepository: mockCloudInferenceRepository,
         taskSummaryRepository: mockTaskSummaryRepository,
         aiConfigRepository: mockAiConfigRepository,
-        systemMessageService: SystemMessageService(),
+        systemMessageService: SystemMessageService(
+          now: () => DateTime(2024, 3, 15),
+        ),
         loggingService: mockLoggingService,
       );
     });
@@ -1210,8 +1212,7 @@ void main() {
 
         expect(capturedSystemMessage, isNotNull);
         final sys = capturedSystemMessage!;
-        final today = DateTime.now().toIso8601String().split('T').first;
-        expect(sys, contains(today));
+        expect(sys, contains('2024-03-15'));
         expect(sys, contains('You are an AI assistant'));
         expect(sys, contains('start_date'));
         expect(sys, contains('end_date'));

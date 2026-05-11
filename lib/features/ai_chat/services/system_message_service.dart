@@ -13,14 +13,18 @@ final systemMessageServiceProvider = Provider<SystemMessageService>((ref) {
 /// Builds the system message (system prompt) injected into AI requests.
 ///
 /// Notes:
-/// - Currently uses `DateTime.now()` to include today’s date for time-based
-///   reasoning in the prompt. If determinism is required for tests, consider
-///   injecting a clock similar to the `Now` typedef in the message processor.
+/// - Uses an injectable clock to include today’s date for time-based
+///   reasoning in the prompt. Tests pass a fixed [DateTime] to make the
+///   resulting prompt deterministic.
 /// - The content is a template and can be externalized or localized in the
 ///   future without changing call sites.
 class SystemMessageService {
+  SystemMessageService({DateTime Function()? now}) : _now = now ?? DateTime.now;
+
+  final DateTime Function() _now;
+
   String getSystemMessage() {
-    final now = DateTime.now();
+    final now = _now();
     final today = now.ymd;
     final tzName = now.timeZoneName;
 

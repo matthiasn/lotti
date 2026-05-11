@@ -150,10 +150,20 @@ void main() {
       await db.customSelect('SELECT 1 AS one').getSingle();
       await SlowQueryInterceptor.flushFileSinkForTest();
 
-      final date = DateTime.now().toIso8601String().substring(0, 10);
-      final logFile = File('${base.path}/logs/slow_queries-$date.log');
+      final logDir = Directory('${base.path}/logs');
+      final logFiles = logDir.existsSync()
+          ? logDir
+                .listSync()
+                .whereType<File>()
+                .where(
+                  (f) =>
+                      f.uri.pathSegments.last.startsWith('slow_queries-') &&
+                      f.uri.pathSegments.last.endsWith('.log'),
+                )
+                .toList()
+          : <File>[];
 
-      expect(logFile.existsSync(), isFalse);
+      expect(logFiles, isEmpty);
 
       await db.close();
     },
@@ -181,11 +191,18 @@ void main() {
       await db.customSelect('SELECT 1 AS one').getSingle();
       await SlowQueryInterceptor.flushFileSinkForTest();
 
-      final date = DateTime.now().toIso8601String().substring(0, 10);
-      final logFile = File('${base.path}/logs/slow_queries-$date.log');
+      final logFiles = Directory('${base.path}/logs')
+          .listSync()
+          .whereType<File>()
+          .where(
+            (f) =>
+                f.uri.pathSegments.last.startsWith('slow_queries-') &&
+                f.uri.pathSegments.last.endsWith('.log'),
+          )
+          .toList();
 
-      expect(logFile.existsSync(), isTrue);
-      final contents = await logFile.readAsString();
+      expect(logFiles, hasLength(1));
+      final contents = await logFiles.single.readAsString();
       expect(contents, contains('[test_slow.sqlite] select'));
       expect(contents, contains('SELECT 1 AS one'));
 

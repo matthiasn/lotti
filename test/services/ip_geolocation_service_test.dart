@@ -22,7 +22,13 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockHttpClient mockHttpClient;
 
-  int localUtcOffsetMinutes() => DateTime.now().timeZoneOffset.inMinutes;
+  // Fixed reference moment used both as the injected clock for the service
+  // and as the source of the expected UTC-offset fallback value. Using a
+  // single fixed [DateTime] keeps offset assertions deterministic across
+  // DST transitions and machines.
+  final fixedNow = DateTime(2024, 1, 15, 12);
+  DateTime clock() => fixedNow;
+  final localUtcOffsetMinutes = fixedNow.timeZoneOffset.inMinutes;
 
   setUpAll(() {
     registerFallbackValue(FakeUri());
@@ -297,12 +303,13 @@ void main() {
 
           final result = await IpGeolocationService.getLocationFromIp(
             httpClient: mockHttpClient,
+            clock: clock,
           );
 
           expect(result, isNotNull);
           expect(
             result!.utcOffset,
-            localUtcOffsetMinutes(),
+            localUtcOffsetMinutes,
             reason: 'Failed for invalid offset: $offset',
           );
         }
@@ -454,10 +461,11 @@ void main() {
 
         final result = await IpGeolocationService.getLocationFromIp(
           httpClient: mockHttpClient,
+          clock: clock,
         );
         expect(
           result?.utcOffset,
-          localUtcOffsetMinutes(),
+          localUtcOffsetMinutes,
         );
 
         verify(
