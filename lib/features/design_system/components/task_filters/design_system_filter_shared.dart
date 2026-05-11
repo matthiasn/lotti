@@ -7,6 +7,15 @@ abstract final class DesignSystemFilterMetrics {
   static const handleWidth = 40.0;
   static const handleHeight = 4.0;
   static const actionRadius = 26.0;
+
+  /// Sticky-footer action button height from the Figma "Apply filter"
+  /// frame (115×56 / 159×56). The action bar's slot constraints and the
+  /// button's own minimum height are pinned to this value so the
+  /// painted pill, the InkWell hit area, and the slot all agree —
+  /// previously they disagreed (slot 56, inner box 44) which under the
+  /// glass-blur footer made the non-highlighted pills paint at one box
+  /// while the centered text sat in another.
+  static const actionMinHeight = 56.0;
 }
 
 /// Strips a trailing colon and any whitespace before it from a label string.
@@ -153,57 +162,76 @@ class DesignSystemFilterActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
+    final radius = BorderRadius.circular(
+      DesignSystemFilterMetrics.actionRadius,
+    );
 
     return Material(
       color: Colors.transparent,
       child: Ink(
         decoration: BoxDecoration(
           color: highlighted ? palette.accent : palette.pillFill,
-          borderRadius: BorderRadius.circular(
-            DesignSystemFilterMetrics.actionRadius,
-          ),
+          borderRadius: radius,
+          // Non-highlighted pills carry a 1px border. Their `pillFill`
+          // is only ~4% of luminance away from the sheet background,
+          // and the glass-blur footer's gradient overlay (transparent
+          // → ~19% white) lifts the pill toward the overlay, so without
+          // the border the pill silhouette can wash out entirely on
+          // dark mode. The border uses the same divider token as the
+          // sheet's hairline divider so the seam reads consistently.
+          // Highlighted (Apply) pills are opaque accent — no border
+          // needed.
+          border: highlighted ? null : Border.all(color: palette.dividerColor),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(
-            DesignSystemFilterMetrics.actionRadius,
-          ),
+          borderRadius: radius,
           onTap: onTap,
-          child: SizedBox(
-            height: 44,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: textStyle.copyWith(
-                    color: highlighted
-                        ? palette.accentText
-                        : palette.primaryText,
-                  ),
-                ),
-                if (counter != null) ...[
-                  SizedBox(width: spacing.step4 - spacing.step1),
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: palette.applyBadgeFill,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$counter',
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(
-                              color: highlighted
-                                  ? palette.accentText
-                                  : palette.primaryText,
-                            ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: DesignSystemFilterMetrics.actionMinHeight,
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: spacing.step5),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textStyle.copyWith(
+                        color: highlighted
+                            ? palette.accentText
+                            : palette.primaryText,
                       ),
                     ),
                   ),
+                  if (counter != null) ...[
+                    SizedBox(width: spacing.step4 - spacing.step1),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: palette.applyBadgeFill,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$counter',
+                          style: tokens.typography.styles.subtitle.subtitle2
+                              .copyWith(
+                                color: highlighted
+                                    ? palette.accentText
+                                    : palette.primaryText,
+                              ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
