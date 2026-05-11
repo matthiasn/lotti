@@ -93,16 +93,18 @@ void main() {
       expect(imageWidget.fit, BoxFit.contain);
       expect(imageWidget.errorBuilder, isNotNull);
 
-      // Both cacheWidth and cacheHeight cap the decoded bitmap (via
-      // ResizeImage) so extreme aspect ratios — e.g. panoramas — can't
-      // balloon along the unconstrained axis. Source images can be up to
-      // 10000×10000 per image_utils.compressAndSave limits.
+      // Both axes are capped via ResizeImage so extreme aspect ratios —
+      // e.g. panoramas — can't balloon along the unconstrained axis. Source
+      // images can be up to 10000×10000 per image_utils.compressAndSave
+      // limits. ResizeImagePolicy.fit keeps the source aspect ratio at
+      // decode time so the displayed bitmap isn't squashed.
       expect(imageWidget.image, isA<ResizeImage>());
       final resize = imageWidget.image as ResizeImage;
       expect(resize.width, isNotNull);
       expect(resize.width, greaterThan(0));
       expect(resize.height, isNotNull);
       expect(resize.height, greaterThan(0));
+      expect(resize.policy, ResizeImagePolicy.fit);
       expect(resize.imageProvider, isA<FileImage>());
     });
 

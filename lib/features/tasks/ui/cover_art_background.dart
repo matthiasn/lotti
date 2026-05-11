@@ -60,27 +60,42 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
             final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
             // ResizeImage asserts width/height > 0; SliverAppBar collapse
             // can briefly drive the constraint to 0 mid-animation, so guard
-            // and clamp the rounded value to a sensible band.
-            return Image.file(
-              File(path),
+            // and clamp the rounded value to a sensible band. Use
+            // ResizeImagePolicy.fit so capping both axes preserves the
+            // source aspect ratio instead of squashing the bitmap.
+            final cacheWidth =
+                constraints.hasBoundedWidth && constraints.maxWidth > 0
+                ? (constraints.maxWidth * devicePixelRatio).round().clamp(
+                    1,
+                    10000,
+                  )
+                : null;
+            final cacheHeight =
+                constraints.hasBoundedHeight && constraints.maxHeight > 0
+                ? (constraints.maxHeight * devicePixelRatio).round().clamp(
+                    1,
+                    10000,
+                  )
+                : null;
+            final fileImage = FileImage(File(path));
+            ImageProvider imageProvider = fileImage;
+            if (cacheWidth != null || cacheHeight != null) {
+              imageProvider = ResizeImage(
+                fileImage,
+                width: cacheWidth,
+                height: cacheHeight,
+                policy: ResizeImagePolicy.fit,
+              );
+            }
+            return Image(
+              image: imageProvider,
               fit: BoxFit.cover,
               alignment: Alignment.topCenter,
-              cacheWidth:
-                  constraints.hasBoundedWidth && constraints.maxWidth > 0
-                  ? (constraints.maxWidth * devicePixelRatio).round().clamp(
-                      1,
-                      10000,
-                    )
-                  : null,
-              cacheHeight:
-                  constraints.hasBoundedHeight && constraints.maxHeight > 0
-                  ? (constraints.maxHeight * devicePixelRatio).round().clamp(
-                      1,
-                      10000,
-                    )
-                  : null,
               errorBuilder: (context, error, stackTrace) {
-                imageCache.evict(FileImage(File(path)));
+                // Evict the actual provider (ResizeImage or bare FileImage)
+                // — ResizeImageKey includes dimensions + policy so a fresh
+                // FileImage would miss the cache entry.
+                imageCache.evict(imageProvider);
                 return const SizedBox.shrink();
               },
             );

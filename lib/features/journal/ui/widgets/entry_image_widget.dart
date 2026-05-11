@@ -23,6 +23,16 @@ class EntryImageWidget extends ConsumerWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final maxHeight = isMobile ? 400.0 : screenWidth;
+    // Hold a single ResizeImage instance so the cache eviction below targets
+    // the exact key Flutter used to store the decoded bitmap. Evicting a bare
+    // FileImage would miss because ResizeImageKey also includes dimensions +
+    // policy.
+    final imageProvider = ResizeImage(
+      FileImage(file),
+      width: (screenWidth * devicePixelRatio).round().clamp(1, 10000),
+      height: (maxHeight * devicePixelRatio).round().clamp(1, 10000),
+      policy: ResizeImagePolicy.fit,
+    );
 
     return GestureDetector(
       onTap: () {
@@ -41,20 +51,12 @@ class EntryImageWidget extends ConsumerWidget {
           tag: 'entry_img',
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxHeight),
-            child: Image.file(
-              file,
+            child: Image(
+              image: imageProvider,
               width: screenWidth,
               fit: BoxFit.contain,
-              cacheWidth: (screenWidth * devicePixelRatio).round().clamp(
-                1,
-                10000,
-              ),
-              cacheHeight: (maxHeight * devicePixelRatio).round().clamp(
-                1,
-                10000,
-              ),
               errorBuilder: (context, error, stackTrace) {
-                imageCache.evict(FileImage(file));
+                imageCache.evict(imageProvider);
                 return const SizedBox.shrink();
               },
             ),
