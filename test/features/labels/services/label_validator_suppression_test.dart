@@ -1,10 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   final testDate = DateTime(2024, 3, 15);

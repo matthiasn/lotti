@@ -18,9 +18,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
-// Mock implementations
-class MockJournalDb extends Mock implements JournalDb {}
+import '../../../mocks/mocks.dart';
 
+// Local generic selectable mock — the central [MockSelectable] requires a
+// list of values up front, but these tests stub `get()` per-test instead.
 class MockSelectable<T> extends Mock implements Selectable<T> {}
 
 class _NoAgentResolver extends TaskSummaryResolver {

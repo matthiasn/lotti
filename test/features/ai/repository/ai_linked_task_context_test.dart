@@ -21,8 +21,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
 class MockTaskProgressRepository extends Mock
     implements TaskProgressRepository {
   @override
@@ -37,10 +35,6 @@ class MockTaskProgressRepository extends Mock
     );
   }
 }
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
 void main() {
   group('AiLinkedTaskContext', () {

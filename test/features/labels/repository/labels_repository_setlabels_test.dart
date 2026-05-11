@@ -2,21 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
+import '../../../mocks/mocks.dart' hide MockLoggingService;
 
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {
@@ -32,8 +23,6 @@ class MockLoggingService extends Mock implements LoggingService {
     ).thenAnswer((_) async {});
   }
 }
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   group('LabelsRepository.setLabels suppression updates', () {
