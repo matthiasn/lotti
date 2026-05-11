@@ -70,11 +70,6 @@ void main() {
             status: false,
           ),
           const ConfigFlag(
-            name: enableAgentsFlag,
-            description: 'Enable Agents?',
-            status: false,
-          ),
-          const ConfigFlag(
             name: enableEmbeddingsFlag,
             description: 'Generate Embeddings?',
             status: false,
@@ -87,11 +82,6 @@ void main() {
           const ConfigFlag(
             name: enableWhatsNewFlag,
             description: "Enable What's New feature?",
-            status: false,
-          ),
-          const ConfigFlag(
-            name: useOutboxBundlingFlag,
-            description: 'Bundle text-only outbox messages',
             status: false,
           ),
           const ConfigFlag(
@@ -134,9 +124,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 12 flags in the mock data (8 originals + whats-new +
-      // outbox-bundling + sync-activity-indicator + sidebar-wake-queue).
-      expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+      // 10 flags in the mock data.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(10));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -145,7 +134,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsIcon), findsNWidgets(12));
+      expect(find.byType(SettingsIcon), findsNWidgets(10));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -308,38 +297,6 @@ void main() {
       // toggle row.
       expect(find.byIcon(Icons.new_releases_outlined), findsAtLeastNWidgets(1));
     });
-
-    testWidgets(
-      'renders the outbox-bundling flag with its localized title and '
-      'description, plus the archive icon — covers the per-flag arms in '
-      '_iconForFlag/_titleForFlag/_subtitleForFlag for the new flag',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pumpAndSettle();
-
-        final context = tester.element(find.byType(FlagsPage));
-        final bundlingItem = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagUseOutboxBundling,
-        );
-        await tester.ensureVisible(bundlingItem);
-        await tester.pumpAndSettle();
-        expect(bundlingItem, findsOneWidget);
-        expect(
-          find.text(context.messages.configFlagUseOutboxBundlingDescription),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: bundlingItem,
-            matching: find.byIcon(Icons.archive_outlined),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
 
     testWidgets('toggle persists the whats-new flag via PersistenceLogic', (
       tester,
@@ -616,7 +573,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
       },
     );
 
@@ -637,7 +594,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pumpAndSettle();
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
       },
     );
 
@@ -654,7 +611,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
       },
     );
   });

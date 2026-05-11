@@ -314,9 +314,7 @@ class MatrixMessageSender {
 
       final fileBytes = bytes ?? await file.readAsBytes();
 
-      final shouldCompress =
-          relativePath.toLowerCase().endsWith('.json') &&
-          await _journalDb.getConfigFlag(useCompressedJsonAttachmentsFlag);
+      final shouldCompress = relativePath.toLowerCase().endsWith('.json');
       final uploadBytes = shouldCompress
           ? await gzipEncodeBytes(fileBytes)
           : fileBytes;

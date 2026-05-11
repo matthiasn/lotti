@@ -23,8 +23,6 @@ class SettingsPage extends ConsumerWidget {
     // Habits and dashboards are now gated inside the Definitions
     // sub-page (`definitions_page.dart`) — the root list always shows
     // the single Definitions entry regardless of those flags.
-    final enableAgents =
-        ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
     final enableWhatsNew =
         ref.watch(configFlagProvider(enableWhatsNewFlag)).value ?? false;
     final enableMatrix =
@@ -49,16 +47,15 @@ class SettingsPage extends ConsumerWidget {
         routePrefix: '/settings/ai',
         onTap: () => context.beamToNamed('/settings/ai'),
       ),
-      if (enableAgents)
-        _SettingsItem(
-          id: '/settings/agents',
-          title: context.messages.agentSettingsTitle,
-          subtitle: context.messages.agentSettingsSubtitle,
-          icon: Icons.smart_toy_outlined,
-          routePrefix: '/settings/agents',
-          onTap: () => context.beamToNamed('/settings/agents'),
-          trailingExtra: const RitualPendingIndicator(),
-        ),
+      _SettingsItem(
+        id: '/settings/agents',
+        title: context.messages.agentSettingsTitle,
+        subtitle: context.messages.agentSettingsSubtitle,
+        icon: Icons.smart_toy_outlined,
+        routePrefix: '/settings/agents',
+        onTap: () => context.beamToNamed('/settings/agents'),
+        trailingExtra: const RitualPendingIndicator(),
+      ),
       if (enableMatrix)
         _SettingsItem(
           id: '/settings/sync',

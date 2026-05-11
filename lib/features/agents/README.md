@@ -12,10 +12,9 @@ sessions, token usage, and wake history.
 
 ## Runtime Boundary
 
-The feature is gated by `enableAgentsFlag` and initialized by
-`agentInitializationProvider`.
+The feature is initialized by `agentInitializationProvider`.
 
-When the flag is enabled, startup does this:
+Startup does this:
 
 1. marks stale `running` wake runs as `abandoned`
 2. wires `WakeOrchestrator.wakeExecutor` to the correct workflow for each
@@ -30,9 +29,6 @@ When the flag is enabled, startup does this:
 8. restores persisted task-agent subscriptions, project-agent direct-edit
    subscriptions, and persisted throttle deadlines
 9. wires the sync event processor if one is registered in `GetIt`
-
-When the flag is switched off, the provider is disposed and the orchestrator is
-stopped again.
 
 - Task agent wake prompts include:
   - current task JSON context
@@ -72,8 +68,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-  Flag{"enableAgentsFlag"} -->|off| Off["Agent runtime stays offline"]
-  Flag -->|on| Init["agentInitializationProvider"]
+  Init["agentInitializationProvider"]
 
   Init --> Abandon["AgentRepository.abandonOrphanedWakeRuns()"]
   Init --> Wire["Assign WakeOrchestrator.wakeExecutor"]

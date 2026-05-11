@@ -60,8 +60,6 @@ void main() {
         enableDailyOsPageFlag: false,
         enableSessionRatingsFlag: false,
         enableSyncActorFlag: false,
-        useCompressedJsonAttachmentsFlag: false,
-        enableAgentsFlag: false,
         enableProjectsFlag: false,
         logAgentRuntimeFlag: true,
         logAgentWorkflowFlag: true,

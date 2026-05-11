@@ -1946,13 +1946,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.';
 
   @override
-  String get configFlagEnableAgents => 'Activează agenții';
-
-  @override
-  String get configFlagEnableAgentsDescription =>
-      'Permite agenților AI să monitorizeze și să analizeze autonom sarcinile dvs.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Activează streamingul AI pentru acțiunile legate de sarcini';
 
@@ -2086,22 +2079,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
       'Afișează activitatea de sincronizare live în bara laterală — o bandă LED tx/rx cu adâncimea cozilor de ieșire și intrare.';
-
-  @override
-  String get configFlagUseCompressedJsonAttachments =>
-      'Comprimă payload-urile JSON de sincronizare';
-
-  @override
-  String get configFlagUseCompressedJsonAttachmentsDescription =>
-      'Comprimă cu gzip atașamentele JSON de sincronizare înainte de încărcare. Reduce consumul de lățime de bandă în rețele lente, cu un mic cost CPU la trimitere și primire.';
-
-  @override
-  String get configFlagUseOutboxBundling =>
-      'Grupează mesajele din căsuța de trimitere';
-
-  @override
-  String get configFlagUseOutboxBundlingDescription =>
-      'Împachetează rândurile consecutive doar cu text din căsuța de trimitere într-un singur mesaj de sincronizare, astfel încât rafalele de modificări mici să fie trimise ca un singur mesaj Matrix. Atașamentele media sunt în continuare trimise individual.';
 
   @override
   String get conflictApplyButton => 'Aplică';
@@ -2256,9 +2233,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conflictPickerUseThisDevice => 'Folosiți acest dispozitiv';
 
   @override
-  String get conflictsCopyTextFromSync => 'Copiază textul din sincronizare';
-
-  @override
   String get conflictsEmptyDescription =>
       'Totul este sincronizat. Elementele rezolvate rămân disponibile în celălalt filtru.';
 
@@ -2273,13 +2247,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get conflictsResolved => 'rezolvat';
-
-  @override
-  String get conflictsResolveLocalVersion => 'Rezolvă cu versiunea locală';
-
-  @override
-  String get conflictsResolveRemoteVersion =>
-      'Rezolvă cu versiunea de la distanță';
 
   @override
   String get conflictsUnresolved => 'nerezolvat';
@@ -4768,10 +4735,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsCategoriesTitle => 'Categorii';
-
-  @override
-  String get settingsConflictsResolutionTitle =>
-      'Rezolvarea Conflictelor de Sincronizare';
 
   @override
   String get settingsConflictsTitle => 'Sync cu conflicte';

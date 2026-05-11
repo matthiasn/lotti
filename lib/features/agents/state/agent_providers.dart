@@ -287,21 +287,6 @@ ImproverAgentService improverAgentService(Ref ref) {
 /// take effect.
 @Riverpod(keepAlive: true)
 Future<void> agentInitialization(Ref ref) async {
-  final enableAgents = ref.watch(configFlagProvider(enableAgentsFlag));
-  final isEnabled = enableAgents.value ?? false;
-
-  // When keepAlive is true, Riverpod re-executes the provider body whenever a
-  // watched dependency (here: the config flag) changes. The re-execution
-  // disposes the prior state (triggering ref.onDispose → orchestrator.stop()),
-  // so toggling the flag off correctly tears down the running infrastructure.
-  if (!isEnabled) {
-    developer.log(
-      'Agents disabled, skipping initialization',
-      name: 'agentInitialization',
-    );
-    return;
-  }
-
   developer.log(
     'Agents enabled, starting wake orchestrator',
     name: 'agentInitialization',

@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
-
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
@@ -19,7 +17,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -98,9 +95,6 @@ void main() {
       overrides: [
         entryControllerProvider(id: task.meta.id).overrideWith(
           () => _TestEntryController(task),
-        ),
-        configFlagProvider.overrideWith(
-          (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
         ),
         taskAgentProvider.overrideWith(
           (ref, id) async => agent,

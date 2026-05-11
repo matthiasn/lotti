@@ -6,7 +6,6 @@
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorised.",
   "categoryFavoriteDescription": "Mark this category as a favourite",
   "colorLabel": "Colour:",
-  "configFlagEnableAgentsDescription": "Allow AI agents to autonomously monitor and analyse your tasks.",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableDailyOs": "Enable DailyOS",

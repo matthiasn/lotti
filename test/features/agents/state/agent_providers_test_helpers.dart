@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -17,7 +16,6 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -133,12 +131,7 @@ class InitProviderBench {
   }
 
   /// Creates a [ProviderContainer] with all mocks wired in.
-  ///
-  /// When [enableAgents] is true, the `enableAgentsFlag` config flag will
-  /// emit `true`.
-  ProviderContainer createContainer({
-    bool enableAgents = true,
-  }) {
+  ProviderContainer createContainer() {
     final container = ProviderContainer(
       overrides: [
         agentServiceProvider.overrideWithValue(mockService),
@@ -163,11 +156,6 @@ class InitProviderBench {
         ),
         projectActivityMonitorProvider.overrideWithValue(
           mockProjectActivityMonitor,
-        ),
-        configFlagProvider.overrideWith(
-          (ref, flagName) => Stream.value(
-            flagName == enableAgentsFlag && enableAgents,
-          ),
         ),
       ],
     );

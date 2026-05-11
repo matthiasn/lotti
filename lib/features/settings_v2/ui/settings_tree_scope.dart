@@ -61,8 +61,6 @@ class SettingsTreeScopeHost extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableAgents =
-        ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
     final enableHabits =
         ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false;
     final enableDashboards =
@@ -74,7 +72,6 @@ class SettingsTreeScopeHost extends ConsumerWidget {
 
     final tree = buildSettingsTree(
       labels: settingsTreeLabelsFor(context),
-      enableAgents: enableAgents,
       enableHabits: enableHabits,
       enableDashboards: enableDashboards,
       enableMatrix: enableMatrix,

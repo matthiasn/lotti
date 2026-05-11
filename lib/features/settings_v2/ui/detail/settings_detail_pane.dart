@@ -91,8 +91,6 @@ class SettingsDetailPane extends ConsumerWidget {
   SettingsTreeIndex _fallbackIndex(BuildContext context, WidgetRef ref) {
     final tree = buildSettingsTree(
       labels: settingsTreeLabelsFor(context),
-      enableAgents:
-          ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false,
       enableHabits:
           ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false,
       enableDashboards:

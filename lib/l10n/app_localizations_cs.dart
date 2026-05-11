@@ -1932,13 +1932,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.';
 
   @override
-  String get configFlagEnableAgents => 'Povolit agenty';
-
-  @override
-  String get configFlagEnableAgentsDescription =>
-      'Umožni AI agentům autonomně sledovat a analyzovat tvé úkoly.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Povolit AI streamování pro akce úkolů';
 
@@ -2069,21 +2062,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
       'Zobrazit živou aktivitu synchronizace v postranním panelu — tx/rx LED proužek s hloubkou odchozí a příchozí fronty.';
-
-  @override
-  String get configFlagUseCompressedJsonAttachments =>
-      'Komprimovat JSON payloady synchronizace';
-
-  @override
-  String get configFlagUseCompressedJsonAttachmentsDescription =>
-      'Před nahráním gzip-komprimuje JSON přílohy synchronizace. Šetří šířku pásma v pomalých sítích za mírnou cenu CPU při odesílání a příjmu.';
-
-  @override
-  String get configFlagUseOutboxBundling => 'Sdružovat zprávy odchozí pošty';
-
-  @override
-  String get configFlagUseOutboxBundlingDescription =>
-      'Zabalí po sobě jdoucí textové řádky odchozí pošty do jedné synchronizační obálky, takže dávky drobných změn odejdou jako jediná zpráva Matrixu. Mediální přílohy se i nadále odesílají samostatně.';
 
   @override
   String get conflictApplyButton => 'Použít';
@@ -2239,9 +2217,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get conflictPickerUseThisDevice => 'Použít toto zařízení';
 
   @override
-  String get conflictsCopyTextFromSync => 'Kopírovat text ze synchronizace';
-
-  @override
   String get conflictsEmptyDescription =>
       'Všechno je teď synchronizované. Vyřešené položky zůstávají dostupné v druhém filtru.';
 
@@ -2256,12 +2231,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get conflictsResolved => 'vyřešeno';
-
-  @override
-  String get conflictsResolveLocalVersion => 'Vyřešit s místní verzí';
-
-  @override
-  String get conflictsResolveRemoteVersion => 'Vyřešit se vzdálenou verzí';
 
   @override
   String get conflictsUnresolved => 'nevyřešeno';
@@ -4743,10 +4712,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsCategoriesTitle => 'Kategorie';
-
-  @override
-  String get settingsConflictsResolutionTitle =>
-      'Řešení konfliktů synchronizace';
 
   @override
   String get settingsConflictsTitle => 'Konflikty synchronizace';

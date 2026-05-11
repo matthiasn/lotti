@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
@@ -15,24 +14,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AiSummaryCard – gating and CTA', () {
-    testWidgets('renders nothing when agents are disabled', (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            configFlagProvider.overrideWith(
-              (ref, flagName) => Stream.value(false),
-            ),
-            taskAgentProvider.overrideWith((ref, id) async => null),
-          ],
-          child: const AiSummaryCard(taskId: 'task-001'),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Assign Agent'), findsNothing);
-      expect(find.text('AI summary'), findsNothing);
-    });
-
     testWidgets('shows Assign Agent CTA when no agent is attached', (
       tester,
     ) async {
@@ -148,9 +129,6 @@ void main() {
         RiverpodWidgetTestBench(
           mediaQueryData: const MediaQueryData(size: Size(900, 800)),
           overrides: [
-            configFlagProvider.overrideWith(
-              (ref, flagName) => Stream.value(true),
-            ),
             taskAgentProvider.overrideWith((ref, id) async => identity),
             agentReportProvider.overrideWith(
               (ref, agentId) async => makeTestReport(tldr: 'Tldr.'),
@@ -189,9 +167,6 @@ void main() {
         RiverpodWidgetTestBench(
           mediaQueryData: const MediaQueryData(size: Size(900, 800)),
           overrides: [
-            configFlagProvider.overrideWith(
-              (ref, flagName) => Stream.value(true),
-            ),
             taskAgentProvider.overrideWith((ref, id) async => identity),
             agentReportProvider.overrideWith(
               (ref, agentId) async => makeTestReport(

@@ -4,7 +4,6 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 import 'package:lotti/features/settings_v2/ui/settings_tree_scope.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -167,13 +166,6 @@ void main() {
         // contain the agents branch and exclude the others.
         final mockJournalDb = MockJournalDb();
         registerFallbackValue('');
-        when(
-          () => mockJournalDb.watchConfigFlag(any()),
-        ).thenAnswer((invocation) {
-          final name = invocation.positionalArguments.first as String;
-          final on = name == enableAgentsFlag;
-          return Stream.value(on);
-        });
 
         late SettingsTreeScope scope;
         await tester.pumpWidget(

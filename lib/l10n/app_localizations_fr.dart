@@ -1943,13 +1943,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Lorsque cette option est activée, l\'application tentera de générer des embeddings pour tes entrées afin d\'améliorer la recherche et les suggestions de contenu associées.';
 
   @override
-  String get configFlagEnableAgents => 'Activer les agents';
-
-  @override
-  String get configFlagEnableAgentsDescription =>
-      'Permettre aux agents IA de surveiller et analyser tes tâches de manière autonome.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Activer le streaming IA pour les actions liées aux tâches';
 
@@ -2082,21 +2075,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
       'Affiche l\'activité de synchronisation en direct dans la barre latérale — une bande LED tx/rx avec la profondeur des files d\'entrée et de sortie.';
-
-  @override
-  String get configFlagUseCompressedJsonAttachments =>
-      'Compresser les payloads JSON de sync';
-
-  @override
-  String get configFlagUseCompressedJsonAttachmentsDescription =>
-      'Compresse les pièces jointes JSON de synchronisation avec gzip avant l\'envoi. Économise de la bande passante sur les réseaux lents, au prix d\'un léger coût CPU à l\'envoi et à la réception.';
-
-  @override
-  String get configFlagUseOutboxBundling => 'Regrouper les messages d\'outbox';
-
-  @override
-  String get configFlagUseOutboxBundlingDescription =>
-      'Regroupe les lignes texte consécutives de l\'outbox en une seule enveloppe de synchronisation pour qu\'une rafale de petits changements parte en un seul message Matrix. Les pièces jointes média sont toujours envoyées individuellement.';
 
   @override
   String get conflictApplyButton => 'Appliquer';
@@ -2250,10 +2228,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get conflictPickerUseThisDevice => 'Utiliser cet appareil';
 
   @override
-  String get conflictsCopyTextFromSync =>
-      'Copier le texte depuis la synchronisation';
-
-  @override
   String get conflictsEmptyDescription =>
       'Tout est synchronisé. Les éléments résolus restent disponibles dans l\'autre filtre.';
 
@@ -2268,13 +2242,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get conflictsResolved => 'résolu';
-
-  @override
-  String get conflictsResolveLocalVersion => 'Résoudre avec la version locale';
-
-  @override
-  String get conflictsResolveRemoteVersion =>
-      'Résoudre avec la version distante';
 
   @override
   String get conflictsUnresolved => 'non résolu';
@@ -4787,10 +4754,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsCategoriesTitle => 'Catégories';
-
-  @override
-  String get settingsConflictsResolutionTitle =>
-      'Résolution des conflits de synchronisation';
 
   @override
   String get settingsConflictsTitle => 'Conflits de synchronisation';

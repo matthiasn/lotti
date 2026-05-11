@@ -1314,14 +1314,6 @@ void main() {
 
     tearDown(tearDownTestGetIt);
 
-    test('does nothing when agents are disabled', () async {
-      final container = bench.createContainer(enableAgents: false);
-      await bench.initAndSubscribe(container);
-
-      verifyNever(() => bench.mockOrchestrator.start(any()));
-      verifyNever(() => bench.mockTaskAgentService.restoreSubscriptions());
-    });
-
     test(
       'starts orchestrator and restores subscriptions when enabled',
       () async {
