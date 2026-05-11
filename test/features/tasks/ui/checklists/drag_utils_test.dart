@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-class MockChecklistController extends Mock implements ChecklistController {}
 
 class MockPerformDropEvent extends Mock implements PerformDropEvent {}
 

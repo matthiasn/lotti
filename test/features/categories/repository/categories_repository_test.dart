@@ -12,17 +12,8 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
 void main() {
   setUpAll(() {

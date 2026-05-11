@@ -15,12 +15,8 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
 class MockTaskProgressRepository extends Mock
     implements TaskProgressRepository {}
-
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 void main() {
   late AiInputRepository repository;

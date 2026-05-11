@@ -34,9 +34,6 @@ class MockClipboardDataReader extends Mock implements ClipboardDataReader {}
 
 class MockDataReaderFile extends Mock implements DataReaderFile {}
 
-class MockAutomaticImageAnalysisTrigger extends Mock
-    implements AutomaticImageAnalysisTrigger {}
-
 class FakeJournalImage extends Fake implements JournalImage {}
 
 void main() {

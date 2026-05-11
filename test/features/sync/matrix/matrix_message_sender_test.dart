@@ -27,8 +27,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockRoom extends Mock implements Room {}
-
 class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 enum _GeneratedSendMessageKind {

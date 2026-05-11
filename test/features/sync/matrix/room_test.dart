@@ -12,8 +12,6 @@ import '../../../mocks/mocks.dart';
 
 class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 
-class MockRoom extends Mock implements Room {}
-
 class MockMatrixClient extends Mock implements Client {}
 
 void main() {

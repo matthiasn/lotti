@@ -8,11 +8,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockJournalDb mockJournalDb;

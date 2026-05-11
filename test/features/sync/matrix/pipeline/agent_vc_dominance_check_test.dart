@@ -173,19 +173,20 @@ void main() {
 
   tearDown(() async => db.close());
 
+  final fixedNow = DateTime(2024, 3, 15).toIso8601String();
+
   Future<void> insertEntityWithVc({
     required String id,
     required Map<String, dynamic> vc,
     String type = 'agent',
   }) async {
-    final now = DateTime.now().toIso8601String();
     final serialized =
         '{"id":"$id","vectorClock":${_jsonVc(vc)},"deletedAt":null}';
     await db.customStatement(
       'INSERT INTO agent_entities '
       '(id, agent_id, type, created_at, updated_at, serialized, schema_version) '
       'VALUES (?, ?, ?, ?, ?, ?, 1)',
-      [id, id, type, now, now, serialized],
+      [id, id, type, fixedNow, fixedNow, serialized],
     );
   }
 
@@ -193,12 +194,11 @@ void main() {
     required String id,
     required String serialized,
   }) async {
-    final now = DateTime.now().toIso8601String();
     await db.customStatement(
       'INSERT INTO agent_entities '
       '(id, agent_id, type, created_at, updated_at, serialized, schema_version) '
       'VALUES (?, ?, ?, ?, ?, ?, 1)',
-      [id, id, 'agent', now, now, serialized],
+      [id, id, 'agent', fixedNow, fixedNow, serialized],
     );
   }
 
@@ -209,14 +209,13 @@ void main() {
     String toId = 't',
     String type = 'agent_state',
   }) async {
-    final now = DateTime.now().toIso8601String();
     final serialized =
         '{"id":"$id","vectorClock":${_jsonVc(vc)},"deletedAt":null}';
     await db.customStatement(
       'INSERT INTO agent_links '
       '(id, from_id, to_id, type, created_at, updated_at, serialized, schema_version) '
       'VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
-      [id, fromId, toId, type, now, now, serialized],
+      [id, fromId, toId, type, fixedNow, fixedNow, serialized],
     );
   }
 

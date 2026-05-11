@@ -7,7 +7,7 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockSyncDatabase extends Mock implements SyncDatabase {}
+import '../../../mocks/mocks.dart';
 
 enum _GeneratedRepositoryBatchOperation {
   markSent,

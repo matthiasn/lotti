@@ -13,13 +13,9 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_utils/retry_fake_time.dart';
 import '../test_utils.dart';
-
-class MockHttpClient extends Mock implements http.Client {}
-
-// Add this fake for mocktail
-class FakeBaseRequest extends Fake implements http.BaseRequest {}
 
 void main() {
   setUpAll(() {

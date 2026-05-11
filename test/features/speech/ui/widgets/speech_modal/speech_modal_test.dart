@@ -6,13 +6,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 
 class MockPathProviderPlatform extends Mock
     with MockPlatformInterfaceMixin
     implements PathProviderPlatform {}
-
-class FakeJournalAudio extends Fake implements JournalAudio {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

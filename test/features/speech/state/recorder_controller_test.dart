@@ -47,8 +47,6 @@ class MockRealtimeTranscriptionService extends Mock
 
 class MockRecAudioRecorder extends Mock implements rec.AudioRecorder {}
 
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
 class MockAutomaticPromptTrigger extends Mock
     implements AutomaticPromptTrigger {}
 

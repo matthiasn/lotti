@@ -10,7 +10,6 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,11 +17,6 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
-
-class MockSyncDatabase extends Mock implements SyncDatabase {}
 
 class _MockQueuePipelineCoordinator extends Mock
     implements QueuePipelineCoordinator {}

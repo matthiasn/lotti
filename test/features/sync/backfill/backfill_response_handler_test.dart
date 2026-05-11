@@ -5,7 +5,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -15,9 +14,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../features/agents/test_utils.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-
-class MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

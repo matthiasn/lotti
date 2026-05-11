@@ -10,6 +10,8 @@ import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
 
@@ -19,9 +21,6 @@ class MockConversationStrategy extends Mock implements ConversationStrategy {}
 
 class FakeChatCompletionMessageToolCall extends Fake
     implements ChatCompletionMessageToolCall {}
-
-class FakeAiConfigInferenceProvider extends Fake
-    implements AiConfigInferenceProvider {}
 
 class FakeConversationManager extends Fake implements ConversationManager {}
 

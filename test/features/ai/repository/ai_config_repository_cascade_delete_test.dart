@@ -9,10 +9,9 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 
 class MockAiConfigDb extends Mock implements AiConfigDb {}
-
-class MockOutboxService extends Mock implements OutboxService {}
 
 void main() {
   late MockAiConfigDb mockDb;

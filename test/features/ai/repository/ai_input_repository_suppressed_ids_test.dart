@@ -14,8 +14,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
-
 class TestAiInputRepo extends AiInputRepository {
   TestAiInputRepo(super.ref, {required super.projectRepository})
     : super(taskSummaryResolver: TaskSummaryResolver(null));

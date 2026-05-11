@@ -19,9 +19,6 @@ import '../../../mocks/mocks.dart';
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
-class MockCloudInferenceRepository extends Mock
-    implements CloudInferenceRepository {}
-
 void main() {
   late AiConfigPrompt testPromptConfig;
   late MockUnifiedAiInferenceRepository mockRepository;

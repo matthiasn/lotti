@@ -9,9 +9,9 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockClient extends Mock implements Client {}
+import '../../../mocks/mocks.dart';
 
-class MockRoom extends Mock implements Room {}
+class MockClient extends Mock implements Client {}
 
 class MockLoginResponse extends Mock implements LoginResponse {}
 

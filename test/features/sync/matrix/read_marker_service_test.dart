@@ -10,13 +10,7 @@ import '../../../mocks/mocks.dart';
 
 class MockClient extends Mock implements Client {}
 
-class MockRoom extends Mock implements Room {}
-
-class MockTimeline extends Mock implements Timeline {}
-
 typedef MockLogging = MockLoggingService;
-
-class MockEvent extends Mock implements Event {}
 
 class MockMatrixException extends Mock implements MatrixException {}
 

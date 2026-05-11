@@ -36,15 +36,10 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
-class MockEvent extends Mock implements Event {}
-
 class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
 
 class MockBackfillResponseHandler extends Mock
     implements BackfillResponseHandler {}
-
-class MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
 
 void main() {
   setUpAll(() {

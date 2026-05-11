@@ -16,6 +16,8 @@ import 'package:matrix/encryption/key_verification_manager.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 abstract interface class CachedStreamController<T> {
   T? get value;
   Stream<T> get stream;
@@ -32,10 +34,6 @@ class MockDeviceKeys extends Mock implements DeviceKeys {}
 class MockKeyVerification extends Mock implements KeyVerification {}
 
 class MockSyncUpdate extends Mock implements SyncUpdate {}
-
-class MockEvent extends Mock implements Event {}
-
-class MockRoom extends Mock implements Room {}
 
 class MockEncryption extends Mock implements Encryption {}
 

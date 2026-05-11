@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
@@ -12,7 +11,7 @@ import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockJournalDb extends Mock implements JournalDb {}
+import '../../../mocks/mocks.dart';
 
 class FakeLabelsRepository extends Fake implements LabelsRepository {
   List<String> lastAdded = const [];

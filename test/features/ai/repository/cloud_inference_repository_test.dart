@@ -38,9 +38,6 @@ class FakeRequest extends Fake implements http.Request {}
 
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
-class FakeAiConfigInferenceProvider extends Fake
-    implements AiConfigInferenceProvider {}
-
 void main() {
   setUpAll(() {
     // Register fallback values for mocktail

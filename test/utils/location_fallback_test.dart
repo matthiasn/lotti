@@ -14,6 +14,7 @@ import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../helpers/fallbacks.dart';
+import '../mocks/mocks.dart' hide MockLoggingService;
 
 class _FakeLinuxBackend implements LinuxLocationBackend {
   _FakeLinuxBackend({this.result, this.error, this.closeError});
@@ -45,8 +46,6 @@ Future<Geolocation?> nullIpGeolocationProvider({
 }
 
 class MockLocation extends Mock implements Location {}
-
-class MockJournalDb extends Mock implements JournalDb {}
 
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {

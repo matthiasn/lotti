@@ -8,23 +8,19 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart' hide MockLoggingService;
 
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
-
+// Local [MockLoggingService] that auto-stubs `captureException` with all
+// six named arguments so test bodies don't need to repeat that wiring.
+// The central mock leaves `captureException` unstubbed and expects callers
+// to use the `stubLoggingService` helper.
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {
     when(
@@ -39,8 +35,6 @@ class MockLoggingService extends Mock implements LoggingService {
     ).thenAnswer((_) async {});
   }
 }
-
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   final baseTime = DateTime.utc(1970);

@@ -5,7 +5,6 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
@@ -15,9 +14,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockCloudInferenceRepository extends Mock
-    implements CloudInferenceRepository {}
 
 void main() {
   setUpAll(() {
@@ -62,7 +58,9 @@ void main() {
         cloudInferenceRepository: mockCloudInferenceRepository,
         taskSummaryRepository: mockTaskSummaryRepository,
         aiConfigRepository: mockAiConfigRepository,
-        systemMessageService: SystemMessageService(),
+        systemMessageService: SystemMessageService(
+          now: () => DateTime(2024, 3, 15),
+        ),
         loggingService: mockLoggingService,
       );
     });
@@ -1210,8 +1208,7 @@ void main() {
 
         expect(capturedSystemMessage, isNotNull);
         final sys = capturedSystemMessage!;
-        final today = DateTime.now().toIso8601String().split('T').first;
-        expect(sys, contains(today));
+        expect(sys, contains('2024-03-15'));
         expect(sys, contains('You are an AI assistant'));
         expect(sys, contains('start_date'));
         expect(sys, contains('end_date'));

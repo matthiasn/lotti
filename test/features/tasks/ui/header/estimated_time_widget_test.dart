@@ -7,10 +7,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
-
-class MockTimeService extends Mock implements TimeService {}
 
 void main() {
   late MockTimeService mockTimeService;

@@ -24,13 +24,11 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -41,11 +39,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockSyncDatabase extends Mock implements SyncDatabase {}
-
 class MockUserActivityGate extends Mock implements UserActivityGate {}
-
-class MockUserActivityService extends Mock implements UserActivityService {}
 
 class MockOutboxRepository extends Mock implements OutboxRepository {}
 
@@ -57,9 +51,6 @@ class MockMatrixClient extends Mock implements Client {}
 
 class MockCachedLoginController extends Mock
     implements matrix_utils.CachedStreamController<LoginState> {}
-
-class MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
 
 class TestableOutboxService extends OutboxService {
   TestableOutboxService({

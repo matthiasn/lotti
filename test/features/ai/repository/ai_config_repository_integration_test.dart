@@ -8,7 +8,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockOutboxService extends Mock implements OutboxService {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   late GetIt getIt;

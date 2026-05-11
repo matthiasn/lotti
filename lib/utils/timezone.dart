@@ -6,12 +6,14 @@ import 'package:lotti/utils/platform.dart';
 ///
 /// [overrideIsTestEnv] is intended for tests only — it bypasses the
 /// `isTestEnv` early-return so the platform-specific branches can be
-/// exercised.
+/// exercised. [clock] is also test-only and lets callers inject a fixed
+/// [DateTime] so the result is deterministic.
 Future<String> getLocalTimezone({
   String? linuxTimezoneFilePath,
   bool? overrideIsTestEnv,
+  DateTime Function()? clock,
 }) async {
-  final now = DateTime.now();
+  final now = (clock ?? DateTime.now)();
   final effectiveIsTestEnv = overrideIsTestEnv ?? isTestEnv;
 
   if (effectiveIsTestEnv) {
