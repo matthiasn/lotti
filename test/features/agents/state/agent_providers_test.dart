@@ -270,7 +270,13 @@ void main() {
         await getIt.reset();
       });
 
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          domainLoggerProvider.overrideWithValue(
+            DomainLogger(loggingService: LoggingService()),
+          ),
+        ],
+      );
       addTearDown(container.dispose);
 
       final repo = container.read(agentRepositoryProvider);

@@ -124,7 +124,10 @@ AgentDatabase agentDatabase(Ref ref) {
 /// The agent repository wrapping the database.
 @Riverpod(keepAlive: true)
 AgentRepository agentRepository(Ref ref) {
-  return AgentRepository(ref.watch(agentDatabaseProvider));
+  return AgentRepository(
+    ref.watch(agentDatabaseProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
 }
 
 /// Sync-aware write wrapper for agent entities and links.

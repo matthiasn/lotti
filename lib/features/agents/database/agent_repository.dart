@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
 /// Typed CRUD repository wrapping [AgentDatabase] and [AgentDbConversions].
@@ -20,9 +21,11 @@ import 'package:sqlite3/sqlite3.dart' show SqliteException;
 /// Wake-run log and saga log rows are plain Drift data classes and are read
 /// and written directly without an intermediate domain conversion.
 class AgentRepository {
-  AgentRepository(this._db);
+  AgentRepository(this._db, {DomainLogger? domainLogger})
+    : _domainLogger = domainLogger;
 
   final AgentDatabase _db;
+  final DomainLogger? _domainLogger;
 
   /// Multiplier for SQL LIMIT when post-query Dart filtering is applied.
   /// Over-fetching compensates for rows discarded during in-memory filtering.
@@ -1080,8 +1083,15 @@ class AgentRepository {
     final companion = AgentDbConversions.toLinkCompanion(link);
     try {
       await _db.into(_db.agentLinks).insert(companion);
-    } on SqliteException catch (e) {
+    } on SqliteException catch (e, st) {
       if (e.resultCode == 19) {
+        _domainLogger?.error(
+          LogDomains.agentRuntime,
+          'agent_links unique constraint violated for toId=${link.toId}',
+          error: e,
+          stackTrace: st,
+          subDomain: 'AgentRepository.insertLinkExclusive',
+        );
         throw DuplicateInsertException('agent_links', link.toId);
       }
       rethrow;
@@ -1217,8 +1227,15 @@ class AgentRepository {
   Future<void> insertWakeRun({required WakeRunLogData entry}) async {
     try {
       await _db.into(_db.wakeRunLog).insert(entry.toCompanion(true));
-    } on SqliteException catch (e) {
+    } on SqliteException catch (e, st) {
       if (e.resultCode == 19) {
+        _domainLogger?.error(
+          LogDomains.agentRuntime,
+          'wake_run_log unique constraint violated for runKey=${entry.runKey}',
+          error: e,
+          stackTrace: st,
+          subDomain: 'AgentRepository.insertWakeRun',
+        );
         throw DuplicateInsertException('wake_run_log', entry.runKey);
       }
       rethrow;
@@ -1410,8 +1427,16 @@ class AgentRepository {
   Future<void> insertSagaOp({required SagaLogData entry}) async {
     try {
       await _db.into(_db.sagaLog).insert(entry.toCompanion(true));
-    } on SqliteException catch (e) {
+    } on SqliteException catch (e, st) {
       if (e.resultCode == 19) {
+        _domainLogger?.error(
+          LogDomains.agentRuntime,
+          'saga_log unique constraint violated for '
+          'operationId=${entry.operationId}',
+          error: e,
+          stackTrace: st,
+          subDomain: 'AgentRepository.insertSagaOp',
+        );
         throw DuplicateInsertException('saga_log', entry.operationId);
       }
       rethrow;
