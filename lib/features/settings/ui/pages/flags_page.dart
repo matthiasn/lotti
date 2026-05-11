@@ -97,14 +97,11 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableLoggingFlag,
     enableMatrixFlag,
     resendAttachments,
-    useCompressedJsonAttachmentsFlag,
-    useOutboxBundlingFlag,
     enableHabitsPageFlag,
     enableDashboardsPageFlag,
     enableDailyOsPageFlag,
     enableEventsFlag,
     enableSessionRatingsFlag,
-    enableAgentsFlag,
     enableProjectsFlag,
     enableEmbeddingsFlag,
     enableVectorSearchFlag,
@@ -144,10 +141,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.sync_rounded;
       case resendAttachments:
         return Icons.refresh_rounded;
-      case useCompressedJsonAttachmentsFlag:
-        return Icons.compress_rounded;
-      case useOutboxBundlingFlag:
-        return Icons.archive_outlined;
       case enableHabitsPageFlag:
         return Icons.repeat_rounded;
       case enableDashboardsPageFlag:
@@ -158,8 +151,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.event_rounded;
       case enableSessionRatingsFlag:
         return Icons.star_rate_rounded;
-      case enableAgentsFlag:
-        return Icons.smart_toy_outlined;
       case enableProjectsFlag:
         return Icons.folder_outlined;
       case enableEmbeddingsFlag:
@@ -195,12 +186,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableMatrixDescription;
       case resendAttachments:
         return context.messages.configFlagResendAttachmentsDescription;
-      case useCompressedJsonAttachmentsFlag:
-        return context
-            .messages
-            .configFlagUseCompressedJsonAttachmentsDescription;
-      case useOutboxBundlingFlag:
-        return context.messages.configFlagUseOutboxBundlingDescription;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPageDescription;
       case enableDashboardsPageFlag:
@@ -211,8 +196,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableEventsDescription;
       case enableSessionRatingsFlag:
         return context.messages.configFlagEnableSessionRatingsDescription;
-      case enableAgentsFlag:
-        return context.messages.configFlagEnableAgentsDescription;
       case enableProjectsFlag:
         return context.messages.configFlagEnableProjectsDescription;
       case enableEmbeddingsFlag:
@@ -248,10 +231,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableMatrix;
       case resendAttachments:
         return context.messages.configFlagResendAttachments;
-      case useCompressedJsonAttachmentsFlag:
-        return context.messages.configFlagUseCompressedJsonAttachments;
-      case useOutboxBundlingFlag:
-        return context.messages.configFlagUseOutboxBundling;
       case enableHabitsPageFlag:
         return context.messages.configFlagEnableHabitsPage;
       case enableDashboardsPageFlag:
@@ -262,8 +241,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableEvents;
       case enableSessionRatingsFlag:
         return context.messages.configFlagEnableSessionRatings;
-      case enableAgentsFlag:
-        return context.messages.configFlagEnableAgents;
       case enableProjectsFlag:
         return context.messages.configFlagEnableProjects;
       case enableEmbeddingsFlag:

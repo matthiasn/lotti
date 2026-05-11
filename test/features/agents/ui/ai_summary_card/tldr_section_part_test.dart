@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/utils/consts.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_data/entity_factories.dart';
@@ -26,9 +24,6 @@ import 'test_bench.dart';
 Widget _narrowScope({required double width, DateTime? nextWakeAt}) {
   return ProviderScope(
     overrides: [
-      configFlagProvider.overrideWith(
-        (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
-      ),
       taskAgentProvider.overrideWith(
         (ref, id) async => makeTestIdentity(),
       ),

@@ -97,7 +97,6 @@ class OutboxService {
           loggingService: _loggingService,
           maxRetriesOverride: maxRetries,
           domainLogger: _domainLogger,
-          bundleMaxSizeProvider: _resolveBundleMaxSize,
         );
 
     _startRunner();
@@ -153,47 +152,6 @@ class OutboxService {
         }
       });
     }
-
-    // Cache the bundle-size flag and refresh on changes. We subscribe
-    // eagerly so [_resolveBundleMaxSize] can return the cached value
-    // synchronously inside the dequeue hot path. A read failure on the
-    // initial seed is logged and the safe single-row default stays in
-    // effect until the stream emits a successful value.
-    // `Future.sync` so a synchronous throw from a misbehaving
-    // [JournalDb.getConfigFlag] (or a mock that throws sync) lands in
-    // `onError` instead of escaping the constructor.
-    unawaited(
-      Future.sync(
-        () => _journalDb.getConfigFlag(useOutboxBundlingFlag),
-      ).then(
-        (enabled) {
-          _bundleMaxSize = enabled ? SyncTuning.outboxBundleMaxSize : 1;
-        },
-        onError: (Object e, StackTrace st) {
-          _loggingService.captureException(
-            e,
-            domain: 'OUTBOX',
-            subDomain: 'bundleFlag.seed',
-            stackTrace: st,
-          );
-        },
-      ),
-    );
-    _bundleFlagSubscription = _journalDb
-        .watchConfigFlag(useOutboxBundlingFlag)
-        .listen(
-          (enabled) {
-            _bundleMaxSize = enabled ? SyncTuning.outboxBundleMaxSize : 1;
-          },
-          onError: (Object e, StackTrace st) {
-            _loggingService.captureException(
-              e,
-              domain: 'OUTBOX',
-              subDomain: 'bundleFlag.watch',
-              stackTrace: st,
-            );
-          },
-        );
 
     // DB-driven nudge: ensure new pending items kick the runner while online.
     _outboxCountSubscription = _syncDatabase.watchOutboxCount().listen((count) {
@@ -256,11 +214,6 @@ class OutboxService {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<LoginState>? _loginSubscription;
   StreamSubscription<int>? _outboxCountSubscription;
-  StreamSubscription<bool>? _bundleFlagSubscription;
-  // Cached bundle-size cap: kept in memory and refreshed via the
-  // [JournalDb.watchConfigFlag] stream so each drain pass reads it
-  // synchronously instead of paying a microtask per call.
-  int _bundleMaxSize = 1;
   final DateTime _createdAt = DateTime.now();
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
@@ -535,20 +488,6 @@ class OutboxService {
   @visibleForTesting
   static int priorityForMessageForTesting(SyncMessage message) =>
       _priorityForMessage(message);
-
-  @visibleForTesting
-  Future<int> resolveBundleMaxSizeForTesting() => _resolveBundleMaxSize();
-
-  /// Resolves the bundle size cap for the next [OutboxProcessor] drain.
-  /// Returns `1` (no bundling) by default; flips to
-  /// [SyncTuning.outboxBundleMaxSize] when the user has opted in via the
-  /// `useOutboxBundlingFlag` feature flag.
-  ///
-  /// Reads from an in-memory cache populated by the constructor's
-  /// [JournalDb.watchConfigFlag] subscription, so this stays a synchronous
-  /// field read on the dequeue hot path. Flipping the flag at runtime
-  /// propagates on the next stream emission.
-  Future<int> _resolveBundleMaxSize() async => _bundleMaxSize;
 
   /// Upper bound on how many items a single `sendNext` invocation will
   /// push through the processor in one runner pass. Raised from the
@@ -1824,7 +1763,6 @@ class OutboxService {
     await _connectivitySubscription?.cancel();
     await _loginSubscription?.cancel();
     await _outboxCountSubscription?.cancel();
-    await _bundleFlagSubscription?.cancel();
     _watchdogTimer?.cancel();
     _startupPruneTimer?.cancel();
     _pruneTimer?.cancel();

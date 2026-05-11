@@ -8,14 +8,12 @@ import 'package:lotti/features/settings_v2/domain/settings_tree_data.dart';
 SettingsTreeLabel _labels(String id) => (title: 'title:$id', desc: 'desc:$id');
 
 List<SettingsNode> _tree({
-  bool enableAgents = true,
   bool enableHabits = true,
   bool enableDashboards = true,
   bool enableMatrix = true,
   bool enableWhatsNew = true,
 }) => buildSettingsTree(
   labels: _labels,
-  enableAgents: enableAgents,
   enableHabits: enableHabits,
   enableDashboards: enableDashboards,
   enableMatrix: enableMatrix,
@@ -79,7 +77,6 @@ void main() {
       () {
         final ids = _ids(
           _tree(
-            enableAgents: false,
             enableHabits: false,
             enableDashboards: false,
             enableMatrix: false,
@@ -103,7 +100,6 @@ void main() {
     test('AI, Sync, and Advanced branches are unconditional', () {
       final ids = _ids(
         _tree(
-          enableAgents: false,
           enableHabits: false,
           enableDashboards: false,
           enableMatrix: false,
@@ -148,17 +144,7 @@ void main() {
     });
   });
 
-  group('buildSettingsTree — enableAgents', () {
-    test('omits the Agents branch and all its children when off', () {
-      final ids = _ids(_tree(enableAgents: false));
-      expect(ids, isNot(contains('agents')));
-      expect(ids, isNot(contains('agents/stats')));
-      expect(ids, isNot(contains('agents/templates')));
-      expect(ids, isNot(contains('agents/instances')));
-      expect(ids, isNot(contains('agents/souls')));
-      expect(ids, isNot(contains('agents/pending-wakes')));
-    });
-
+  group('buildSettingsTree — agents branch', () {
     test('children mirror the tab order in AgentSettingsBody', () {
       // Stats / Templates / Instances / Souls / Pending Wakes — same
       // order as the in-page TabBar, so the tree shape matches the
@@ -413,7 +399,6 @@ void main() {
   group('buildSettingsTree — flag combinations', () {
     test('every flag off: minimal always-on tree', () {
       final ids = _tree(
-        enableAgents: false,
         enableHabits: false,
         enableDashboards: false,
         enableMatrix: false,
@@ -422,6 +407,7 @@ void main() {
 
       expect(ids, [
         'ai',
+        'agents',
         // Sync branch stays so the conflicts leaf remains reachable —
         // and sits directly below the AI/Agents-family slot regardless
         // of which optional taxonomy branches are gated off.

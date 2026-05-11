@@ -92,8 +92,8 @@ void main() {
 
       await _pumpSettingsPage(tester, mockJournalDb);
 
-      // Core items always visible: AI, Definitions, Theming, Advanced.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(4));
+      // Core items always visible: AI, Agents, Definitions, Theming, Advanced.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(5));
     });
 
     testWidgets('shows Sync tile when Matrix flag is ON', (tester) async {
@@ -156,21 +156,7 @@ void main() {
       },
     );
 
-    testWidgets('shows Agents card when enableAgentsFlag is ON', (
-      tester,
-    ) async {
-      when(mockJournalDb.watchConfigFlags).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          {
-            const ConfigFlag(
-              name: enableAgentsFlag,
-              description: 'Enable Agents?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
+    testWidgets('shows Agents card', (tester) async {
       await _pumpSettingsPage(tester, mockJournalDb);
 
       expect(find.text('Agents'), findsOneWidget);
@@ -178,23 +164,6 @@ void main() {
       expect(
         find.text('Templates, instances, and monitoring'),
         findsOneWidget,
-      );
-    });
-
-    testWidgets('hides Agents card when enableAgentsFlag is OFF', (
-      tester,
-    ) async {
-      when(mockJournalDb.watchConfigFlags).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
-      );
-
-      await _pumpSettingsPage(tester, mockJournalDb);
-
-      expect(find.text('Agents'), findsNothing);
-      // Subtitle also absent when the flag is off.
-      expect(
-        find.text('Templates, instances, and monitoring'),
-        findsNothing,
       );
     });
 

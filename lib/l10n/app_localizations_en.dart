@@ -1903,13 +1903,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.';
 
   @override
-  String get configFlagEnableAgents => 'Enable Agents';
-
-  @override
-  String get configFlagEnableAgentsDescription =>
-      'Allow AI agents to autonomously monitor and analyze your tasks.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Enable AI streaming for task actions';
 
@@ -2039,21 +2032,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
       'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.';
-
-  @override
-  String get configFlagUseCompressedJsonAttachments =>
-      'Compress JSON sync payloads';
-
-  @override
-  String get configFlagUseCompressedJsonAttachmentsDescription =>
-      'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.';
-
-  @override
-  String get configFlagUseOutboxBundling => 'Bundle outbox messages';
-
-  @override
-  String get configFlagUseOutboxBundlingDescription =>
-      'Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.';
 
   @override
   String get conflictApplyButton => 'Apply';
@@ -2206,9 +2184,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictPickerUseThisDevice => 'Use this device';
 
   @override
-  String get conflictsCopyTextFromSync => 'Copy Text from Sync';
-
-  @override
   String get conflictsEmptyDescription =>
       'Everything is in sync right now. Resolved items stay available in the other filter.';
 
@@ -2223,12 +2198,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get conflictsResolved => 'resolved';
-
-  @override
-  String get conflictsResolveLocalVersion => 'Resolve with local version';
-
-  @override
-  String get conflictsResolveRemoteVersion => 'Resolve with remote version';
 
   @override
   String get conflictsUnresolved => 'unresolved';
@@ -4654,9 +4623,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoriesTitle => 'Categories';
 
   @override
-  String get settingsConflictsResolutionTitle => 'Sync Conflict Resolution';
-
-  @override
   String get settingsConflictsTitle => 'Sync Conflicts';
 
   @override
@@ -5837,10 +5803,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get colorLabel => 'Colour:';
-
-  @override
-  String get configFlagEnableAgentsDescription =>
-      'Allow AI agents to autonomously monitor and analyse your tasks.';
 
   @override
   String get configFlagEnableAiStreaming =>

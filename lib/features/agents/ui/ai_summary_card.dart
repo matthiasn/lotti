@@ -5,7 +5,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
@@ -25,7 +24,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/consts.dart';
 
 part 'ai_summary_card/assign_agent_cta_part.dart';
 part 'ai_summary_card/proposal_kind_part.dart';
@@ -58,10 +56,6 @@ class AiSummaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableAgents =
-        ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
-    if (!enableAgents) return const SizedBox.shrink();
-
     final taskAgentAsync = ref.watch(taskAgentProvider(taskId));
 
     return taskAgentAsync.when(

@@ -47,8 +47,6 @@ class SettingsTreeView extends ConsumerWidget {
   List<SettingsNode> _fallbackTree(BuildContext context, WidgetRef ref) {
     return buildSettingsTree(
       labels: settingsTreeLabelsFor(context),
-      enableAgents:
-          ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false,
       enableHabits:
           ref.watch(configFlagProvider(enableHabitsPageFlag)).value ?? false,
       enableDashboards:

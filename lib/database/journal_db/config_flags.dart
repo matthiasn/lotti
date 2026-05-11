@@ -109,32 +109,6 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: useCompressedJsonAttachmentsFlag,
-      description: 'Gzip-compress JSON sync attachments on send?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: useOutboxBundlingFlag,
-      description:
-          'Bundle text-only outbox messages into a single sync envelope '
-          '(media attachments still send individually)?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
-      name: enableAgentsFlag,
-      description: 'Enable Agents?',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableProjectsFlag,
       description: 'Enable Projects?',
       status: false,

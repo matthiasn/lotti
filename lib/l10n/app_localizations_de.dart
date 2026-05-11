@@ -1933,13 +1933,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wenn aktiviert, versucht die App, Einbettungen für deine Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.';
 
   @override
-  String get configFlagEnableAgents => 'Agenten aktivieren';
-
-  @override
-  String get configFlagEnableAgentsDescription =>
-      'KI-Agenten erlauben, deine Aufgaben autonom zu überwachen und zu analysieren.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'AI-Streaming für Aufgabenaktionen aktivieren';
 
@@ -2070,21 +2063,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
       'Live-Sync-Aktivität in der Seitenleiste anzeigen — eine tx/rx-LED-Leiste mit Outbox- und Inbox-Tiefe.';
-
-  @override
-  String get configFlagUseCompressedJsonAttachments =>
-      'JSON-Sync-Payloads komprimieren';
-
-  @override
-  String get configFlagUseCompressedJsonAttachmentsDescription =>
-      'Komprimiert JSON-Sync-Anhänge mit gzip vor dem Hochladen. Spart Bandbreite in langsamen Netzen – gegen einen kleinen CPU-Aufwand beim Senden und Empfangen.';
-
-  @override
-  String get configFlagUseOutboxBundling => 'Outbox-Nachrichten bündeln';
-
-  @override
-  String get configFlagUseOutboxBundlingDescription =>
-      'Bündelt aufeinanderfolgende reine Textzeilen aus der Outbox in einer einzigen Sync-Nachricht, damit Bursts kleiner Änderungen als eine Matrix-Nachricht verschickt werden. Medienanhänge werden weiterhin einzeln gesendet.';
 
   @override
   String get conflictApplyButton => 'Übernehmen';
@@ -2240,9 +2218,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get conflictPickerUseThisDevice => 'Dieses Gerät verwenden';
 
   @override
-  String get conflictsCopyTextFromSync => 'Text aus Synchronisierung kopieren';
-
-  @override
   String get conflictsEmptyDescription =>
       'Alles ist synchronisiert. Gelöste Einträge bleiben im anderen Filter verfügbar.';
 
@@ -2257,12 +2232,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get conflictsResolved => 'gelöst';
-
-  @override
-  String get conflictsResolveLocalVersion => 'Mit lokaler Version auflösen';
-
-  @override
-  String get conflictsResolveRemoteVersion => 'Mit entfernter Version auflösen';
 
   @override
   String get conflictsUnresolved => 'ungelöst';
@@ -4716,10 +4685,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCategoriesTitle => 'Kategorien';
-
-  @override
-  String get settingsConflictsResolutionTitle =>
-      'Lösung von Synchronisierungskonflikten';
 
   @override
   String get settingsConflictsTitle => 'Synchronisierungskonflikte';

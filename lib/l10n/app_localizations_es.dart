@@ -1943,13 +1943,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuando está habilitado, la aplicación intentará generar incrustaciones para tus entradas para mejorar la búsqueda y las sugerencias de contenido relacionado.';
 
   @override
-  String get configFlagEnableAgents => 'Activar agentes';
-
-  @override
-  String get configFlagEnableAgentsDescription =>
-      'Permitir que los agentes de IA supervisen y analicen tus tareas de forma autónoma.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Habilitar streaming de IA para acciones de tareas';
 
@@ -2082,21 +2075,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get configFlagShowSyncActivityIndicatorDescription =>
       'Muestra la actividad de sincronización en directo en la barra lateral — una franja LED tx/rx con la profundidad de bandejas de entrada y salida.';
-
-  @override
-  String get configFlagUseCompressedJsonAttachments =>
-      'Comprimir cargas útiles JSON de sync';
-
-  @override
-  String get configFlagUseCompressedJsonAttachmentsDescription =>
-      'Comprime con gzip los archivos adjuntos JSON de sincronización antes de subirlos. Ahorra ancho de banda en redes lentas, a cambio de un pequeño coste de CPU al enviar y recibir.';
-
-  @override
-  String get configFlagUseOutboxBundling => 'Agrupar mensajes de salida';
-
-  @override
-  String get configFlagUseOutboxBundlingDescription =>
-      'Empaqueta las filas de texto consecutivas de la cola de salida en un único envío de sincronización, para que los lotes de cambios pequeños se envíen como un único mensaje de Matrix. Los archivos adjuntos multimedia se siguen enviando por separado.';
 
   @override
   String get conflictApplyButton => 'Aplicar';
@@ -2249,9 +2227,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get conflictPickerUseThisDevice => 'Usar este dispositivo';
 
   @override
-  String get conflictsCopyTextFromSync => 'Copiar texto desde sincronización';
-
-  @override
   String get conflictsEmptyDescription =>
       'Todo está sincronizado. Los elementos resueltos siguen disponibles en el otro filtro.';
 
@@ -2266,12 +2241,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get conflictsResolved => 'resueltos';
-
-  @override
-  String get conflictsResolveLocalVersion => 'Resolver con versión local';
-
-  @override
-  String get conflictsResolveRemoteVersion => 'Resolver con versión remota';
 
   @override
   String get conflictsUnresolved => 'sin resolver';
@@ -4774,10 +4743,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsCategoriesTitle => 'Categorías';
-
-  @override
-  String get settingsConflictsResolutionTitle =>
-      'Resolución de Conflictos de Sincronización';
 
   @override
   String get settingsConflictsTitle => 'Conflictos de Sincronización';

@@ -85,10 +85,14 @@ void _stubClaimSequence(
 ) {
   var call = 0;
   when(
-    () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+    () => repo.claimNextBatch(
+      maxSize: any(named: 'maxSize'),
+      leaseDuration: any(named: 'leaseDuration'),
+    ),
   ).thenAnswer((_) async {
-    if (call >= items.length) return null;
-    return items[call++];
+    if (call >= items.length) return <OutboxItem>[];
+    final next = items[call++];
+    return next == null ? <OutboxItem>[] : [next];
   });
 }
 
@@ -99,11 +103,6 @@ void _stubHasMorePending(MockOutboxRepository repo, {bool hasMore = false}) {
 const _generatedProcessorRetryDelay = Duration(milliseconds: 75);
 const _generatedProcessorErrorDelay = Duration(milliseconds: 225);
 const _generatedProcessorMaxRetries = 3;
-
-enum _GeneratedProcessorMode {
-  single,
-  bundle,
-}
 
 enum _GeneratedProcessorPayloadShape {
   valid,
@@ -131,7 +130,6 @@ enum _GeneratedProcessorPostSendObservation {
 
 class _GeneratedProcessorScenario {
   const _GeneratedProcessorScenario({
-    required this.mode,
     required this.rowCount,
     required this.payloadShape,
     required this.sendOutcome,
@@ -140,7 +138,6 @@ class _GeneratedProcessorScenario {
     required this.postSendObservation,
   });
 
-  final _GeneratedProcessorMode mode;
   final int rowCount;
   final _GeneratedProcessorPayloadShape payloadShape;
   final _GeneratedProcessorSendOutcome sendOutcome;
@@ -148,18 +145,11 @@ class _GeneratedProcessorScenario {
   final _GeneratedProcessorRetryProfile retryProfile;
   final _GeneratedProcessorPostSendObservation postSendObservation;
 
-  bool get usesBundleClaim => mode == _GeneratedProcessorMode.bundle;
-
-  int get claimedCount {
-    if (rowCount == 0) {
-      return 0;
-    }
-    return usesBundleClaim ? rowCount : 1;
-  }
+  int get claimedCount => rowCount;
 
   bool get hasClaim => claimedCount > 0;
 
-  bool get usesBundleCommit => usesBundleClaim && claimedCount > 1;
+  bool get usesBundleCommit => claimedCount > 1;
 
   bool get decodeFails {
     if (!hasClaim) {
@@ -255,7 +245,6 @@ class _GeneratedProcessorScenario {
   @override
   String toString() {
     return '_GeneratedProcessorScenario('
-        'mode: $mode, '
         'rowCount: $rowCount, '
         'payloadShape: $payloadShape, '
         'sendOutcome: $sendOutcome, '
@@ -267,9 +256,6 @@ class _GeneratedProcessorScenario {
 }
 
 extension _AnyGeneratedProcessorScenario on glados.Any {
-  glados.Generator<_GeneratedProcessorMode> get processorMode =>
-      glados.AnyUtils(this).choose(_GeneratedProcessorMode.values);
-
   glados.Generator<_GeneratedProcessorPayloadShape> get processorPayloadShape =>
       glados.AnyUtils(this).choose(_GeneratedProcessorPayloadShape.values);
 
@@ -285,8 +271,7 @@ extension _AnyGeneratedProcessorScenario on glados.Any {
   ).choose(_GeneratedProcessorPostSendObservation.values);
 
   glados.Generator<_GeneratedProcessorScenario> get processorScenario =>
-      glados.CombinableAny(this).combine7(
-        processorMode,
+      glados.CombinableAny(this).combine6(
         glados.IntAnys(this).intInRange(0, 5),
         processorPayloadShape,
         processorSendOutcome,
@@ -294,7 +279,6 @@ extension _AnyGeneratedProcessorScenario on glados.Any {
         processorRetryProfile,
         processorPostSendObservation,
         (
-          _GeneratedProcessorMode mode,
           int rowCount,
           _GeneratedProcessorPayloadShape payloadShape,
           _GeneratedProcessorSendOutcome sendOutcome,
@@ -302,7 +286,6 @@ extension _AnyGeneratedProcessorScenario on glados.Any {
           _GeneratedProcessorRetryProfile retryProfile,
           _GeneratedProcessorPostSendObservation postSendObservation,
         ) => _GeneratedProcessorScenario(
-          mode: mode,
           rowCount: rowCount,
           payloadShape: payloadShape,
           sendOutcome: sendOutcome,
@@ -315,21 +298,14 @@ extension _AnyGeneratedProcessorScenario on glados.Any {
 
 void _stubGeneratedClaim({
   required MockOutboxRepository repo,
-  required _GeneratedProcessorScenario scenario,
   required List<OutboxItem> claimedRows,
 }) {
-  if (scenario.usesBundleClaim) {
-    when(
-      () => repo.claimNextBatch(
-        maxSize: any(named: 'maxSize'),
-        leaseDuration: any(named: 'leaseDuration'),
-      ),
-    ).thenAnswer((_) async => claimedRows);
-  } else {
-    when(
-      () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
-    ).thenAnswer((_) async => claimedRows.isEmpty ? null : claimedRows.single);
-  }
+  when(
+    () => repo.claimNextBatch(
+      maxSize: any(named: 'maxSize'),
+      leaseDuration: any(named: 'leaseDuration'),
+    ),
+  ).thenAnswer((_) async => claimedRows);
 }
 
 void _stubGeneratedRepositoryMutations(MockOutboxRepository repo) {
@@ -433,8 +409,11 @@ void main() {
     final log = MockLoggingService();
 
     when(
-      () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
-    ).thenAnswer((_) async => null);
+      () => repo.claimNextBatch(
+        maxSize: any(named: 'maxSize'),
+        leaseDuration: any(named: 'leaseDuration'),
+      ),
+    ).thenAnswer((_) async => <OutboxItem>[]);
     _stubSilentLogging(log);
 
     final proc = OutboxProcessor(
@@ -502,7 +481,7 @@ void main() {
     glados.any.processorScenario,
     glados.ExploreConfig(numRuns: 220),
   ).test(
-    'generated processQueue scenarios match single and bundle state model',
+    'generated processQueue scenarios match the bundle state model',
     (scenario) async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
@@ -510,11 +489,7 @@ void main() {
       final claimedRows = scenario.claimedRows();
       final sentMessages = <SyncMessage>[];
 
-      _stubGeneratedClaim(
-        repo: repo,
-        scenario: scenario,
-        claimedRows: claimedRows,
-      );
+      _stubGeneratedClaim(repo: repo, claimedRows: claimedRows);
       _stubGeneratedRepositoryMutations(repo);
       _stubGeneratedHasMore(repo: repo, scenario: scenario);
       _stubGeneratedLogging(log: log, scenario: scenario);
@@ -538,7 +513,6 @@ void main() {
         retryDelayOverride: _generatedProcessorRetryDelay,
         errorDelayOverride: _generatedProcessorErrorDelay,
         maxRetriesOverride: _generatedProcessorMaxRetries,
-        bundleMaxSizeProvider: () async => scenario.usesBundleClaim ? 50 : 1,
       );
 
       final result = await processor.processQueue();
@@ -546,27 +520,15 @@ void main() {
       expect(result.nextDelay, scenario.expectedDelay);
       expect(result.shouldSchedule, scenario.expectedDelay != null);
 
-      if (scenario.usesBundleClaim) {
-        verify(
-          () => repo.claimNextBatch(
-            maxSize: 50,
-            leaseDuration: any(named: 'leaseDuration'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
-        );
-      } else {
-        verify(
-          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
-        ).called(1);
-        verifyNever(
-          () => repo.claimNextBatch(
-            maxSize: any(named: 'maxSize'),
-            leaseDuration: any(named: 'leaseDuration'),
-          ),
-        );
-      }
+      verify(
+        () => repo.claimNextBatch(
+          maxSize: any(named: 'maxSize'),
+          leaseDuration: any(named: 'leaseDuration'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+      );
 
       if (scenario.sendsMessage) {
         expect(sentMessages, hasLength(1));
@@ -878,8 +840,11 @@ void main() {
     final item = _item(id: 1000, subject: 'S', messageId: 'repeat');
     // Claim the same item repeatedly to simulate the retry loop.
     when(
-      () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
-    ).thenAnswer((_) async => item);
+      () => repo.claimNextBatch(
+        maxSize: any(named: 'maxSize'),
+        leaseDuration: any(named: 'leaseDuration'),
+      ),
+    ).thenAnswer((_) async => [item]);
     _stubHasMorePending(repo);
     when(() => repo.markRetry(any())).thenAnswer((_) async {});
     when(() => sender.send(any())).thenAnswer((_) async => false);
@@ -998,16 +963,22 @@ void main() {
 
       var call = 0;
       when(
-        () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
+        () => repo.claimNextBatch(
+          maxSize: any(named: 'maxSize'),
+          leaseDuration: any(named: 'leaseDuration'),
+        ),
       ).thenAnswer((_) async {
         call++;
-        return call == 1
-            ? s0
-            : call == 2
-            ? s1
-            : call == 3
-            ? s2
-            : s0; // 4th call after reset
+        return [
+          if (call == 1)
+            s0
+          else
+            call == 2
+                ? s1
+                : call == 3
+                ? s2
+                : s0, // 4th call after reset
+        ];
       });
       _stubHasMorePending(repo);
       when(() => repo.markRetry(any<OutboxItem>())).thenAnswer((_) async {});
@@ -1202,74 +1173,6 @@ void main() {
     }
 
     test(
-      'bundling disabled by default — claim() is used, never claimNextBatch',
-      () async {
-        final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
-        final log = MockLoggingService();
-
-        _stubClaimSequence(repo, [textItem(id: 1)]);
-        _stubHasMorePending(repo);
-        when(() => repo.markSent(any())).thenAnswer((_) async {});
-        when(() => sender.send(any())).thenAnswer((_) async => true);
-        _stubSilentLogging(log);
-
-        final proc = OutboxProcessor(
-          repository: repo,
-          messageSender: sender,
-          loggingService: log,
-        );
-
-        await proc.processQueue();
-
-        verify(
-          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
-        ).called(1);
-        verifyNever(
-          () => repo.claimNextBatch(
-            maxSize: any(named: 'maxSize'),
-            leaseDuration: any(named: 'leaseDuration'),
-          ),
-        );
-      },
-    );
-
-    test(
-      'when the bundle provider yields 1, the legacy claim() path is used '
-      '(boundary case — proves no behavior drift when the flag is off)',
-      () async {
-        final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
-        final log = MockLoggingService();
-
-        _stubClaimSequence(repo, [textItem(id: 1)]);
-        _stubHasMorePending(repo);
-        when(() => repo.markSent(any())).thenAnswer((_) async {});
-        when(() => sender.send(any())).thenAnswer((_) async => true);
-        _stubSilentLogging(log);
-
-        final proc = OutboxProcessor(
-          repository: repo,
-          messageSender: sender,
-          loggingService: log,
-          bundleMaxSizeProvider: () async => 1,
-        );
-
-        await proc.processQueue();
-
-        verify(
-          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
-        ).called(1);
-        verifyNever(
-          () => repo.claimNextBatch(
-            maxSize: any(named: 'maxSize'),
-            leaseDuration: any(named: 'leaseDuration'),
-          ),
-        );
-      },
-    );
-
-    test(
       'a single-row batch of text routes through the single-item path '
       '(no bundle envelope is constructed, so the wire format is unchanged '
       'when only one row is pending)',
@@ -1292,7 +1195,6 @@ void main() {
           repository: repo,
           messageSender: sender,
           loggingService: log,
-          bundleMaxSizeProvider: () async => 50,
         );
 
         await proc.processQueue();
@@ -1325,7 +1227,6 @@ void main() {
           repository: repo,
           messageSender: sender,
           loggingService: log,
-          bundleMaxSizeProvider: () async => 50,
         );
 
         await proc.processQueue();
@@ -1360,7 +1261,6 @@ void main() {
           repository: repo,
           messageSender: sender,
           loggingService: log,
-          bundleMaxSizeProvider: () async => 50,
         );
 
         final result = await proc.processQueue();
@@ -1403,7 +1303,6 @@ void main() {
           messageSender: sender,
           loggingService: log,
           retryDelayOverride: const Duration(milliseconds: 250),
-          bundleMaxSizeProvider: () async => 50,
         );
 
         final result = await proc.processQueue();
@@ -1445,7 +1344,6 @@ void main() {
           loggingService: log,
           maxRetriesOverride: 2,
           retryDelayOverride: const Duration(seconds: 5),
-          bundleMaxSizeProvider: () async => 50,
         );
 
         final result = await proc.processQueue();
@@ -1482,7 +1380,6 @@ void main() {
             loggingService: log,
             retryDelayOverride: const Duration(milliseconds: 200),
             sendTimeoutOverride: const Duration(milliseconds: 50),
-            bundleMaxSizeProvider: () async => 50,
           );
 
           OutboxProcessingResult? result;
@@ -1524,7 +1421,6 @@ void main() {
           repository: repo,
           messageSender: sender,
           loggingService: log,
-          bundleMaxSizeProvider: () async => 50,
         );
 
         final result = await proc.processQueue();
@@ -1565,7 +1461,6 @@ void main() {
           repository: repo,
           messageSender: sender,
           loggingService: log,
-          bundleMaxSizeProvider: () async => 50,
         );
 
         // Drain until processQueue reports nothing more to do.
@@ -1628,7 +1523,6 @@ void main() {
           repository: repo,
           messageSender: sender,
           loggingService: log,
-          bundleMaxSizeProvider: () async => 50,
         );
 
         var safety = 100;
@@ -1642,44 +1536,6 @@ void main() {
         expect((sends[0] as SyncOutboxBundle).children, hasLength(50));
         expect((sends[1] as SyncOutboxBundle).children, hasLength(9));
         expect(sends[2], isNot(isA<SyncOutboxBundle>()));
-      },
-    );
-
-    test(
-      'a flag-read failure inside the provider falls back to single-row '
-      'behavior — the outbox never blocks on a transient flag read',
-      () async {
-        final repo = MockOutboxRepository();
-        final sender = MockMessageSender();
-        final log = MockLoggingService();
-
-        _stubClaimSequence(repo, [textItem(id: 1)]);
-        _stubHasMorePending(repo);
-        when(() => repo.markSent(any())).thenAnswer((_) async {});
-        when(() => sender.send(any())).thenAnswer((_) async => true);
-        _stubSilentLogging(log);
-
-        final proc = OutboxProcessor(
-          repository: repo,
-          messageSender: sender,
-          loggingService: log,
-          // The OutboxService.resolveBundleMaxSize wrapper catches the
-          // exception and returns 1; here we model the same fallback.
-          bundleMaxSizeProvider: () async => 1,
-        );
-
-        final result = await proc.processQueue();
-
-        expect(result.shouldSchedule, isFalse);
-        verify(
-          () => repo.claim(leaseDuration: any(named: 'leaseDuration')),
-        ).called(1);
-        verifyNever(
-          () => repo.claimNextBatch(
-            maxSize: any(named: 'maxSize'),
-            leaseDuration: any(named: 'leaseDuration'),
-          ),
-        );
       },
     );
 
@@ -1706,7 +1562,6 @@ void main() {
           messageSender: sender,
           loggingService: log,
           errorDelayOverride: const Duration(milliseconds: 444),
-          bundleMaxSizeProvider: () async => 50,
         );
 
         final result = await proc.processQueue();
@@ -1748,7 +1603,6 @@ void main() {
           loggingService: log,
           maxRetriesOverride: 2,
           errorDelayOverride: const Duration(seconds: 30),
-          bundleMaxSizeProvider: () async => 50,
         );
 
         final result = await proc.processQueue();
@@ -1778,7 +1632,6 @@ void main() {
           repository: repo,
           messageSender: sender,
           loggingService: log,
-          bundleMaxSizeProvider: () async => 50,
         );
 
         // First failed bundle.
@@ -1820,7 +1673,6 @@ void main() {
           repository: repo,
           messageSender: sender,
           loggingService: log,
-          bundleMaxSizeProvider: () async => 50,
         );
 
         stubBatchClaimFromQueue(repo, [textItem(id: 1), textItem(id: 2)]);

@@ -17,14 +17,12 @@ import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 SettingsTreeLabel _labels(String id) => (title: 'title:$id', desc: 'desc:$id');
 
 List<SettingsNode> _tree({
-  bool enableAgents = true,
   bool enableHabits = true,
   bool enableDashboards = true,
   bool enableMatrix = true,
   bool enableWhatsNew = true,
 }) => buildSettingsTree(
   labels: _labels,
-  enableAgents: enableAgents,
   enableHabits: enableHabits,
   enableDashboards: enableDashboards,
   enableMatrix: enableMatrix,
@@ -40,14 +38,12 @@ enum _GeneratedSettingsUrlSuffix {
 
 class _GeneratedSettingsFlags {
   const _GeneratedSettingsFlags({
-    required this.enableAgents,
     required this.enableHabits,
     required this.enableDashboards,
     required this.enableMatrix,
     required this.enableWhatsNew,
   });
 
-  final bool enableAgents;
   final bool enableHabits;
   final bool enableDashboards;
   final bool enableMatrix;
@@ -55,7 +51,6 @@ class _GeneratedSettingsFlags {
 
   List<SettingsNode> buildTree() {
     return _tree(
-      enableAgents: enableAgents,
       enableHabits: enableHabits,
       enableDashboards: enableDashboards,
       enableMatrix: enableMatrix,
@@ -66,7 +61,6 @@ class _GeneratedSettingsFlags {
   @override
   String toString() {
     return '_GeneratedSettingsFlags('
-        'enableAgents: $enableAgents, '
         'enableHabits: $enableHabits, '
         'enableDashboards: $enableDashboards, '
         'enableMatrix: $enableMatrix, '
@@ -114,20 +108,17 @@ class _GeneratedSettingsUrl {
 }
 
 extension _AnySettingsTreeIndexScenario on Any {
-  Generator<_GeneratedSettingsFlags> get settingsFlags => combine5(
-    this.bool,
+  Generator<_GeneratedSettingsFlags> get settingsFlags => combine4(
     this.bool,
     this.bool,
     this.bool,
     this.bool,
     (
-      bool enableAgents,
       bool enableHabits,
       bool enableDashboards,
       bool enableMatrix,
       bool enableWhatsNew,
     ) => _GeneratedSettingsFlags(
-      enableAgents: enableAgents,
       enableHabits: enableHabits,
       enableDashboards: enableDashboards,
       enableMatrix: enableMatrix,

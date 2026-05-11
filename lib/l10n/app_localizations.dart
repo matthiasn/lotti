@@ -3391,18 +3391,6 @@ abstract class AppLocalizations {
   /// **'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.'**
   String get configFlagAttemptEmbeddingDescription;
 
-  /// No description provided for @configFlagEnableAgents.
-  ///
-  /// In en, this message translates to:
-  /// **'Enable Agents'**
-  String get configFlagEnableAgents;
-
-  /// No description provided for @configFlagEnableAgentsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Allow AI agents to autonomously monitor and analyze your tasks.'**
-  String get configFlagEnableAgentsDescription;
-
   /// No description provided for @configFlagEnableAiStreaming.
   ///
   /// In en, this message translates to:
@@ -3625,30 +3613,6 @@ abstract class AppLocalizations {
   /// **'Show live sync activity in the sidebar — a tx/rx LED strip with outbox and inbox depth.'**
   String get configFlagShowSyncActivityIndicatorDescription;
 
-  /// No description provided for @configFlagUseCompressedJsonAttachments.
-  ///
-  /// In en, this message translates to:
-  /// **'Compress JSON sync payloads'**
-  String get configFlagUseCompressedJsonAttachments;
-
-  /// No description provided for @configFlagUseCompressedJsonAttachmentsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Gzip-compress JSON sync attachments before upload. Saves bandwidth on slow networks in exchange for a small CPU cost when sending and receiving.'**
-  String get configFlagUseCompressedJsonAttachmentsDescription;
-
-  /// No description provided for @configFlagUseOutboxBundling.
-  ///
-  /// In en, this message translates to:
-  /// **'Bundle outbox messages'**
-  String get configFlagUseOutboxBundling;
-
-  /// No description provided for @configFlagUseOutboxBundlingDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Pack consecutive text-only outbox rows into a single sync envelope so bursts of small changes ship in one Matrix message. Media attachments still send individually.'**
-  String get configFlagUseOutboxBundlingDescription;
-
   /// No description provided for @conflictApplyButton.
   ///
   /// In en, this message translates to:
@@ -3840,12 +3804,6 @@ abstract class AppLocalizations {
   /// **'Use this device'**
   String get conflictPickerUseThisDevice;
 
-  /// No description provided for @conflictsCopyTextFromSync.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy Text from Sync'**
-  String get conflictsCopyTextFromSync;
-
   /// No description provided for @conflictsEmptyDescription.
   ///
   /// In en, this message translates to:
@@ -3875,18 +3833,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'resolved'**
   String get conflictsResolved;
-
-  /// No description provided for @conflictsResolveLocalVersion.
-  ///
-  /// In en, this message translates to:
-  /// **'Resolve with local version'**
-  String get conflictsResolveLocalVersion;
-
-  /// No description provided for @conflictsResolveRemoteVersion.
-  ///
-  /// In en, this message translates to:
-  /// **'Resolve with remote version'**
-  String get conflictsResolveRemoteVersion;
 
   /// No description provided for @conflictsUnresolved.
   ///
@@ -8133,12 +8079,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Categories'**
   String get settingsCategoriesTitle;
-
-  /// No description provided for @settingsConflictsResolutionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync Conflict Resolution'**
-  String get settingsConflictsResolutionTitle;
 
   /// No description provided for @settingsConflictsTitle.
   ///

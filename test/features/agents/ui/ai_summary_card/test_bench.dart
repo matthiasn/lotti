@@ -10,7 +10,6 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
-import 'package:lotti/utils/consts.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
@@ -31,9 +30,6 @@ class NoAgentOverrides {
   const NoAgentOverrides();
 
   List<Override> build() => [
-    configFlagProvider.overrideWith(
-      (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
-    ),
     taskAgentProvider.overrideWith((ref, id) async => null),
   ];
 }

@@ -27,15 +27,6 @@ class OutboxProcessingResult {
   bool get shouldSchedule => nextDelay != null;
 }
 
-/// Resolves the per-drain bundle size cap. Returning `1` disables bundling
-/// (the batch path collapses to single-row send, byte-for-byte identical to
-/// the pre-bundling behavior). Returning `> 1` activates bundling: up to that
-/// many consecutive text-only rows are packed into a single
-/// `SyncOutboxBundle` per drain pass. Media-attachment rows always travel
-/// alone regardless of this value (boundary rule lives in
-/// `OutboxRepository.claimNextBatch`).
-typedef OutboxBundleMaxSizeProvider = Future<int> Function();
-
 class OutboxProcessor {
   OutboxProcessor({
     required OutboxRepository repository,
@@ -47,12 +38,12 @@ class OutboxProcessor {
     Duration? sendTimeoutOverride,
     Duration? claimLeaseOverride,
     DomainLogger? domainLogger,
-    OutboxBundleMaxSizeProvider? bundleMaxSizeProvider,
+    int? bundleMaxSizeOverride,
   }) : _repository = repository,
        _messageSender = messageSender,
        _loggingService = loggingService,
        _domainLogger = domainLogger,
-       _bundleMaxSizeProvider = bundleMaxSizeProvider ?? _bundlingDisabled,
+       bundleMaxSize = bundleMaxSizeOverride ?? SyncTuning.outboxBundleMaxSize,
        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
        maxRetriesForDiagnostics =
@@ -60,13 +51,11 @@ class OutboxProcessor {
        sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout,
        claimLease = claimLeaseOverride ?? SyncTuning.outboxClaimLease;
 
-  static Future<int> _bundlingDisabled() async => 1;
-
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
-  final OutboxBundleMaxSizeProvider _bundleMaxSizeProvider;
+  final int bundleMaxSize;
   final Duration retryDelay;
   final Duration errorDelay;
   final int maxRetriesForDiagnostics;
@@ -82,7 +71,6 @@ class OutboxProcessor {
   int _lastFailedRepeats = 0;
 
   Future<OutboxProcessingResult> processQueue() async {
-    final maxSize = await _bundleMaxSizeProvider();
     // Atomic claim (pending → sending). Closes the merge-send race: while
     // we are sending, the row's status is `sending`, so in-flight merges'
     // `updateOutboxMessage` (which matches `status=pending`) returns
@@ -90,21 +78,14 @@ class OutboxProcessor {
     // merged content still rides a later Matrix event instead of being
     // silently overwritten into an already-sent row.
     //
-    // When bundling is disabled (maxSize == 1) we use the original
-    // single-row claim. Bundling activates only when the provider returns a
-    // value greater than 1; the batch claim then enforces the bundling
-    // boundary rule (media attachments always travel alone; text rows pack
-    // up to [maxSize] consecutive rows stopping before the next attachment).
-    if (maxSize <= 1) {
-      final claimedItem = await _repository.claim(leaseDuration: claimLease);
-      if (claimedItem == null) {
-        return OutboxProcessingResult.none;
-      }
-      return _processSingle(claimedItem);
-    }
-
+    // The batch claim enforces the bundling boundary rule: media
+    // attachments always travel alone; text rows pack up to [bundleMaxSize]
+    // consecutive rows stopping before the next attachment. A single-row
+    // batch routes through [_processSingle] so the wire format stays
+    // byte-for-byte identical to the pre-bundling behavior when only one
+    // row is pending.
     final batch = await _repository.claimNextBatch(
-      maxSize: maxSize,
+      maxSize: bundleMaxSize,
       leaseDuration: claimLease,
     );
     if (batch.isEmpty) {

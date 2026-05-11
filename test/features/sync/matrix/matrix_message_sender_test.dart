@@ -795,8 +795,7 @@ void main() {
   });
 
   test(
-    'gzip-compresses .json attachments when useCompressedJsonAttachmentsFlag '
-    'is on',
+    'gzip-compresses .json attachments before upload',
     () async {
       MatrixFile? capturedFile;
       Map<String, dynamic>? capturedExtra;
@@ -819,9 +818,6 @@ void main() {
           parseMarkdown: any<bool>(named: 'parseMarkdown'),
         ),
       ).thenAnswer((_) async => r'$text-event-id');
-      when(
-        () => journalDb.getConfigFlag(useCompressedJsonAttachmentsFlag),
-      ).thenAnswer((_) async => true);
 
       final meta = Metadata(
         id: 'compressed-entry',
@@ -869,68 +865,6 @@ void main() {
       );
       final decompressed = utf8.decode(gzip.decode(uploadedBytes));
       expect(decompressed, rawJson);
-    },
-  );
-
-  test(
-    'leaves .json attachments uncompressed when '
-    'useCompressedJsonAttachmentsFlag is off',
-    () async {
-      MatrixFile? capturedFile;
-      Map<String, dynamic>? capturedExtra;
-      when(
-        () => room.sendFileEvent(
-          any<MatrixFile>(),
-          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
-        ),
-      ).thenAnswer((invocation) async {
-        capturedFile = invocation.positionalArguments.first as MatrixFile;
-        capturedExtra =
-            invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
-        return r'$file-event-id';
-      });
-      when(
-        () => room.sendTextEvent(
-          any<String>(),
-          msgtype: any<String>(named: 'msgtype'),
-          parseCommands: any<bool>(named: 'parseCommands'),
-          parseMarkdown: any<bool>(named: 'parseMarkdown'),
-        ),
-      ).thenAnswer((_) async => r'$text-event-id');
-      // Flag defaults to false via the setUp stub; no override here.
-
-      final meta = Metadata(
-        id: 'plain-entry',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        updatedAt: DateTime(2024, 3, 15, 10, 30),
-        dateFrom: DateTime(2024, 3, 15, 10, 30),
-        dateTo: DateTime(2024, 3, 15, 10, 30),
-      );
-      final entity = JournalEntity.journalEntry(
-        meta: meta,
-        entryText: const EntryText(plainText: 'plain'),
-      );
-      final jsonPath = relativeEntityPath(entity);
-      final rawJson = jsonEncode(entity);
-      File('${documentsDirectory.path}$jsonPath')
-        ..parent.createSync(recursive: true)
-        ..writeAsStringSync(rawJson);
-
-      final result = await sender.sendMatrixMessage(
-        message: SyncMessage.journalEntity(
-          id: meta.id,
-          jsonPath: jsonPath,
-          vectorClock: null,
-          status: SyncEntryStatus.initial,
-        ),
-        context: buildContext(),
-        onSent: (_, _) {},
-      );
-
-      expect(result, isTrue);
-      expect(capturedExtra!.containsKey(attachmentEncodingKey), isFalse);
-      expect(capturedFile!.name, isNot(endsWith('.gz')));
-      expect(utf8.decode(capturedFile!.bytes), rawJson);
     },
   );
 
@@ -1138,7 +1072,7 @@ void main() {
 
     final uploadedJson =
         json.decode(
-              utf8.decode(capturedFile!.bytes),
+              utf8.decode(gzip.decode(capturedFile!.bytes)),
             )
             as Map<String, dynamic>;
     expect(
@@ -1841,7 +1775,7 @@ void main() {
 
     expect(result, isTrue);
     expect(capturedFile, isNotNull);
-    expect(capturedFile!.name, 'test.json');
+    expect(capturedFile!.name, 'test.json.gz');
   });
 
   test('returns false when journal entity json cannot be decoded', () async {

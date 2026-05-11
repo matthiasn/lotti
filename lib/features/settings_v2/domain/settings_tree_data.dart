@@ -23,7 +23,6 @@ typedef SettingsTreeLabelResolver = SettingsTreeLabel Function(String nodeId);
 /// callers can compare paths / persist them.
 List<SettingsNode> buildSettingsTree({
   required SettingsTreeLabelResolver labels,
-  required bool enableAgents,
   required bool enableHabits,
   required bool enableDashboards,
   required bool enableMatrix,
@@ -85,45 +84,44 @@ List<SettingsNode> buildSettingsTree({
         leaf('ai/profiles', Icons.tune_rounded, panel: 'ai-profiles'),
       ],
     ),
-    if (enableAgents)
-      branch(
-        'agents',
-        Icons.smart_toy_outlined,
-        panel: 'agents',
-        // Children mirror the tab order inside `AgentSettingsBody`
-        // (stats, templates, instances, souls, pending-wakes) so the
-        // tree shape matches what the right pane shows under Agents.
-        children: [
-          leaf(
-            'agents/stats',
-            Icons.insights_rounded,
-            panel: 'agents-stats',
-          ),
-          leaf(
-            'agents/templates',
-            Icons.article_outlined,
-            panel: 'agents-templates',
-          ),
-          leaf(
-            'agents/instances',
-            Icons.hub_outlined,
-            panel: 'agents-instances',
-          ),
-          leaf('agents/souls', Icons.auto_awesome, panel: 'agents-souls'),
-          // Trailing path segment is hyphenated (`pending-wakes`)
-          // rather than nested (`pending/wakes`); the `_idToPath`
-          // walker splits ids on `/` and would otherwise look up a
-          // non-existent `agents/pending` parent. The full leaf id is
-          // `agents/pending-wakes`, the panel id is
-          // `agents-pending-wakes`, and the URL is
-          // `/settings/agents/pending-wakes`.
-          leaf(
-            'agents/pending-wakes',
-            Icons.timer_outlined,
-            panel: 'agents-pending-wakes',
-          ),
-        ],
-      ),
+    branch(
+      'agents',
+      Icons.smart_toy_outlined,
+      panel: 'agents',
+      // Children mirror the tab order inside `AgentSettingsBody`
+      // (stats, templates, instances, souls, pending-wakes) so the
+      // tree shape matches what the right pane shows under Agents.
+      children: [
+        leaf(
+          'agents/stats',
+          Icons.insights_rounded,
+          panel: 'agents-stats',
+        ),
+        leaf(
+          'agents/templates',
+          Icons.article_outlined,
+          panel: 'agents-templates',
+        ),
+        leaf(
+          'agents/instances',
+          Icons.hub_outlined,
+          panel: 'agents-instances',
+        ),
+        leaf('agents/souls', Icons.auto_awesome, panel: 'agents-souls'),
+        // Trailing path segment is hyphenated (`pending-wakes`)
+        // rather than nested (`pending/wakes`); the `_idToPath`
+        // walker splits ids on `/` and would otherwise look up a
+        // non-existent `agents/pending` parent. The full leaf id is
+        // `agents/pending-wakes`, the panel id is
+        // `agents-pending-wakes`, and the URL is
+        // `/settings/agents/pending-wakes`.
+        leaf(
+          'agents/pending-wakes',
+          Icons.timer_outlined,
+          panel: 'agents-pending-wakes',
+        ),
+      ],
+    ),
     // Sync sits directly below Agents — both are runtime / system
     // concerns and read better as a pair than separated by the
     // taxonomy leaves (habits / categories / labels). Conflict

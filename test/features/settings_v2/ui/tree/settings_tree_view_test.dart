@@ -77,7 +77,6 @@ void main() {
     ) async {
       await _pumpView(tester);
       expect(find.text("What's New"), findsNothing);
-      expect(find.text('Agents'), findsNothing);
       expect(find.text('Habits'), findsNothing);
       expect(find.text('Dashboards'), findsNothing);
     });
@@ -93,11 +92,6 @@ void main() {
         expect(find.text('Sync Settings'), findsOneWidget);
       },
     );
-
-    testWidgets('enableAgents on surfaces the Agents branch', (tester) async {
-      await _pumpView(tester, flags: {enableAgentsFlag: true});
-      expect(find.text('Agents'), findsOneWidget);
-    });
 
     testWidgets('enableHabits on surfaces the Habits leaf', (tester) async {
       await _pumpView(tester, flags: {enableHabitsPageFlag: true});
@@ -124,7 +118,7 @@ void main() {
       'every root node renders through SettingsTreeNodeWidget (not raw rows)',
       (tester) async {
         // With every flag off the root list is the always-on set
-        // declared in `buildSettingsTree`: ai, sync, definitions,
+        // declared in `buildSettingsTree`: ai, agents, sync, definitions,
         // theming, advanced. Sync stays visible so the always-on
         // Conflicts leaf inside it remains reachable. A depth-0
         // `SettingsTreeNodeWidget` per root proves every entry
@@ -133,9 +127,10 @@ void main() {
         final rootNodeFinder = find.byWidgetPredicate(
           (w) => w is SettingsTreeNodeWidget && w.depth == 0,
         );
-        expect(rootNodeFinder, findsNWidgets(5));
+        expect(rootNodeFinder, findsNWidgets(6));
         for (final title in const [
           'AI Settings',
+          'Agents',
           'Sync Settings',
           'Definitions',
           'Theming',
