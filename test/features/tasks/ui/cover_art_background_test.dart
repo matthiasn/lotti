@@ -148,10 +148,13 @@ void main() {
 
           // Both axes are capped: maxWidth × DPR and maxHeight × DPR.
           // 360 × 3 = 1080 width; 240 × 3 = 720 height.
+          // ResizeImagePolicy.fit keeps the source aspect ratio at decode
+          // time so the displayed bitmap isn't squashed.
           expect(imageWidget.image, isA<ResizeImage>());
           final resize = imageWidget.image as ResizeImage;
           expect(resize.width, 1080);
           expect(resize.height, 720);
+          expect(resize.policy, ResizeImagePolicy.fit);
           expect(resize.imageProvider, isA<FileImage>());
         },
       );

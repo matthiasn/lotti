@@ -63,6 +63,18 @@ class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail>
     final cap = widget.size > 0
         ? (widget.size * devicePixelRatio).round().clamp(1, 10000)
         : null;
+    final fileImage = FileImage(File(path));
+    // Use ResizeImage.fit so capping both axes preserves aspect ratio
+    // instead of squashing non-square source images into a square decode.
+    ImageProvider imageProvider = fileImage;
+    if (cap != null) {
+      imageProvider = ResizeImage(
+        fileImage,
+        width: cap,
+        height: cap,
+        policy: ResizeImagePolicy.fit,
+      );
+    }
 
     return SizedBox(
       width: widget.size,
@@ -71,11 +83,7 @@ class _CoverArtThumbnailState extends ConsumerState<CoverArtThumbnail>
         child: FittedBox(
           fit: BoxFit.cover,
           alignment: Alignment(alignmentX, 0),
-          child: Image.file(
-            File(path),
-            cacheWidth: cap,
-            cacheHeight: cap,
-          ),
+          child: Image(image: imageProvider),
         ),
       ),
     );
