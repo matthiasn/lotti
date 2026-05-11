@@ -15,7 +15,6 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:path/path.dart' as path;
 
 /// Smart loader that ensures JSON presence/currency based on an incoming vector
 /// clock. It uses the AttachmentIndex to fetch missing/stale JSON and writes
@@ -72,6 +71,8 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         if (localVc != null) {
           final status = VectorClock.compare(localVc, incomingVectorClock);
           if (status == VclockStatus.a_gt_b || status == VclockStatus.equal) {
+            // Repair any missing media even when JSON is current.
+            await _ensureMediaOnMissing(local);
             return local; // local is current or newer; no fetch
           }
         }
@@ -132,12 +133,10 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       // No incoming vector clock: fetch if file is missing/empty, else read.
       var needsFetch = false;
       try {
-        // ignore: avoid_slow_async_io
-        if (!await targetFile.exists()) {
+        if (!targetFile.existsSync()) {
           needsFetch = true;
         } else {
-          final len = await targetFile.length();
-          needsFetch = len == 0;
+          needsFetch = targetFile.lengthSync() == 0;
         }
       } catch (_) {
         needsFetch = true;
@@ -221,17 +220,13 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     String relativePath, {
     String? mediaType,
   }) async {
-    final docDir = getDocumentsDirectory();
     final rp = relativePath;
-    // Trim any leading '/' or '\\' to avoid accidental absolute paths on Windows.
-    final rpRel = rp.replaceFirst(RegExp(r'^[\\/]+'), '');
-    final fp = path.normalize(path.join(docDir.path, rpRel));
-    final f = File(fp);
+    // Centralized resolution + sandbox enforcement (rejects path traversal).
+    final f = resolveJsonCandidateFile(rp);
+    final fp = f.path;
     try {
-      // ignore: avoid_slow_async_io
-      if (await f.exists()) {
-        final len = await f.length();
-        if (len > 0) return; // present
+      if (f.existsSync()) {
+        if (f.lengthSync() > 0) return; // present
       }
     } catch (e, st) {
       _logging.captureException(

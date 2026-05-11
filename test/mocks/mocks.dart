@@ -186,6 +186,10 @@ class MockEvent extends Mock implements Event {
   }
 }
 
+class MockMatrixClient extends Mock implements Client {}
+
+class MockMatrixDatabase extends Mock implements DatabaseApi {}
+
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
   bool get showPrivateEntries {

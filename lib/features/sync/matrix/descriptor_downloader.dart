@@ -53,7 +53,9 @@ class DescriptorDownloader {
         logging: _logging,
       );
       final candidateJson = utf8.decode(bytes);
-      final decoded = json.decode(candidateJson) as Map<String, dynamic>;
+      final decoded =
+          (await decodeJsonStringMaybeIsolate(candidateJson))!
+              as Map<String, dynamic>;
       final candidate = JournalEntity.fromJson(decoded);
       final decision = _validator.evaluate(
         jsonPath: jsonPath,

@@ -20,14 +20,6 @@ import 'package:path/path.dart' as path;
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
-class MockEvent extends Mock implements Event {}
-
-class MockMatrixRoom extends Mock implements Room {}
-
-class MockMatrixClient extends Mock implements Client {}
-
-class MockMatrixDatabase extends Mock implements DatabaseApi {}
-
 void main() {
   String stripLeadingSlashes(String s) =>
       s.replaceFirst(RegExp(r'^[\\/]+'), '');
@@ -348,6 +340,157 @@ void main() {
       },
     );
 
+    test(
+      'logs SmartLoader.localRead on non-FileSystemException local failure',
+      () async {
+        // Write a malformed JSON file so readEntityFromJson throws a
+        // FormatException (not a FileSystemException) — that takes the
+        // generic catch branch in load(), which logs to SmartLoader.localRead.
+        const relJson = '/text_entries/2024-01-01/corrupt.text.json';
+        final normalized = stripLeadingSlashes(relJson);
+        final f = File(path.join(tempDir.path, normalized));
+        await f.create(recursive: true);
+        await f.writeAsString('{this is not json');
+
+        final index = AttachmentIndex();
+        final ev = MockEvent();
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.content).thenReturn({'relativePath': relJson});
+        final replacement = JournalEntry(
+          meta: Metadata(
+            id: 'corrupt',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            vectorClock: const VectorClock({'n': 1}),
+          ),
+          entryText: const EntryText(plainText: 'recovered'),
+        );
+        when(ev.downloadAndDecryptAttachment).thenAnswer(
+          (_) async => MatrixFile(
+            bytes: Uint8List.fromList(
+              jsonEncode(replacement.toJson()).codeUnits,
+            ),
+            name: 'corrupt.text.json',
+          ),
+        );
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        final loaded = await loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'n': 1}),
+        );
+
+        expect(loaded.meta.id, 'corrupt');
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.localRead',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'no-VC path: throws and logs smart.fetch.miss(noVc) when descriptor not indexed',
+      () async {
+        const relJson = '/text_entries/2024-01-01/no_descriptor.text.json';
+        final index = AttachmentIndex(logging: loggingService);
+        when(
+          () => loggingService.captureEvent(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        await expectLater(
+          loader.load(jsonPath: relJson),
+          throwsA(isA<FileSystemException>()),
+        );
+        verify(
+          () => loggingService.captureEvent(
+            contains('smart.fetch.miss(noVc) path=$relJson'),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetch',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'skips media fetch when image file already exists with content',
+      () async {
+        final fixedDate = DateTime(2024, 3, 15);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-present',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+          data: ImageData(
+            imageId: 'img-present',
+            imageDirectory: '/images/2024-01-01/',
+            imageFile: 'present.jpg',
+            capturedAt: fixedDate,
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        File(path.join(tempDir.path, stripLeadingSlashes(relJson)))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
+
+        // Pre-create the media file with real content so the early-return
+        // branch in _ensureMediaFile fires (lengthSync > 0).
+        final relMedia = getRelativeImagePath(image);
+        final mediaFile =
+            File(
+                path.join(tempDir.path, stripLeadingSlashes(relMedia)),
+              )
+              ..createSync(recursive: true)
+              ..writeAsBytesSync([1, 2, 3, 4]);
+
+        final index = AttachmentIndex();
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evt-img-present');
+        when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => ev.content).thenReturn({'relativePath': relMedia});
+        when(ev.downloadAndDecryptAttachment).thenAnswer(
+          (_) async => MatrixFile(
+            bytes: Uint8List.fromList([9, 9, 9]),
+            name: 'present.jpg',
+          ),
+        );
+        index.record(ev);
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        final loaded = await loader.load(jsonPath: relJson);
+
+        expect(loaded.meta.id, 'img-present');
+        expect(mediaFile.lengthSync(), 4); // unchanged
+        verifyNever(ev.downloadAndDecryptAttachment);
+      },
+    );
+
     test('ensures missing audio media via AttachmentIndex', () async {
       final audio = JournalAudio(
         meta: Metadata(
@@ -478,7 +621,7 @@ void main() {
       when(() => ev.eventId).thenReturn('evt-stale');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
-      final room = MockMatrixRoom();
+      final room = MockRoom();
       final client = MockMatrixClient();
       final database = MockMatrixDatabase();
       when(() => ev.room).thenReturn(room);
@@ -574,7 +717,7 @@ void main() {
       when(() => ev.eventId).thenReturn('evt-staler');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
-      final room = MockMatrixRoom();
+      final room = MockRoom();
       final client = MockMatrixClient();
       final database = MockMatrixDatabase();
       when(() => ev.room).thenReturn(room);
@@ -645,7 +788,7 @@ void main() {
       when(() => ev.eventId).thenReturn('evt-stale-loop');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
-      final room = MockMatrixRoom();
+      final room = MockRoom();
       final client = MockMatrixClient();
       final database = MockMatrixDatabase();
       when(() => ev.room).thenReturn(room);
@@ -735,7 +878,7 @@ void main() {
           when(() => ev.eventId).thenReturn('evt-reset');
           when(() => ev.attachmentMimetype).thenReturn('application/json');
           when(() => ev.content).thenReturn({'relativePath': relJson});
-          final room = MockMatrixRoom();
+          final room = MockRoom();
           final client = MockMatrixClient();
           final database = MockMatrixDatabase();
           when(() => ev.room).thenReturn(room);
@@ -840,8 +983,8 @@ void main() {
         when(() => evB.attachmentMimetype).thenReturn('application/json');
         when(() => evA.content).thenReturn({'relativePath': relJsonA});
         when(() => evB.content).thenReturn({'relativePath': relJsonB});
-        final roomA = MockMatrixRoom();
-        final roomB = MockMatrixRoom();
+        final roomA = MockRoom();
+        final roomB = MockRoom();
         final clientA = MockMatrixClient();
         final clientB = MockMatrixClient();
         final database = MockMatrixDatabase();
@@ -939,7 +1082,7 @@ void main() {
         when(() => ev.eventId).thenReturn('evt-no-mxc');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
-        final room = MockMatrixRoom();
+        final room = MockRoom();
         final client = MockMatrixClient();
         final database = MockMatrixDatabase();
         when(() => ev.room).thenReturn(room);
@@ -1007,7 +1150,7 @@ void main() {
         when(() => ev.eventId).thenReturn('evt-delete-error');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
-        final room = MockMatrixRoom();
+        final room = MockRoom();
         final client = MockMatrixClient();
         final database = MockMatrixDatabase();
         when(() => ev.room).thenReturn(room);
@@ -1221,7 +1364,7 @@ void main() {
         when(() => ev.eventId).thenReturn('evt-empty-second');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
-        final room = MockMatrixRoom();
+        final room = MockRoom();
         final client = MockMatrixClient();
         final database = MockMatrixDatabase();
         when(() => ev.room).thenReturn(room);
@@ -1294,7 +1437,7 @@ void main() {
         when(() => ev.eventId).thenReturn('evt-invalid-json');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
-        final room = MockMatrixRoom();
+        final room = MockRoom();
         final client = MockMatrixClient();
         final database = MockMatrixDatabase();
         when(() => ev.room).thenReturn(room);

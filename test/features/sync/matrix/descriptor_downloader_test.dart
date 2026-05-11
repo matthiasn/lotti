@@ -13,14 +13,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _MockEvent extends Mock implements Event {}
-
-class _MockMatrixRoom extends Mock implements Room {}
-
-class _MockMatrixClient extends Mock implements Client {}
-
-class _MockMatrixDatabase extends Mock implements DatabaseApi {}
-
 void main() {
   setUpAll(() {
     registerFallbackValue(Uri.parse('mxc://placeholder'));
@@ -30,10 +22,10 @@ void main() {
     late MockLoggingService logging;
     late VectorClockValidator validator;
     late DescriptorDownloader downloader;
-    late _MockEvent descriptorEvent;
-    late _MockMatrixRoom room;
-    late _MockMatrixClient client;
-    late _MockMatrixDatabase database;
+    late MockEvent descriptorEvent;
+    late MockRoom room;
+    late MockMatrixClient client;
+    late MockMatrixDatabase database;
 
     setUp(() {
       logging = MockLoggingService();
@@ -44,10 +36,10 @@ void main() {
         validator: validator,
       );
 
-      descriptorEvent = _MockEvent();
-      room = _MockMatrixRoom();
-      client = _MockMatrixClient();
-      database = _MockMatrixDatabase();
+      descriptorEvent = MockEvent();
+      room = MockRoom();
+      client = MockMatrixClient();
+      database = MockMatrixDatabase();
 
       when(() => descriptorEvent.room).thenReturn(room);
       when(() => room.client).thenReturn(client);
