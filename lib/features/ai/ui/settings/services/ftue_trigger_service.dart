@@ -20,9 +20,11 @@ enum FtueTriggerResult {
 /// Provider types that support FTUE (First Time User Experience) setup.
 const Set<InferenceProviderType> ftueSupportedProviderTypes = {
   InferenceProviderType.alibaba,
+  InferenceProviderType.anthropic,
   InferenceProviderType.gemini,
-  InferenceProviderType.openAi,
   InferenceProviderType.mistral,
+  InferenceProviderType.ollama,
+  InferenceProviderType.openAi,
 };
 
 /// Extension providing FTUE-related properties for provider types.

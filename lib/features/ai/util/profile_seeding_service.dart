@@ -12,6 +12,7 @@ const profileGeminiProId = 'profile-gemini-pro-001';
 const profileOpenAiId = 'profile-openai-001';
 const profileMistralEuId = 'profile-mistral-eu-001';
 const profileAlibabaId = 'profile-alibaba-001';
+const profileAnthropicId = 'profile-anthropic-001';
 const profileLocalId = 'profile-local-001';
 const profileLocalPowerId = 'profile-local-power-001';
 
@@ -225,6 +226,23 @@ class ProfileSeedingService {
       transcriptionModelId: 'qwen3-omni-flash',
       imageGenerationModelId: 'wan2.6-image',
       skillAssignments: _defaultSkillAssignments,
+      isDefault: true,
+      createdAt: DateTime(2026),
+    ),
+    AiConfigInferenceProfile(
+      id: profileAnthropicId,
+      name: 'Anthropic Claude',
+      thinkingModelId: 'claude-sonnet-4-20250514',
+      imageRecognitionModelId: 'claude-sonnet-4-20250514',
+      // Anthropic ships no native transcription or image-generation models;
+      // those slots stay unbound and the user can wire them to another
+      // provider's model from the inference-profile editor.
+      skillAssignments: [
+        const SkillAssignment(
+          skillId: skillImageAnalysisContextId,
+          automate: true,
+        ),
+      ],
       isDefault: true,
       createdAt: DateTime(2026),
     ),

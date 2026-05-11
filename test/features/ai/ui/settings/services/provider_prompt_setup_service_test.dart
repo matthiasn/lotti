@@ -1214,4 +1214,479 @@ void main() {
       ).called(1);
     });
   });
+
+  group('AnthropicFtueResult', () {
+    test('totalModels sums modelsCreated and modelsVerified', () {
+      const result = AnthropicFtueResult(
+        modelsCreated: 1,
+        modelsVerified: 1,
+        categoryCreated: true,
+      );
+      expect(result.totalModels, equals(2));
+    });
+
+    test('zero values yield zero totalModels', () {
+      const result = AnthropicFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        categoryCreated: false,
+      );
+      expect(result.totalModels, equals(0));
+    });
+
+    test('optional categoryReused / categoryName / errors carry through', () {
+      const result = AnthropicFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 2,
+        categoryCreated: false,
+        categoryReused: true,
+        categoryName: 'Test Category Anthropic Enabled',
+        errors: ['boom'],
+      );
+      expect(result.categoryReused, isTrue);
+      expect(result.categoryName, equals('Test Category Anthropic Enabled'));
+      expect(result.errors, equals(['boom']));
+    });
+  });
+
+  group('Anthropic FTUE Setup - performAnthropicFtueSetup', () {
+    late ProviderPromptSetupService setupService;
+    late MockAiConfigRepository mockRepository;
+    late MockCategoryRepository mockCategoryRepository;
+    late AiConfigInferenceProvider anthropicProvider;
+
+    setUp(() {
+      setupService = const ProviderPromptSetupService();
+      mockRepository = MockAiConfigRepository();
+      mockCategoryRepository = MockCategoryRepository();
+
+      anthropicProvider = AiTestDataFactory.createTestProvider(
+        id: 'anthropic-provider-id',
+        name: 'Anthropic',
+        // ignore: avoid_redundant_argument_values
+        type: InferenceProviderType.anthropic,
+        apiKey: 'sk-ant-test-key',
+        baseUrl: 'https://api.anthropic.com',
+      );
+    });
+
+    Widget createAnthropicFtueTestWidget({
+      required Future<AnthropicFtueResult?> Function(BuildContext, WidgetRef)
+      onPressed,
+    }) {
+      return ProviderScope(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                return ElevatedButton(
+                  onPressed: () async {
+                    await onPressed(context, ref);
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('returns null for non-Anthropic provider', (tester) async {
+      final geminiProvider = AiTestDataFactory.createTestProvider(
+        id: 'gemini-id',
+        name: 'Gemini',
+        type: InferenceProviderType.gemini,
+      );
+
+      AnthropicFtueResult? result;
+      await tester.pumpWidget(
+        createAnthropicFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performAnthropicFtueSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+      expect(result, isNull);
+    });
+
+    testWidgets('creates 2 models when none exist and a fresh category', (
+      tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          defaultProfileId: any(named: 'defaultProfileId'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'cat-anthropic',
+          name: ftueAnthropicCategoryName,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
+
+      AnthropicFtueResult? result;
+      await tester.pumpWidget(
+        createAnthropicFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performAnthropicFtueSetup(
+              context: context,
+              ref: ref,
+              provider: anthropicProvider,
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+
+      expect(result, isNotNull);
+      expect(result!.modelsCreated, equals(2));
+      expect(result!.modelsVerified, equals(0));
+      expect(result!.categoryCreated, isTrue);
+      verify(() => mockRepository.saveConfig(any())).called(2);
+    });
+
+    testWidgets(
+      'verifies existing models instead of recreating them, reuses category',
+      (tester) async {
+        final existingModels = [
+          AiTestDataFactory.createTestModel(
+            id: 'existing-sonnet',
+            name: 'Claude Sonnet 4',
+            providerModelId: ftueAnthropicReasoningModelId,
+            inferenceProviderId: anthropicProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-haiku',
+            name: 'Claude Haiku 3.5',
+            providerModelId: ftueAnthropicFlashModelId,
+            inferenceProviderId: anthropicProvider.id,
+          ),
+        ];
+
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => existingModels);
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer(
+          (_) async => [
+            CategoryDefinition(
+              id: 'cat-anthropic',
+              name: ftueAnthropicCategoryName,
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              vectorClock: null,
+              private: false,
+              active: true,
+            ),
+          ],
+        );
+
+        AnthropicFtueResult? result;
+        await tester.pumpWidget(
+          createAnthropicFtueTestWidget(
+            onPressed: (context, ref) async {
+              return result = await setupService.performAnthropicFtueSetup(
+                context: context,
+                ref: ref,
+                provider: anthropicProvider,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Test'));
+        await tester.pump();
+
+        expect(result!.modelsCreated, equals(0));
+        expect(result!.modelsVerified, equals(2));
+        expect(result!.categoryCreated, isFalse);
+        expect(result!.categoryReused, isTrue);
+        verifyNever(() => mockRepository.saveConfig(any()));
+        verifyNever(
+          () => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            defaultProfileId: any(named: 'defaultProfileId'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'category is created with the Anthropic FTUE name + color + profile',
+      (tester) async {
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => <AiConfig>[]);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer((_) async => <CategoryDefinition>[]);
+        when(
+          () => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            defaultProfileId: any(named: 'defaultProfileId'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryDefinition(
+            id: 'cat-anthropic',
+            name: ftueAnthropicCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ),
+        );
+
+        await tester.pumpWidget(
+          createAnthropicFtueTestWidget(
+            onPressed: (context, ref) async {
+              return setupService.performAnthropicFtueSetup(
+                context: context,
+                ref: ref,
+                provider: anthropicProvider,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Test'));
+        await tester.pump();
+
+        verify(
+          () => mockCategoryRepository.createCategory(
+            name: ftueAnthropicCategoryName,
+            color: ftueAnthropicCategoryColor,
+            defaultProfileId: profileAnthropicId,
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  group('OllamaFtueResult', () {
+    test('modelsCreated/Verified are always zero in PR-1', () {
+      const result = OllamaFtueResult(categoryCreated: true);
+      expect(result.modelsCreated, equals(0));
+      expect(result.modelsVerified, equals(0));
+      expect(result.totalModels, equals(0));
+    });
+
+    test('carries category metadata and errors through', () {
+      const result = OllamaFtueResult(
+        categoryCreated: false,
+        categoryReused: true,
+        categoryName: ftueOllamaCategoryName,
+        errors: ['could not reach localhost:11434'],
+      );
+      expect(result.categoryReused, isTrue);
+      expect(result.categoryName, equals(ftueOllamaCategoryName));
+      expect(result.errors, isNotEmpty);
+    });
+  });
+
+  group('Ollama FTUE Setup - performOllamaFtueSetup', () {
+    late ProviderPromptSetupService setupService;
+    late MockAiConfigRepository mockRepository;
+    late MockCategoryRepository mockCategoryRepository;
+    late AiConfigInferenceProvider ollamaProvider;
+
+    setUp(() {
+      setupService = const ProviderPromptSetupService();
+      mockRepository = MockAiConfigRepository();
+      mockCategoryRepository = MockCategoryRepository();
+
+      ollamaProvider = AiTestDataFactory.createTestProvider(
+        id: 'ollama-provider-id',
+        name: 'Ollama',
+        type: InferenceProviderType.ollama,
+        apiKey: '',
+        baseUrl: 'http://localhost:11434',
+      );
+    });
+
+    Widget createOllamaFtueTestWidget({
+      required Future<OllamaFtueResult?> Function(BuildContext, WidgetRef)
+      onPressed,
+    }) {
+      return ProviderScope(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                return ElevatedButton(
+                  onPressed: () async {
+                    await onPressed(context, ref);
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('returns null for non-Ollama provider', (tester) async {
+      final geminiProvider = AiTestDataFactory.createTestProvider(
+        id: 'gemini-id',
+        name: 'Gemini',
+        type: InferenceProviderType.gemini,
+      );
+
+      OllamaFtueResult? result;
+      await tester.pumpWidget(
+        createOllamaFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performOllamaFtueSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+      expect(result, isNull);
+    });
+
+    testWidgets(
+      'creates the Ollama test category bound to the local profile and '
+      'touches no model repository — Ollama serves whatever the user has '
+      'pulled locally, so PR-1 does not auto-create any model rows',
+      (tester) async {
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer((_) async => <CategoryDefinition>[]);
+        when(
+          () => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            defaultProfileId: any(named: 'defaultProfileId'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryDefinition(
+            id: 'cat-ollama',
+            name: ftueOllamaCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ),
+        );
+
+        OllamaFtueResult? result;
+        await tester.pumpWidget(
+          createOllamaFtueTestWidget(
+            onPressed: (context, ref) async {
+              return result = await setupService.performOllamaFtueSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Test'));
+        await tester.pump();
+
+        expect(result, isNotNull);
+        expect(result!.categoryCreated, isTrue);
+        expect(result!.modelsCreated, equals(0));
+        expect(result!.modelsVerified, equals(0));
+        verifyNever(() => mockRepository.saveConfig(any()));
+        verify(
+          () => mockCategoryRepository.createCategory(
+            name: ftueOllamaCategoryName,
+            color: ftueOllamaCategoryColor,
+            defaultProfileId: profileLocalId,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets('reuses an existing Ollama category instead of recreating it', (
+      tester,
+    ) async {
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer(
+        (_) async => [
+          CategoryDefinition(
+            id: 'cat-ollama',
+            name: ftueOllamaCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ),
+        ],
+      );
+
+      OllamaFtueResult? result;
+      await tester.pumpWidget(
+        createOllamaFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performOllamaFtueSetup(
+              context: context,
+              ref: ref,
+              provider: ollamaProvider,
+            );
+          },
+        ),
+      );
+
+      await tester.tap(find.text('Test'));
+      await tester.pump();
+
+      expect(result!.categoryCreated, isFalse);
+      expect(result!.categoryReused, isTrue);
+      verifyNever(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          defaultProfileId: any(named: 'defaultProfileId'),
+        ),
+      );
+    });
+  });
 }

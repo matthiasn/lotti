@@ -1999,6 +1999,30 @@ abstract class AppLocalizations {
   /// **'Switch to standard recording'**
   String get aiBatchToggleTooltip;
 
+  /// No description provided for @aiCapabilityChipImageGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'Image generation'**
+  String get aiCapabilityChipImageGeneration;
+
+  /// No description provided for @aiCapabilityChipImageRecognition.
+  ///
+  /// In en, this message translates to:
+  /// **'Image recognition'**
+  String get aiCapabilityChipImageRecognition;
+
+  /// No description provided for @aiCapabilityChipThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get aiCapabilityChipThinking;
+
+  /// No description provided for @aiCapabilityChipTranscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription'**
+  String get aiCapabilityChipTranscription;
+
   /// No description provided for @aiCardEmptyProposals.
   ///
   /// In en, this message translates to:
@@ -2550,6 +2574,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Providers'**
   String get aiSettingsTabProviders;
+
+  /// No description provided for @aiSetupPreviewAcceptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept & finish'**
+  String get aiSetupPreviewAcceptButton;
+
+  /// No description provided for @aiSetupPreviewAlreadyAddedSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Already added'**
+  String get aiSetupPreviewAlreadyAddedSectionLabel;
+
+  /// No description provided for @aiSetupPreviewCategoryFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a test category {categoryName} to try it out.'**
+  String aiSetupPreviewCategoryFooter(String categoryName);
+
+  /// No description provided for @aiSetupPreviewConnectedHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'{providerName} connected'**
+  String aiSetupPreviewConnectedHeader(String providerName);
+
+  /// No description provided for @aiSetupPreviewCustomizeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Customize'**
+  String get aiSetupPreviewCustomizeButton;
+
+  /// No description provided for @aiSetupPreviewLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Review what Lotti will add. Uncheck anything you don\'t want; you can always set it up later by hand.'**
+  String get aiSetupPreviewLead;
+
+  /// No description provided for @aiSetupPreviewLiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Live'**
+  String get aiSetupPreviewLiveBadge;
+
+  /// No description provided for @aiSetupPreviewModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{providerName} setup'**
+  String aiSetupPreviewModalTitle(String providerName);
+
+  /// No description provided for @aiSetupPreviewModelsSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get aiSetupPreviewModelsSectionLabel;
+
+  /// No description provided for @aiSetupPreviewProfileSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inference profile'**
+  String get aiSetupPreviewProfileSectionLabel;
+
+  /// No description provided for @aiSetupPreviewProfileSetActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Set active'**
+  String get aiSetupPreviewProfileSetActiveBadge;
+
+  /// No description provided for @aiSetupResultBulletCategoryCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up a test category {categoryName} to try it out'**
+  String aiSetupResultBulletCategoryCreated(String categoryName);
+
+  /// No description provided for @aiSetupResultBulletCategoryReused.
+  ///
+  /// In en, this message translates to:
+  /// **'Reusing existing test category {categoryName}'**
+  String aiSetupResultBulletCategoryReused(String categoryName);
+
+  /// No description provided for @aiSetupResultBulletModels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Configured 1 model} other{Configured {count} models}}'**
+  String aiSetupResultBulletModels(int count);
+
+  /// No description provided for @aiSetupResultBulletProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Created inference profile {profileName}'**
+  String aiSetupResultBulletProfile(String profileName);
+
+  /// No description provided for @aiSetupResultErrorsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 issue} other{{count} issues}} during setup'**
+  String aiSetupResultErrorsHeader(int count);
+
+  /// No description provided for @aiSetupResultHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'{providerName} is connected'**
+  String aiSetupResultHeader(String providerName);
+
+  /// No description provided for @aiSetupResultLead.
+  ///
+  /// In en, this message translates to:
+  /// **'We set things up for you. AI features are ready to use in your journal.'**
+  String get aiSetupResultLead;
+
+  /// No description provided for @aiSetupResultModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{providerName} ready'**
+  String aiSetupResultModalTitle(String providerName);
+
+  /// No description provided for @aiSetupResultReviewSetupButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Review setup'**
+  String get aiSetupResultReviewSetupButton;
+
+  /// No description provided for @aiSetupResultStartUsingButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start using AI'**
+  String get aiSetupResultStartUsingButton;
 
   /// No description provided for @aiSetupWizardCreatesOptimized.
   ///

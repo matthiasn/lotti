@@ -683,18 +683,25 @@ getOpenAiFtueKnownModels() {
 
 /// Category names for FTUE test categories
 const ftueAlibabaCategoryName = 'Test Category Alibaba Enabled';
+const ftueAnthropicCategoryName = 'Test Category Anthropic Enabled';
 const ftueGeminiCategoryName = 'Test Category Gemini Enabled';
+const ftueOllamaCategoryName = 'Test Category Ollama Enabled';
 const ftueOpenAiCategoryName = 'Test Category OpenAI Enabled';
 const ftueMistralCategoryName = 'Test Category Mistral Enabled';
 
 /// Brand colors for FTUE test categories (hex format)
 const ftueAlibabaCategoryColor = '#FF6D00'; // Alibaba Orange
+const ftueAnthropicCategoryColor = '#D97757'; // Anthropic Cinnamon
 const ftueGeminiCategoryColor = '#4285F4'; // Google Blue
+const ftueOllamaCategoryColor = '#0F172A'; // Ollama Charcoal
 const ftueOpenAiCategoryColor = '#10A37F'; // OpenAI Green
 const ftueMistralCategoryColor = '#FF7000'; // Mistral Orange
 
-/// Brand colors as Color constants for UI usage
-const ftueAlibabaColor = Color(0xFFFF6D00);
+/// Brand colors as Color constants for UI usage.
+///
+/// New UI surfaces should prefer `tokens.colors.aiProvider.*` from the
+/// design-system tokens. These three remain only because
+/// `ai_provider_selection_modal.dart` has not migrated yet.
 const ftueGeminiColor = Color(0xFF4285F4);
 const ftueOpenAiColor = Color(0xFF10A37F);
 const ftueMistralColor = Color(0xFFFF7000);
@@ -792,4 +799,39 @@ getMistralFtueKnownModels() {
   }
 
   return (flash: flash, reasoning: reasoning, audio: audio);
+}
+
+// =============================================================================
+// Anthropic FTUE (First Time User Experience) Model Constants
+// =============================================================================
+
+/// Model IDs used for Anthropic FTUE automation.
+/// Pair: Sonnet for reasoning/thinking, Haiku for fast / cheap calls.
+const ftueAnthropicReasoningModelId = 'claude-sonnet-4-20250514';
+const ftueAnthropicFlashModelId = 'claude-3-5-haiku-20241022';
+
+/// Finds a KnownModel by its provider model ID from the anthropicModels list.
+/// Returns null if not found.
+KnownModel? findAnthropicKnownModel(String providerModelId) {
+  return anthropicModels.firstWhereOrNull(
+    (model) => model.providerModelId == providerModelId,
+  );
+}
+
+/// Returns the two KnownModel configurations needed for Anthropic FTUE.
+/// - Reasoning model (Claude Sonnet 4) for complex thinking tasks
+/// - Flash model (Claude Haiku 3.5) for fast / cheap calls
+///
+/// Anthropic does not ship native audio transcription or image generation
+/// models, so those skill slots stay unbound on the seeded profile and the
+/// user can wire them to a different provider's model later.
+({KnownModel reasoning, KnownModel flash})? getAnthropicFtueKnownModels() {
+  final reasoning = findAnthropicKnownModel(ftueAnthropicReasoningModelId);
+  final flash = findAnthropicKnownModel(ftueAnthropicFlashModelId);
+
+  if (reasoning == null || flash == null) {
+    return null;
+  }
+
+  return (reasoning: reasoning, flash: flash);
 }

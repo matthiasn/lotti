@@ -497,6 +497,10 @@
   "agentTokenUsageWakeCount": "Aufwachvorgänge",
   "aiAssistantTitle": "Generieren…",
   "aiBatchToggleTooltip": "Zur Standardaufnahme wechseln",
+  "aiCapabilityChipImageGeneration": "Bildgenerierung",
+  "aiCapabilityChipImageRecognition": "Bilderkennung",
+  "aiCapabilityChipThinking": "Denken",
+  "aiCapabilityChipTranscription": "Transkription",
   "aiCardEmptyProposals": "Keine offenen Vorschläge · der Agent zeigt neue Änderungen hier an",
   "aiCardHistoryToggle": "Verlauf · {count}",
   "@aiCardHistoryToggle": {
@@ -617,6 +621,107 @@
   "aiSettingsTabModels": "Modelle",
   "aiSettingsTabProfiles": "Profile",
   "aiSettingsTabProviders": "Anbieter",
+  "aiSetupPreviewAcceptButton": "Übernehmen & abschließen",
+  "aiSetupPreviewAlreadyAddedSectionLabel": "Bereits hinzugefügt",
+  "aiSetupPreviewCategoryFooter": "Richte Testkategorie {categoryName} ein, um es auszuprobieren.",
+  "@aiSetupPreviewCategoryFooter": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupPreviewConnectedHeader": "{providerName} verbunden",
+  "@aiSetupPreviewConnectedHeader": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupPreviewCustomizeButton": "Anpassen",
+  "aiSetupPreviewLead": "Sieh dir an, was Lotti hinzufügen wird. Hake ab, was du nicht möchtest — du kannst es später jederzeit manuell einrichten.",
+  "aiSetupPreviewLiveBadge": "Live",
+  "aiSetupPreviewModalTitle": "Einrichtung {providerName}",
+  "@aiSetupPreviewModalTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupPreviewModelsSectionLabel": "Modelle",
+  "aiSetupPreviewProfileSectionLabel": "Inferenzprofil",
+  "aiSetupPreviewProfileSetActiveBadge": "Aktiv setzen",
+  "aiSetupResultBulletCategoryCreated": "Testkategorie {categoryName} eingerichtet",
+  "@aiSetupResultBulletCategoryCreated": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupResultBulletCategoryReused": "Vorhandene Testkategorie {categoryName} wird wiederverwendet",
+  "@aiSetupResultBulletCategoryReused": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupResultBulletModels": "{count, plural, =1{1 Modell eingerichtet} other{{count} Modelle eingerichtet}}",
+  "@aiSetupResultBulletModels": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiSetupResultBulletProfile": "Inferenzprofil {profileName} erstellt",
+  "@aiSetupResultBulletProfile": {
+    "placeholders": {
+      "profileName": {
+        "type": "String",
+        "example": "Gemini Flash"
+      }
+    }
+  },
+  "aiSetupResultErrorsHeader": "{count, plural, =1{1 Problem} other{{count} Probleme}} bei der Einrichtung",
+  "@aiSetupResultErrorsHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "aiSetupResultHeader": "{providerName} ist verbunden",
+  "@aiSetupResultHeader": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupResultLead": "Wir haben alles für dich eingerichtet. Die KI-Funktionen stehen in deinem Journal bereit.",
+  "aiSetupResultModalTitle": "{providerName} bereit",
+  "@aiSetupResultModalTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupResultReviewSetupButton": "Einrichtung prüfen",
+  "aiSetupResultStartUsingButton": "KI verwenden",
   "aiSetupWizardCreatesOptimized": "Erstellt optimierte Modelle, Prompts und eine Testkategorie",
   "aiSetupWizardDescription": "Modelle, Prompts und Testkategorie für {providerName} einrichten oder aktualisieren",
   "@aiSetupWizardDescription": {

@@ -497,6 +497,10 @@
   "agentTokenUsageWakeCount": "Treziri",
   "aiAssistantTitle": "Generează…",
   "aiBatchToggleTooltip": "Comutare la înregistrare standard",
+  "aiCapabilityChipImageGeneration": "Generare de imagini",
+  "aiCapabilityChipImageRecognition": "Recunoaștere de imagini",
+  "aiCapabilityChipThinking": "Gândire",
+  "aiCapabilityChipTranscription": "Transcriere",
   "aiCardEmptyProposals": "Nicio propunere deschisă · agentul va afișa aici noile modificări",
   "aiCardHistoryToggle": "Istoric · {count}",
   "@aiCardHistoryToggle": {
@@ -617,6 +621,107 @@
   "aiSettingsTabModels": "Modele",
   "aiSettingsTabProfiles": "Profile",
   "aiSettingsTabProviders": "Furnizori",
+  "aiSetupPreviewAcceptButton": "Acceptați și finalizați",
+  "aiSetupPreviewAlreadyAddedSectionLabel": "Deja adăugate",
+  "aiSetupPreviewCategoryFooter": "Configurați categoria de test {categoryName} pentru a o încerca.",
+  "@aiSetupPreviewCategoryFooter": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupPreviewConnectedHeader": "{providerName} conectat",
+  "@aiSetupPreviewConnectedHeader": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupPreviewCustomizeButton": "Personalizați",
+  "aiSetupPreviewLead": "Verificați ce va adăuga Lotti. Debifați ce nu doriți — puteți configura manual mai târziu oricând.",
+  "aiSetupPreviewLiveBadge": "Live",
+  "aiSetupPreviewModalTitle": "Configurare {providerName}",
+  "@aiSetupPreviewModalTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupPreviewModelsSectionLabel": "Modele",
+  "aiSetupPreviewProfileSectionLabel": "Profil de inferență",
+  "aiSetupPreviewProfileSetActiveBadge": "Activați",
+  "aiSetupResultBulletCategoryCreated": "Categoria de test {categoryName} a fost configurată",
+  "@aiSetupResultBulletCategoryCreated": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupResultBulletCategoryReused": "Se reutilizează categoria de test existentă {categoryName}",
+  "@aiSetupResultBulletCategoryReused": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupResultBulletModels": "{count, plural, =1{1 model configurat} few{{count} modele configurate} other{{count} de modele configurate}}",
+  "@aiSetupResultBulletModels": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiSetupResultBulletProfile": "Profil de inferență {profileName} creat",
+  "@aiSetupResultBulletProfile": {
+    "placeholders": {
+      "profileName": {
+        "type": "String",
+        "example": "Gemini Flash"
+      }
+    }
+  },
+  "aiSetupResultErrorsHeader": "{count, plural, =1{1 problemă} few{{count} probleme} other{{count} de probleme}} la configurare",
+  "@aiSetupResultErrorsHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "aiSetupResultHeader": "{providerName} este conectat",
+  "@aiSetupResultHeader": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupResultLead": "Am configurat totul pentru dvs. Funcțiile AI sunt gata de utilizat în jurnalul dvs.",
+  "aiSetupResultModalTitle": "{providerName} gata",
+  "@aiSetupResultModalTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupResultReviewSetupButton": "Verificați configurarea",
+  "aiSetupResultStartUsingButton": "Începeți să utilizați AI",
   "aiSetupWizardCreatesOptimized": "Creează modele, prompturi și o categorie de test optimizate",
   "aiSetupWizardDescription": "Configurează sau actualizează modele, prompturi și categoria de test pentru {providerName}",
   "@aiSetupWizardDescription": {

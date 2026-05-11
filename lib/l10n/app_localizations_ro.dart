@@ -1118,6 +1118,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
 
   @override
+  String get aiCapabilityChipImageGeneration => 'Generare de imagini';
+
+  @override
+  String get aiCapabilityChipImageRecognition => 'Recunoaștere de imagini';
+
+  @override
+  String get aiCapabilityChipThinking => 'Gândire';
+
+  @override
+  String get aiCapabilityChipTranscription => 'Transcriere';
+
+  @override
   String get aiCardEmptyProposals =>
       'Nicio propunere deschisă · agentul va afișa aici noile modificări';
 
@@ -1419,6 +1431,105 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSettingsTabProviders => 'Furnizori';
+
+  @override
+  String get aiSetupPreviewAcceptButton => 'Acceptați și finalizați';
+
+  @override
+  String get aiSetupPreviewAlreadyAddedSectionLabel => 'Deja adăugate';
+
+  @override
+  String aiSetupPreviewCategoryFooter(String categoryName) {
+    return 'Configurați categoria de test $categoryName pentru a o încerca.';
+  }
+
+  @override
+  String aiSetupPreviewConnectedHeader(String providerName) {
+    return '$providerName conectat';
+  }
+
+  @override
+  String get aiSetupPreviewCustomizeButton => 'Personalizați';
+
+  @override
+  String get aiSetupPreviewLead =>
+      'Verificați ce va adăuga Lotti. Debifați ce nu doriți — puteți configura manual mai târziu oricând.';
+
+  @override
+  String get aiSetupPreviewLiveBadge => 'Live';
+
+  @override
+  String aiSetupPreviewModalTitle(String providerName) {
+    return 'Configurare $providerName';
+  }
+
+  @override
+  String get aiSetupPreviewModelsSectionLabel => 'Modele';
+
+  @override
+  String get aiSetupPreviewProfileSectionLabel => 'Profil de inferență';
+
+  @override
+  String get aiSetupPreviewProfileSetActiveBadge => 'Activați';
+
+  @override
+  String aiSetupResultBulletCategoryCreated(String categoryName) {
+    return 'Categoria de test $categoryName a fost configurată';
+  }
+
+  @override
+  String aiSetupResultBulletCategoryReused(String categoryName) {
+    return 'Se reutilizează categoria de test existentă $categoryName';
+  }
+
+  @override
+  String aiSetupResultBulletModels(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de modele configurate',
+      few: '$count modele configurate',
+      one: '1 model configurat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiSetupResultBulletProfile(String profileName) {
+    return 'Profil de inferență $profileName creat';
+  }
+
+  @override
+  String aiSetupResultErrorsHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de probleme',
+      few: '$count probleme',
+      one: '1 problemă',
+    );
+    return '$_temp0 la configurare';
+  }
+
+  @override
+  String aiSetupResultHeader(String providerName) {
+    return '$providerName este conectat';
+  }
+
+  @override
+  String get aiSetupResultLead =>
+      'Am configurat totul pentru dvs. Funcțiile AI sunt gata de utilizat în jurnalul dvs.';
+
+  @override
+  String aiSetupResultModalTitle(String providerName) {
+    return '$providerName gata';
+  }
+
+  @override
+  String get aiSetupResultReviewSetupButton => 'Verificați configurarea';
+
+  @override
+  String get aiSetupResultStartUsingButton => 'Începeți să utilizați AI';
 
   @override
   String get aiSetupWizardCreatesOptimized =>
