@@ -6,8 +6,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 
-class MockEvent extends Mock implements Event {}
-
 enum _GeneratedAttachmentOperationKind { record, find }
 
 enum _GeneratedAttachmentEventIdMode { valid, empty, throws }

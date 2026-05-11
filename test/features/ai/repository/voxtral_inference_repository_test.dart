@@ -18,8 +18,6 @@ import '../../../test_utils/retry_fake_time.dart';
 
 class FakeRequest extends Fake implements http.Request {}
 
-class FakeBaseRequest extends Fake implements http.BaseRequest {}
-
 /// Creates a mock SSE stream response for testing
 http.StreamedResponse createSseStreamedResponse({
   required List<Map<String, dynamic>> events,

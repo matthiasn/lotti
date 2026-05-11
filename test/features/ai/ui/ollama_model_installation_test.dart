@@ -9,8 +9,7 @@ import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockCloudInferenceRepository extends Mock
-    implements CloudInferenceRepository {}
+import '../../../mocks/mocks.dart';
 
 class MockAiConfigByTypeController extends AiConfigByTypeController {
   MockAiConfigByTypeController(this._configs);

@@ -12,8 +12,6 @@ import 'package:mocktail/mocktail.dart';
 import '../mocks/mocks.dart';
 import '../test_utils/retry_fake_time.dart';
 
-class MockHttpClient extends Mock implements http.Client {}
-
 class FakeUri extends Fake implements Uri {}
 
 class FakeException extends Fake implements Exception {}

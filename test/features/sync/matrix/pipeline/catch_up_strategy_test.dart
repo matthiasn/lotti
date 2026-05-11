@@ -2418,8 +2418,6 @@ void main() {
   });
 }
 
-class MockEvent extends Mock implements Event {}
-
 class _CollectingBootstrapSink implements BootstrapSink {
   _CollectingBootstrapSink(
     this._onPage, {

@@ -20,10 +20,6 @@ import '../mocks/mocks.dart';
 
 class FakeJournalImage extends Fake implements JournalImage {}
 
-class FakeJournalAudio extends Fake implements JournalAudio {}
-
-class FakeMetadata extends Fake implements Metadata {}
-
 class FakeDropItem extends Fake implements DropItem {
   FakeDropItem(this._xFile);
 

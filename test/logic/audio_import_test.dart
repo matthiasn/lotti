@@ -15,10 +15,6 @@ import 'package:path/path.dart' as path;
 
 import '../mocks/mocks.dart';
 
-class FakeJournalAudio extends Fake implements JournalAudio {}
-
-class FakeMetadata extends Fake implements Metadata {}
-
 class FakeDropItem extends Fake implements DropItem {
   FakeDropItem(this._xFile);
 

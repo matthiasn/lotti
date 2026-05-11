@@ -15,8 +15,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-class MockSyncDatabase extends Mock implements SyncDatabase {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const n = 111;

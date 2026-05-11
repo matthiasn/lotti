@@ -23,7 +23,6 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart'
     show aiInputRepositoryProvider;
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
-import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
@@ -44,11 +43,6 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockCloudInferenceRepository extends Mock
-    implements CloudInferenceRepository {}
-
-class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 
 class MockPromptCapabilityFilter extends Mock
     implements PromptCapabilityFilter {}

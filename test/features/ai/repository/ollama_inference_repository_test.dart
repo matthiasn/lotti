@@ -9,7 +9,7 @@ import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class MockHttpClient extends Mock implements http.Client {}
+import '../../../mocks/mocks.dart';
 
 class MockStreamedResponse extends Mock implements http.StreamedResponse {}
 

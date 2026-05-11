@@ -12,9 +12,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

@@ -12,11 +12,11 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 class MockMatrixSdkGateway extends Mock implements MatrixSdkGateway {}
 
 class MockClient extends Mock implements Client {}
-
-class MockRoom extends Mock implements Room {}
 
 class MockStateEvent extends Mock implements StrippedStateEvent {}
 

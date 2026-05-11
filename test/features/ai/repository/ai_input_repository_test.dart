@@ -41,9 +41,6 @@ class MockTaskProgressRepository extends Mock
   }
 }
 
-// Mock for PersistenceLogic
-class MockPersistenceLogic extends Mock implements PersistenceLogic {}
-
 // Mock classes for parameters
 class FakeId extends Mock {}
 

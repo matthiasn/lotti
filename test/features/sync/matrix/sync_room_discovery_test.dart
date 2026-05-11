@@ -11,12 +11,6 @@ import '../../../mocks/mocks.dart';
 
 class MockClient extends Mock implements Client {}
 
-class MockRoom extends Mock implements Room {}
-
-class MockTimeline extends Mock implements Timeline {}
-
-class MockEvent extends Mock implements Event {}
-
 class MockRoomSummary extends Mock implements RoomSummary {}
 
 class MockStrippedStateEvent extends Mock implements StrippedStateEvent {}

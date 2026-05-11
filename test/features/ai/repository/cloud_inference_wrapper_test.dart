@@ -3,16 +3,11 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
-import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class MockCloudInferenceRepository extends Mock
-    implements CloudInferenceRepository {}
-
-class FakeAiConfigInferenceProvider extends Fake
-    implements AiConfigInferenceProvider {}
+import '../../../mocks/mocks.dart';
 
 class FakeChatCompletionTool extends Fake implements ChatCompletionTool {}
 

@@ -18,8 +18,6 @@ class MockSyncLifecycleCoordinator extends Mock
 
 class MockClient extends Mock implements Client {}
 
-class MockRoom extends Mock implements Room {}
-
 class MockRoomSummary extends Mock implements RoomSummary {}
 
 void main() {

@@ -29,9 +29,6 @@ import '../test_utils.dart';
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
-class MockCloudInferenceRepository extends Mock
-    implements CloudInferenceRepository {}
-
 /// Helper to create override for UnifiedAiController with a specific state.
 Override unifiedAiControllerOverride(UnifiedAiState initialState) {
   return unifiedAiControllerProvider.overrideWithBuild(

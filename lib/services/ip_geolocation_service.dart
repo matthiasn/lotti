@@ -25,7 +25,7 @@ class IpGeolocationService {
     DateTime Function()? clock,
   }) async {
     final client = httpClient ?? http.Client();
-    final nowFn = clock ?? DateTime.now;
+    final now = (clock ?? DateTime.now)();
     try {
       final response = await client
           .get(
@@ -41,8 +41,6 @@ class IpGeolocationService {
         final longitude = (data['longitude'] as num?)?.toDouble();
 
         if (latitude != null && longitude != null) {
-          final now = nowFn();
-
           return Geolocation(
             createdAt: now,
             latitude: latitude,
@@ -53,7 +51,7 @@ class IpGeolocationService {
             ),
             timezone: data['timezone'] as String? ?? now.timeZoneName,
             utcOffset: data['utc_offset'] != null
-                ? _parseUtcOffset(data['utc_offset'] as String, nowFn)
+                ? _parseUtcOffset(data['utc_offset'] as String, now)
                 : now.timeZoneOffset.inMinutes,
             accuracy: _ipLocationAccuracy,
           );
@@ -67,10 +65,10 @@ class IpGeolocationService {
       );
     }
 
-    return _getLocationFromIpApiFallback(httpClient: client, clock: nowFn);
+    return _getLocationFromIpApiFallback(httpClient: client, now: now);
   }
 
-  static int _parseUtcOffset(String offset, DateTime Function() nowFn) {
+  static int _parseUtcOffset(String offset, DateTime now) {
     // Parse offset format like "+0200" or "-0430"
     try {
       if (offset.isEmpty) return 0;
@@ -91,13 +89,13 @@ class IpGeolocationService {
       );
     }
 
-    return nowFn().timeZoneOffset.inMinutes;
+    return now.timeZoneOffset.inMinutes;
   }
 
   // Alternative fallback using ip-api.com
   static Future<Geolocation?> _getLocationFromIpApiFallback({
     required http.Client httpClient,
-    required DateTime Function() clock,
+    required DateTime now,
   }) async {
     try {
       final response = await httpClient
@@ -115,8 +113,6 @@ class IpGeolocationService {
           final longitude = (data['lon'] as num?)?.toDouble();
 
           if (latitude != null && longitude != null) {
-            final now = clock();
-
             return Geolocation(
               createdAt: now,
               latitude: latitude,

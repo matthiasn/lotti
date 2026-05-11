@@ -12,9 +12,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockSyncSequenceLogService extends Mock
-    implements SyncSequenceLogService {}
-
 // Fake types for mocktail fallback
 class FakeEntryStream extends Fake
     implements Stream<List<({String id, Map<String, int>? vectorClock})>> {}

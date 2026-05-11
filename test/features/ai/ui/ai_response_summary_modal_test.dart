@@ -6,16 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary_modal.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../test_helper.dart';
-
-class MockUrlLauncher extends Mock
-    with MockPlatformInterfaceMixin
-    implements UrlLauncherPlatform {}
-
-class FakeLaunchOptions extends Fake implements LaunchOptions {}
 
 // Note: We don't need to implement the mocks for clipboard functionality since
 // we're only testing for the presence of UI elements

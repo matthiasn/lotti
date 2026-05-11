@@ -6,7 +6,6 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -16,12 +15,7 @@ import 'package:path/path.dart' as path;
 
 import '../mocks/mocks.dart';
 
-class MockAutomaticImageAnalysisTrigger extends Mock
-    implements AutomaticImageAnalysisTrigger {}
-
 class FakeJournalImage extends Fake implements JournalImage {}
-
-class FakeMetadata extends Fake implements Metadata {}
 
 class FakeDropItem extends Fake implements DropItem {
   FakeDropItem(this._xFile);

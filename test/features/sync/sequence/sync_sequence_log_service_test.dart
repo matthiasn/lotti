@@ -15,8 +15,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockSyncDatabase extends Mock implements SyncDatabase {}
-
 enum _GeneratedCounterState {
   absent,
   received,

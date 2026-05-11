@@ -3,12 +3,9 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/read_marker_manager.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
-
-class MockRoom extends Mock implements Room {}
 
 enum _GeneratedMarkerOperationKind {
   schedule,
