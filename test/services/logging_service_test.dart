@@ -243,23 +243,6 @@ void main() {
     });
   });
 
-  test('captureEvent supports different InsightLevel values', () {
-    fakeAsync((async) {
-      logging.captureEvent(
-        'trace message',
-        domain: 'TRACE_TEST',
-        level: InsightLevel.trace,
-      );
-
-      async.flushMicrotasks();
-
-      final logFile = _findLogFile(tempDocs);
-      expect(logFile, isNotNull, reason: 'Log file should exist');
-      final content = logFile!.readAsStringSync();
-      expect(content.contains('[TRACE] TRACE_TEST: trace message'), isTrue);
-    });
-  });
-
   test('captureEvent supports warn level', () {
     fakeAsync((async) {
       logging.captureEvent(

@@ -7,9 +7,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
-import 'package:lotti/features/agents/model/task_resolution_time_series.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/wake_run_chart_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -176,9 +174,6 @@ Future<RitualSummaryMetrics> ritualSummaryMetrics(
   final lastSessionAt = await ref.watch(
     latestCompletedRitualTimestampProvider(templateId).future,
   );
-  final resolutionTimeSeries = await ref.watch(
-    templateTaskResolutionTimeSeriesProvider(templateId).future,
-  );
 
   final now = clock.now();
   final today = truncateToDay(now);
@@ -219,33 +214,12 @@ Future<RitualSummaryMetrics> ritualSummaryMetrics(
     lifetimeWakeCount: lifetimeWakeCount,
     wakesSinceLastSession: wakesSinceLastSession,
     totalTokenUsageSinceLastSession: totalTokenUsageSinceLastSession,
-    meanTimeToResolution: _weightedMeanMttr(
-      resolutionTimeSeries.dailyBuckets,
-    ),
     dailyWakeCounts: _buildDailyWakeCounts(
       recentWakeRuns: recentWakeRuns,
       chartStart: chartStart,
       today: today,
     ),
   );
-}
-
-Duration? _weightedMeanMttr(List<DailyResolutionBucket> buckets) {
-  var totalResolved = 0;
-  var totalMs = 0;
-
-  for (final bucket in buckets) {
-    if (bucket.resolvedCount <= 0) {
-      continue;
-    }
-    totalResolved += bucket.resolvedCount;
-    totalMs += bucket.averageMttr.inMilliseconds * bucket.resolvedCount;
-  }
-
-  if (totalResolved == 0) {
-    return null;
-  }
-  return Duration(milliseconds: totalMs ~/ totalResolved);
 }
 
 List<DailyWakeCountBucket> _buildDailyWakeCounts({

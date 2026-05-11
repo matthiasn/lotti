@@ -4,7 +4,6 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
-import 'package:lotti/features/sync/state/matrix_room_provider.dart';
 import 'package:lotti/features/sync/state/matrix_stats_provider.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
@@ -16,67 +15,6 @@ void main() {
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-  });
-
-  group('MatrixRoomController', () {
-    test('build returns current room from matrix service', () async {
-      when(
-        () => mockMatrixService.getRoom(),
-      ).thenAnswer((_) async => '!room:server');
-
-      final container = ProviderContainer(
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final room = await container.read(matrixRoomControllerProvider.future);
-
-      expect(room, '!room:server');
-      verify(() => mockMatrixService.getRoom()).called(1);
-    });
-
-    test('delegates room actions to matrix service', () async {
-      when(() => mockMatrixService.getRoom()).thenAnswer((_) async => null);
-      when(
-        () => mockMatrixService.createRoom(),
-      ).thenAnswer((_) async => '!new:room');
-      when(
-        () => mockMatrixService.inviteToSyncRoom(userId: any(named: 'userId')),
-      ).thenAnswer((_) async {});
-      when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
-      when(
-        () => mockMatrixService.joinRoom(any()),
-      ).thenAnswer((_) async => '!joined:room');
-      when(() => mockMatrixService.leaveRoom()).thenAnswer((_) async {});
-
-      final container = ProviderContainer(
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      // Ensure provider is built
-      await container.read(matrixRoomControllerProvider.future);
-      final controller = container.read(matrixRoomControllerProvider.notifier);
-
-      await controller.createRoom();
-      verify(() => mockMatrixService.createRoom()).called(1);
-
-      await controller.inviteToRoom('@user:server');
-      verify(
-        () => mockMatrixService.inviteToSyncRoom(userId: '@user:server'),
-      ).called(1);
-
-      await controller.joinRoom('!room:server');
-      verify(() => mockMatrixService.saveRoom('!room:server')).called(1);
-      verify(() => mockMatrixService.joinRoom('!room:server')).called(1);
-
-      await controller.leaveRoom();
-      verify(() => mockMatrixService.leaveRoom()).called(1);
-    });
   });
 
   group('MatrixStats providers', () {

@@ -3,7 +3,6 @@ enum InsightLevel {
   error,
   warn,
   info,
-  trace,
 }
 
 /// Type of log entry.

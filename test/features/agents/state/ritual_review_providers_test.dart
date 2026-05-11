@@ -570,7 +570,6 @@ void main() {
         expect(result.lifetimeWakeCount, 21);
         expect(result.wakesSinceLastSession, 2);
         expect(result.totalTokenUsageSinceLastSession, 175);
-        expect(result.meanTimeToResolution, const Duration(hours: 3));
         expect(result.dailyWakeCounts, hasLength(30));
         expect(result.dailyWakeCounts.first.date, chartStart);
         expect(result.dailyWakeCounts.first.wakeCount, 1);
@@ -634,7 +633,6 @@ void main() {
       expect(result.lifetimeWakeCount, 9);
       expect(result.wakesSinceLastSession, 9);
       expect(result.totalTokenUsageSinceLastSession, 16);
-      expect(result.meanTimeToResolution, isNull);
       verify(
         () => repository.sumTokenUsageForTemplate(kTestTemplateId),
       ).called(1);

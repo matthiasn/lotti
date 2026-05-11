@@ -9,7 +9,6 @@ void main() {
       expect(result.applied, isTrue);
       expect(result.rowsWritten, 1);
       expect(result.skipReason, isNull);
-      expect(result.skipped, isFalse);
     });
 
     test('accepts custom rowsWritten', () {
@@ -30,7 +29,6 @@ void main() {
       expect(result.applied, isFalse);
       expect(result.skipReason, JournalUpdateSkipReason.conflict);
       expect(result.rowsWritten, 0);
-      expect(result.skipped, isTrue);
     });
   });
 
@@ -53,15 +51,5 @@ void main() {
         'missing_base',
       );
     });
-  });
-
-  test('skipped getter is inverse of applied', () {
-    final applied = JournalUpdateResult.applied();
-    final skipped = JournalUpdateResult.skipped(
-      reason: JournalUpdateSkipReason.overwritePrevented,
-    );
-
-    expect(applied.skipped, isFalse);
-    expect(skipped.skipped, isTrue);
   });
 }

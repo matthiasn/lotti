@@ -9,7 +9,11 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
+import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 import 'agent_repository_test_helpers.dart';
 
@@ -3950,7 +3954,6 @@ void main() {
           isA<DuplicateInsertException>()
               .having((e) => e.table, 'table', 'wake_run_log')
               .having((e) => e.key, 'key', 'run-key-001')
-              .having((e) => e.cause, 'cause', isNotNull)
               .having(
                 (e) => e.toString(),
                 'toString',
@@ -4289,8 +4292,7 @@ void main() {
         throwsA(
           isA<DuplicateInsertException>()
               .having((e) => e.table, 'table', 'saga_log')
-              .having((e) => e.key, 'key', 'op-001')
-              .having((e) => e.cause, 'cause', isNotNull),
+              .having((e) => e.key, 'key', 'op-001'),
         ),
       );
     });
@@ -6309,6 +6311,102 @@ void main() {
       expect(result.totalInput, 300);
       expect(result.totalOutput, 130);
       expect(result.totalThoughts, 40);
+    });
+  });
+
+  // ── DomainLogger wiring on duplicate inserts ───────────────────────────────
+
+  group('DuplicateInsertException logging', () {
+    late AgentDatabase loggedDb;
+    late AgentRepository loggedRepo;
+    late MockDomainLogger mockLogger;
+
+    setUp(() {
+      registerFallbackValue(StackTrace.empty);
+      loggedDb = AgentDatabase(inMemoryDatabase: true, background: false);
+      mockLogger = MockDomainLogger();
+      loggedRepo = AgentRepository(loggedDb, domainLogger: mockLogger);
+    });
+
+    tearDown(() async {
+      await loggedDb.close();
+    });
+
+    test('insertLinkExclusive logs SqliteException before throwing', () async {
+      const toId = 'tpl-target-logger';
+      await loggedRepo.insertLinkExclusive(
+        model.AgentLink.improverTarget(
+          id: 'link-logger-first',
+          fromId: 'agent-imp-A',
+          toId: toId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+
+      await expectLater(
+        loggedRepo.insertLinkExclusive(
+          model.AgentLink.improverTarget(
+            id: 'link-logger-second',
+            fromId: 'agent-imp-B',
+            toId: toId,
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        ),
+        throwsA(isA<DuplicateInsertException>()),
+      );
+
+      verify(
+        () => mockLogger.error(
+          LogDomains.agentRuntime,
+          any(that: contains('agent_links')),
+          error: any(named: 'error', that: isA<SqliteException>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'AgentRepository.insertLinkExclusive',
+        ),
+      ).called(1);
+    });
+
+    test('insertWakeRun logs SqliteException before throwing', () async {
+      final entry = makeWakeRun();
+      await loggedRepo.insertWakeRun(entry: entry);
+
+      await expectLater(
+        loggedRepo.insertWakeRun(entry: makeWakeRun()),
+        throwsA(isA<DuplicateInsertException>()),
+      );
+
+      verify(
+        () => mockLogger.error(
+          LogDomains.agentRuntime,
+          any(that: contains('wake_run_log')),
+          error: any(named: 'error', that: isA<SqliteException>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'AgentRepository.insertWakeRun',
+        ),
+      ).called(1);
+    });
+
+    test('insertSagaOp logs SqliteException before throwing', () async {
+      await loggedRepo.insertSagaOp(entry: makeSagaOp());
+
+      await expectLater(
+        loggedRepo.insertSagaOp(entry: makeSagaOp()),
+        throwsA(isA<DuplicateInsertException>()),
+      );
+
+      verify(
+        () => mockLogger.error(
+          LogDomains.agentRuntime,
+          any(that: contains('saga_log')),
+          error: any(named: 'error', that: isA<SqliteException>()),
+          stackTrace: any(named: 'stackTrace', that: isNotNull),
+          subDomain: 'AgentRepository.insertSagaOp',
+        ),
+      ).called(1);
     });
   });
 }
