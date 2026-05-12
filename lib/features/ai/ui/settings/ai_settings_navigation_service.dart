@@ -3,7 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
 
 /// Service responsible for handling navigation to AI configuration edit pages
 ///
@@ -12,31 +12,59 @@ import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.d
 class AiSettingsNavigationService {
   const AiSettingsNavigationService();
 
-  /// Navigates to the appropriate edit page based on the AI configuration type
+  /// Navigates to the appropriate edit page based on the AI
+  /// configuration type. Provider / model / profile rows all beam to
+  /// a per-kind URL so the Settings V2 desktop master/detail surface
+  /// swaps the right pane in place. Prompt and skill rows aren't
+  /// editable through the settings UI today — they fall back to the
+  /// legacy no-op slide route.
   Future<void> navigateToConfigEdit(
     BuildContext context,
     AiConfig config,
   ) async {
-    final route = _createEditRouteWithTransition(config);
-    await Navigator.of(context).push(route);
+    switch (config) {
+      case AiConfigInferenceProvider(:final id):
+        await navigateToProviderDetail(context, providerId: id);
+      case AiConfigModel(:final id):
+        nav_service.beamToNamed('/settings/ai/model/$id');
+      case AiConfigInferenceProfile(:final id):
+        nav_service.beamToNamed('/settings/ai/profile/$id');
+      case AiConfigPrompt() || AiConfigSkill():
+        // Not editable through the settings UI — preserve the existing
+        // no-op behavior so callers that hit this branch don't crash.
+        await Navigator.of(context).push(
+          _createSlideRoute(builder: (_) => const SizedBox.shrink()),
+        );
+    }
   }
 
-  /// Navigates to the provider detail page. When [focusApiKey] is
-  /// true, the detail page auto-routes to the edit form with the API
-  /// key field focused — the Fix-flow entry point used by the
-  /// provider card's invalid-key affordance.
+  /// Navigates to the provider detail page via Beamer. When
+  /// [focusApiKey] is true, the URL carries `?focusApiKey=true` so the
+  /// detail page auto-routes to the edit form with the API key field
+  /// focused — the Fix-flow entry point used by the provider card's
+  /// invalid-key affordance.
+  ///
+  /// Using Beamer (instead of `Navigator.push`) is what makes desktop
+  /// master/detail work: the URL change drives the `AiPanelDispatch`
+  /// inside the AI panel registry entry, which swaps the right-pane
+  /// content in place. On mobile, Beamer pushes the detail page on
+  /// top of the AI Settings page in the standard page stack so back
+  /// navigation keeps working.
+  ///
+  /// The [context] argument is unused — Beamer reads its delegate
+  /// from the singleton `NavService` — but kept on the signature so
+  /// the call site stays symmetric with the other `navigateTo…`
+  /// methods and tests can stub a `BuildContext` without special
+  /// casing.
   Future<void> navigateToProviderDetail(
     BuildContext context, {
     required String providerId,
     bool focusApiKey = false,
   }) async {
-    final route = _createSlideRoute(
-      builder: (context) => AiProviderDetailPage(
-        providerId: providerId,
-        focusApiKey: focusApiKey,
-      ),
-    );
-    await Navigator.of(context).push(route);
+    final path = focusApiKey
+        ? '/settings/ai/provider/$providerId?focusApiKey=true'
+        : '/settings/ai/provider/$providerId';
+    nav_service.beamToNamed(path);
   }
 
   /// Navigates to create a new inference provider
@@ -47,6 +75,27 @@ class AiSettingsNavigationService {
     final route = _createSlideRoute(
       builder: (context) => InferenceProviderEditPage(
         preselectedType: preselectedType,
+      ),
+    );
+    await Navigator.of(context).push(route);
+  }
+
+  /// Opens the provider edit form for an existing provider on top of
+  /// the current page. Unlike [navigateToProviderDetail] this uses
+  /// Navigator.push so the edit form overlays the detail page in both
+  /// desktop and mobile modes — the user expects a back-gesture to
+  /// return to the detail view they came from. Centralised here so the
+  /// detail page doesn't reach for `Navigator.push` directly and tests
+  /// can stub navigation through the service.
+  Future<void> navigateToProviderEdit(
+    BuildContext context, {
+    required String providerId,
+    bool focusApiKey = false,
+  }) async {
+    final route = _createSlideRoute(
+      builder: (context) => InferenceProviderEditPage(
+        configId: providerId,
+        focusApiKey: focusApiKey,
       ),
     );
     await Navigator.of(context).push(route);
@@ -66,29 +115,6 @@ class AiSettingsNavigationService {
       builder: (context) => const InferenceProfileForm(),
     );
     await Navigator.of(context).push(route);
-  }
-
-  /// Creates the appropriate route with slide transition based on config type
-  PageRoute<void> _createEditRouteWithTransition(AiConfig config) {
-    return switch (config) {
-      AiConfigInferenceProvider() => _createSlideRoute(
-        builder: (context) => InferenceProviderEditPage(
-          configId: config.id,
-        ),
-      ),
-      AiConfigModel() => _createSlideRoute(
-        builder: (context) => InferenceModelEditPage(
-          configId: config.id,
-        ),
-      ),
-      AiConfigInferenceProfile() => _createSlideRoute(
-        builder: (context) => InferenceProfileForm(existingProfile: config),
-      ),
-      // Prompts and skills are not editable through the settings UI.
-      AiConfigPrompt() || AiConfigSkill() => _createSlideRoute(
-        builder: (_) => const SizedBox.shrink(),
-      ),
-    };
   }
 
   /// Creates a smooth slide transition route with both pages moving

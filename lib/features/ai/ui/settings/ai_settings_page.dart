@@ -11,14 +11,17 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dar
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_empty_view.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Surface width at which the AI Settings card lists switch from a
 /// single-column stack (mobile / narrow detail pane) to a 2-column
@@ -26,15 +29,31 @@ import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 /// reflects the available card area, not the device width.
 const double _kDesktopLayoutBreakpoint = 700;
 
-/// Embeddable body alias for the Settings V2 detail pane. Same widget
-/// tree as the standalone page; PR-4 will swap the panel registry to
-/// a `DetailIdDispatch` so on desktop the right pane swaps to the
-/// provider detail page when a row is tapped.
+/// Embeddable body alias for the Settings V2 detail pane.
+///
+/// Same widget tree as the standalone page in its default form. The
+/// optional [initialTab] + [hideTabBar] params drive the per-leaf
+/// embedded mode the v4 panel registry uses on desktop: when a
+/// specific tab is pinned and the tab bar is hidden, the panel slot
+/// renders only that tab's body so the sidebar leaves
+/// (Providers / Models / Profiles) each map to one focused view —
+/// no in-pane tab strip on top of the sidebar selection.
 class AiSettingsBody extends StatelessWidget {
-  const AiSettingsBody({super.key});
+  const AiSettingsBody({this.initialTab, this.hideTabBar = false, super.key});
+
+  /// Pre-selects a tab. When provided, [AiSettingsPage] seeds its
+  /// filter state and `TabController.index` from this value so the
+  /// matching tab's body renders without the user tapping anything.
+  final AiSettingsTab? initialTab;
+
+  /// Removes the in-pane tab bar widget when `true`. Used by the
+  /// per-leaf desktop panels — the sidebar already names the leaf, a
+  /// second tab strip on top would be redundant.
+  final bool hideTabBar;
 
   @override
-  Widget build(BuildContext context) => const AiSettingsPage();
+  Widget build(BuildContext context) =>
+      AiSettingsPage(initialTab: initialTab, hideTabBar: hideTabBar);
 }
 
 /// Main AI Settings page. Visual reference: the D1 PNGs at
@@ -57,7 +76,23 @@ class AiSettingsBody extends StatelessWidget {
 /// navigation service) is preserved verbatim from the v1 page; only
 /// the rendering layer is new.
 class AiSettingsPage extends ConsumerStatefulWidget {
-  const AiSettingsPage({super.key});
+  const AiSettingsPage({
+    this.initialTab,
+    this.hideTabBar = false,
+    super.key,
+  });
+
+  /// Pre-selects a tab. Seeds the filter state and the
+  /// `TabController.index` so the matching body renders on first
+  /// frame; the page falls back to `AiSettingsFilterState.initial()`
+  /// when this is null (standalone mobile usage).
+  final AiSettingsTab? initialTab;
+
+  /// Suppresses the in-pane `AiSettingsTabBar`. Used by the v4 panel
+  /// registry so each desktop leaf (Providers / Models / Profiles)
+  /// renders only its focused tab body — the sidebar leaf itself
+  /// already names the view.
+  final bool hideTabBar;
 
   @override
   ConsumerState<AiSettingsPage> createState() => _AiSettingsPageState();
@@ -73,15 +108,20 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   final _navigationService = const AiSettingsNavigationService();
   final _deleteService = const AiConfigDeleteService();
 
-  AiSettingsFilterState _filterState = AiSettingsFilterState.initial();
+  late AiSettingsFilterState _filterState;
 
   Timer? _searchDebounceTimer;
 
   @override
   void initState() {
     super.initState();
+    final seededTab = widget.initialTab;
+    _filterState = seededTab == null
+        ? AiSettingsFilterState.initial()
+        : AiSettingsFilterState.initial().copyWith(activeTab: seededTab);
     _tabController = TabController(
       length: AiSettingsTab.values.length,
+      initialIndex: seededTab?.index ?? 0,
       vsync: this,
     )..addListener(_handleTabControllerChange);
     _searchController.addListener(_handleSearchChange);
@@ -161,6 +201,39 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     await _navigationService.navigateToCreateProvider(context);
   }
 
+  /// Computes the FAB's semantic label, icon, and handler from the
+  /// active tab so the floating action button creates the right kind
+  /// of config AND the glyph names what's about to be added:
+  /// `bolt` (Providers) → `psychology_alt` (Models) → `tune`
+  /// (Profiles). The icon set mirrors the sidebar leaf icons so the
+  /// FAB glyph echoes the leaf the user is on. Matches the FAB
+  /// pattern already used by `InferenceProfilePage` / habits /
+  /// measurables so the gesture for "create a new X" is the same
+  /// across the settings surface.
+  ({String semanticLabel, IconData icon, VoidCallback onPressed}) _activeTabFab() {
+    final messages = context.messages;
+    switch (_filterState.activeTab) {
+      case AiSettingsTab.providers:
+        return (
+          semanticLabel: messages.aiSettingsAddProviderButton,
+          icon: Icons.bolt_rounded,
+          onPressed: _handleAddProvider,
+        );
+      case AiSettingsTab.models:
+        return (
+          semanticLabel: messages.aiSettingsAddModelButton,
+          icon: Icons.psychology_alt_rounded,
+          onPressed: () => _navigationService.navigateToCreateModel(context),
+        );
+      case AiSettingsTab.profiles:
+        return (
+          semanticLabel: messages.aiSettingsAddProfileButton,
+          icon: Icons.tune_rounded,
+          onPressed: () => _navigationService.navigateToCreateProfile(context),
+        );
+    }
+  }
+
   /// Opens the provider edit page preselected to [type] — used by the
   /// four quick-add chips inside the empty-state "No providers yet"
   /// card. The form's existing save handler still runs the FTUE flow.
@@ -199,8 +272,17 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final fab = _activeTabFab();
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
+      floatingActionButton: DesignSystemBottomNavigationFabPadding(
+        child: DesignSystemFloatingActionButton(
+          key: ValueKey('ai-settings-fab-${_filterState.activeTab.name}'),
+          semanticLabel: fab.semanticLabel,
+          icon: fab.icon,
+          onPressed: fab.onPressed,
+        ),
+      ),
       body: CustomScrollView(
         controller: _scrollController,
         physics: const ClampingScrollPhysics(),
@@ -213,7 +295,6 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
             child: AiSettingsHeaderBar(
               searchController: _searchController,
               onSearchClear: _handleSearchClear,
-              onAddProvider: _handleAddProvider,
             ),
           ),
           ..._buildBodySlivers(),
@@ -279,15 +360,16 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: AiSettingsTabBar(
-            tabController: _tabController,
-            providerCount: 0,
-            modelCount: models.length,
-            profileCount: profiles.length,
-            onTabChanged: _handleTabChange,
+        if (!widget.hideTabBar)
+          SliverToBoxAdapter(
+            child: AiSettingsTabBar(
+              tabController: _tabController,
+              providerCount: 0,
+              modelCount: models.length,
+              profileCount: profiles.length,
+              onTabChanged: _handleTabChange,
+            ),
           ),
-        ),
         SliverPadding(
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.step5,
@@ -303,16 +385,17 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     }
 
     return [
-      SliverToBoxAdapter(
-        child: AiSettingsTabBar(
-          tabController: _tabController,
-          providerCount: providers!.length,
-          modelCount: models.length,
-          profileCount: profiles.length,
-          onTabChanged: _handleTabChange,
+      if (!widget.hideTabBar)
+        SliverToBoxAdapter(
+          child: AiSettingsTabBar(
+            tabController: _tabController,
+            providerCount: providers!.length,
+            modelCount: models.length,
+            profileCount: profiles.length,
+            onTabChanged: _handleTabChange,
+          ),
         ),
-      ),
-      ..._buildActiveTabBody(providers, models, profiles),
+      ..._buildActiveTabBody(providers!, models, profiles),
     ];
   }
 
@@ -325,7 +408,33 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       case AiSettingsTab.providers:
         return [_buildProvidersGrid(providers, models)];
       case AiSettingsTab.models:
-        return [_buildModelsList(models, providers)];
+        final tokens = context.designTokens;
+        return [
+          // Provider filter strip on the Models tab — reuses the
+          // existing `ProviderFilterChipsRow` (Wrap-based, FilterChip
+          // colour scheme from the theme) so the v3 chrome stays in
+          // sync with every other surface in the app that filters by
+          // provider (e.g. the model management modal). Wrap ensures
+          // the row stacks to multiple rows on narrow viewports
+          // instead of horizontally scrolling.
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              tokens.spacing.step1,
+              tokens.spacing.step5,
+              tokens.spacing.step3,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: ProviderFilterChipsRow(
+                selectedProviderIds: _filterState.selectedProviders,
+                onChanged: (ids) => _updateFilterState(
+                  _filterState.copyWith(selectedProviders: ids),
+                ),
+              ),
+            ),
+          ),
+          _buildModelsList(models, providers),
+        ];
       case AiSettingsTab.profiles:
         return [_buildProfilesGrid(profiles, models, providers)];
     }

@@ -5,8 +5,11 @@ import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
-import 'package:lotti/features/ai/ui/inference_profile_page.dart';
+import 'package:lotti/features/ai/ui/inference_profile_form.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
@@ -66,7 +69,11 @@ void main() {
       'habits',
       'dashboards',
       'measurables',
-      // Step 9 — AI + agents.
+      // Step 9 — AI + agents. The AI tab leaves were promoted to
+      // their own sidebar entries in v4 so the right pane never
+      // has to render a duplicate in-pane TabBar on desktop.
+      'ai-providers',
+      'ai-models',
       'ai-profiles',
       'agents-stats',
       'agents-templates',
@@ -211,13 +218,44 @@ void main() {
         // exercised in the dedicated group below).
         expect(build('sync-conflicts'), isA<DetailIdDispatch>());
 
-        // Step 9 — AI + agents. The agents tab variants are wrapped in
-        // `DetailIdDispatch` so the FAB ("+") and row taps can swap
-        // the panel between list / detail / create — the per-tab
-        // `initialTab` wiring is asserted via the dispatch closures
-        // in the dedicated group below.
-        expect(build('ai'), isA<AiSettingsBody>());
-        expect(build('ai-profiles'), isA<InferenceProfilesBody>());
+        // Step 9 — AI + agents. The AI panel is wrapped in the
+        // multi-kind `AiPanelDispatch` (v4) so the right pane swaps
+        // between the list and per-kind detail pages (provider /
+        // model / profile) on desktop instead of pushing fullscreen
+        // routes over the master/detail shell — the dispatch
+        // behavior itself is asserted in the dedicated group below.
+        // The agents tab variants follow the same broad pattern via
+        // `DetailIdDispatch`.
+        expect(build('ai'), isA<AiPanelDispatch>());
+        // Each AI sidebar leaf renders an `AiSettingsBody` pinned to
+        // one tab with `hideTabBar: true` so the in-pane TabBar
+        // doesn't duplicate the sidebar selection. The legacy
+        // `InferenceProfilesBody` is no longer wired into the v2
+        // panel registry — the v3 Profiles tab body took its slot.
+        for (final entry in {
+          'ai-providers': AiSettingsTab.providers,
+          'ai-models': AiSettingsTab.models,
+          'ai-profiles': AiSettingsTab.profiles,
+        }.entries) {
+          final body = build(entry.key);
+          expect(body, isA<AiSettingsBody>());
+          final pinned = body as AiSettingsBody;
+          expect(
+            pinned.initialTab,
+            entry.value,
+            reason:
+                '${entry.key} must pin AiSettingsBody to '
+                '${entry.value} so the matching tab body renders',
+          );
+          expect(
+            pinned.hideTabBar,
+            isTrue,
+            reason:
+                '${entry.key} must hide the in-pane TabBar — the '
+                'sidebar leaf is the source of truth for which view '
+                'is active on desktop',
+          );
+        }
 
         final agentsRoot = build('agents');
         expect(agentsRoot, isA<AgentSettingsBody>());
@@ -799,6 +837,180 @@ void main() {
         expect(detail, isA<ConflictDetailRoute>());
         expect((detail as ConflictDetailRoute).conflictId, 'conflict-12');
         expect(detail.key, const ValueKey('settings-v2-conflict-conflict-12'));
+      },
+    );
+
+    // The AI panel uses a custom `AiPanelDispatch` widget (not the
+    // generic `DetailIdDispatch`) because three orthogonal detail
+    // kinds — provider, model, profile — live behind one panel slot
+    // and each is keyed off a different `pathParameters` key. The
+    // route → page mapping is extracted into the pure
+    // `aiPanelSelectionFor` helper so the tests below can verify
+    // every dispatch branch by widget TYPE without having to pump
+    // the destination pages (each carries its own Riverpod /
+    // repository setup that would dominate every test here).
+  });
+
+  group('aiPanelSelectionFor — AI panel route dispatch (v4)', () {
+    test(
+      'null route resolves to AiSettingsBody with hideTabBar: true — '
+      'the AI Settings parent landing on desktop renders the Providers '
+      'content (the page-level default tab) without an in-pane TabBar, '
+      'so it looks identical to the Providers leaf',
+      () {
+        final selection = aiPanelSelectionFor(null);
+        expect(selection.child, isA<AiSettingsBody>());
+        final body = selection.child as AiSettingsBody;
+        expect(body.hideTabBar, isTrue);
+        expect(body.initialTab, isNull);
+        expect(selection.modeKey, 'list');
+      },
+    );
+
+    test(
+      'bare /settings/ai URL with no path parameters resolves to the same '
+      'hide-tabs list as the null-route case — a route without any of '
+      'the three id keys must never be misread as a detail dispatch',
+      () {
+        final selection = aiPanelSelectionFor(const (
+          path: '/settings/ai',
+          pathParameters: <String, String>{},
+          queryParameters: <String, String>{},
+        ));
+        expect(selection.child, isA<AiSettingsBody>());
+        expect((selection.child as AiSettingsBody).hideTabBar, isTrue);
+        expect(selection.modeKey, 'list');
+      },
+    );
+
+    test(
+      'providerId in pathParameters resolves to AiProviderDetailPage with '
+      'focusApiKey: false by default and a stable per-id ValueKey',
+      () {
+        final selection = aiPanelSelectionFor(const (
+          path: '/settings/ai/provider/gemini-xyz',
+          pathParameters: <String, String>{'providerId': 'gemini-xyz'},
+          queryParameters: <String, String>{},
+        ));
+        expect(selection.child, isA<AiProviderDetailPage>());
+        final page = selection.child as AiProviderDetailPage;
+        expect(page.providerId, 'gemini-xyz');
+        expect(page.focusApiKey, isFalse);
+        expect(page.key, const ValueKey('settings-v2-ai-provider-gemini-xyz'));
+        expect(selection.modeKey, 'provider:gemini-xyz:view');
+      },
+    );
+
+    test(
+      'route with ?focusApiKey=true flips AiProviderDetailPage.focusApiKey '
+      'to true AND distinguishes the modeKey from the no-focus variant — '
+      'the AnimatedSwitcher needs a different key so the Fix-flow rebuild '
+      'actually fires a transition',
+      () {
+        final selection = aiPanelSelectionFor(const (
+          path: '/settings/ai/provider/gemini-xyz',
+          pathParameters: <String, String>{'providerId': 'gemini-xyz'},
+          queryParameters: <String, String>{'focusApiKey': 'true'},
+        ));
+        expect(selection.child, isA<AiProviderDetailPage>());
+        expect((selection.child as AiProviderDetailPage).focusApiKey, isTrue);
+        expect(selection.modeKey, 'provider:gemini-xyz:fix');
+      },
+    );
+
+    test(
+      'modelId in pathParameters resolves to InferenceModelEditPage with '
+      'the right configId and a stable per-id ValueKey',
+      () {
+        final selection = aiPanelSelectionFor(const (
+          path: '/settings/ai/model/abc-123',
+          pathParameters: <String, String>{'modelId': 'abc-123'},
+          queryParameters: <String, String>{},
+        ));
+        expect(selection.child, isA<InferenceModelEditPage>());
+        final page = selection.child as InferenceModelEditPage;
+        expect(page.configId, 'abc-123');
+        expect(page.key, const ValueKey('settings-v2-ai-model-abc-123'));
+        expect(selection.modeKey, 'model:abc-123');
+      },
+    );
+
+    test(
+      'profileId in pathParameters resolves to InferenceProfileDetailPage — '
+      'the URL only carries the id so the route goes through the lookup '
+      'wrapper rather than InferenceProfileForm directly (which takes the '
+      'already-resolved AiConfigInferenceProfile)',
+      () {
+        final selection = aiPanelSelectionFor(const (
+          path: '/settings/ai/profile/prof-9',
+          pathParameters: <String, String>{'profileId': 'prof-9'},
+          queryParameters: <String, String>{},
+        ));
+        expect(selection.child, isA<InferenceProfileDetailPage>());
+        final page = selection.child as InferenceProfileDetailPage;
+        expect(page.profileId, 'prof-9');
+        expect(page.key, const ValueKey('settings-v2-ai-profile-prof-9'));
+        expect(selection.modeKey, 'profile:prof-9');
+      },
+    );
+
+    test(
+      'providerId takes priority when multiple id keys are accidentally '
+      'present (defensive: Beamer should only bind one of the three at a '
+      'time, but the dispatcher must pick deterministically if it ever '
+      'sees more than one)',
+      () {
+        final selection = aiPanelSelectionFor(const (
+          path: '/settings/ai/provider/p',
+          pathParameters: <String, String>{
+            'providerId': 'p',
+            'modelId': 'm',
+            'profileId': 'pr',
+          },
+          queryParameters: <String, String>{},
+        ));
+        expect(selection.child, isA<AiProviderDetailPage>());
+        expect((selection.child as AiProviderDetailPage).providerId, 'p');
+      },
+    );
+
+    test(
+      'modelId takes priority over profileId when both are present (same '
+      'defensive priority order as the if-else chain in the resolver)',
+      () {
+        final selection = aiPanelSelectionFor(const (
+          path: '/settings/ai/model/m',
+          pathParameters: <String, String>{
+            'modelId': 'm',
+            'profileId': 'pr',
+          },
+          queryParameters: <String, String>{},
+        ));
+        expect(selection.child, isA<InferenceModelEditPage>());
+        expect((selection.child as InferenceModelEditPage).configId, 'm');
+      },
+    );
+
+    test(
+      'empty-string ids fall through to the list — Beamer should never '
+      'hand an empty string back here, but if it did the dispatcher must '
+      'resolve to a valid panel rather than render an empty detail page',
+      () {
+        for (final key in ['providerId', 'modelId', 'profileId']) {
+          final selection = aiPanelSelectionFor((
+            path: '/settings/ai',
+            pathParameters: {key: ''},
+            queryParameters: const <String, String>{},
+          ));
+          expect(
+            selection.child,
+            isA<AiSettingsBody>(),
+            reason:
+                '$key="" must not be treated as a detail dispatch — the '
+                'list is the safe fallback',
+          );
+          expect(selection.modeKey, 'list');
+        }
       },
     );
   });

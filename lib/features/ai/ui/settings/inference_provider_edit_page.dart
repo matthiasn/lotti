@@ -12,12 +12,16 @@ import 'package:lotti/features/ai/state/settings/inference_provider_form_control
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/services/ftue_trigger_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
@@ -245,12 +249,24 @@ class _InferenceProviderEditPageState
         if (context.mounted) {
           Navigator.of(context).pop();
         }
+      } catch (_) {
+        // Surface a toast so the spinner snapping off after a failed
+        // addConfig / updateConfig isn't silent — matches the
+        // inference profile form's save error UX.
+        if (mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.commonError,
+          );
+        }
       } finally {
         if (mounted) {
           setState(() => _isSaving = false);
         }
       }
     }
+
+    final tokens = context.designTokens;
 
     return CallbackShortcuts(
       bindings: {
@@ -283,17 +299,18 @@ class _InferenceProviderEditPageState
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     flexibleSpace: FlexibleSpaceBar(
-                      titlePadding: const EdgeInsets.only(bottom: 16),
+                      titlePadding: EdgeInsets.only(
+                        bottom: tokens.spacing.step5,
+                      ),
                       title: Text(
                         widget.configId == null
                             ? context.messages.apiKeyAddPageTitle
                             : context.messages.apiKeyEditPageTitle,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: context.colorScheme.onSurface,
-                          letterSpacing: -0.3,
-                        ),
+                        style: tokens.typography.styles.heading.heading3
+                            .copyWith(
+                              color: context.colorScheme.onSurface,
+                              fontWeight: tokens.typography.weight.semiBold,
+                            ),
                       ),
                     ),
                   ),
@@ -309,10 +326,10 @@ class _InferenceProviderEditPageState
                         handleSave,
                       ),
                       AsyncError() => _buildErrorState(context),
-                      _ => const Center(
+                      _ => Center(
                         child: Padding(
-                          padding: EdgeInsets.all(48),
-                          child: CircularProgressIndicator(),
+                          padding: EdgeInsets.all(tokens.spacing.step9),
+                          child: const CircularProgressIndicator(),
                         ),
                       ),
                     },
@@ -342,11 +359,13 @@ class _InferenceProviderEditPageState
     bool isFormValid,
     Future<void> Function() handleSave,
   ) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     if (formState == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(48),
-          child: CircularProgressIndicator(),
+          padding: EdgeInsets.all(tokens.spacing.step9),
+          child: const CircularProgressIndicator(),
         ),
       );
     }
@@ -354,54 +373,40 @@ class _InferenceProviderEditPageState
     final formController = ref.read(_formProvider.notifier);
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(tokens.spacing.step6),
       child: Column(
         children: [
           // Provider Configuration Section
           AiFormSection(
-            title: 'Provider Configuration',
+            title: messages.apiKeyProviderConfigTitle,
             icon: Icons.settings_rounded,
-            description: 'Configure your AI inference provider settings',
+            description: messages.apiKeyProviderConfigDescription,
             children: [
-              // Provider Type Selection
-              GestureDetector(
+              // Provider Type Selection — read-only field. Uses a
+              // gesture-tappable styled box (no `TextEditingController`)
+              // so we don't allocate a fresh controller on every rebuild.
+              _ProviderTypeField(
+                label: messages.apiKeyProviderTypeLabel,
+                value: formState.inferenceProviderType.displayName(context),
+                icon: formState.inferenceProviderType.icon,
                 onTap: () => _showProviderTypeModal(context),
-                child: AbsorbPointer(
-                  child: AiTextField(
-                    label: 'Provider Type',
-                    hint: 'Select a provider type',
-                    readOnly: true,
-                    controller: TextEditingController(
-                      text: formState.inferenceProviderType.displayName(
-                        context,
-                      ),
-                    ),
-                    prefixIcon: formState.inferenceProviderType.icon,
-                    suffixIcon: Icon(
-                      Icons.arrow_drop_down_rounded,
-                      color: context.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.6,
-                      ),
-                    ),
-                  ),
-                ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: tokens.spacing.step6),
 
               // Display Name
               AiTextField(
-                label: 'Display Name',
-                hint: 'Enter a friendly name',
+                label: messages.apiKeyDisplayNameLabel,
+                hint: messages.apiKeyDisplayNameHint,
                 controller: formController.nameController,
                 onChanged: formController.nameChanged,
                 validator: (_) => formState.name.error?.displayMessage,
                 prefixIcon: Icons.label_outline_rounded,
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: tokens.spacing.step6),
 
               // Base URL
               AiTextField(
-                label: 'Base URL',
+                label: messages.apiKeyBaseUrlLabel,
                 hint: 'https://api.example.com',
                 controller: formController.baseUrlController,
                 onChanged: formController.baseUrlChanged,
@@ -411,21 +416,21 @@ class _InferenceProviderEditPageState
               ),
             ],
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: tokens.spacing.step7),
 
           // Authentication Section - Only show for providers that require API key
           if (!ProviderConfig.noApiKeyRequired.contains(
             formState.inferenceProviderType,
           )) ...[
             AiFormSection(
-              title: 'Authentication',
+              title: messages.apiKeyAuthenticationTitle,
               icon: Icons.security_rounded,
-              description: 'Secure your API connection',
+              description: messages.apiKeyAuthenticationDescription,
               children: [
                 // API Key
                 AiTextField(
-                  label: 'API Key',
-                  hint: 'Enter your API key',
+                  label: messages.apiKeyInputLabel,
+                  hint: messages.apiKeyInputHint,
                   controller: formController.apiKeyController,
                   focusNode: _apiKeyFocusNode,
                   onChanged: formController.apiKeyChanged,
@@ -444,12 +449,14 @@ class _InferenceProviderEditPageState
                     onPressed: () => setState(() {
                       _showApiKey = !_showApiKey;
                     }),
-                    tooltip: _showApiKey ? 'Hide API Key' : 'Show API Key',
+                    tooltip: _showApiKey
+                        ? messages.apiKeyHideTooltip
+                        : messages.apiKeyShowTooltip,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: tokens.spacing.step6),
           ],
 
           // Available Models Section - Only show when editing existing provider
@@ -461,7 +468,9 @@ class _InferenceProviderEditPageState
 
           // AI Setup Section - Only show for supported providers when editing
           if (widget.configId != null &&
-              _isFtueSupported(formState.inferenceProviderType))
+              ftueSupportedProviderTypes.contains(
+                formState.inferenceProviderType,
+              ))
             _AiSetupSection(
               providerId: widget.configId!,
               providerType: formState.inferenceProviderType,
@@ -469,11 +478,6 @@ class _InferenceProviderEditPageState
         ],
       ),
     );
-  }
-
-  /// Checks if FTUE setup is supported for this provider type.
-  bool _isFtueSupported(InferenceProviderType type) {
-    return ftueSupportedProviderTypes.contains(type);
   }
 
   void _showProviderTypeModal(BuildContext context) {
@@ -539,52 +543,138 @@ class _InferenceProviderEditPageState
   }
 
   Widget _buildErrorState(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(48),
+        padding: EdgeInsets.all(tokens.spacing.step9),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(tokens.spacing.step5),
               decoration: BoxDecoration(
                 color: context.colorScheme.errorContainer.withValues(
                   alpha: 0.2,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(tokens.radii.l),
               ),
               child: Icon(
                 Icons.error_outline_rounded,
-                size: 48,
+                size: tokens.spacing.step9,
                 color: context.colorScheme.error,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spacing.step6),
             Text(
-              context.messages.apiKeyEditLoadError,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+              messages.apiKeyEditLoadError,
+              style: tokens.typography.styles.body.bodyLarge.copyWith(
                 color: context.colorScheme.onSurface,
+                fontWeight: tokens.typography.weight.semiBold,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: tokens.spacing.step3),
             Text(
-              'Please try again or contact support',
-              style: TextStyle(
-                fontSize: 14,
+              messages.apiKeyEditLoadErrorRetry,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spacing.step6),
             LottiSecondaryButton(
-              label: 'Go Back',
+              label: messages.apiKeyEditGoBackButton,
               onPressed: () => Navigator.of(context).pop(),
               icon: Icons.arrow_back_rounded,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Read-only field used to surface the currently-selected provider type
+/// inside the form. Tapping anywhere on the field opens the provider
+/// type modal. Implemented as a styled box (no `TextEditingController`)
+/// so we don't allocate a new controller per build the way an
+/// `AbsorbPointer(AiTextField(...))` pattern would.
+class _ProviderTypeField extends StatelessWidget {
+  const _ProviderTypeField({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Semantics(
+      button: true,
+      label: label,
+      value: value,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step4,
+          ),
+          decoration: BoxDecoration(
+            color: context.colorScheme.surface,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            border: Border.all(
+              color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: tokens.spacing.step6,
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+              SizedBox(width: tokens.spacing.step4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                        fontWeight: tokens.typography.weight.semiBold,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      value,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: context.colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down_rounded,
+                color: context.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.6,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -603,6 +693,8 @@ class _AvailableModelsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     final knownModels = knownModelsByProvider[providerType] ?? [];
 
     if (knownModels.isEmpty) {
@@ -626,18 +718,18 @@ class _AvailableModelsSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
+            SizedBox(height: tokens.spacing.step4),
             AiFormSection(
-              title: 'Available Models',
+              title: messages.apiKeyAvailableModelsTitle,
               icon: Icons.psychology_rounded,
-              description: 'Quick-add preconfigured models for this provider',
+              description: messages.apiKeyAvailableModelsDescription,
               children: [
                 ...knownModels.map((knownModel) {
                   final isAdded = existingModelIds.contains(
                     knownModel.providerModelId,
                   );
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.only(bottom: tokens.spacing.step4),
                     child: _KnownModelTile(
                       knownModel: knownModel,
                       providerId: providerId,
@@ -650,10 +742,10 @@ class _AvailableModelsSection extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const Center(
+      loading: () => Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(),
+          padding: EdgeInsets.all(tokens.spacing.step6),
+          child: const CircularProgressIndicator(),
         ),
       ),
       error: (_, _) => const SizedBox.shrink(),
@@ -723,6 +815,8 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     final inputModalities = widget.knownModel.inputModalities
         .map((m) => m.displayName(context))
         .join(', ');
@@ -737,7 +831,7 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
             : context.colorScheme.surfaceContainerHighest.withValues(
                 alpha: 0.3,
               ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(
           color: widget.isAdded
               ? context.colorScheme.primary.withValues(alpha: 0.3)
@@ -745,14 +839,14 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(tokens.spacing.step4),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Model icon
             Container(
-              width: 40,
-              height: 40,
+              width: tokens.spacing.step8,
+              height: tokens.spacing.step8,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: widget.isAdded
@@ -768,18 +862,18 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(tokens.radii.s),
               ),
               child: Icon(
                 _getModelIcon(),
-                size: 20,
+                size: tokens.spacing.step6,
                 color: widget.isAdded
                     ? context.colorScheme.primary
                     : context.colorScheme.onSurfaceVariant,
               ),
             ),
 
-            const SizedBox(width: 12),
+            SizedBox(width: tokens.spacing.step4),
 
             // Model info
             Expanded(
@@ -792,71 +886,75 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
                       Expanded(
                         child: Text(
                           widget.knownModel.name,
-                          style: context.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.3,
-                          ),
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                fontWeight: tokens.typography.weight.semiBold,
+                                color: context.colorScheme.onSurface,
+                              ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (widget.isAdded) ...[
-                        const SizedBox(width: 8),
+                        SizedBox(width: tokens.spacing.step3),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tokens.spacing.step3,
+                            vertical: tokens.spacing.step1,
                           ),
                           decoration: BoxDecoration(
                             color: context.colorScheme.primary,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(tokens.radii.s),
                           ),
                           child: Text(
-                            context.messages.aiSettingsAddedLabel,
-                            style: context.textTheme.labelSmall?.copyWith(
-                              color: context.colorScheme.onPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 10,
-                            ),
+                            messages.aiSettingsAddedLabel,
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: context.colorScheme.onPrimary,
+                                  fontWeight: tokens.typography.weight.semiBold,
+                                ),
                           ),
                         ),
                       ],
                     ],
                   ),
 
-                  const SizedBox(height: 4),
+                  SizedBox(height: tokens.spacing.step2),
 
                   // Description
                   Text(
                     widget.knownModel.description,
-                    style: context.textTheme.bodySmall?.copyWith(
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: context.colorScheme.onSurfaceVariant.withValues(
                         alpha: 0.8,
                       ),
-                      height: 1.3,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  const SizedBox(height: 8),
+                  SizedBox(height: tokens.spacing.step3),
 
                   // Modalities
                   Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
+                    spacing: tokens.spacing.step2,
+                    runSpacing: tokens.spacing.step2,
                     children: [
                       _ModalityChip(
-                        label: 'In: $inputModalities',
+                        label: messages.apiKeyKnownModelInputLabel(
+                          inputModalities,
+                        ),
                         icon: Icons.input_rounded,
                       ),
                       _ModalityChip(
-                        label: 'Out: $outputModalities',
+                        label: messages.apiKeyKnownModelOutputLabel(
+                          outputModalities,
+                        ),
                         icon: Icons.output_rounded,
                       ),
                       if (widget.knownModel.isReasoningModel)
                         _ModalityChip(
-                          label: context.messages.aiSettingsReasoningLabel,
+                          label: messages.aiSettingsReasoningLabel,
                           icon: Icons.psychology_alt_rounded,
                         ),
                     ],
@@ -865,7 +963,7 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
               ),
             ),
 
-            const SizedBox(width: 8),
+            SizedBox(width: tokens.spacing.step3),
 
             // Add button
             if (!widget.isAdded)
@@ -873,16 +971,16 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
                 onPressed: _isAdding ? null : _addModel,
                 icon: _isAdding
                     ? SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: tokens.spacing.step6,
+                        height: tokens.spacing.step6,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: context.colorScheme.primary,
                         ),
                       )
                     : Container(
-                        width: 32,
-                        height: 32,
+                        width: tokens.spacing.step7,
+                        height: tokens.spacing.step7,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -898,18 +996,18 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
                               color: context.colorScheme.primary.withValues(
                                 alpha: 0.2,
                               ),
-                              blurRadius: 6,
+                              blurRadius: tokens.spacing.step3,
                               offset: const Offset(0, 1),
                             ),
                           ],
                         ),
                         child: Icon(
                           Icons.add_rounded,
-                          size: 18,
+                          size: tokens.spacing.step5,
                           color: context.colorScheme.primary,
                         ),
                       ),
-                tooltip: context.messages.aiSettingsAddModelTooltip,
+                tooltip: messages.aiSettingsAddModelTooltip,
                 style: IconButton.styleFrom(
                   padding: EdgeInsets.zero,
                 ),
@@ -938,7 +1036,11 @@ class _AiSetupSection extends ConsumerStatefulWidget {
 class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
   bool _isRunning = false;
 
-  String get _providerName => widget.providerType.ftueDisplayName ?? 'AI';
+  /// Resolves the user-facing provider name through `aiProviderDisplayName`
+  /// so the FTUE workflow surfaces use the localised brand name (e.g.
+  /// "Google Gemini") and not the English-only `ftueDisplayName` constant.
+  String _providerName(BuildContext context) =>
+      aiProviderDisplayName(type: widget.providerType, messages: context.messages);
 
   Future<void> _runFtueSetup() async {
     if (_isRunning) return;
@@ -965,7 +1067,7 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
         providerType: widget.providerType,
         config: config,
         setupService: setupService,
-        providerName: _providerName,
+        providerName: _providerName(context),
         isMounted: () => mounted,
       );
 
@@ -986,22 +1088,24 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 32),
+        SizedBox(height: tokens.spacing.step7),
         AiFormSection(
-          title: context.messages.aiSetupWizardTitle,
+          title: messages.aiSetupWizardTitle,
           icon: Icons.auto_awesome_rounded,
-          description: context.messages.aiSetupWizardDescription(_providerName),
+          description: messages.aiSetupWizardDescription(_providerName(context)),
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(tokens.spacing.step5),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainerHighest.withValues(
                   alpha: 0.3,
                 ),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(tokens.radii.m),
                 border: Border.all(
                   color: context.colorScheme.outlineVariant.withValues(
                     alpha: 0.3,
@@ -1014,72 +1118,78 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(tokens.spacing.step3),
                         decoration: BoxDecoration(
                           color: context.colorScheme.primary.withValues(
                             alpha: 0.1,
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(tokens.radii.s),
                         ),
                         child: Icon(
                           Icons.settings_suggest_rounded,
                           color: context.colorScheme.primary,
-                          size: 20,
+                          size: tokens.spacing.step6,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: tokens.spacing.step4),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              context.messages.aiSetupWizardRunLabel,
-                              style: context.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              messages.aiSetupWizardRunLabel,
+                              style: tokens.typography.styles.subtitle.subtitle2
+                                  .copyWith(
+                                    color: context.colorScheme.onSurface,
+                                    fontWeight:
+                                        tokens.typography.weight.semiBold,
+                                  ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: tokens.spacing.step1),
                             Text(
-                              context.messages.aiSetupWizardCreatesOptimized,
-                              style: context.textTheme.bodySmall?.copyWith(
-                                color: context.colorScheme.onSurfaceVariant,
-                              ),
+                              messages.aiSetupWizardCreatesOptimized,
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: context.colorScheme.onSurfaceVariant,
+                                  ),
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: tokens.spacing.step5),
                   // Info about idempotency
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(tokens.spacing.step4),
                     decoration: BoxDecoration(
                       color: context.colorScheme.primaryContainer.withValues(
                         alpha: 0.2,
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(tokens.radii.s),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.info_outline_rounded,
-                          size: 16,
+                          size: tokens.spacing.step5,
                           color: context.colorScheme.primary,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: tokens.spacing.step3),
                         Expanded(
                           child: Text(
-                            context.messages.aiSetupWizardSafeToRunMultiple,
-                            style: context.textTheme.bodySmall?.copyWith(
-                              color: context.colorScheme.onPrimaryContainer,
-                            ),
+                            messages.aiSetupWizardSafeToRunMultiple,
+                            style: tokens.typography.styles.body.bodySmall
+                                .copyWith(
+                                  color:
+                                      context.colorScheme.onPrimaryContainer,
+                                ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: tokens.spacing.step5),
                   // Run button
                   SizedBox(
                     width: double.infinity,
@@ -1087,18 +1197,21 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
                       onPressed: _isRunning ? null : _runFtueSetup,
                       icon: _isRunning
                           ? SizedBox(
-                              width: 16,
-                              height: 16,
+                              width: tokens.spacing.step5,
+                              height: tokens.spacing.step5,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: context.colorScheme.onPrimary,
                               ),
                             )
-                          : const Icon(Icons.auto_awesome, size: 18),
+                          : Icon(
+                              Icons.auto_awesome,
+                              size: tokens.spacing.step5,
+                            ),
                       label: Text(
                         _isRunning
-                            ? context.messages.aiSetupWizardRunningButton
-                            : context.messages.aiSetupWizardRunButton,
+                            ? messages.aiSetupWizardRunningButton
+                            : messages.aiSetupWizardRunButton,
                       ),
                     ),
                   ),
@@ -1124,31 +1237,33 @@ class _ModalityChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step1,
+      ),
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerHighest.withValues(
           alpha: 0.5,
         ),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
-            size: 10,
+            size: tokens.spacing.step4,
             color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
           ),
-          const SizedBox(width: 3),
+          SizedBox(width: tokens.spacing.step2),
           Text(
             label,
-            style: context.textTheme.labelSmall?.copyWith(
+            style: tokens.typography.styles.others.caption.copyWith(
               color: context.colorScheme.onSurfaceVariant.withValues(
                 alpha: 0.9,
               ),
-              fontSize: 9,
-              letterSpacing: -0.2,
             ),
           ),
         ],

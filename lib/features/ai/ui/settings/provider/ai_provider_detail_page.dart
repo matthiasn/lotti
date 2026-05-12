@@ -5,13 +5,13 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
-import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Detail page for a single inference provider.
@@ -179,10 +179,16 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
           // resolved — so the form opens with a populated controller
           // (the form fetches the config itself, but routing only
           // after `data` gives us a defensive "config exists" check).
+          // Beam to the same path without `?focusApiKey=true` so a later
+          // remount (panel swap, back-nav, hot reload) doesn't re-open
+          // the edit form unprompted.
           if (_focusFlowQueued) {
             _focusFlowQueued = false;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
+              nav_service.beamToNamed(
+                '/settings/ai/provider/${widget.providerId}',
+              );
               _openEditForm(focusApiKey: true);
             });
           }
@@ -203,13 +209,10 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
   }
 
   Future<void> _openEditForm({required bool focusApiKey}) async {
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => InferenceProviderEditPage(
-          configId: widget.providerId,
-          focusApiKey: focusApiKey,
-        ),
-      ),
+    await _navigationService.navigateToProviderEdit(
+      context,
+      providerId: widget.providerId,
+      focusApiKey: focusApiKey,
     );
   }
 

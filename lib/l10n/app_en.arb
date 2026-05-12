@@ -682,8 +682,6 @@
   "agentTokenUsageWakeCount": "Wakes",
   "aiAssistantTitle": "Generate…",
   "aiBatchToggleTooltip": "Switch to standard recording",
-  "aiCardMenuActionDelete": "Delete",
-  "aiCardMenuActionEdit": "Edit",
   "aiCapabilityChipImageGeneration": "Image generation",
   "aiCapabilityChipImageRecognition": "Image recognition",
   "aiCapabilityChipThinking": "Thinking",
@@ -697,6 +695,8 @@
       }
     }
   },
+  "aiCardMenuActionDelete": "Delete",
+  "aiCardMenuActionEdit": "Edit",
   "aiCardOpenAgentInternals": "Open agent internals",
   "aiCardProposalConfirmed": "Confirmed",
   "aiCardProposalDismissed": "Dismissed",
@@ -850,9 +850,11 @@
   "aiResponseTypeTaskSummary": "Task Summary",
   "aiSettingsAddedLabel": "Added",
   "aiSettingsAddModelButton": "Add Model",
+  "aiSettingsAddModelButton": "Add model",
   "aiSettingsAddModelTooltip": "Add this model to your provider",
   "aiSettingsAddProfileButton": "Add Profile",
   "aiSettingsAddProviderButton": "Add provider",
+  "aiSettingsModelsFilterAllProviders": "All providers",
   "aiSettingsClearAllFiltersTooltip": "Clear all filters",
   "aiSettingsClearFiltersButton": "Clear",
   "aiSettingsCounterModels": "Models",
@@ -982,6 +984,15 @@
       }
     }
   },
+  "aiSetupResultKnownModelsMissing": "Failed to find required {providerName} model configurations",
+  "@aiSetupResultKnownModelsMissing": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
   "aiSetupResultLead": "We set things up for you. AI features are ready to use in your journal.",
   "aiSetupResultModalTitle": "{providerName} ready",
   "@aiSetupResultModalTitle": {
@@ -1010,8 +1021,41 @@
   "aiSetupWizardTitle": "AI Setup Wizard",
   "aiTaskSummaryTitle": "AI Task Summary",
   "apiKeyAddPageTitle": "Add Provider",
+  "apiKeyAuthenticationDescription": "Secure your API connection",
+  "apiKeyAuthenticationTitle": "Authentication",
+  "apiKeyAvailableModelsDescription": "Quick-add preconfigured models for this provider",
+  "apiKeyAvailableModelsTitle": "Available Models",
+  "apiKeyBaseUrlLabel": "Base URL",
+  "apiKeyDisplayNameHint": "Enter a friendly name",
+  "apiKeyDisplayNameLabel": "Display Name",
+  "apiKeyEditGoBackButton": "Go Back",
   "apiKeyEditLoadError": "Failed to load API key configuration",
+  "apiKeyEditLoadErrorRetry": "Please try again or contact support",
   "apiKeyEditPageTitle": "Edit Provider",
+  "apiKeyHideTooltip": "Hide API Key",
+  "apiKeyInputHint": "Enter your API key",
+  "apiKeyInputLabel": "API Key",
+  "apiKeyKnownModelInputLabel": "In: {modalities}",
+  "@apiKeyKnownModelInputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyKnownModelOutputLabel": "Out: {modalities}",
+  "@apiKeyKnownModelOutputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyProviderConfigDescription": "Configure your AI inference provider settings",
+  "apiKeyProviderConfigTitle": "Provider Configuration",
+  "apiKeyProviderTypeHint": "Select a provider type",
+  "apiKeyProviderTypeLabel": "Provider Type",
+  "apiKeyShowTooltip": "Show API Key",
   "audioRecordingCancel": "CANCEL",
   "audioRecordingListening": "Listening...",
   "audioRecordingRealtime": "Live Transcription",
@@ -1857,6 +1901,15 @@
   "inferenceProfileDescriptionLabel": "Description",
   "inferenceProfileDesktopOnly": "Desktop Only",
   "inferenceProfileDesktopOnlyDescription": "Only available on desktop platforms (e.g. for local models)",
+  "inferenceProfileDetailLoadError": "Could not load profile: {error}",
+  "@inferenceProfileDetailLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "inferenceProfileDetailNotFound": "Profile not found",
   "inferenceProfileEditTitle": "Edit Profile",
   "inferenceProfileImageGeneration": "Image Generation",
   "inferenceProfileImageRecognition": "Image Recognition",
@@ -2444,10 +2497,16 @@
   "settingsAgentsSoulsSubtitle": "Long-lived agent personalities",
   "settingsAgentsStatsSubtitle": "Token usage and activity",
   "settingsAgentsTemplatesSubtitle": "Shared agent blueprints",
+  "settingsAiModelsSubtitle": "Per-provider model rows and capabilities",
+  "settingsAiModelsTitle": "Models",
   "settingsAiProfilesSubtitle": "Providers and models",
   "settingsAiProfilesTitle": "Inference Profiles",
+  "settingsAiProvidersSubtitle": "Connected AI providers and keys",
+  "settingsAiProvidersTitle": "Providers",
   "settingsAiSubtitle": "Configure AI providers, models, and prompts",
   "settingsAiTitle": "AI Settings",
+  "settingsBeamPageEditModelTitle": "Edit model",
+  "settingsBeamPageEditProfileTitle": "Edit profile",
   "settingsCategoriesCreateTitle": "Create category",
   "settingsCategoriesDetailsLabel": "Category Details",
   "settingsCategoriesEmptyState": "No categories found",

@@ -1116,12 +1116,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Zur Standardaufnahme wechseln';
 
   @override
-  String get aiCardMenuActionDelete => 'Löschen';
-
-  @override
-  String get aiCardMenuActionEdit => 'Bearbeiten';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Bildgenerierung';
 
   @override
@@ -1141,6 +1135,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String aiCardHistoryToggle(int count) {
     return 'Verlauf · $count';
   }
+
+  @override
+  String get aiCardMenuActionDelete => 'Löschen';
+
+  @override
+  String get aiCardMenuActionEdit => 'Bearbeiten';
 
   @override
   String get aiCardOpenAgentInternals => 'Agent-Internes öffnen';
@@ -1531,6 +1531,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Anbieter hinzufügen';
 
   @override
+  String get aiSettingsModelsFilterAllProviders => 'Alle Anbieter';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Alle Filter zurücksetzen';
 
   @override
@@ -1701,6 +1704,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String aiSetupResultKnownModelsMissing(String providerName) {
+    return 'Erforderliche Modellkonfigurationen für $providerName konnten nicht gefunden werden';
+  }
+
+  @override
   String get aiSetupResultLead =>
       'Wir haben alles für dich eingerichtet. Die KI-Funktionen stehen in deinem Journal bereit.';
 
@@ -1747,11 +1755,75 @@ class AppLocalizationsDe extends AppLocalizations {
   String get apiKeyAddPageTitle => 'Anbieter hinzufügen';
 
   @override
+  String get apiKeyAuthenticationDescription => 'Sichere deine API-Verbindung';
+
+  @override
+  String get apiKeyAuthenticationTitle => 'Authentifizierung';
+
+  @override
+  String get apiKeyAvailableModelsDescription =>
+      'Vorkonfigurierte Modelle für diesen Anbieter schnell hinzufügen';
+
+  @override
+  String get apiKeyAvailableModelsTitle => 'Verfügbare Modelle';
+
+  @override
+  String get apiKeyBaseUrlLabel => 'Basis-URL';
+
+  @override
+  String get apiKeyDisplayNameHint => 'Gib einen Anzeigenamen ein';
+
+  @override
+  String get apiKeyDisplayNameLabel => 'Anzeigename';
+
+  @override
+  String get apiKeyEditGoBackButton => 'Zurück';
+
+  @override
   String get apiKeyEditLoadError =>
       'API-Schlüssel-Konfiguration konnte nicht geladen werden';
 
   @override
+  String get apiKeyEditLoadErrorRetry =>
+      'Bitte versuche es erneut oder kontaktiere den Support';
+
+  @override
   String get apiKeyEditPageTitle => 'Anbieter bearbeiten';
+
+  @override
+  String get apiKeyHideTooltip => 'API-Schlüssel ausblenden';
+
+  @override
+  String get apiKeyInputHint => 'Gib deinen API-Schlüssel ein';
+
+  @override
+  String get apiKeyInputLabel => 'API-Schlüssel';
+
+  @override
+  String apiKeyKnownModelInputLabel(String modalities) {
+    return 'Eingang: $modalities';
+  }
+
+  @override
+  String apiKeyKnownModelOutputLabel(String modalities) {
+    return 'Ausgang: $modalities';
+  }
+
+  @override
+  String get apiKeyProviderConfigDescription =>
+      'Konfiguriere die Einstellungen deines KI-Inferenzanbieters';
+
+  @override
+  String get apiKeyProviderConfigTitle => 'Anbieterkonfiguration';
+
+  @override
+  String get apiKeyProviderTypeHint => 'Anbietertyp auswählen';
+
+  @override
+  String get apiKeyProviderTypeLabel => 'Anbietertyp';
+
+  @override
+  String get apiKeyShowTooltip => 'API-Schlüssel anzeigen';
 
   @override
   String get audioRecordingCancel => 'ABBRECHEN';
@@ -3700,6 +3772,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nur auf Desktop-Plattformen verfügbar (z.B. für lokale Modelle)';
 
   @override
+  String inferenceProfileDetailLoadError(String error) {
+    return 'Profil konnte nicht geladen werden: $error';
+  }
+
+  @override
+  String get inferenceProfileDetailNotFound => 'Profil nicht gefunden';
+
+  @override
   String get inferenceProfileEditTitle => 'Profil bearbeiten';
 
   @override
@@ -4999,10 +5079,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAgentsTemplatesSubtitle => 'Geteilte Agenten-Vorlagen';
 
   @override
+  String get settingsAiModelsSubtitle =>
+      'Modellzeilen und Fähigkeiten je Anbieter';
+
+  @override
+  String get settingsAiModelsTitle => 'Modelle';
+
+  @override
   String get settingsAiProfilesSubtitle => 'Anbieter und Modelle';
 
   @override
   String get settingsAiProfilesTitle => 'Inferenzprofile';
+
+  @override
+  String get settingsAiProvidersSubtitle =>
+      'Verbundene KI-Anbieter und Schlüssel';
+
+  @override
+  String get settingsAiProvidersTitle => 'Anbieter';
 
   @override
   String get settingsAiSubtitle =>
@@ -5010,6 +5104,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'AI-Einstellungen';
+
+  @override
+  String get settingsBeamPageEditModelTitle => 'Modell bearbeiten';
+
+  @override
+  String get settingsBeamPageEditProfileTitle => 'Profil bearbeiten';
 
   @override
   String get settingsCategoriesCreateTitle => 'Kategorie erstellen';

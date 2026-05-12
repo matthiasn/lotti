@@ -6,8 +6,11 @@ import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_review_page.dart';
+import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart'
     as new_categories;
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
@@ -43,6 +46,7 @@ import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
 class SettingsLocation extends BeamLocation<BeamState> {
@@ -53,6 +57,14 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings',
     '/settings/ai',
     '/settings/ai/profiles',
+    // AI Settings detail surfaces. Each detail kind sits behind its own
+    // literal prefix (provider / model / profile) so the segments
+    // can't collide with one another or with the legacy `/profiles`
+    // leaf — the dispatcher in the panel registry picks the right
+    // page based on which `pathParameters` key beamer captured.
+    '/settings/ai/provider/:providerId',
+    '/settings/ai/model/:modelId',
+    '/settings/ai/profile/:profileId',
     '/settings/sync',
     '/settings/sync/matrix/maintenance',
     '/settings/sync/backfill',
@@ -153,17 +165,67 @@ class SettingsLocation extends BeamLocation<BeamState> {
         child: SettingsPage(),
       ),
 
-      // AI Settings
+      // AI Settings — list view. Rendered under any `/settings/ai/*`
+      // URL so the mobile page stack reads
+      // `SettingsPage > AiSettingsPage > <detail>` and the system
+      // back gesture returns to the list, not all the way to the
+      // Settings root. The legacy `/settings/ai/profiles` leaf opts
+      // out so it can render its own page directly.
       if (path.startsWith('/settings/ai') &&
           !pathContains('advanced') &&
-          !pathContains('profiles'))
+          path != '/settings/ai/profiles')
         const BeamPage(
           key: ValueKey('settings-ai'),
           title: 'AI Settings',
           child: AiSettingsPage(),
         ),
 
-      // Inference Profiles
+      // AI Settings — provider detail. Sits above the list page in the
+      // mobile stack. `focusApiKey` is plumbed via a query parameter
+      // so the Fix-flow URL is bookmarkable.
+      if (pathContainsKey('providerId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-ai-provider-${state.pathParameters['providerId']}',
+          ),
+          title: context.messages.aiProviderDetailPageTitle,
+          child: AiProviderDetailPage(
+            providerId: state.pathParameters['providerId']!,
+            focusApiKey:
+                state.uri.queryParameters['focusApiKey'] == 'true',
+          ),
+        ),
+
+      // AI Settings — model edit. Same stacking rule.
+      if (pathContainsKey('modelId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-ai-model-${state.pathParameters['modelId']}',
+          ),
+          title: context.messages.settingsBeamPageEditModelTitle,
+          child: InferenceModelEditPage(
+            configId: state.pathParameters['modelId'],
+          ),
+        ),
+
+      // AI Settings — profile edit. The legacy `Navigator.push` path
+      // handed the resolved `AiConfigInferenceProfile` to
+      // `InferenceProfileForm`; URL-based routing only carries the
+      // id, so we go through `InferenceProfileDetailPage` which
+      // resolves the id via Riverpod and hands the loaded profile to
+      // the form.
+      if (pathContainsKey('profileId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-ai-profile-${state.pathParameters['profileId']}',
+          ),
+          title: context.messages.settingsBeamPageEditProfileTitle,
+          child: InferenceProfileDetailPage(
+            profileId: state.pathParameters['profileId']!,
+          ),
+        ),
+
+      // Inference Profiles (legacy)
       if (path == '/settings/ai/profiles')
         const BeamPage(
           key: ValueKey('settings-ai-profiles'),

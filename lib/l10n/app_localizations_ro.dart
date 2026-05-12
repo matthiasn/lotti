@@ -1118,12 +1118,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
 
   @override
-  String get aiCardMenuActionDelete => 'Ștergere';
-
-  @override
-  String get aiCardMenuActionEdit => 'Editare';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Generare de imagini';
 
   @override
@@ -1143,6 +1137,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String aiCardHistoryToggle(int count) {
     return 'Istoric · $count';
   }
+
+  @override
+  String get aiCardMenuActionDelete => 'Ștergere';
+
+  @override
+  String get aiCardMenuActionEdit => 'Editare';
 
   @override
   String get aiCardOpenAgentInternals =>
@@ -1539,6 +1539,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Adaugă furnizor';
 
   @override
+  String get aiSettingsModelsFilterAllProviders => 'Toți furnizorii';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Șterge toate filtrele';
 
   @override
@@ -1709,6 +1712,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String aiSetupResultKnownModelsMissing(String providerName) {
+    return 'Nu s-au putut găsi configurațiile de model necesare pentru $providerName';
+  }
+
+  @override
   String get aiSetupResultLead =>
       'Am configurat totul pentru dvs. Funcțiile AI sunt gata de utilizat în jurnalul dvs.';
 
@@ -1755,11 +1763,75 @@ class AppLocalizationsRo extends AppLocalizations {
   String get apiKeyAddPageTitle => 'Adaugă furnizor';
 
   @override
+  String get apiKeyAuthenticationDescription => 'Securizați conexiunea API';
+
+  @override
+  String get apiKeyAuthenticationTitle => 'Autentificare';
+
+  @override
+  String get apiKeyAvailableModelsDescription =>
+      'Adăugați rapid modele preconfigurate pentru acest furnizor';
+
+  @override
+  String get apiKeyAvailableModelsTitle => 'Modele disponibile';
+
+  @override
+  String get apiKeyBaseUrlLabel => 'URL de bază';
+
+  @override
+  String get apiKeyDisplayNameHint => 'Introduceți un nume prietenos';
+
+  @override
+  String get apiKeyDisplayNameLabel => 'Nume afișat';
+
+  @override
+  String get apiKeyEditGoBackButton => 'Înapoi';
+
+  @override
   String get apiKeyEditLoadError =>
       'Eșec la încărcarea configurației cheii API';
 
   @override
+  String get apiKeyEditLoadErrorRetry =>
+      'Vă rugăm să încercați din nou sau să contactați asistența';
+
+  @override
   String get apiKeyEditPageTitle => 'Editează furnizor';
+
+  @override
+  String get apiKeyHideTooltip => 'Ascunde cheia API';
+
+  @override
+  String get apiKeyInputHint => 'Introduceți cheia API';
+
+  @override
+  String get apiKeyInputLabel => 'Cheie API';
+
+  @override
+  String apiKeyKnownModelInputLabel(String modalities) {
+    return 'Intrare: $modalities';
+  }
+
+  @override
+  String apiKeyKnownModelOutputLabel(String modalities) {
+    return 'Ieșire: $modalities';
+  }
+
+  @override
+  String get apiKeyProviderConfigDescription =>
+      'Configurați setările furnizorului dvs. de inferență AI';
+
+  @override
+  String get apiKeyProviderConfigTitle => 'Configurare furnizor';
+
+  @override
+  String get apiKeyProviderTypeHint => 'Selectați un tip de furnizor';
+
+  @override
+  String get apiKeyProviderTypeLabel => 'Tip furnizor';
+
+  @override
+  String get apiKeyShowTooltip => 'Arată cheia API';
 
   @override
   String get audioRecordingCancel => 'ANULARE';
@@ -3720,6 +3792,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Disponibil doar pe platformele desktop (ex. pentru modele locale)';
 
   @override
+  String inferenceProfileDetailLoadError(String error) {
+    return 'Profilul nu a putut fi încărcat: $error';
+  }
+
+  @override
+  String get inferenceProfileDetailNotFound => 'Profil negăsit';
+
+  @override
   String get inferenceProfileEditTitle => 'Editați profilul';
 
   @override
@@ -5052,10 +5132,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAgentsTemplatesSubtitle => 'Șabloane de agenți partajate';
 
   @override
+  String get settingsAiModelsSubtitle => 'Modele și capabilități per furnizor';
+
+  @override
+  String get settingsAiModelsTitle => 'Modele';
+
+  @override
   String get settingsAiProfilesSubtitle => 'Furnizori și modele';
 
   @override
   String get settingsAiProfilesTitle => 'Profiluri de inferență';
+
+  @override
+  String get settingsAiProvidersSubtitle => 'Furnizori AI conectați și chei';
+
+  @override
+  String get settingsAiProvidersTitle => 'Furnizori';
 
   @override
   String get settingsAiSubtitle =>
@@ -5063,6 +5155,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Setări AI';
+
+  @override
+  String get settingsBeamPageEditModelTitle => 'Editare model';
+
+  @override
+  String get settingsBeamPageEditProfileTitle => 'Editare profil';
 
   @override
   String get settingsCategoriesCreateTitle => 'Creare categorie';

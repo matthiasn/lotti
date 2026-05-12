@@ -277,16 +277,25 @@ class _ProviderStatusRow extends StatelessWidget {
               connected,
               style: caption.copyWith(color: tokens.colors.text.highEmphasis),
             ),
-            const Spacer(),
-            Flexible(
-              child: Text(
-                tail,
-                textAlign: TextAlign.end,
-                style: caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+            // Expanded (not Spacer + Flexible) so the tail's "3 models
+            // · last used 2m ago" text actually sits flush against the
+            // card's right edge. The previous Spacer-with-Flexible
+            // pairing split the remaining width 1:1 and parked the
+            // count in the middle-right of the card.
+            Expanded(
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.spacing.step3,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                child: Text(
+                  tail,
+                  textAlign: TextAlign.end,
+                  style: caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],
@@ -345,16 +354,23 @@ class _ProviderStatusRow extends StatelessWidget {
                 color: tokens.colors.text.highEmphasis,
               ),
             ),
-            const Spacer(),
-            Flexible(
-              child: Text(
-                messages.aiProviderCardOllamaHint,
-                textAlign: TextAlign.end,
-                style: caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+            // Same flush-right treatment as the Connected branch — the
+            // Ollama hint sits at the card's right edge instead of
+            // floating in the middle.
+            Expanded(
+              child: Padding(
+                padding: EdgeInsetsDirectional.only(
+                  start: tokens.spacing.step3,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                child: Text(
+                  messages.aiProviderCardOllamaHint,
+                  textAlign: TextAlign.end,
+                  style: caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],
