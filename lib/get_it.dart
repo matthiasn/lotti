@@ -241,9 +241,10 @@ Future<void> registerSingletons() async {
     domainLogger: domainLogger,
   );
 
-  // Note: SyncEventProcessor is created here but BackfillResponseHandler
-  // needs OutboxService which depends on MatrixService. We'll create
-  // the handler later and inject it after OutboxService is available.
+  // SyncEventProcessor is constructed first; its `backfillResponseHandler`
+  // (a `late final`) is assigned below once BackfillResponseHandler exists.
+  // The chain BackfillResponseHandler → OutboxService → MatrixService →
+  // SyncEventProcessor prevents constructor-time injection.
   final syncEventProcessor = SyncEventProcessor(
     loggingService: loggingService,
     domainLogger: domainLogger,
@@ -258,7 +259,6 @@ Future<void> registerSingletons() async {
     sequenceLogService: syncSequenceLogService,
     journalDb: journalDb,
     vectorClockService: vectorClockService,
-    // backfillResponseHandler will be injected later to avoid circular dependency
   );
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
@@ -448,7 +448,8 @@ Future<void> registerSingletons() async {
   // this hook is how the service learns the walk finished.
   queuePipelineCoordinator.onBridgeCompleted = backfillRequestService.nudge;
 
-  // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
+  // Set-once assignment of the late-final `backfillResponseHandler`. Must
+  // run before MatrixService consumes any inbound timeline events.
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;
 
   // Start the backfill request service

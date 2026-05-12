@@ -1,7 +1,6 @@
 // ignore_for_file: avoid_setters_without_getters
 
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -24,6 +23,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
 import 'package:lotti/features/sync/matrix/outbox_bundle_unpacker.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
@@ -75,7 +75,6 @@ class SyncEventProcessor {
     AttachmentIndex? attachmentIndex,
     JournalDb? journalDb,
     VectorClockService? vectorClockService,
-    this.backfillResponseHandler,
   }) : _loggingService = loggingService,
        _domainLogger = domainLogger,
        _updateNotifications = updateNotifications,
@@ -116,9 +115,7 @@ class SyncEventProcessor {
   String? _localHostId;
   bool _localHostIdResolved = false;
 
-  static const int _recentJournalEntityLimit = 500;
-  final LinkedHashMap<String, String> _recentJournalEntityFingerprints =
-      LinkedHashMap<String, String>();
+  final JournalEntityDedupCache _dedupCache = JournalEntityDedupCache();
 
   // Dedupe concurrent descriptor fetches for the same attachment event.
   // Two text events that reference the same `jsonPath` during a single
@@ -129,9 +126,13 @@ class SyncEventProcessor {
   final Map<String, Future<String?>> _inFlightDescriptorFetches =
       <String, Future<String?>>{};
 
-  /// Backfill response handler, injected after construction
-  /// to resolve circular dependency in DI setup.
-  BackfillResponseHandler? backfillResponseHandler;
+  /// Backfill response handler. Set exactly once during DI boot via the
+  /// public setter (declared `late final` so reads before assignment throw
+  /// loudly instead of silently no-oping). The set-once assignment, rather
+  /// than constructor injection, breaks the cycle
+  /// `SyncEventProcessor` ← `MatrixService` ← `OutboxService` ←
+  /// `BackfillResponseHandler` during get_it wiring.
+  late final BackfillResponseHandler backfillResponseHandler;
 
   /// Agent repository, injected after construction to avoid circular
   /// dependency. When set, incoming agent entities and links are upserted
@@ -304,36 +305,6 @@ class SyncEventProcessor {
     return message.contains('stale attachment json');
   }
 
-  bool _isDuplicateJournalEntity(String entryId, VectorClock? vectorClock) {
-    if (vectorClock == null) return false;
-    final fingerprint = _vectorClockFingerprint(vectorClock);
-    final cached = _recentJournalEntityFingerprints[entryId];
-    if (cached == null || cached != fingerprint) {
-      return false;
-    }
-    _recentJournalEntityFingerprints.remove(entryId);
-    _recentJournalEntityFingerprints[entryId] = fingerprint;
-    return true;
-  }
-
-  void _markJournalEntityProcessed(String entryId, VectorClock? vectorClock) {
-    if (vectorClock == null) return;
-    final fingerprint = _vectorClockFingerprint(vectorClock);
-    _recentJournalEntityFingerprints.remove(entryId);
-    _recentJournalEntityFingerprints[entryId] = fingerprint;
-    if (_recentJournalEntityFingerprints.length > _recentJournalEntityLimit) {
-      _recentJournalEntityFingerprints.remove(
-        _recentJournalEntityFingerprints.keys.first,
-      );
-    }
-  }
-
-  String _vectorClockFingerprint(VectorClock vectorClock) {
-    final entries = vectorClock.vclock.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
-    return entries.map((entry) => '${entry.key}:${entry.value}').join('|');
-  }
-
   /// Upserts every embedded entry link and returns the count that
   /// actually wrote a row.
   ///
@@ -472,7 +443,7 @@ class SyncEventProcessor {
       }
     }
 
-    _markJournalEntityProcessed(syncMessage.id, incomingVc);
+    _dedupCache.markProcessed(syncMessage.id, incomingVc);
     return diag;
   }
 
@@ -616,7 +587,7 @@ class SyncEventProcessor {
     required Event event,
     required SyncJournalEntity syncMessage,
   }) async {
-    if (_isDuplicateJournalEntity(syncMessage.id, syncMessage.vectorClock)) {
+    if (_dedupCache.isDuplicate(syncMessage.id, syncMessage.vectorClock)) {
       return PreparedSyncEvent._(
         event: event,
         syncMessage: syncMessage,
@@ -856,7 +827,7 @@ class SyncEventProcessor {
       'embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
       subDomain: 'processor.apply',
     );
-    _markJournalEntityProcessed(
+    _dedupCache.markProcessed(
       journalEntity.meta.id,
       vcB ?? syncMessage.vectorClock,
     );
@@ -1816,25 +1787,11 @@ class SyncEventProcessor {
         return null;
       case SyncBackfillRequest():
         // Handle backfill request - another device is asking for a missing entry
-        if (backfillResponseHandler != null) {
-          await backfillResponseHandler!.handleBackfillRequest(syncMessage);
-        } else {
-          _trace(
-            'backfillRequest.ignored no handler configured',
-            subDomain: 'processor.apply',
-          );
-        }
+        await backfillResponseHandler.handleBackfillRequest(syncMessage);
         return null;
       case SyncBackfillResponse():
         // Handle backfill response - another device responded to our request
-        if (backfillResponseHandler != null) {
-          await backfillResponseHandler!.handleBackfillResponse(syncMessage);
-        } else {
-          _trace(
-            'backfillResponse.ignored no handler configured',
-            subDomain: 'processor.apply',
-          );
-        }
+        await backfillResponseHandler.handleBackfillResponse(syncMessage);
         return null;
       // Agent entities use last-writer-wins semantics (no vector clock
       // comparison). Agent state mutations are causally ordered — wakes

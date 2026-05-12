@@ -17,7 +17,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -37,9 +36,6 @@ import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
 class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
-
-class MockBackfillResponseHandler extends Mock
-    implements BackfillResponseHandler {}
 
 void main() {
   setUpAll(() {
@@ -3425,7 +3421,7 @@ void main() {
   });
 
   group('SyncEventProcessor - Backfill Messages', () {
-    test('SyncBackfillRequest is ignored when no handler configured', () async {
+    test('SyncBackfillRequest throws when no handler configured', () async {
       const message = SyncBackfillRequest(
         entries: [
           BackfillRequestEntry(hostId: 'host-1', counter: 5),
@@ -3435,20 +3431,17 @@ void main() {
 
       when(() => event.text).thenReturn(encodeMessage(message));
 
-      await processor.process(event: event, journalDb: journalDb);
-
-      // Should log that request was ignored
-      verify(
-        () => loggingService.captureEvent(
-          any<Object>(),
-          domain: LogDomains.sync,
-          subDomain: 'processor.apply',
-        ),
-      ).called(1);
+      // Late-final field: reads before DI assignment must surface as
+      // LateInitializationError so misconfigured boot fails loudly rather
+      // than silently dropping inbound backfill traffic.
+      await expectLater(
+        processor.process(event: event, journalDb: journalDb),
+        throwsA(isA<LateInitializationError>()),
+      );
     });
 
     test(
-      'SyncBackfillResponse is ignored when no handler configured',
+      'SyncBackfillResponse throws when no handler configured',
       () async {
         const message = SyncBackfillResponse(
           hostId: 'host-1',
@@ -3459,16 +3452,10 @@ void main() {
 
         when(() => event.text).thenReturn(encodeMessage(message));
 
-        await processor.process(event: event, journalDb: journalDb);
-
-        // Should log that response was ignored
-        verify(
-          () => loggingService.captureEvent(
-            any<Object>(),
-            domain: LogDomains.sync,
-            subDomain: 'processor.apply',
-          ),
-        ).called(1);
+        await expectLater(
+          processor.process(event: event, journalDb: journalDb),
+          throwsA(isA<LateInitializationError>()),
+        );
       },
     );
 
