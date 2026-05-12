@@ -118,6 +118,12 @@ List<Observation> aggregateSumByHour(
 }
 
 List<String> getDayStrings(int rangeDays, DateTime rangeStart) {
+  // Clamp negative ranges (`rangeEnd < rangeStart`) to an empty list
+  // so every aggregate-by-day caller can hand us the raw
+  // `range.inDays` from a half-open `[rangeStart, rangeEnd)` window
+  // without having to guard upstream. `List<String>.generate` would
+  // otherwise throw `RangeError` on a negative length.
+  if (rangeDays <= 0) return const <String>[];
   return List<String>.generate(rangeDays, (days) {
     final day = rangeStart.add(Duration(days: days));
     return day.ymd;
@@ -134,19 +140,9 @@ List<String> daysInRange({
   ).toList();
 }
 
-/// Average measurement value per day across [rangeStart, rangeEnd).
-///
-/// Mirrors [aggregateSumByDay] in shape but emits the mean of each day's
-/// measurement values. The day list is pre-built in chronological order
-/// from `[rangeStart, rangeEnd)` so the returned [Observation]s come back
-/// sorted regardless of the input ordering — the charts that consume
-/// these points require monotonically increasing time. Days that fall
-/// outside the requested range are filtered out, matching the contract
-/// of `aggregateSumByDay` / `aggregateMaxByDay`. Days inside the range
-/// with no measurements are skipped on the output (returning a zero
-/// observation would distort the average chart by pulling the line down
-/// to zero on empty days; the sum/max variants keep zero buckets because
-/// zero is a meaningful aggregate for them but not for a mean).
+/// Average measurement value per day across `[rangeStart, rangeEnd)`.
+/// Days with no measurements are omitted from the output — emitting a
+/// zero observation would pull a mean chart line down on empty days.
 List<Observation> aggregateAvgByDay(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
@@ -154,10 +150,6 @@ List<Observation> aggregateAvgByDay(
 }) {
   final range = rangeEnd.difference(rangeStart);
   final dayStrings = getDayStrings(range.inDays, rangeStart);
-  // `inDayBuckets` doubles as the in-range filter: an entity whose
-  // `meta.dateFrom.ymd` is not one of the pre-built bucket keys is
-  // either before `rangeStart` or on/after `rangeEnd` and must be
-  // excluded.
   final inDayBuckets = dayStrings.toSet();
   final sumsByDay = <String, num>{};
   final countsByDay = <String, int>{};

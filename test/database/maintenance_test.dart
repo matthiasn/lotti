@@ -58,23 +58,6 @@ JournalEntry _buildJournalEntry({
   );
 }
 
-MeasurementEntry _buildMeasurementEntry({
-  required String id,
-  required DateTime timestamp,
-  num value = 42,
-}) {
-  return testMeasurementChocolateEntry.copyWith(
-    meta: testMeasurementChocolateEntry.meta.copyWith(
-      id: id,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      dateFrom: timestamp,
-      dateTo: timestamp,
-    ),
-    data: testMeasurementChocolateEntry.data.copyWith(value: value),
-  );
-}
-
 QuantitativeEntry _buildQuantitativeEntry({
   required String id,
   required DateTime timestamp,
@@ -895,7 +878,7 @@ void main() {
             timestamp: now,
             text: 'FTS text entry',
           ),
-          _buildMeasurementEntry(
+          buildMeasurementEntry(
             id: 'fts-measurement',
             timestamp: now.add(const Duration(minutes: 5)),
             value: 123,

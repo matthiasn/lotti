@@ -149,13 +149,8 @@ class _ChecklistCardState extends State<ChecklistCard> {
       }
     }
 
-    // Legacy bool migration: true → openOnly, false → all. The bool
-    // key shipped before the v3 "Done" tab landed in #2929 (2026-04-10);
-    // this branch upgrades any device still carrying the old key on
-    // first read and rewrites it as the string form below, so the
-    // fallback decays away as users open the page. It can be deleted
-    // once we are confident every active install has rolled past the
-    // April 2026 build.
+    // Legacy bool migration: true → openOnly, false → all. Rewrites
+    // as the new string form below on first read.
     final boolValue = await prefs.getBool(key);
     if (!mounted || boolValue == null) return;
     final migrated = boolValue ? ChecklistFilter.openOnly : ChecklistFilter.all;

@@ -144,13 +144,8 @@ extension DesignSystemToastMessenger on BuildContext {
   /// paint a tone-coloured progress strip along the toast's top edge that
   /// drains over [duration] — used for undoable transient actions.
   ///
-  /// Known limitation: toasts are dispatched through Flutter's
-  /// `ScaffoldMessenger`, which queues every `SnackBar` regardless of
-  /// type. Callers that need "only the latest toast is visible" use
-  /// the [replaceCurrent] / [clearQueue] flags rather than relying on
-  /// scaffolding-level isolation. A dedicated `ToastController` with
-  /// its own overlay would let us drop both flags, but the current
-  /// surface has not warranted the rework.
+  /// Toasts share `ScaffoldMessenger`'s queue; pass [replaceCurrent] /
+  /// [clearQueue] when only the latest should be visible.
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showToast({
     required DesignSystemToastTone tone,
     required String title,

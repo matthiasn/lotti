@@ -387,6 +387,35 @@ final testMeasurementChocolateEntry = MeasurementEntry(
   ),
 );
 
+/// Factory for stamping a measurement at [timestamp] with [value] — used
+/// by aggregator tests and the maintenance-retention tests to seed the
+/// chart-friendly chocolate measurement at arbitrary points in time
+/// without re-wiring the seed entity by hand. The same [timestamp] is
+/// applied to both `meta.dateFrom`/`dateTo` and `data.dateFrom`/`dateTo`
+/// so the two stay aligned — aggregators key on `meta.dateFrom.ymd` but
+/// the data-level timestamps remain visible to any consumer that reads
+/// them.
+MeasurementEntry buildMeasurementEntry({
+  required String id,
+  required DateTime timestamp,
+  num value = 42,
+}) {
+  return testMeasurementChocolateEntry.copyWith(
+    meta: testMeasurementChocolateEntry.meta.copyWith(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+    ),
+    data: testMeasurementChocolateEntry.data.copyWith(
+      value: value,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+    ),
+  );
+}
+
 final testMeasuredCoverageEntry = MeasurementEntry(
   meta: Metadata(
     id: '2c6ffac2-a4b7-4b00-9ff3-ae696971fede',

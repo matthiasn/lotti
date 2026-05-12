@@ -43,6 +43,20 @@ import '../test_data/test_data.dart';
 // Create a FakeGeolocation class for registerFallbackValue
 class FakeGeolocation extends Fake implements Geolocation {}
 
+/// Asserts that the badge has been invalidated at least once since the
+/// last reset, then clears interactions so the next assertion only
+/// counts calls made after this boundary. Used at each save / status
+/// transition so a regression in any single path fails its own
+/// assertion instead of being masked by an earlier path's call. We use
+/// `greaterThanOrEqualTo(1)` (not exactly 1) because nested writes
+/// (geolocation hydration, label refresh) legitimately stack extra
+/// `_savedJournalEntity` invocations; the contract this guards is
+/// "badge gets invalidated on save", not exact call count.
+void _verifyAndResetBadge(MockNotificationService mock) {
+  verify(mock.updateBadge).called(greaterThanOrEqualTo(1));
+  clearInteractions(mock);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final secureStorageMock = MockSecureStorage();
@@ -205,15 +219,7 @@ void main() {
           testText,
         );
 
-        // Per-save guard: the create path must have already invalidated
-        // the badge by now. Asserting at this boundary (instead of only
-        // a cumulative total at the end of the test) keeps the
-        // assertion causal — a regression in the create path would
-        // surface here even if the update path still fires its badge.
-        verify(mockNotificationService.updateBadge).called(
-          greaterThanOrEqualTo(1),
-        );
-        clearInteractions(mockNotificationService);
+        _verifyAndResetBadge(mockNotificationService);
 
         // update entry with new plaintext
         await getIt<PersistenceLogic>().updateJournalEntityText(
@@ -236,15 +242,7 @@ void main() {
         verify(
           () => mockFts5Db.insertText(any(), removePrevious: true),
         ).called(2);
-
-        // Per-save guard: the update path must also invalidate the
-        // badge. We use `greaterThanOrEqualTo(1)` (not exactly 1)
-        // because nested writes (geolocation hydration, label refresh)
-        // legitimately stack extra saves; the contract this guards is
-        // "badge gets invalidated on update", not exact call count.
-        verify(mockNotificationService.updateBadge).called(
-          greaterThanOrEqualTo(1),
-        );
+        _verifyAndResetBadge(mockNotificationService);
       },
     );
 
@@ -336,12 +334,8 @@ void main() {
         1,
       );
 
-      // Clear interactions on the boundary between the create call
-      // (which fired updateBadge during task creation) and the IN
-      // PROGRESS transition below — without this, the subsequent
-      // verify could be satisfied entirely by the create's call and
-      // still pass even if `updateTask` stopped invalidating the
-      // badge.
+      // Boundary between the create call and the IN PROGRESS
+      // transition below — see `_verifyAndResetBadge` for the WHY.
       clearInteractions(mockNotificationService);
 
       // update task with status 'IN PROGRESS'
@@ -357,25 +351,13 @@ void main() {
         ),
       );
 
-      // Per-transition guard: the IN PROGRESS update must invalidate
-      // the badge on its own. `greaterThanOrEqualTo(1)` (not exactly
-      // 1) because nested writes (label refresh, geolocation)
-      // legitimately stack additional badge invalidations; the
-      // contract this guards is "the badge gets invalidated on
-      // status change", not exact call count.
-      verify(mockNotificationService.updateBadge).called(
-        greaterThanOrEqualTo(1),
-      );
+      _verifyAndResetBadge(mockNotificationService);
       expect(await getIt<JournalDb>().getWipCount(), 1);
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
       expect(
         await getIt<JournalDb>().getTasksCount(statuses: ['IN PROGRESS']),
         1,
       );
-
-      // Same boundary reset as above: isolate the DONE transition so
-      // its assertion does not piggy-back on the IN PROGRESS call.
-      clearInteractions(mockNotificationService);
 
       // update task with status 'DONE'
       await getIt<PersistenceLogic>().updateTask(
@@ -390,11 +372,7 @@ void main() {
         ),
       );
 
-      // Per-transition guard: the DONE transition must invalidate the
-      // badge on its own — see comment on the IN PROGRESS verify above.
-      verify(mockNotificationService.updateBadge).called(
-        greaterThanOrEqualTo(1),
-      );
+      _verifyAndResetBadge(mockNotificationService);
 
       // expect task counts by status to be updated
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);

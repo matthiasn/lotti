@@ -1,25 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 import '../../test_data/test_data.dart';
-
-MeasurementEntry _measurement({
-  required String id,
-  required DateTime at,
-  required num value,
-}) {
-  return testMeasurementChocolateEntry.copyWith(
-    meta: testMeasurementChocolateEntry.meta.copyWith(
-      id: id,
-      createdAt: at,
-      updatedAt: at,
-      dateFrom: at,
-      dateTo: at,
-    ),
-    data: testMeasurementChocolateEntry.data.copyWith(value: value),
-  );
-}
 
 void main() {
   group('Chart utils', () {
@@ -92,15 +74,25 @@ void main() {
     final rangeEnd = DateTime(2024, 3, 13);
 
     test(
-      'averages multiple same-day measurements and emits one Observation '
-      'per day with measurements — empty days are skipped so the chart '
-      'is not pulled to zero on missing data',
+      'averages same-day measurements and skips empty days',
       () {
         final result = aggregateAvgByDay(
           [
-            _measurement(id: 'a', at: DateTime(2024, 3, 10, 9), value: 10),
-            _measurement(id: 'b', at: DateTime(2024, 3, 10, 18), value: 30),
-            _measurement(id: 'c', at: DateTime(2024, 3, 11, 12), value: 7),
+            buildMeasurementEntry(
+              id: 'a',
+              timestamp: DateTime(2024, 3, 10, 9),
+              value: 10,
+            ),
+            buildMeasurementEntry(
+              id: 'b',
+              timestamp: DateTime(2024, 3, 10, 18),
+              value: 30,
+            ),
+            buildMeasurementEntry(
+              id: 'c',
+              timestamp: DateTime(2024, 3, 11, 12),
+              value: 7,
+            ),
             // 2024-03-12 intentionally has no measurement.
           ],
           rangeStart: rangeStart,
@@ -121,12 +113,15 @@ void main() {
     );
 
     test(
-      'ignores non-measurement entities so a task or text entry on the '
-      'same day does not perturb the average',
+      'ignores non-measurement entities',
       () {
         final result = aggregateAvgByDay(
           [
-            _measurement(id: 'a', at: DateTime(2024, 3, 10, 9), value: 5),
+            buildMeasurementEntry(
+              id: 'a',
+              timestamp: DateTime(2024, 3, 10, 9),
+              value: 5,
+            ),
             testTextEntry, // not a MeasurementEntry — must be skipped
           ],
           rangeStart: rangeStart,
@@ -148,18 +143,28 @@ void main() {
     });
 
     test(
-      'filters out measurements that fall outside [rangeStart, rangeEnd) '
-      'so a caller passing a 3-day window does not get points from days '
-      'before or after',
+      'filters out measurements outside [rangeStart, rangeEnd)',
       () {
         final result = aggregateAvgByDay(
           [
             // Two days before rangeStart — must be filtered out.
-            _measurement(id: 'pre', at: DateTime(2024, 3, 8, 12), value: 100),
+            buildMeasurementEntry(
+              id: 'pre',
+              timestamp: DateTime(2024, 3, 8, 12),
+              value: 100,
+            ),
             // Inside the window.
-            _measurement(id: 'in', at: DateTime(2024, 3, 10, 12), value: 5),
+            buildMeasurementEntry(
+              id: 'in',
+              timestamp: DateTime(2024, 3, 10, 12),
+              value: 5,
+            ),
             // On rangeEnd — must be filtered out (window is half-open).
-            _measurement(id: 'on-end', at: DateTime(2024, 3, 13), value: 99),
+            buildMeasurementEntry(
+              id: 'on-end',
+              timestamp: DateTime(2024, 3, 13),
+              value: 99,
+            ),
           ],
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
@@ -172,15 +177,44 @@ void main() {
     );
 
     test(
-      'emits observations in chronological order regardless of how the '
-      'input list is shuffled — chart consumers require monotonically '
-      'increasing time',
+      'returns empty without throwing when rangeEnd <= rangeStart — a '
+      'caller passing an inverted or zero-width window should not crash',
       () {
         final result = aggregateAvgByDay(
           [
-            _measurement(id: 'c', at: DateTime(2024, 3, 12, 9), value: 30),
-            _measurement(id: 'a', at: DateTime(2024, 3, 10, 9), value: 10),
-            _measurement(id: 'b', at: DateTime(2024, 3, 11, 9), value: 20),
+            buildMeasurementEntry(
+              id: 'in',
+              timestamp: DateTime(2024, 3, 10, 12),
+              value: 5,
+            ),
+          ],
+          rangeStart: DateTime(2024, 3, 13),
+          rangeEnd: DateTime(2024, 3, 10),
+        );
+        expect(result, isEmpty);
+      },
+    );
+
+    test(
+      'emits observations in chronological order on shuffled input',
+      () {
+        final result = aggregateAvgByDay(
+          [
+            buildMeasurementEntry(
+              id: 'c',
+              timestamp: DateTime(2024, 3, 12, 9),
+              value: 30,
+            ),
+            buildMeasurementEntry(
+              id: 'a',
+              timestamp: DateTime(2024, 3, 10, 9),
+              value: 10,
+            ),
+            buildMeasurementEntry(
+              id: 'b',
+              timestamp: DateTime(2024, 3, 11, 9),
+              value: 20,
+            ),
           ],
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,

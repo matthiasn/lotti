@@ -1,8 +1,5 @@
--- The 'tags' column is vestigial: always empty since the tag-based search
--- path was removed, and SQLite FTS5 does not support `ALTER TABLE … DROP
--- COLUMN` on virtual tables. Dropping it would require recreating the
--- virtual table and rebuilding every row from `journal`, which is not
--- worth the migration cost while every insert just binds `''`.
+-- `tags` is vestigial (always bound as ''); dropping a column from an
+-- FTS5 virtual table requires a full rebuild, so the column stays.
 CREATE VIRTUAL TABLE
   journal_fts USING fts5(plain_text, title, summary, tags, uuid);
 

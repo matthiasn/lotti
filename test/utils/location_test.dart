@@ -45,12 +45,8 @@ void main() {
     });
 
     test('should handle negative coordinates', () {
-      // We don't pin the exact hash string: the upstream `dart_geohash`
-      // package has historical inconsistencies on negative-lat/-lon
-      // inputs, and pinning a literal made this test flaky on package
-      // bumps. Asserting that the function returns a non-empty hash
-      // is sufficient to catch a real regression (null / throw /
-      // empty-string return) without coupling to upstream encoding.
+      // `dart_geohash` has historical inconsistencies on negative
+      // coords; assert non-empty rather than pin a literal.
       const lat = -52.205;
       const lon = -0.119;
 
