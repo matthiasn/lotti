@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Connection-state hint surfaced on the provider card. Reflects what
@@ -488,12 +489,7 @@ class AiModelCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             model.providerModelId,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  fontFamily: 'Inconsolata',
-                                  color: tokens.colors.text.lowEmphasis,
-                                  letterSpacing: 0,
-                                ),
+                            style: monoMetaStyle(tokens, tokens.colors),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),

@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
+import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
@@ -17,12 +18,6 @@ import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dar
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
-
-/// Surface width at which the AI Settings card lists switch from a
-/// single-column stack (mobile / narrow detail pane) to a 2-column
-/// grid (desktop). Measured at the inner cross-axis extent so it
-/// reflects the available card area, not the device width.
-const double _kDesktopLayoutBreakpoint = 700;
 
 /// Embeddable body alias for the Settings V2 detail pane. Same widget
 /// tree as the standalone page; PR-4 will swap the panel registry to
@@ -434,7 +429,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       sliver: SliverLayoutBuilder(
         builder: (context, constraints) {
           final columns =
-              constraints.crossAxisExtent >= _kDesktopLayoutBreakpoint ? 2 : 1;
+              constraints.crossAxisExtent >= aiSettingsGridColumnBreakpoint
+              ? 2
+              : 1;
           if (columns == 1) {
             return SliverList.separated(
               itemCount: items.length,

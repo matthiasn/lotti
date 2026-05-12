@@ -4,22 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   late MockAiConfigRepository mockRepository;
-  late SettingsDb settingsDb;
 
   // Bus-style stream controllers per AiConfigType so individual tests
   // can push fresh snapshots without re-wiring the whole stub.
@@ -92,13 +90,9 @@ void main() {
     registerFallbackValue(AiConfigType.inferenceProvider);
   });
 
-  setUp(() {
+  setUp(() async {
     mockRepository = MockAiConfigRepository();
-    settingsDb = SettingsDb(inMemoryDatabase: true);
-    if (getIt.isRegistered<SettingsDb>()) {
-      getIt.unregister<SettingsDb>();
-    }
-    getIt.registerSingleton<SettingsDb>(settingsDb);
+    await setUpTestGetIt();
 
     providersController = StreamController<List<AiConfig>>.broadcast();
     modelsController = StreamController<List<AiConfig>>.broadcast();
@@ -124,8 +118,7 @@ void main() {
     await providersController.close();
     await modelsController.close();
     await profilesController.close();
-    await settingsDb.close();
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   Widget buildHarness({List<NavigatorObserver> navigatorObservers = const []}) {

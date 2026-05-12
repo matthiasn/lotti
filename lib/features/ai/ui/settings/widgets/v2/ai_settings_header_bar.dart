@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-
-/// Cross-axis width at which the header bar stops fitting the search
-/// field + the Add-provider CTA side-by-side and stacks them
-/// vertically. Local to the header bar — the page-level card grid
-/// has its own breakpoint (`_kDesktopLayoutBreakpoint` in
-/// `ai_settings_page.dart`) that triggers at a different inner width.
-const double _kStackedHeaderBreakpoint = 600;
 
 /// Subtitle paragraph + search field + green "+ Add provider" CTA
 /// shown directly below the page's `SettingsPageHeader` title.
@@ -67,7 +61,8 @@ class AiSettingsHeaderBar extends StatelessWidget {
               // Mobile: stack search + Add provider vertically so each
               // gets full width on a narrow viewport. Desktop /
               // tablet pane: side-by-side row with search expanded.
-              final stacked = constraints.maxWidth < _kStackedHeaderBreakpoint;
+              final stacked =
+                  constraints.maxWidth < aiSettingsHeaderStackBreakpoint;
               final searchField = AiSettingsSearchField(
                 controller: searchController,
                 onClear: onSearchClear,
