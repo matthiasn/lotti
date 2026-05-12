@@ -497,8 +497,6 @@
   "agentTokenUsageWakeCount": "Aufwachvorgänge",
   "aiAssistantTitle": "Generieren…",
   "aiBatchToggleTooltip": "Zur Standardaufnahme wechseln",
-  "aiCardMenuActionDelete": "Löschen",
-  "aiCardMenuActionEdit": "Bearbeiten",
   "aiCapabilityChipImageGeneration": "Bildgenerierung",
   "aiCapabilityChipImageRecognition": "Bilderkennung",
   "aiCapabilityChipThinking": "Denken",
@@ -512,6 +510,8 @@
       }
     }
   },
+  "aiCardMenuActionDelete": "Löschen",
+  "aiCardMenuActionEdit": "Bearbeiten",
   "aiCardOpenAgentInternals": "Agent-Internes öffnen",
   "aiCardProposalConfirmed": "Bestätigt",
   "aiCardProposalDismissed": "Abgelehnt",
@@ -690,6 +690,7 @@
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Bild",
+  "aiSettingsModelsFilterAllProviders": "Alle Anbieter",
   "aiSettingsNoModelsConfigured": "Keine AI-Modelle konfiguriert",
   "aiSettingsNoProvidersConfigured": "Keine AI-Anbieter konfiguriert",
   "aiSettingsPageLead": "Richte KI-Anbieter ein, die Modelle, die Lotti nutzen kann, und die Inferenzprofile, die entscheiden, welches Modell welche Aufgabe übernimmt.",
@@ -789,6 +790,15 @@
       }
     }
   },
+  "aiSetupResultKnownModelsMissing": "Erforderliche Modellkonfigurationen für {providerName} konnten nicht gefunden werden",
+  "@aiSetupResultKnownModelsMissing": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
   "aiSetupResultLead": "Wir haben alles für dich eingerichtet. Die KI-Funktionen stehen in deinem Journal bereit.",
   "aiSetupResultModalTitle": "{providerName} bereit",
   "@aiSetupResultModalTitle": {
@@ -817,8 +827,41 @@
   "aiSetupWizardTitle": "KI-Einrichtungsassistent",
   "aiTaskSummaryTitle": "KI-Aufgabenzusammenfassung",
   "apiKeyAddPageTitle": "Anbieter hinzufügen",
+  "apiKeyAuthenticationDescription": "Sichere deine API-Verbindung",
+  "apiKeyAuthenticationTitle": "Authentifizierung",
+  "apiKeyAvailableModelsDescription": "Vorkonfigurierte Modelle für diesen Anbieter schnell hinzufügen",
+  "apiKeyAvailableModelsTitle": "Verfügbare Modelle",
+  "apiKeyBaseUrlLabel": "Basis-URL",
+  "apiKeyDisplayNameHint": "Gib einen Anzeigenamen ein",
+  "apiKeyDisplayNameLabel": "Anzeigename",
+  "apiKeyEditGoBackButton": "Zurück",
   "apiKeyEditLoadError": "API-Schlüssel-Konfiguration konnte nicht geladen werden",
+  "apiKeyEditLoadErrorRetry": "Bitte versuche es erneut oder kontaktiere den Support",
   "apiKeyEditPageTitle": "Anbieter bearbeiten",
+  "apiKeyHideTooltip": "API-Schlüssel ausblenden",
+  "apiKeyInputHint": "Gib deinen API-Schlüssel ein",
+  "apiKeyInputLabel": "API-Schlüssel",
+  "apiKeyKnownModelInputLabel": "Eingabe: {modalities}",
+  "@apiKeyKnownModelInputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyKnownModelOutputLabel": "Ausgabe: {modalities}",
+  "@apiKeyKnownModelOutputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyProviderConfigDescription": "Konfiguriere die Einstellungen deines KI-Inferenzanbieters",
+  "apiKeyProviderConfigTitle": "Anbieterkonfiguration",
+  "apiKeyProviderTypeHint": "Anbietertyp auswählen",
+  "apiKeyProviderTypeLabel": "Anbietertyp",
+  "apiKeyShowTooltip": "API-Schlüssel anzeigen",
   "audioRecordingCancel": "ABBRECHEN",
   "audioRecordingListening": "Hört zu...",
   "audioRecordingRealtime": "Live-Transkription",
@@ -1664,6 +1707,15 @@
   "inferenceProfileDescriptionLabel": "Beschreibung",
   "inferenceProfileDesktopOnly": "Nur Desktop",
   "inferenceProfileDesktopOnlyDescription": "Nur auf Desktop-Plattformen verfügbar (z.B. für lokale Modelle)",
+  "inferenceProfileDetailLoadError": "Profil konnte nicht geladen werden: {error}",
+  "@inferenceProfileDetailLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "inferenceProfileDetailNotFound": "Profil nicht gefunden",
   "inferenceProfileEditTitle": "Profil bearbeiten",
   "inferenceProfileImageGeneration": "Bilderzeugung",
   "inferenceProfileImageRecognition": "Bilderkennung",
@@ -2222,10 +2274,16 @@
   "settingsAgentsSoulsSubtitle": "Langlebige Agenten-Persönlichkeiten",
   "settingsAgentsStatsSubtitle": "Token-Nutzung und Aktivität",
   "settingsAgentsTemplatesSubtitle": "Geteilte Agenten-Vorlagen",
+  "settingsAiModelsSubtitle": "Modellzeilen und Fähigkeiten je Anbieter",
+  "settingsAiModelsTitle": "Modelle",
   "settingsAiProfilesSubtitle": "Anbieter und Modelle",
   "settingsAiProfilesTitle": "Inferenzprofile",
+  "settingsAiProvidersSubtitle": "Verbundene KI-Anbieter und Schlüssel",
+  "settingsAiProvidersTitle": "Anbieter",
   "settingsAiSubtitle": "AI-Anbieter, Modelle und Prompts konfigurieren",
   "settingsAiTitle": "AI-Einstellungen",
+  "settingsBeamPageEditModelTitle": "Modell bearbeiten",
+  "settingsBeamPageEditProfileTitle": "Profil bearbeiten",
   "settingsCategoriesCreateTitle": "Kategorie erstellen",
   "settingsCategoriesDetailsLabel": "Kategoriedetails",
   "settingsCategoriesEmptyState": "Keine Kategorien gefunden",

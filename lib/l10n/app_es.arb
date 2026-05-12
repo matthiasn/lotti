@@ -497,8 +497,6 @@
   "agentTokenUsageWakeCount": "Despertares",
   "aiAssistantTitle": "Generar…",
   "aiBatchToggleTooltip": "Cambiar a grabación estándar",
-  "aiCardMenuActionDelete": "Eliminar",
-  "aiCardMenuActionEdit": "Editar",
   "aiCapabilityChipImageGeneration": "Generación de imágenes",
   "aiCapabilityChipImageRecognition": "Reconocimiento de imágenes",
   "aiCapabilityChipThinking": "Razonamiento",
@@ -512,6 +510,8 @@
       }
     }
   },
+  "aiCardMenuActionDelete": "Eliminar",
+  "aiCardMenuActionEdit": "Editar",
   "aiCardOpenAgentInternals": "Abrir interior del agente",
   "aiCardProposalConfirmed": "Confirmada",
   "aiCardProposalDismissed": "Descartada",
@@ -690,6 +690,7 @@
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Texto",
   "aiSettingsModalityVision": "Visión",
+  "aiSettingsModelsFilterAllProviders": "Todos los proveedores",
   "aiSettingsNoModelsConfigured": "No hay modelos AI configurados",
   "aiSettingsNoProvidersConfigured": "No hay proveedores AI configurados",
   "aiSettingsPageLead": "Configura los proveedores de IA, los modelos que Lotti puede usar y los perfiles de inferencia que deciden qué modelo gestiona cada tarea.",
@@ -789,6 +790,15 @@
       }
     }
   },
+  "aiSetupResultKnownModelsMissing": "No se pudieron encontrar las configuraciones de modelo requeridas para {providerName}",
+  "@aiSetupResultKnownModelsMissing": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
   "aiSetupResultLead": "Lo hemos configurado todo por ti. Las funciones de IA están listas para usar en tu diario.",
   "aiSetupResultModalTitle": "{providerName} listo",
   "@aiSetupResultModalTitle": {
@@ -817,8 +827,41 @@
   "aiSetupWizardTitle": "Asistente de configuración AI",
   "aiTaskSummaryTitle": "Resumen de tareas de IA",
   "apiKeyAddPageTitle": "Añadir proveedor",
+  "apiKeyAuthenticationDescription": "Asegura tu conexión a la API",
+  "apiKeyAuthenticationTitle": "Autenticación",
+  "apiKeyAvailableModelsDescription": "Añade rápidamente modelos preconfigurados para este proveedor",
+  "apiKeyAvailableModelsTitle": "Modelos disponibles",
+  "apiKeyBaseUrlLabel": "URL base",
+  "apiKeyDisplayNameHint": "Introduce un nombre descriptivo",
+  "apiKeyDisplayNameLabel": "Nombre para mostrar",
+  "apiKeyEditGoBackButton": "Atrás",
   "apiKeyEditLoadError": "Error al cargar la configuración de la clave API",
+  "apiKeyEditLoadErrorRetry": "Inténtalo de nuevo o contacta con soporte",
   "apiKeyEditPageTitle": "Editar proveedor",
+  "apiKeyHideTooltip": "Ocultar clave API",
+  "apiKeyInputHint": "Introduce tu clave API",
+  "apiKeyInputLabel": "Clave API",
+  "apiKeyKnownModelInputLabel": "Entrada: {modalities}",
+  "@apiKeyKnownModelInputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyKnownModelOutputLabel": "Salida: {modalities}",
+  "@apiKeyKnownModelOutputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyProviderConfigDescription": "Configura los ajustes de tu proveedor de inferencia de IA",
+  "apiKeyProviderConfigTitle": "Configuración del proveedor",
+  "apiKeyProviderTypeHint": "Selecciona un tipo de proveedor",
+  "apiKeyProviderTypeLabel": "Tipo de proveedor",
+  "apiKeyShowTooltip": "Mostrar clave API",
   "audioRecordingCancel": "CANCELAR",
   "audioRecordingListening": "Escuchando...",
   "audioRecordingRealtime": "Transcripción en vivo",
@@ -1664,6 +1707,15 @@
   "inferenceProfileDescriptionLabel": "Descripción",
   "inferenceProfileDesktopOnly": "Solo escritorio",
   "inferenceProfileDesktopOnlyDescription": "Solo disponible en plataformas de escritorio (p. ej. para modelos locales)",
+  "inferenceProfileDetailLoadError": "No se pudo cargar el perfil: {error}",
+  "@inferenceProfileDetailLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "inferenceProfileDetailNotFound": "Perfil no encontrado",
   "inferenceProfileEditTitle": "Editar perfil",
   "inferenceProfileImageGeneration": "Generación de imágenes",
   "inferenceProfileImageRecognition": "Reconocimiento de imágenes",
@@ -2222,10 +2274,16 @@
   "settingsAgentsSoulsSubtitle": "Personalidades duraderas de agentes",
   "settingsAgentsStatsSubtitle": "Uso de tokens y actividad",
   "settingsAgentsTemplatesSubtitle": "Plantillas de agentes compartidas",
+  "settingsAiModelsSubtitle": "Filas de modelos y capacidades por proveedor",
+  "settingsAiModelsTitle": "Modelos",
   "settingsAiProfilesSubtitle": "Proveedores y modelos",
   "settingsAiProfilesTitle": "Perfiles de inferencia",
+  "settingsAiProvidersSubtitle": "Proveedores de IA conectados y claves",
+  "settingsAiProvidersTitle": "Proveedores",
   "settingsAiSubtitle": "Configurar proveedores de AI, modelos y prompts",
   "settingsAiTitle": "Configuración de AI",
+  "settingsBeamPageEditModelTitle": "Editar modelo",
+  "settingsBeamPageEditProfileTitle": "Editar perfil",
   "settingsCategoriesCreateTitle": "Crear categoría",
   "settingsCategoriesDetailsLabel": "Detalles de categoría",
   "settingsCategoriesEmptyState": "No se encontraron categorías",

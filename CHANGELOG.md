@@ -74,11 +74,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - AI Settings page redesigned to match the new design-system reference.
   The collapsing v1 title strip now sits above an `AiSettingsHeaderBar`
-  that carries the page subtitle, an inline search field, and a green
-  "+ Add provider" CTA (the floating action button is gone). The tab
-  row uses an `AiSettingsTabBar` that bakes the counters directly into
-  each label — "Providers 2 / Models 5 / Profiles 2" — instead of a
-  separate counter strip. Below the tab bar the active tab renders the
+  that carries an inline search field; the page's "Add" affordance
+  rides on a per-tab `DesignSystemFloatingActionButton` (Scaffold's
+  `floatingActionButton` slot) instead of a header CTA — see the FAB
+  bullet later in this section for the icon/handler swap rules. The
+  tab row uses an `AiSettingsTabBar` that bakes the counters directly
+  into each label — "Providers 2 / Models 5 / Profiles 2" — instead
+  of a separate counter strip. Below the tab bar the active tab renders the
   new card surfaces: `AiProviderCard` is a 2-column responsive grid
   card with the provider's accented icon top-left, a `⋯` overflow
   menu top-right, the display name + tagline, a hairline divider, and
@@ -215,6 +217,98 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wrapped model name. The inference profile form's body padding
   now includes `DesignSystemBottomNavigationBar.occupiedHeight` so
   the last form section clears the bottom nav on mobile.
+- AI Settings desktop master/detail dispatch. The `ai` panel in
+  the Settings V2 registry was promoted from a plain
+  `AiSettingsBody` body to a multi-kind `AiPanelDispatch` so the
+  right pane on desktop now swaps to `AiProviderDetailPage`,
+  `InferenceModelEditPage`, or `InferenceProfileDetailPage` in
+  place when a row is tapped (or when the user beams to
+  `/settings/ai/provider/<id>`, `/settings/ai/model/<id>`, or
+  `/settings/ai/profile/<id>`) — previously the detail page was
+  pushed as a fullscreen route over the master/detail shell,
+  hiding the sidebar. The three typed URL patterns
+  (`/settings/ai/provider/:providerId`,
+  `/settings/ai/model/:modelId`, `/settings/ai/profile/:profileId`)
+  handle both surfaces: on desktop the panel slot reacts to
+  `NavService.desktopSelectedSettingsRoute`, on mobile the Beamer
+  location builder pushes the detail page on top of the AI
+  Settings page so the back gesture still returns to the list.
+  `AiSettingsNavigationService.navigateToConfigEdit` now beams to
+  the matching typed route instead of calling `Navigator.push`
+  directly, and the Fix-flow rides the provider URL with a
+  `?focusApiKey=true` query parameter — `AiPanelDispatch` reads
+  that query off the live route and rebuilds the detail page
+  with `focusApiKey: true` so the edit form auto-pushes with the
+  API key field focused regardless of which surface the user
+  came in on.
+- AI Settings desktop sidebar shows Providers / Models / Profiles
+  as their own leaves under "AI Settings". Previously the three
+  views lived only as tabs inside the AI Settings page body, and
+  the sidebar carried a single (legacy) "Inference Profiles" leaf
+  that pointed at the V1 profile list — the v3 redesign moved
+  profile rendering into the tab body but the legacy leaf was
+  never updated. The settings tree now mirrors the three tabs as
+  three leaves, each panel renders `AiSettingsBody` pinned to its
+  tab with the in-pane TabBar hidden, and the `ai-profiles` panel
+  is repointed from `InferenceProfilesBody` (V1) to the v3
+  Profiles tab body so a desktop user sees one consistent profile
+  list whether they reach it via the sidebar or the AI Settings
+  page directly. Clicking the AI Settings parent row itself also
+  renders without the TabBar — the page-level default tab is
+  already Providers, so the parent landing lands visually
+  identical to the Providers leaf instead of briefly flashing a
+  duplicate tab strip before the user picks a leaf. On mobile
+  the page still ships its TabBar — the sidebar doesn't exist
+  there, so the tabs remain the only way to flip between the
+  three views.
+- AI Settings "Add" affordance is a per-tab floating action button.
+  The inline "Add provider" pill in the page header is gone — it
+  was hard-coded to provider creation even when the user was
+  looking at Models or Profiles, and it duplicated the FAB pattern
+  the rest of the settings surface already uses
+  (`InferenceProfilePage`, habits, measurables). The page now
+  drives a `DesignSystemFloatingActionButton` in the Scaffold's
+  `floatingActionButton` slot (wrapped in
+  `DesignSystemBottomNavigationFabPadding` so it clears the
+  bottom nav on mobile). Its `semanticLabel`, `icon`, AND handler
+  swap per active tab — `Icons.bolt_rounded` on Providers,
+  `Icons.psychology_alt_rounded` on Models, `Icons.tune_rounded`
+  on Profiles. The icon set mirrors the sidebar leaf icons so
+  the FAB glyph echoes the leaf the user is on and names what's
+  about to be added. `AiSettingsHeaderBar` is now just the
+  search bar — the subtitle paragraph the v2 redesign shipped
+  was redundant with the page title + sidebar leaf, and the
+  custom design-system text input it used had a different
+  placeholder than every other search field in the app. The
+  header now reuses `AiSettingsSearchBar` (which wraps the
+  app-wide `LottiSearchBar`) so the styling and hint copy match
+  the rest of the settings surface.
+- Provider card's status row right-aligns the model count tail
+  flush against the card's right edge. The v3 layout shipped a
+  `Spacer + Flexible(Text)` pairing for the right-side tail,
+  which split the remaining width 1:1 and parked "3 models · last
+  used 2m ago" in the middle-right of the card instead of at the
+  edge. `Expanded(Text(textAlign: end))` collapses the gap so the
+  tail snaps to the right margin; the Ollama-hint variant on the
+  offline status branch got the same treatment.
+- Models tab regains the pre-v3 filter strip in full. The v3
+  redesign hooked up the filter service to filter by
+  `selectedProviders` / `selectedCapabilities` / `reasoningFilter`
+  but never shipped the UI for any of them. The strip now reuses
+  the existing `AiSettingsFilterChips` widget (which itself
+  wraps `ProviderFilterChipsRow(useStyledChips: true)`), so the
+  Models tab gets the same chrome the rest of the app already
+  uses: provider-tinted pills (colored leading dot + matching
+  border + dark accent-tinted background pulled from the
+  per-provider `colors.aiProvider.*` tokens), capability chips
+  (Text / Vision / Audio) plus a Reasoning toggle in a neutral
+  Material FilterChip style, and an appearing "Clear filters"
+  action when at least one filter is active. The chips sit in a
+  `Wrap`, so the row stacks across multiple lines on narrow
+  viewports instead of horizontally scrolling — the
+  design-system-chip prototype shipped earlier on this branch
+  (and its successor with `useStyledChips: false`) didn't match
+  what the rest of the app does and were both removed.
 - Sync conflict resolution screen rebuilt as an inline-diff picker.
   Tapping a conflict row now opens a dedicated page with a back chip
   + title + amber count pill in the header, lead copy, and an amber

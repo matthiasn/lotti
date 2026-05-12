@@ -1402,7 +1402,9 @@ void main() {
       // Should show AI Setup Wizard section
       expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
       expect(
-        find.text(strings.aiSetupWizardDescription('Gemini')),
+        find.text(
+          strings.aiSetupWizardDescription(strings.aiProviderGeminiName),
+        ),
         findsOneWidget,
       );
       expect(find.text(strings.aiSetupWizardRunLabel), findsOneWidget);
@@ -1456,7 +1458,9 @@ void main() {
       // Should show AI Setup Wizard section for OpenAI
       expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
       expect(
-        find.text(strings.aiSetupWizardDescription('OpenAI')),
+        find.text(
+          strings.aiSetupWizardDescription(strings.aiProviderOpenAiName),
+        ),
         findsOneWidget,
       );
     });
@@ -1504,7 +1508,9 @@ void main() {
       // Should show AI Setup Wizard section for Mistral
       expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
       expect(
-        find.text(strings.aiSetupWizardDescription('Mistral')),
+        find.text(
+          strings.aiSetupWizardDescription(strings.aiProviderMistralName),
+        ),
         findsOneWidget,
       );
     });
@@ -1927,6 +1933,218 @@ void main() {
         expect(modelsCreated, equals(openaiModels.length));
         final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
         expect(promptsCreated, equals(0));
+      },
+    );
+  });
+
+  /// Modular coverage for the save-error toast branch added to
+  /// `handleSave`. Before this branch landed, a thrown
+  /// `addConfig` / `updateConfig` would silently snap the spinner off
+  /// without telling the user anything went wrong.
+  group('Save error handling', () {
+    testWidgets(
+      'surfaces the localised commonError toast and clears the saving '
+      'spinner when saveConfig throws on a NEW provider — covers the '
+      'try/catch branch in handleSave',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenThrow(Exception('write failed'));
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        // Make a valid OpenAI provider so the form is dirty + valid.
+        final strings = l10n(tester);
+        await tester.enterText(
+          find.widgetWithText(TextFormField, strings.apiKeyDisplayNameHint),
+          'My Provider',
+        );
+        await tester.pump();
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'https://api.example.com'),
+          'https://api.example.com/v1',
+        );
+        await tester.pump();
+        await tester.enterText(
+          find.widgetWithText(TextFormField, strings.apiKeyInputHint),
+          'sk-secret',
+        );
+        await tester.pump();
+
+        await tester.ensureVisible(find.text('Save'));
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        // Drain the awaited future so the catch + finally fire.
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        // Toast text comes from `commonError` — assert it landed in
+        // the tree. Different toast implementations expose the title
+        // through SemanticsNode or as a Text widget; checking by text
+        // is sufficient because the bench fakes the messenger.
+        expect(find.text(strings.commonError), findsAtLeastNWidgets(1));
+        // The form is back to "not saving" (the spinner cleared).
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'surfaces the localised commonError toast when updateConfig throws '
+      'on an EXISTING provider — covers the same catch arm via the '
+      'edit-flow branch (configId != null)',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenThrow(Exception('update failed'));
+
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'test-provider-id'),
+        );
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        // Dirty the existing provider so save becomes enabled.
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Test Provider'),
+          'Renamed Provider',
+        );
+        await tester.pump();
+
+        await tester.ensureVisible(find.text('Save'));
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        expect(find.text(strings.commonError), findsAtLeastNWidgets(1));
+      },
+    );
+  });
+
+  /// Modular coverage for the read-only `_ProviderTypeField` widget
+  /// added to fix the per-build `TextEditingController` leak. The field
+  /// is private, so we exercise it through the public form: tapping the
+  /// read-only field has to open the provider-type modal, the rendered
+  /// value has to track the form state's localised display name, and
+  /// the field has to expose a Semantics button (no
+  /// `TextEditingController` is used internally).
+  group('Provider type read-only field', () {
+    testWidgets(
+      'tapping the field opens the provider type selection modal — the '
+      'GestureDetector wrap was replaced with an InkWell on the styled '
+      'box, but the tap behavior must remain identical',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        // The default provider type label is OpenAI Compatible. Tap
+        // the field — the InkWell is the visible tap target.
+        await tester.tap(find.text('OpenAI Compatible'));
+        await tester.pumpAndSettle();
+
+        // The provider-type selection modal exposes the OpenAI option
+        // as a list row, which is only present when the modal is open.
+        expect(find.text('OpenAI'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'renders the localised provider type display name as the field '
+      'value and the matching provider icon as the leading affordance',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'test-provider-id'),
+        );
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        // Field label (caption) and value (provider display name).
+        expect(find.text(strings.apiKeyProviderTypeLabel), findsOneWidget);
+        expect(
+          find.text(strings.aiProviderOpenAiName),
+          findsAtLeastNWidgets(1),
+        );
+      },
+    );
+
+    testWidgets(
+      'surfaces a Semantics button for the field so accessibility tools '
+      'can announce + activate the type picker — the InkWell-based '
+      'replacement must not regress on a11y',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        // The field annotates itself with `Semantics(button: true,
+        // label: <Provider Type>, value: <display name>)` so screen
+        // readers can announce + activate the type picker. We assert
+        // the field's Semantics widget is in the tree with the right
+        // properties.
+        final semanticsWidgets = tester
+            .widgetList<Semantics>(find.byType(Semantics))
+            .where(
+              (s) =>
+                  s.properties.label == strings.apiKeyProviderTypeLabel &&
+                  s.properties.button == true,
+            )
+            .toList();
+        expect(semanticsWidgets, hasLength(1));
+        // The default provider type for a new provider is
+        // OpenAI Compatible (genericOpenAi), surfaced through the
+        // localized display name.
+        expect(
+          semanticsWidgets.first.properties.value,
+          strings.aiProviderGenericOpenAiName,
+        );
+      },
+    );
+
+    testWidgets(
+      'does NOT allocate a TextEditingController per build — the field is '
+      'a styled InkWell, not an AbsorbPointer(AiTextField(controller: '
+      'TextEditingController(...))) — exercising the prior leaky pattern '
+      'would surface as a TextField widget in the tree, so this guard '
+      'asserts no TextField appears in the Provider Configuration card.',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        // The provider-type label sits inside the field, so we walk up
+        // to its enclosing Semantics widget and assert the descendants
+        // do not contain a Material `TextField` — the leaky pattern.
+        final fieldRoot = find.ancestor(
+          of: find.text(strings.apiKeyProviderTypeLabel),
+          matching: find.byType(Semantics),
+        );
+        expect(fieldRoot, findsAtLeastNWidgets(1));
+        expect(
+          find.descendant(
+            of: fieldRoot.first,
+            matching: find.byType(TextField),
+          ),
+          findsNothing,
+        );
       },
     );
   });

@@ -8,9 +8,12 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -90,9 +93,22 @@ void main() {
     registerFallbackValue(AiConfigType.inferenceProvider);
   });
 
+  late MockNavService mockNavService;
+
   setUp(() async {
     mockRepository = MockAiConfigRepository();
     await setUpTestGetIt();
+
+    // The v4 nav service beams provider/model/profile-detail URLs
+    // through `nav_service.beamToNamed`, which calls
+    // `getIt<NavService>()`. Without this mock, every navigation test
+    // crashes with a missing-registration error.
+    mockNavService = MockNavService();
+    when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
+    getIt.registerSingleton<NavService>(mockNavService);
 
     providersController = StreamController<List<AiConfig>>.broadcast();
     modelsController = StreamController<List<AiConfig>>.broadcast();
@@ -421,7 +437,7 @@ void main() {
         await tester.pump();
         expect(find.byType(AiProviderCard), findsOneWidget);
 
-        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.tap(find.byIcon(Icons.clear_rounded));
         await tester.pump(const Duration(milliseconds: 350));
         await tester.pump();
 
@@ -691,16 +707,12 @@ void main() {
 
   group('AiSettingsPage — navigation', () {
     testWidgets(
-      'tapping a provider card pushes a new route through the navigator',
+      'tapping a provider card beams to the per-provider detail URL — '
+      'desktop master/detail panel swap path (no Navigator.push)',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigById(any())).thenAnswer(
-          (_) async => null,
-        );
-
-        final spy = _PushSpy();
         await pumpWith(
           tester: tester,
           providers: [
@@ -712,18 +724,15 @@ void main() {
           ],
           models: const <AiConfig>[],
           profiles: const <AiConfig>[],
-          navigatorObservers: [spy],
         );
-
-        // Initial root push is the AiSettingsPage itself.
-        expect(spy.pushed, hasLength(1));
 
         await tester.tap(find.byType(AiProviderCard));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        // The card tap should have pushed exactly one new route.
-        expect(spy.pushed, hasLength(2));
+        verify(
+          () => mockNavService.beamToNamed('/settings/ai/provider/p1'),
+        ).called(1);
       },
     );
 
@@ -753,16 +762,12 @@ void main() {
     );
 
     testWidgets(
-      'tapping a model card pushes a new route',
+      'tapping a model card beams to the per-model detail URL — same '
+      'desktop master/detail dispatch path as provider rows',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(
-          () => mockRepository.getConfigById(any()),
-        ).thenAnswer((_) async => null);
-
-        final spy = _PushSpy();
         await pumpWith(
           tester: tester,
           providers: [
@@ -777,35 +782,29 @@ void main() {
             ),
           ],
           profiles: const <AiConfig>[],
-          navigatorObservers: [spy],
         );
 
         await tester.tap(find.text('Models'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        // Initial root + the tab-switch animation does not push.
-        expect(spy.pushed, hasLength(1));
-
         await tester.tap(find.byType(AiModelCard));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(spy.pushed, hasLength(2));
+        verify(
+          () => mockNavService.beamToNamed('/settings/ai/model/m1'),
+        ).called(1);
       },
     );
 
     testWidgets(
-      'tapping a profile card pushes a new route',
+      'tapping a profile card beams to the per-profile detail URL — same '
+      'desktop master/detail dispatch path as provider/model rows',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(
-          () => mockRepository.getConfigById(any()),
-        ).thenAnswer((_) async => null);
-
-        final spy = _PushSpy();
         await pumpWith(
           tester: tester,
           providers: [
@@ -825,34 +824,31 @@ void main() {
               thinking: 'gemini-flash-id',
             ),
           ],
-          navigatorObservers: [spy],
         );
 
         await tester.tap(find.text('Profiles'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(spy.pushed, hasLength(1));
-
         await tester.tap(find.byType(AiProfileCard));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(spy.pushed, hasLength(2));
+        verify(
+          () => mockNavService.beamToNamed(
+            '/settings/ai/profile/profile-1',
+          ),
+        ).called(1);
       },
     );
 
     testWidgets(
-      'tapping Fix on an invalid-key provider card pushes a new route',
+      'tapping Fix on an invalid-key provider card beams to the detail URL '
+      'with the focusApiKey query param — Fix-flow entry point',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(
-          () => mockRepository.getConfigById(any()),
-        ).thenAnswer((_) async => null);
-
-        final spy = _PushSpy();
         await pumpWith(
           tester: tester,
           providers: [
@@ -865,34 +861,31 @@ void main() {
           ],
           models: const <AiConfig>[],
           profiles: const <AiConfig>[],
-          navigatorObservers: [spy],
         );
 
         // The blank-API-key provider lands in `invalidKey` status,
         // which wires up the inline Fix affordance.
         expect(find.text('Invalid key'), findsOneWidget);
-        expect(spy.pushed, hasLength(1));
 
         await tester.tap(find.text('Fix'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(spy.pushed, hasLength(2));
+        verify(
+          () => mockNavService.beamToNamed(
+            '/settings/ai/provider/p1?focusApiKey=true',
+          ),
+        ).called(1);
       },
     );
 
     testWidgets(
-      'tapping Edit on the provider card overflow menu pushes the detail '
-      'page (same path as a card tap)',
+      'tapping Edit on the provider card overflow menu beams to the same '
+      'detail URL as a card tap (same nav path)',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(
-          () => mockRepository.getConfigById(any()),
-        ).thenAnswer((_) async => null);
-
-        final spy = _PushSpy();
         await pumpWith(
           tester: tester,
           providers: [
@@ -904,10 +897,7 @@ void main() {
           ],
           models: const <AiConfig>[],
           profiles: const <AiConfig>[],
-          navigatorObservers: [spy],
         );
-
-        expect(spy.pushed, hasLength(1));
 
         // Open the card's `⋯` menu.
         await tester.tap(find.byIcon(Icons.more_horiz_rounded));
@@ -915,16 +905,14 @@ void main() {
         // Two rows expected: Edit + Delete (from `_buildCardMenu`).
         expect(find.text('Edit'), findsOneWidget);
         expect(find.text('Delete'), findsOneWidget);
-        // Snapshot the push count *after* the menu opens — opening the
-        // popup itself pushes a `PopupRoute`, so a naive
-        // `>= 2` assertion would pass before Edit is tapped.
-        final pushesAfterMenuOpen = spy.pushed.length;
 
         await tester.tap(find.text('Edit'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(spy.pushed.length, greaterThan(pushesAfterMenuOpen));
+        verify(
+          () => mockNavService.beamToNamed('/settings/ai/provider/p1'),
+        ).called(1);
       },
     );
 
@@ -986,7 +974,10 @@ void main() {
     );
 
     testWidgets(
-      'tapping the Add provider CTA pushes a new route',
+      'tapping the per-tab FloatingActionButton pushes the create route — '
+      'the create flows still use Navigator.push (slide overlay) rather '
+      'than beaming, since they overlay the list rather than swap a '
+      'detail panel',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1002,11 +993,24 @@ void main() {
           navigatorObservers: [spy],
         );
 
-        await tester.tap(find.text('Add provider'));
+        // Initial root push baseline.
+        final baseline = spy.pushed.length;
+
+        // The FAB is rendered as `DesignSystemFloatingActionButton`
+        // wrapping an InkWell whose onTap is wired to the page's add
+        // handler. The outer padding wrapper places the FAB off the
+        // synthetic test viewport in some layouts, so tap the inner
+        // InkWell directly to bypass any hit-test offset issues.
+        final fab = find.byType(AiSettingsFloatingActionButton);
+        final inkWell = find.descendant(
+          of: fab,
+          matching: find.byType(InkWell),
+        );
+        await tester.tap(inkWell, warnIfMissed: false);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(spy.pushed, hasLength(2));
+        expect(spy.pushed.length, greaterThan(baseline));
       },
     );
   });

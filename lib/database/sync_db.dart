@@ -575,14 +575,32 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   Future<List<OutboxItem>> oldestOutboxItems(int limit) {
-    return (select(outbox)
-          ..where((t) => t.status.equals(OutboxStatus.pending.index))
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.createdAt),
-            (t) => OrderingTerm(expression: t.id),
-          ])
-          ..limit(limit))
-        .get();
+    // Force the partial `idx_outbox_pending_created_id` index by
+    // emitting the status filter as a SQL literal (not a parameter
+    // binding) AND pinning it with `INDEXED BY`. Drift's standard
+    // query builder uses `WHERE status = ?`, which prevents SQLite
+    // from matching the partial-index predicate `WHERE status = 0`
+    // at plan time — the planner falls back to the wider
+    // `(status, priority, created_at)` index and pays the temp
+    // B-tree sort the v21 partial was designed to skip. The literal
+    // `status = ${OutboxStatus.pending.index}` plus the explicit
+    // index pin lets the planner walk the partial in
+    // `(created_at, id)` order and stop at LIMIT N without ever
+    // materialising the sort.
+    //
+    // Safety: `OutboxStatus.pending.index` is a Dart `int` from a
+    // closed enum, so there is no SQL-injection surface here — the
+    // value is interpolated as the literal integer the index
+    // predicate needs.
+    return customSelect(
+      'SELECT * FROM outbox '
+      'INDEXED BY idx_outbox_pending_created_id '
+      'WHERE status = ${OutboxStatus.pending.index} '
+      'ORDER BY created_at ASC, id ASC '
+      'LIMIT ?1',
+      variables: [Variable.withInt(limit)],
+      readsFrom: {outbox},
+    ).map((row) => outbox.map(row.data)).get();
   }
 
   Future<OutboxItem?> claimNextOutboxItem({

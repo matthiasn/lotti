@@ -1108,12 +1108,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
 
   @override
-  String get aiCardMenuActionDelete => 'Smazat';
-
-  @override
-  String get aiCardMenuActionEdit => 'Upravit';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Generování obrázků';
 
   @override
@@ -1133,6 +1127,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String aiCardHistoryToggle(int count) {
     return 'Historie · $count';
   }
+
+  @override
+  String get aiCardMenuActionDelete => 'Smazat';
+
+  @override
+  String get aiCardMenuActionEdit => 'Upravit';
 
   @override
   String get aiCardOpenAgentInternals => 'Otevřít interní informace agenta';
@@ -1585,6 +1585,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSettingsModalityVision => 'Obraz';
 
   @override
+  String get aiSettingsModelsFilterAllProviders => 'Všichni poskytovatelé';
+
+  @override
   String get aiSettingsNoModelsConfigured =>
       'Nejsou nakonfigurovány žádné AI modely';
 
@@ -1702,6 +1705,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String aiSetupResultKnownModelsMissing(String providerName) {
+    return 'Nepodařilo se najít požadované konfigurace modelů pro $providerName';
+  }
+
+  @override
   String get aiSetupResultLead =>
       'Vše jsme za tebe nastavili. Funkce AI jsou připraveny v tvém deníku.';
 
@@ -1748,11 +1756,75 @@ class AppLocalizationsCs extends AppLocalizations {
   String get apiKeyAddPageTitle => 'Přidat poskytovatele';
 
   @override
+  String get apiKeyAuthenticationDescription => 'Zabezpeč své připojení k API';
+
+  @override
+  String get apiKeyAuthenticationTitle => 'Ověření';
+
+  @override
+  String get apiKeyAvailableModelsDescription =>
+      'Rychle přidej předkonfigurované modely pro tohoto poskytovatele';
+
+  @override
+  String get apiKeyAvailableModelsTitle => 'Dostupné modely';
+
+  @override
+  String get apiKeyBaseUrlLabel => 'Základní URL';
+
+  @override
+  String get apiKeyDisplayNameHint => 'Zadej přívětivý název';
+
+  @override
+  String get apiKeyDisplayNameLabel => 'Zobrazovaný název';
+
+  @override
+  String get apiKeyEditGoBackButton => 'Zpět';
+
+  @override
   String get apiKeyEditLoadError =>
       'Nepodařilo se načíst konfiguraci API klíče';
 
   @override
+  String get apiKeyEditLoadErrorRetry =>
+      'Zkus to prosím znovu nebo kontaktuj podporu';
+
+  @override
   String get apiKeyEditPageTitle => 'Upravit poskytovatele';
+
+  @override
+  String get apiKeyHideTooltip => 'Skrýt API klíč';
+
+  @override
+  String get apiKeyInputHint => 'Zadej svůj API klíč';
+
+  @override
+  String get apiKeyInputLabel => 'API klíč';
+
+  @override
+  String apiKeyKnownModelInputLabel(String modalities) {
+    return 'Vstup: $modalities';
+  }
+
+  @override
+  String apiKeyKnownModelOutputLabel(String modalities) {
+    return 'Výstup: $modalities';
+  }
+
+  @override
+  String get apiKeyProviderConfigDescription =>
+      'Nakonfiguruj nastavení poskytovatele AI inference';
+
+  @override
+  String get apiKeyProviderConfigTitle => 'Konfigurace poskytovatele';
+
+  @override
+  String get apiKeyProviderTypeHint => 'Vyber typ poskytovatele';
+
+  @override
+  String get apiKeyProviderTypeLabel => 'Typ poskytovatele';
+
+  @override
+  String get apiKeyShowTooltip => 'Zobrazit API klíč';
 
   @override
   String get audioRecordingCancel => 'ZRUŠIT';
@@ -3698,6 +3770,14 @@ class AppLocalizationsCs extends AppLocalizations {
       'Only available on desktop platforms (e.g. for local models)';
 
   @override
+  String inferenceProfileDetailLoadError(String error) {
+    return 'Profil se nepodařilo načíst: $error';
+  }
+
+  @override
+  String get inferenceProfileDetailNotFound => 'Profil nenalezen';
+
+  @override
   String get inferenceProfileEditTitle => 'Edit Profile';
 
   @override
@@ -5033,10 +5113,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsAgentsTemplatesSubtitle => 'Sdílené šablony agentů';
 
   @override
+  String get settingsAiModelsSubtitle =>
+      'Modely a schopnosti podle poskytovatele';
+
+  @override
+  String get settingsAiModelsTitle => 'Modely';
+
+  @override
   String get settingsAiProfilesSubtitle => 'Poskytovatelé a modely';
 
   @override
   String get settingsAiProfilesTitle => 'Inferenční profily';
+
+  @override
+  String get settingsAiProvidersSubtitle =>
+      'Připojení poskytovatelé AI a klíče';
+
+  @override
+  String get settingsAiProvidersTitle => 'Poskytovatelé';
 
   @override
   String get settingsAiSubtitle =>
@@ -5044,6 +5138,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Nastavení AI';
+
+  @override
+  String get settingsBeamPageEditModelTitle => 'Upravit model';
+
+  @override
+  String get settingsBeamPageEditProfileTitle => 'Upravit profil';
 
   @override
   String get settingsCategoriesCreateTitle => 'Vytvořit kategorii';

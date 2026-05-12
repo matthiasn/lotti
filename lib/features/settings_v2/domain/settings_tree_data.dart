@@ -80,7 +80,12 @@ List<SettingsNode> buildSettingsTree({
       'ai',
       Icons.psychology_rounded,
       panel: 'ai',
+      // Children mirror the three tabs inside the v3 AI Settings
+      // page so the desktop sidebar shows the same three list views
+      // (Providers / Models / Profiles) without the in-pane TabBar.
       children: [
+        leaf('ai/providers', Icons.bolt_rounded, panel: 'ai-providers'),
+        leaf('ai/models', Icons.psychology_alt_rounded, panel: 'ai-models'),
         leaf('ai/profiles', Icons.tune_rounded, panel: 'ai-profiles'),
       ],
     ),

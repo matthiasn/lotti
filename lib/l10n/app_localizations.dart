@@ -1999,18 +1999,6 @@ abstract class AppLocalizations {
   /// **'Switch to standard recording'**
   String get aiBatchToggleTooltip;
 
-  /// No description provided for @aiCardMenuActionDelete.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete'**
-  String get aiCardMenuActionDelete;
-
-  /// No description provided for @aiCardMenuActionEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit'**
-  String get aiCardMenuActionEdit;
-
   /// No description provided for @aiCapabilityChipImageGeneration.
   ///
   /// In en, this message translates to:
@@ -2046,6 +2034,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'History · {count}'**
   String aiCardHistoryToggle(int count);
+
+  /// No description provided for @aiCardMenuActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get aiCardMenuActionDelete;
+
+  /// No description provided for @aiCardMenuActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get aiCardMenuActionEdit;
 
   /// No description provided for @aiCardOpenAgentInternals.
   ///
@@ -2686,7 +2686,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiSettingsAddModelButton.
   ///
   /// In en, this message translates to:
-  /// **'Add Model'**
+  /// **'Add model'**
   String get aiSettingsAddModelButton;
 
   /// No description provided for @aiSettingsAddModelTooltip.
@@ -2802,6 +2802,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vision'**
   String get aiSettingsModalityVision;
+
+  /// No description provided for @aiSettingsModelsFilterAllProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'All providers'**
+  String get aiSettingsModelsFilterAllProviders;
 
   /// No description provided for @aiSettingsNoModelsConfigured.
   ///
@@ -2965,6 +2971,12 @@ abstract class AppLocalizations {
   /// **'{providerName} is connected'**
   String aiSetupResultHeader(String providerName);
 
+  /// No description provided for @aiSetupResultKnownModelsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to find required {providerName} model configurations'**
+  String aiSetupResultKnownModelsMissing(String providerName);
+
   /// No description provided for @aiSetupResultLead.
   ///
   /// In en, this message translates to:
@@ -3043,17 +3055,131 @@ abstract class AppLocalizations {
   /// **'Add Provider'**
   String get apiKeyAddPageTitle;
 
+  /// No description provided for @apiKeyAuthenticationDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure your API connection'**
+  String get apiKeyAuthenticationDescription;
+
+  /// No description provided for @apiKeyAuthenticationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get apiKeyAuthenticationTitle;
+
+  /// No description provided for @apiKeyAvailableModelsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick-add preconfigured models for this provider'**
+  String get apiKeyAvailableModelsDescription;
+
+  /// No description provided for @apiKeyAvailableModelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Models'**
+  String get apiKeyAvailableModelsTitle;
+
+  /// No description provided for @apiKeyBaseUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL'**
+  String get apiKeyBaseUrlLabel;
+
+  /// No description provided for @apiKeyDisplayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a friendly name'**
+  String get apiKeyDisplayNameHint;
+
+  /// No description provided for @apiKeyDisplayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display Name'**
+  String get apiKeyDisplayNameLabel;
+
+  /// No description provided for @apiKeyEditGoBackButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go Back'**
+  String get apiKeyEditGoBackButton;
+
   /// No description provided for @apiKeyEditLoadError.
   ///
   /// In en, this message translates to:
   /// **'Failed to load API key configuration'**
   String get apiKeyEditLoadError;
 
+  /// No description provided for @apiKeyEditLoadErrorRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Please try again or contact support'**
+  String get apiKeyEditLoadErrorRetry;
+
   /// No description provided for @apiKeyEditPageTitle.
   ///
   /// In en, this message translates to:
   /// **'Edit Provider'**
   String get apiKeyEditPageTitle;
+
+  /// No description provided for @apiKeyHideTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide API Key'**
+  String get apiKeyHideTooltip;
+
+  /// No description provided for @apiKeyInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your API key'**
+  String get apiKeyInputHint;
+
+  /// No description provided for @apiKeyInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API Key'**
+  String get apiKeyInputLabel;
+
+  /// No description provided for @apiKeyKnownModelInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'In: {modalities}'**
+  String apiKeyKnownModelInputLabel(String modalities);
+
+  /// No description provided for @apiKeyKnownModelOutputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Out: {modalities}'**
+  String apiKeyKnownModelOutputLabel(String modalities);
+
+  /// No description provided for @apiKeyProviderConfigDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure your AI inference provider settings'**
+  String get apiKeyProviderConfigDescription;
+
+  /// No description provided for @apiKeyProviderConfigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider Configuration'**
+  String get apiKeyProviderConfigTitle;
+
+  /// No description provided for @apiKeyProviderTypeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a provider type'**
+  String get apiKeyProviderTypeHint;
+
+  /// No description provided for @apiKeyProviderTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider Type'**
+  String get apiKeyProviderTypeLabel;
+
+  /// No description provided for @apiKeyShowTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show API Key'**
+  String get apiKeyShowTooltip;
 
   /// No description provided for @audioRecordingCancel.
   ///
@@ -6432,6 +6558,18 @@ abstract class AppLocalizations {
   /// **'Only available on desktop platforms (e.g. for local models)'**
   String get inferenceProfileDesktopOnlyDescription;
 
+  /// No description provided for @inferenceProfileDetailLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load profile: {error}'**
+  String inferenceProfileDetailLoadError(String error);
+
+  /// No description provided for @inferenceProfileDetailNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile not found'**
+  String get inferenceProfileDetailNotFound;
+
   /// No description provided for @inferenceProfileEditTitle.
   ///
   /// In en, this message translates to:
@@ -8566,6 +8704,18 @@ abstract class AppLocalizations {
   /// **'Shared agent blueprints'**
   String get settingsAgentsTemplatesSubtitle;
 
+  /// No description provided for @settingsAiModelsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Per-provider model rows and capabilities'**
+  String get settingsAiModelsSubtitle;
+
+  /// No description provided for @settingsAiModelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get settingsAiModelsTitle;
+
   /// No description provided for @settingsAiProfilesSubtitle.
   ///
   /// In en, this message translates to:
@@ -8578,6 +8728,18 @@ abstract class AppLocalizations {
   /// **'Inference Profiles'**
   String get settingsAiProfilesTitle;
 
+  /// No description provided for @settingsAiProvidersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected AI providers and keys'**
+  String get settingsAiProvidersSubtitle;
+
+  /// No description provided for @settingsAiProvidersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get settingsAiProvidersTitle;
+
   /// No description provided for @settingsAiSubtitle.
   ///
   /// In en, this message translates to:
@@ -8589,6 +8751,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Settings'**
   String get settingsAiTitle;
+
+  /// No description provided for @settingsBeamPageEditModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit model'**
+  String get settingsBeamPageEditModelTitle;
+
+  /// No description provided for @settingsBeamPageEditProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get settingsBeamPageEditProfileTitle;
 
   /// No description provided for @settingsCategoriesCreateTitle.
   ///

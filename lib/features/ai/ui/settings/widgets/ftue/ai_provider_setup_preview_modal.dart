@@ -146,10 +146,20 @@ class AiProviderSetupPreviewModal extends StatefulWidget {
       );
     }
 
+    // Resolve the localised provider name once so the modal title
+    // matches the in-modal banner; the preset's `providerName` is
+    // intentionally still the English brand alias used downstream by
+    // the result modal's accent map and analytics.
+    final localisedProviderName = aiProviderDisplayName(
+      type: providerType,
+      messages: context.messages,
+    );
     final result =
         await ModalUtils.showSinglePageModal<AiProviderSetupPreviewResult>(
           context: context,
-          title: context.messages.aiSetupPreviewModalTitle(preset.providerName),
+          title: context.messages.aiSetupPreviewModalTitle(
+            localisedProviderName,
+          ),
           builder: (modalCtx) => AiProviderSetupPreviewModal(
             providerType: providerType,
             preset: AiProviderSetupPreviewPreset(
@@ -195,12 +205,16 @@ class _AiProviderSetupPreviewModalState
       tokens: tokens,
     );
 
+    final localisedProviderName = aiProviderDisplayName(
+      type: widget.providerType,
+      messages: messages,
+    );
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ConnectedBanner(
-          providerName: widget.preset.providerName,
+          providerName: localisedProviderName,
           accent: accent,
         ),
         SizedBox(height: tokens.spacing.step4),

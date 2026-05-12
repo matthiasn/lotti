@@ -19,6 +19,16 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
         );
       case 'ai':
         return (title: m.settingsAiTitle, desc: m.settingsAiSubtitle);
+      case 'ai/providers':
+        return (
+          title: m.settingsAiProvidersTitle,
+          desc: m.settingsAiProvidersSubtitle,
+        );
+      case 'ai/models':
+        return (
+          title: m.settingsAiModelsTitle,
+          desc: m.settingsAiModelsSubtitle,
+        );
       case 'ai/profiles':
         return (
           title: m.settingsAiProfilesTitle,

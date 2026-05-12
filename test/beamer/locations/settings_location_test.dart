@@ -9,8 +9,11 @@ import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_review_page.dart';
+import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/inference_profile_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
@@ -43,6 +46,7 @@ import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -101,6 +105,12 @@ void main() {
         '/settings',
         '/settings/ai',
         '/settings/ai/profiles',
+        // AI Settings detail surfaces — added in v4 so per-kind detail
+        // pages can be deep-linked / bookmarked / picked up by the
+        // desktop master/detail panel dispatcher.
+        '/settings/ai/provider/:providerId',
+        '/settings/ai/model/:modelId',
+        '/settings/ai/profile/:profileId',
         '/settings/sync',
         '/settings/sync/matrix/maintenance',
         '/settings/sync/backfill',
@@ -263,6 +273,139 @@ void main() {
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<InferenceProfilePage>());
     });
+
+    /// AI Settings v4 — per-kind detail BeamPages. Each test mounts the
+    /// location through a real MaterialApp so `context.messages` (used
+    /// for the localised page title) actually resolves; the rest of the
+    /// suite uses a `MockBuildContext` for non-localised stacks.
+    Future<List<BeamPage>> pumpAndBuildPages(
+      WidgetTester tester,
+      BeamState beamState,
+      RouteInformation routeInformation,
+    ) async {
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (ctx) {
+              capturedContext = ctx;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final location = SettingsLocation(routeInformation);
+      return location.buildPages(capturedContext, beamState);
+    }
+
+    testWidgets(
+      'buildPages stacks AiProviderDetailPage on top of AiSettingsPage '
+      'for /settings/ai/provider/:providerId — the detail page must sit '
+      'above the list so the back gesture returns to the list, not all '
+      'the way to the Settings root',
+      (tester) async {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/ai/provider/gemini-1'),
+        );
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'providerId': 'gemini-1'});
+
+        final pages = await pumpAndBuildPages(
+          tester,
+          beamState,
+          routeInformation,
+        );
+
+        expect(pages.length, 3);
+        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[1].child, isA<AiSettingsPage>());
+        expect(pages[2].child, isA<AiProviderDetailPage>());
+        final detailPage = pages[2].child as AiProviderDetailPage;
+        expect(detailPage.providerId, 'gemini-1');
+        expect(detailPage.focusApiKey, isFalse);
+      },
+    );
+
+    testWidgets(
+      'buildPages threads ?focusApiKey=true into AiProviderDetailPage so '
+      'the Fix-flow URL is bookmarkable',
+      (tester) async {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse(
+            '/settings/ai/provider/gemini-1?focusApiKey=true',
+          ),
+        );
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'providerId': 'gemini-1'});
+
+        final pages = await pumpAndBuildPages(
+          tester,
+          beamState,
+          routeInformation,
+        );
+
+        final detailPage = pages.last.child as AiProviderDetailPage;
+        expect(detailPage.focusApiKey, isTrue);
+      },
+    );
+
+    testWidgets(
+      'buildPages stacks InferenceModelEditPage for /settings/ai/model/:id '
+      'and forwards the modelId into the page constructor',
+      (tester) async {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/ai/model/m-1'),
+        );
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'modelId': 'm-1'});
+
+        final pages = await pumpAndBuildPages(
+          tester,
+          beamState,
+          routeInformation,
+        );
+
+        expect(pages.length, 3);
+        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[1].child, isA<AiSettingsPage>());
+        expect(pages[2].child, isA<InferenceModelEditPage>());
+        final modelPage = pages[2].child as InferenceModelEditPage;
+        expect(modelPage.configId, 'm-1');
+      },
+    );
+
+    testWidgets(
+      'buildPages stacks InferenceProfileDetailPage for '
+      '/settings/ai/profile/:id — the URL only carries the id so the '
+      'wrapper page resolves the profile via Riverpod',
+      (tester) async {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/ai/profile/p-1'),
+        );
+        final beamState = BeamState.fromRouteInformation(
+          routeInformation,
+        ).copyWith(pathParameters: {'profileId': 'p-1'});
+
+        final pages = await pumpAndBuildPages(
+          tester,
+          beamState,
+          routeInformation,
+        );
+
+        expect(pages.length, 3);
+        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[1].child, isA<AiSettingsPage>());
+        expect(pages[2].child, isA<InferenceProfileDetailPage>());
+        final profilePage = pages[2].child as InferenceProfileDetailPage;
+        expect(profilePage.profileId, 'p-1');
+      },
+    );
 
     test('buildPages builds SyncSettingsPage', () {
       final routeInformation = RouteInformation(

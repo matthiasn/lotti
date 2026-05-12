@@ -890,7 +890,12 @@ void main() {
       'claimNextOutboxBatch as `SEARCH outbox USING INDEX '
       'idx_outbox_status_priority_created_at (status=?)` + `USE TEMP '
       'B-TREE FOR ORDER BY` at tails up to 6.0 s before the '
-      'literal-status partial index was added',
+      "literal-status partial index was added. NOTE: SQLite's planner "
+      "won't naturally pick the partial when the WHERE clause uses a "
+      "parameter binding (Drift's default), so `oldestOutboxItems` and "
+      'the pending branch of `claimNextOutboxBatch` issue raw SQL with '
+      '`INDEXED BY idx_outbox_pending_created_id` — this test mirrors '
+      'that production shape so the index walk is verified end-to-end.',
       () async {
         final database = db!;
 
@@ -919,10 +924,18 @@ void main() {
         );
         await database.customStatement('ANALYZE');
 
+        // Mirror the exact SQL shape `oldestOutboxItems` issues in
+        // production: literal status filter (so the partial-index
+        // predicate `WHERE status = 0` matches at plan time) plus
+        // `INDEXED BY idx_outbox_pending_created_id` to pin the
+        // walk. This is the plan that runs at every wake-up of the
+        // outbox processor.
         final plan = await database
             .customSelect(
               'EXPLAIN QUERY PLAN '
-              'SELECT * FROM outbox WHERE status = 0 '
+              'SELECT * FROM outbox '
+              'INDEXED BY idx_outbox_pending_created_id '
+              'WHERE status = ${OutboxStatus.pending.index} '
               'ORDER BY created_at ASC, id ASC LIMIT 1',
             )
             .get();
@@ -932,10 +945,9 @@ void main() {
           details,
           contains('idx_outbox_pending_created_id'),
           reason:
-              'literal status = 0 + (created_at, id) sort must match the '
-              'v21 partial index after ANALYZE; otherwise the planner '
-              'falls back to the priority-leading index and pays a '
-              'temp B-tree sort',
+              'production query pins the partial via INDEXED BY — the '
+              'plan must walk it directly so the LIMIT N stops early '
+              'instead of scanning every `sent` tombstone',
         );
         expect(
           details,

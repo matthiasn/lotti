@@ -309,6 +309,12 @@ void main() {
       walk(_tree());
       expect(leafPanels, {
         'whats-new': 'whats-new',
+        // AI Settings v4 added per-tab leaves under `ai` so the
+        // sidebar exposes Providers / Models / Profiles directly
+        // instead of forcing the user to drill into the AI landing
+        // and switch tabs from there.
+        'ai/providers': 'ai-providers',
+        'ai/models': 'ai-models',
         'ai/profiles': 'ai-profiles',
         'agents/stats': 'agents-stats',
         'agents/templates': 'agents-templates',
@@ -362,9 +368,17 @@ void main() {
   });
 
   group('buildSettingsTree — child ordering', () {
-    test('AI has Profiles only', () {
+    test('AI has Providers / Models / Profiles in tab order', () {
+      // v4 split the AI branch into per-tab leaves so the sidebar
+      // exposes the same three surfaces as the in-page tab bar
+      // (Providers → Models → Profiles), keeping the navigation grammar
+      // consistent between desktop sidebar and mobile tabs.
       final ai = _tree().firstWhere((n) => n.id == 'ai');
-      expect(ai.children!.map((n) => n.id).toList(), ['ai/profiles']);
+      expect(ai.children!.map((n) => n.id).toList(), [
+        'ai/providers',
+        'ai/models',
+        'ai/profiles',
+      ]);
     });
 
     test('Advanced has flags / logging / maintenance / about in order', () {
