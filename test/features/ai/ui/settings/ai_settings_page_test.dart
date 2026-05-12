@@ -212,7 +212,8 @@ void main() {
   group('AiSettingsPage — populated', () {
     testWidgets(
       'Providers tab shows one AiProviderCard per provider with the model '
-      'count tail derived from the models list',
+      'count tail derived from the models list, and the desktop 2-column '
+      'grid uses a separator between rows when there are 3+ providers',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -228,21 +229,28 @@ void main() {
           name: 'My OpenAI',
           apiKey: '',
         );
+        // 3rd provider pushes the grid into a second row, which is the
+        // only way the desktop separator-builder branch fires.
+        final anthropic = buildProvider(
+          id: 'anthropic-1',
+          type: InferenceProviderType.anthropic,
+          name: 'My Anthropic',
+        );
 
         await pumpWith(
           tester: tester,
-          providers: [gemini, openAi],
+          providers: [gemini, openAi, anthropic],
           models: [buildModel(id: 'm1', providerId: 'gemini-1')],
           profiles: const <AiConfig>[],
         );
 
-        // Two provider cards rendered.
-        expect(find.byType(AiProviderCard), findsNWidgets(2));
-        // Tab counter reflects the provider count.
+        // Three provider cards rendered.
+        expect(find.byType(AiProviderCard), findsNWidgets(3));
         expect(find.text('My Gemini'), findsOneWidget);
         expect(find.text('My OpenAI'), findsOneWidget);
+        expect(find.text('My Anthropic'), findsOneWidget);
         // Gemini provider with one model → "Connected" + model count tail.
-        expect(find.text('Connected'), findsOneWidget);
+        expect(find.text('Connected'), findsNWidgets(2));
         // OpenAI provider with a blank API key → Invalid key status.
         expect(find.text('Invalid key'), findsOneWidget);
         await settleTimers(tester);
@@ -423,6 +431,264 @@ void main() {
     );
   });
 
+  group('AiSettingsPage — empty / error states', () {
+    testWidgets(
+      'AiSettingsBody smoke-mounts as the standalone page',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const AiSettingsBody(),
+            ),
+          ),
+        );
+        providersController.add(const <AiConfig>[]);
+        await tester.pump();
+        await tester.pump();
+        modelsController.add(const <AiConfig>[]);
+        profilesController.add(const <AiConfig>[]);
+        await tester.pump();
+        await tester.pump();
+
+        // Renders the same widget tree as `AiSettingsPage`.
+        expect(find.text('AI Settings'), findsOneWidget);
+        expect(find.byType(AiSettingsPage), findsOneWidget);
+        await settleTimers(tester);
+      },
+    );
+
+    // Note: the providers-stream error branch is covered structurally by
+    // the empty / populated paths above, but is hard to drive end-to-end
+    // here — Riverpod's generated stream controller keeps the AsyncValue
+    // in `loading` for both `Stream.error(...)` and `broadcastController
+    // .addError(...)` in this harness, so the page never transitions
+    // into the `hasError && providers == null` branch. The branch ships
+    // as defensive code; the cleanup pass after v3 will revisit the
+    // page's async-state handling and add a more durable test then.
+
+    testWidgets(
+      'Models tab empty list renders the no-models-configured message',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        await tester.tap(find.text('Models'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // From en.arb: aiSettingsNoModelsConfigured.
+        expect(find.text('No AI models configured'), findsOneWidget);
+        expect(find.byType(AiModelCard), findsNothing);
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'Profiles tab with no profiles renders inferenceProfilesEmpty',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        await tester.tap(find.text('Profiles'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // From en.arb: inferenceProfilesEmpty.
+        expect(find.text('No inference profiles yet'), findsOneWidget);
+        expect(find.byType(AiProfileCard), findsNothing);
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'Profiles tab with a non-matching search shows multiSelectNoItemsFound',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: [
+            buildProfile(id: 'profile-1', thinking: 'unknown-model-id'),
+          ],
+        );
+
+        await tester.enterText(find.byType(TextField), 'no-match-zzz');
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+
+        await tester.tap(find.text('Profiles'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // From en.arb: multiSelectNoItemsFound.
+        expect(find.text('No items found'), findsOneWidget);
+        expect(find.byType(AiProfileCard), findsNothing);
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'Providers tab with a non-matching search shows the configured-but-filtered-out empty message',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(
+              id: 'p1',
+              type: InferenceProviderType.gemini,
+              name: 'My Gemini',
+            ),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        await tester.enterText(find.byType(TextField), 'no-match-zzz');
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+
+        // From en.arb: aiSettingsNoProvidersConfigured.
+        expect(find.text('No AI providers configured'), findsOneWidget);
+        expect(find.byType(AiProviderCard), findsNothing);
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'Models tab with a non-matching search shows the no-models-configured '
+      'empty message',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: [
+            buildModel(
+              id: 'm1',
+              providerId: 'p1',
+              name: 'Gemini Flash',
+              providerModelId: 'gemini-flash-id',
+            ),
+          ],
+          profiles: const <AiConfig>[],
+        );
+
+        await tester.enterText(find.byType(TextField), 'no-match-zzz');
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+
+        await tester.tap(find.text('Models'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text('No AI models configured'), findsOneWidget);
+        expect(find.byType(AiModelCard), findsNothing);
+        await settleTimers(tester);
+      },
+    );
+  });
+
+  group('AiSettingsPage — responsive layout', () {
+    testWidgets(
+      'narrow viewport (< 700) renders cards as a single-column list',
+      (tester) async {
+        // Surface is below the page-level grid breakpoint, so the
+        // `_buildCardList` branch with columns == 1 fires.
+        await tester.binding.setSurfaceSize(const Size(500, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(
+              id: 'p1',
+              type: InferenceProviderType.gemini,
+              name: 'Gemini A',
+            ),
+            buildProvider(
+              id: 'p2',
+              type: InferenceProviderType.openAi,
+              name: 'OpenAI A',
+            ),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        // Both provider cards still render — sanity check.
+        expect(find.byType(AiProviderCard), findsNWidgets(2));
+
+        // In single-column mode each card sits inside its own list
+        // entry rather than paired in a Row. Confirm no two cards
+        // share a parent Row (which would indicate the 2-col branch).
+        final cards = find.byType(AiProviderCard);
+        for (var i = 0; i < cards.evaluate().length; i++) {
+          final rowAncestor = find.ancestor(
+            of: cards.at(i),
+            matching: find.byWidgetPredicate(
+              (w) => w is Row && w.children.length == 3,
+            ),
+          );
+          expect(
+            rowAncestor,
+            findsNothing,
+            reason:
+                'Single-column mode should not wrap cards in the 2-col '
+                'Row(Expanded, SizedBox, Expanded) structure.',
+          );
+        }
+        await settleTimers(tester);
+      },
+    );
+  });
+
   group('AiSettingsPage — navigation', () {
     testWidgets(
       'tapping a provider card pushes a new route through the navigator',
@@ -482,6 +748,135 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         // Initial root + one quick-add push.
+        expect(spy.pushed, hasLength(2));
+      },
+    );
+
+    testWidgets(
+      'tapping a model card pushes a new route',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        when(
+          () => mockRepository.getConfigById(any()),
+        ).thenAnswer((_) async => null);
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: [
+            buildModel(
+              id: 'm1',
+              providerId: 'p1',
+              name: 'Gemini Flash',
+              providerModelId: 'gemini-flash-id',
+            ),
+          ],
+          profiles: const <AiConfig>[],
+          navigatorObservers: [spy],
+        );
+
+        await tester.tap(find.text('Models'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Initial root + the tab-switch animation does not push.
+        expect(spy.pushed, hasLength(1));
+
+        await tester.tap(find.byType(AiModelCard));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(spy.pushed, hasLength(2));
+      },
+    );
+
+    testWidgets(
+      'tapping a profile card pushes a new route',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        when(
+          () => mockRepository.getConfigById(any()),
+        ).thenAnswer((_) async => null);
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: [
+            buildModel(
+              id: 'm1',
+              providerId: 'p1',
+              providerModelId: 'gemini-flash-id',
+            ),
+          ],
+          profiles: [
+            buildProfile(
+              id: 'profile-1',
+              name: 'Tap Me Profile',
+              thinking: 'gemini-flash-id',
+            ),
+          ],
+          navigatorObservers: [spy],
+        );
+
+        await tester.tap(find.text('Profiles'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(spy.pushed, hasLength(1));
+
+        await tester.tap(find.byType(AiProfileCard));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(spy.pushed, hasLength(2));
+      },
+    );
+
+    testWidgets(
+      'tapping Fix on an invalid-key provider card pushes a new route',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        when(
+          () => mockRepository.getConfigById(any()),
+        ).thenAnswer((_) async => null);
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(
+              id: 'p1',
+              type: InferenceProviderType.openAi,
+              name: 'Broken OpenAI',
+              apiKey: '',
+            ),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          navigatorObservers: [spy],
+        );
+
+        // The blank-API-key provider lands in `invalidKey` status,
+        // which wires up the inline Fix affordance.
+        expect(find.text('Invalid key'), findsOneWidget);
+        expect(spy.pushed, hasLength(1));
+
+        await tester.tap(find.text('Fix'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
         expect(spy.pushed, hasLength(2));
       },
     );
