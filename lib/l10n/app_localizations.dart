@@ -2245,11 +2245,83 @@ abstract class AppLocalizations {
   /// **'Model \"{modelName}\" installed successfully!'**
   String aiOllamaModelInstalledSuccessfully(String modelName);
 
+  /// No description provided for @aiProfileCardActiveBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get aiProfileCardActiveBadge;
+
+  /// No description provided for @aiProfileSlotModelMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'missing'**
+  String get aiProfileSlotModelMissing;
+
   /// No description provided for @aiProviderAlibabaDescription.
   ///
   /// In en, this message translates to:
   /// **'Alibaba Cloud\'s Qwen family of models via DashScope API'**
   String get aiProviderAlibabaDescription;
+
+  /// No description provided for @aiProviderCardFixButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix'**
+  String get aiProviderCardFixButton;
+
+  /// Provider card status line when the provider has a key + at least one model row.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Connected · 1 model} other{Connected · {count} models}}'**
+  String aiProviderCardStatusConnected(int count);
+
+  /// No description provided for @aiProviderCardMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get aiProviderCardMenuTooltip;
+
+  /// Right-side meta on a connected provider card when no last-used data is available.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 model} other{{count} models}}'**
+  String aiProviderCardModelCount(int count);
+
+  /// Right-side meta on a connected provider card combining model count with a last-used label.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 model · last used {lastUsed}} other{{count} models · last used {lastUsed}}}'**
+  String aiProviderCardModelCountWithLastUsed(int count, String lastUsed);
+
+  /// No description provided for @aiProviderCardOllamaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure Ollama is running'**
+  String get aiProviderCardOllamaHint;
+
+  /// No description provided for @aiProviderCardStatusConnectedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get aiProviderCardStatusConnectedShort;
+
+  /// No description provided for @aiProviderCardStatusInvalidKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid key'**
+  String get aiProviderCardStatusInvalidKey;
+
+  /// No description provided for @aiProviderCardStatusOfflineShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get aiProviderCardStatusOfflineShort;
+
+  /// No description provided for @aiProviderCardStatusOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline · Make sure Ollama is running'**
+  String get aiProviderCardStatusOffline;
 
   /// No description provided for @aiProviderAlibabaName.
   ///
@@ -2352,6 +2424,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
+
+  /// No description provided for @aiProviderUnknownName.
+  ///
+  /// In en, this message translates to:
+  /// **'AI provider'**
+  String get aiProviderUnknownName;
+
+  /// No description provided for @aiProviderTaglineAnthropic.
+  ///
+  /// In en, this message translates to:
+  /// **'Claude Sonnet · long-context reasoning'**
+  String get aiProviderTaglineAnthropic;
+
+  /// No description provided for @aiProviderTaglineGemini.
+  ///
+  /// In en, this message translates to:
+  /// **'Free tier · multimodal · audio transcription'**
+  String get aiProviderTaglineGemini;
+
+  /// No description provided for @aiProviderTaglineOllama.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on your Mac · zero cloud calls'**
+  String get aiProviderTaglineOllama;
+
+  /// No description provided for @aiProviderTaglineOpenAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Flagship reasoning · GPT-5.2 family'**
+  String get aiProviderTaglineOpenAi;
 
   /// No description provided for @aiProviderVoxtralDescription.
   ///
@@ -2476,8 +2578,20 @@ abstract class AppLocalizations {
   /// No description provided for @aiSettingsAddProviderButton.
   ///
   /// In en, this message translates to:
-  /// **'Add Provider'**
+  /// **'Add provider'**
   String get aiSettingsAddProviderButton;
+
+  /// No description provided for @aiSettingsPageLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.'**
+  String get aiSettingsPageLead;
+
+  /// No description provided for @aiSettingsSearchHintShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get aiSettingsSearchHintShort;
 
   /// No description provided for @aiSettingsClearAllFiltersTooltip.
   ///
@@ -2503,11 +2617,59 @@ abstract class AppLocalizations {
   /// **'Filter by {provider}'**
   String aiSettingsFilterByProviderTooltip(String provider);
 
+  /// No description provided for @aiSettingsCounterModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get aiSettingsCounterModels;
+
+  /// No description provided for @aiSettingsCounterProfiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles'**
+  String get aiSettingsCounterProfiles;
+
+  /// No description provided for @aiSettingsCounterProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get aiSettingsCounterProviders;
+
+  /// No description provided for @aiSettingsEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Add one to unlock transcription, image recognition, image generation, and semantic search.'**
+  String get aiSettingsEmptyDescription;
+
+  /// No description provided for @aiSettingsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No providers yet'**
+  String get aiSettingsEmptyTitle;
+
   /// No description provided for @aiSettingsFilterByReasoningTooltip.
   ///
   /// In en, this message translates to:
   /// **'Filter by reasoning capability'**
   String get aiSettingsFilterByReasoningTooltip;
+
+  /// No description provided for @aiSettingsFtueBannerDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Takes about a minute. Lotti will set up models and a starting profile for you.'**
+  String get aiSettingsFtueBannerDescription;
+
+  /// No description provided for @aiSettingsFtueBannerStartButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start setup'**
+  String get aiSettingsFtueBannerStartButton;
+
+  /// No description provided for @aiSettingsFtueBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first AI provider'**
+  String get aiSettingsFtueBannerTitle;
 
   /// No description provided for @aiSettingsModalityAudio.
   ///

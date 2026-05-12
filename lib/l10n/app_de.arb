@@ -552,7 +552,50 @@
       }
     }
   },
+  "aiProfileCardActiveBadge": "Aktiv",
+  "aiProfileSlotModelMissing": "fehlt",
   "aiProviderAlibabaDescription": "Alibaba Clouds Qwen-Modellfamilie über die DashScope-API",
+  "aiProviderCardFixButton": "Beheben",
+  "aiProviderCardStatusConnected": "{count, plural, =1{Verbunden · 1 Modell} other{Verbunden · {count} Modelle}}",
+  "@aiProviderCardStatusConnected": {
+    "description": "Provider card status line when the provider has a key + at least one model row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiProviderCardMenuTooltip": "Weitere Aktionen",
+  "aiProviderCardModelCount": "{count, plural, =1{1 Modell} other{{count} Modelle}}",
+  "@aiProviderCardModelCount": {
+    "description": "Right-side meta on a connected provider card when no last-used data is available.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiProviderCardModelCountWithLastUsed": "{count, plural, =1{1 Modell · zuletzt verwendet {lastUsed}} other{{count} Modelle · zuletzt verwendet {lastUsed}}}",
+  "@aiProviderCardModelCountWithLastUsed": {
+    "description": "Right-side meta on a connected provider card combining model count with a last-used label.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "lastUsed": {
+        "type": "String",
+        "example": "vor 2 Min."
+      }
+    }
+  },
+  "aiProviderCardOllamaHint": "Stelle sicher, dass Ollama läuft",
+  "aiProviderCardStatusConnectedShort": "Verbunden",
+  "aiProviderCardStatusInvalidKey": "Ungültiger Schlüssel",
+  "aiProviderCardStatusOfflineShort": "Offline",
+  "aiProviderCardStatusOffline": "Offline · Stelle sicher, dass Ollama läuft",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Anthropics Claude-Familie von AI-Assistenten",
   "aiProviderAnthropicName": "Anthropic Claude",
@@ -570,6 +613,11 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "Modelle von OpenRouter",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderUnknownName": "KI-Anbieter",
+  "aiProviderTaglineAnthropic": "Claude Sonnet · Reasoning mit langem Kontext",
+  "aiProviderTaglineGemini": "Free Tier · multimodal · Audiotranskription",
+  "aiProviderTaglineOllama": "Läuft auf deinem Mac · keine Cloud-Aufrufe",
+  "aiProviderTaglineOpenAi": "Top-Reasoning · GPT-5.2-Familie",
   "aiProviderVoxtralDescription": "Lokale Voxtral-Transkription (bis zu 30 Min. Audio, 13 Sprachen)",
   "aiProviderVoxtralName": "Voxtral (lokal)",
   "aiProviderWhisperDescription": "Lokale Whisper-Transkription mit OpenAI-kompatibler API",
@@ -591,6 +639,8 @@
   "aiSettingsAddModelTooltip": "Dieses Modell zu deinem Anbieter hinzufügen",
   "aiSettingsAddProfileButton": "Profil hinzufügen",
   "aiSettingsAddProviderButton": "Anbieter hinzufügen",
+  "aiSettingsPageLead": "Richte KI-Anbieter ein, die Modelle, die Lotti nutzen kann, und die Inferenzprofile, die entscheiden, welches Modell welche Aufgabe übernimmt.",
+  "aiSettingsSearchHintShort": "Suchen",
   "aiSettingsClearAllFiltersTooltip": "Alle Filter zurücksetzen",
   "aiSettingsClearFiltersButton": "Löschen",
   "aiSettingsFilterByCapabilityTooltip": "Nach Fähigkeit {capability} filtern",
@@ -609,7 +659,15 @@
       }
     }
   },
+  "aiSettingsCounterModels": "Modelle",
+  "aiSettingsCounterProfiles": "Profile",
+  "aiSettingsCounterProviders": "Anbieter",
+  "aiSettingsEmptyDescription": "Füge einen hinzu, um Transkription, Bilderkennung, Bildgenerierung und semantische Suche freizuschalten.",
+  "aiSettingsEmptyTitle": "Noch keine Anbieter",
   "aiSettingsFilterByReasoningTooltip": "Nach Schlussfolgerungsfähigkeit filtern",
+  "aiSettingsFtueBannerDescription": "Dauert etwa eine Minute. Lotti richtet Modelle und ein Startprofil für dich ein.",
+  "aiSettingsFtueBannerStartButton": "Einrichtung starten",
+  "aiSettingsFtueBannerTitle": "Füge deinen ersten KI-Anbieter hinzu",
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Bild",

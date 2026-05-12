@@ -1241,8 +1241,72 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get aiProfileCardActiveBadge => 'Aktivní';
+
+  @override
+  String get aiProfileSlotModelMissing => 'chybí';
+
+  @override
   String get aiProviderAlibabaDescription =>
       'Rodina modelů Qwen od Alibaba Cloud přes DashScope API';
+
+  @override
+  String get aiProviderCardFixButton => 'Opravit';
+
+  @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Připojeno · $count modelů',
+      few: 'Připojeno · $count modely',
+      one: 'Připojeno · 1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardMenuTooltip => 'Další akce';
+
+  @override
+  String aiProviderCardModelCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modelů',
+      few: '$count modely',
+      one: '1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiProviderCardModelCountWithLastUsed(int count, String lastUsed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modelů · naposledy použito $lastUsed',
+      few: '$count modely · naposledy použity $lastUsed',
+      one: '1 model · naposledy použit $lastUsed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardOllamaHint => 'Ujisti se, že Ollama běží';
+
+  @override
+  String get aiProviderCardStatusConnectedShort => 'Připojeno';
+
+  @override
+  String get aiProviderCardStatusInvalidKey => 'Neplatný klíč';
+
+  @override
+  String get aiProviderCardStatusOfflineShort => 'Offline';
+
+  @override
+  String get aiProviderCardStatusOffline =>
+      'Offline · Ujisti se, že Ollama běží';
 
   @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
@@ -1298,6 +1362,24 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
+
+  @override
+  String get aiProviderUnknownName => 'AI poskytovatel';
+
+  @override
+  String get aiProviderTaglineAnthropic =>
+      'Claude Sonnet · uvažování s dlouhým kontextem';
+
+  @override
+  String get aiProviderTaglineGemini =>
+      'Bezplatná úroveň · multimodální · přepis zvuku';
+
+  @override
+  String get aiProviderTaglineOllama =>
+      'Běží na tvém Macu · žádné cloudové volání';
+
+  @override
+  String get aiProviderTaglineOpenAi => 'Špičkové uvažování · řada GPT-5.2';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1369,6 +1451,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Přidat poskytovatele';
 
   @override
+  String get aiSettingsPageLead =>
+      'Nakonfiguruj AI poskytovatele, modely, které Lotti může volat, a inferenční profily, které rozhodují, který model zpracovává který úkol.';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Hledat';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Vymazat všechny filtry';
 
   @override
@@ -1385,8 +1474,35 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get aiSettingsCounterModels => 'Modely';
+
+  @override
+  String get aiSettingsCounterProfiles => 'Profily';
+
+  @override
+  String get aiSettingsCounterProviders => 'Poskytovatelé';
+
+  @override
+  String get aiSettingsEmptyDescription =>
+      'Přidej jednoho a odemkni přepis, rozpoznávání obrázků, generování obrázků a sémantické vyhledávání.';
+
+  @override
+  String get aiSettingsEmptyTitle => 'Zatím žádní poskytovatelé';
+
+  @override
   String get aiSettingsFilterByReasoningTooltip =>
       'Filtrovat podle schopnosti uvažování';
+
+  @override
+  String get aiSettingsFtueBannerDescription =>
+      'Trvá asi minutu. Lotti za tebe nastaví modely a počáteční profil.';
+
+  @override
+  String get aiSettingsFtueBannerStartButton => 'Spustit nastavení';
+
+  @override
+  String get aiSettingsFtueBannerTitle =>
+      'Přidej svého prvního AI poskytovatele';
 
   @override
   String get aiSettingsModalityAudio => 'Audio';

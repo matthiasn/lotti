@@ -18,6 +18,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   accent.
 
 ### Added
+- AI Settings page redesigned to match the new design-system reference.
+  The collapsing v1 title strip now sits above an `AiSettingsHeaderBar`
+  that carries the page subtitle, an inline search field, and a green
+  "+ Add provider" CTA (the floating action button is gone). The tab
+  row uses an `AiSettingsTabBar` that bakes the counters directly into
+  each label — "Providers 2 / Models 5 / Profiles 2" — instead of a
+  separate counter strip. Below the tab bar the active tab renders the
+  new card surfaces: `AiProviderCard` is a 2-column responsive grid
+  card with the provider's accented icon top-left, a `⋯` overflow
+  menu top-right, the display name + tagline, a hairline divider, and
+  a status row with a colored dot + left label + right meta — the
+  three status variants are Connected (with model count tail), generic
+  "Invalid key · Fix" (covers missing / wrong / revoked / 401 / 403 in
+  one phrase per the design tweak), and "Offline · Make sure Ollama is
+  running"; `AiModelCard` is a single-column row with the provider
+  icon, model name + monospaced provider-model id inline, and the
+  capability chips below (intentionally no on/off toggle); and
+  `AiProfileCard` is a 2-column grid card with the active badge inline
+  with the name and a task→model mapping list (Thinking / Image
+  recognition / Transcription / Image generation → model). Unresolved
+  model ids render as `missing` in the warning tone so dangling profile
+  references are visible at a glance. With zero providers configured
+  the page swaps in `AiSettingsFtueBanner` — an accented banner with a
+  sparkle icon, lead copy, and a "Start setup" button that opens the
+  same provider-type picker — followed by `AiSettingsNoProvidersCard`,
+  a single wrapper card with "No providers yet" + the four first-class
+  provider chips (Gemini / OpenAI / Anthropic / Ollama) that each open
+  the connect form preselected to that provider. Per-provider chrome
+  is wired through a new `AiProviderVisual` helper so the accent /
+  surface / display name / tagline lookups stay consistent across the
+  cards, chips, banner, and (upcoming) provider detail page. ~30 new
+  l10n keys × 6 locales for the page chrome, status copy, capability
+  chips, and the empty / FTUE surfaces.
 - AI Settings FTUE modals redesigned to match the new design system. The
   old `FtueSetupDialog` / `FtueResultDialog` are replaced by
   `AiProviderSetupPreviewModal` and `AiProviderSetupResultModal`. The
