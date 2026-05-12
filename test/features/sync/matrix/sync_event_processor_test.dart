@@ -3436,7 +3436,13 @@ void main() {
       // than silently dropping inbound backfill traffic.
       await expectLater(
         processor.process(event: event, journalDb: journalDb),
-        throwsA(isA<LateInitializationError>()),
+        throwsA(
+          isA<Error>().having(
+            (e) => e.toString(),
+            'toString',
+            contains("Field 'backfillResponseHandler' has not been initialized"),
+          ),
+        ),
       );
     });
 
@@ -3454,7 +3460,13 @@ void main() {
 
         await expectLater(
           processor.process(event: event, journalDb: journalDb),
-          throwsA(isA<LateInitializationError>()),
+          throwsA(
+          isA<Error>().having(
+            (e) => e.toString(),
+            'toString',
+            contains("Field 'backfillResponseHandler' has not been initialized"),
+          ),
+        ),
         );
       },
     );
