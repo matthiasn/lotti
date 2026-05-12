@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -139,6 +139,21 @@ class AgentDatabase extends _$AgentDatabase {
             'AND deleted_at IS NULL '
             r"AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL",
           );
+        }
+        if (from < 8) {
+          // `getWakeRunsInWindow` filters on `created_at` and orders
+          // by `created_at DESC`; the pre-v8 indices were all
+          // leaded by `agent_id`, `template_id`, or `status` so the
+          // planner fell back to `SCAN wake_run_log` + `USE TEMP
+          // B-TREE FOR ORDER BY` (2026-05-10 desktop super_slow
+          // log: 11 hits/day at 305–408 ms). A bare-`created_at`
+          // index turns the window query into an in-order index
+          // walk and lets the LIMIT stop without a sort step.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_wake_run_log_created_at '
+            'ON wake_run_log(created_at DESC)',
+          );
+          await customStatement('ANALYZE');
         }
       },
     );

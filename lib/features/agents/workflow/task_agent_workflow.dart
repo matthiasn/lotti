@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
@@ -1544,12 +1545,73 @@ to keep the user-facing suggestion list clean and trustworthy:
           .where((id) => id.isNotEmpty)
           .toSet();
 
-      final reportByTaskId = <String, _LinkedTaskAgentReport?>{};
-      await Future.wait(
-        taskIds.map((id) async {
-          reportByTaskId[id] = await _resolveLatestTaskAgentReport(id);
-        }),
-      );
+      // Two bulk queries replace the prior `Future.wait(map →
+      // _resolveLatestTaskAgentReport(id))` fan-out. The fan-out hit
+      // 2 203 `agent_links WHERE to_id = ? AND type = ?` queries plus
+      // a compounding 2 484 `agent_entities WHERE id = ?` queries on
+      // the 2026-05-10 desktop slow_queries log; each per-row request
+      // queued independently behind the writer lock. The bulk path is
+      // `getLinksToMultiple` + `getLatestReportsByAgentIds`, mirroring
+      // the already-batched implementation in
+      // `ProjectAgentWorkflow._buildLinkedTasksContext`.
+      final reportByTaskId = <String, _LinkedTaskAgentReport>{};
+      if (taskIds.isNotEmpty) {
+        var linksByTaskId = const <String, List<AgentLink>>{};
+        try {
+          linksByTaskId = await agentRepository.getLinksToMultiple(
+            taskIds.toList(),
+            type: AgentLinkTypes.agentTask,
+          );
+        } catch (e, s) {
+          _logError(
+            'batch agent_task link lookup failed',
+            error: e,
+            stackTrace: s,
+          );
+        }
+
+        final linkedAgentIds = linksByTaskId.values
+            .expand((links) => links.map((link) => link.fromId))
+            .toSet()
+            .toList();
+
+        var reportsByAgentId = const <String, AgentReportEntity>{};
+        if (linkedAgentIds.isNotEmpty) {
+          try {
+            reportsByAgentId = await agentRepository.getLatestReportsByAgentIds(
+              linkedAgentIds,
+              AgentReportScopes.current,
+            );
+          } catch (e, s) {
+            _logError(
+              'batch agent report lookup failed',
+              error: e,
+              stackTrace: s,
+            );
+          }
+        }
+
+        // Sort matches the prior per-task `orderedPrimaryFirst` shape
+        // (createdAt DESC, then id DESC): newest link wins, but only if
+        // its agent has a non-empty current report — otherwise fall
+        // back to the next link, exactly as the pre-batch code did.
+        for (final taskId in taskIds) {
+          final links = linksByTaskId[taskId];
+          if (links == null || links.isEmpty) continue;
+          for (final link in links.orderedPrimaryFirst()) {
+            final report = reportsByAgentId[link.fromId];
+            if (report == null) continue;
+            final content = report.content.trim();
+            if (content.isEmpty) continue;
+            reportByTaskId[taskId] = _LinkedTaskAgentReport(
+              agentId: link.fromId,
+              content: content,
+              createdAt: report.createdAt,
+            );
+            break;
+          }
+        }
+      }
 
       for (final row in allRows) {
         final linkedTaskId = row['id'];
@@ -1582,54 +1644,6 @@ to keep the user-facing suggestion list clean and trustworthy:
     }
   }
 
-  Future<_LinkedTaskAgentReport?> _resolveLatestTaskAgentReport(
-    String linkedTaskId,
-  ) async {
-    try {
-      final links = await agentRepository.getLinksTo(
-        linkedTaskId,
-        type: AgentLinkTypes.agentTask,
-      );
-      if (links.isEmpty) {
-        return null;
-      }
-
-      final sortedLinks = links.toList()
-        ..sort((a, b) {
-          final byCreatedAt = b.createdAt.compareTo(a.createdAt);
-          if (byCreatedAt != 0) return byCreatedAt;
-          return b.id.compareTo(a.id);
-        });
-
-      for (final link in sortedLinks) {
-        final report = await agentRepository.getLatestReport(
-          link.fromId,
-          AgentReportScopes.current,
-        );
-        if (report == null) {
-          continue;
-        }
-        final content = report.content.trim();
-        if (content.isEmpty) {
-          continue;
-        }
-        return _LinkedTaskAgentReport(
-          agentId: link.fromId,
-          content: content,
-          createdAt: report.createdAt,
-        );
-      }
-      return null;
-    } catch (e, s) {
-      _logError(
-        'failed to resolve linked task-agent report',
-        error: e,
-        stackTrace: s,
-      );
-      return null;
-    }
-  }
-
   /// Batch-resolves all observation payloads into a map keyed by payload ID.
   Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
     List<AgentMessageEntity> observations,
@@ -1639,25 +1653,31 @@ to keep the user-facing suggestion list clean and trustworthy:
         .whereType<String>()
         .toSet();
 
-    final entries = await Future.wait(
-      payloadIds.map((id) async {
-        try {
-          final entity = await agentRepository.getEntity(id);
-          if (entity is AgentMessagePayloadEntity) {
-            return MapEntry(id, entity);
-          }
-        } catch (e) {
-          // Non-fatal — observation will render with placeholder text.
-        }
-        return null;
-      }),
-    );
+    if (payloadIds.isEmpty) {
+      return const <String, AgentMessagePayloadEntity>{};
+    }
 
-    return {
-      for (final entry
-          in entries.whereType<MapEntry<String, AgentMessagePayloadEntity>>())
-        entry.key: entry.value,
-    };
+    // Single batched IN-list lookup instead of `Future.wait(map →
+    // getEntity)`. See `AgentRepository.getEntitiesByIds` for the slow-
+    // log evidence behind the rewrite. Non-payload entities (or ids
+    // with no row / soft-deleted) are silently dropped — the caller
+    // renders a placeholder, same as the pre-batch failure mode.
+    final Map<String, AgentDomainEntity> entitiesById;
+    try {
+      entitiesById = await agentRepository.getEntitiesByIds(payloadIds);
+    } catch (e) {
+      // Non-fatal — observation will render with placeholder text.
+      return const <String, AgentMessagePayloadEntity>{};
+    }
+
+    final result = <String, AgentMessagePayloadEntity>{};
+    for (final entry in entitiesById.entries) {
+      final entity = entry.value;
+      if (entity is AgentMessagePayloadEntity) {
+        result[entry.key] = entity;
+      }
+    }
+    return result;
   }
 
   /// Extracts the text content from an observation payload.

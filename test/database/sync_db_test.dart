@@ -880,6 +880,142 @@ void main() {
       expect(details, isNot(contains('SCAN outbox')));
     });
 
+    test(
+      'pending-claim plan uses the v21 partial index '
+      'idx_outbox_pending_created_id and skips the temp B-tree — the '
+      '2026-05-12 desktop super-slow log captured oldestOutboxItems / '
+      'claimNextOutboxBatch as `SEARCH outbox USING INDEX '
+      'idx_outbox_status_priority_created_at (status=?)` + `USE TEMP '
+      'B-TREE FOR ORDER BY` at tails up to 6.0 s before the '
+      'literal-status partial index was added',
+      () async {
+        final database = db!;
+
+        // Seed enough sent tombstones that the partial index is
+        // clearly the cheaper plan — and run ANALYZE so the planner
+        // has stats to choose with. The migration runs ANALYZE on
+        // upgrade; for in-memory fresh-create test DBs we run it
+        // here explicitly.
+        for (var i = 0; i < 200; i++) {
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.sent,
+              subject: 'tombstone-$i',
+              message: '{"i":$i}',
+              createdAt: DateTime(2024, 1, 1).add(Duration(seconds: i)),
+            ),
+          );
+        }
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            subject: 'live',
+            message: '{}',
+            createdAt: DateTime(2024, 2, 1),
+          ),
+        );
+        await database.customStatement('ANALYZE');
+
+        final plan = await database
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT * FROM outbox WHERE status = 0 '
+              'ORDER BY created_at ASC, id ASC LIMIT 1',
+            )
+            .get();
+        final details = plan.map((r) => r.data.toString()).join('\n');
+
+        expect(
+          details,
+          contains('idx_outbox_pending_created_id'),
+          reason:
+              'literal status = 0 + (created_at, id) sort must match the '
+              'v21 partial index after ANALYZE; otherwise the planner '
+              'falls back to the priority-leading index and pays a '
+              'temp B-tree sort',
+        );
+        expect(
+          details,
+          isNot(contains('USE TEMP B-TREE FOR ORDER BY')),
+          reason:
+              'partial index sort key already matches the query — no '
+              'temp B-tree should appear in the plan',
+        );
+        // SQLite reports a partial-index walk as `SCAN <table> USING
+        // INDEX <name>` — that is the correct outcome here because the
+        // partial only contains the actionable pending rows and the
+        // index order already matches the ORDER BY. What we are
+        // guarding against is a *base-table* scan; assert by index
+        // name instead of the SCAN keyword.
+        expect(details, isNot(contains('SCAN outbox USING INDEX sqlite_')));
+        expect(
+          details,
+          isNot(matches(RegExp('SCAN outbox(?! USING)'))),
+        );
+      },
+    );
+
+    test(
+      'sending-expiry plan uses the v21 partial index '
+      'idx_outbox_sending_expiry — the same temp-B-tree regression hit '
+      "claimNextOutboxBatch's expired-sending branch "
+      '(`WHERE status = 3 AND updated_at < cutoff ORDER BY created_at, '
+      'id LIMIT 50`)',
+      () async {
+        final database = db!;
+
+        for (var i = 0; i < 100; i++) {
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.sent,
+              subject: 'sent-$i',
+              message: '{"i":$i}',
+              createdAt: DateTime(2024, 1, 1).add(Duration(seconds: i)),
+            ),
+          );
+        }
+        // Plant a real expired-sending row so the partial index has
+        // qualifying rows for the planner to weigh against the
+        // tombstones; then ANALYZE so the v21 partial wins on cost.
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.sending.index),
+            subject: const Value('stale-lease'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1)),
+            updatedAt: Value(DateTime(2024, 1, 1)),
+          ),
+        );
+        await database.customStatement('ANALYZE');
+
+        final plan = await database
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT * FROM outbox '
+              'WHERE status = 3 AND updated_at < ?1 '
+              'ORDER BY created_at ASC, id ASC LIMIT 50',
+              variables: [Variable<DateTime>(DateTime(2024, 1, 2))],
+            )
+            .get();
+        final details = plan.map((r) => r.data.toString()).join('\n');
+
+        expect(
+          details,
+          contains('idx_outbox_sending_expiry'),
+          reason:
+              'literal status = 3 + updated_at range must match the v21 '
+              'sending-expiry partial index after ANALYZE',
+        );
+        // See sibling test — `SCAN outbox USING INDEX <partial>` is
+        // legitimate; only a base-table scan (`SCAN outbox` without
+        // an index) is a regression.
+        expect(
+          details,
+          isNot(matches(RegExp('SCAN outbox(?! USING)'))),
+        );
+      },
+    );
+
     test('claimNextOutboxItem claims oldest eligible item', () async {
       final database = db!;
       await database.addOutboxItem(
@@ -2585,6 +2721,158 @@ void main() {
     });
   });
 
+  group('hasActionableEntries Tests', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test(
+      'returns false when sync_sequence_log is empty, so the periodic '
+      'backfill timer can skip the retire + load body when nothing is '
+      'missing (see BackfillRequestService._processBackfillRequests)',
+      () async {
+        final database = db!;
+
+        expect(await database.hasActionableEntries(), isFalse);
+      },
+    );
+
+    test(
+      'returns false when only terminal-status rows exist (received / '
+      'backfilled / deleted / unresolvable), since none of those need a '
+      'backfill request',
+      () async {
+        final database = db!;
+        const hostId = 'host-1';
+
+        for (final status in <SyncSequenceStatus>[
+          SyncSequenceStatus.received,
+          SyncSequenceStatus.backfilled,
+          SyncSequenceStatus.deleted,
+          SyncSequenceStatus.unresolvable,
+        ]) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(status.index),
+              status: Value(status.index),
+              createdAt: Value(DateTime(2024, status.index + 1)),
+              updatedAt: Value(DateTime(2024, status.index + 1)),
+            ),
+          );
+        }
+
+        expect(await database.hasActionableEntries(), isFalse);
+      },
+    );
+
+    test('returns true when any row is in `missing` status', () async {
+      final database = db!;
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(7),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(DateTime(2024, 3, 1)),
+          updatedAt: Value(DateTime(2024, 3, 1)),
+        ),
+      );
+
+      expect(await database.hasActionableEntries(), isTrue);
+    });
+
+    test('returns true when any row is in `requested` status', () async {
+      final database = db!;
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(7),
+          status: Value(SyncSequenceStatus.requested.index),
+          createdAt: Value(DateTime(2024, 3, 1)),
+          updatedAt: Value(DateTime(2024, 3, 1)),
+        ),
+      );
+
+      expect(await database.hasActionableEntries(), isTrue);
+    });
+
+    test(
+      'plan uses the actionable partial index '
+      '(idx_sync_sequence_log_actionable_status_created_at) so the probe '
+      'stays O(log n) on the index regardless of how many terminal rows '
+      'have accumulated — this is the load-bearing assumption of the '
+      'early-exit gate in BackfillRequestService',
+      () async {
+        final database = db!;
+
+        // Seed enough rows that the planner could be tempted to scan the
+        // base table; the partial index must still win.
+        for (var i = 0; i < 200; i++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value('host-bulk'),
+              counter: Value(i),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(DateTime(2024, 1, 1).add(Duration(minutes: i))),
+              updatedAt: Value(DateTime(2024, 1, 1).add(Duration(minutes: i))),
+            ),
+          );
+        }
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-bulk'),
+            counter: const Value(9999),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2024, 2, 1)),
+            updatedAt: Value(DateTime(2024, 2, 1)),
+          ),
+        );
+
+        final rows = await database
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT 1 FROM sync_sequence_log '
+              'WHERE status IN (1, 2) LIMIT 1',
+            )
+            .get();
+        final plan = rows.map((r) => r.data.toString()).join('\n');
+
+        // Either of the two actionable partial indices is acceptable —
+        // both are declared `WHERE status IN (1, 2)` (see
+        // `idx_sync_sequence_log_actionable_status_created_at` and
+        // `idx_sync_sequence_log_actionable_status_updated_at` in
+        // `lib/database/sync_db.dart`). What we care about is that the
+        // planner does NOT fall back to a full base-table scan.
+        expect(
+          plan,
+          matches(
+            RegExp(
+              'idx_sync_sequence_log_actionable_status_'
+              '(created_at|updated_at)',
+            ),
+          ),
+          reason:
+              'probe must match an actionable partial index, not SCAN sync_sequence_log',
+        );
+        expect(
+          plan,
+          isNot(contains('SCAN sync_sequence_log')),
+          reason: 'probe must never fall back to a base-table scan',
+        );
+        expect(
+          await database.hasActionableEntries(),
+          isTrue,
+          reason: 'one missing row among 200 terminals must still register',
+        );
+      },
+    );
+  });
+
   group('getMissingEntriesWithLimits Tests', () {
     setUp(() async {
       db = SyncDatabase(inMemoryDatabase: true);
@@ -3241,6 +3529,88 @@ void main() {
       expect(entries, hasLength(1));
       expect(entries.first, (hostId: 'host-1', counter: 5));
     });
+
+    test(
+      'plan uses an outbox status index (full or partial) rather than '
+      'SCANning the table — load-bearing for the 2-minute backfill tick '
+      'which was the top offender in the 2026-05-12 desktop slow-query '
+      'log when `t.status.isIn([pending, sending])` bound the values '
+      'as parameters and the planner fell back to SCAN outbox',
+      () async {
+        final database = db!;
+
+        for (var i = 0; i < 50; i++) {
+          await database.addOutboxItem(
+            _buildOutbox(
+              status: OutboxStatus.sent,
+              createdAt: DateTime(2024, 1, 1).add(Duration(seconds: i)),
+              subject: 'irrelevant:$i',
+              message: '{"runtimeType": "noise"}',
+            ),
+          );
+        }
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: DateTime(2024, 2, 1),
+            subject: backfillSubject,
+            message:
+                '{"runtimeType": "backfillRequest", '
+                '"entries": [{"hostId": "h1", "counter": 1}], '
+                '"requesterId": "req-1"}',
+          ),
+        );
+
+        final rows = await database
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT * FROM outbox WHERE status IN (0, 3) '
+              "AND subject LIKE 'backfillRequest:%'",
+            )
+            .get();
+        final plan = rows.map((r) => r.data.toString()).join('\n');
+
+        // With status values inlined as literals the planner has a real
+        // status filter at plan time and picks either the partial
+        // `idx_outbox_actionable_priority_created_at` (WHERE status IN
+        // (0, 3)) or the full `idx_outbox_status_priority_created_at` for
+        // a two-key seek. Both are correct outcomes; the regression we
+        // are guarding against is the planner falling back to SCAN
+        // outbox, which is what happened with parameterised statuses.
+        expect(
+          plan,
+          anyOf(
+            contains('idx_outbox_actionable_priority_created_at'),
+            contains('idx_outbox_status_priority_created_at'),
+          ),
+          reason:
+              'literal `IN (0, 3)` must let the planner pick a status '
+              'index seek instead of falling back to SCAN outbox',
+        );
+        expect(
+          plan,
+          isNot(contains('SCAN outbox')),
+          reason: 'no full table scan once the planner can see the status set',
+        );
+
+        final entries = await database.getPendingBackfillEntries();
+        expect(entries, hasLength(1));
+      },
+    );
+
+    test(
+      'status literals (0, 3) baked into the partial-index match stay '
+      'in sync with OutboxStatus.pending.index and the sending status '
+      'used by the outbox state machine — without this guard a future '
+      'enum reorder would silently index the wrong rows',
+      () {
+        expect(OutboxStatus.pending.index, 0);
+        // `_outboxSendingStatus` mirrors OutboxStatus.sending.index (3);
+        // the sync_db.dart guard test asserts the partial-index DDL uses
+        // the same two literals via `idx_outbox_actionable_priority_created_at`.
+        expect(OutboxStatus.sending.index, 3);
+      },
+    );
   });
 
   group('getRequestedEntries Tests', () {
@@ -4596,8 +4966,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 20', () {
-      expect(db.schemaVersion, 20);
+    test('schema version is 21', () {
+      expect(db.schemaVersion, 21);
     });
 
     test(

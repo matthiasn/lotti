@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 20);
+        expect(db.schemaVersion, 21);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -142,7 +142,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 20);
+      expect(versionResult.first.read<int>('user_version'), 21);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -298,7 +298,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 20);
+      expect(versionResult.first.read<int>('user_version'), 21);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -377,7 +377,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 20);
+      expect(versionResult.first.read<int>('user_version'), 21);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -457,7 +457,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 20);
+      expect(versionResult.first.read<int>('user_version'), 21);
 
       final indexResults = await db
           .customSelect(
@@ -549,7 +549,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 20);
+        expect(versionResult.first.read<int>('user_version'), 21);
 
         // v11 replaces the v10 index with the covering variant; when the
         // migration steps v9 → v11 in one run, the v10 index must no longer
@@ -661,7 +661,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 20);
+        expect(versionResult.first.read<int>('user_version'), 21);
 
         final oldIndex = await db
             .customSelect(
@@ -777,7 +777,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 20);
+        expect(versionResult.first.read<int>('user_version'), 21);
 
         final ready = await db
             .customSelect(
@@ -798,6 +798,82 @@ void main() {
         // (which dominate the table on a steady-state client) must
         // stay out of the index.
         expect(indexSql, contains("'enqueued', 'retrying', 'leased'"));
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v21 migration adds the literal-status outbox partial indices so '
+      'the pending claim path stops using '
+      '`idx_outbox_status_priority_created_at` + `USE TEMP B-TREE FOR '
+      'ORDER BY` (2026-05-12 desktop super_slow log: tails up to 6.0 s)',
+      () async {
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v21.db'));
+        final sqlite = sqlite3.open(dbFile.path);
+
+        // Seed a v20 schema: outbox table + the pre-v21 indices, so the
+        // migration's CREATE-INDEX-IF-NOT-EXISTS only adds what is new.
+        sqlite.execute('''
+          CREATE TABLE outbox (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            status INTEGER NOT NULL DEFAULT 0,
+            retries INTEGER NOT NULL DEFAULT 0,
+            message TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            file_path TEXT,
+            outbox_entry_id TEXT,
+            payload_size INTEGER,
+            priority INTEGER NOT NULL DEFAULT 2
+          )
+        ''');
+        sqlite.execute(
+          'CREATE INDEX idx_outbox_status_priority_created_at '
+          'ON outbox (status, priority, created_at)',
+        );
+        sqlite.execute(
+          'CREATE INDEX idx_outbox_actionable_priority_created_at '
+          'ON outbox (priority, created_at) '
+          'WHERE status IN (0, 3)',
+        );
+        sqlite.execute(
+          'CREATE INDEX idx_outbox_pending_entry_id_created_at '
+          'ON outbox (outbox_entry_id, created_at) '
+          'WHERE status = 0 AND outbox_entry_id IS NOT NULL',
+        );
+        sqlite.execute('PRAGMA user_version = 20');
+        sqlite.dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v21.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 21);
+
+        final pendingIndex = await db
+            .customSelect(
+              "SELECT name, sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_outbox_pending_created_id'",
+            )
+            .get();
+        expect(pendingIndex, hasLength(1));
+        final pendingSql = pendingIndex.first.readNullable<String>('sql');
+        expect(pendingSql, contains('created_at, id'));
+        expect(pendingSql, contains('WHERE status = 0'));
+
+        final sendingIndex = await db
+            .customSelect(
+              "SELECT name, sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_outbox_sending_expiry'",
+            )
+            .get();
+        expect(sendingIndex, hasLength(1));
+        final sendingSql = sendingIndex.first.readNullable<String>('sql');
+        expect(sendingSql, contains('updated_at, created_at, id'));
+        expect(sendingSql, contains('WHERE status = 3'));
 
         await db.close();
       },

@@ -34,6 +34,19 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
   bool _inFlight = false;
   String? _lastSignature;
 
+  /// Cadence at which this panel polls `MatrixService.getSyncMetrics`
+  /// while the panel is on-screen AND the app is foregrounded. The
+  /// previous 2-second cadence drove the
+  /// `SELECT … GROUP BY status, producer FROM inbound_event_queue`
+  /// aggregate to 223 hits/day on the 2026-05-12 desktop slow_queries
+  /// log (each ~200-700 ms — plan is fine, cost is writer-lock
+  /// contention compounding at 30 polls/min). 5 s still feels live to
+  /// a user watching the panel and removes the 60% of polls that
+  /// were contributing nothing actionable. `_inFlight` continues to
+  /// guard against a slow probe overlapping itself.
+  @visibleForTesting
+  static const Duration pollInterval = Duration(seconds: 5);
+
   @override
   void initState() {
     super.initState();
@@ -44,7 +57,7 @@ class MatrixSyncMetricsPanelState extends ConsumerState<MatrixSyncMetricsPanel>
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+    _pollTimer = Timer.periodic(pollInterval, (_) async {
       if (!_appActive || _inFlight) return;
       _inFlight = true;
       try {

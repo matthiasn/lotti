@@ -56,6 +56,49 @@ class AgentRepository {
     return AgentDbConversions.fromEntityRow(rows.first);
   }
 
+  /// Batch-fetch non-deleted entities for every id in [ids] in a single
+  /// SQL round-trip. Returns the matched entities keyed by their `id`
+  /// column so the caller can look them up without iterating; ids that
+  /// have no row (or whose row is soft-deleted) are simply absent from
+  /// the map.
+  ///
+  /// Issues one `WHERE id IN (?, …)` query against the primary-key
+  /// index instead of N round-trips. The 2026-05-10 desktop slow_queries
+  /// log captured 2 484 hits/day for `SELECT * FROM agent_entities
+  /// WHERE id = ? AND deleted_at IS NULL` — all from the per-row
+  /// `Future.wait` fan-out in `_collectObservationPayloads`
+  /// (project_agent_workflow.dart and task_agent_workflow.dart). The
+  /// plan was a clean PK seek; the cost was the writer-lock queue
+  /// wait piling up behind each independent isolate hop.
+  ///
+  /// Empty input returns an empty map without touching the database.
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
+    Iterable<String> ids,
+  ) async {
+    final uniqueIds = ids.toSet();
+    if (uniqueIds.isEmpty) return const <String, AgentDomainEntity>{};
+
+    final placeholders = List.filled(uniqueIds.length, '?').join(', ');
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM agent_entities '
+          'WHERE id IN ($placeholders) AND deleted_at IS NULL',
+          variables: uniqueIds.map(Variable.withString).toList(),
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+
+    final result = <String, AgentDomainEntity>{};
+    for (final row in rows) {
+      final entityRow = await _db.agentEntities.mapFromRow(row);
+      // `agentEntities.id` is the column the IN-list filters against,
+      // so it doubles as the stable result-map key without having to
+      // re-enter the Freezed union to extract a per-variant id field.
+      result[entityRow.id] = AgentDbConversions.fromEntityRow(entityRow);
+    }
+    return result;
+  }
+
   /// Fetch non-deleted entities for [agentId], optionally filtered by [type]
   /// (the string value stored in the `type` column, e.g. `'agentMessage'`).
   ///

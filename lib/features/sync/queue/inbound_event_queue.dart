@@ -183,10 +183,6 @@ const List<String> _activeStatuses = <String>[
   _statusRetrying,
 ];
 
-// Marker-clamp uses the same set as `_activeStatuses`. Kept as its
-// own name for clarity at call sites even though the values match.
-const List<String> _clampStatuses = _activeStatuses;
-
 // Peek eligibility. Includes `leased` so crash recovery works: a
 // worker that died mid-apply left its rows in `leased` state with a
 // non-zero `lease_until`. Once that timestamp elapses the row is
@@ -634,12 +630,29 @@ class InboundQueue {
   }) async {
     final table = _db.inboundEventQueue;
     final minTs = table.originTs.min();
+    // `status IN ('enqueued','leased','retrying')` is inlined as a
+    // literal SQL fragment via `CustomExpression` so the SQLite planner
+    // can prove this query's WHERE implies the partial index's WHERE
+    // clause (`idx_inbound_event_queue_active_room_ts`, declared
+    // `WHERE status IN ('enqueued','leased','retrying')`). Drift's
+    // `t.status.isIn(_clampStatuses)` binds the three status values as
+    // parameters; the planner can't see them at plan time, the
+    // partial-index match fails, and the predicate falls back to a
+    // rowid B-tree walk filtered by `room_id` + status equality. The
+    // 2026-05-12 desktop super_slow log captured this as `SEARCH
+    // inbound_event_queue` (no index name) at up to 862 ms per call.
+    // Literal values mirror `_statusEnqueued`, `_statusLeased`, and
+    // `_statusRetrying` declared at the top of this file — the
+    // partial-index DDL in `lib/database/sync_db.dart` uses the same
+    // string literals.
     final row =
         await (_db.selectOnly(table)
               ..addColumns([minTs])
               ..where(
                 table.roomId.equals(roomId) &
-                    table.status.isIn(_clampStatuses) &
+                    const CustomExpression<bool>(
+                      "status IN ('enqueued','leased','retrying')",
+                    ) &
                     table.queueId.equals(excludeQueueId).not(),
               ))
             .getSingle();
@@ -742,6 +755,36 @@ class InboundQueue {
       (t) => t.jsonPath.equals(path),
       hardCap: hardCap,
       diagnostic: 'path=$path',
+    );
+  }
+
+  /// Bulk variant of [resurrectByPath] — flips abandoned rows whose
+  /// `json_path` is in [paths] back to `enqueued` in a single
+  /// SELECT + transactional UPDATE round-trip.
+  ///
+  /// Backs the coordinator's debounced `pathRecorded` subscriber: a
+  /// burst of attachment downloads (matrix-sync catch-up) used to fan
+  /// out N independent per-path SELECT/UPDATE pairs, each queuing
+  /// behind the previous transaction's writer lock. The 2026-05-12
+  /// desktop super_slow log captured this as 222 hits/day of
+  /// `inbound_event_queue WHERE status='abandoned' AND
+  /// resurrection_count<? AND json_path=?` at ~384 ms each, ten or
+  /// more landing in the same millisecond span. Collapsing the burst
+  /// into one `WHERE json_path IN (...)` query removes the wait
+  /// chain entirely.
+  ///
+  /// Empty input returns 0 without touching the database. Duplicate
+  /// paths are deduplicated to keep the IN-list short.
+  Future<int> resurrectByPaths(
+    Iterable<String> paths, {
+    int hardCap = 50,
+  }) async {
+    final uniquePaths = paths.toSet();
+    if (uniquePaths.isEmpty) return 0;
+    return _resurrectWhere(
+      (t) => t.jsonPath.isIn(uniquePaths),
+      hardCap: hardCap,
+      diagnostic: 'paths=${uniquePaths.length}',
     );
   }
 

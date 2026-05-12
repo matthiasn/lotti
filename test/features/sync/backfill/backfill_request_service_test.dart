@@ -276,6 +276,12 @@ void main() {
     when(
       () => mockSyncDatabase.getPendingBackfillEntries(),
     ).thenAnswer((_) async => {});
+    // Default: actionable rows exist so the service runs the full body.
+    // Individual tests that exercise the empty-table early-exit override
+    // this stub explicitly.
+    when(
+      () => mockSequenceService.hasActionableEntries(),
+    ).thenAnswer((_) async => true);
     // Default: nothing to retire on each cycle. The request service calls
     // this at the top of every `_processBackfillRequests` pass to let the
     // contiguous-prefix watermark advance past permanently stuck counters.
@@ -348,6 +354,66 @@ void main() {
             offset: any(named: 'offset'),
           ),
         ]);
+      },
+    );
+
+    test(
+      'short-circuits the periodic tick when the sequence log has no '
+      'actionable rows so neither retire pass nor the missing-batch load '
+      'touches sync_db (avoids the 2-minute no-op storm captured in the '
+      '2026-05-12 desktop slow-query log)',
+      () async {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+        );
+        addTearDown(service.dispose);
+
+        when(
+          () => mockSequenceService.hasActionableEntries(),
+        ).thenAnswer((_) async => false);
+
+        final count = await service.processFullBackfill();
+
+        expect(count, 0);
+
+        verify(() => mockSequenceService.hasActionableEntries()).called(1);
+        verifyNever(
+          () => mockSequenceService.retireExhaustedRequestedEntries(
+            maxRequestCount: any(named: 'maxRequestCount'),
+          ),
+        );
+        verifyNever(
+          () => mockSequenceService.retireAgedOutRequestedEntries(
+            amnestyWindow: any(named: 'amnestyWindow'),
+          ),
+        );
+        verifyNever(
+          () => mockSequenceService.getMissingEntries(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+          ),
+        );
+        verifyNever(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            minAge: any(named: 'minAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        );
+        verifyNever(() => mockSyncDatabase.getPendingBackfillEntries());
+        verifyNever(
+          () => mockOutboxService.enqueueMessage(
+            any<SyncMessage>(),
+          ),
+        );
       },
     );
 

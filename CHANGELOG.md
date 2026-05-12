@@ -6,6 +6,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.998]
 ### Fixed
+- Sync stack hot-path cleanup driven by the 2026-05-10/11/12 desktop
+  slow- and super-slow-query logs. Eight load-bearing offenders folded
+  into one pass:
+  - `BackfillRequestService` no longer runs the 2-minute periodic body
+    against an empty sequence log. A new `hasActionableEntries()`
+    probe (matches the `idx_sync_sequence_log_actionable_status_…`
+    partial indices via `status IN (1, 2) LIMIT 1`) short-circuits
+    both retire passes and `_loadNextUnqueuedMissingBatch` when no
+    `missing`/`requested` rows exist — the 347 no-op ticks/day that
+    each ran ~5 sync_db queries are gone.
+  - `SyncDatabase.getPendingBackfillEntries` switched from drift's
+    parameterised `status.isIn(...)` to a literal `status IN (0, 3)`
+    via `CustomExpression`. The planner can now seek the outbox
+    index instead of falling back to `SCAN outbox` (357 hits/day,
+    avg 226 ms, max 1.8 s on 2026-05-12).
+  - `InboundEventQueue._oldestActiveOriginTs` inlines its status set
+    as a literal `IN ('enqueued','leased','retrying')` so the
+    partial index `idx_inbound_event_queue_active_room_ts` finally
+    matches; the parameterised form had degraded into a rowid scan
+    at up to 862 ms per commit/abandon.
+  - New `AgentRepository.getEntitiesByIds` collapses the per-id
+    `Future.wait(getEntity)` fan-out used by both
+    `ProjectAgentWorkflow._collectObservationPayloads` and
+    `TaskAgentWorkflow._collectObservationPayloads` into a single
+    `WHERE id IN (?, …)` query. `TaskAgentWorkflow._buildLinkedTasks
+    ContextJson` switched to the existing bulk
+    `getLinksToMultiple` + `getLatestReportsByAgentIds` pair —
+    eliminates the compounding N×M `agent_links WHERE to_id = ? AND
+    type = ?` + per-link `getLatestReport` fan-out (2 484 + 2 203
+    slow hits on 2026-05-10).
+  - `QueuePipelineCoordinator` debounces `AttachmentIndex.path
+    Recorded` events into a 100 ms accumulator and flushes through a
+    new bulk `InboundEventQueue.resurrectByPaths(paths)`. A burst of
+    attachment downloads now resolves in one SELECT + UPDATE
+    round-trip instead of N independent writer-lock transactions
+    (222 super-slow hits/day on 2026-05-12).
+  - `sync_db` schema bumped to v21 with two literal-status partial
+    indices for outbox claim ordering:
+    `idx_outbox_pending_created_id (created_at, id) WHERE status =
+    0` and `idx_outbox_sending_expiry (updated_at, created_at, id)
+    WHERE status = 3`. The pending-claim path no longer has to pay
+    `USE TEMP B-TREE FOR ORDER BY` after seeking
+    `idx_outbox_status_priority_created_at`.
+  - Agent database schema bumped to v8 with
+    `idx_wake_run_log_created_at`. `getWakeRunsInWindow` had been
+    falling back to a base-table scan + temp B-tree because every
+    existing wake_run_log index was leaded by `agent_id` /
+    `template_id` / `status`.
+  - `MatrixSyncMetricsPanel`'s on-screen poll widened from 2 s to
+    5 s (now exposed as the `pollInterval` constant). The 30
+    polls/min cadence had pulled the `GROUP BY status, producer`
+    aggregate to 223 hits/day; widening removes the polling
+    pressure without losing perceived liveness.
+
 - Tasks Filter sticky footer no longer renders the Clear all / Save
   pills as floating text labels on dark mode. The button's inner box
   was 44 tall while its slot enforced a 56 minimum, so under the

@@ -85,6 +85,39 @@ enum SyncSequenceStatus {
   'ON outbox (outbox_entry_id, created_at) '
   'WHERE status = 0 AND outbox_entry_id IS NOT NULL',
 )
+// Hot-path partials for `oldestOutboxItems` and `claimNextOutboxBatch`'s
+// pending branch. Both queries shape as
+//   `WHERE status = 0 ORDER BY created_at ASC, id ASC LIMIT N`
+// — sorted by (created_at, id) but with no priority column in the
+// ORDER BY. The general `idx_outbox_status_priority_created_at` index
+// sorts within status by (priority, created_at) instead, so the
+// planner had to materialise the matching rows into a temp B-tree to
+// re-sort. The 2026-05-12 desktop super-slow log captured this as
+// `SEARCH outbox USING INDEX idx_outbox_status_priority_created_at
+// (status=?)` + `USE TEMP B-TREE FOR ORDER BY` at 553 ms / 706 ms /
+// 6.0 s. The literal `WHERE status = 0` keeps the index dense (only
+// the actionable pending rows live in it), so the LIMIT walk stops
+// at the first row regardless of how many `sent` tombstones have
+// accumulated.
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_pending_created_id '
+  'ON outbox (created_at, id) '
+  'WHERE status = 0',
+)
+// Companion partial for `claimNextOutboxBatch`'s expired-`sending`
+// branch (`WHERE status = 3 AND updated_at < cutoff ORDER BY
+// created_at ASC, id ASC LIMIT N`). Leading on `updated_at` lets the
+// `< cutoff` filter cut the partial index to just the expired rows
+// before any sort step; `(created_at, id)` then satisfies the ORDER
+// BY without a temp B-tree. Status literal `3` mirrors
+// `_outboxSendingStatus = OutboxStatus.sending.index` — same
+// enum-order assumption the guard test in
+// `test/database/sync_db_test.dart` already enforces.
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_sending_expiry '
+  'ON outbox (updated_at, created_at, id) '
+  'WHERE status = 3',
+)
 class Outbox extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -950,12 +983,21 @@ class SyncDatabase extends _$SyncDatabase {
   ///
   /// Two filters applied at SQL level keep this cheap on devices where the
   /// outbox has accumulated hundreds of thousands of rows:
-  /// 1. `status IN (pending, sending)` — drift renders this as
-  ///    `status IN (?, ?)`, which the SQLite planner can satisfy from
-  ///    `idx_outbox_status_priority_created_at` (two index seeks). The
-  ///    earlier `status = ? OR status = ?` form (drift's `|` operator)
-  ///    refused to use that index and forced a full SCAN — observed at
-  ///    700–850 ms per call on a ~1M-row outbox.
+  /// 1. `status IN (0, 3)` is inlined as a literal SQL fragment via
+  ///    `CustomExpression` so the SQLite planner can prove this query's
+  ///    WHERE implies the partial index's WHERE clause
+  ///    (`idx_outbox_actionable_priority_created_at`, declared with
+  ///    `WHERE status IN (0, 3)`). Drift's
+  ///    `t.status.isIn([pending, sending])` binds the two status values
+  ///    as parameters; the planner can't see them at plan time, the
+  ///    partial-index match fails, and the predicate falls back to a
+  ///    full table scan. The 2026-05-12 desktop slow_queries log
+  ///    captured this shape at 357 hits/day with every plan reading
+  ///    `SCAN outbox` (avg 226 ms, max 1.8 s) before the rewrite.
+  ///    Literal values mirror `OutboxStatus.pending.index = 0` and
+  ///    `_outboxSendingStatus = 3` — the guard test in
+  ///    `test/database/sync_db_test.dart` asserts the partial-index
+  ///    declaration stays in sync with this assumption.
   /// 2. `subject LIKE 'backfillRequest:%'` — `_enqueueBackfillRequest`
   ///    sets `subject` to `'backfillRequest:batch:N'` for every backfill
   ///    request enqueue, so the prefix is a reliable marker. Without
@@ -967,10 +1009,7 @@ class SyncDatabase extends _$SyncDatabase {
     final pendingItems =
         await (select(outbox)..where(
               (t) =>
-                  t.status.isIn([
-                    OutboxStatus.pending.index,
-                    _outboxSendingStatus,
-                  ]) &
+                  const CustomExpression<bool>('status IN (0, 3)') &
                   t.subject.like('backfillRequest:%'),
             ))
             .get();
@@ -1417,6 +1456,31 @@ class SyncDatabase extends _$SyncDatabase {
     });
   }
 
+  /// Cheap existence probe for any actionable (`missing` or `requested`) row.
+  ///
+  /// Used as the gate for the periodic backfill timer: when the table holds
+  /// no actionable rows, the timer body can skip both retire passes and the
+  /// `_loadNextUnqueuedMissingBatch` work entirely. The slow-query log on
+  /// 2026-05-12 showed `processBackfillRequests` ticking 347 times against
+  /// an empty actionable set, each pass running 5 sync_db queries — one
+  /// of which (`getPendingBackfillEntries`) hit the outbox at 226 ms avg.
+  ///
+  /// `status IN (1, 2)` is inlined as a literal SQL fragment via
+  /// `CustomExpression` so the SQLite planner can prove this query's WHERE
+  /// implies the partial index
+  /// `idx_sync_sequence_log_actionable_status_created_at`'s WHERE clause
+  /// (`WHERE status IN (1, 2)`). With a `LIMIT 1` the planner short-circuits
+  /// on the first matching index row, so this is effectively O(log n) on the
+  /// partial index even with hundreds of thousands of historical rows
+  /// already in `received`/`backfilled`/`unresolvable`.
+  Future<bool> hasActionableEntries() async {
+    final row = await customSelect(
+      'SELECT 1 FROM sync_sequence_log WHERE status IN (1, 2) LIMIT 1',
+      readsFrom: {syncSequenceLog},
+    ).getSingleOrNull();
+    return row != null;
+  }
+
   /// Get missing entries with age and per-host limits for automatic backfill.
   /// [maxAge] - Only include entries created within this duration
   /// [minAge] - Debounce window: rows freshly flagged as missing are held back
@@ -1861,7 +1925,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration {
@@ -2213,6 +2277,36 @@ class SyncDatabase extends _$SyncDatabase {
             'CREATE INDEX IF NOT EXISTS '
             'idx_inbound_event_queue_status_producer_enqueued '
             'ON inbound_event_queue (status, producer, enqueued_at)',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 21) {
+          // `oldestOutboxItems` / `claimNextOutboxBatch` both fire
+          //   `WHERE status = 0 ORDER BY created_at ASC, id ASC LIMIT N`
+          // and the expired-sending companion fires
+          //   `WHERE status = 3 AND updated_at < cutoff ORDER BY
+          //   created_at ASC, id ASC LIMIT N`.
+          // The general `(status, priority, created_at)` index sorts
+          // within status by (priority, created_at) — not what the
+          // ORDER BY needs — so the planner reverted to a temp
+          // B-tree sort. The 2026-05-12 desktop super-slow log
+          // captured 56 hits/day for the pending LIMIT 1 shape and 16
+          // hits/day for the LIMIT 50 + updated_at companion, with
+          // tails reaching 6.0 s. Two literal-status partial indices
+          // sized to the actionable rows let the planner walk in
+          // (created_at, id) order and stop at LIMIT — no temp
+          // B-tree, no scanning of `sent` tombstones.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_outbox_pending_created_id '
+            'ON outbox (created_at, id) '
+            'WHERE status = 0',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_outbox_sending_expiry '
+            'ON outbox (updated_at, created_at, id) '
+            'WHERE status = 3',
           );
           await customStatement('ANALYZE');
         }

@@ -2160,6 +2160,77 @@ void main() {
       expect(result, isNull);
     });
 
+    group('getEntitiesByIds', () {
+      test(
+        'returns empty map on empty input without touching the database',
+        () async {
+          final result = await repo.getEntitiesByIds(<String>[]);
+          expect(result, isEmpty);
+        },
+      );
+
+      test(
+        'batches a request set of ids into a single IN-list query, '
+        'returning matched entities keyed by id and silently dropping '
+        'ids with no row',
+        () async {
+          await repo.upsertEntity(makeAgent(id: 'bulk-agent-1'));
+          await repo.upsertEntity(makeAgent(id: 'bulk-agent-2'));
+          await repo.upsertEntity(makeAgent(id: 'bulk-agent-3'));
+
+          final result = await repo.getEntitiesByIds([
+            'bulk-agent-1',
+            'bulk-agent-3',
+            'missing-id',
+          ]);
+
+          expect(
+            result.keys,
+            unorderedEquals(['bulk-agent-1', 'bulk-agent-3']),
+          );
+          expect(result['bulk-agent-1'], isA<AgentIdentityEntity>());
+          expect(result['bulk-agent-3'], isA<AgentIdentityEntity>());
+          expect(result.containsKey('missing-id'), isFalse);
+        },
+      );
+
+      test(
+        'excludes soft-deleted rows (deleted_at IS NOT NULL) — matches '
+        'the per-id getEntity contract so callers see the same '
+        'visibility behaviour after the batch rewrite',
+        () async {
+          final live = makeAgent(id: 'bulk-live');
+          final softDeleted = makeAgent(id: 'bulk-soft').copyWith(
+            deletedAt: DateTime(2026, 5, 12),
+          );
+          await repo.upsertEntity(live);
+          await repo.upsertEntity(softDeleted);
+
+          final result = await repo.getEntitiesByIds([
+            'bulk-live',
+            'bulk-soft',
+          ]);
+          expect(result.keys, ['bulk-live']);
+        },
+      );
+
+      test(
+        'deduplicates incoming ids before SQL so a caller passing the '
+        'same id twice never expands the IN-list redundantly',
+        () async {
+          await repo.upsertEntity(makeAgent(id: 'bulk-dup'));
+
+          final result = await repo.getEntitiesByIds([
+            'bulk-dup',
+            'bulk-dup',
+            'bulk-dup',
+          ]);
+
+          expect(result.keys, ['bulk-dup']);
+        },
+      );
+    });
+
     test('upsert overwrites existing entity with same ID', () async {
       final original = makeAgent(id: 'entity-agent-x');
       await repo.upsertEntity(original);

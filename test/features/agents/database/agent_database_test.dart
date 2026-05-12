@@ -1,6 +1,7 @@
 // ignore_for_file: cascade_invocations
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:path/path.dart' as path;
@@ -116,7 +117,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          7,
+          8,
         );
 
         // Verify the new columns exist by querying them
@@ -228,11 +229,11 @@ void main() {
       );
       addTearDown(db.close);
 
-      // Verify schema version is now 6 (latest).
+      // Verify schema version is now 8 (latest).
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        7,
+        8,
       );
 
       // Verify the partial unique index exists.
@@ -481,11 +482,11 @@ void main() {
       );
       addTearDown(db.close);
 
-      // Verify schema version is now 6 (latest).
+      // Verify schema version is now 8 (latest).
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        7,
+        8,
       );
 
       // Verify the column exists by selecting it.
@@ -616,7 +617,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          7,
+          8,
         );
 
         final indexes = await db
@@ -753,7 +754,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          7,
+          8,
         );
 
         // Verify wake_run_log soul columns exist and are readable.
@@ -820,6 +821,87 @@ void main() {
   });
 
   group('AgentDatabase fresh install', () {
+    test(
+      'idx_wake_run_log_created_at exists so getWakeRunsInWindow can '
+      'walk the range in `created_at` order instead of `SCAN '
+      'wake_run_log` + temp B-tree (2026-05-10 desktop super_slow log: '
+      '11 hits/day at 305-408 ms before the index was added)',
+      () async {
+        final db = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        addTearDown(db.close);
+
+        final indexes = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND name = 'idx_wake_run_log_created_at'",
+            )
+            .get();
+        expect(indexes, hasLength(1));
+
+        // Seed enough rows that the planner can choose between
+        // SCAN and the new index — ANALYZE so the choice is
+        // cost-based on real stats.
+        for (var i = 0; i < 60; i++) {
+          // Use raw seconds-since-epoch — drift stores `DateTime`
+          // columns as INTEGER, so the planner's range filter works
+          // on integer comparisons. Passing a Dart `DateTime` to
+          // `customStatement` won't bind; pass the same int value
+          // that drift would have written.
+          final ts =
+              DateTime(
+                2026,
+                1,
+                2,
+              ).add(Duration(minutes: i)).millisecondsSinceEpoch ~/
+              1000;
+          await db.customStatement(
+            'INSERT INTO wake_run_log '
+            '(run_key, agent_id, reason, thread_id, status, created_at) '
+            "VALUES ('run-$i', 'agent-A', 'test', 'thread-$i', 'ok', ?)",
+            [ts],
+          );
+        }
+        await db.customStatement('ANALYZE');
+
+        final plan = await db
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT * FROM wake_run_log '
+              'WHERE created_at >= ?1 AND created_at <= ?2 '
+              'ORDER BY created_at DESC',
+              variables: [
+                Variable<DateTime>(DateTime(2026, 1, 2)),
+                Variable<DateTime>(DateTime(2026, 1, 3)),
+              ],
+            )
+            .get();
+        final details = plan.map((r) => r.data.toString()).join('\n');
+
+        expect(
+          details,
+          contains('idx_wake_run_log_created_at'),
+          reason:
+              'created_at window query must use the dedicated index '
+              'instead of falling back to a base-table scan',
+        );
+        expect(
+          details,
+          isNot(matches(RegExp('SCAN wake_run_log(?! USING)'))),
+          reason: 'must not regress to a full base-table scan',
+        );
+        expect(
+          details,
+          isNot(contains('USE TEMP B-TREE FOR ORDER BY')),
+          reason:
+              'the (created_at DESC) index already provides the sort '
+              'order — no temp B-tree should appear',
+        );
+      },
+    );
+
     test('creates idx_unique_soul_per_template index on new DB', () async {
       final db = AgentDatabase(
         inMemoryDatabase: true,

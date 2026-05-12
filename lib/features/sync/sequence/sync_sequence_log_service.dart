@@ -1033,6 +1033,14 @@ class SyncSequenceLogService {
     }
   }
 
+  /// Cheap existence probe for any actionable (`missing` or `requested`)
+  /// sequence row. Used by the backfill request service to short-circuit
+  /// the periodic timer body when nothing is missing — see
+  /// [SyncDatabase.hasActionableEntries] for the rationale.
+  Future<bool> hasActionableEntries() {
+    return _syncDatabase.hasActionableEntries();
+  }
+
   /// Get entries marked as missing or requested that haven't exceeded
   /// the maximum request count, for sending backfill requests.
   ///
