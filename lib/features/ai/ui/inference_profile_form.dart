@@ -10,6 +10,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
 import 'package:uuid/uuid.dart';
 
@@ -84,7 +85,17 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          // Pad the bottom by the height the app's bottom nav bar
+          // occupies (zero on desktop, ~88pt on mobile with the home
+          // indicator) plus the page's normal 16-pt padding so the
+          // last form section always clears the nav bar on mobile
+          // instead of slipping behind it.
+          padding: EdgeInsets.fromLTRB(
+            16,
+            16,
+            16,
+            16 + DesignSystemBottomNavigationBar.occupiedHeight(context),
+          ),
           children: [
             TextFormField(
               controller: _nameController,

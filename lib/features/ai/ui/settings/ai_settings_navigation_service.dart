@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 
 /// Service responsible for handling navigation to AI configuration edit pages
 ///
@@ -17,6 +18,24 @@ class AiSettingsNavigationService {
     AiConfig config,
   ) async {
     final route = _createEditRouteWithTransition(config);
+    await Navigator.of(context).push(route);
+  }
+
+  /// Navigates to the provider detail page. When [focusApiKey] is
+  /// true, the detail page auto-routes to the edit form with the API
+  /// key field focused — the Fix-flow entry point used by the
+  /// provider card's invalid-key affordance.
+  Future<void> navigateToProviderDetail(
+    BuildContext context, {
+    required String providerId,
+    bool focusApiKey = false,
+  }) async {
+    final route = _createSlideRoute(
+      builder: (context) => AiProviderDetailPage(
+        providerId: providerId,
+        focusApiKey: focusApiKey,
+      ),
+    );
     await Navigator.of(context).push(route);
   }
 

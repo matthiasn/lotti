@@ -9,8 +9,10 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
+import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_empty_view.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
@@ -64,6 +66,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
   final _filterService = const AiSettingsFilterService();
   final _navigationService = const AiSettingsNavigationService();
+  final _deleteService = const AiConfigDeleteService();
 
   AiSettingsFilterState _filterState = AiSettingsFilterState.initial();
 
@@ -123,7 +126,30 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   }
 
   Future<void> _handleConfigTap(AiConfig config) async {
+    // Provider rows route through the new detail page (PR-4);
+    // model + profile rows still open their edit form directly.
+    if (config is AiConfigInferenceProvider) {
+      await _navigationService.navigateToProviderDetail(
+        context,
+        providerId: config.id,
+      );
+      return;
+    }
     await _navigationService.navigateToConfigEdit(context, config);
+  }
+
+  /// Fires from the provider card's "Fix" affordance when status is
+  /// `invalidKey`. Routes through the detail page so the user lands in
+  /// the same place they'd land from a regular row tap, but the detail
+  /// page immediately pushes the edit form with the API key field
+  /// focused — saves the user a tap when the only thing they came
+  /// here for was to paste a fresh key.
+  Future<void> _handleFixProvider(AiConfigInferenceProvider provider) async {
+    await _navigationService.navigateToProviderDetail(
+      context,
+      providerId: provider.id,
+      focusApiKey: true,
+    );
   }
 
   Future<void> _handleAddProvider() async {
@@ -138,6 +164,31 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       context,
       preselectedType: type,
     );
+  }
+
+  /// Builds the `Edit` + `Delete` rows shown in a v2 card's `⋯`
+  /// overflow menu. `Edit` mirrors a card tap (kept so the menu is
+  /// the source of truth for what a row can do); `Delete` runs the
+  /// existing [AiConfigDeleteService] which handles confirmation,
+  /// cascade delete for providers, and the undo snackbar.
+  List<AiCardMenuAction> _buildCardMenu(AiConfig config) {
+    return [
+      AiCardMenuAction(
+        icon: Icons.edit_outlined,
+        label: context.messages.aiCardMenuActionEdit,
+        onSelected: () => _handleConfigTap(config),
+      ),
+      AiCardMenuAction(
+        icon: Icons.delete_outline_rounded,
+        label: context.messages.aiCardMenuActionDelete,
+        isDestructive: true,
+        onSelected: () => _deleteService.deleteConfig(
+          context: context,
+          ref: ref,
+          config: config,
+        ),
+      ),
+    ];
   }
 
   @override
@@ -305,8 +356,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         modelCount: modelCount,
         status: status,
         onTap: () => _handleConfigTap(provider),
+        menuActions: _buildCardMenu(provider),
         onFix: status == AiProviderCardStatus.invalidKey
-            ? () => _handleConfigTap(provider)
+            ? () => _handleFixProvider(provider)
             : null,
       );
     }
@@ -352,6 +404,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
             model: model,
             providerType: providerTypeById[model.inferenceProviderId],
             onTap: () => _handleConfigTap(model),
+            menuActions: _buildCardMenu(model),
           );
         },
       ),
@@ -403,6 +456,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         ),
         modelLookup: (id) => modelNamesById[id],
         onTap: () => _handleConfigTap(profile),
+        menuActions: _buildCardMenu(profile),
       );
     }
 
