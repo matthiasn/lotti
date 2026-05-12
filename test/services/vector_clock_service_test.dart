@@ -220,7 +220,6 @@ void main() {
 
         // commit is a no-op under persist-on-reserve semantics.
         await reservation.commit();
-        expect(reservation.isPending, isFalse);
       },
     );
 
@@ -255,7 +254,6 @@ void main() {
       final reservation = await service.reserveNextVectorClock();
       await reservation.commit();
       await reservation.commit(); // no-op
-      expect(reservation.isPending, isFalse);
     });
 
     test(

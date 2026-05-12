@@ -67,7 +67,6 @@ void main() {
   });
 
   tearDown(() async {
-    await navService.dispose();
     await getIt.reset();
   });
 

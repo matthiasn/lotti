@@ -546,7 +546,6 @@ class _DesktopSettingsBench {
   }
 
   Future<void> dispose() async {
-    await navService.dispose();
     await getIt.reset();
   }
 }

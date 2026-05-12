@@ -108,15 +108,6 @@ void main() {
       ).thenAnswer((_) async {});
 
       when(
-        () => mockNotificationService.showNotification(
-          title: any(named: 'title'),
-          body: any(named: 'body'),
-          notificationId: any(named: 'notificationId'),
-          deepLink: any(named: 'deepLink'),
-        ),
-      ).thenAnswer((_) async {});
-
-      when(
         () => mockNotificationService.cancelNotification(any()),
       ).thenAnswer((_) async {});
 

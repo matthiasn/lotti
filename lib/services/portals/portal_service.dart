@@ -78,6 +78,8 @@ abstract class PortalService {
     }
   }
 
+  bool get isInitialized => _initialized;
+
   DBusClient get client {
     if (!_initialized) {
       throw StateError(PortalConstants.notInitializedError);
@@ -87,8 +89,6 @@ abstract class PortalService {
     }
     return _client;
   }
-
-  bool get isInitialized => _initialized;
 
   /// Checks if we're running in a Flatpak environment
   ///

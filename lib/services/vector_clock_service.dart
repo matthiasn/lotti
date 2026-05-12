@@ -56,9 +56,6 @@ class VcReservation {
   final VectorClockService _service;
   bool _finalized = false;
 
-  /// Whether the reservation is still pending (neither committed nor released).
-  bool get isPending => !_finalized;
-
   /// Acknowledge the reservation on a successful write. No-op — the counter
   /// was already persisted at [VectorClockService.reserveNextVectorClock]
   /// time. Retained for API stability so [VectorClockService.withVcScope] can
@@ -81,9 +78,6 @@ class VcReservation {
 }
 
 class _VcScope {
-  _VcScope(this.parent);
-
-  final _VcScope? parent;
   final List<VcReservation> reservations = [];
 }
 
@@ -300,7 +294,7 @@ class VectorClockService {
       return action();
     }
 
-    final scope = _VcScope(null);
+    final scope = _VcScope();
     try {
       final result = await runZoned(action, zoneValues: {_zoneKey: scope});
       final shouldCommit = commitWhen?.call(result) ?? true;

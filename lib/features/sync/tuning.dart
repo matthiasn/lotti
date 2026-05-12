@@ -7,7 +7,6 @@ class BackfillHostStats {
     required this.backfilledCount,
     required this.deletedCount,
     required this.unresolvableCount,
-    this.lastSeenAt,
   });
 
   final int receivedCount;
@@ -16,17 +15,6 @@ class BackfillHostStats {
   final int backfilledCount;
   final int deletedCount;
   final int unresolvableCount;
-  final DateTime? lastSeenAt;
-
-  int get totalCount =>
-      receivedCount +
-      missingCount +
-      requestedCount +
-      backfilledCount +
-      deletedCount +
-      unresolvableCount;
-
-  int get pendingCount => missingCount + requestedCount;
 }
 
 /// Aggregate stats across all hosts.
@@ -61,7 +49,6 @@ class BackfillStats {
   final int totalDeleted;
   final int totalUnresolvable;
 
-  int get totalPending => totalMissing + totalRequested;
   int get totalEntries =>
       totalReceived +
       totalMissing +
@@ -117,19 +104,6 @@ class SyncTuning {
   /// follow-up drain.
   static const Duration outboxPostDrainSettle = Duration(milliseconds: 1500);
 
-  // Live-scan / Catch-up coalescing
-  static const Duration minLiveScanGap = Duration(seconds: 1);
-  static const Duration trailingLiveScanDebounce = Duration(milliseconds: 120);
-  static const Duration minCatchupGap = Duration(seconds: 1);
-  static const Duration trailingCatchupDelay = Duration(seconds: 1);
-
-  /// If a live scan has been in flight longer than this, assume the apply
-  /// pipeline is stuck (most likely on an unbounded Matrix SDK call) and
-  /// forcibly release the `_scanInFlight` guard so incoming signals can
-  /// schedule a fresh scan. Paired with [attachmentDownloadTimeout] which
-  /// bounds the known hang point at the source.
-  static const Duration liveScanStuckThreshold = Duration(seconds: 90);
-
   /// Upper bound on a single Matrix attachment download + decrypt. A hang
   /// here used to stall the entire apply pipeline — the scan never
   /// completed, `_scanInFlight` stayed set, and every subsequent timeline
@@ -138,15 +112,7 @@ class SyncTuning {
   /// reschedule with backoff and frees the pipeline for other events.
   static const Duration attachmentDownloadTimeout = Duration(seconds: 45);
 
-  // Sync wait timeout for catch-up.
-  // Time to wait for Matrix SDK to sync with server before running catch-up.
-  // Applies to all catch-up scenarios: initial startup, app resume, wake, reconnect.
-  // 30s allows for slow networks; if timeout occurs, a follow-up catch-up triggers
-  // when sync eventually completes.
-  static const Duration catchupSyncWaitTimeout = Duration(seconds: 30);
-
   // Historical windows
-  static const int catchupPreContextCount = 80;
   static const int catchupMaxLookback =
       10000; // Increased from 1000 to handle larger backlogs
 

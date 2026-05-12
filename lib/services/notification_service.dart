@@ -247,37 +247,4 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin.cancel(id: notificationId);
   }
-
-  Future<void> showNotification({
-    required String title,
-    required String body,
-    required int notificationId,
-    String? deepLink,
-  }) async {
-    final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
-
-    if (!notifyEnabled || Platform.isWindows || Platform.isLinux) {
-      return;
-    }
-
-    await _requestPermissions();
-    await flutterLocalNotificationsPlugin.cancel(id: notificationId);
-
-    await flutterLocalNotificationsPlugin.show(
-      id: notificationId,
-      title: title,
-      body: body,
-      notificationDetails: const NotificationDetails(
-        iOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: true,
-        ),
-        macOS: DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: true,
-        ),
-      ),
-      payload: deepLink,
-    );
-  }
 }

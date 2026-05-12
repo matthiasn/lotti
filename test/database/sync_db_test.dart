@@ -2511,27 +2511,6 @@ void main() {
       expect(stats.totalEntries, 5);
     });
 
-    test('includes host activity lastSeenAt', () async {
-      final database = db!;
-      const hostId = 'host-1';
-      final lastSeen = DateTime(2024, 5, 15);
-
-      await database.updateHostActivity(hostId, lastSeen);
-      await database.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: const Value(hostId),
-          counter: const Value(1),
-          status: Value(SyncSequenceStatus.received.index),
-          createdAt: Value(DateTime(2024, 1, 1)),
-          updatedAt: Value(DateTime(2024, 1, 1)),
-        ),
-      );
-
-      final stats = await database.getBackfillStats();
-
-      expect(stats.hostStats.first.lastSeenAt, lastSeen);
-    });
-
     test('counts unresolvable entries correctly', () async {
       final database = db!;
       const hostId = 'host-1';
