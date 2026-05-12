@@ -552,7 +552,50 @@
       }
     }
   },
+  "aiProfileCardActiveBadge": "Actif",
+  "aiProfileSlotModelMissing": "manquant",
   "aiProviderAlibabaDescription": "La famille de modèles Qwen d'Alibaba Cloud via l'API DashScope",
+  "aiProviderCardFixButton": "Corriger",
+  "aiProviderCardStatusConnected": "{count, plural, =1{Connecté · 1 modèle} other{Connecté · {count} modèles}}",
+  "@aiProviderCardStatusConnected": {
+    "description": "Provider card status line when the provider has a key + at least one model row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiProviderCardMenuTooltip": "Plus d'actions",
+  "aiProviderCardModelCount": "{count, plural, =1{1 modèle} other{{count} modèles}}",
+  "@aiProviderCardModelCount": {
+    "description": "Right-side meta on a connected provider card when no last-used data is available.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiProviderCardModelCountWithLastUsed": "{count, plural, =1{1 modèle · utilisé pour la dernière fois {lastUsed}} other{{count} modèles · utilisés pour la dernière fois {lastUsed}}}",
+  "@aiProviderCardModelCountWithLastUsed": {
+    "description": "Right-side meta on a connected provider card combining model count with a last-used label.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "lastUsed": {
+        "type": "String",
+        "example": "il y a 2 min"
+      }
+    }
+  },
+  "aiProviderCardOllamaHint": "Vérifie qu'Ollama est en cours d'exécution",
+  "aiProviderCardStatusConnectedShort": "Connecté",
+  "aiProviderCardStatusInvalidKey": "Clé invalide",
+  "aiProviderCardStatusOfflineShort": "Hors ligne",
+  "aiProviderCardStatusOffline": "Hors ligne · Vérifie qu'Ollama est en cours d'exécution",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "La famille d'assistants AI Claude d'Anthropic",
   "aiProviderAnthropicName": "Anthropic Claude",
@@ -570,6 +613,11 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "Modèles d'OpenRouter",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderUnknownName": "Fournisseur d'IA",
+  "aiProviderTaglineAnthropic": "Claude Sonnet · raisonnement à long contexte",
+  "aiProviderTaglineGemini": "Offre gratuite · multimodal · transcription audio",
+  "aiProviderTaglineOllama": "S'exécute sur ton Mac · zéro appel cloud",
+  "aiProviderTaglineOpenAi": "Raisonnement phare · famille GPT-5.2",
   "aiProviderVoxtralDescription": "Transcription Voxtral locale (jusqu'à 30 min d'audio, 13 langues)",
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Transcription Whisper locale avec API compatible OpenAI",
@@ -591,6 +639,8 @@
   "aiSettingsAddModelTooltip": "Ajouter ce modèle à ton fournisseur",
   "aiSettingsAddProfileButton": "Ajouter un profil",
   "aiSettingsAddProviderButton": "Ajouter un fournisseur",
+  "aiSettingsPageLead": "Configure les fournisseurs d'IA, les modèles que Lotti peut appeler et les profils d'inférence qui décident quel modèle gère chaque tâche.",
+  "aiSettingsSearchHintShort": "Rechercher",
   "aiSettingsClearAllFiltersTooltip": "Effacer tous les filtres",
   "aiSettingsClearFiltersButton": "Effacer",
   "aiSettingsFilterByCapabilityTooltip": "Filtrer par capacité {capability}",
@@ -609,7 +659,15 @@
       }
     }
   },
+  "aiSettingsCounterModels": "Modèles",
+  "aiSettingsCounterProfiles": "Profils",
+  "aiSettingsCounterProviders": "Fournisseurs",
+  "aiSettingsEmptyDescription": "Ajoutes-en un pour activer la transcription, la reconnaissance d'images, la génération d'images et la recherche sémantique.",
+  "aiSettingsEmptyTitle": "Aucun fournisseur pour le moment",
   "aiSettingsFilterByReasoningTooltip": "Filtrer par capacité de raisonnement",
+  "aiSettingsFtueBannerDescription": "Cela prend environ une minute. Lotti configure des modèles et un profil de départ pour toi.",
+  "aiSettingsFtueBannerStartButton": "Commencer la configuration",
+  "aiSettingsFtueBannerTitle": "Ajoute ton premier fournisseur d'IA",
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Texte",
   "aiSettingsModalityVision": "Vision",

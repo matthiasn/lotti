@@ -1229,8 +1229,69 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiProfileCardActiveBadge => 'Active';
+
+  @override
+  String get aiProfileSlotModelMissing => 'missing';
+
+  @override
   String get aiProviderAlibabaDescription =>
       'Alibaba Cloud\'s Qwen family of models via DashScope API';
+
+  @override
+  String get aiProviderCardFixButton => 'Fix';
+
+  @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Connected · $count models',
+      one: 'Connected · 1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardMenuTooltip => 'More actions';
+
+  @override
+  String aiProviderCardModelCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count models',
+      one: '1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiProviderCardModelCountWithLastUsed(int count, String lastUsed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count models · last used $lastUsed',
+      one: '1 model · last used $lastUsed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardOllamaHint => 'Make sure Ollama is running';
+
+  @override
+  String get aiProviderCardStatusConnectedShort => 'Connected';
+
+  @override
+  String get aiProviderCardStatusInvalidKey => 'Invalid key';
+
+  @override
+  String get aiProviderCardStatusOfflineShort => 'Offline';
+
+  @override
+  String get aiProviderCardStatusOffline =>
+      'Offline · Make sure Ollama is running';
 
   @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
@@ -1286,6 +1347,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
+
+  @override
+  String get aiProviderUnknownName => 'AI provider';
+
+  @override
+  String get aiProviderTaglineAnthropic =>
+      'Claude Sonnet · long-context reasoning';
+
+  @override
+  String get aiProviderTaglineGemini =>
+      'Free tier · multimodal · audio transcription';
+
+  @override
+  String get aiProviderTaglineOllama => 'Runs on your Mac · zero cloud calls';
+
+  @override
+  String get aiProviderTaglineOpenAi => 'Flagship reasoning · GPT-5.2 family';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1352,7 +1430,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsAddProfileButton => 'Add Profile';
 
   @override
-  String get aiSettingsAddProviderButton => 'Add Provider';
+  String get aiSettingsAddProviderButton => 'Add provider';
+
+  @override
+  String get aiSettingsPageLead =>
+      'Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Search';
 
   @override
   String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
@@ -1371,8 +1456,34 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiSettingsCounterModels => 'Models';
+
+  @override
+  String get aiSettingsCounterProfiles => 'Profiles';
+
+  @override
+  String get aiSettingsCounterProviders => 'Providers';
+
+  @override
+  String get aiSettingsEmptyDescription =>
+      'Add one to unlock transcription, image recognition, image generation, and semantic search.';
+
+  @override
+  String get aiSettingsEmptyTitle => 'No providers yet';
+
+  @override
   String get aiSettingsFilterByReasoningTooltip =>
       'Filter by reasoning capability';
+
+  @override
+  String get aiSettingsFtueBannerDescription =>
+      'Takes about a minute. Lotti will set up models and a starting profile for you.';
+
+  @override
+  String get aiSettingsFtueBannerStartButton => 'Start setup';
+
+  @override
+  String get aiSettingsFtueBannerTitle => 'Add your first AI provider';
 
   @override
   String get aiSettingsModalityAudio => 'Audio';

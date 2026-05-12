@@ -392,7 +392,50 @@
       }
     }
   },
+  "aiProfileCardActiveBadge": "Aktivní",
+  "aiProfileSlotModelMissing": "chybí",
   "aiProviderAlibabaDescription": "Rodina modelů Qwen od Alibaba Cloud přes DashScope API",
+  "aiProviderCardFixButton": "Opravit",
+  "aiProviderCardStatusConnected": "{count, plural, =1{Připojeno · 1 model} few{Připojeno · {count} modely} other{Připojeno · {count} modelů}}",
+  "@aiProviderCardStatusConnected": {
+    "description": "Provider card status line when the provider has a key + at least one model row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiProviderCardMenuTooltip": "Další akce",
+  "aiProviderCardModelCount": "{count, plural, =1{1 model} few{{count} modely} other{{count} modelů}}",
+  "@aiProviderCardModelCount": {
+    "description": "Right-side meta on a connected provider card when no last-used data is available.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiProviderCardModelCountWithLastUsed": "{count, plural, =1{1 model · naposledy použit {lastUsed}} few{{count} modely · naposledy použity {lastUsed}} other{{count} modelů · naposledy použito {lastUsed}}}",
+  "@aiProviderCardModelCountWithLastUsed": {
+    "description": "Right-side meta on a connected provider card combining model count with a last-used label.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "lastUsed": {
+        "type": "String",
+        "example": "před 2 min"
+      }
+    }
+  },
+  "aiProviderCardOllamaHint": "Ujisti se, že Ollama běží",
+  "aiProviderCardStatusConnectedShort": "Připojeno",
+  "aiProviderCardStatusInvalidKey": "Neplatný klíč",
+  "aiProviderCardStatusOfflineShort": "Offline",
+  "aiProviderCardStatusOffline": "Offline · Ujisti se, že Ollama běží",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Rodina AI asistentů Claude od Anthropic",
   "aiProviderAnthropicName": "Anthropic Claude",
@@ -410,6 +453,11 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "Modely OpenRouter",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderUnknownName": "AI poskytovatel",
+  "aiProviderTaglineAnthropic": "Claude Sonnet · uvažování s dlouhým kontextem",
+  "aiProviderTaglineGemini": "Bezplatná úroveň · multimodální · přepis zvuku",
+  "aiProviderTaglineOllama": "Běží na tvém Macu · žádné cloudové volání",
+  "aiProviderTaglineOpenAi": "Špičkové uvažování · řada GPT-5.2",
   "aiProviderVoxtralDescription": "Lokální přepis Voxtral (až 30 min zvuku, 13 jazyků)",
   "aiProviderVoxtralName": "Voxtral (lokální)",
   "aiProviderWhisperDescription": "Lokální přepisování s Whisper a kompatibilní API OpenAI",
@@ -431,6 +479,8 @@
   "aiSettingsAddModelTooltip": "Přidat tento model ke svému poskytovateli",
   "aiSettingsAddProfileButton": "Přidat profil",
   "aiSettingsAddProviderButton": "Přidat poskytovatele",
+  "aiSettingsPageLead": "Nakonfiguruj AI poskytovatele, modely, které Lotti může volat, a inferenční profily, které rozhodují, který model zpracovává který úkol.",
+  "aiSettingsSearchHintShort": "Hledat",
   "aiSettingsClearAllFiltersTooltip": "Vymazat všechny filtry",
   "aiSettingsClearFiltersButton": "Vymazat",
   "aiSettingsFilterByCapabilityTooltip": "Filtrovat podle schopnosti {capability}",
@@ -449,7 +499,15 @@
       }
     }
   },
+  "aiSettingsCounterModels": "Modely",
+  "aiSettingsCounterProfiles": "Profily",
+  "aiSettingsCounterProviders": "Poskytovatelé",
+  "aiSettingsEmptyDescription": "Přidej jednoho a odemkni přepis, rozpoznávání obrázků, generování obrázků a sémantické vyhledávání.",
+  "aiSettingsEmptyTitle": "Zatím žádní poskytovatelé",
   "aiSettingsFilterByReasoningTooltip": "Filtrovat podle schopnosti uvažování",
+  "aiSettingsFtueBannerDescription": "Trvá asi minutu. Lotti za tebe nastaví modely a počáteční profil.",
+  "aiSettingsFtueBannerStartButton": "Spustit nastavení",
+  "aiSettingsFtueBannerTitle": "Přidej svého prvního AI poskytovatele",
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Obraz",

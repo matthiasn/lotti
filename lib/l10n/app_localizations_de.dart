@@ -1249,8 +1249,69 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get aiProfileCardActiveBadge => 'Aktiv';
+
+  @override
+  String get aiProfileSlotModelMissing => 'fehlt';
+
+  @override
   String get aiProviderAlibabaDescription =>
       'Alibaba Clouds Qwen-Modellfamilie über die DashScope-API';
+
+  @override
+  String get aiProviderCardFixButton => 'Beheben';
+
+  @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Verbunden · $count Modelle',
+      one: 'Verbunden · 1 Modell',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardMenuTooltip => 'Weitere Aktionen';
+
+  @override
+  String aiProviderCardModelCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Modelle',
+      one: '1 Modell',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiProviderCardModelCountWithLastUsed(int count, String lastUsed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Modelle · zuletzt verwendet $lastUsed',
+      one: '1 Modell · zuletzt verwendet $lastUsed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardOllamaHint => 'Stelle sicher, dass Ollama läuft';
+
+  @override
+  String get aiProviderCardStatusConnectedShort => 'Verbunden';
+
+  @override
+  String get aiProviderCardStatusInvalidKey => 'Ungültiger Schlüssel';
+
+  @override
+  String get aiProviderCardStatusOfflineShort => 'Offline';
+
+  @override
+  String get aiProviderCardStatusOffline =>
+      'Offline · Stelle sicher, dass Ollama läuft';
 
   @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
@@ -1306,6 +1367,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
+
+  @override
+  String get aiProviderUnknownName => 'KI-Anbieter';
+
+  @override
+  String get aiProviderTaglineAnthropic =>
+      'Claude Sonnet · Reasoning mit langem Kontext';
+
+  @override
+  String get aiProviderTaglineGemini =>
+      'Free Tier · multimodal · Audiotranskription';
+
+  @override
+  String get aiProviderTaglineOllama =>
+      'Läuft auf deinem Mac · keine Cloud-Aufrufe';
+
+  @override
+  String get aiProviderTaglineOpenAi => 'Top-Reasoning · GPT-5.2-Familie';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1376,6 +1455,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Anbieter hinzufügen';
 
   @override
+  String get aiSettingsPageLead =>
+      'Richte KI-Anbieter ein, die Modelle, die Lotti nutzen kann, und die Inferenzprofile, die entscheiden, welches Modell welche Aufgabe übernimmt.';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Suchen';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Alle Filter zurücksetzen';
 
   @override
@@ -1392,8 +1478,35 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get aiSettingsCounterModels => 'Modelle';
+
+  @override
+  String get aiSettingsCounterProfiles => 'Profile';
+
+  @override
+  String get aiSettingsCounterProviders => 'Anbieter';
+
+  @override
+  String get aiSettingsEmptyDescription =>
+      'Füge einen hinzu, um Transkription, Bilderkennung, Bildgenerierung und semantische Suche freizuschalten.';
+
+  @override
+  String get aiSettingsEmptyTitle => 'Noch keine Anbieter';
+
+  @override
   String get aiSettingsFilterByReasoningTooltip =>
       'Nach Schlussfolgerungsfähigkeit filtern';
+
+  @override
+  String get aiSettingsFtueBannerDescription =>
+      'Dauert etwa eine Minute. Lotti richtet Modelle und ein Startprofil für dich ein.';
+
+  @override
+  String get aiSettingsFtueBannerStartButton => 'Einrichtung starten';
+
+  @override
+  String get aiSettingsFtueBannerTitle =>
+      'Füge deinen ersten KI-Anbieter hinzu';
 
   @override
   String get aiSettingsModalityAudio => 'Audio';
