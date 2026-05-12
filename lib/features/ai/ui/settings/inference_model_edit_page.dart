@@ -6,21 +6,26 @@ import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/settings/inference_model_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_selection_modal.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 
+/// Create / edit page for an inference model row. Rewritten in v3 to
+/// match the visual language shipped by the AI Settings v1 → v3 page
+/// redesign: design-system tokens for surfaces and spacing, sections
+/// in level-02 cards, a clean AppBar with a text Save action, and a
+/// provider-tinted header strip when the form has resolved its owning
+/// provider. The form controller wiring (`InferenceModelFormController`,
+/// modality / provider selection modals, Cmd+S shortcut) is preserved
+/// verbatim — only the rendering layer changed.
 class InferenceModelEditPage extends ConsumerStatefulWidget {
-  const InferenceModelEditPage({
-    this.configId,
-    super.key,
-  });
+  const InferenceModelEditPage({this.configId, super.key});
 
   final String? configId;
 
@@ -31,14 +36,17 @@ class InferenceModelEditPage extends ConsumerStatefulWidget {
 
 class _InferenceModelEditPageState
     extends ConsumerState<InferenceModelEditPage> {
+  bool _isSaving = false;
+
   @override
   Widget build(BuildContext context) {
-    // Listen for the config if editing an existing one
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
     final configAsync = widget.configId == null
         ? const AsyncData<AiConfig?>(null)
         : ref.watch(aiConfigByIdProvider(widget.configId!));
 
-    // Watch the form state to enable/disable save button
     final formState = ref
         .watch(inferenceModelFormControllerProvider(configId: widget.configId))
         .value;
@@ -51,117 +59,81 @@ class _InferenceModelEditPageState
         formState.outputModalities.isNotEmpty &&
         (widget.configId == null || formState.isDirty);
 
-    // Create save handler that can be used by both app bar action and keyboard shortcut
     Future<void> handleSave() async {
-      if (!isFormValid) return;
-
-      final config = formState.toAiConfig();
-      final controller = ref.read(
-        inferenceModelFormControllerProvider(
-          configId: widget.configId,
-        ).notifier,
-      );
-
-      if (widget.configId == null) {
-        await controller.addConfig(config);
-      } else {
-        await controller.updateConfig(config);
-      }
-
-      if (context.mounted) {
-        Navigator.of(context).pop();
+      if (!isFormValid || _isSaving) return;
+      setState(() => _isSaving = true);
+      try {
+        final config = formState.toAiConfig();
+        final controller = ref.read(
+          inferenceModelFormControllerProvider(
+            configId: widget.configId,
+          ).notifier,
+        );
+        if (widget.configId == null) {
+          await controller.addConfig(config);
+        } else {
+          await controller.updateConfig(config);
+        }
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() => _isSaving = false);
+        }
+        rethrow;
       }
     }
 
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, meta: true): () {
-          if (isFormValid) {
-            handleSave();
-          }
+          if (isFormValid && !_isSaving) handleSave();
         },
       },
       child: Scaffold(
-        backgroundColor: context.colorScheme.surface,
-        body: Column(
-          children: [
-            Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  // Clean App Bar
-                  SliverAppBar(
-                    expandedHeight: 100,
-                    pinned: true,
-                    backgroundColor: context.colorScheme.surface,
-                    surfaceTintColor: Colors.transparent,
-                    elevation: 0,
-                    leading: IconButton(
-                      icon: Icon(
-                        Icons.chevron_left_rounded,
-                        color: context.colorScheme.onSurface,
-                        size: 28,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    flexibleSpace: FlexibleSpaceBar(
-                      titlePadding: const EdgeInsets.only(bottom: 16),
-                      title: Text(
-                        widget.configId == null
-                            ? context.messages.modelAddPageTitle
-                            : context.messages.modelEditPageTitle,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: context.colorScheme.onSurface,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Form Content
-                  SliverToBoxAdapter(
-                    child: switch (configAsync) {
-                      AsyncData(value: final config) => _buildForm(
-                        context,
-                        ref,
-                        config,
-                        formState,
-                        isFormValid,
-                        handleSave,
-                      ),
-                      AsyncError() => _buildErrorState(context),
-                      _ => const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(48),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                    },
-                  ),
-                ],
-              ),
+        backgroundColor: tokens.colors.background.level01,
+        appBar: AppBar(
+          backgroundColor: tokens.colors.background.level01,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: messages.modelEditBackTooltip,
+            onPressed: () => Navigator.of(context).maybePop(),
+          ),
+          title: Text(
+            widget.configId == null
+                ? messages.modelAddPageTitle
+                : messages.modelEditPageTitle,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
+              fontWeight: tokens.typography.weight.semiBold,
             ),
-            // Fixed bottom bar
-            FormBottomBar(
-              onSave: isFormValid ? handleSave : null,
-              onCancel: () => Navigator.of(context).pop(),
-              isFormValid: isFormValid,
-              isDirty: widget.configId == null || (formState?.isDirty ?? false),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isFormValid && !_isSaving ? handleSave : null,
+              child: Text(messages.modelEditSaveButton),
             ),
+            SizedBox(width: tokens.spacing.step2),
           ],
         ),
+        body: switch (configAsync) {
+          AsyncData() => _buildBody(context, formState),
+          AsyncError() => _buildErrorState(context),
+          _ => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(48),
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        },
       ),
     );
   }
 
-  Widget _buildForm(
-    BuildContext context,
-    WidgetRef ref,
-    AiConfig? config,
-    InferenceModelFormState? formState,
-    bool isFormValid,
-    Future<void> Function() handleSave,
-  ) {
+  Widget _buildBody(BuildContext context, InferenceModelFormState? formState) {
     if (formState == null) {
       return const Center(
         child: Padding(
@@ -170,83 +142,79 @@ class _InferenceModelEditPageState
         ),
       );
     }
-
+    final tokens = context.designTokens;
+    final messages = context.messages;
     final formController = ref.read(
       inferenceModelFormControllerProvider(configId: widget.configId).notifier,
     );
 
-    // Get provider name for display
+    // Resolve the owning provider so the header strip can wear its
+    // accent. The form may not have a provider selected yet — we render
+    // a neutral header in that case.
     final providerAsync = formState.inferenceProviderId.isNotEmpty
         ? ref.watch(aiConfigByIdProvider(formState.inferenceProviderId))
         : const AsyncData<AiConfig?>(null);
+    final ownerProvider = providerAsync.maybeWhen(
+      data: (value) => value is AiConfigInferenceProvider ? value : null,
+      orElse: () => null,
+    );
+    final providerName = ownerProvider?.name ?? messages.modelEditProviderHint;
 
-    final providerName = switch (providerAsync) {
-      AsyncData(value: final provider) when provider != null => provider.name,
-      _ => 'Select a provider',
-    };
+    final bottomInset = DesignSystemBottomNavigationBar.occupiedHeight(
+      context,
+    );
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          // Basic Configuration Section
-          AiFormSection(
-            title: 'Basic Configuration',
-            icon: Icons.settings_rounded,
-            description: 'Configure your AI model settings',
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step5,
+        tokens.spacing.step5,
+        tokens.spacing.step6 + bottomInset,
+      ),
+      children: [
+        _HeaderStrip(
+          modelName: formState.name.value,
+          providerType: ownerProvider?.inferenceProviderType,
+          providerName: providerName,
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        _Section(
+          title: messages.modelEditSectionIdentity,
+          child: _SectionCard(
             children: [
-              // Provider Selection
-              GestureDetector(
+              _SelectorField(
+                label: messages.modelEditProviderLabel,
+                value: providerName,
+                isEmpty: formState.inferenceProviderId.isEmpty,
                 onTap: () => _showProviderSelectionModal(
                   context,
                   formController,
                   formState.inferenceProviderId,
                 ),
-                child: AbsorbPointer(
-                  child: AiTextField(
-                    label: 'Provider',
-                    hint: 'Select a provider',
-                    readOnly: true,
-                    controller: TextEditingController(text: providerName),
-                    prefixIcon: Icons.cloud_rounded,
-                    suffixIcon: Icon(
-                      Icons.arrow_drop_down_rounded,
-                      color: context.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.6,
-                      ),
-                    ),
-                  ),
-                ),
               ),
-              const SizedBox(height: 20),
-
-              // Display Name
+              SizedBox(height: tokens.spacing.step4),
               AiTextField(
-                label: 'Display Name',
-                hint: 'Enter a friendly name',
+                label: messages.modelEditDisplayNameLabel,
+                hint: messages.modelEditDisplayNameHint,
                 controller: formController.nameController,
                 onChanged: formController.nameChanged,
                 validator: (_) => formState.name.error?.displayMessage,
                 prefixIcon: Icons.label_outline_rounded,
               ),
-              const SizedBox(height: 20),
-
-              // Provider Model ID
+              SizedBox(height: tokens.spacing.step4),
               AiTextField(
-                label: 'Provider Model ID',
-                hint: 'e.g., gpt-4-turbo',
+                label: messages.modelEditProviderModelIdLabel,
+                hint: messages.modelEditProviderModelIdHint,
                 controller: formController.providerModelIdController,
                 onChanged: formController.providerModelIdChanged,
                 validator: (_) =>
                     formState.providerModelId.error?.displayMessage,
                 prefixIcon: Icons.fingerprint_rounded,
               ),
-              const SizedBox(height: 20),
-
-              // Description
+              SizedBox(height: tokens.spacing.step4),
               AiTextField(
-                label: 'Description',
-                hint: 'Describe this model',
+                label: messages.modelEditDescriptionLabel,
+                hint: messages.modelEditDescriptionHint,
                 controller: formController.descriptionController,
                 onChanged: formController.descriptionChanged,
                 validator: (_) => formState.description.error,
@@ -254,12 +222,10 @@ class _InferenceModelEditPageState
                 minLines: 2,
                 prefixIcon: Icons.description_rounded,
               ),
-              const SizedBox(height: 20),
-
-              // Max Completion Tokens
+              SizedBox(height: tokens.spacing.step4),
               AiTextField(
-                label: 'Max Completion Tokens',
-                hint: 'Optional - leave empty for unlimited',
+                label: messages.modelEditMaxTokensLabel,
+                hint: messages.modelEditMaxTokensHint,
                 controller: formController.maxCompletionTokensController,
                 onChanged: formController.maxCompletionTokensChanged,
                 validator: (_) =>
@@ -269,95 +235,55 @@ class _InferenceModelEditPageState
               ),
             ],
           ),
-          const SizedBox(height: 32),
-
-          // Capabilities Section
-          AiFormSection(
-            title: 'Capabilities',
-            icon: Icons.psychology_rounded,
-            description: 'Define model input and output modalities',
+        ),
+        SizedBox(height: tokens.spacing.step6),
+        _Section(
+          title: messages.modelEditSectionCapabilities,
+          child: _SectionCard(
             children: [
-              // Input Modalities
-              GestureDetector(
+              _SelectorField(
+                label: messages.modelEditInputModalitiesLabel,
+                value: _formatModalities(formState.inputModalities),
+                isEmpty: formState.inputModalities.isEmpty,
                 onTap: () => _showModalitySelectionModal(
                   context,
-                  'Input Modalities',
+                  messages.modelEditInputModalitiesLabel,
                   formState.inputModalities,
                   formController.inputModalitiesChanged,
                 ),
-                child: AbsorbPointer(
-                  child: AiTextField(
-                    label: 'Input Modalities',
-                    hint: 'Select input types',
-                    readOnly: true,
-                    controller: TextEditingController(
-                      text: _formatModalities(formState.inputModalities),
-                    ),
-                    prefixIcon: Icons.input_rounded,
-                    suffixIcon: Icon(
-                      Icons.arrow_drop_down_rounded,
-                      color: context.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.6,
-                      ),
-                    ),
-                  ),
-                ),
               ),
-              const SizedBox(height: 20),
-
-              // Output Modalities
-              GestureDetector(
+              SizedBox(height: tokens.spacing.step4),
+              _SelectorField(
+                label: messages.modelEditOutputModalitiesLabel,
+                value: _formatModalities(formState.outputModalities),
+                isEmpty: formState.outputModalities.isEmpty,
                 onTap: () => _showModalitySelectionModal(
                   context,
-                  'Output Modalities',
+                  messages.modelEditOutputModalitiesLabel,
                   formState.outputModalities,
                   formController.outputModalitiesChanged,
                 ),
-                child: AbsorbPointer(
-                  child: AiTextField(
-                    label: 'Output Modalities',
-                    hint: 'Select output types',
-                    readOnly: true,
-                    controller: TextEditingController(
-                      text: _formatModalities(formState.outputModalities),
-                    ),
-                    prefixIcon: Icons.output_rounded,
-                    suffixIcon: Icon(
-                      Icons.arrow_drop_down_rounded,
-                      color: context.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.6,
-                      ),
-                    ),
-                  ),
-                ),
               ),
-              const SizedBox(height: 20),
-
-              // Is Reasoning Model Switch
+              SizedBox(height: tokens.spacing.step4),
               UnifiedAiToggleField(
-                label: 'Reasoning Model',
-                description: 'This model has advanced reasoning capabilities',
+                label: messages.modelEditReasoningLabel,
+                description: messages.modelEditReasoningDescription,
                 value: formState.isReasoningModel,
                 onChanged: formController.isReasoningModelChanged,
                 icon: Icons.psychology_alt_rounded,
               ),
-              const SizedBox(height: 20),
-
-              // Supports Function Calling Switch
+              SizedBox(height: tokens.spacing.step3),
               UnifiedAiToggleField(
-                label: 'Function Calling',
-                description: 'This model supports function/tool calling',
+                label: messages.modelEditFunctionCallingLabel,
+                description: messages.modelEditFunctionCallingDescription,
                 value: formState.supportsFunctionCalling,
                 onChanged: formController.supportsFunctionCallingChanged,
                 icon: Icons.functions_rounded,
               ),
             ],
           ),
-          const SizedBox(height: 32),
-
-          const SizedBox(height: 20),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -388,57 +314,266 @@ class _InferenceModelEditPageState
   }
 
   String _formatModalities(List<Modality> modalities) {
-    if (modalities.isEmpty) return 'None selected';
+    if (modalities.isEmpty) {
+      return context.messages.modelEditModalityNoneSelected;
+    }
     return modalities.map((m) => m.displayName(context)).join(', ');
   }
 
   Widget _buildErrorState(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(48),
+        padding: EdgeInsets.all(tokens.spacing.step7),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(tokens.spacing.step4),
               decoration: BoxDecoration(
-                color: context.colorScheme.errorContainer.withValues(
-                  alpha: 0.2,
+                color: tokens.colors.alert.error.defaultColor.withValues(
+                  alpha: 0.12,
                 ),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(tokens.radii.l),
               ),
               child: Icon(
                 Icons.error_outline_rounded,
-                size: 48,
-                color: context.colorScheme.error,
+                size: tokens.spacing.step8,
+                color: tokens.colors.alert.error.defaultColor,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spacing.step4),
             Text(
-              context.messages.modelEditLoadError,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: context.colorScheme.onSurface,
+              messages.modelEditLoadError,
+              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                color: tokens.colors.text.highEmphasis,
+                fontWeight: tokens.typography.weight.semiBold,
               ),
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Please try again or contact support',
-              style: TextStyle(
-                fontSize: 14,
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            LottiSecondaryButton(
-              label: 'Go Back',
-              onPressed: () => Navigator.of(context).pop(),
-              icon: Icons.arrow_back_rounded,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderStrip extends StatelessWidget {
+  const _HeaderStrip({
+    required this.modelName,
+    required this.providerType,
+    required this.providerName,
+  });
+
+  final String modelName;
+  final InferenceProviderType? providerType;
+  final String providerName;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final visual = aiProviderVisual(
+      type: providerType,
+      tokens: tokens,
+      messages: messages,
+    );
+    final shownName = modelName.isNotEmpty
+        ? modelName
+        : messages.modelEditDisplayNameHint;
+    return Container(
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: tokens.spacing.step9,
+            height: tokens.spacing.step9,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: visual.surface,
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+            ),
+            child: Icon(
+              aiProviderIcon(providerType),
+              size: tokens.spacing.step6,
+              color: visual.accent,
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step4),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  shownName,
+                  style: tokens.typography.styles.heading.heading3.copyWith(
+                    color: modelName.isNotEmpty
+                        ? tokens.colors.text.highEmphasis
+                        : tokens.colors.text.mediumEmphasis,
+                    fontWeight: tokens.typography.weight.semiBold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  providerName,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
+            fontWeight: tokens.typography.weight.semiBold,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        child,
+      ],
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Container(
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// Tap-to-open selector field used by Provider / Input modalities /
+/// Output modalities. Renders a read-only row that mirrors the visual
+/// rhythm of `AiTextField` without instantiating a `TextEditingController`
+/// — the previous `AbsorbPointer(AiTextField(controller: TextEditingController(...)))`
+/// pattern leaked a controller on every rebuild.
+class _SelectorField extends StatelessWidget {
+  const _SelectorField({
+    required this.label,
+    required this.value,
+    required this.isEmpty,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final bool isEmpty;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final borderColor = isEmpty
+        ? tokens.colors.alert.warning.defaultColor.withValues(alpha: 0.4)
+        : tokens.colors.text.lowEmphasis.withValues(alpha: 0.2);
+    return Semantics(
+      button: true,
+      label: label,
+      value: value,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step4,
+            vertical: tokens.spacing.step3,
+          ),
+          decoration: BoxDecoration(
+            color: tokens.colors.background.level01,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.tune_rounded,
+                size: 18,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                        fontWeight: tokens.typography.weight.semiBold,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      value,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: isEmpty
+                            ? tokens.colors.text.mediumEmphasis
+                            : tokens.colors.text.highEmphasis,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Icon(
+                Icons.arrow_drop_down_rounded,
+                color: isEmpty
+                    ? tokens.colors.alert.warning.defaultColor
+                    : tokens.colors.text.mediumEmphasis,
+              ),
+            ],
+          ),
         ),
       ),
     );

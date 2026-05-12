@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -44,7 +45,7 @@ class AiProviderCard extends StatelessWidget {
     required this.modelCount,
     required this.status,
     required this.onTap,
-    this.onMenuTap,
+    this.menuActions = const [],
     this.onFix,
     this.lastUsedLabel,
     super.key,
@@ -55,10 +56,11 @@ class AiProviderCard extends StatelessWidget {
   final AiProviderCardStatus status;
   final VoidCallback onTap;
 
-  /// Optional — fires when the user taps the `⋯` icon. PR-4 wires
-  /// this to a context menu (Re-test / Edit / Disconnect). Today the
-  /// page passes null so the icon is a non-interactive affordance.
-  final VoidCallback? onMenuTap;
+  /// Rows to show when the user taps the `⋯` icon. Empty (the default)
+  /// hides the icon entirely — the v2 cards used to render a disabled
+  /// IconButton on top of the tappable card, which made the icon look
+  /// actionable but only forwarded the tap to the card itself.
+  final List<AiCardMenuAction> menuActions;
 
   /// Required when [status] is [AiProviderCardStatus.invalidKey] —
   /// powers the right-side "Fix →" affordance on the status row.
@@ -122,7 +124,7 @@ class AiProviderCard extends StatelessWidget {
                 accent: visual.accent,
                 surface: visual.surface,
                 providerType: provider.inferenceProviderType,
-                onMenuTap: onMenuTap,
+                menuActions: menuActions,
               ),
               SizedBox(height: tokens.spacing.step3),
               Text(
@@ -174,13 +176,13 @@ class _CardHeaderRow extends StatelessWidget {
     required this.accent,
     required this.surface,
     required this.providerType,
-    this.onMenuTap,
+    required this.menuActions,
   });
 
   final Color accent;
   final Color surface;
   final InferenceProviderType? providerType;
-  final VoidCallback? onMenuTap;
+  final List<AiCardMenuAction> menuActions;
 
   @override
   Widget build(BuildContext context) {
@@ -192,7 +194,7 @@ class _CardHeaderRow extends StatelessWidget {
           providerType: providerType,
         ),
         const Spacer(),
-        _CardOverflowMenuButton(onMenuTap: onMenuTap),
+        AiCardActionMenuButton(actions: menuActions),
       ],
     );
   }
@@ -230,34 +232,6 @@ class _ProviderIconTile extends StatelessWidget {
         aiProviderIcon(providerType),
         size: dim * 0.5,
         color: accent,
-      ),
-    );
-  }
-}
-
-/// 3-dot overflow menu button used by every card variant. PR-3 passes
-/// `onMenuTap: null`, which leaves the icon as a non-interactive
-/// affordance until PR-4 wires up the menu (Re-test / Edit /
-/// Disconnect). Centralised so the three card families can't drift on
-/// hit-target size, padding, or icon weight.
-class _CardOverflowMenuButton extends StatelessWidget {
-  const _CardOverflowMenuButton({this.onMenuTap});
-
-  final VoidCallback? onMenuTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return SizedBox(
-      width: tokens.spacing.step7,
-      height: tokens.spacing.step7,
-      child: IconButton(
-        onPressed: onMenuTap,
-        padding: EdgeInsets.zero,
-        iconSize: 18,
-        color: tokens.colors.text.lowEmphasis,
-        icon: const Icon(Icons.more_horiz_rounded),
-        tooltip: context.messages.aiProviderCardMenuTooltip,
       ),
     );
   }
@@ -417,7 +391,7 @@ class AiModelCard extends StatelessWidget {
     required this.model,
     required this.providerType,
     required this.onTap,
-    this.onMenuTap,
+    this.menuActions = const [],
     super.key,
   });
 
@@ -432,7 +406,7 @@ class AiModelCard extends StatelessWidget {
   final InferenceProviderType? providerType;
 
   final VoidCallback onTap;
-  final VoidCallback? onMenuTap;
+  final List<AiCardMenuAction> menuActions;
 
   @override
   Widget build(BuildContext context) {
@@ -465,40 +439,32 @@ class AiModelCard extends StatelessWidget {
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
+                // Stack the model name, the mono provider-model id, and
+                // the capability chips vertically — previously the name
+                // and id sat inline on the first row which truncated
+                // both on mobile widths. Vertical stack lets long names
+                // and ids wrap to multiple lines instead of clipping.
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            model.name,
-                            style: tokens.typography.styles.subtitle.subtitle2
-                                .copyWith(
-                                  color: tokens.colors.text.highEmphasis,
-                                  fontWeight: tokens.typography.weight.semiBold,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    Text(
+                      model.name,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                            fontWeight: tokens.typography.weight.semiBold,
                           ),
-                        ),
-                        SizedBox(width: tokens.spacing.step2),
-                        Flexible(
-                          child: Text(
-                            model.providerModelId,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  fontFamily: 'Inconsolata',
-                                  color: tokens.colors.text.lowEmphasis,
-                                  letterSpacing: 0,
-                                ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                      softWrap: true,
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      model.providerModelId,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        fontFamily: 'Inconsolata',
+                        color: tokens.colors.text.lowEmphasis,
+                        letterSpacing: 0,
+                      ),
+                      softWrap: true,
                     ),
                     SizedBox(height: tokens.spacing.step2),
                     _CapabilityChipRow(
@@ -513,7 +479,7 @@ class AiModelCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: tokens.spacing.step3),
-              _CardOverflowMenuButton(onMenuTap: onMenuTap),
+              AiCardActionMenuButton(actions: menuActions),
             ],
           ),
         ),
@@ -567,7 +533,7 @@ class AiProfileCard extends StatelessWidget {
     required this.providerTypeFor,
     required this.modelLookup,
     required this.onTap,
-    this.onMenuTap,
+    this.menuActions = const [],
     super.key,
   });
 
@@ -588,7 +554,7 @@ class AiProfileCard extends StatelessWidget {
   final String? Function(String providerModelId) modelLookup;
 
   final VoidCallback onTap;
-  final VoidCallback? onMenuTap;
+  final List<AiCardMenuAction> menuActions;
 
   @override
   Widget build(BuildContext context) {
@@ -665,8 +631,7 @@ class AiProfileCard extends StatelessWidget {
                             color: tokens.colors.text.highEmphasis,
                             fontWeight: tokens.typography.weight.semiBold,
                           ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
                     ),
                   ),
                   if (isActive) ...[
@@ -677,7 +642,7 @@ class AiProfileCard extends StatelessWidget {
                     ),
                   ],
                   const Spacer(),
-                  _CardOverflowMenuButton(onMenuTap: onMenuTap),
+                  AiCardActionMenuButton(actions: menuActions),
                 ],
               ),
               if (hasDescription) ...[
@@ -691,8 +656,7 @@ class AiProfileCard extends StatelessWidget {
                     style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
                   ),
                 ),
               ],
@@ -739,6 +703,9 @@ class _ProfileSlotRow extends StatelessWidget {
     final resolved = modelName ?? messages.aiProfileSlotModelMissing;
     final caption = tokens.typography.styles.others.caption;
     return Row(
+      // Top-align so the icon + slot label stay flush with the first
+      // line of a wrapped model name on mobile widths.
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(slot.icon, size: 14, color: tokens.colors.text.mediumEmphasis),
         SizedBox(width: tokens.spacing.step2),
@@ -762,8 +729,7 @@ class _ProfileSlotRow extends StatelessWidget {
                   : tokens.colors.text.highEmphasis,
               fontWeight: tokens.typography.weight.semiBold,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            softWrap: true,
           ),
         ),
       ],

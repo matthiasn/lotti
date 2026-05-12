@@ -138,6 +138,7 @@ class InferenceProviderEditPage extends ConsumerStatefulWidget {
   const InferenceProviderEditPage({
     this.configId,
     this.preselectedType,
+    this.focusApiKey = false,
     super.key,
   });
 
@@ -146,6 +147,12 @@ class InferenceProviderEditPage extends ConsumerStatefulWidget {
   /// If provided, pre-selects this provider type for new providers.
   /// Only used when configId is null (creating a new provider).
   final InferenceProviderType? preselectedType;
+
+  /// When `true`, the form focuses the API key field on first frame and
+  /// scrolls it into view. Used by the provider card's "Fix" affordance
+  /// (invalid-key status) so the user lands directly on the field that
+  /// needs editing instead of scanning the form.
+  final bool focusApiKey;
 
   @override
   ConsumerState<InferenceProviderEditPage> createState() =>
@@ -156,6 +163,38 @@ class _InferenceProviderEditPageState
     extends ConsumerState<InferenceProviderEditPage> {
   bool _showApiKey = false;
   bool _isSaving = false;
+  final FocusNode _apiKeyFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.focusApiKey) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _apiKeyFocusNode.requestFocus();
+        // Without this the field can sit below the fold on small
+        // viewports — focus alone does not scroll the SliverAppBar
+        // collapsed. Best-effort: only acts if the FocusNode is
+        // attached (i.e. the API-key section is actually mounted for
+        // this provider type).
+        final ctx = _apiKeyFocusNode.context;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: 0.2,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _apiKeyFocusNode.dispose();
+    super.dispose();
+  }
 
   /// Helper to get the form controller provider with correct parameters
   InferenceProviderFormControllerProvider get _formProvider =>
@@ -388,6 +427,7 @@ class _InferenceProviderEditPageState
                   label: 'API Key',
                   hint: 'Enter your API key',
                   controller: formController.apiKeyController,
+                  focusNode: _apiKeyFocusNode,
                   onChanged: formController.apiKeyChanged,
                   validator: (_) => formState.apiKey.error?.displayMessage,
                   obscureText: !_showApiKey,

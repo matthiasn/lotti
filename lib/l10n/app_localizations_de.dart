@@ -1116,6 +1116,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Zur Standardaufnahme wechseln';
 
   @override
+  String get aiCardMenuActionDelete => 'Löschen';
+
+  @override
+  String get aiCardMenuActionEdit => 'Bearbeiten';
+
+  @override
   String get aiCapabilityChipImageGeneration => 'Bildgenerierung';
 
   @override
@@ -1259,18 +1265,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Alibaba Clouds Qwen-Modellfamilie über die DashScope-API';
 
   @override
-  String get aiProviderCardFixButton => 'Beheben';
+  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
 
   @override
-  String aiProviderCardStatusConnected(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Verbunden · $count Modelle',
-      one: 'Verbunden · 1 Modell',
-    );
-    return '$_temp0';
-  }
+  String get aiProviderAnthropicDescription =>
+      'Anthropics Claude-Familie von AI-Assistenten';
+
+  @override
+  String get aiProviderAnthropicName => 'Anthropic Claude';
+
+  @override
+  String get aiProviderCardFixButton => 'Beheben';
 
   @override
   String get aiProviderCardMenuTooltip => 'Weitere Aktionen';
@@ -1301,27 +1306,98 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderCardOllamaHint => 'Stelle sicher, dass Ollama läuft';
 
   @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Verbunden · $count Modelle',
+      one: 'Verbunden · 1 Modell',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get aiProviderCardStatusConnectedShort => 'Verbunden';
 
   @override
   String get aiProviderCardStatusInvalidKey => 'Ungültiger Schlüssel';
 
   @override
-  String get aiProviderCardStatusOfflineShort => 'Offline';
-
-  @override
   String get aiProviderCardStatusOffline =>
       'Offline · Stelle sicher, dass Ollama läuft';
 
   @override
-  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
+  String get aiProviderCardStatusOfflineShort => 'Offline';
 
   @override
-  String get aiProviderAnthropicDescription =>
-      'Anthropics Claude-Familie von AI-Assistenten';
+  String get aiProviderDetailActiveProfileTitle => 'Aktives Profil';
 
   @override
-  String get aiProviderAnthropicName => 'Anthropic Claude';
+  String get aiProviderDetailAddModelButton => 'Modell hinzufügen';
+
+  @override
+  String get aiProviderDetailApiKeyLabel => 'API-Schlüssel';
+
+  @override
+  String get aiProviderDetailBackTooltip => 'Zurück';
+
+  @override
+  String get aiProviderDetailBaseUrlLabel => 'Basis-URL';
+
+  @override
+  String get aiProviderDetailConnectionTitle => 'Verbindung';
+
+  @override
+  String get aiProviderDetailDangerZoneTitle => 'Gefahrenzone';
+
+  @override
+  String get aiProviderDetailDisplayNameLabel => 'Anzeigename';
+
+  @override
+  String get aiProviderDetailEditButton => 'Bearbeiten';
+
+  @override
+  String get aiProviderDetailEditTooltip => 'Anbieter bearbeiten';
+
+  @override
+  String get aiProviderDetailLoadError =>
+      'Anbieter konnte nicht geladen werden. Versuche es erneut über die KI-Einstellungen.';
+
+  @override
+  String get aiProviderDetailMissingMessage =>
+      'Dieser Anbieter ist nicht mehr verfügbar.';
+
+  @override
+  String aiProviderDetailModelsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Modelle · $count',
+      one: 'Modelle · 1',
+      zero: 'Modelle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderDetailNoModelsMessage =>
+      'Noch keine Modelle. Füge eines hinzu, um diesen Anbieter zu nutzen.';
+
+  @override
+  String get aiProviderDetailPageTitle => 'Anbieter-Details';
+
+  @override
+  String get aiProviderDetailRemoveButton => 'Anbieter entfernen';
+
+  @override
+  String get aiProviderDetailRemoveDescription =>
+      'Löscht den Anbieter und alle Modelle, die ihn nutzen. Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String get aiProviderDetailRemoveTitle => 'Diesen Anbieter entfernen';
+
+  @override
+  String get aiProviderDetailValueUnset => 'Nicht gesetzt';
 
   @override
   String get aiProviderGeminiDescription => 'Googles Gemini AI-Modelle';
@@ -1369,9 +1445,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderUnknownName => 'KI-Anbieter';
-
-  @override
   String get aiProviderTaglineAnthropic =>
       'Claude Sonnet · Reasoning mit langem Kontext';
 
@@ -1385,6 +1458,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiProviderTaglineOpenAi => 'Top-Reasoning · GPT-5.2-Familie';
+
+  @override
+  String get aiProviderUnknownName => 'KI-Anbieter';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1455,27 +1531,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Anbieter hinzufügen';
 
   @override
-  String get aiSettingsPageLead =>
-      'Richte KI-Anbieter ein, die Modelle, die Lotti nutzen kann, und die Inferenzprofile, die entscheiden, welches Modell welche Aufgabe übernimmt.';
-
-  @override
-  String get aiSettingsSearchHintShort => 'Suchen';
-
-  @override
   String get aiSettingsClearAllFiltersTooltip => 'Alle Filter zurücksetzen';
 
   @override
   String get aiSettingsClearFiltersButton => 'Löschen';
-
-  @override
-  String aiSettingsFilterByCapabilityTooltip(String capability) {
-    return 'Nach Fähigkeit $capability filtern';
-  }
-
-  @override
-  String aiSettingsFilterByProviderTooltip(String provider) {
-    return 'Nach $provider filtern';
-  }
 
   @override
   String get aiSettingsCounterModels => 'Modelle';
@@ -1492,6 +1551,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiSettingsEmptyTitle => 'Noch keine Anbieter';
+
+  @override
+  String aiSettingsFilterByCapabilityTooltip(String capability) {
+    return 'Nach Fähigkeit $capability filtern';
+  }
+
+  @override
+  String aiSettingsFilterByProviderTooltip(String provider) {
+    return 'Nach $provider filtern';
+  }
 
   @override
   String get aiSettingsFilterByReasoningTooltip =>
@@ -1525,6 +1594,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine AI-Anbieter konfiguriert';
 
   @override
+  String get aiSettingsPageLead =>
+      'Richte KI-Anbieter ein, die Modelle, die Lotti nutzen kann, und die Inferenzprofile, die entscheiden, welches Modell welche Aufgabe übernimmt.';
+
+  @override
   String get aiSettingsPageTitle => 'AI-Einstellungen';
 
   @override
@@ -1532,6 +1605,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiSettingsSearchHint => 'AI-Konfigurationen suchen...';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Suchen';
 
   @override
   String get aiSettingsTabModels => 'Modelle';
@@ -4033,11 +4109,83 @@ class AppLocalizationsDe extends AppLocalizations {
   String get modelAddPageTitle => 'Modell hinzufügen';
 
   @override
+  String get modelEditBackTooltip => 'Zurück';
+
+  @override
+  String get modelEditDescriptionHint => 'Beschreibe dieses Modell';
+
+  @override
+  String get modelEditDescriptionLabel => 'Beschreibung';
+
+  @override
+  String get modelEditDisplayNameHint =>
+      'Ein einprägsamer Name für dieses Modell';
+
+  @override
+  String get modelEditDisplayNameLabel => 'Anzeigename';
+
+  @override
+  String get modelEditFunctionCallingDescription =>
+      'Dieses Modell unterstützt Function- und Tool-Calling.';
+
+  @override
+  String get modelEditFunctionCallingLabel => 'Function Calling';
+
+  @override
+  String get modelEditInputModalitiesHint => 'Eingabetypen auswählen';
+
+  @override
+  String get modelEditInputModalitiesLabel => 'Eingabemodalitäten';
+
+  @override
   String get modelEditLoadError =>
       'Modellkonfiguration konnte nicht geladen werden';
 
   @override
+  String get modelEditMaxTokensHint => 'Optional — leer lassen für unbegrenzt';
+
+  @override
+  String get modelEditMaxTokensLabel => 'Maximale Completion-Tokens';
+
+  @override
+  String get modelEditModalityNoneSelected => 'Nichts ausgewählt';
+
+  @override
+  String get modelEditOutputModalitiesHint => 'Ausgabetypen auswählen';
+
+  @override
+  String get modelEditOutputModalitiesLabel => 'Ausgabemodalitäten';
+
+  @override
   String get modelEditPageTitle => 'Modell bearbeiten';
+
+  @override
+  String get modelEditProviderHint => 'Anbieter auswählen';
+
+  @override
+  String get modelEditProviderLabel => 'Anbieter';
+
+  @override
+  String get modelEditProviderModelIdHint => 'z. B. gpt-4-turbo';
+
+  @override
+  String get modelEditProviderModelIdLabel => 'Anbieter-Modell-ID';
+
+  @override
+  String get modelEditReasoningDescription =>
+      'Dieses Modell nutzt erweitertes Denken / Chain-of-Thought.';
+
+  @override
+  String get modelEditReasoningLabel => 'Reasoning-Modell';
+
+  @override
+  String get modelEditSaveButton => 'Speichern';
+
+  @override
+  String get modelEditSectionCapabilities => 'Fähigkeiten';
+
+  @override
+  String get modelEditSectionIdentity => 'Identität';
 
   @override
   String modelManagementSelectedCount(int count) {
