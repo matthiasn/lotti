@@ -682,6 +682,8 @@
   "agentTokenUsageWakeCount": "Wakes",
   "aiAssistantTitle": "Generate…",
   "aiBatchToggleTooltip": "Switch to standard recording",
+  "aiCardMenuActionDelete": "Delete",
+  "aiCardMenuActionEdit": "Edit",
   "aiCapabilityChipImageGeneration": "Image generation",
   "aiCapabilityChipImageRecognition": "Image recognition",
   "aiCapabilityChipThinking": "Thinking",
@@ -740,17 +742,10 @@
   "aiProfileCardActiveBadge": "Active",
   "aiProfileSlotModelMissing": "missing",
   "aiProviderAlibabaDescription": "Alibaba Cloud's Qwen family of models via DashScope API",
+  "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
+  "aiProviderAnthropicDescription": "Anthropic's Claude family of AI assistants",
+  "aiProviderAnthropicName": "Anthropic Claude",
   "aiProviderCardFixButton": "Fix",
-  "aiProviderCardStatusConnected": "{count, plural, =1{Connected · 1 model} other{Connected · {count} models}}",
-  "@aiProviderCardStatusConnected": {
-    "description": "Provider card status line when the provider has a key + at least one model row.",
-    "placeholders": {
-      "count": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
   "aiProviderCardMenuTooltip": "More actions",
   "aiProviderCardModelCount": "{count, plural, =1{1 model} other{{count} models}}",
   "@aiProviderCardModelCount": {
@@ -777,13 +772,47 @@
     }
   },
   "aiProviderCardOllamaHint": "Make sure Ollama is running",
+  "aiProviderCardStatusConnected": "{count, plural, =1{Connected · 1 model} other{Connected · {count} models}}",
+  "@aiProviderCardStatusConnected": {
+    "description": "Provider card status line when the provider has a key + at least one model row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
   "aiProviderCardStatusConnectedShort": "Connected",
   "aiProviderCardStatusInvalidKey": "Invalid key",
-  "aiProviderCardStatusOfflineShort": "Offline",
   "aiProviderCardStatusOffline": "Offline · Make sure Ollama is running",
-  "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
-  "aiProviderAnthropicDescription": "Anthropic's Claude family of AI assistants",
-  "aiProviderAnthropicName": "Anthropic Claude",
+  "aiProviderCardStatusOfflineShort": "Offline",
+  "aiProviderDetailActiveProfileTitle": "Active profile",
+  "aiProviderDetailAddModelButton": "Add model",
+  "aiProviderDetailApiKeyLabel": "API key",
+  "aiProviderDetailBackTooltip": "Back",
+  "aiProviderDetailBaseUrlLabel": "Base URL",
+  "aiProviderDetailConnectionTitle": "Connection",
+  "aiProviderDetailDangerZoneTitle": "Danger zone",
+  "aiProviderDetailDisplayNameLabel": "Display name",
+  "aiProviderDetailEditButton": "Edit",
+  "aiProviderDetailEditTooltip": "Edit provider",
+  "aiProviderDetailLoadError": "Could not load this provider. Try again from the AI Settings list.",
+  "aiProviderDetailMissingMessage": "This provider is no longer available.",
+  "aiProviderDetailModelsTitle": "{count, plural, =0{Models} =1{Models · 1} other{Models · {count}}}",
+  "@aiProviderDetailModelsTitle": {
+    "description": "Models section heading on the provider detail page; suffixes the count when one or more models exist.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiProviderDetailNoModelsMessage": "No models yet. Add one to start using this provider.",
+  "aiProviderDetailPageTitle": "Provider details",
+  "aiProviderDetailRemoveButton": "Remove provider",
+  "aiProviderDetailRemoveDescription": "Deletes the provider and every model that depends on it. This cannot be undone.",
+  "aiProviderDetailRemoveTitle": "Remove this provider",
+  "aiProviderDetailValueUnset": "Not set",
   "aiProviderGeminiDescription": "Google's Gemini AI models",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiDescription": "API compatible with OpenAI format",
@@ -798,11 +827,11 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "OpenRouter's models",
   "aiProviderOpenRouterName": "OpenRouter",
-  "aiProviderUnknownName": "AI provider",
   "aiProviderTaglineAnthropic": "Claude Sonnet · long-context reasoning",
   "aiProviderTaglineGemini": "Free tier · multimodal · audio transcription",
   "aiProviderTaglineOllama": "Runs on your Mac · zero cloud calls",
   "aiProviderTaglineOpenAi": "Flagship reasoning · GPT-5.2 family",
+  "aiProviderUnknownName": "AI provider",
   "aiProviderVoxtralDescription": "Local Voxtral transcription (up to 30 min audio, 13 languages)",
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Local Whisper transcription with OpenAI-compatible API",
@@ -824,10 +853,13 @@
   "aiSettingsAddModelTooltip": "Add this model to your provider",
   "aiSettingsAddProfileButton": "Add Profile",
   "aiSettingsAddProviderButton": "Add provider",
-  "aiSettingsPageLead": "Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.",
-  "aiSettingsSearchHintShort": "Search",
   "aiSettingsClearAllFiltersTooltip": "Clear all filters",
   "aiSettingsClearFiltersButton": "Clear",
+  "aiSettingsCounterModels": "Models",
+  "aiSettingsCounterProfiles": "Profiles",
+  "aiSettingsCounterProviders": "Providers",
+  "aiSettingsEmptyDescription": "Add one to unlock transcription, image recognition, image generation, and semantic search.",
+  "aiSettingsEmptyTitle": "No providers yet",
   "aiSettingsFilterByCapabilityTooltip": "Filter by {capability} capability",
   "@aiSettingsFilterByCapabilityTooltip": {
     "placeholders": {
@@ -844,11 +876,6 @@
       }
     }
   },
-  "aiSettingsCounterModels": "Models",
-  "aiSettingsCounterProfiles": "Profiles",
-  "aiSettingsCounterProviders": "Providers",
-  "aiSettingsEmptyDescription": "Add one to unlock transcription, image recognition, image generation, and semantic search.",
-  "aiSettingsEmptyTitle": "No providers yet",
   "aiSettingsFilterByReasoningTooltip": "Filter by reasoning capability",
   "aiSettingsFtueBannerDescription": "Takes about a minute. Lotti will set up models and a starting profile for you.",
   "aiSettingsFtueBannerStartButton": "Start setup",
@@ -858,9 +885,11 @@
   "aiSettingsModalityVision": "Vision",
   "aiSettingsNoModelsConfigured": "No AI models configured",
   "aiSettingsNoProvidersConfigured": "No AI providers configured",
+  "aiSettingsPageLead": "Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.",
   "aiSettingsPageTitle": "AI Settings",
   "aiSettingsReasoningLabel": "Reasoning",
   "aiSettingsSearchHint": "Search AI configurations...",
+  "aiSettingsSearchHintShort": "Search",
   "aiSettingsTabModels": "Models",
   "aiSettingsTabProfiles": "Profiles",
   "aiSettingsTabProviders": "Providers",
@@ -1989,8 +2018,31 @@
   "modalityTextDescription": "Text-based content and processing",
   "modalityTextName": "Text",
   "modelAddPageTitle": "Add Model",
+  "modelEditBackTooltip": "Back",
+  "modelEditDescriptionHint": "Describe this model",
+  "modelEditDescriptionLabel": "Description",
+  "modelEditDisplayNameHint": "A friendly name for this model",
+  "modelEditDisplayNameLabel": "Display name",
+  "modelEditFunctionCallingDescription": "This model supports function and tool calling.",
+  "modelEditFunctionCallingLabel": "Function calling",
+  "modelEditInputModalitiesHint": "Select input types",
+  "modelEditInputModalitiesLabel": "Input modalities",
   "modelEditLoadError": "Failed to load model configuration",
+  "modelEditMaxTokensHint": "Optional — leave empty for unlimited",
+  "modelEditMaxTokensLabel": "Max completion tokens",
+  "modelEditModalityNoneSelected": "None selected",
+  "modelEditOutputModalitiesHint": "Select output types",
+  "modelEditOutputModalitiesLabel": "Output modalities",
   "modelEditPageTitle": "Edit Model",
+  "modelEditProviderHint": "Select a provider",
+  "modelEditProviderLabel": "Provider",
+  "modelEditProviderModelIdHint": "e.g. gpt-4-turbo",
+  "modelEditProviderModelIdLabel": "Provider model ID",
+  "modelEditReasoningDescription": "This model uses extended thinking / chain-of-thought.",
+  "modelEditReasoningLabel": "Reasoning model",
+  "modelEditSaveButton": "Save",
+  "modelEditSectionCapabilities": "Capabilities",
+  "modelEditSectionIdentity": "Identity",
   "modelManagementSelectedCount": "{count} model{count, plural, =1{} other{s}} selected",
   "@modelManagementSelectedCount": {
     "placeholders": {

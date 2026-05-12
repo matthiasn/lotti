@@ -1108,6 +1108,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
 
   @override
+  String get aiCardMenuActionDelete => 'Smazat';
+
+  @override
+  String get aiCardMenuActionEdit => 'Upravit';
+
+  @override
   String get aiCapabilityChipImageGeneration => 'Generování obrázků';
 
   @override
@@ -1251,19 +1257,17 @@ class AppLocalizationsCs extends AppLocalizations {
       'Rodina modelů Qwen od Alibaba Cloud přes DashScope API';
 
   @override
-  String get aiProviderCardFixButton => 'Opravit';
+  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
 
   @override
-  String aiProviderCardStatusConnected(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Připojeno · $count modelů',
-      few: 'Připojeno · $count modely',
-      one: 'Připojeno · 1 model',
-    );
-    return '$_temp0';
-  }
+  String get aiProviderAnthropicDescription =>
+      'Rodina AI asistentů Claude od Anthropic';
+
+  @override
+  String get aiProviderAnthropicName => 'Anthropic Claude';
+
+  @override
+  String get aiProviderCardFixButton => 'Opravit';
 
   @override
   String get aiProviderCardMenuTooltip => 'Další akce';
@@ -1296,27 +1300,101 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderCardOllamaHint => 'Ujisti se, že Ollama běží';
 
   @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Připojeno · $count modelů',
+      few: 'Připojeno · $count modely',
+      one: 'Připojeno · 1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get aiProviderCardStatusConnectedShort => 'Připojeno';
 
   @override
   String get aiProviderCardStatusInvalidKey => 'Neplatný klíč';
 
   @override
-  String get aiProviderCardStatusOfflineShort => 'Offline';
-
-  @override
   String get aiProviderCardStatusOffline =>
       'Offline · Ujisti se, že Ollama běží';
 
   @override
-  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
+  String get aiProviderCardStatusOfflineShort => 'Offline';
 
   @override
-  String get aiProviderAnthropicDescription =>
-      'Rodina AI asistentů Claude od Anthropic';
+  String get aiProviderDetailActiveProfileTitle => 'Aktivní profil';
 
   @override
-  String get aiProviderAnthropicName => 'Anthropic Claude';
+  String get aiProviderDetailAddModelButton => 'Přidat model';
+
+  @override
+  String get aiProviderDetailApiKeyLabel => 'API klíč';
+
+  @override
+  String get aiProviderDetailBackTooltip => 'Zpět';
+
+  @override
+  String get aiProviderDetailBaseUrlLabel => 'Základní URL';
+
+  @override
+  String get aiProviderDetailConnectionTitle => 'Připojení';
+
+  @override
+  String get aiProviderDetailDangerZoneTitle => 'Nebezpečná zóna';
+
+  @override
+  String get aiProviderDetailDisplayNameLabel => 'Zobrazované jméno';
+
+  @override
+  String get aiProviderDetailEditButton => 'Upravit';
+
+  @override
+  String get aiProviderDetailEditTooltip => 'Upravit poskytovatele';
+
+  @override
+  String get aiProviderDetailLoadError =>
+      'Poskytovatele se nepodařilo načíst. Zkus to znovu z nastavení AI.';
+
+  @override
+  String get aiProviderDetailMissingMessage =>
+      'Tento poskytovatel již není dostupný.';
+
+  @override
+  String aiProviderDetailModelsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Modelů · $count',
+      many: 'Modelů · $count',
+      few: 'Modely · $count',
+      one: 'Model · 1',
+      zero: 'Modely',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderDetailNoModelsMessage =>
+      'Zatím žádné modely. Přidej jeden, abys mohl tohoto poskytovatele používat.';
+
+  @override
+  String get aiProviderDetailPageTitle => 'Detail poskytovatele';
+
+  @override
+  String get aiProviderDetailRemoveButton => 'Odstranit poskytovatele';
+
+  @override
+  String get aiProviderDetailRemoveDescription =>
+      'Smaže poskytovatele a všechny modely, které jej používají. Tuto akci nelze vrátit.';
+
+  @override
+  String get aiProviderDetailRemoveTitle => 'Odstranit tohoto poskytovatele';
+
+  @override
+  String get aiProviderDetailValueUnset => 'Nenastaveno';
 
   @override
   String get aiProviderGeminiDescription => 'Google Gemini AI modely';
@@ -1364,9 +1442,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderUnknownName => 'AI poskytovatel';
-
-  @override
   String get aiProviderTaglineAnthropic =>
       'Claude Sonnet · uvažování s dlouhým kontextem';
 
@@ -1380,6 +1455,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiProviderTaglineOpenAi => 'Špičkové uvažování · řada GPT-5.2';
+
+  @override
+  String get aiProviderUnknownName => 'AI poskytovatel';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1451,27 +1529,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Přidat poskytovatele';
 
   @override
-  String get aiSettingsPageLead =>
-      'Nakonfiguruj AI poskytovatele, modely, které Lotti může volat, a inferenční profily, které rozhodují, který model zpracovává který úkol.';
-
-  @override
-  String get aiSettingsSearchHintShort => 'Hledat';
-
-  @override
   String get aiSettingsClearAllFiltersTooltip => 'Vymazat všechny filtry';
 
   @override
   String get aiSettingsClearFiltersButton => 'Vymazat';
-
-  @override
-  String aiSettingsFilterByCapabilityTooltip(String capability) {
-    return 'Filtrovat podle schopnosti $capability';
-  }
-
-  @override
-  String aiSettingsFilterByProviderTooltip(String provider) {
-    return 'Filtrovat podle $provider';
-  }
 
   @override
   String get aiSettingsCounterModels => 'Modely';
@@ -1488,6 +1549,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiSettingsEmptyTitle => 'Zatím žádní poskytovatelé';
+
+  @override
+  String aiSettingsFilterByCapabilityTooltip(String capability) {
+    return 'Filtrovat podle schopnosti $capability';
+  }
+
+  @override
+  String aiSettingsFilterByProviderTooltip(String provider) {
+    return 'Filtrovat podle $provider';
+  }
 
   @override
   String get aiSettingsFilterByReasoningTooltip =>
@@ -1522,6 +1593,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nejsou nakonfigurovány žádní poskytovatelé AI';
 
   @override
+  String get aiSettingsPageLead =>
+      'Nakonfiguruj AI poskytovatele, modely, které Lotti může volat, a inferenční profily, které rozhodují, který model zpracovává který úkol.';
+
+  @override
   String get aiSettingsPageTitle => 'Nastavení AI';
 
   @override
@@ -1529,6 +1604,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiSettingsSearchHint => 'Hledat konfigurace AI...';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Hledat';
 
   @override
   String get aiSettingsTabModels => 'Modely';
@@ -4048,10 +4126,82 @@ class AppLocalizationsCs extends AppLocalizations {
   String get modelAddPageTitle => 'Přidat model';
 
   @override
+  String get modelEditBackTooltip => 'Zpět';
+
+  @override
+  String get modelEditDescriptionHint => 'Popiš tento model';
+
+  @override
+  String get modelEditDescriptionLabel => 'Popis';
+
+  @override
+  String get modelEditDisplayNameHint => 'Přívětivý název pro tento model';
+
+  @override
+  String get modelEditDisplayNameLabel => 'Zobrazované jméno';
+
+  @override
+  String get modelEditFunctionCallingDescription =>
+      'Tento model podporuje volání funkcí a nástrojů.';
+
+  @override
+  String get modelEditFunctionCallingLabel => 'Volání funkcí';
+
+  @override
+  String get modelEditInputModalitiesHint => 'Vyber vstupní typy';
+
+  @override
+  String get modelEditInputModalitiesLabel => 'Vstupní modality';
+
+  @override
   String get modelEditLoadError => 'Nepodařilo se načíst konfiguraci modelu';
 
   @override
+  String get modelEditMaxTokensHint =>
+      'Volitelné — ponech prázdné pro neomezeno';
+
+  @override
+  String get modelEditMaxTokensLabel => 'Maximální počet completion tokenů';
+
+  @override
+  String get modelEditModalityNoneSelected => 'Nic nevybráno';
+
+  @override
+  String get modelEditOutputModalitiesHint => 'Vyber výstupní typy';
+
+  @override
+  String get modelEditOutputModalitiesLabel => 'Výstupní modality';
+
+  @override
   String get modelEditPageTitle => 'Upravit model';
+
+  @override
+  String get modelEditProviderHint => 'Vyber poskytovatele';
+
+  @override
+  String get modelEditProviderLabel => 'Poskytovatel';
+
+  @override
+  String get modelEditProviderModelIdHint => 'např. gpt-4-turbo';
+
+  @override
+  String get modelEditProviderModelIdLabel => 'ID modelu u poskytovatele';
+
+  @override
+  String get modelEditReasoningDescription =>
+      'Tento model používá rozšířené myšlení / řetězec úvah.';
+
+  @override
+  String get modelEditReasoningLabel => 'Model pro uvažování';
+
+  @override
+  String get modelEditSaveButton => 'Uložit';
+
+  @override
+  String get modelEditSectionCapabilities => 'Schopnosti';
+
+  @override
+  String get modelEditSectionIdentity => 'Identita';
 
   @override
   String modelManagementSelectedCount(int count) {

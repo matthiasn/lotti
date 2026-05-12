@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    show aiConfigRepositoryProvider;
+    show CascadeDeletionResult, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
@@ -878,6 +878,110 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(spy.pushed, hasLength(2));
+      },
+    );
+
+    testWidgets(
+      'tapping Edit on the provider card overflow menu pushes the detail '
+      'page (same path as a card tap)',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        when(
+          () => mockRepository.getConfigById(any()),
+        ).thenAnswer((_) async => null);
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          providers: [
+            buildProvider(
+              id: 'p1',
+              type: InferenceProviderType.gemini,
+              name: 'Menu Test',
+            ),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          navigatorObservers: [spy],
+        );
+
+        expect(spy.pushed, hasLength(1));
+
+        // Open the card's `⋯` menu.
+        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.pumpAndSettle();
+        // Two rows expected: Edit + Delete (from `_buildCardMenu`).
+        expect(find.text('Edit'), findsOneWidget);
+        expect(find.text('Delete'), findsOneWidget);
+        // Snapshot the push count *after* the menu opens — opening the
+        // popup itself pushes a `PopupRoute`, so a naive
+        // `>= 2` assertion would pass before Edit is tapped.
+        final pushesAfterMenuOpen = spy.pushed.length;
+
+        await tester.tap(find.text('Edit'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(spy.pushed.length, greaterThan(pushesAfterMenuOpen));
+      },
+    );
+
+    testWidgets(
+      'tapping Delete on the provider card overflow menu invokes the '
+      'cascade-delete service',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider(
+          id: 'p1',
+          type: InferenceProviderType.gemini,
+          name: 'Delete Me',
+        );
+
+        when(
+          () => mockRepository.getConfigById(provider.id),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockRepository.deleteInferenceProviderWithModels(provider.id),
+        ).thenAnswer(
+          (_) async => const CascadeDeletionResult(
+            deletedModels: <AiConfigModel>[],
+            providerName: 'Delete Me',
+          ),
+        );
+
+        await pumpWith(
+          tester: tester,
+          providers: [provider],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+
+        // The delete service opens its own confirmation dialog. Find it
+        // and tap the destructive primary action. The dialog may not
+        // render in this harness — assert against either the dialog or
+        // a direct repository call.
+        final filledButton = find.descendant(
+          of: find.byType(Dialog),
+          matching: find.byType(FilledButton),
+        );
+        if (filledButton.evaluate().isNotEmpty) {
+          await tester.tap(filledButton.first);
+          await tester.pumpAndSettle();
+        }
+
+        verify(
+          () => mockRepository.deleteInferenceProviderWithModels(provider.id),
+        ).called(1);
       },
     );
 

@@ -1098,6 +1098,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Switch to standard recording';
 
   @override
+  String get aiCardMenuActionDelete => 'Delete';
+
+  @override
+  String get aiCardMenuActionEdit => 'Edit';
+
+  @override
   String get aiCapabilityChipImageGeneration => 'Image generation';
 
   @override
@@ -1239,18 +1245,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Alibaba Cloud\'s Qwen family of models via DashScope API';
 
   @override
-  String get aiProviderCardFixButton => 'Fix';
+  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
 
   @override
-  String aiProviderCardStatusConnected(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Connected · $count models',
-      one: 'Connected · 1 model',
-    );
-    return '$_temp0';
-  }
+  String get aiProviderAnthropicDescription =>
+      'Anthropic\'s Claude family of AI assistants';
+
+  @override
+  String get aiProviderAnthropicName => 'Anthropic Claude';
+
+  @override
+  String get aiProviderCardFixButton => 'Fix';
 
   @override
   String get aiProviderCardMenuTooltip => 'More actions';
@@ -1281,27 +1286,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderCardOllamaHint => 'Make sure Ollama is running';
 
   @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Connected · $count models',
+      one: 'Connected · 1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get aiProviderCardStatusConnectedShort => 'Connected';
 
   @override
   String get aiProviderCardStatusInvalidKey => 'Invalid key';
 
   @override
-  String get aiProviderCardStatusOfflineShort => 'Offline';
-
-  @override
   String get aiProviderCardStatusOffline =>
       'Offline · Make sure Ollama is running';
 
   @override
-  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
+  String get aiProviderCardStatusOfflineShort => 'Offline';
 
   @override
-  String get aiProviderAnthropicDescription =>
-      'Anthropic\'s Claude family of AI assistants';
+  String get aiProviderDetailActiveProfileTitle => 'Active profile';
 
   @override
-  String get aiProviderAnthropicName => 'Anthropic Claude';
+  String get aiProviderDetailAddModelButton => 'Add model';
+
+  @override
+  String get aiProviderDetailApiKeyLabel => 'API key';
+
+  @override
+  String get aiProviderDetailBackTooltip => 'Back';
+
+  @override
+  String get aiProviderDetailBaseUrlLabel => 'Base URL';
+
+  @override
+  String get aiProviderDetailConnectionTitle => 'Connection';
+
+  @override
+  String get aiProviderDetailDangerZoneTitle => 'Danger zone';
+
+  @override
+  String get aiProviderDetailDisplayNameLabel => 'Display name';
+
+  @override
+  String get aiProviderDetailEditButton => 'Edit';
+
+  @override
+  String get aiProviderDetailEditTooltip => 'Edit provider';
+
+  @override
+  String get aiProviderDetailLoadError =>
+      'Could not load this provider. Try again from the AI Settings list.';
+
+  @override
+  String get aiProviderDetailMissingMessage =>
+      'This provider is no longer available.';
+
+  @override
+  String aiProviderDetailModelsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Models · $count',
+      one: 'Models · 1',
+      zero: 'Models',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderDetailNoModelsMessage =>
+      'No models yet. Add one to start using this provider.';
+
+  @override
+  String get aiProviderDetailPageTitle => 'Provider details';
+
+  @override
+  String get aiProviderDetailRemoveButton => 'Remove provider';
+
+  @override
+  String get aiProviderDetailRemoveDescription =>
+      'Deletes the provider and every model that depends on it. This cannot be undone.';
+
+  @override
+  String get aiProviderDetailRemoveTitle => 'Remove this provider';
+
+  @override
+  String get aiProviderDetailValueUnset => 'Not set';
 
   @override
   String get aiProviderGeminiDescription => 'Google\'s Gemini AI models';
@@ -1349,9 +1425,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderUnknownName => 'AI provider';
-
-  @override
   String get aiProviderTaglineAnthropic =>
       'Claude Sonnet · long-context reasoning';
 
@@ -1364,6 +1437,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiProviderTaglineOpenAi => 'Flagship reasoning · GPT-5.2 family';
+
+  @override
+  String get aiProviderUnknownName => 'AI provider';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1433,27 +1509,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Add provider';
 
   @override
-  String get aiSettingsPageLead =>
-      'Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.';
-
-  @override
-  String get aiSettingsSearchHintShort => 'Search';
-
-  @override
   String get aiSettingsClearAllFiltersTooltip => 'Clear all filters';
 
   @override
   String get aiSettingsClearFiltersButton => 'Clear';
-
-  @override
-  String aiSettingsFilterByCapabilityTooltip(String capability) {
-    return 'Filter by $capability capability';
-  }
-
-  @override
-  String aiSettingsFilterByProviderTooltip(String provider) {
-    return 'Filter by $provider';
-  }
 
   @override
   String get aiSettingsCounterModels => 'Models';
@@ -1470,6 +1529,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSettingsEmptyTitle => 'No providers yet';
+
+  @override
+  String aiSettingsFilterByCapabilityTooltip(String capability) {
+    return 'Filter by $capability capability';
+  }
+
+  @override
+  String aiSettingsFilterByProviderTooltip(String provider) {
+    return 'Filter by $provider';
+  }
 
   @override
   String get aiSettingsFilterByReasoningTooltip =>
@@ -1501,6 +1570,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsNoProvidersConfigured => 'No AI providers configured';
 
   @override
+  String get aiSettingsPageLead =>
+      'Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.';
+
+  @override
   String get aiSettingsPageTitle => 'AI Settings';
 
   @override
@@ -1508,6 +1581,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSettingsSearchHint => 'Search AI configurations...';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Search';
 
   @override
   String get aiSettingsTabModels => 'Models';
@@ -3976,10 +4052,81 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelAddPageTitle => 'Add Model';
 
   @override
+  String get modelEditBackTooltip => 'Back';
+
+  @override
+  String get modelEditDescriptionHint => 'Describe this model';
+
+  @override
+  String get modelEditDescriptionLabel => 'Description';
+
+  @override
+  String get modelEditDisplayNameHint => 'A friendly name for this model';
+
+  @override
+  String get modelEditDisplayNameLabel => 'Display name';
+
+  @override
+  String get modelEditFunctionCallingDescription =>
+      'This model supports function and tool calling.';
+
+  @override
+  String get modelEditFunctionCallingLabel => 'Function calling';
+
+  @override
+  String get modelEditInputModalitiesHint => 'Select input types';
+
+  @override
+  String get modelEditInputModalitiesLabel => 'Input modalities';
+
+  @override
   String get modelEditLoadError => 'Failed to load model configuration';
 
   @override
+  String get modelEditMaxTokensHint => 'Optional — leave empty for unlimited';
+
+  @override
+  String get modelEditMaxTokensLabel => 'Max completion tokens';
+
+  @override
+  String get modelEditModalityNoneSelected => 'None selected';
+
+  @override
+  String get modelEditOutputModalitiesHint => 'Select output types';
+
+  @override
+  String get modelEditOutputModalitiesLabel => 'Output modalities';
+
+  @override
   String get modelEditPageTitle => 'Edit Model';
+
+  @override
+  String get modelEditProviderHint => 'Select a provider';
+
+  @override
+  String get modelEditProviderLabel => 'Provider';
+
+  @override
+  String get modelEditProviderModelIdHint => 'e.g. gpt-4-turbo';
+
+  @override
+  String get modelEditProviderModelIdLabel => 'Provider model ID';
+
+  @override
+  String get modelEditReasoningDescription =>
+      'This model uses extended thinking / chain-of-thought.';
+
+  @override
+  String get modelEditReasoningLabel => 'Reasoning model';
+
+  @override
+  String get modelEditSaveButton => 'Save';
+
+  @override
+  String get modelEditSectionCapabilities => 'Capabilities';
+
+  @override
+  String get modelEditSectionIdentity => 'Identity';
 
   @override
   String modelManagementSelectedCount(int count) {

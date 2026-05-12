@@ -1999,6 +1999,18 @@ abstract class AppLocalizations {
   /// **'Switch to standard recording'**
   String get aiBatchToggleTooltip;
 
+  /// No description provided for @aiCardMenuActionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get aiCardMenuActionDelete;
+
+  /// No description provided for @aiCardMenuActionEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get aiCardMenuActionEdit;
+
   /// No description provided for @aiCapabilityChipImageGeneration.
   ///
   /// In en, this message translates to:
@@ -2263,17 +2275,29 @@ abstract class AppLocalizations {
   /// **'Alibaba Cloud\'s Qwen family of models via DashScope API'**
   String get aiProviderAlibabaDescription;
 
+  /// No description provided for @aiProviderAlibabaName.
+  ///
+  /// In en, this message translates to:
+  /// **'Alibaba Cloud (Qwen)'**
+  String get aiProviderAlibabaName;
+
+  /// No description provided for @aiProviderAnthropicDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Anthropic\'s Claude family of AI assistants'**
+  String get aiProviderAnthropicDescription;
+
+  /// No description provided for @aiProviderAnthropicName.
+  ///
+  /// In en, this message translates to:
+  /// **'Anthropic Claude'**
+  String get aiProviderAnthropicName;
+
   /// No description provided for @aiProviderCardFixButton.
   ///
   /// In en, this message translates to:
   /// **'Fix'**
   String get aiProviderCardFixButton;
-
-  /// Provider card status line when the provider has a key + at least one model row.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Connected · 1 model} other{Connected · {count} models}}'**
-  String aiProviderCardStatusConnected(int count);
 
   /// No description provided for @aiProviderCardMenuTooltip.
   ///
@@ -2299,6 +2323,12 @@ abstract class AppLocalizations {
   /// **'Make sure Ollama is running'**
   String get aiProviderCardOllamaHint;
 
+  /// Provider card status line when the provider has a key + at least one model row.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Connected · 1 model} other{Connected · {count} models}}'**
+  String aiProviderCardStatusConnected(int count);
+
   /// No description provided for @aiProviderCardStatusConnectedShort.
   ///
   /// In en, this message translates to:
@@ -2311,35 +2341,131 @@ abstract class AppLocalizations {
   /// **'Invalid key'**
   String get aiProviderCardStatusInvalidKey;
 
-  /// No description provided for @aiProviderCardStatusOfflineShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Offline'**
-  String get aiProviderCardStatusOfflineShort;
-
   /// No description provided for @aiProviderCardStatusOffline.
   ///
   /// In en, this message translates to:
   /// **'Offline · Make sure Ollama is running'**
   String get aiProviderCardStatusOffline;
 
-  /// No description provided for @aiProviderAlibabaName.
+  /// No description provided for @aiProviderCardStatusOfflineShort.
   ///
   /// In en, this message translates to:
-  /// **'Alibaba Cloud (Qwen)'**
-  String get aiProviderAlibabaName;
+  /// **'Offline'**
+  String get aiProviderCardStatusOfflineShort;
 
-  /// No description provided for @aiProviderAnthropicDescription.
+  /// No description provided for @aiProviderDetailActiveProfileTitle.
   ///
   /// In en, this message translates to:
-  /// **'Anthropic\'s Claude family of AI assistants'**
-  String get aiProviderAnthropicDescription;
+  /// **'Active profile'**
+  String get aiProviderDetailActiveProfileTitle;
 
-  /// No description provided for @aiProviderAnthropicName.
+  /// No description provided for @aiProviderDetailAddModelButton.
   ///
   /// In en, this message translates to:
-  /// **'Anthropic Claude'**
-  String get aiProviderAnthropicName;
+  /// **'Add model'**
+  String get aiProviderDetailAddModelButton;
+
+  /// No description provided for @aiProviderDetailApiKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get aiProviderDetailApiKeyLabel;
+
+  /// No description provided for @aiProviderDetailBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get aiProviderDetailBackTooltip;
+
+  /// No description provided for @aiProviderDetailBaseUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL'**
+  String get aiProviderDetailBaseUrlLabel;
+
+  /// No description provided for @aiProviderDetailConnectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get aiProviderDetailConnectionTitle;
+
+  /// No description provided for @aiProviderDetailDangerZoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger zone'**
+  String get aiProviderDetailDangerZoneTitle;
+
+  /// No description provided for @aiProviderDetailDisplayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get aiProviderDetailDisplayNameLabel;
+
+  /// No description provided for @aiProviderDetailEditButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get aiProviderDetailEditButton;
+
+  /// No description provided for @aiProviderDetailEditTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit provider'**
+  String get aiProviderDetailEditTooltip;
+
+  /// No description provided for @aiProviderDetailLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this provider. Try again from the AI Settings list.'**
+  String get aiProviderDetailLoadError;
+
+  /// No description provided for @aiProviderDetailMissingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This provider is no longer available.'**
+  String get aiProviderDetailMissingMessage;
+
+  /// Models section heading on the provider detail page; suffixes the count when one or more models exist.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Models} =1{Models · 1} other{Models · {count}}}'**
+  String aiProviderDetailModelsTitle(int count);
+
+  /// No description provided for @aiProviderDetailNoModelsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No models yet. Add one to start using this provider.'**
+  String get aiProviderDetailNoModelsMessage;
+
+  /// No description provided for @aiProviderDetailPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider details'**
+  String get aiProviderDetailPageTitle;
+
+  /// No description provided for @aiProviderDetailRemoveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove provider'**
+  String get aiProviderDetailRemoveButton;
+
+  /// No description provided for @aiProviderDetailRemoveDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletes the provider and every model that depends on it. This cannot be undone.'**
+  String get aiProviderDetailRemoveDescription;
+
+  /// No description provided for @aiProviderDetailRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this provider'**
+  String get aiProviderDetailRemoveTitle;
+
+  /// No description provided for @aiProviderDetailValueUnset.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get aiProviderDetailValueUnset;
 
   /// No description provided for @aiProviderGeminiDescription.
   ///
@@ -2425,12 +2551,6 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
-  /// No description provided for @aiProviderUnknownName.
-  ///
-  /// In en, this message translates to:
-  /// **'AI provider'**
-  String get aiProviderUnknownName;
-
   /// No description provided for @aiProviderTaglineAnthropic.
   ///
   /// In en, this message translates to:
@@ -2454,6 +2574,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Flagship reasoning · GPT-5.2 family'**
   String get aiProviderTaglineOpenAi;
+
+  /// No description provided for @aiProviderUnknownName.
+  ///
+  /// In en, this message translates to:
+  /// **'AI provider'**
+  String get aiProviderUnknownName;
 
   /// No description provided for @aiProviderVoxtralDescription.
   ///
@@ -2581,18 +2707,6 @@ abstract class AppLocalizations {
   /// **'Add provider'**
   String get aiSettingsAddProviderButton;
 
-  /// No description provided for @aiSettingsPageLead.
-  ///
-  /// In en, this message translates to:
-  /// **'Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.'**
-  String get aiSettingsPageLead;
-
-  /// No description provided for @aiSettingsSearchHintShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get aiSettingsSearchHintShort;
-
   /// No description provided for @aiSettingsClearAllFiltersTooltip.
   ///
   /// In en, this message translates to:
@@ -2604,18 +2718,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get aiSettingsClearFiltersButton;
-
-  /// No description provided for @aiSettingsFilterByCapabilityTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by {capability} capability'**
-  String aiSettingsFilterByCapabilityTooltip(String capability);
-
-  /// No description provided for @aiSettingsFilterByProviderTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter by {provider}'**
-  String aiSettingsFilterByProviderTooltip(String provider);
 
   /// No description provided for @aiSettingsCounterModels.
   ///
@@ -2646,6 +2748,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No providers yet'**
   String get aiSettingsEmptyTitle;
+
+  /// No description provided for @aiSettingsFilterByCapabilityTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by {capability} capability'**
+  String aiSettingsFilterByCapabilityTooltip(String capability);
+
+  /// No description provided for @aiSettingsFilterByProviderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by {provider}'**
+  String aiSettingsFilterByProviderTooltip(String provider);
 
   /// No description provided for @aiSettingsFilterByReasoningTooltip.
   ///
@@ -2701,6 +2815,12 @@ abstract class AppLocalizations {
   /// **'No AI providers configured'**
   String get aiSettingsNoProvidersConfigured;
 
+  /// No description provided for @aiSettingsPageLead.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.'**
+  String get aiSettingsPageLead;
+
   /// No description provided for @aiSettingsPageTitle.
   ///
   /// In en, this message translates to:
@@ -2718,6 +2838,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search AI configurations...'**
   String get aiSettingsSearchHint;
+
+  /// No description provided for @aiSettingsSearchHintShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get aiSettingsSearchHintShort;
 
   /// No description provided for @aiSettingsTabModels.
   ///
@@ -7030,17 +7156,155 @@ abstract class AppLocalizations {
   /// **'Add Model'**
   String get modelAddPageTitle;
 
+  /// No description provided for @modelEditBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get modelEditBackTooltip;
+
+  /// No description provided for @modelEditDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe this model'**
+  String get modelEditDescriptionHint;
+
+  /// No description provided for @modelEditDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get modelEditDescriptionLabel;
+
+  /// No description provided for @modelEditDisplayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A friendly name for this model'**
+  String get modelEditDisplayNameHint;
+
+  /// No description provided for @modelEditDisplayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get modelEditDisplayNameLabel;
+
+  /// No description provided for @modelEditFunctionCallingDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This model supports function and tool calling.'**
+  String get modelEditFunctionCallingDescription;
+
+  /// No description provided for @modelEditFunctionCallingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Function calling'**
+  String get modelEditFunctionCallingLabel;
+
+  /// No description provided for @modelEditInputModalitiesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select input types'**
+  String get modelEditInputModalitiesHint;
+
+  /// No description provided for @modelEditInputModalitiesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Input modalities'**
+  String get modelEditInputModalitiesLabel;
+
   /// No description provided for @modelEditLoadError.
   ///
   /// In en, this message translates to:
   /// **'Failed to load model configuration'**
   String get modelEditLoadError;
 
+  /// No description provided for @modelEditMaxTokensHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional — leave empty for unlimited'**
+  String get modelEditMaxTokensHint;
+
+  /// No description provided for @modelEditMaxTokensLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Max completion tokens'**
+  String get modelEditMaxTokensLabel;
+
+  /// No description provided for @modelEditModalityNoneSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'None selected'**
+  String get modelEditModalityNoneSelected;
+
+  /// No description provided for @modelEditOutputModalitiesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select output types'**
+  String get modelEditOutputModalitiesHint;
+
+  /// No description provided for @modelEditOutputModalitiesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Output modalities'**
+  String get modelEditOutputModalitiesLabel;
+
   /// No description provided for @modelEditPageTitle.
   ///
   /// In en, this message translates to:
   /// **'Edit Model'**
   String get modelEditPageTitle;
+
+  /// No description provided for @modelEditProviderHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a provider'**
+  String get modelEditProviderHint;
+
+  /// No description provided for @modelEditProviderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get modelEditProviderLabel;
+
+  /// No description provided for @modelEditProviderModelIdHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. gpt-4-turbo'**
+  String get modelEditProviderModelIdHint;
+
+  /// No description provided for @modelEditProviderModelIdLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider model ID'**
+  String get modelEditProviderModelIdLabel;
+
+  /// No description provided for @modelEditReasoningDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This model uses extended thinking / chain-of-thought.'**
+  String get modelEditReasoningDescription;
+
+  /// No description provided for @modelEditReasoningLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning model'**
+  String get modelEditReasoningLabel;
+
+  /// No description provided for @modelEditSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get modelEditSaveButton;
+
+  /// No description provided for @modelEditSectionCapabilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Capabilities'**
+  String get modelEditSectionCapabilities;
+
+  /// No description provided for @modelEditSectionIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get modelEditSectionIdentity;
 
   /// No description provided for @modelManagementSelectedCount.
   ///

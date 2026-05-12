@@ -95,6 +95,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   redesigned AI Settings surfaces (quick-add provider tiles,
   provider cards, master/detail rail) so per-provider accents stay
   consistent across mobile, desktop, and modal layers.
+- AI Settings provider detail page. Tapping a provider row on the
+  AI Settings page now opens `AiProviderDetailPage` (under
+  `lib/features/ai/ui/settings/provider/`) instead of dropping the
+  user straight into the edit form. The detail page shows a
+  provider-tinted header strip with the display name, tagline, and
+  derived status pill; a Connection card with masked API key
+  (last 4 visible), base URL, and display name plus an `Edit`
+  action; a Models section that lists the provider's own models
+  via `AiModelCard` with an `Add model` button; an Active profile
+  section that surfaces the inference profile most strongly tied to
+  this provider's models (default profile first, otherwise the first
+  match) via `AiProfileCard`, hidden when no profile references the
+  provider's models; and a Danger zone that routes through the
+  existing `AiConfigDeleteService` so cascade-delete + confirmation
+  modal + undo snackbar match the rest of the AI settings. The
+  bottom of the page pads by `DesignSystemBottomNavigationBar.occupiedHeight`
+  so the danger-zone card never slips behind the app's bottom nav
+  on mobile.
+- Provider card "Fix" affordance now auto-focuses the API key field.
+  When a provider's status is `invalidKey`, the `Fix →` link routes
+  through the provider detail page with `focusApiKey: true`, which
+  immediately pushes `InferenceProviderEditPage(focusApiKey: true)`.
+  The edit page wires a `FocusNode` through `AiTextField` and
+  requests focus on the next frame, so the user lands directly on
+  the field that needs editing in one tap. A regular card tap still
+  opens the detail page without auto-pushing so users who want to
+  inspect models / profile before editing don't get bounced.
+- Card overflow menus do the right thing. The `⋯` icon on Provider,
+  Model, and Profile cards used to render a disabled IconButton on
+  top of a tappable card — tapping the icon just forwarded the tap
+  to the card itself. Each card now accepts a `menuActions` list
+  (`AiCardMenuAction` / `AiCardActionMenuButton` under
+  `widgets/v2/ai_card_action_menu.dart`) and the AI Settings page
+  passes Edit + Delete rows; Delete runs the existing
+  `AiConfigDeleteService` so cascade-delete + confirmation + undo
+  snackbar are consistent with the rest of the settings. Cards
+  without a populated `menuActions` list (e.g. the cards embedded
+  in the provider detail page) hide the icon entirely instead of
+  showing a non-interactive affordance.
+- Inference model edit page redesigned to match the v1–v3 visual
+  language. The old SliverAppBar + `colorScheme.surface` chrome is
+  replaced by a clean AppBar with a text `Save` action (the
+  `FormBottomBar` is gone — Cmd+S still saves), a provider-tinted
+  header strip that reads the model name + owning provider
+  inline, and two design-system sections (`Identity`,
+  `Capabilities`) rendered as `level02` cards on a `level01` page
+  background. Provider, input modalities, and output modalities
+  use a shared `_SelectorField` that styles a read-only
+  `AiTextField` as a tap-to-open dropdown and tints the trailing
+  caret amber when the field is empty so unset required selections
+  are visible at a glance. All form copy (section names, field
+  labels, hints, toggle descriptions, "Select a provider" hint,
+  back tooltip, save button) is now localised across all six
+  supported locales — previously the page shipped hard-coded
+  English on every label.
+- Card text on the Models and Profiles tabs no longer truncates on
+  mobile. The model card now stacks the display name, the
+  monospaced `provider/model-id` line, and the capability chips
+  vertically — previously the name and id sat inline on one row
+  and both ellipsised at narrow widths. The profile card lets the
+  profile name, description, and each task→model slot wrap to
+  multiple lines instead of clipping; slot rows are top-aligned so
+  the icon + slot label stay flush with the first line of a
+  wrapped model name. The inference profile form's body padding
+  now includes `DesignSystemBottomNavigationBar.occupiedHeight` so
+  the last form section clears the bottom nav on mobile.
 - Sync conflict resolution screen rebuilt as an inline-diff picker.
   Tapping a conflict row now opens a dedicated page with a back chip
   + title + amber count pill in the header, lead copy, and an amber

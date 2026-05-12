@@ -138,6 +138,7 @@ class InferenceProviderEditPage extends ConsumerStatefulWidget {
   const InferenceProviderEditPage({
     this.configId,
     this.preselectedType,
+    this.focusApiKey = false,
     super.key,
   });
 
@@ -146,6 +147,12 @@ class InferenceProviderEditPage extends ConsumerStatefulWidget {
   /// If provided, pre-selects this provider type for new providers.
   /// Only used when configId is null (creating a new provider).
   final InferenceProviderType? preselectedType;
+
+  /// When `true`, the form focuses the API key field on first frame and
+  /// scrolls it into view. Used by the provider card's "Fix" affordance
+  /// (invalid-key status) so the user lands directly on the field that
+  /// needs editing instead of scanning the form.
+  final bool focusApiKey;
 
   @override
   ConsumerState<InferenceProviderEditPage> createState() =>
@@ -156,6 +163,40 @@ class _InferenceProviderEditPageState
     extends ConsumerState<InferenceProviderEditPage> {
   bool _showApiKey = false;
   bool _isSaving = false;
+  final FocusNode _apiKeyFocusNode = FocusNode();
+
+  /// Set once the Fix-flow has actually focused + scrolled the API key
+  /// field, so the retry in `build` stops once it has succeeded. The
+  /// retry exists because the form's first frame can render a loading
+  /// placeholder (when `configId` is set), in which case the API-key
+  /// section isn't mounted yet and `_apiKeyFocusNode.context` is null —
+  /// a one-shot `addPostFrameCallback` in `initState` would silently
+  /// no-op in that case.
+  bool _didFocusApiKey = false;
+
+  @override
+  void dispose() {
+    _apiKeyFocusNode.dispose();
+    super.dispose();
+  }
+
+  /// Re-runs every build until the API-key section is actually
+  /// mounted (i.e. `_apiKeyFocusNode.context` is non-null), then
+  /// requests focus + scrolls into view exactly once. Only fires when
+  /// the caller asked for the Fix-flow via `widget.focusApiKey`.
+  void _tryFocusApiKey() {
+    if (!widget.focusApiKey || _didFocusApiKey || !mounted) return;
+    final ctx = _apiKeyFocusNode.context;
+    if (ctx == null) return;
+    _didFocusApiKey = true;
+    _apiKeyFocusNode.requestFocus();
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: 0.2,
+    );
+  }
 
   /// Helper to get the form controller provider with correct parameters
   InferenceProviderFormControllerProvider get _formProvider =>
@@ -168,6 +209,13 @@ class _InferenceProviderEditPageState
 
   @override
   Widget build(BuildContext context) {
+    // Schedule the Fix-flow focus retry from every build. `initState`'s
+    // post-frame callback fires before the form has finished loading
+    // its config, when the API-key section isn't mounted yet, so a
+    // one-shot retry there silently no-ops; this re-tries after every
+    // build until the section appears.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryFocusApiKey());
+
     // Listen for the config if editing an existing one
     final configAsync = widget.configId != null
         ? ref.watch(aiConfigByIdProvider(widget.configId!))
@@ -388,6 +436,7 @@ class _InferenceProviderEditPageState
                   label: 'API Key',
                   hint: 'Enter your API key',
                   controller: formController.apiKeyController,
+                  focusNode: _apiKeyFocusNode,
                   onChanged: formController.apiKeyChanged,
                   validator: (_) => formState.apiKey.error?.displayMessage,
                   obscureText: !_showApiKey,

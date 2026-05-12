@@ -1118,6 +1118,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Comutare la înregistrare standard';
 
   @override
+  String get aiCardMenuActionDelete => 'Ștergere';
+
+  @override
+  String get aiCardMenuActionEdit => 'Editare';
+
+  @override
   String get aiCapabilityChipImageGeneration => 'Generare de imagini';
 
   @override
@@ -1263,19 +1269,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Familia de modele Qwen de la Alibaba Cloud prin API-ul DashScope';
 
   @override
-  String get aiProviderCardFixButton => 'Remediați';
+  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
 
   @override
-  String aiProviderCardStatusConnected(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Conectat · $count de modele',
-      few: 'Conectat · $count modele',
-      one: 'Conectat · 1 model',
-    );
-    return '$_temp0';
-  }
+  String get aiProviderAnthropicDescription =>
+      'Familia de asistenți AI Claude de la Anthropic';
+
+  @override
+  String get aiProviderAnthropicName => 'Anthropic Claude';
+
+  @override
+  String get aiProviderCardFixButton => 'Remediați';
 
   @override
   String get aiProviderCardMenuTooltip => 'Mai multe acțiuni';
@@ -1308,27 +1312,100 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderCardOllamaHint => 'Asigurați-vă că Ollama rulează';
 
   @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Conectat · $count de modele',
+      few: 'Conectat · $count modele',
+      one: 'Conectat · 1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get aiProviderCardStatusConnectedShort => 'Conectat';
 
   @override
   String get aiProviderCardStatusInvalidKey => 'Cheie nevalidă';
 
   @override
-  String get aiProviderCardStatusOfflineShort => 'Deconectat';
-
-  @override
   String get aiProviderCardStatusOffline =>
       'Deconectat · Asigurați-vă că Ollama rulează';
 
   @override
-  String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
+  String get aiProviderCardStatusOfflineShort => 'Deconectat';
 
   @override
-  String get aiProviderAnthropicDescription =>
-      'Familia de asistenți AI Claude de la Anthropic';
+  String get aiProviderDetailActiveProfileTitle => 'Profil activ';
 
   @override
-  String get aiProviderAnthropicName => 'Anthropic Claude';
+  String get aiProviderDetailAddModelButton => 'Adaugă model';
+
+  @override
+  String get aiProviderDetailApiKeyLabel => 'Cheie API';
+
+  @override
+  String get aiProviderDetailBackTooltip => 'Înapoi';
+
+  @override
+  String get aiProviderDetailBaseUrlLabel => 'URL de bază';
+
+  @override
+  String get aiProviderDetailConnectionTitle => 'Conexiune';
+
+  @override
+  String get aiProviderDetailDangerZoneTitle => 'Zonă periculoasă';
+
+  @override
+  String get aiProviderDetailDisplayNameLabel => 'Nume afișat';
+
+  @override
+  String get aiProviderDetailEditButton => 'Editare';
+
+  @override
+  String get aiProviderDetailEditTooltip => 'Editare furnizor';
+
+  @override
+  String get aiProviderDetailLoadError =>
+      'Acest furnizor nu a putut fi încărcat. Încercați din nou din setările AI.';
+
+  @override
+  String get aiProviderDetailMissingMessage =>
+      'Acest furnizor nu mai este disponibil.';
+
+  @override
+  String aiProviderDetailModelsTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Modele · $count',
+      few: 'Modele · $count',
+      one: 'Modele · 1',
+      zero: 'Modele',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderDetailNoModelsMessage =>
+      'Niciun model încă. Adăugați unul pentru a utiliza acest furnizor.';
+
+  @override
+  String get aiProviderDetailPageTitle => 'Detalii furnizor';
+
+  @override
+  String get aiProviderDetailRemoveButton => 'Eliminați furnizorul';
+
+  @override
+  String get aiProviderDetailRemoveDescription =>
+      'Șterge furnizorul și toate modelele care depind de el. Acțiune ireversibilă.';
+
+  @override
+  String get aiProviderDetailRemoveTitle => 'Eliminați acest furnizor';
+
+  @override
+  String get aiProviderDetailValueUnset => 'Nesetat';
 
   @override
   String get aiProviderGeminiDescription => 'Modele AI Gemini de la Google';
@@ -1375,9 +1452,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderUnknownName => 'Furnizor AI';
-
-  @override
   String get aiProviderTaglineAnthropic =>
       'Claude Sonnet · raționament cu context lung';
 
@@ -1391,6 +1465,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderTaglineOpenAi => 'Raționament de top · familia GPT-5.2';
+
+  @override
+  String get aiProviderUnknownName => 'Furnizor AI';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1462,27 +1539,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Adaugă furnizor';
 
   @override
-  String get aiSettingsPageLead =>
-      'Configurați furnizorii AI, modelele pe care Lotti le poate apela și profilurile de inferență care decid ce model gestionează fiecare sarcină.';
-
-  @override
-  String get aiSettingsSearchHintShort => 'Căutați';
-
-  @override
   String get aiSettingsClearAllFiltersTooltip => 'Șterge toate filtrele';
 
   @override
   String get aiSettingsClearFiltersButton => 'Șterge';
-
-  @override
-  String aiSettingsFilterByCapabilityTooltip(String capability) {
-    return 'Filtrează după capabilitatea $capability';
-  }
-
-  @override
-  String aiSettingsFilterByProviderTooltip(String provider) {
-    return 'Filtrează după $provider';
-  }
 
   @override
   String get aiSettingsCounterModels => 'Modele';
@@ -1499,6 +1559,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSettingsEmptyTitle => 'Încă niciun furnizor';
+
+  @override
+  String aiSettingsFilterByCapabilityTooltip(String capability) {
+    return 'Filtrează după capabilitatea $capability';
+  }
+
+  @override
+  String aiSettingsFilterByProviderTooltip(String provider) {
+    return 'Filtrează după $provider';
+  }
 
   @override
   String get aiSettingsFilterByReasoningTooltip =>
@@ -1530,6 +1600,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsNoProvidersConfigured => 'Niciun furnizor AI configurat';
 
   @override
+  String get aiSettingsPageLead =>
+      'Configurați furnizorii AI, modelele pe care Lotti le poate apela și profilurile de inferență care decid ce model gestionează fiecare sarcină.';
+
+  @override
   String get aiSettingsPageTitle => 'Setări AI';
 
   @override
@@ -1537,6 +1611,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSettingsSearchHint => 'Caută configurații AI...';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Căutați';
 
   @override
   String get aiSettingsTabModels => 'Modele';
@@ -4065,10 +4142,81 @@ class AppLocalizationsRo extends AppLocalizations {
   String get modelAddPageTitle => 'Adaugă model';
 
   @override
+  String get modelEditBackTooltip => 'Înapoi';
+
+  @override
+  String get modelEditDescriptionHint => 'Descrieți acest model';
+
+  @override
+  String get modelEditDescriptionLabel => 'Descriere';
+
+  @override
+  String get modelEditDisplayNameHint => 'Un nume prietenos pentru acest model';
+
+  @override
+  String get modelEditDisplayNameLabel => 'Nume afișat';
+
+  @override
+  String get modelEditFunctionCallingDescription =>
+      'Acest model acceptă apeluri de funcții și instrumente.';
+
+  @override
+  String get modelEditFunctionCallingLabel => 'Apeluri de funcții';
+
+  @override
+  String get modelEditInputModalitiesHint => 'Selectați tipurile de intrare';
+
+  @override
+  String get modelEditInputModalitiesLabel => 'Modalități de intrare';
+
+  @override
   String get modelEditLoadError => 'Eșec la încărcarea configurației modelului';
 
   @override
+  String get modelEditMaxTokensHint => 'Opțional — lăsați gol pentru nelimitat';
+
+  @override
+  String get modelEditMaxTokensLabel => 'Tokenuri maxime de completare';
+
+  @override
+  String get modelEditModalityNoneSelected => 'Niciunul selectat';
+
+  @override
+  String get modelEditOutputModalitiesHint => 'Selectați tipurile de ieșire';
+
+  @override
+  String get modelEditOutputModalitiesLabel => 'Modalități de ieșire';
+
+  @override
   String get modelEditPageTitle => 'Editează modelul';
+
+  @override
+  String get modelEditProviderHint => 'Selectați un furnizor';
+
+  @override
+  String get modelEditProviderLabel => 'Furnizor';
+
+  @override
+  String get modelEditProviderModelIdHint => 'ex. gpt-4-turbo';
+
+  @override
+  String get modelEditProviderModelIdLabel => 'ID model furnizor';
+
+  @override
+  String get modelEditReasoningDescription =>
+      'Acest model folosește gândire extinsă / lanț de raționament.';
+
+  @override
+  String get modelEditReasoningLabel => 'Model cu raționament';
+
+  @override
+  String get modelEditSaveButton => 'Salvare';
+
+  @override
+  String get modelEditSectionCapabilities => 'Capabilități';
+
+  @override
+  String get modelEditSectionIdentity => 'Identitate';
 
   @override
   String modelManagementSelectedCount(int count) {
