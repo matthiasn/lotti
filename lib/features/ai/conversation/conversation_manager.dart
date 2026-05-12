@@ -38,10 +38,6 @@ class ConversationManager {
   Map<String, String> get thoughtSignatures =>
       Map.unmodifiable(_thoughtSignatures);
 
-  /// Get signature for a specific tool call ID.
-  String? getSignatureForToolCall(String toolCallId) =>
-      _thoughtSignatures[toolCallId];
-
   int get turnCount =>
       _messages.where((m) => m.role == ChatCompletionMessageRole.user).length;
 

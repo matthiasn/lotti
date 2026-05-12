@@ -43,16 +43,6 @@ class UnifiedAiState {
 
   @override
   int get hashCode => message.hashCode ^ error.hashCode;
-
-  UnifiedAiState copyWith({
-    String? message,
-    Exception? error,
-  }) {
-    return UnifiedAiState(
-      message: message ?? this.message,
-      error: error ?? this.error,
-    );
-  }
 }
 
 /// Record type for unified AI controller parameters.

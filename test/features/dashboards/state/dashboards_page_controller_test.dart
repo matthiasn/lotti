@@ -152,16 +152,6 @@ void main() {
         state = container.read(selectedCategoryIdsProvider);
         expect(state, {'category-2'});
       });
-
-      test('clear removes all category ids', () {
-        container.read(selectedCategoryIdsProvider.notifier)
-          ..toggle('category-1')
-          ..toggle('category-2')
-          ..clear();
-
-        final state = container.read(selectedCategoryIdsProvider);
-        expect(state, isEmpty);
-      });
     });
 
     group('filteredSortedDashboardsProvider', () {

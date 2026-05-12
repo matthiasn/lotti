@@ -182,22 +182,15 @@ void main() {
         expect(GeminiThinkingConfig.standard.includeThoughts, isFalse);
       });
 
-      test('intensive preset has budget 16384 and includeThoughts false', () {
-        expect(GeminiThinkingConfig.intensive.thinkingBudget, 16384);
-        expect(GeminiThinkingConfig.intensive.includeThoughts, isFalse);
-      });
-
       test('presets are const', () {
         // These compile-time const checks verify the presets are constant
         const auto = GeminiThinkingConfig.auto;
         const disabled = GeminiThinkingConfig.disabled;
         const standard = GeminiThinkingConfig.standard;
-        const intensive = GeminiThinkingConfig.intensive;
 
         expect(auto, isNotNull);
         expect(disabled, isNotNull);
         expect(standard, isNotNull);
-        expect(intensive, isNotNull);
       });
     });
 
@@ -250,15 +243,6 @@ void main() {
 
         expect(json, {
           'thinkingBudget': 8192,
-          'includeThoughts': false,
-        });
-      });
-
-      test('serializes intensive preset', () {
-        final json = GeminiThinkingConfig.intensive.toJson();
-
-        expect(json, {
-          'thinkingBudget': 16384,
           'includeThoughts': false,
         });
       });
@@ -359,10 +343,9 @@ void main() {
         expect(json['thinkingLevel'], 'LOW');
       });
 
-      test('maps intensive preset (16384) to HIGH for Gemini 3', () {
-        final json = GeminiThinkingConfig.intensive.toJson(
-          modelId: 'gemini-3.1-pro-preview',
-        );
+      test('maps large budget (>= 8192) to HIGH for Gemini 3', () {
+        const config = GeminiThinkingConfig(thinkingBudget: 16384);
+        final json = config.toJson(modelId: 'gemini-3.1-pro-preview');
         expect(json['thinkingLevel'], 'HIGH');
       });
 
@@ -394,7 +377,6 @@ void main() {
         // This tests the pattern used in cloud_inference_repository.dart
         expect(GeminiThinkingConfig.auto.thinkingBudget != 0, isTrue);
         expect(GeminiThinkingConfig.standard.thinkingBudget != 0, isTrue);
-        expect(GeminiThinkingConfig.intensive.thinkingBudget != 0, isTrue);
         expect(GeminiThinkingConfig.disabled.thinkingBudget != 0, isFalse);
       });
 

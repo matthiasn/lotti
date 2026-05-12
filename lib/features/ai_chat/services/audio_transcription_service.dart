@@ -20,13 +20,9 @@ class AudioTranscriptionService {
 
   /// Transcribes audio from a local file at [filePath] to natural text.
   ///
-  /// The appropriate provider and model are resolved from persisted AI configs
-  /// by selecting an audio-capable model, preferring `gemini-2.5-flash` when
-  /// available, and then routing the request to the matching provider.
-  /// Returns the full transcription as a single concatenated string.
-  ///
-  /// Note: The audio payload is base64-encoded to match current API
-  /// requirements; this can be revisited once streaming uploads are supported.
+  /// Returns the full transcription as a single concatenated string by
+  /// consuming [transcribeStream]. Tests rely on this convenience entry
+  /// point; UI code uses the streaming variant directly.
   Future<String> transcribe(String filePath) async {
     final buffer = StringBuffer();
     // ignore: prefer_foreach - await for is required for async stream iteration

@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -37,13 +36,5 @@ class ChecklistCompletionService extends _$ChecklistCompletionService {
         .where((s) => s.checklistItemId != checklistItemId)
         .toList();
     state = AsyncData(updatedSuggestions);
-  }
-
-  /// Get suggestion for a specific checklist item
-  ChecklistCompletionSuggestion? getSuggestionForItem(String checklistItemId) {
-    final suggestions = state.value ?? [];
-    return suggestions.firstWhereOrNull(
-      (s) => s.checklistItemId == checklistItemId,
-    );
   }
 }

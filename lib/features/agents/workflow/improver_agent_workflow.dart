@@ -10,7 +10,6 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/ritual_context_builder.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
-import 'package:lotti/services/domain_logging.dart';
 
 /// Orchestrates the improver agent ritual workflow.
 ///
@@ -28,7 +27,6 @@ class ImproverAgentWorkflow {
     required this.repository,
     required this.templateService,
     required this.syncService,
-    this.domainLogger,
   });
 
   final FeedbackExtractionService feedbackService;
@@ -37,7 +35,6 @@ class ImproverAgentWorkflow {
   final AgentRepository repository;
   final AgentTemplateService templateService;
   final AgentSyncService syncService;
-  final DomainLogger? domainLogger;
 
   static const _logTag = 'ImproverAgentWorkflow';
 

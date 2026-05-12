@@ -322,42 +322,6 @@ void main() {
       expect(savedConfig.apiKey, equals('updated-key'));
     });
 
-    test('should delete a configuration', () async {
-      // Arrange
-      final mockResult = CascadeDeletionResult(
-        deletedModels: [
-          AiConfigModel(
-            id: 'model-1',
-            name: 'Test Model',
-            providerModelId: 'test-model',
-            inferenceProviderId: 'test-id',
-            createdAt: DateTime(2024, 3, 15),
-            inputModalities: [Modality.text],
-            outputModalities: [Modality.text],
-            isReasoningModel: false,
-          ),
-        ],
-        providerName: 'Test Provider',
-      );
-
-      when(
-        () => mockRepository.deleteInferenceProviderWithModels('test-id'),
-      ).thenAnswer((_) async => mockResult);
-
-      // Act
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      final result = await controller.deleteConfig('test-id');
-
-      // Assert
-      expect(result.deletedModels.length, equals(1));
-      expect(result.providerName, equals('Test Provider'));
-      verify(
-        () => mockRepository.deleteInferenceProviderWithModels('test-id'),
-      ).called(1);
-    });
-
     test('should update form state when name is changed', () async {
       // Arrange
       final controller = container.read(
@@ -413,25 +377,6 @@ void main() {
 
       // Assert
       expect(formState?.baseUrl.value, equals('https://new.example.com'));
-    });
-
-    test('should update form state when comment is changed', () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container.read(
-        inferenceProviderFormControllerProvider(configId: null).future,
-      );
-
-      // Act
-      controller.descriptionChanged('New comment');
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
-
-      // Assert
-      expect(formState?.description.value, equals('New comment'));
     });
 
     test(

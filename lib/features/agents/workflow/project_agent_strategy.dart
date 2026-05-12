@@ -31,7 +31,6 @@ class ProjectAgentStrategy extends ConversationStrategy {
     required this.agentId,
     required this.threadId,
     required this.runKey,
-    required this.projectId,
   });
 
   /// Sync-aware write service for persisting messages.
@@ -45,9 +44,6 @@ class ProjectAgentStrategy extends ConversationStrategy {
 
   /// The run key for the current wake cycle.
   final String runKey;
-
-  /// The project entity ID this agent is working on.
-  final String projectId;
 
   String? _reportContent;
   String? _reportTldr;

@@ -252,10 +252,4 @@ class InferenceProviderFormController
       ),
     );
   }
-
-  /// Delete a configuration
-  Future<CascadeDeletionResult> deleteConfig(String id) async {
-    final repository = ref.read(aiConfigRepositoryProvider);
-    return repository.deleteInferenceProviderWithModels(id);
-  }
 }

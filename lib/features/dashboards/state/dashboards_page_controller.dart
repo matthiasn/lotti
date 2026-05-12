@@ -38,10 +38,6 @@ class SelectedCategoryIds extends Notifier<Set<String>> {
       state = {...state, categoryId};
     }
   }
-
-  void clear() {
-    state = {};
-  }
 }
 
 /// Stream provider for categories from database.

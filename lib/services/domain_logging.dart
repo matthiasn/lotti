@@ -15,7 +15,6 @@ abstract final class LogDomains {
   static const agentWorkflow = 'agent_workflow';
   static const sync = 'sync';
   static const ai = 'ai';
-  static const general = 'general';
 }
 
 /// Lightweight domain-specific logging layer on top of [LoggingService].
@@ -147,12 +146,5 @@ class DomainLogger {
   static String sanitizeId(String id) {
     if (id.length < 6) return '[id:$id]';
     return '[id:${id.substring(0, 6)}]';
-  }
-
-  /// Replaces content/message body with a length placeholder.
-  ///
-  /// Example: `'Hello world, this is a secret'` → `'[content: 28 chars]'`
-  static String sanitizeContent(String content) {
-    return '[content: ${content.length} chars]';
   }
 }

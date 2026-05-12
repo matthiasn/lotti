@@ -81,13 +81,6 @@ class SettingsTreePath extends Notifier<List<String>> {
     if (clamped == state.length) return;
     state = state.sublist(0, clamped);
   }
-
-  /// Resets to the empty root. Useful after a deep link into a
-  /// subtree that no longer exists (flag turned off between sessions).
-  void clear() {
-    if (state.isEmpty) return;
-    state = const <String>[];
-  }
 }
 
 final settingsTreePathProvider =

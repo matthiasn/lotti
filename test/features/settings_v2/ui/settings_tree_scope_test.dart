@@ -78,7 +78,7 @@ void main() {
             index: index,
             child: Builder(
               builder: (context) {
-                captured = SettingsTreeScope.of(context);
+                captured = SettingsTreeScope.maybeOf(context)!;
                 return const SizedBox.shrink();
               },
             ),
@@ -173,7 +173,7 @@ void main() {
             SettingsTreeScopeHost(
               child: Builder(
                 builder: (context) {
-                  scope = SettingsTreeScope.of(context);
+                  scope = SettingsTreeScope.maybeOf(context)!;
                   return const SizedBox.shrink();
                 },
               ),

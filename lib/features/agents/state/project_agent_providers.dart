@@ -39,13 +39,11 @@ Future<AgentDomainEntity?> projectAgent(
 /// Lightweight project-agent report freshness state for project UI surfaces.
 class ProjectAgentSummaryState {
   const ProjectAgentSummaryState({
-    required this.agentId,
     required this.hasReport,
     this.pendingProjectActivityAt,
     this.scheduledWakeAt,
   });
 
-  final String agentId;
   final bool hasReport;
   final DateTime? pendingProjectActivityAt;
   final DateTime? scheduledWakeAt;
@@ -81,7 +79,6 @@ projectAgentSummaryProvider = FutureProvider.autoDispose
       );
 
       return ProjectAgentSummaryState(
-        agentId: identity.agentId,
         hasReport: report != null && report.content.trim().isNotEmpty,
         pendingProjectActivityAt: state?.slots.pendingProjectActivityAt,
         scheduledWakeAt: state?.scheduledWakeAt,

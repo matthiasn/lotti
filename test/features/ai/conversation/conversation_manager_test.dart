@@ -827,11 +827,6 @@ void main() {
         );
 
         expect(manager.thoughtSignatures, {'tool-1': 'signature-abc123'});
-        expect(manager.getSignatureForToolCall('tool-1'), 'signature-abc123');
-      });
-
-      test('returns null for unknown tool call signature', () {
-        expect(manager.getSignatureForToolCall('unknown-tool'), isNull);
       });
 
       test('accumulates signatures across multiple messages', () {

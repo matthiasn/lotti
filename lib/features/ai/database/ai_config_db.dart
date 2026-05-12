@@ -55,10 +55,6 @@ class AiConfigDb extends _$AiConfigDb {
     return configsByType(type).get();
   }
 
-  Stream<List<AiConfigDbEntity>> watchConfigsByType(String type) {
-    return configsByType(type).watch();
-  }
-
   Future<List<AiConfigDbEntity>> getAllConfigs() {
     return allConfigs().get();
   }

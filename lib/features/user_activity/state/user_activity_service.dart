@@ -14,9 +14,6 @@ class UserActivityService {
     }
   }
 
-  int get msSinceLastActivity =>
-      DateTime.now().difference(_lastActivity).inMilliseconds;
-
   DateTime get lastActivity => _lastActivity;
 
   Stream<DateTime> get activityStream => _activityController.stream;

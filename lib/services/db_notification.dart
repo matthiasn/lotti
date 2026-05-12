@@ -161,14 +161,3 @@ const propagatedNotificationPrefix = 'PROPAGATED::';
 /// emission. See [propagatedNotificationPrefix] for the intent.
 String propagatedNotification(String token) =>
     '$propagatedNotificationPrefix$token';
-
-/// Whether [token] was emitted as a propagated (non-direct) effect.
-bool isPropagatedNotification(String token) =>
-    token.startsWith(propagatedNotificationPrefix);
-
-/// Returns the underlying token wrapped by [propagatedNotification], or
-/// [token] itself when it was not wrapped.
-String unwrapPropagatedNotification(String token) =>
-    isPropagatedNotification(token)
-    ? token.substring(propagatedNotificationPrefix.length)
-    : token;

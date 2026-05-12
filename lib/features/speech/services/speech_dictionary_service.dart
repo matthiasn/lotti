@@ -116,17 +116,6 @@ class SpeechDictionaryService {
 
     return null;
   }
-
-  /// Checks if a term can be added to the dictionary for a given entry.
-  ///
-  /// Returns true if the entry has an associated category.
-  Future<bool> canAddTermForEntry(String entryId) async {
-    final entry = await journalRepository.getJournalEntityById(entryId);
-    if (entry == null) return false;
-
-    final categoryId = await _getCategoryIdForEntry(entry);
-    return categoryId != null;
-  }
 }
 
 /// Result of attempting to add a term to the speech dictionary.

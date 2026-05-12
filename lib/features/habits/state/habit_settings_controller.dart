@@ -9,7 +9,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/habits/autocomplete_update.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/notification_service.dart';
 
@@ -256,17 +255,6 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
   Future<void> delete() async {
     await getIt<PersistenceLogic>().upsertEntityDefinition(
       state.habitDefinition.copyWith(deletedAt: DateTime.now()),
-    );
-  }
-
-  /// Removes an autocomplete rule at the specified path.
-  void removeAutoCompleteRuleAt(List<int> replaceAtPath) {
-    state = state.copyWith(
-      autoCompleteRule: replaceAt(
-        state.autoCompleteRule,
-        replaceAtPath: replaceAtPath,
-        replaceWith: null,
-      ),
     );
   }
 }

@@ -320,56 +320,6 @@ void main() {
       }, tags: 'glados');
     });
 
-    group('isSupported', () {
-      test('returns true for supported extensions', () {
-        expect(AudioMetadataExtractor.isSupported('m4a'), isTrue);
-        expect(AudioMetadataExtractor.isSupported('aac'), isTrue);
-        expect(AudioMetadataExtractor.isSupported('mp3'), isTrue);
-        expect(AudioMetadataExtractor.isSupported('wav'), isTrue);
-        expect(AudioMetadataExtractor.isSupported('ogg'), isTrue);
-      });
-
-      test('returns false for unsupported extensions', () {
-        expect(AudioMetadataExtractor.isSupported('flac'), isFalse);
-        expect(AudioMetadataExtractor.isSupported('wma'), isFalse);
-        expect(AudioMetadataExtractor.isSupported('jpg'), isFalse);
-        expect(AudioMetadataExtractor.isSupported('pdf'), isFalse);
-      });
-
-      test('is case insensitive', () {
-        expect(AudioMetadataExtractor.isSupported('M4A'), isTrue);
-        expect(AudioMetadataExtractor.isSupported('MP3'), isTrue);
-        expect(AudioMetadataExtractor.isSupported('WAV'), isTrue);
-      });
-
-      test('returns false for empty string', () {
-        expect(AudioMetadataExtractor.isSupported(''), isFalse);
-      });
-
-      glados.Glados(
-        glados.any.audioFilenameScenario,
-        glados.ExploreConfig(numRuns: 180),
-      ).test(
-        'accepts generated supported extensions case-insensitively',
-        (
-          scenario,
-        ) {
-          expect(
-            AudioMetadataExtractor.isSupported(scenario.extension),
-            isTrue,
-          );
-          expect(
-            AudioMetadataExtractor.isSupported(
-              scenario.extension.toUpperCase(),
-            ),
-            isTrue,
-            reason: '$scenario',
-          );
-        },
-        tags: 'glados',
-      );
-    });
-
     group('extractDuration', () {
       test('returns zero duration when bypass flag is set', () async {
         AudioMetadataExtractor.bypassMediaKitInTests = true;

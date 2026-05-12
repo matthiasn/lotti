@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:collection/collection.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -67,15 +66,6 @@ abstract class TimeHistoryData with _$TimeHistoryData {
     /// Maps day (at noon) -> categoryId -> cumulative height from lower cats.
     required StackedHeights stackedHeights,
   }) = _TimeHistoryData;
-}
-
-/// Extension methods for TimeHistoryData.
-extension TimeHistoryDataX on TimeHistoryData {
-  /// Lookup a day summary by date (at noon).
-  DayTimeSummary? dayAt(DateTime day) {
-    final noon = day.dayAtNoon;
-    return days.firstWhereOrNull((d) => d.day == noon);
-  }
 }
 
 /// Controller for the time history header data layer.

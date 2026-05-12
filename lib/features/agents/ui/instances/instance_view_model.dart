@@ -104,8 +104,6 @@ class InstanceVm {
   /// together) and finally to a sentinel id so unassigned rows land in
   /// their own bucket.
   String soulGroupId() => soulId ?? templateId ?? '__no_soul__';
-  String soulGroupLabel(String fallbackUnassigned) =>
-      soulName ?? templateName ?? fallbackUnassigned;
 }
 
 /// All instances (task agents + evolution sessions), enriched with their

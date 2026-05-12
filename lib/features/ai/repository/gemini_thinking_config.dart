@@ -12,7 +12,6 @@ class GeminiThinkingConfig {
   static const auto = GeminiThinkingConfig(thinkingBudget: -1);
   static const disabled = GeminiThinkingConfig(thinkingBudget: 0);
   static const standard = GeminiThinkingConfig(thinkingBudget: 8192);
-  static const intensive = GeminiThinkingConfig(thinkingBudget: 16384);
 
   /// Serializes the thinking config for the Gemini API.
   ///

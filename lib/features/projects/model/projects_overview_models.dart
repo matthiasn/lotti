@@ -7,6 +7,10 @@ import 'package:lotti/classes/project_data.dart';
 enum ProjectsSearchMode {
   disabled,
   localText,
+
+  /// Reserved for vector-based search — not yet wired into the filter
+  /// pipeline. Keep this slot so the persisted enum index stays stable
+  /// when the embedding-backed path lands.
   vector,
 }
 

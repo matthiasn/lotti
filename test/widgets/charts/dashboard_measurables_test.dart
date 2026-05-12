@@ -89,7 +89,6 @@ void main() {
           final needsBeamer = testCase.$2 == AggregationType.dailyMax;
 
           Widget chart = MeasurablesBarChart(
-            dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             measurableDataTypeId: testCase.$1.id,
@@ -145,7 +144,6 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           MeasurablesBarChart(
-            dashboardId: 'dashboardId',
             rangeStart: DateTime(2022),
             rangeEnd: DateTime(2023),
             measurableDataTypeId: measurableWater.id,

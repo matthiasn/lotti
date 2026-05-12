@@ -406,27 +406,5 @@ void main() {
       expect(schedule.showFrom, equals(showFrom));
       expect(schedule.alertAtTime, equals(alertAtTime));
     });
-
-    test('removeAutoCompleteRuleAt handles null rule gracefully', () {
-      const testHabitId = 'test-habit-id';
-
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final controller = container.read(
-        habitSettingsControllerProvider(testHabitId).notifier,
-      );
-
-      // Initial state has autoCompleteRule set to null
-      var state = container.read(habitSettingsControllerProvider(testHabitId));
-      expect(state.autoCompleteRule, isNull);
-
-      // Remove at path [0] - calling on null should be safe (no-op)
-      controller.removeAutoCompleteRuleAt([0]);
-
-      state = container.read(habitSettingsControllerProvider(testHabitId));
-      // Should still be null
-      expect(state.autoCompleteRule, isNull);
-    });
   });
 }

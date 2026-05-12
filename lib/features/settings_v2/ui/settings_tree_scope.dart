@@ -14,13 +14,10 @@ import 'package:lotti/utils/consts.dart';
 /// locale-aware label resolver, and publishes the resulting tree and
 /// [SettingsTreeIndex] through this inherited widget. Descendant
 /// consumers (`SettingsTreeView`, `SettingsDetailPane`) read both
-/// values via [SettingsTreeScope.of] instead of rebuilding their own
-/// copy.
-///
-/// Widgets pumped outside this scope (e.g. in unit tests that pump
-/// the tree view in isolation) can fall back to building the tree
-/// locally by calling [SettingsTreeScope.maybeOf] and constructing
-/// fresh data when it returns `null`.
+/// values via [SettingsTreeScope.maybeOf] instead of rebuilding their
+/// own copy. Tests that pump the tree view in isolation can fall back
+/// to building the tree locally when [SettingsTreeScope.maybeOf]
+/// returns `null`.
 @immutable
 class SettingsTreeScope extends InheritedWidget {
   const SettingsTreeScope({
@@ -35,12 +32,6 @@ class SettingsTreeScope extends InheritedWidget {
 
   static SettingsTreeScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<SettingsTreeScope>();
-
-  static SettingsTreeScope of(BuildContext context) {
-    final scope = maybeOf(context);
-    assert(scope != null, 'No SettingsTreeScope found in this context');
-    return scope!;
-  }
 
   @override
   bool updateShouldNotify(SettingsTreeScope oldWidget) =>
