@@ -526,11 +526,12 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
   /// Best-guess provider type for a profile card. The profile schema
   /// doesn't carry a provider id — it just references models by their
-  /// `providerModelId`. Walk the four skill slots in priority order
-  /// (thinking → image recognition → transcription → image generation)
-  /// and pick the first model whose owning provider we can resolve.
-  /// Returns null when none of the slots resolve — the card paints
-  /// neutral chrome in that case rather than impersonating Gemini.
+  /// `providerModelId`. Walk the five skill slots in priority order
+  /// (thinking → thinking-high-end → image recognition → transcription
+  /// → image generation) and pick the first model whose owning provider
+  /// we can resolve. Returns null when none of the slots resolve — the
+  /// card paints neutral chrome in that case rather than impersonating
+  /// Gemini.
   InferenceProviderType? _providerTypeForProfile(
     AiConfigInferenceProfile profile,
     Map<String, String> providerIdByModelProviderModelId,
@@ -538,6 +539,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   ) {
     final candidates = <String?>[
       profile.thinkingModelId,
+      profile.thinkingHighEndModelId,
       profile.imageRecognitionModelId,
       profile.transcriptionModelId,
       profile.imageGenerationModelId,

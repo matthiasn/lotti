@@ -4192,7 +4192,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tento model používá rozšířené myšlení / řetězec úvah.';
 
   @override
-  String get modelEditReasoningLabel => 'Reasoning model';
+  String get modelEditReasoningLabel => 'Model pro uvažování';
 
   @override
   String get modelEditSaveButton => 'Uložit';

@@ -1638,7 +1638,7 @@
   "modelEditProviderModelIdHint": "např. gpt-4-turbo",
   "modelEditProviderModelIdLabel": "ID modelu u poskytovatele",
   "modelEditReasoningDescription": "Tento model používá rozšířené myšlení / řetězec úvah.",
-  "modelEditReasoningLabel": "Reasoning model",
+  "modelEditReasoningLabel": "Model pro uvažování",
   "modelEditSaveButton": "Uložit",
   "modelEditSectionCapabilities": "Schopnosti",
   "modelEditSectionIdentity": "Identita",

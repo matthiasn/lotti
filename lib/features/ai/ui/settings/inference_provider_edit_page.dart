@@ -165,35 +165,37 @@ class _InferenceProviderEditPageState
   bool _isSaving = false;
   final FocusNode _apiKeyFocusNode = FocusNode();
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.focusApiKey) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _apiKeyFocusNode.requestFocus();
-        // Without this the field can sit below the fold on small
-        // viewports — focus alone does not scroll the SliverAppBar
-        // collapsed. Best-effort: only acts if the FocusNode is
-        // attached (i.e. the API-key section is actually mounted for
-        // this provider type).
-        final ctx = _apiKeyFocusNode.context;
-        if (ctx != null) {
-          Scrollable.ensureVisible(
-            ctx,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            alignment: 0.2,
-          );
-        }
-      });
-    }
-  }
+  /// Set once the Fix-flow has actually focused + scrolled the API key
+  /// field, so the retry in `build` stops once it has succeeded. The
+  /// retry exists because the form's first frame can render a loading
+  /// placeholder (when `configId` is set), in which case the API-key
+  /// section isn't mounted yet and `_apiKeyFocusNode.context` is null —
+  /// a one-shot `addPostFrameCallback` in `initState` would silently
+  /// no-op in that case.
+  bool _didFocusApiKey = false;
 
   @override
   void dispose() {
     _apiKeyFocusNode.dispose();
     super.dispose();
+  }
+
+  /// Re-runs every build until the API-key section is actually
+  /// mounted (i.e. `_apiKeyFocusNode.context` is non-null), then
+  /// requests focus + scrolls into view exactly once. Only fires when
+  /// the caller asked for the Fix-flow via `widget.focusApiKey`.
+  void _tryFocusApiKey() {
+    if (!widget.focusApiKey || _didFocusApiKey || !mounted) return;
+    final ctx = _apiKeyFocusNode.context;
+    if (ctx == null) return;
+    _didFocusApiKey = true;
+    _apiKeyFocusNode.requestFocus();
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: 0.2,
+    );
   }
 
   /// Helper to get the form controller provider with correct parameters
@@ -207,6 +209,13 @@ class _InferenceProviderEditPageState
 
   @override
   Widget build(BuildContext context) {
+    // Schedule the Fix-flow focus retry from every build. `initState`'s
+    // post-frame callback fires before the form has finished loading
+    // its config, when the API-key section isn't mounted yet, so a
+    // one-shot retry there silently no-ops; this re-tries after every
+    // build until the section appears.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryFocusApiKey());
+
     // Listen for the config if editing an existing one
     final configAsync = widget.configId != null
         ? ref.watch(aiConfigByIdProvider(widget.configId!))

@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -87,7 +88,16 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    // All three watches sit at the top of `build` so Riverpod's
+    // dependency graph is stable across loading / error / data
+    // transitions — calling `ref.watch` inside a `.when(data: ...)`
+    // callback would cause the controllers to be dropped and
+    // re-subscribed every time the AsyncValue changes state.
     final configAsync = ref.watch(aiConfigByIdProvider(widget.providerId));
+    final modelsAsync = ref.watch(
+      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
+    );
+    final profilesAsync = ref.watch(inferenceProfileControllerProvider);
 
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
@@ -151,15 +161,12 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
               ),
             );
           }
-          // Detail body needs the provider's models and the active
-          // profile pool. Both are stream-backed so the page stays
-          // live (e.g. after the user adds a model from the
-          // "+ Add model" button or returns from the edit form).
-          final modelsAsync = ref.watch(
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model),
-          );
-          final profilesAsync = ref.watch(inferenceProfileControllerProvider);
-
+          // `modelsAsync` and `profilesAsync` are watched at the top
+          // of `build`; we project them lazily here because we want to
+          // render the detail body even while those streams are still
+          // resolving (empty lists in that case — the body shows the
+          // empty-section card for models and hides the active-profile
+          // section).
           final models = modelsAsync.maybeWhen(
             data: (rows) => rows
                 .whereType<AiConfigModel>()
@@ -580,13 +587,20 @@ class _ConnectionRow extends StatelessWidget {
         Expanded(
           child: Text(
             shown,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: isMissing
-                  ? tokens.colors.alert.warning.defaultColor
-                  : tokens.colors.text.highEmphasis,
-              fontFamily: isMissing ? null : 'Inconsolata',
-              letterSpacing: 0,
-            ),
+            // "Not set" placeholders stay in the regular bodySmall sans
+            // style (warning-tinted); resolved values route through the
+            // DS mono helper so the surface stops re-inventing the
+            // `fontFamily: 'Inconsolata'` override at the call site.
+            style: isMissing
+                ? tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.alert.warning.defaultColor,
+                  )
+                : monoMetaStyle(
+                    tokens,
+                    tokens.colors,
+                    base: tokens.typography.styles.body.bodySmall,
+                    color: tokens.colors.text.highEmphasis,
+                  ),
           ),
         ),
       ],

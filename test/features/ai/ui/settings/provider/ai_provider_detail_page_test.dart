@@ -4,22 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   late MockAiConfigRepository mockRepository;
-  late SettingsDb settingsDb;
   late StreamController<List<AiConfig>> modelsController;
   late StreamController<List<AiConfig>> profilesController;
   late StreamController<List<AiConfig>> providersController;
@@ -83,17 +82,11 @@ void main() {
     );
   }
 
-  setUpAll(() {
-    registerFallbackValue(AiConfigType.inferenceProvider);
-  });
+  setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
     mockRepository = MockAiConfigRepository();
-    settingsDb = SettingsDb(inMemoryDatabase: true);
-    if (getIt.isRegistered<SettingsDb>()) {
-      getIt.unregister<SettingsDb>();
-    }
-    getIt.registerSingleton<SettingsDb>(settingsDb);
+    await setUpTestGetIt();
 
     modelsController = StreamController<List<AiConfig>>.broadcast();
     profilesController = StreamController<List<AiConfig>>.broadcast();
@@ -119,8 +112,7 @@ void main() {
     await modelsController.close();
     await profilesController.close();
     await providersController.close();
-    await settingsDb.close();
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   Widget buildHarness({
@@ -601,6 +593,182 @@ void main() {
 
         // Initial push (detail page) + automatic Fix-flow push (edit page).
         expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'tapping the "Add model" button pushes a new route',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          provider: buildProvider(),
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          navigatorObservers: [spy],
+        );
+
+        expect(spy.pushed, hasLength(1));
+
+        await tester.tap(find.text('Add model'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'tapping a model card inside the Models section pushes a new route',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider();
+        when(
+          () => mockRepository.getConfigById('m1'),
+        ).thenAnswer((_) async => null);
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: [buildModel(id: 'm1', providerId: provider.id)],
+          profiles: const <AiConfig>[],
+          navigatorObservers: [spy],
+        );
+
+        expect(spy.pushed, hasLength(1));
+
+        await tester.tap(find.byType(AiModelCard));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'tapping the active-profile card pushes a new route',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider();
+        when(
+          () => mockRepository.getConfigById('profile-1'),
+        ).thenAnswer((_) async => null);
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: [buildModel(id: 'm1', providerId: provider.id)],
+          profiles: [buildProfile(isDefault: true)],
+          navigatorObservers: [spy],
+        );
+
+        expect(spy.pushed, hasLength(1));
+
+        await tester.ensureVisible(find.byType(AiProfileCard));
+        await tester.tap(find.byType(AiProfileCard));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'tapping the Connection card Edit button pushes the edit form',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          provider: buildProvider(),
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          navigatorObservers: [spy],
+        );
+
+        expect(spy.pushed, hasLength(1));
+
+        // The Edit button on the Connection card renders the "Edit"
+        // label; the AppBar pencil is icon-only. Tap by text to avoid
+        // hitting the pencil.
+        await tester.tap(find.text('Edit'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'header strip status pill renders "Invalid key" for a cloud '
+      'provider with an empty API key',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Cloud provider with blank API key → invalidKey status, which
+        // drives the header strip pill into the alert/error branch.
+        await pumpWith(
+          tester: tester,
+          provider: buildProvider(
+            type: InferenceProviderType.openAi,
+            name: 'OpenAI',
+            apiKey: '',
+          ),
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        expect(find.text('Invalid key'), findsOneWidget);
+
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
+      'connection rows substitute the "Not set" placeholder when the '
+      'base URL and display name are empty',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Provider with present API key but empty baseUrl + empty name.
+        // Tests the `_ConnectionRow` "Not set" branch for both fields
+        // and the header strip's fallback to the localized provider
+        // display name (`visual.displayName`).
+        final provider = buildProvider(
+          name: '',
+          baseUrl: '',
+        );
+
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        // Both unset rows show the localized placeholder.
+        expect(find.text('Not set'), findsNWidgets(2));
+        // Header strip falls back to the Gemini provider display name.
+        expect(find.text('Google Gemini'), findsOneWidget);
+
         await settleTimers(tester);
       },
     );
