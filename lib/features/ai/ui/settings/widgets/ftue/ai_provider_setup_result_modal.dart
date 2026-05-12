@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -221,13 +222,13 @@ class AiProviderSetupResultModal extends StatelessWidget {
           _ResultBullet(
             icon: Icons.memory_rounded,
             text: messages.aiSetupResultBulletModels(data.totalModels),
-            accent: _providerAccent(data.providerType, tokens),
+            accent: aiProviderAccent(type: data.providerType, tokens: tokens),
           ),
         SizedBox(height: tokens.spacing.step3),
         _ResultBullet(
           icon: Icons.tune_rounded,
           text: messages.aiSetupResultBulletProfile(data.profileName),
-          accent: _providerAccent(data.providerType, tokens),
+          accent: aiProviderAccent(type: data.providerType, tokens: tokens),
         ),
         if (data.categoryName != null) ...[
           SizedBox(height: tokens.spacing.step3),
@@ -240,7 +241,7 @@ class AiProviderSetupResultModal extends StatelessWidget {
                 : messages.aiSetupResultBulletCategoryReused(
                     data.categoryName!,
                   ),
-            accent: _providerAccent(data.providerType, tokens),
+            accent: aiProviderAccent(type: data.providerType, tokens: tokens),
           ),
         ],
         if (hasErrors) ...[
@@ -380,14 +381,6 @@ class _Actions extends StatelessWidget {
   }
 }
 
-/// Mirrors `_providerAccent` in the preview modal so the result modal
-/// shares the same per-provider color treatment for its bullet icons.
-Color _providerAccent(InferenceProviderType type, DsTokens tokens) {
-  return switch (type) {
-    InferenceProviderType.gemini => tokens.colors.aiProvider.gemini.color,
-    InferenceProviderType.openAi => tokens.colors.aiProvider.openAi.color,
-    InferenceProviderType.anthropic => tokens.colors.aiProvider.anthropic.color,
-    InferenceProviderType.ollama => tokens.colors.aiProvider.ollama.color,
-    _ => tokens.colors.interactive.enabled,
-  };
-}
+// Provider accent now routes through `aiProviderAccent` so the preview
+// modal, this result modal, and the AI Settings cards share one source
+// of truth for per-provider chrome.

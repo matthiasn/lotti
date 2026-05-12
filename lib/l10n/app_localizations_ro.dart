@@ -1253,8 +1253,72 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get aiProfileCardActiveBadge => 'Activ';
+
+  @override
+  String get aiProfileSlotModelMissing => 'lipsește';
+
+  @override
   String get aiProviderAlibabaDescription =>
       'Familia de modele Qwen de la Alibaba Cloud prin API-ul DashScope';
+
+  @override
+  String get aiProviderCardFixButton => 'Remediați';
+
+  @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Conectat · $count de modele',
+      few: 'Conectat · $count modele',
+      one: 'Conectat · 1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardMenuTooltip => 'Mai multe acțiuni';
+
+  @override
+  String aiProviderCardModelCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de modele',
+      few: '$count modele',
+      one: '1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiProviderCardModelCountWithLastUsed(int count, String lastUsed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de modele · folosite ultima dată $lastUsed',
+      few: '$count modele · folosite ultima dată $lastUsed',
+      one: '1 model · folosit ultima dată $lastUsed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardOllamaHint => 'Asigurați-vă că Ollama rulează';
+
+  @override
+  String get aiProviderCardStatusConnectedShort => 'Conectat';
+
+  @override
+  String get aiProviderCardStatusInvalidKey => 'Cheie nevalidă';
+
+  @override
+  String get aiProviderCardStatusOfflineShort => 'Deconectat';
+
+  @override
+  String get aiProviderCardStatusOffline =>
+      'Deconectat · Asigurați-vă că Ollama rulează';
 
   @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
@@ -1309,6 +1373,24 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
+
+  @override
+  String get aiProviderUnknownName => 'Furnizor AI';
+
+  @override
+  String get aiProviderTaglineAnthropic =>
+      'Claude Sonnet · raționament cu context lung';
+
+  @override
+  String get aiProviderTaglineGemini =>
+      'Nivel gratuit · multimodal · transcriere audio';
+
+  @override
+  String get aiProviderTaglineOllama =>
+      'Rulează pe Mac-ul dvs. · zero apeluri în cloud';
+
+  @override
+  String get aiProviderTaglineOpenAi => 'Raționament de top · familia GPT-5.2';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1380,6 +1462,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Adaugă furnizor';
 
   @override
+  String get aiSettingsPageLead =>
+      'Configurați furnizorii AI, modelele pe care Lotti le poate apela și profilurile de inferență care decid ce model gestionează fiecare sarcină.';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Căutați';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Șterge toate filtrele';
 
   @override
@@ -1396,8 +1485,34 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get aiSettingsCounterModels => 'Modele';
+
+  @override
+  String get aiSettingsCounterProfiles => 'Profile';
+
+  @override
+  String get aiSettingsCounterProviders => 'Furnizori';
+
+  @override
+  String get aiSettingsEmptyDescription =>
+      'Adăugați unul pentru a debloca transcrierea, recunoașterea de imagini, generarea de imagini și căutarea semantică.';
+
+  @override
+  String get aiSettingsEmptyTitle => 'Încă niciun furnizor';
+
+  @override
   String get aiSettingsFilterByReasoningTooltip =>
       'Filtrează după capacitatea de raționament';
+
+  @override
+  String get aiSettingsFtueBannerDescription =>
+      'Durează aproximativ un minut. Lotti va configura modelele și un profil inițial pentru dvs.';
+
+  @override
+  String get aiSettingsFtueBannerStartButton => 'Începeți configurarea';
+
+  @override
+  String get aiSettingsFtueBannerTitle => 'Adăugați primul dvs. furnizor AI';
 
   @override
   String get aiSettingsModalityAudio => 'Audio';

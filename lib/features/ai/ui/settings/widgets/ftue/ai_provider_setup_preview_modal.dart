@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -190,7 +190,10 @@ class _AiProviderSetupPreviewModalState
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final accent = _providerAccent(widget.providerType, tokens);
+    final accent = aiProviderAccent(
+      type: widget.providerType,
+      tokens: tokens,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -651,7 +654,7 @@ class _CapabilityChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final labels = _capabilityLabelsFor(
+    final labels = modelCapabilityLabels(
       messages: messages,
       isReasoning: model.isReasoningModel,
       inputModalities: model.inputModalities,
@@ -669,7 +672,7 @@ class _StoredModelCapabilityChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final labels = _capabilityLabelsFor(
+    final labels = modelCapabilityLabels(
       messages: messages,
       isReasoning: model.isReasoningModel,
       inputModalities: model.inputModalities,
@@ -702,44 +705,14 @@ class _ChipRow extends StatelessWidget {
   }
 }
 
-// --------------------------------------------------------------------------
-// Pure helpers
-// --------------------------------------------------------------------------
+// `modelCapabilityLabels` and the accent helper both live in
+// `ai_provider_visual.dart` so the preview modal, the result modal,
+// and the AI Settings cards share one source of truth for the
+// capability-chip labelling and the per-provider chrome.
 
-List<String> _capabilityLabelsFor({
-  required AppLocalizations messages,
-  required bool isReasoning,
-  required List<Modality> inputModalities,
-  required List<Modality> outputModalities,
-}) {
-  final out = <String>[];
-  if (isReasoning) {
-    out.add(messages.aiCapabilityChipThinking);
-  }
-  if (inputModalities.contains(Modality.image)) {
-    out.add(messages.aiCapabilityChipImageRecognition);
-  }
-  if (inputModalities.contains(Modality.audio)) {
-    out.add(messages.aiCapabilityChipTranscription);
-  }
-  if (outputModalities.contains(Modality.image)) {
-    out.add(messages.aiCapabilityChipImageGeneration);
-  }
-  return out;
-}
-
-Color _providerAccent(InferenceProviderType type, DsTokens tokens) {
-  return switch (type) {
-    InferenceProviderType.gemini => tokens.colors.aiProvider.gemini.color,
-    InferenceProviderType.openAi => tokens.colors.aiProvider.openAi.color,
-    InferenceProviderType.anthropic => tokens.colors.aiProvider.anthropic.color,
-    InferenceProviderType.ollama => tokens.colors.aiProvider.ollama.color,
-    // Providers without a dedicated brand token (Mistral, Alibaba,
-    // Generic, etc.) fall back to the neutral interactive token rather
-    // than impersonating Gemini's teal.
-    _ => tokens.colors.interactive.enabled,
-  };
-}
+// Provider accent now routes through the shared `aiProviderAccent`
+// helper so the preview modal, the result modal, and the AI Settings
+// cards can't drift on per-provider chrome.
 
 // --------------------------------------------------------------------------
 // Per-provider presets

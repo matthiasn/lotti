@@ -1254,8 +1254,70 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get aiProfileCardActiveBadge => 'Actif';
+
+  @override
+  String get aiProfileSlotModelMissing => 'manquant';
+
+  @override
   String get aiProviderAlibabaDescription =>
       'La famille de modèles Qwen d\'Alibaba Cloud via l\'API DashScope';
+
+  @override
+  String get aiProviderCardFixButton => 'Corriger';
+
+  @override
+  String aiProviderCardStatusConnected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Connecté · $count modèles',
+      one: 'Connecté · 1 modèle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardMenuTooltip => 'Plus d\'actions';
+
+  @override
+  String aiProviderCardModelCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles',
+      one: '1 modèle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiProviderCardModelCountWithLastUsed(int count, String lastUsed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles · utilisés pour la dernière fois $lastUsed',
+      one: '1 modèle · utilisé pour la dernière fois $lastUsed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderCardOllamaHint =>
+      'Vérifie qu\'Ollama est en cours d\'exécution';
+
+  @override
+  String get aiProviderCardStatusConnectedShort => 'Connecté';
+
+  @override
+  String get aiProviderCardStatusInvalidKey => 'Clé invalide';
+
+  @override
+  String get aiProviderCardStatusOfflineShort => 'Hors ligne';
+
+  @override
+  String get aiProviderCardStatusOffline =>
+      'Hors ligne · Vérifie qu\'Ollama est en cours d\'exécution';
 
   @override
   String get aiProviderAlibabaName => 'Alibaba Cloud (Qwen)';
@@ -1312,6 +1374,24 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiProviderOpenRouterName => 'OpenRouter';
+
+  @override
+  String get aiProviderUnknownName => 'Fournisseur d\'IA';
+
+  @override
+  String get aiProviderTaglineAnthropic =>
+      'Claude Sonnet · raisonnement à long contexte';
+
+  @override
+  String get aiProviderTaglineGemini =>
+      'Offre gratuite · multimodal · transcription audio';
+
+  @override
+  String get aiProviderTaglineOllama =>
+      'S\'exécute sur ton Mac · zéro appel cloud';
+
+  @override
+  String get aiProviderTaglineOpenAi => 'Raisonnement phare · famille GPT-5.2';
 
   @override
   String get aiProviderVoxtralDescription =>
@@ -1382,6 +1462,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiSettingsAddProviderButton => 'Ajouter un fournisseur';
 
   @override
+  String get aiSettingsPageLead =>
+      'Configure les fournisseurs d\'IA, les modèles que Lotti peut appeler et les profils d\'inférence qui décident quel modèle gère chaque tâche.';
+
+  @override
+  String get aiSettingsSearchHintShort => 'Rechercher';
+
+  @override
   String get aiSettingsClearAllFiltersTooltip => 'Effacer tous les filtres';
 
   @override
@@ -1398,8 +1485,35 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get aiSettingsCounterModels => 'Modèles';
+
+  @override
+  String get aiSettingsCounterProfiles => 'Profils';
+
+  @override
+  String get aiSettingsCounterProviders => 'Fournisseurs';
+
+  @override
+  String get aiSettingsEmptyDescription =>
+      'Ajoutes-en un pour activer la transcription, la reconnaissance d\'images, la génération d\'images et la recherche sémantique.';
+
+  @override
+  String get aiSettingsEmptyTitle => 'Aucun fournisseur pour le moment';
+
+  @override
   String get aiSettingsFilterByReasoningTooltip =>
       'Filtrer par capacité de raisonnement';
+
+  @override
+  String get aiSettingsFtueBannerDescription =>
+      'Cela prend environ une minute. Lotti configure des modèles et un profil de départ pour toi.';
+
+  @override
+  String get aiSettingsFtueBannerStartButton => 'Commencer la configuration';
+
+  @override
+  String get aiSettingsFtueBannerTitle =>
+      'Ajoute ton premier fournisseur d\'IA';
 
   @override
   String get aiSettingsModalityAudio => 'Audio';

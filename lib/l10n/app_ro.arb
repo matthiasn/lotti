@@ -552,7 +552,50 @@
       }
     }
   },
+  "aiProfileCardActiveBadge": "Activ",
+  "aiProfileSlotModelMissing": "lipsește",
   "aiProviderAlibabaDescription": "Familia de modele Qwen de la Alibaba Cloud prin API-ul DashScope",
+  "aiProviderCardFixButton": "Remediați",
+  "aiProviderCardStatusConnected": "{count, plural, =1{Conectat · 1 model} few{Conectat · {count} modele} other{Conectat · {count} de modele}}",
+  "@aiProviderCardStatusConnected": {
+    "description": "Provider card status line when the provider has a key + at least one model row.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiProviderCardMenuTooltip": "Mai multe acțiuni",
+  "aiProviderCardModelCount": "{count, plural, =1{1 model} few{{count} modele} other{{count} de modele}}",
+  "@aiProviderCardModelCount": {
+    "description": "Right-side meta on a connected provider card when no last-used data is available.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiProviderCardModelCountWithLastUsed": "{count, plural, =1{1 model · folosit ultima dată {lastUsed}} few{{count} modele · folosite ultima dată {lastUsed}} other{{count} de modele · folosite ultima dată {lastUsed}}}",
+  "@aiProviderCardModelCountWithLastUsed": {
+    "description": "Right-side meta on a connected provider card combining model count with a last-used label.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      },
+      "lastUsed": {
+        "type": "String",
+        "example": "acum 2 min"
+      }
+    }
+  },
+  "aiProviderCardOllamaHint": "Asigurați-vă că Ollama rulează",
+  "aiProviderCardStatusConnectedShort": "Conectat",
+  "aiProviderCardStatusInvalidKey": "Cheie nevalidă",
+  "aiProviderCardStatusOfflineShort": "Deconectat",
+  "aiProviderCardStatusOffline": "Deconectat · Asigurați-vă că Ollama rulează",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Familia de asistenți AI Claude de la Anthropic",
   "aiProviderAnthropicName": "Anthropic Claude",
@@ -570,6 +613,11 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "Modele OpenRouter",
   "aiProviderOpenRouterName": "OpenRouter",
+  "aiProviderUnknownName": "Furnizor AI",
+  "aiProviderTaglineAnthropic": "Claude Sonnet · raționament cu context lung",
+  "aiProviderTaglineGemini": "Nivel gratuit · multimodal · transcriere audio",
+  "aiProviderTaglineOllama": "Rulează pe Mac-ul dvs. · zero apeluri în cloud",
+  "aiProviderTaglineOpenAi": "Raționament de top · familia GPT-5.2",
   "aiProviderVoxtralDescription": "Transcriere Voxtral locală (până la 30 min audio, 13 limbi)",
   "aiProviderVoxtralName": "Voxtral (local)",
   "aiProviderWhisperDescription": "Transcriere Whisper locală cu API compatibil OpenAI",
@@ -591,6 +639,8 @@
   "aiSettingsAddModelTooltip": "Adaugă acest model la furnizorul tău",
   "aiSettingsAddProfileButton": "Adaugă profil",
   "aiSettingsAddProviderButton": "Adaugă furnizor",
+  "aiSettingsPageLead": "Configurați furnizorii AI, modelele pe care Lotti le poate apela și profilurile de inferență care decid ce model gestionează fiecare sarcină.",
+  "aiSettingsSearchHintShort": "Căutați",
   "aiSettingsClearAllFiltersTooltip": "Șterge toate filtrele",
   "aiSettingsClearFiltersButton": "Șterge",
   "aiSettingsFilterByCapabilityTooltip": "Filtrează după capabilitatea {capability}",
@@ -609,7 +659,15 @@
       }
     }
   },
+  "aiSettingsCounterModels": "Modele",
+  "aiSettingsCounterProfiles": "Profile",
+  "aiSettingsCounterProviders": "Furnizori",
+  "aiSettingsEmptyDescription": "Adăugați unul pentru a debloca transcrierea, recunoașterea de imagini, generarea de imagini și căutarea semantică.",
+  "aiSettingsEmptyTitle": "Încă niciun furnizor",
   "aiSettingsFilterByReasoningTooltip": "Filtrează după capacitatea de raționament",
+  "aiSettingsFtueBannerDescription": "Durează aproximativ un minut. Lotti va configura modelele și un profil inițial pentru dvs.",
+  "aiSettingsFtueBannerStartButton": "Începeți configurarea",
+  "aiSettingsFtueBannerTitle": "Adăugați primul dvs. furnizor AI",
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Viziune",

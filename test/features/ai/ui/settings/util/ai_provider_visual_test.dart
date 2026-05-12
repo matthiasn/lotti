@@ -1,0 +1,291 @@
+import 'package:flutter/widgets.dart' show IconData;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_en.dart';
+
+void main() {
+  final messages = AppLocalizationsEn();
+
+  group('aiProviderAccent / aiProviderSurface', () {
+    test('every supported provider type resolves to a non-null Color', () {
+      for (final type in InferenceProviderType.values) {
+        expect(
+          aiProviderAccent(type: type, tokens: dsTokensDark),
+          isNotNull,
+          reason: 'aiProviderAccent must not be null for $type',
+        );
+        expect(
+          aiProviderSurface(type: type, tokens: dsTokensDark),
+          isNotNull,
+          reason: 'aiProviderSurface must not be null for $type',
+        );
+      }
+    });
+
+    test('Gemini / OpenAI / Anthropic / Ollama accents are distinct', () {
+      final accents = {
+        aiProviderAccent(
+          type: InferenceProviderType.gemini,
+          tokens: dsTokensDark,
+        ),
+        aiProviderAccent(
+          type: InferenceProviderType.openAi,
+          tokens: dsTokensDark,
+        ),
+        aiProviderAccent(
+          type: InferenceProviderType.anthropic,
+          tokens: dsTokensDark,
+        ),
+        aiProviderAccent(
+          type: InferenceProviderType.ollama,
+          tokens: dsTokensDark,
+        ),
+      };
+      expect(
+        accents.length,
+        equals(4),
+        reason:
+            'The four first-class providers must each carry a distinct '
+            'accent so the cards / tiles / rail are differentiable at a glance.',
+      );
+    });
+
+    test(
+      'unsupported provider types resolve to the neutral interactive '
+      'accent — the fallback is keyed off `interactive.enabled`, not the '
+      'Gemini brand token (the v1 regression this guards against).',
+      () {
+        final neutralAccent = dsTokensDark.colors.interactive.enabled;
+        for (final type in const [
+          InferenceProviderType.mistral,
+          InferenceProviderType.openRouter,
+          InferenceProviderType.alibaba,
+          InferenceProviderType.nebiusAiStudio,
+          InferenceProviderType.genericOpenAi,
+        ]) {
+          expect(
+            aiProviderAccent(type: type, tokens: dsTokensDark),
+            equals(neutralAccent),
+            reason: '$type should fall back to interactive.enabled',
+          );
+        }
+      },
+    );
+
+    test(
+      'null type falls back to the neutral interactive accent — for '
+      'callers that cannot resolve an owning provider',
+      () {
+        expect(
+          aiProviderAccent(type: null, tokens: dsTokensDark),
+          equals(dsTokensDark.colors.interactive.enabled),
+        );
+      },
+    );
+
+    test(
+      'light + dark variants are distinct hex values for first-class types',
+      () {
+        for (final type in const [
+          InferenceProviderType.gemini,
+          InferenceProviderType.openAi,
+          InferenceProviderType.anthropic,
+          InferenceProviderType.ollama,
+        ]) {
+          final lightAccent = aiProviderAccent(
+            type: type,
+            tokens: dsTokensLight,
+          );
+          final darkAccent = aiProviderAccent(type: type, tokens: dsTokensDark);
+          expect(
+            lightAccent,
+            isNot(equals(darkAccent)),
+            reason:
+                'Light and dark accents for $type should differ — the dark '
+                'mode uses lifted hues so cards stay readable on the dark sheet.',
+          );
+        }
+      },
+    );
+  });
+
+  group('aiProviderDisplayName', () {
+    test('returns a non-empty label for every supported provider type', () {
+      for (final type in InferenceProviderType.values) {
+        final name = aiProviderDisplayName(type: type, messages: messages);
+        expect(
+          name,
+          isNotEmpty,
+          reason: 'aiProviderDisplayName for $type must be non-empty',
+        );
+      }
+    });
+
+    test('first-class providers carry their expected display names', () {
+      expect(
+        aiProviderDisplayName(
+          type: InferenceProviderType.gemini,
+          messages: messages,
+        ),
+        equals('Google Gemini'),
+      );
+      expect(
+        aiProviderDisplayName(
+          type: InferenceProviderType.openAi,
+          messages: messages,
+        ),
+        equals('OpenAI'),
+      );
+      expect(
+        aiProviderDisplayName(
+          type: InferenceProviderType.anthropic,
+          messages: messages,
+        ),
+        equals('Anthropic Claude'),
+      );
+      expect(
+        aiProviderDisplayName(
+          type: InferenceProviderType.ollama,
+          messages: messages,
+        ),
+        equals('Ollama'),
+      );
+    });
+  });
+
+  group('aiProviderTagline', () {
+    test(
+      'only the four first-class providers carry taglines — others return empty',
+      () {
+        const expectingTagline = {
+          InferenceProviderType.gemini,
+          InferenceProviderType.openAi,
+          InferenceProviderType.anthropic,
+          InferenceProviderType.ollama,
+        };
+        for (final type in InferenceProviderType.values) {
+          final tagline = aiProviderTagline(type: type, messages: messages);
+          if (expectingTagline.contains(type)) {
+            expect(
+              tagline,
+              isNotEmpty,
+              reason: '$type should have a tagline',
+            );
+          } else {
+            expect(
+              tagline,
+              isEmpty,
+              reason:
+                  '$type should NOT have a tagline — only the four first-class '
+                  'providers (Gemini/OpenAI/Anthropic/Ollama) carry one.',
+            );
+          }
+        }
+      },
+    );
+  });
+
+  group('aiProviderIcon', () {
+    test('returns a non-null icon for every provider type and for null', () {
+      for (final type in InferenceProviderType.values) {
+        expect(
+          aiProviderIcon(type),
+          isNotNull,
+          reason: 'aiProviderIcon should never return null for $type',
+        );
+      }
+      // Null-type callers (e.g. an AiModelCard whose owning provider
+      // hasn't loaded yet) get the generic robot icon.
+      expect(aiProviderIcon(null), isNotNull);
+    });
+
+    test('first-class providers each carry a distinct icon', () {
+      final icons = <IconData>{
+        aiProviderIcon(InferenceProviderType.gemini),
+        aiProviderIcon(InferenceProviderType.openAi),
+        aiProviderIcon(InferenceProviderType.anthropic),
+        aiProviderIcon(InferenceProviderType.ollama),
+        aiProviderIcon(InferenceProviderType.mistral),
+        aiProviderIcon(InferenceProviderType.alibaba),
+      };
+      expect(
+        icons.length,
+        equals(6),
+        reason: 'Each named provider should have a distinct icon glyph',
+      );
+    });
+  });
+
+  group('aiProviderDisplayName + tagline — null fallbacks', () {
+    test(
+      'null type resolves to the "AI provider" placeholder label so cards '
+      'can render without a resolved owner',
+      () {
+        expect(
+          aiProviderDisplayName(type: null, messages: messages),
+          equals('AI provider'),
+        );
+      },
+    );
+
+    test(
+      'null type produces an empty tagline (caller can guard on isEmpty)',
+      () {
+        expect(
+          aiProviderTagline(type: null, messages: messages),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'aiProviderVisual on a null type bundles neutral chrome and the '
+      'unknown-provider label',
+      () {
+        final visual = aiProviderVisual(
+          type: null,
+          tokens: dsTokensDark,
+          messages: messages,
+        );
+        expect(visual.displayName, equals('AI provider'));
+        expect(visual.tagline, isEmpty);
+        expect(visual.accent, equals(dsTokensDark.colors.interactive.enabled));
+      },
+    );
+  });
+
+  group('aiProviderVisual', () {
+    test(
+      'bundles accent + surface + displayName + tagline into one record',
+      () {
+        final visual = aiProviderVisual(
+          type: InferenceProviderType.gemini,
+          tokens: dsTokensDark,
+          messages: messages,
+        );
+        expect(visual.displayName, equals('Google Gemini'));
+        expect(visual.tagline, isNotEmpty);
+        expect(
+          visual.accent,
+          equals(
+            aiProviderAccent(
+              type: InferenceProviderType.gemini,
+              tokens: dsTokensDark,
+            ),
+          ),
+        );
+        expect(
+          visual.surface,
+          equals(
+            aiProviderSurface(
+              type: InferenceProviderType.gemini,
+              tokens: dsTokensDark,
+            ),
+          ),
+        );
+      },
+    );
+  });
+}
