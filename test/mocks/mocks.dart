@@ -72,6 +72,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
+import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -461,6 +462,9 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
 }
 
 class MockSoulDocumentService extends Mock implements SoulDocumentService {}
+
+class MockBackfillResponseHandler extends Mock
+    implements BackfillResponseHandler {}
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
   // Default null/no-op so tests that stub only `process` keep working: a

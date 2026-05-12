@@ -911,6 +911,30 @@ void main() {
           controller.close();
         });
       });
+
+      test('removeSubscription removes only the named subscription', () {
+        fakeAsync((async) {
+          orchestrator
+            ..addSubscription(makeSub())
+            ..addSubscription(
+              makeSub(id: 'sub-2', matchEntityIds: {'entity-2'}),
+            )
+            // Drop the second subscription; the first must keep firing so a
+            // per-link delete on agent-1 does not silence the agent's other
+            // subscriptions or its per-agent throttle/suppression state.
+            ..removeSubscription('sub-2');
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+          emitAndDrain(async, controller, {'entity-1', 'entity-2'});
+
+          final captured = captureSingleWakeRun(mockRepository);
+          expect(captured.agentId, 'agent-1');
+          expect(captured.reasonId, 'sub-1');
+
+          controller.close();
+        });
+      });
     });
 
     group('notification matching', () {

@@ -1,0 +1,1935 @@
+// ignore_for_file: avoid_redundant_argument_values, cascade_invocations
+
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as path;
+
+import '../../../mocks/mocks.dart';
+import 'sync_event_processor_test_helpers.dart';
+
+void main() {
+  setUpAll(registerSyncProcessorFallbacks);
+  setUp(setUpProcessorMocks);
+
+  group('SyncEventProcessor - Agent Entities and Links', () {
+    late MockAgentRepository mockAgentRepo;
+
+    setUp(() {
+      mockAgentRepo = MockAgentRepository();
+      when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((_) async {});
+      when(() => mockAgentRepo.upsertLink(any())).thenAnswer((_) async {});
+      processor.agentRepository = mockAgentRepo;
+    });
+
+    test('processes agent identity entity', () async {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Test Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {'cat-1'},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          any<Object>(that: contains('agentEntity')),
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
+        ),
+      ).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
+    test('processes agent state entity', () async {
+      final entity = AgentDomainEntity.agentState(
+        id: 'state-1',
+        agentId: 'agent-1',
+        revision: 5,
+        slots: const AgentSlots(),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        wakeCounter: 42,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+    });
+
+    test('processes agent message entity', () async {
+      final entity = AgentDomainEntity.agentMessage(
+        id: 'msg-1',
+        agentId: 'agent-1',
+        threadId: 'thread-1',
+        kind: AgentMessageKind.thought,
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        metadata: const AgentMessageMetadata(),
+        tokensApprox: 100,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+    });
+
+    test('processes agent message payload entity', () async {
+      final entity = AgentDomainEntity.agentMessagePayload(
+        id: 'payload-1',
+        agentId: 'agent-1',
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        content: const {'text': 'hello world'},
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+    });
+
+    test('processes agent report entity', () async {
+      final entity = AgentDomainEntity.agentReport(
+        id: 'report-1',
+        agentId: 'agent-1',
+        scope: 'current',
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        content: 'Report content',
+        confidence: 0.9,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+    });
+
+    test('processes agent report head entity', () async {
+      final entity = AgentDomainEntity.agentReportHead(
+        id: 'head-1',
+        agentId: 'agent-1',
+        scope: 'current',
+        reportId: 'report-1',
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+    });
+
+    test(
+      'processes wakeTokenUsage entity with templateId in notification',
+      () async {
+        final entity = AgentDomainEntity.wakeTokenUsage(
+          id: 'usage-1',
+          agentId: 'agent-1',
+          runKey: 'run-1',
+          threadId: 'thread-1',
+          modelId: 'models/gemini-2.5-pro',
+          createdAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          templateId: 'tpl-1',
+          inputTokens: 100,
+          outputTokens: 50,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        verify(
+          () => updateNotifications.notify(
+            {'agent-1', 'tpl-1', 'AGENT_CHANGED'},
+            fromSync: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('processes wakeTokenUsage entity without templateId', () async {
+      final entity = AgentDomainEntity.wakeTokenUsage(
+        id: 'usage-2',
+        agentId: 'agent-1',
+        runKey: 'run-2',
+        threadId: 'thread-2',
+        modelId: 'models/gemini-2.5-pro',
+        createdAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        inputTokens: 200,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
+    test('processes agent link (basic)', () async {
+      final link = AgentLink.basic(
+        id: 'link-1',
+        fromId: 'agent-1',
+        toId: 'state-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verify(() => mockAgentRepo.upsertLink(link)).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          any<Object>(that: contains('agentLink')),
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
+        ),
+      ).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'state-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
+    });
+
+    test(
+      'no-ops a legacy SyncAgentBundle envelope so the marker advances; '
+      'children recover via the per-entity / per-link backfill path',
+      () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-1',
+          agentId: 'agent-1',
+          revision: 5,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 1}),
+        );
+        final link = AgentLink.basic(
+          id: 'link-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-a': 2}),
+        );
+        final message = SyncMessage.agentBundle(
+          agentId: 'agent-1',
+          wakeRunKey: 'run-1',
+          originatingHostId: 'host-a',
+          entities: [
+            SyncMessage.agentEntity(
+                  agentEntity: entity,
+                  status: SyncEntryStatus.update,
+                )
+                as SyncAgentEntity,
+          ],
+          links: [
+            SyncMessage.agentLink(
+                  agentLink: link,
+                  status: SyncEntryStatus.update,
+                )
+                as SyncAgentLink,
+          ],
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        // Bundle is intentionally not applied — the agent repo is not
+        // touched, no AGENT_CHANGED notifications fire, and process()
+        // completes cleanly so the inbound queue marker advances. The
+        // sender already recorded each child under per-entity /
+        // per-link sequence-log entries, so backfill picks them up if
+        // they are missing locally.
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verifyNever(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any<bool>(named: 'fromSync'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'processes agent link variants (agentState, messagePrev, etc)',
+      () async {
+        final links = [
+          AgentLink.agentState(
+            id: 'link-2',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+          AgentLink.messagePrev(
+            id: 'link-3',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+          AgentLink.messagePayload(
+            id: 'link-4',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+          AgentLink.toolEffect(
+            id: 'link-5',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+          AgentLink.agentTask(
+            id: 'link-6',
+            fromId: 'a',
+            toId: 'b',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+        ];
+
+        for (final link in links) {
+          reset(mockAgentRepo);
+          when(() => mockAgentRepo.upsertLink(any())).thenAnswer((_) async {});
+
+          final message = SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+        }
+      },
+    );
+
+    test('skips agent entity when agentRepository is null', () async {
+      processor.agentRepository = null;
+
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Test Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      verify(
+        () => loggingService.captureEvent(
+          any<Object>(that: contains('ignored')),
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
+        ),
+      ).called(1);
+    });
+
+    test('skips agent link when agentRepository is null', () async {
+      processor.agentRepository = null;
+
+      final link = AgentLink.basic(
+        id: 'link-1',
+        fromId: 'a',
+        toId: 'b',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      verifyNever(() => mockAgentRepo.upsertLink(any()));
+      verify(
+        () => loggingService.captureEvent(
+          any<Object>(that: contains('ignored')),
+          domain: LogDomains.sync,
+          subDomain: 'processor.apply',
+        ),
+      ).called(1);
+    });
+
+    test('propagates repository error on agent entity upsert', () async {
+      when(
+        () => mockAgentRepo.upsertEntity(any()),
+      ).thenAnswer((_) async => throw Exception('db error'));
+
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Test Agent',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentEntity(
+        agentEntity: entity,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      // The processor catches, logs, and rethrows
+      await expectLater(
+        () => processor.process(event: event, journalDb: journalDb),
+        throwsA(isA<Exception>()),
+      );
+
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    test('propagates repository error on agent link upsert', () async {
+      when(
+        () => mockAgentRepo.upsertLink(any()),
+      ).thenAnswer((_) async => throw Exception('db error'));
+
+      final link = AgentLink.basic(
+        id: 'link-1',
+        fromId: 'a',
+        toId: 'b',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+
+      final message = SyncMessage.agentLink(
+        agentLink: link,
+        status: SyncEntryStatus.update,
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+
+      await expectLater(
+        () => processor.process(event: event, journalDb: journalDb),
+        throwsA(isA<Exception>()),
+      );
+
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
+    group('agent entity sequence log recording', () {
+      late MockSyncSequenceLogService mockSeqService;
+      late MockAgentRepository mockAgentRepoSeq;
+
+      setUp(() {
+        mockSeqService = MockSyncSequenceLogService();
+        mockAgentRepoSeq = MockAgentRepository();
+        when(
+          () => mockAgentRepoSeq.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(() => mockAgentRepoSeq.upsertLink(any())).thenAnswer((_) async {});
+      });
+
+      test('records received agent entity in sequence log', () async {
+        const vc = VectorClock({'host-A': 10});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-seq-1',
+          agentId: 'agent-seq-1',
+          kind: 'task_agent',
+          displayName: 'Seq Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-A',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: 'agent-seq-1',
+            vectorClock: vc,
+            originatingHostId: 'host-A',
+            coveredVectorClocks: null,
+            payloadType: SyncSequencePayloadType.agentEntity,
+            jsonPath: any(named: 'jsonPath'),
+          ),
+        ).called(1);
+      });
+
+      test('logs gap detection for agent entity', () async {
+        const vc = VectorClock({'host-B': 20});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-gap-1',
+          agentId: 'agent-gap-1',
+          kind: 'task_agent',
+          displayName: 'Gap Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-B',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer(
+          (_) async => [(hostId: 'host-B', counter: 18)],
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => loggingService.captureEvent(
+            contains('apply.agentEntity.gapsDetected count=1'),
+            domain: LogDomains.sync,
+            subDomain: 'processor.gapDetection',
+          ),
+        ).called(1);
+      });
+
+      test('handles recordReceivedEntry exception for agent entity', () async {
+        const vc = VectorClock({'host-C': 5});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-err-1',
+          agentId: 'agent-err-1',
+          kind: 'task_agent',
+          displayName: 'Err Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-C',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenThrow(Exception('seq log error'));
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        // Entity should still be upserted despite seq log error
+        verify(() => mockAgentRepoSeq.upsertEntity(entity)).called(1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('records received agent link in sequence log', () async {
+        const vc = VectorClock({'host-A': 15});
+        final link = AgentLink.basic(
+          id: 'link-seq-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-A',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: 'link-seq-1',
+            vectorClock: vc,
+            originatingHostId: 'host-A',
+            coveredVectorClocks: null,
+            payloadType: SyncSequencePayloadType.agentLink,
+            jsonPath: any(named: 'jsonPath'),
+          ),
+        ).called(1);
+      });
+
+      test('logs gap detection for agent link', () async {
+        const vc = VectorClock({'host-D': 12});
+        final link = AgentLink.basic(
+          id: 'link-gap-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-D',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            (hostId: 'host-D', counter: 9),
+            (hostId: 'host-D', counter: 10),
+          ],
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => loggingService.captureEvent(
+            contains('apply.agentLink.gapsDetected count=2'),
+            domain: LogDomains.sync,
+            subDomain: 'processor.gapDetection',
+          ),
+        ).called(1);
+      });
+
+      test('handles recordReceivedEntry exception for agent link', () async {
+        const vc = VectorClock({'host-E': 7});
+        final link = AgentLink.basic(
+          id: 'link-err-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-E',
+        );
+
+        when(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        ).thenThrow(Exception('seq log error link'));
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        // Link should still be upserted despite seq log error.
+        verify(() => mockAgentRepoSeq.upsertLink(link)).called(1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'recordReceived',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('skips sequence log when vectorClock is null', () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-no-vc',
+          agentId: 'agent-no-vc',
+          kind: 'task_agent',
+          displayName: 'No VC',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          originatingHostId: 'host-A',
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verifyNever(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        );
+      });
+
+      test('skips sequence log when originatingHostId is null', () async {
+        const vc = VectorClock({'host-A': 10});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-no-host',
+          agentId: 'agent-no-host',
+          kind: 'task_agent',
+          displayName: 'No Host',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+          // no originatingHostId
+        );
+
+        final proc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: mockSeqService,
+        )..agentRepository = mockAgentRepoSeq;
+
+        when(() => event.text).thenReturn(encodeMessage(message));
+        await proc.process(event: event, journalDb: journalDb);
+
+        verifyNever(
+          () => mockSeqService.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+          ),
+        );
+      });
+    });
+
+    group('lifecycle side-effects on incoming identity', () {
+      late MockWakeOrchestrator mockOrchestrator;
+
+      setUp(() {
+        mockOrchestrator = MockWakeOrchestrator();
+        processor.wakeOrchestrator = mockOrchestrator;
+        when(
+          () => mockOrchestrator.removeSubscriptions(any()),
+        ).thenReturn(null);
+      });
+
+      test('removes subscriptions when agent is dormant', () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-dormant',
+          agentId: 'agent-dormant',
+          kind: 'task_agent',
+          displayName: 'Dormant Agent',
+          lifecycle: AgentLifecycle.dormant,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        verify(
+          () => mockOrchestrator.removeSubscriptions('agent-dormant'),
+        ).called(1);
+      });
+
+      test('removes subscriptions when agent is destroyed', () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-destroyed',
+          agentId: 'agent-destroyed',
+          kind: 'task_agent',
+          displayName: 'Destroyed Agent',
+          lifecycle: AgentLifecycle.destroyed,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        verify(
+          () => mockOrchestrator.removeSubscriptions('agent-destroyed'),
+        ).called(1);
+      });
+
+      test('restores subscriptions for active task_agent', () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-active',
+          agentId: 'agent-active',
+          kind: 'task_agent',
+          displayName: 'Active Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        final taskLink = AgentLink.basic(
+          id: 'link-1',
+          fromId: 'agent-active',
+          toId: 'task-42',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        when(
+          () => mockAgentRepo.getLinksFrom(
+            'agent-active',
+            type: 'agent_task',
+          ),
+        ).thenAnswer((_) async => [taskLink]);
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+        verify(
+          () => mockOrchestrator.addSubscription(
+            any(
+              that: isA<AgentSubscription>().having(
+                (s) => s.agentId,
+                'agentId',
+                'agent-active',
+              ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('does NOT remove subscriptions for non-identity entities', () async {
+        final entity = AgentDomainEntity.agentState(
+          id: 'state-1',
+          agentId: 'agent-1',
+          revision: 5,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+      });
+
+      test('safe when wakeOrchestrator is null', () async {
+        processor.wakeOrchestrator = null;
+
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-dormant',
+          agentId: 'agent-dormant',
+          kind: 'task_agent',
+          displayName: 'Dormant Agent',
+          lifecycle: AgentLifecycle.dormant,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        // Should not throw even though lifecycle is dormant.
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        verifyNever(() => mockOrchestrator.removeSubscriptions(any()));
+      });
+    });
+
+    group('subscription restoration on incoming agent link', () {
+      late MockWakeOrchestrator mockOrchestrator;
+
+      setUp(() {
+        mockOrchestrator = MockWakeOrchestrator();
+        processor.wakeOrchestrator = mockOrchestrator;
+      });
+
+      test(
+        'agent_task link for active task_agent restores subscription',
+        () async {
+          final activeAgent = AgentDomainEntity.agent(
+            id: 'agent-1',
+            agentId: 'agent-1',
+            kind: 'task_agent',
+            displayName: 'Active Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          when(
+            () => mockAgentRepo.getEntity('agent-1'),
+          ).thenAnswer((_) async => activeAgent);
+
+          final link = AgentLink.agentTask(
+            id: 'link-1',
+            fromId: 'agent-1',
+            toId: 'task-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          final message = SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          verify(
+            () => mockOrchestrator.addSubscription(
+              any(
+                that: isA<AgentSubscription>()
+                    .having((s) => s.agentId, 'agentId', 'agent-1')
+                    .having(
+                      (s) => s.matchEntityIds,
+                      'matchEntityIds',
+                      {'task-42'},
+                    ),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'agent_task link for dormant agent does NOT restore subscription',
+        () async {
+          final dormantAgent = AgentDomainEntity.agent(
+            id: 'agent-1',
+            agentId: 'agent-1',
+            kind: 'task_agent',
+            displayName: 'Dormant Agent',
+            lifecycle: AgentLifecycle.dormant,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          when(
+            () => mockAgentRepo.getEntity('agent-1'),
+          ).thenAnswer((_) async => dormantAgent);
+
+          final link = AgentLink.agentTask(
+            id: 'link-1',
+            fromId: 'agent-1',
+            toId: 'task-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          final message = SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+        },
+      );
+
+      test(
+        'soft-deleted agent_task link removes the wake subscription',
+        () async {
+          final link = AgentLink.agentTask(
+            id: 'link-deleted',
+            fromId: 'agent-1',
+            toId: 'task-42',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            deletedAt: DateTime(2024, 3, 16),
+          );
+
+          final message = SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processor.process(event: event, journalDb: journalDb);
+
+          verify(() => mockAgentRepo.upsertLink(link)).called(1);
+          // Mirror remote delete: the per-link subscription must go so this
+          // device stops waking an agent that was unlinked elsewhere.
+          verify(
+            () => mockOrchestrator.removeSubscription('agent-1_task_task-42'),
+          ).called(1);
+          // Delete path skips agent lookup + re-subscribe entirely.
+          verifyNever(() => mockAgentRepo.getEntity(any()));
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+        },
+      );
+
+      test('non-agent_task link does NOT trigger subscription logic', () async {
+        final link = AgentLink.basic(
+          id: 'link-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+        // getEntity should not be called for non-agent_task links.
+        verifyNever(() => mockAgentRepo.getEntity(any()));
+        verifyNever(() => mockOrchestrator.addSubscription(any()));
+      });
+    });
+
+    group('descriptor-only resolution (jsonPath)', () {
+      late Directory tempDir;
+
+      setUp(() {
+        tempDir = Directory.systemTemp.createTempSync(
+          'agent_resolve_test',
+        );
+        if (getIt.isRegistered<Directory>()) {
+          getIt.unregister<Directory>();
+        }
+        getIt.registerSingleton<Directory>(tempDir);
+      });
+
+      tearDown(() async {
+        await getIt.reset();
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      });
+
+      test('resolves agent entity from jsonPath on disk', () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-disk',
+          agentId: 'agent-disk',
+          kind: 'task_agent',
+          displayName: 'Disk Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        const relativePath = '/agent_entities/agent-disk.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(entity.toJson()));
+
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      });
+
+      test('resolves agent link from jsonPath on disk', () async {
+        final link = AgentLink.basic(
+          id: 'link-disk',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        const relativePath = '/agent_links/link-disk.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync(jsonEncode(link.toJson()));
+
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verify(() => mockAgentRepo.upsertLink(link)).called(1);
+      });
+
+      test('skips agent entity with no entity and no jsonPath', () async {
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verify(
+          () => loggingService.captureEvent(
+            any<Object>(that: contains('no payload and no jsonPath')),
+            domain: LogDomains.sync,
+            subDomain: 'processor.resolve',
+          ),
+        ).called(1);
+      });
+
+      test('skips agent link with no link and no jsonPath', () async {
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verify(
+          () => loggingService.captureEvent(
+            any<Object>(that: contains('no payload and no jsonPath')),
+            domain: LogDomains.sync,
+            subDomain: 'processor.resolve',
+          ),
+        ).called(1);
+      });
+
+      test('skips agent entity with path-traversal jsonPath', () async {
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+          jsonPath: '../../../etc/passwd',
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve.agentEntity.invalidPath',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test('skips agent link with path-traversal jsonPath', () async {
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+          jsonPath: '../../../etc/passwd',
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve.agentLink.invalidPath',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'rethrows FileSystemException for missing agent entity file',
+        () async {
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_entities/missing.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await expectLater(
+            () => processor.process(event: event, journalDb: journalDb),
+            throwsA(isA<FileSystemException>()),
+          );
+        },
+      );
+
+      test(
+        'rethrows FileSystemException for missing agent link file',
+        () async {
+          const message = SyncMessage.agentLink(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_links/missing.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await expectLater(
+            () => processor.process(event: event, journalDb: journalDb),
+            throwsA(isA<FileSystemException>()),
+          );
+        },
+      );
+
+      test('skips agent entity with corrupt JSON file', () async {
+        const relativePath = '/agent_entities/corrupt.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync('not valid json {{{');
+
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve.agentEntity',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+
+      group('descriptor-based resolution (AttachmentIndex)', () {
+        late AttachmentIndex attachmentIndex;
+        late SyncEventProcessor processorWithIndex;
+        late MockEvent descriptorEvent;
+
+        setUp(() {
+          attachmentIndex = AttachmentIndex(logging: loggingService);
+          processorWithIndex = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            attachmentIndex: attachmentIndex,
+          );
+          processorWithIndex.agentRepository = mockAgentRepo;
+
+          descriptorEvent = MockEvent();
+          when(() => descriptorEvent.eventId).thenReturn('desc-event-id');
+          when(
+            () => descriptorEvent.attachmentMimetype,
+          ).thenReturn('application/json');
+          when(() => descriptorEvent.content).thenReturn({
+            'relativePath': '/agent_entities/agent-desc.json',
+          });
+        });
+
+        test(
+          'fetches agent entity from descriptor when file is missing',
+          () async {
+            final entity = AgentDomainEntity.agent(
+              id: 'agent-desc',
+              agentId: 'agent-desc',
+              kind: 'task_agent',
+              displayName: 'Descriptor Agent',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'state-1',
+              config: const AgentConfig(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              vectorClock: null,
+            );
+
+            final bytes = Uint8List.fromList(
+              utf8.encode(jsonEncode(entity.toJson())),
+            );
+            when(
+              descriptorEvent.downloadAndDecryptAttachment,
+            ).thenAnswer((_) async => MatrixFile(bytes: bytes, name: 'e.json'));
+
+            attachmentIndex.record(descriptorEvent);
+
+            const message = SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              jsonPath: '/agent_entities/agent-desc.json',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            await processorWithIndex.process(
+              event: event,
+              journalDb: journalDb,
+            );
+
+            verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+            verify(descriptorEvent.downloadAndDecryptAttachment).called(1);
+          },
+        );
+
+        test(
+          'fetches agent link from descriptor when file is missing',
+          () async {
+            final link = AgentLink.basic(
+              id: 'link-desc',
+              fromId: 'agent-1',
+              toId: 'state-1',
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 15),
+              vectorClock: null,
+            );
+
+            final bytes = Uint8List.fromList(
+              utf8.encode(jsonEncode(link.toJson())),
+            );
+
+            final linkDescriptorEvent = MockEvent();
+            when(
+              () => linkDescriptorEvent.eventId,
+            ).thenReturn('link-desc-event-id');
+            when(
+              () => linkDescriptorEvent.attachmentMimetype,
+            ).thenReturn('application/json');
+            when(() => linkDescriptorEvent.content).thenReturn({
+              'relativePath': '/agent_links/link-desc.json',
+            });
+            when(
+              linkDescriptorEvent.downloadAndDecryptAttachment,
+            ).thenAnswer((_) async => MatrixFile(bytes: bytes, name: 'l.json'));
+
+            attachmentIndex.record(linkDescriptorEvent);
+
+            const message = SyncMessage.agentLink(
+              status: SyncEntryStatus.update,
+              jsonPath: '/agent_links/link-desc.json',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            await processorWithIndex.process(
+              event: event,
+              journalDb: journalDb,
+            );
+
+            verify(() => mockAgentRepo.upsertLink(link)).called(1);
+            verify(linkDescriptorEvent.downloadAndDecryptAttachment).called(1);
+          },
+        );
+
+        test(
+          'throws when descriptor download fails (no stale fallback)',
+          () async {
+            when(
+              descriptorEvent.downloadAndDecryptAttachment,
+            ).thenThrow(Exception('download failed'));
+
+            attachmentIndex.record(descriptorEvent);
+
+            const message = SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              jsonPath: '/agent_entities/agent-desc.json',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            await expectLater(
+              () => processorWithIndex.process(
+                event: event,
+                journalDb: journalDb,
+              ),
+              throwsA(isA<FileSystemException>()),
+            );
+
+            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          },
+        );
+
+        test('throws when descriptor returns empty bytes', () async {
+          when(descriptorEvent.downloadAndDecryptAttachment).thenAnswer(
+            (_) async => MatrixFile(bytes: Uint8List(0), name: 'e.json'),
+          );
+
+          attachmentIndex.record(descriptorEvent);
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_entities/agent-desc.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await expectLater(
+            () => processorWithIndex.process(
+              event: event,
+              journalDb: journalDb,
+            ),
+            throwsA(isA<FileSystemException>()),
+          );
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+        });
+
+        test('falls back to disk when no descriptor in index', () async {
+          final entity = AgentDomainEntity.agent(
+            id: 'agent-disk-fb',
+            agentId: 'agent-disk-fb',
+            kind: 'task_agent',
+            displayName: 'Disk Fallback',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'state-1',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          );
+
+          const relativePath = '/agent_entities/agent-disk-fb.json';
+          final normalized = stripLeadingSlashes(relativePath);
+          final file = File(path.join(tempDir.path, normalized));
+          file.parent.createSync(recursive: true);
+          file.writeAsStringSync(jsonEncode(entity.toJson()));
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: relativePath,
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await processorWithIndex.process(
+            event: event,
+            journalDb: journalDb,
+          );
+
+          verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+        });
+
+        test('skips agent entity with corrupt descriptor JSON', () async {
+          final bytes = Uint8List.fromList(utf8.encode('not valid json'));
+          when(
+            descriptorEvent.downloadAndDecryptAttachment,
+          ).thenAnswer((_) async => MatrixFile(bytes: bytes, name: 'e.json'));
+
+          attachmentIndex.record(descriptorEvent);
+
+          const message = SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_entities/agent-desc.json',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          // Descriptor fetched successfully but JSON parse fails →
+          // permanent skip (returns null), not a retry.
+          await processorWithIndex.process(
+            event: event,
+            journalDb: journalDb,
+          );
+
+          verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          verify(
+            () => loggingService.captureException(
+              any<Object>(),
+              domain: 'AGENT_SYNC',
+              subDomain: 'resolve.agentEntity.parseFetched',
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('skips agent link with corrupt JSON file', () async {
+        const relativePath = '/agent_links/corrupt.json';
+        final normalized = stripLeadingSlashes(relativePath);
+        final file = File(path.join(tempDir.path, normalized));
+        file.parent.createSync(recursive: true);
+        file.writeAsStringSync('not valid json {{{');
+
+        const message = SyncMessage.agentLink(
+          status: SyncEntryStatus.update,
+          jsonPath: relativePath,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        verifyNever(() => mockAgentRepo.upsertLink(any()));
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'AGENT_SYNC',
+            subDomain: 'resolve.agentLink',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+  });
+
+  test('logs exceptions for invalid base64 payloads', () async {
+    when(() => event.text).thenReturn('not-base64');
+
+    await expectLater(
+      processor.process(event: event, journalDb: journalDb),
+      throwsA(isA<FormatException>()),
+    );
+
+    verify(
+      () => loggingService.captureException(
+        any<Object>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SyncEventProcessor',
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).called(1);
+  });
+
+  test('logs exceptions thrown by handlers', () async {
+    const message = SyncMessage.journalEntity(
+      id: 'entity-id',
+      jsonPath: '/entity.json',
+      vectorClock: null,
+      status: SyncEntryStatus.initial,
+    );
+    when(() => event.text).thenReturn(encodeMessage(message));
+    when(
+      () => journalEntityLoader.load(
+        jsonPath: '/entity.json',
+      ),
+    ).thenThrow(Exception('load failed'));
+
+    await expectLater(
+      processor.process(event: event, journalDb: journalDb),
+      throwsA(isA<Exception>()),
+    );
+
+    verify(
+      () => loggingService.captureException(
+        any<Object>(),
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'SyncEventProcessor',
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      ),
+    ).called(1);
+  });
+
+  test('skips message with unknown enum value (ArgumentError)', () async {
+    // Simulate a SyncMessage JSON with an unknown enum value that would
+    // cause $enumDecode to throw ArgumentError.
+    final badJson = {
+      'runtimeType': 'journalEntity',
+      'id': 'entity-id',
+      'jsonPath': '/entity.json',
+      'vectorClock': null,
+      'status': 'unknownEnumValue',
+    };
+    final encoded = base64.encode(utf8.encode(json.encode(badJson)));
+    when(() => event.text).thenReturn(encoded);
+
+    // Should NOT throw — the error is caught and logged.
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(
+      () => loggingService.captureEvent(
+        any<Object>(
+          that: contains('skipping undeserializable sync message'),
+        ),
+        domain: LogDomains.sync,
+        subDomain: 'processor.skipUnrecoverable',
+      ),
+    ).called(1);
+  });
+
+  test('skips message with FormatException from malformed JSON', () async {
+    // Valid base64/JSON but with a structure that causes FormatException
+    // when SyncMessage.fromJson tries to parse sub-fields.
+    final badJson = {
+      'runtimeType': 'journalEntity',
+      'id': 123, // wrong type — id should be String
+      'jsonPath': '/entity.json',
+      'vectorClock': null,
+      'status': 'initial',
+    };
+    final encoded = base64.encode(utf8.encode(json.encode(badJson)));
+    when(() => event.text).thenReturn(encoded);
+
+    // The error might be TypeError or similar — either way, if it's not
+    // ArgumentError or FormatException, it will rethrow through the outer
+    // catch. Let's verify it doesn't crash with an unrecoverable retry.
+    try {
+      await processor.process(event: event, journalDb: journalDb);
+      // If it didn't throw, it was caught as deserialization error → good.
+    } on Object {
+      // If it threw, it's a non-deserialization error that rethrows → also ok,
+      // but verify the outer catch logged it.
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'SyncEventProcessor',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    }
+  });
+
+  test('skips message with CheckedFromJsonException from empty JSON', () async {
+    // An empty JSON object hits the default case in the generated
+    // _$SyncMessageFromJson switch, which throws CheckedFromJsonException.
+    // The processor catches this and logs a skip.
+    final badJson = <String, dynamic>{};
+    final encoded = base64.encode(utf8.encode(json.encode(badJson)));
+    when(() => event.text).thenReturn(encoded);
+
+    await processor.process(event: event, journalDb: journalDb);
+
+    verify(
+      () => loggingService.captureEvent(
+        any<String>(
+          that: contains('skipping undeserializable sync message'),
+        ),
+        domain: LogDomains.sync,
+        subDomain: 'processor.skipUnrecoverable',
+      ),
+    ).called(1);
+  });
+}

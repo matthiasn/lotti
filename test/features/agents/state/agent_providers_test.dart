@@ -2034,6 +2034,8 @@ void main() {
 
     test('wires repository and orchestrator into SyncEventProcessor', () async {
       final mockProcessor = MockSyncEventProcessor();
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockProcessor.backfillResponseHandler).thenReturn(mockHandler);
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
 
       final container = bench.createContainer();
@@ -2045,10 +2047,15 @@ void main() {
       verify(
         () => mockProcessor.agentRepository = any(that: isNotNull),
       ).called(1);
+      verify(
+        () => mockHandler.agentRepository = any(that: isNotNull),
+      ).called(1);
     });
 
     test('clears SyncEventProcessor fields on dispose', () async {
       final mockProcessor = MockSyncEventProcessor();
+      final mockHandler = MockBackfillResponseHandler();
+      when(() => mockProcessor.backfillResponseHandler).thenReturn(mockHandler);
       getIt.registerSingleton<SyncEventProcessor>(mockProcessor);
 
       final container = bench.createContainer();
@@ -2065,6 +2072,7 @@ void main() {
 
       verify(() => mockProcessor.wakeOrchestrator = null).called(1);
       verify(() => mockProcessor.agentRepository = null).called(1);
+      verify(() => mockHandler.agentRepository = null).called(1);
     });
 
     test('stops orchestrator on dispose', () async {
