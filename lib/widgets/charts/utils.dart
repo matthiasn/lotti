@@ -137,31 +137,44 @@ List<String> daysInRange({
 /// Average measurement value per day across [rangeStart, rangeEnd).
 ///
 /// Mirrors [aggregateSumByDay] in shape but emits the mean of each day's
-/// measurement values. Days without any [MeasurementEntry] are skipped
-/// (returning a zero observation would distort the average chart by
-/// pulling the line down to zero on empty days; the sum/max variants
-/// keep zero buckets because zero is a meaningful aggregate for them
-/// but not for a mean).
+/// measurement values. The day list is pre-built in chronological order
+/// from `[rangeStart, rangeEnd)` so the returned [Observation]s come back
+/// sorted regardless of the input ordering — the charts that consume
+/// these points require monotonically increasing time. Days that fall
+/// outside the requested range are filtered out, matching the contract
+/// of `aggregateSumByDay` / `aggregateMaxByDay`. Days inside the range
+/// with no measurements are skipped on the output (returning a zero
+/// observation would distort the average chart by pulling the line down
+/// to zero on empty days; the sum/max variants keep zero buckets because
+/// zero is a meaningful aggregate for them but not for a mean).
 List<Observation> aggregateAvgByDay(
   List<JournalEntity> entities, {
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
+  final range = rangeEnd.difference(rangeStart);
+  final dayStrings = getDayStrings(range.inDays, rangeStart);
+  // `inDayBuckets` doubles as the in-range filter: an entity whose
+  // `meta.dateFrom.ymd` is not one of the pre-built bucket keys is
+  // either before `rangeStart` or on/after `rangeEnd` and must be
+  // excluded.
+  final inDayBuckets = dayStrings.toSet();
   final sumsByDay = <String, num>{};
   final countsByDay = <String, int>{};
 
   for (final entity in entities) {
     if (entity is! MeasurementEntry) continue;
     final dayString = entity.meta.dateFrom.ymd;
+    if (!inDayBuckets.contains(dayString)) continue;
     sumsByDay[dayString] = (sumsByDay[dayString] ?? 0) + entity.data.value;
     countsByDay[dayString] = (countsByDay[dayString] ?? 0) + 1;
   }
 
   final aggregated = <Observation>[];
-  for (final dayString in sumsByDay.keys) {
-    final day = DateTime.parse(dayString);
+  for (final dayString in dayStrings) {
     final count = countsByDay[dayString] ?? 0;
     if (count == 0) continue;
+    final day = DateTime.parse(dayString);
     aggregated.add(Observation(day, sumsByDay[dayString]! / count));
   }
   return aggregated;

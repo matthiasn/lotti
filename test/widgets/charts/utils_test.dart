@@ -146,5 +146,55 @@ void main() {
       );
       expect(result, isEmpty);
     });
+
+    test(
+      'filters out measurements that fall outside [rangeStart, rangeEnd) '
+      'so a caller passing a 3-day window does not get points from days '
+      'before or after',
+      () {
+        final result = aggregateAvgByDay(
+          [
+            // Two days before rangeStart — must be filtered out.
+            _measurement(id: 'pre', at: DateTime(2024, 3, 8, 12), value: 100),
+            // Inside the window.
+            _measurement(id: 'in', at: DateTime(2024, 3, 10, 12), value: 5),
+            // On rangeEnd — must be filtered out (window is half-open).
+            _measurement(id: 'on-end', at: DateTime(2024, 3, 13), value: 99),
+          ],
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        expect(result, hasLength(1));
+        expect(result.single.dateTime, DateTime(2024, 3, 10));
+        expect(result.single.value, 5);
+      },
+    );
+
+    test(
+      'emits observations in chronological order regardless of how the '
+      'input list is shuffled — chart consumers require monotonically '
+      'increasing time',
+      () {
+        final result = aggregateAvgByDay(
+          [
+            _measurement(id: 'c', at: DateTime(2024, 3, 12, 9), value: 30),
+            _measurement(id: 'a', at: DateTime(2024, 3, 10, 9), value: 10),
+            _measurement(id: 'b', at: DateTime(2024, 3, 11, 9), value: 20),
+          ],
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        expect(
+          result.map((o) => o.dateTime).toList(),
+          [
+            DateTime(2024, 3, 10),
+            DateTime(2024, 3, 11),
+            DateTime(2024, 3, 12),
+          ],
+        );
+      },
+    );
   });
 }

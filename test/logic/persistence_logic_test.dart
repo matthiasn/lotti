@@ -205,6 +205,16 @@ void main() {
           testText,
         );
 
+        // Per-save guard: the create path must have already invalidated
+        // the badge by now. Asserting at this boundary (instead of only
+        // a cumulative total at the end of the test) keeps the
+        // assertion causal — a regression in the create path would
+        // surface here even if the update path still fires its badge.
+        verify(mockNotificationService.updateBadge).called(
+          greaterThanOrEqualTo(1),
+        );
+        clearInteractions(mockNotificationService);
+
         // update entry with new plaintext
         await getIt<PersistenceLogic>().updateJournalEntityText(
           textEntry.meta.id,
@@ -227,15 +237,13 @@ void main() {
           () => mockFts5Db.insertText(any(), removePrevious: true),
         ).called(2);
 
-        // Each save fires NotificationService.updateBadge via
-        // PersistenceLogic._savedJournalEntity. We assert "fires at
-        // least once per save" instead of a strict exact count
-        // because internal write paths (geolocation hydration, label
-        // refresh) legitimately stack extra saves and the badge
-        // semantics only require it to be invalidated, not invalidated
-        // exactly N times.
+        // Per-save guard: the update path must also invalidate the
+        // badge. We use `greaterThanOrEqualTo(1)` (not exactly 1)
+        // because nested writes (geolocation hydration, label refresh)
+        // legitimately stack extra saves; the contract this guards is
+        // "badge gets invalidated on update", not exact call count.
         verify(mockNotificationService.updateBadge).called(
-          greaterThanOrEqualTo(2),
+          greaterThanOrEqualTo(1),
         );
       },
     );
@@ -328,6 +336,14 @@ void main() {
         1,
       );
 
+      // Clear interactions on the boundary between the create call
+      // (which fired updateBadge during task creation) and the IN
+      // PROGRESS transition below — without this, the subsequent
+      // verify could be satisfied entirely by the create's call and
+      // still pass even if `updateTask` stopped invalidating the
+      // badge.
+      clearInteractions(mockNotificationService);
+
       // update task with status 'IN PROGRESS'
       await getIt<PersistenceLogic>().updateTask(
         journalEntityId: task.meta.id,
@@ -341,12 +357,12 @@ void main() {
         ),
       );
 
-      // Status transition to IN PROGRESS goes through updateTask →
-      // _savedJournalEntity → updateBadge. We use "at least one" here
-      // because nested writes (label refresh, geolocation) legitimately
-      // stack additional badge invalidations; the contract this guards
-      // is "the badge gets invalidated on status change", not exact
-      // call count.
+      // Per-transition guard: the IN PROGRESS update must invalidate
+      // the badge on its own. `greaterThanOrEqualTo(1)` (not exactly
+      // 1) because nested writes (label refresh, geolocation)
+      // legitimately stack additional badge invalidations; the
+      // contract this guards is "the badge gets invalidated on
+      // status change", not exact call count.
       verify(mockNotificationService.updateBadge).called(
         greaterThanOrEqualTo(1),
       );
@@ -356,6 +372,10 @@ void main() {
         await getIt<JournalDb>().getTasksCount(statuses: ['IN PROGRESS']),
         1,
       );
+
+      // Same boundary reset as above: isolate the DONE transition so
+      // its assertion does not piggy-back on the IN PROGRESS call.
+      clearInteractions(mockNotificationService);
 
       // update task with status 'DONE'
       await getIt<PersistenceLogic>().updateTask(
@@ -370,8 +390,8 @@ void main() {
         ),
       );
 
-      // Same as the IN PROGRESS update above — DONE goes through the
-      // save path so updateBadge is invalidated at least once.
+      // Per-transition guard: the DONE transition must invalidate the
+      // badge on its own — see comment on the IN PROGRESS verify above.
       verify(mockNotificationService.updateBadge).called(
         greaterThanOrEqualTo(1),
       );

@@ -38,13 +38,13 @@ void main() {
           await tester.pumpAndSettle();
 
           final editor = find.byType(QuillEditor);
-          debugPrint(editor.toString());
-
-          // Quill does not accept `tester.enterText` directly — driving
-          // input requires reaching into the QuillController and
-          // calling `document.insert`. Left as a smoke check that the
-          // editor mounts; deeper text-entry coverage lives in the
-          // unit tests for the editor widget itself.
+          // Smoke check: the editor must actually mount on the page —
+          // the rest of this block depends on it being present. Quill
+          // does not accept `tester.enterText` directly (driving input
+          // requires reaching into the QuillController and calling
+          // `document.insert`), so deeper text-entry coverage lives in
+          // the unit tests for the editor widget itself.
+          expect(editor, findsOneWidget);
 
           await waitSeconds(1);
 
