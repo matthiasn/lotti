@@ -256,6 +256,14 @@ class WakeOrchestrator {
     clearThrottle(agentId);
   }
 
+  /// Remove a single subscription by id. Used when a remote `AgentTaskLink`
+  /// delete syncs in: the per-link subscription needs to go, but the agent's
+  /// other subscriptions and per-agent runtime state (suppression, throttle,
+  /// wake counters) must stay intact.
+  void removeSubscription(String subscriptionId) {
+    _subscriptions.removeWhere((s) => s.id == subscriptionId);
+  }
+
   /// Mark [agentId] as awaiting-content (or not).
   ///
   /// While the flag is set, [_onBatch] will not call [_setThrottleDeadline]

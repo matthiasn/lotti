@@ -301,26 +301,32 @@ extension _AgentHandlers on SyncEventProcessor {
     }
     if (agentRepository != null) {
       await agentRepository!.upsertLink(resolvedLink);
-      // Restore wake subscription when an agent_task link arrives for an
-      // active task_agent. This handles the case where the link arrives
-      // after the identity — the SyncAgentEntity handler queries existing
-      // links, which may be empty if the link hasn't been synced yet.
-      // addSubscription is idempotent (replaces by ID), so both handlers
-      // firing for the same agent is harmless.
-      if (wakeOrchestrator != null &&
-          resolvedLink is AgentTaskLink &&
-          resolvedLink.deletedAt == null) {
-        final agent = await agentRepository!.getEntity(resolvedLink.fromId);
-        if (agent is AgentIdentityEntity &&
-            agent.lifecycle == AgentLifecycle.active &&
-            agent.kind == 'task_agent') {
-          wakeOrchestrator!.addSubscription(
-            AgentSubscription(
-              id: '${resolvedLink.fromId}_task_${resolvedLink.toId}',
-              agentId: resolvedLink.fromId,
-              matchEntityIds: {resolvedLink.toId},
-            ),
-          );
+      // Mirror remote agent_task link lifecycle in the wake orchestrator.
+      // A non-deleted link restores the per-link subscription for active
+      // task_agents (this handles the case where the link arrives after
+      // the identity — the SyncAgentEntity handler queries existing links,
+      // which may be empty if the link hasn't been synced yet;
+      // addSubscription is idempotent). A deleted link removes the matching
+      // subscription so this device stops waking an agent that was already
+      // unlinked elsewhere.
+      if (wakeOrchestrator != null && resolvedLink is AgentTaskLink) {
+        final subscriptionId =
+            '${resolvedLink.fromId}_task_${resolvedLink.toId}';
+        if (resolvedLink.deletedAt != null) {
+          wakeOrchestrator!.removeSubscription(subscriptionId);
+        } else {
+          final agent = await agentRepository!.getEntity(resolvedLink.fromId);
+          if (agent is AgentIdentityEntity &&
+              agent.lifecycle == AgentLifecycle.active &&
+              agent.kind == 'task_agent') {
+            wakeOrchestrator!.addSubscription(
+              AgentSubscription(
+                id: subscriptionId,
+                agentId: resolvedLink.fromId,
+                matchEntityIds: {resolvedLink.toId},
+              ),
+            );
+          }
         }
       }
       _updateNotifications.notify(

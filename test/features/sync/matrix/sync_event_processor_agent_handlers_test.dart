@@ -1268,7 +1268,7 @@ void main() {
       );
 
       test(
-        'soft-deleted agent_task link does NOT restore subscription',
+        'soft-deleted agent_task link removes the wake subscription',
         () async {
           final link = AgentLink.agentTask(
             id: 'link-deleted',
@@ -1289,7 +1289,12 @@ void main() {
           await processor.process(event: event, journalDb: journalDb);
 
           verify(() => mockAgentRepo.upsertLink(link)).called(1);
-          // Deleted link must not trigger agent lookup or subscription.
+          // Mirror remote delete: the per-link subscription must go so this
+          // device stops waking an agent that was unlinked elsewhere.
+          verify(
+            () => mockOrchestrator.removeSubscription('agent-1_task_task-42'),
+          ).called(1);
+          // Delete path skips agent lookup + re-subscribe entirely.
           verifyNever(() => mockAgentRepo.getEntity(any()));
           verifyNever(() => mockOrchestrator.addSubscription(any()));
         },

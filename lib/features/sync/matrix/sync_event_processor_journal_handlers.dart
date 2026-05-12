@@ -100,9 +100,15 @@ extension _JournalHandlers on SyncEventProcessor {
       return null;
     }
 
+    // `rethrowOnError: true` so a failed link upsert here propagates out
+    // before we record the entry as processed below. Otherwise redelivery
+    // of this event would go down the duplicate path and never retry the
+    // missing link — the entity is stale-skipped, but its links are still
+    // load-bearing for the local apply (category color lookups, etc.).
     final processedLinksCount = await _processEmbeddedEntryLinks(
       entryLinks: entryLinks,
       journalDb: journalDb,
+      rethrowOnError: true,
     );
 
     final diag = SyncApplyDiagnostics(
