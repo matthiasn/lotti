@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
@@ -730,6 +730,56 @@ void main() {
     );
   });
 
+  group('marker-clamp planner alignment', () {
+    test(
+      'oldest-active-origin probe uses the active-room partial index '
+      'rather than falling back to a rowid scan — the 2026-05-12 '
+      'desktop super-slow log captured the parameterised form as '
+      'SEARCH inbound_event_queue (no index name) at up to 862 ms per '
+      'call before the literal-IN rewrite',
+      () async {
+        // Seed enough rows to make the planner cost a SCAN higher than
+        // the partial-index walk. Without rows the planner sometimes
+        // picks any usable path; with a few hundred actionable rows the
+        // chosen plan is the steady-state plan.
+        await queue.enqueueBatch(
+          [
+            for (var i = 0; i < 200; i++)
+              _buildSyncEvent(
+                eventId: '\$bulk-$i',
+                roomId: roomA,
+                originTsMs: 1000 + i,
+              ),
+          ],
+          producer: InboundEventProducer.live,
+        );
+
+        final rows = await db
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT MIN(origin_ts) FROM inbound_event_queue '
+              'WHERE room_id = ? '
+              "AND status IN ('enqueued','leased','retrying') "
+              'AND NOT (queue_id = ?)',
+              variables: [Variable.withString(roomA), Variable.withInt(-1)],
+            )
+            .get();
+        final plan = rows.map((r) => r.data.toString()).join('\n');
+
+        expect(
+          plan,
+          contains('idx_inbound_event_queue_active_room_ts'),
+          reason:
+              'literal status IN must let the planner match the partial '
+              'index (idx_inbound_event_queue_active_room_ts, declared '
+              "WHERE status IN ('enqueued','leased','retrying')) — "
+              'otherwise this query degenerates to a rowid scan on '
+              'every commit/abandon',
+        );
+      },
+    );
+  });
+
   group('_advanceMarkerIfNewer tie-breaker', () {
     test(
       'equal timestamps: a lex-greater durable eventId advances the '
@@ -1453,6 +1503,124 @@ void main() {
         final resurrected = await queue.resurrectByPath(path, hardCap: 50);
         expect(resurrected, 0);
         expect(await statusOf(batch.first.queueId), 'abandoned');
+      },
+    );
+
+    test(
+      'resurrectByPaths flips every abandoned row whose json_path '
+      'is in the supplied set back to enqueued in a single SELECT + '
+      'UPDATE round-trip — folds a burst of pathRecorded events into '
+      'one DB call instead of N independent transactions',
+      () async {
+        const pathA = '/audio/2026-04-21/foo.m4a.json';
+        const pathB = '/images/2026-04-21/bar.jpg.json';
+        const pathC = '/audio/2026-04-21/baz.m4a.json';
+
+        Future<int> abandonWithPath(String eventId, String path, int ts) async {
+          await queue.enqueueLive(
+            _buildSyncEvent(
+              eventId: eventId,
+              roomId: roomA,
+              originTsMs: ts,
+              content: <String, dynamic>{
+                'msgtype': syncMessageType,
+                'jsonPath': path,
+              },
+            ),
+          );
+          final batch = await queue.peekBatchReady();
+          final target = batch.firstWhere((b) => b.eventId == eventId);
+          await queue.markSkipped(
+            target,
+            reason: 'maxAttempts(pendingAttachment)',
+          );
+          return target.queueId;
+        }
+
+        final idA = await abandonWithPath(r'$a', pathA, 100);
+        final idB = await abandonWithPath(r'$b', pathB, 200);
+        final idC = await abandonWithPath(r'$c', pathC, 300);
+
+        // Bulk call flips both pathA and pathB rows but leaves pathC
+        // untouched, mirroring how a debounced burst from
+        // `pathRecorded` should fan into one DB call rather than
+        // three independent SELECT + UPDATE pairs.
+        final resurrected = await queue.resurrectByPaths({pathA, pathB});
+        expect(resurrected, 2);
+        expect(await statusOf(idA), 'enqueued');
+        expect(await statusOf(idB), 'enqueued');
+        expect(await statusOf(idC), 'abandoned');
+      },
+    );
+
+    test(
+      'resurrectByPaths returns 0 on an empty set without touching the '
+      'database — the debouncer drains a no-op tick when no path '
+      'has been seen since the last flush',
+      () async {
+        final count = await queue.resurrectByPaths(const <String>{});
+        expect(count, 0);
+      },
+    );
+
+    test(
+      'resurrectByPaths deduplicates the input set so a caller passing '
+      'the same path twice never inflates the IN-list',
+      () async {
+        const path = '/audio/2026-04-21/dup.m4a.json';
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$dup',
+            roomId: roomA,
+            originTsMs: 500,
+            content: <String, dynamic>{
+              'msgtype': syncMessageType,
+              'jsonPath': path,
+            },
+          ),
+        );
+        final batch = await queue.peekBatchReady();
+        await queue.markSkipped(batch.first, reason: 'pendingAttachment');
+
+        final resurrected = await queue.resurrectByPaths([path, path, path]);
+        expect(resurrected, 1);
+        expect(await statusOf(batch.first.queueId), 'enqueued');
+      },
+    );
+
+    test(
+      'resurrectByPaths chunks the IN-list past 900 entries so a very '
+      'large catch-up batch (initial sync downloading thousands of '
+      'attachments) cannot trip SQLite SQLITE_MAX_VARIABLE_NUMBER '
+      '(default 999)',
+      () async {
+        const realPath = '/audio/2026-04-21/real.m4a.json';
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$real',
+            roomId: roomA,
+            originTsMs: 500,
+            content: <String, dynamic>{
+              'msgtype': syncMessageType,
+              'jsonPath': realPath,
+            },
+          ),
+        );
+        final batch = await queue.peekBatchReady();
+        await queue.markSkipped(batch.first, reason: 'pendingAttachment');
+
+        // 1 800 synthetic paths = two full chunks at the 900-cap, plus
+        // one real path embedded so we can confirm the row actually
+        // flips. The crucial guard is that the call completes — a
+        // pre-chunking version would raise SqliteException.
+        final manyPaths = <String>[
+          for (var i = 0; i < 1800; i++) '/synthetic/$i.json',
+          realPath,
+        ];
+
+        final resurrected = await queue.resurrectByPaths(manyPaths);
+        expect(resurrected, 1);
+        expect(await statusOf(batch.first.queueId), 'enqueued');
       },
     );
 

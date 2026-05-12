@@ -333,6 +333,25 @@ class BackfillRequestService {
     _isProcessing = true;
 
     try {
+      // Cheap actionable-existence probe: when the sync_sequence_log has no
+      // rows in `missing`/`requested`, both retire passes and the load
+      // batch below would each touch sync_db while producing nothing. The
+      // 2026-05-12 desktop slow_queries log captured 347 no-op ticks/day,
+      // each running 5 queries (one of which — `getPendingBackfillEntries`
+      // — averaged 226 ms). The probe uses the partial index
+      // `idx_sync_sequence_log_actionable_status_created_at`
+      // (`WHERE status IN (1, 2)`) with `LIMIT 1`, so it is O(log n) on
+      // that index regardless of the historical log size.
+      final hasActionable = await _sequenceLogService.hasActionableEntries();
+      if (!hasActionable) {
+        _trace(
+          'processBackfillRequests: no actionable entries '
+          '(useLimits=$useLimits bypassDebounce=$bypassDebounce)',
+          subDomain: 'backfill.process',
+        );
+        return 0;
+      }
+
       // Retire missing/requested rows that have hit the request-count cap.
       // Without this, rows for counters that can never be resolved (e.g.
       // pre-history entries, purged payloads, permanently VC-behind

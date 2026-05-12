@@ -141,6 +141,67 @@ void main() {
     );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
+
+    // The workflow's `_collectObservationPayloads` switched from a per-id
+    // `Future.wait(getEntity)` fan-out to the bulk
+    // `AgentRepository.getEntitiesByIds(...)` call (see the 2026-05-12
+    // slow-log analysis). Existing tests stub payloads via
+    // `getEntity('payload-X')`; route the bulk stub through those by
+    // delegating to the same per-id stubs, so a test only needs to
+    // teach the mock about each id once.
+    when(
+      () => mockAgentRepository.getEntitiesByIds(any()),
+    ).thenAnswer((invocation) async {
+      final ids = invocation.positionalArguments.first as Iterable<String>;
+      final result = <String, AgentDomainEntity>{};
+      for (final id in ids) {
+        final entity = await mockAgentRepository.getEntity(id);
+        if (entity != null) {
+          result[id] = entity;
+        }
+      }
+      return result;
+    });
+
+    // `_buildLinkedTasksContextJson` switched from per-task
+    // `Future.wait(_resolveLatestTaskAgentReport)` to bulk
+    // `getLinksToMultiple` + `getLatestReportsByAgentIds`. Forward the
+    // bulk calls through the existing per-id `getLinksTo` /
+    // `getLatestReport` stubs so the same test fixtures keep driving
+    // the workflow without per-test rewrites.
+    when(
+      () => mockAgentRepository.getLinksToMultiple(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((invocation) async {
+      final ids = invocation.positionalArguments.first as List<String>;
+      final type = invocation.namedArguments[const Symbol('type')] as String?;
+      final result = <String, List<AgentLink>>{};
+      for (final id in ids) {
+        final links = await mockAgentRepository.getLinksTo(id, type: type);
+        if (links.isNotEmpty) {
+          result[id] = links;
+        }
+      }
+      return result;
+    });
+
+    when(
+      () => mockAgentRepository.getLatestReportsByAgentIds(any(), any()),
+    ).thenAnswer((invocation) async {
+      final ids = invocation.positionalArguments.first as List<String>;
+      final scope = invocation.positionalArguments[1] as String;
+      final result = <String, AgentReportEntity>{};
+      for (final id in ids) {
+        final report = await mockAgentRepository.getLatestReport(id, scope);
+        if (report != null) {
+          result[id] = report;
+        }
+      }
+      return result;
+    });
+
     when(
       () => mockAgentRepository.updateWakeRunTemplate(
         any(),
@@ -2512,8 +2573,11 @@ void main() {
             () => mockAgentRepository.getLinksTo('t2', type: 'agent_task'),
           ).thenAnswer((_) async => [linkB, linkA]);
 
-          // With descending tie-breaking on ID, 'link-b' sorts before 'link-a',
-          // so the workflow resolves the report for 'linked-agent-b' first.
+          // With descending tie-breaking on ID, 'link-b' sorts before
+          // 'link-a' in `orderedPrimaryFirst`, so the workflow picks
+          // 'linked-agent-b's report when both exist with non-empty
+          // content. Stub both reports; the assertion below verifies
+          // that the workflow's deterministic tie-break still picks B.
           final reportB =
               AgentDomainEntity.agentReport(
                     id: 'linked-report-b',
@@ -2524,31 +2588,45 @@ void main() {
                     content: 'report-b',
                   )
                   as AgentReportEntity;
+          final reportA =
+              AgentDomainEntity.agentReport(
+                    id: 'linked-report-a',
+                    agentId: 'linked-agent-a',
+                    scope: 'current',
+                    createdAt: now,
+                    vectorClock: null,
+                    content: 'report-a',
+                  )
+                  as AgentReportEntity;
           when(
             () => mockAgentRepository.getLatestReport(
               'linked-agent-b',
               'current',
             ),
           ).thenAnswer((_) async => reportB);
+          when(
+            () => mockAgentRepository.getLatestReport(
+              'linked-agent-a',
+              'current',
+            ),
+          ).thenAnswer((_) async => reportA);
 
           final message = await executeAndCaptureMessage(
             linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
           );
 
-          verify(
-            () => mockAgentRepository.getLatestReport(
-              'linked-agent-b',
-              'current',
-            ),
-          ).called(1);
-          verifyNever(
-            () => mockAgentRepository.getLatestReport(
-              'linked-agent-a',
-              'current',
-            ),
-          );
+          // The 2026-05-12 N+1 rewrite moved from a per-link
+          // `Future.wait(getLatestReport)` (which short-circuited on
+          // the first non-empty report) to a bulk
+          // `getLatestReportsByAgentIds` fetch followed by an
+          // in-memory walk of the sorted links. Correctness contract
+          // is the same — the first link in `orderedPrimaryFirst`
+          // order whose report has non-empty content wins — and is
+          // asserted here through the rendered message:
+          // `report-b` must show up, `report-a` must NOT.
           expect(message, isNotNull);
           expect(message, contains('report-b'));
+          expect(message, isNot(contains('report-a')));
         },
       );
 

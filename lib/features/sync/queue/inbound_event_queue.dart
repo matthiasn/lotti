@@ -183,10 +183,6 @@ const List<String> _activeStatuses = <String>[
   _statusRetrying,
 ];
 
-// Marker-clamp uses the same set as `_activeStatuses`. Kept as its
-// own name for clarity at call sites even though the values match.
-const List<String> _clampStatuses = _activeStatuses;
-
 // Peek eligibility. Includes `leased` so crash recovery works: a
 // worker that died mid-apply left its rows in `leased` state with a
 // non-zero `lease_until`. Once that timestamp elapses the row is
@@ -634,12 +630,29 @@ class InboundQueue {
   }) async {
     final table = _db.inboundEventQueue;
     final minTs = table.originTs.min();
+    // `status IN ('enqueued','leased','retrying')` is inlined as a
+    // literal SQL fragment via `CustomExpression` so the SQLite planner
+    // can prove this query's WHERE implies the partial index's WHERE
+    // clause (`idx_inbound_event_queue_active_room_ts`, declared
+    // `WHERE status IN ('enqueued','leased','retrying')`). Drift's
+    // `t.status.isIn(_clampStatuses)` binds the three status values as
+    // parameters; the planner can't see them at plan time, the
+    // partial-index match fails, and the predicate falls back to a
+    // rowid B-tree walk filtered by `room_id` + status equality. The
+    // 2026-05-12 desktop super_slow log captured this as `SEARCH
+    // inbound_event_queue` (no index name) at up to 862 ms per call.
+    // Literal values mirror `_statusEnqueued`, `_statusLeased`, and
+    // `_statusRetrying` declared at the top of this file — the
+    // partial-index DDL in `lib/database/sync_db.dart` uses the same
+    // string literals.
     final row =
         await (_db.selectOnly(table)
               ..addColumns([minTs])
               ..where(
                 table.roomId.equals(roomId) &
-                    table.status.isIn(_clampStatuses) &
+                    const CustomExpression<bool>(
+                      "status IN ('enqueued','leased','retrying')",
+                    ) &
                     table.queueId.equals(excludeQueueId).not(),
               ))
             .getSingle();
@@ -743,6 +756,65 @@ class InboundQueue {
       hardCap: hardCap,
       diagnostic: 'path=$path',
     );
+  }
+
+  /// Maximum number of paths bound per `json_path IN (...)` chunk in
+  /// [resurrectByPaths]. SQLite's default `SQLITE_MAX_VARIABLE_NUMBER`
+  /// is 999; chunking at 900 leaves headroom for the implicit
+  /// `resurrection_count` parameter and any future additions to
+  /// `_resurrectWhere` without bumping into the cap.
+  static const int _resurrectByPathsChunkSize = 900;
+
+  /// Bulk variant of [resurrectByPath] — flips abandoned rows whose
+  /// `json_path` is in [paths] back to `enqueued`. Issues one
+  /// SELECT + transactional UPDATE round-trip per
+  /// [_resurrectByPathsChunkSize] batch.
+  ///
+  /// Backs the coordinator's debounced `pathRecorded` subscriber: a
+  /// burst of attachment downloads (matrix-sync catch-up) used to fan
+  /// out N independent per-path SELECT/UPDATE pairs, each queuing
+  /// behind the previous transaction's writer lock. The 2026-05-12
+  /// desktop super_slow log captured this as 222 hits/day of
+  /// `inbound_event_queue WHERE status='abandoned' AND
+  /// resurrection_count<? AND json_path=?` at ~384 ms each, ten or
+  /// more landing in the same millisecond span. Collapsing the burst
+  /// into one `WHERE json_path IN (...)` query removes the wait
+  /// chain entirely.
+  ///
+  /// Chunking guards against SQLite's host-variable limit (default
+  /// 999) so a very large catch-up batch — e.g. an initial sync that
+  /// downloads thousands of attachments while abandoned ledger rows
+  /// were waiting — cannot trip the cap. Each chunk still resurrects
+  /// in one DB round-trip; the cumulative wall cost grows linearly
+  /// with chunk count, never exponentially.
+  ///
+  /// Empty input returns 0 without touching the database. Duplicate
+  /// paths are deduplicated to keep each IN-list short.
+  Future<int> resurrectByPaths(
+    Iterable<String> paths, {
+    int hardCap = 50,
+  }) async {
+    final uniquePaths = paths.toSet();
+    if (uniquePaths.isEmpty) return 0;
+
+    final pathList = uniquePaths.toList(growable: false);
+    var totalResurrected = 0;
+    for (
+      var start = 0;
+      start < pathList.length;
+      start += _resurrectByPathsChunkSize
+    ) {
+      final end = start + _resurrectByPathsChunkSize > pathList.length
+          ? pathList.length
+          : start + _resurrectByPathsChunkSize;
+      final chunk = pathList.sublist(start, end);
+      totalResurrected += await _resurrectWhere(
+        (t) => t.jsonPath.isIn(chunk),
+        hardCap: hardCap,
+        diagnostic: 'paths=${chunk.length}',
+      );
+    }
+    return totalResurrected;
   }
 
   /// Resurrects every abandoned row for the current (and any other)

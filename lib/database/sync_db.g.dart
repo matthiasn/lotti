@@ -2949,6 +2949,14 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     'idx_outbox_pending_entry_id_created_at',
     'CREATE INDEX idx_outbox_pending_entry_id_created_at ON outbox (outbox_entry_id, created_at) WHERE status = 0 AND outbox_entry_id IS NOT NULL',
   );
+  late final Index idxOutboxPendingCreatedId = Index(
+    'idx_outbox_pending_created_id',
+    'CREATE INDEX idx_outbox_pending_created_id ON outbox (created_at, id) WHERE status = 0',
+  );
+  late final Index idxOutboxSendingExpiry = Index(
+    'idx_outbox_sending_expiry',
+    'CREATE INDEX idx_outbox_sending_expiry ON outbox (updated_at, created_at, id) WHERE status = 3',
+  );
   late final Index idxSyncSequenceLogActionableStatusCreatedAt = Index(
     'idx_sync_sequence_log_actionable_status_created_at',
     'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at ON sync_sequence_log (status, created_at) WHERE status IN (1, 2)',
@@ -3026,6 +3034,8 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxOutboxStatusPriorityCreatedAt,
     idxOutboxActionablePriorityCreatedAt,
     idxOutboxPendingEntryIdCreatedAt,
+    idxOutboxPendingCreatedId,
+    idxOutboxSendingExpiry,
     idxSyncSequenceLogActionableStatusCreatedAt,
     idxSyncSequenceLogActionableStatusUpdatedAt,
     idxSyncSequenceLogActionableStatusLastRequestedAt,

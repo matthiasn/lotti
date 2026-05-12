@@ -155,6 +155,35 @@ class QueuePipelineCoordinator {
   StreamSubscription<Set<String>>? _journalUpdateSub;
   bool _started = false;
 
+  /// Accumulates `pathRecorded` paths between flushes of
+  /// [_attachmentPathFlushTimer]. A burst of attachment downloads
+  /// (matrix-sync catch-up) used to fan out one
+  /// `resurrectByPath` call per path; each opened a writer
+  /// transaction whose lock starved the next call's SELECT. The
+  /// 2026-05-12 desktop super_slow log captured 222 hits/day of
+  /// `inbound_event_queue WHERE … json_path = ?` at ~384 ms each,
+  /// often ten back-to-back in the same millisecond span. Coalescing
+  /// into one bulk [InboundQueue.resurrectByPaths] call per debounce
+  /// window removes the writer-lock chain entirely.
+  final Set<String> _pendingPathResurrections = <String>{};
+  Timer? _attachmentPathFlushTimer;
+
+  /// Tracks an in-flight [_flushPendingPathResurrections] call so
+  /// [stop] can await it before tearing the queue down. Without this,
+  /// a flush kicked off by the debounce timer right before the
+  /// listener cancels could still be running its
+  /// `_queue.resurrectByPaths` call when the queue is disposed,
+  /// producing a "used after close" error on shutdown.
+  Future<void>? _attachmentPathFlushInFlight;
+
+  /// Debounce window for [_pendingPathResurrections]. Tuned wide
+  /// enough to fold an attachment download burst together (the
+  /// observed bursts span 10–30 ms) but short enough that an isolated
+  /// attachment landing still resurrects within a single user-visible
+  /// frame.
+  @visibleForTesting
+  static const Duration attachmentPathDebounce = Duration(milliseconds: 100);
+
   /// Set when the most recent reconnect-mode bridge pass finished with
   /// `stopReason == boundaryReached` AND the sink accepted zero events
   /// across every page. That is the precise signal that the SDK's local
@@ -323,18 +352,7 @@ class QueuePipelineCoordinator {
       // available — no polling, no user action required for the
       // common cases.
       _attachmentPathSub = _attachmentIndex?.pathRecorded.listen(
-        (path) async {
-          try {
-            await _queue.resurrectByPath(path);
-          } catch (error, stackTrace) {
-            _logging.captureException(
-              error,
-              domain: _logDomain,
-              subDomain: '$_logSub.resurrectByPath',
-              stackTrace: stackTrace,
-            );
-          }
-        },
+        _onAttachmentPathRecorded,
         onError: (Object error, StackTrace stackTrace) {
           _logging.captureException(
             error,
@@ -391,6 +409,22 @@ class QueuePipelineCoordinator {
       _syncSub = null;
       await _attachmentPathSub?.cancel();
       _attachmentPathSub = null;
+      _attachmentPathFlushTimer?.cancel();
+      _attachmentPathFlushTimer = null;
+      _pendingPathResurrections.clear();
+      // Wait for any flush already in flight before tearing the
+      // queue down further — `resurrectByPaths` opens a writer
+      // transaction and we must not race it against `_queue` /
+      // `_worker` disposal on the error path.
+      final pendingFlush = _attachmentPathFlushInFlight;
+      _attachmentPathFlushInFlight = null;
+      if (pendingFlush != null) {
+        try {
+          await pendingFlush;
+        } catch (_) {
+          // Already logged on the flush side.
+        }
+      }
       await _journalUpdateSub?.cancel();
       _journalUpdateSub = null;
       try {
@@ -553,7 +587,25 @@ class QueuePipelineCoordinator {
       await tryRun('attachmentPathSub', () async {
         await _attachmentPathSub?.cancel();
         _attachmentPathSub = null;
+        // Cancel the debounce timer so no new flush is scheduled, and
+        // drop the still-pending accumulator since the subscription is
+        // gone. Any flush *already in flight* is awaited below so its
+        // `resurrectByPaths` writer transaction settles before
+        // `_queue` / `_worker` disposal — otherwise teardown can race
+        // a flush still mid-transaction and trip drift's "used after
+        // close" guard.
+        _attachmentPathFlushTimer?.cancel();
+        _attachmentPathFlushTimer = null;
+        _pendingPathResurrections.clear();
       });
+      final pendingPathFlush = _attachmentPathFlushInFlight;
+      _attachmentPathFlushInFlight = null;
+      if (pendingPathFlush != null) {
+        await tryRun(
+          'attachmentPathFlush',
+          () async => pendingPathFlush,
+        );
+      }
       await tryRun('journalUpdateSub', () async {
         await _journalUpdateSub?.cancel();
         _journalUpdateSub = null;
@@ -715,6 +767,71 @@ class QueuePipelineCoordinator {
         error,
         domain: _logDomain,
         subDomain: '$_logSub.postLoad',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Accumulator hook for the `pathRecorded` subscription. Adds [path]
+  /// to the pending set and arms a one-shot flush timer; subsequent
+  /// paths arriving within [attachmentPathDebounce] reset the timer
+  /// without firing another DB call, so a burst of attachment
+  /// downloads folds into a single bulk
+  /// [InboundQueue.resurrectByPaths] round-trip.
+  void _onAttachmentPathRecorded(String path) {
+    if (path.isEmpty) return;
+    _pendingPathResurrections.add(path);
+    _attachmentPathFlushTimer?.cancel();
+    _attachmentPathFlushTimer = Timer(
+      attachmentPathDebounce,
+      _kickPendingPathResurrectionFlush,
+    );
+  }
+
+  /// Starts a flush and records the resulting future on
+  /// [_attachmentPathFlushInFlight] so [stop] can await it before
+  /// disposing the queue. Clears the field once the flush settles —
+  /// using `identical` to avoid clobbering a newer in-flight future
+  /// scheduled by a follow-up path event.
+  void _kickPendingPathResurrectionFlush() {
+    final flush = _flushPendingPathResurrections();
+    _attachmentPathFlushInFlight = flush;
+    unawaited(
+      flush.whenComplete(() {
+        if (identical(_attachmentPathFlushInFlight, flush)) {
+          _attachmentPathFlushInFlight = null;
+        }
+      }),
+    );
+  }
+
+  /// Resolves the pending-path batch by passing the accumulated set
+  /// to [InboundQueue.resurrectByPaths] in a single SELECT + UPDATE
+  /// round-trip. Exposed for tests so a fakeAsync run can deliver the
+  /// flush synchronously without waiting on a real timer.
+  @visibleForTesting
+  Future<void> flushPendingPathResurrectionsForTest() {
+    _attachmentPathFlushTimer?.cancel();
+    _attachmentPathFlushTimer = null;
+    _kickPendingPathResurrectionFlush();
+    return _attachmentPathFlushInFlight ?? Future<void>.value();
+  }
+
+  Future<void> _flushPendingPathResurrections() async {
+    _attachmentPathFlushTimer = null;
+    if (_pendingPathResurrections.isEmpty) return;
+    // Drain the set into a local copy so any path that lands while
+    // the bulk call is in flight gets its own next-cycle batch
+    // instead of being silently dropped.
+    final paths = _pendingPathResurrections.toList(growable: false);
+    _pendingPathResurrections.clear();
+    try {
+      await _queue.resurrectByPaths(paths);
+    } catch (error, stackTrace) {
+      _logging.captureException(
+        error,
+        domain: _logDomain,
+        subDomain: '$_logSub.resurrectByPaths',
         stackTrace: stackTrace,
       );
     }

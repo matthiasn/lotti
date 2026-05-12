@@ -56,6 +56,77 @@ class AgentRepository {
     return AgentDbConversions.fromEntityRow(rows.first);
   }
 
+  /// Maximum number of host variables to bind per `IN (...)` chunk in
+  /// [getEntitiesByIds]. SQLite's default `SQLITE_MAX_VARIABLE_NUMBER`
+  /// is 999 on the platforms this app targets; chunking at 900 leaves
+  /// headroom for the planner without pretending we can pack more.
+  /// A caller passing more ids than this is split into multiple
+  /// sequential queries and the result maps are merged.
+  static const int _getEntitiesByIdsChunkSize = 900;
+
+  /// Batch-fetch non-deleted entities for every id in [ids]. Returns
+  /// the matched entities keyed by their `id` column so the caller can
+  /// look them up without iterating; ids that have no row (or whose
+  /// row is soft-deleted) are simply absent from the map.
+  ///
+  /// Issues one `WHERE id IN (?, …)` query per
+  /// [_getEntitiesByIdsChunkSize] batch against the primary-key index
+  /// instead of N per-id round-trips. The 2026-05-10 desktop
+  /// slow_queries log captured 2 484 hits/day for `SELECT * FROM
+  /// agent_entities WHERE id = ? AND deleted_at IS NULL` — all from
+  /// the per-row `Future.wait` fan-out in `_collectObservationPayloads`
+  /// (project_agent_workflow.dart and task_agent_workflow.dart). The
+  /// plan was a clean PK seek; the cost was the writer-lock queue
+  /// wait piling up behind each independent isolate hop.
+  ///
+  /// Chunking guards the bulk path against SQLite's host-variable
+  /// limit (default 999): an unbounded caller (e.g.
+  /// `_collectObservationPayloads` on a project agent with thousands
+  /// of pending observations) would otherwise throw `SqliteException
+  /// (too many SQL variables)` once the IN-list exceeded 999 entries.
+  /// At the production chunk size the worst case is still one round-
+  /// trip per ~900 ids, which is dramatically cheaper than the
+  /// per-id fan-out it replaces.
+  ///
+  /// Empty input returns an empty map without touching the database.
+  Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
+    Iterable<String> ids,
+  ) async {
+    final uniqueIds = ids.toSet();
+    if (uniqueIds.isEmpty) return const <String, AgentDomainEntity>{};
+
+    final idList = uniqueIds.toList(growable: false);
+    final result = <String, AgentDomainEntity>{};
+
+    for (
+      var start = 0;
+      start < idList.length;
+      start += _getEntitiesByIdsChunkSize
+    ) {
+      final end = start + _getEntitiesByIdsChunkSize > idList.length
+          ? idList.length
+          : start + _getEntitiesByIdsChunkSize;
+      final chunk = idList.sublist(start, end);
+      final placeholders = List.filled(chunk.length, '?').join(', ');
+      final rows = await _db
+          .customSelect(
+            'SELECT * FROM agent_entities '
+            'WHERE id IN ($placeholders) AND deleted_at IS NULL',
+            variables: chunk.map(Variable.withString).toList(),
+            readsFrom: {_db.agentEntities},
+          )
+          .get();
+      for (final row in rows) {
+        final entityRow = await _db.agentEntities.mapFromRow(row);
+        // `agentEntities.id` is the column the IN-list filters against,
+        // so it doubles as the stable result-map key without having to
+        // re-enter the Freezed union to extract a per-variant id field.
+        result[entityRow.id] = AgentDbConversions.fromEntityRow(entityRow);
+      }
+    }
+    return result;
+  }
+
   /// Fetch non-deleted entities for [agentId], optionally filtered by [type]
   /// (the string value stored in the `type` column, e.g. `'agentMessage'`).
   ///

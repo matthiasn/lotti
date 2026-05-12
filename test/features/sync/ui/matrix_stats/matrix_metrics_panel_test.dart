@@ -66,4 +66,18 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
+
+  testWidgets(
+    'pollInterval is at least 5 seconds — the 2-second cadence used '
+    'until 2026-05-12 drove `GROUP BY status, producer FROM '
+    'inbound_event_queue` to 223 hits/day on the desktop slow-query '
+    'log; widening the window cuts that polling pressure without '
+    'losing perceived liveness',
+    (tester) async {
+      expect(
+        MatrixSyncMetricsPanelState.pollInterval,
+        greaterThanOrEqualTo(const Duration(seconds: 5)),
+      );
+    },
+  );
 }

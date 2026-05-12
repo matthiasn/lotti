@@ -2875,6 +2875,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_wake_run_log_agent_thread',
     'CREATE INDEX idx_wake_run_log_agent_thread ON wake_run_log (agent_id, thread_id, created_at DESC)',
   );
+  late final Index idxWakeRunLogCreatedAt = Index(
+    'idx_wake_run_log_created_at',
+    'CREATE INDEX idx_wake_run_log_created_at ON wake_run_log (created_at DESC)',
+  );
   late final SagaLog sagaLog = SagaLog(this);
   late final Index idxSagaLogAgent = Index(
     'idx_saga_log_agent',
@@ -3496,6 +3500,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxWakeRunLogTemplate,
     idxWakeRunLogStatus,
     idxWakeRunLogAgentThread,
+    idxWakeRunLogCreatedAt,
     sagaLog,
     idxSagaLogAgent,
     idxSagaLogStatus,

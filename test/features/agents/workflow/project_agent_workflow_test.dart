@@ -185,6 +185,25 @@ void main() {
     );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+
+    // `_collectObservationPayloads` now batches via `getEntitiesByIds`.
+    // Route the default stub through the per-id `getEntity` stubs so
+    // existing tests that only stub `getEntity('payload-X')` keep
+    // working without per-test duplication.
+    when(
+      () => mockAgentRepository.getEntitiesByIds(any()),
+    ).thenAnswer((invocation) async {
+      final ids = invocation.positionalArguments.first as Iterable<String>;
+      final result = <String, AgentDomainEntity>{};
+      for (final id in ids) {
+        final entity = await mockAgentRepository.getEntity(id);
+        if (entity != null) {
+          result[id] = entity;
+        }
+      }
+      return result;
+    });
+
     when(
       () => mockAgentRepository.updateWakeRunTemplate(
         any(),

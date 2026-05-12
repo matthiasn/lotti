@@ -339,7 +339,7 @@ final class EvolutionSessionStatsProvider
 }
 
 String _$evolutionSessionStatsHash() =>
-    r'494f006a3c961bd0d493b2de57bedb1afca8e582';
+    r'c57e112be259155d5eb3ae33716c8d5f0569fe37';
 
 /// Aggregate stats for evolution sessions of a template.
 
@@ -611,7 +611,7 @@ final class RitualSummaryMetricsProvider
 }
 
 String _$ritualSummaryMetricsHash() =>
-    r'244d355b6f719bc199e5168fb83c3255aebca336';
+    r'51f7be2c05c4c1f51a40d22106ebe6c2aa6870de';
 
 /// Compact summary metrics for ritual home and chat header surfaces.
 

@@ -1001,25 +1001,34 @@ immediately.''';
         .whereType<String>()
         .toSet();
 
-    final entries = await Future.wait(
-      payloadIds.map((id) async {
-        try {
-          final entity = await agentRepository.getEntity(id);
-          if (entity is AgentMessagePayloadEntity) {
-            return MapEntry(id, entity);
-          }
-        } catch (e) {
-          // Non-fatal — observation will render with placeholder text.
-        }
-        return null;
-      }),
-    );
+    if (payloadIds.isEmpty) {
+      return const <String, AgentMessagePayloadEntity>{};
+    }
 
-    return {
-      for (final entry
-          in entries.whereType<MapEntry<String, AgentMessagePayloadEntity>>())
-        entry.key: entry.value,
-    };
+    // Single batched IN-list lookup instead of `Future.wait(map →
+    // getEntity)`. The fan-out version showed up at 2 484 hits/day in
+    // the 2026-05-10 desktop slow_queries log because each per-row
+    // `WHERE id = ?` queued independently behind the writer lock; the
+    // bulk path makes one round-trip regardless of payload count.
+    // Non-payload entities (or ids that have no row / are soft-deleted)
+    // are silently dropped — the caller renders a placeholder, same as
+    // the pre-batch failure mode.
+    final Map<String, AgentDomainEntity> entitiesById;
+    try {
+      entitiesById = await agentRepository.getEntitiesByIds(payloadIds);
+    } catch (e) {
+      // Non-fatal — observation will render with placeholder text.
+      return const <String, AgentMessagePayloadEntity>{};
+    }
+
+    final result = <String, AgentMessagePayloadEntity>{};
+    for (final entry in entitiesById.entries) {
+      final entity = entry.value;
+      if (entity is AgentMessagePayloadEntity) {
+        result[entry.key] = entity;
+      }
+    }
+    return result;
   }
 
   /// Extracts the text content from an observation payload.

@@ -79,6 +79,15 @@ CREATE INDEX idx_wake_run_log_agent ON wake_run_log(agent_id, created_at DESC);
 CREATE INDEX idx_wake_run_log_template ON wake_run_log(template_id, created_at DESC);
 CREATE INDEX idx_wake_run_log_status ON wake_run_log(status);
 CREATE INDEX idx_wake_run_log_agent_thread ON wake_run_log(agent_id, thread_id, created_at DESC);
+-- `getWakeRunsInWindow` filters on `created_at >= ? AND created_at <= ?`
+-- and orders by `created_at DESC`. The existing indices above are all
+-- leaded by `agent_id`, `template_id`, or `status` — none lets the
+-- planner walk by `created_at`. The 2026-05-10 desktop super_slow log
+-- captured this as `SCAN wake_run_log` + `USE TEMP B-TREE FOR ORDER BY`
+-- at 305 ms / 408 ms (11 hits). A `created_at`-only index turns the
+-- range query into an in-order index walk and lets the LIMIT walk
+-- stop without a sort step.
+CREATE INDEX idx_wake_run_log_created_at ON wake_run_log(created_at DESC);
 
 CREATE TABLE saga_log (
   operation_id TEXT NOT NULL PRIMARY KEY,

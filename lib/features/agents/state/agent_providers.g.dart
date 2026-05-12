@@ -322,7 +322,7 @@ final class AgentRepositoryProvider
   }
 }
 
-String _$agentRepositoryHash() => r'9506f288080ed0c5c3a258a6d765c745f4d40258';
+String _$agentRepositoryHash() => r'495427d4a4870c98f5eeb1b72fc2c3351afea318';
 
 /// Sync-aware write wrapper for agent entities and links.
 
@@ -952,4 +952,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'f016714a4a9b52db2c0de998b64aedc5aa6a2504';
+    r'9e575dd990b15957d262a3190597e20ae2f8410a';
