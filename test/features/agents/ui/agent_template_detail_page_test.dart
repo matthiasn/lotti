@@ -68,8 +68,6 @@ List<Override> _templateStatsOverrides() => [
   evolutionSessionStatsProvider.overrideWith(
     (ref, id) async => const EvolutionSessionStats(
       totalSessions: 0,
-      completedCount: 0,
-      abandonedCount: 0,
       approvalRate: 0,
     ),
   ),

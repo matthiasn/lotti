@@ -3,11 +3,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 
-/// Fixed row height from spec §3. Exposed here as a convenience alias
-/// so the old `kSettingsTreeRowHeight` consumers outside this file
-/// keep compiling.
-const double kSettingsTreeRowHeight = SettingsV2Constants.rowHeight;
-
 /// Renders one tree row per spec §3 "Row anatomy": left active rail,
 /// icon tile, title + description column, optional badge, chevron.
 ///

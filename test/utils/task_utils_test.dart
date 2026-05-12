@@ -12,7 +12,7 @@ void main() {
           id: 'id',
           createdAt: testDate,
           utcOffset: 120,
-        ).color,
+        ).colorForBrightness(Brightness.dark),
         Colors.orange,
       );
       expect(
@@ -20,7 +20,7 @@ void main() {
           id: 'id',
           createdAt: testDate,
           utcOffset: 120,
-        ).color,
+        ).colorForBrightness(Brightness.dark),
         Colors.lightGreenAccent,
       );
       expect(
@@ -28,7 +28,7 @@ void main() {
           id: 'id',
           createdAt: testDate,
           utcOffset: 120,
-        ).color,
+        ).colorForBrightness(Brightness.dark),
         Colors.blue,
       );
       expect(
@@ -36,7 +36,7 @@ void main() {
           id: 'id',
           createdAt: testDate,
           utcOffset: 120,
-        ).color,
+        ).colorForBrightness(Brightness.dark),
         Colors.blue,
       );
       expect(
@@ -45,7 +45,7 @@ void main() {
           createdAt: testDate,
           utcOffset: 120,
           reason: '',
-        ).color,
+        ).colorForBrightness(Brightness.dark),
         Colors.red,
       );
       expect(
@@ -54,7 +54,7 @@ void main() {
           createdAt: testDate,
           utcOffset: 120,
           reason: '',
-        ).color,
+        ).colorForBrightness(Brightness.dark),
         Colors.red,
       );
       expect(
@@ -62,7 +62,7 @@ void main() {
           id: 'id',
           createdAt: testDate,
           utcOffset: 120,
-        ).color,
+        ).colorForBrightness(Brightness.dark),
         Colors.green,
       );
       expect(
@@ -70,7 +70,7 @@ void main() {
           id: 'id',
           createdAt: testDate,
           utcOffset: 120,
-        ).color,
+        ).colorForBrightness(Brightness.dark),
         Colors.red,
       );
     });

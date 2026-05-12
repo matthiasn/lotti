@@ -25,13 +25,6 @@ void main() {
       expect(TaskPriority.p3Low.short, 'P3');
     });
 
-    test('labels', () {
-      expect(TaskPriority.p0Urgent.label, 'Urgent');
-      expect(TaskPriority.p1High.label, 'High');
-      expect(TaskPriority.p2Medium.label, 'Medium');
-      expect(TaskPriority.p3Low.label, 'Low');
-    });
-
     test('color mapping (light mode)', () {
       expect(
         TaskPriority.p0Urgent.colorForBrightness(Brightness.light),

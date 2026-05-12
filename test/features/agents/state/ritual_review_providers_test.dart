@@ -323,8 +323,6 @@ void main() {
       );
 
       expect(stats.totalSessions, 4);
-      expect(stats.completedCount, 2);
-      expect(stats.abandonedCount, 1);
       expect(stats.approvalRate, 0.5);
     });
 
@@ -346,8 +344,6 @@ void main() {
       );
 
       expect(stats.totalSessions, 0);
-      expect(stats.completedCount, 0);
-      expect(stats.abandonedCount, 0);
       expect(stats.approvalRate, 0.0);
     });
   });

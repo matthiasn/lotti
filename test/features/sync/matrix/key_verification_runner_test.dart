@@ -396,7 +396,7 @@ void main() {
     );
   });
 
-  group('listenForKeyVerificationRequests', () {
+  group('listenForKeyVerificationRequestsWithSubscription', () {
     late _MockMatrixService service;
     late MockLoggingService loggingService;
     late _MockClient client;
@@ -458,7 +458,7 @@ void main() {
         },
       );
 
-      await listenForKeyVerificationRequests(
+      await listenForKeyVerificationRequestsWithSubscription(
         service: service,
         loggingService: loggingService,
         requests: requestCachedController.stream,
@@ -489,7 +489,7 @@ void main() {
     test('logs exceptions when listener wiring fails', () async {
       when(() => service.client).thenThrow(Exception('unavailable'));
 
-      await listenForKeyVerificationRequests(
+      await listenForKeyVerificationRequestsWithSubscription(
         service: service,
         loggingService: loggingService,
       );

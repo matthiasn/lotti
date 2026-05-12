@@ -15,14 +15,6 @@ Future<void> setLastReadMatrixEventId(
 Future<String?> getLastReadMatrixEventId(SettingsDb settingsDb) =>
     settingsDb.itemByKey(lastReadMatrixEventId);
 
-Future<void> setLastReadMatrixEventTs(
-  int tsMillis,
-  SettingsDb settingsDb,
-) => settingsDb.saveSettingsItem(
-  lastReadMatrixEventTs,
-  tsMillis.toString(),
-);
-
 Future<int?> getLastReadMatrixEventTs(SettingsDb settingsDb) async {
   final v = await settingsDb.itemByKey(lastReadMatrixEventTs);
   if (v == null) return null;

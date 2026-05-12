@@ -36,8 +36,6 @@ void main() {
           statsOverride ??
               (ref, id) async => const EvolutionSessionStats(
                 totalSessions: 0,
-                completedCount: 0,
-                abandonedCount: 0,
                 approvalRate: 0,
               ),
         ),
@@ -102,8 +100,6 @@ void main() {
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
             totalSessions: 7,
-            completedCount: 5,
-            abandonedCount: 2,
             approvalRate: 0.71,
           ),
         ),
@@ -118,8 +114,6 @@ void main() {
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
             totalSessions: 3,
-            completedCount: 2,
-            abandonedCount: 1,
             approvalRate: 0.67,
           ),
         ),
@@ -138,8 +132,6 @@ void main() {
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
             totalSessions: 4,
-            completedCount: 3,
-            abandonedCount: 1,
             approvalRate: 0.75,
           ),
         ),
@@ -160,8 +152,6 @@ void main() {
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
             totalSessions: 4,
-            completedCount: 2,
-            abandonedCount: 2,
             approvalRate: 0.5,
           ),
         ),
@@ -179,8 +169,6 @@ void main() {
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
             totalSessions: 3,
-            completedCount: 2,
-            abandonedCount: 1,
             approvalRate: 0.6666,
           ),
         ),
@@ -234,8 +222,6 @@ void main() {
           sessionsOverride: (ref, id) async => sessions,
           statsOverride: (ref, id) async => const EvolutionSessionStats(
             totalSessions: 2,
-            completedCount: 1,
-            abandonedCount: 1,
             approvalRate: 0.5,
           ),
         ),
@@ -285,8 +271,6 @@ void main() {
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
             totalSessions: 3,
-            completedCount: 0,
-            abandonedCount: 3,
             approvalRate: 0,
           ),
         ),
@@ -301,8 +285,6 @@ void main() {
         buildSubject(
           statsOverride: (ref, id) async => const EvolutionSessionStats(
             totalSessions: 5,
-            completedCount: 5,
-            abandonedCount: 0,
             approvalRate: 1,
           ),
         ),

@@ -3,7 +3,6 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:genui/genui.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
@@ -19,7 +18,6 @@ class EvolutionChatData {
     required this.messages,
     this.sessionId,
     this.isWaiting = false,
-    this.currentDirectives,
     this.processor,
     this.categoryRatings = const {},
     this.lastSurfacedProposalKey,
@@ -28,7 +26,6 @@ class EvolutionChatData {
   final String? sessionId;
   final List<EvolutionChatMessage> messages;
   final bool isWaiting;
-  final String? currentDirectives;
 
   /// The GenUI message processor, available after session start.
   /// Used by [Surface] widgets to render dynamic content.
@@ -40,7 +37,6 @@ class EvolutionChatData {
     String? Function()? sessionId,
     List<EvolutionChatMessage>? messages,
     bool? isWaiting,
-    String? Function()? currentDirectives,
     SurfaceController? Function()? processor,
     Map<String, int>? categoryRatings,
     String? Function()? lastSurfacedProposalKey,
@@ -49,9 +45,6 @@ class EvolutionChatData {
       sessionId: sessionId != null ? sessionId() : this.sessionId,
       messages: messages ?? this.messages,
       isWaiting: isWaiting ?? this.isWaiting,
-      currentDirectives: currentDirectives != null
-          ? currentDirectives()
-          : this.currentDirectives,
       processor: processor != null ? processor() : this.processor,
       categoryRatings: categoryRatings ?? this.categoryRatings,
       lastSurfacedProposalKey: lastSurfacedProposalKey != null
@@ -73,14 +66,6 @@ class EvolutionChatState extends _$EvolutionChatState {
   @override
   Future<EvolutionChatData> build(String templateId) async {
     final workflow = ref.read(templateEvolutionWorkflowProvider);
-
-    // Load current directives for display in proposal cards.
-    final versionData = await ref.read(
-      activeTemplateVersionProvider(templateId).future,
-    );
-    final currentDirectives = versionData is AgentTemplateVersionEntity
-        ? versionData.directives
-        : null;
 
     final now = clock.now();
     final messages = <EvolutionChatMessage>[
@@ -107,7 +92,6 @@ class EvolutionChatState extends _$EvolutionChatState {
             timestamp: clock.now(),
           ),
         ],
-        currentDirectives: currentDirectives,
       );
     }
 
@@ -196,7 +180,6 @@ class EvolutionChatState extends _$EvolutionChatState {
     return EvolutionChatData(
       sessionId: session.sessionId,
       messages: messages,
-      currentDirectives: currentDirectives,
       processor: processor,
       lastSurfacedProposalKey:
           openingProposal != null && openingSurfaces.isNotEmpty

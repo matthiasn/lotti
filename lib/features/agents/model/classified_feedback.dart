@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 
@@ -55,22 +54,6 @@ abstract class ClassifiedFeedback with _$ClassifiedFeedback {
 
 /// Extension methods for filtering and grouping feedback.
 extension ClassifiedFeedbackX on ClassifiedFeedback {
-  /// All items with positive sentiment.
-  List<ClassifiedFeedbackItem> get positive =>
-      items.where((i) => i.sentiment == FeedbackSentiment.positive).toList();
-
-  /// All items with negative sentiment.
-  List<ClassifiedFeedbackItem> get negative =>
-      items.where((i) => i.sentiment == FeedbackSentiment.negative).toList();
-
-  /// All items with neutral sentiment.
-  List<ClassifiedFeedbackItem> get neutral =>
-      items.where((i) => i.sentiment == FeedbackSentiment.neutral).toList();
-
-  /// Group items by category.
-  Map<FeedbackCategory, List<ClassifiedFeedbackItem>> get byCategory =>
-      items.groupListsBy((i) => i.category);
-
   /// All critical-priority items (grievances, excellence, template
   /// improvements).
   List<ClassifiedFeedbackItem> get critical => items

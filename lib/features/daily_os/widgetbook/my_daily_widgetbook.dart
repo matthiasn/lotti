@@ -2711,24 +2711,6 @@ Task _task({
   );
 }
 
-MyDailyTimelineBlockDensity myDailyTimelineBlockDensity({
-  required DsTokens tokens,
-  required double height,
-  required Duration duration,
-}) {
-  if (duration <= const Duration(minutes: 35) ||
-      height <= tokens.spacing.step9) {
-    return MyDailyTimelineBlockDensity.compact;
-  }
-  if (duration >= const Duration(minutes: 90)) {
-    return MyDailyTimelineBlockDensity.expanded;
-  }
-  if (height <= tokens.spacing.step10) {
-    return MyDailyTimelineBlockDensity.regular;
-  }
-  return MyDailyTimelineBlockDensity.expanded;
-}
-
 String _formatTimelineHour(BuildContext context, int hour) {
   return _formatLocalizedPreviewTime(
     context,

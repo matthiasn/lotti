@@ -114,18 +114,6 @@ class KeyVerificationRunner {
   }
 }
 
-Future<void> listenForKeyVerificationRequests({
-  required MatrixService service,
-  required LoggingService loggingService,
-  Stream<KeyVerification>? requests,
-}) async {
-  await listenForKeyVerificationRequestsWithSubscription(
-    service: service,
-    loggingService: loggingService,
-    requests: requests,
-  );
-}
-
 Future<StreamSubscription<KeyVerification>?>
 listenForKeyVerificationRequestsWithSubscription({
   required MatrixService service,

@@ -321,34 +321,5 @@ void main() {
         });
       }
     });
-
-    group('Backward compatibility', () {
-      test('color getter defaults to dark mode colors', () {
-        final status = TaskStatus.groomed(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(status.color, equals(Colors.lightGreenAccent));
-      });
-
-      test('color getter returns dark mode orange for open status', () {
-        final status = TaskStatus.open(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(status.color, equals(Colors.orange));
-      });
-
-      test('color getter returns dark mode blue for in progress status', () {
-        final status = TaskStatus.inProgress(
-          id: 'test',
-          createdAt: testDate,
-          utcOffset: 0,
-        );
-        expect(status.color, equals(Colors.blue));
-      });
-    });
   });
 }

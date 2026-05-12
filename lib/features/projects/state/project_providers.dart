@@ -118,23 +118,6 @@ final projectsForCategoryProvider = FutureProvider.autoDispose
       return repository.getProjectsForCategory(categoryId);
     });
 
-/// Provider that returns the number of tasks linked to a project.
-final projectTaskCountProvider = FutureProvider.autoDispose.family<int, String>(
-  (ref, projectId) async {
-    final repository = ref.watch(projectRepositoryProvider);
-
-    final sub = repository.updateStream
-        .where(
-          (ids) => ids.contains(projectId) || ids.contains(projectNotification),
-        )
-        .listen((_) => ref.invalidateSelf());
-    ref.onDispose(sub.cancel);
-
-    final tasks = await repository.getTasksForProject(projectId);
-    return tasks.length;
-  },
-);
-
 /// Provider that returns the latest agent-authored health snapshot.
 final projectHealthMetricsProvider = FutureProvider.autoDispose
     .family<ProjectHealthMetrics?, String>((
@@ -178,33 +161,6 @@ final projectHealthSnapshotProvider = FutureProvider.autoDispose
         summary: summary,
         recommendations: recommendations,
       );
-    });
-
-/// Provider that prepares all health-dashboard data for projects in a category.
-///
-/// Results are sorted worst-band-first by default so the most urgent projects
-/// rise to the top for future dashboard surfaces.
-final projectHealthOverviewEntriesProvider = FutureProvider.autoDispose
-    .family<List<ProjectHealthOverviewEntry>, String>((ref, categoryId) async {
-      final projects = await ref.watch(
-        projectsForCategoryProvider(categoryId).future,
-      );
-
-      final snapshots = await Future.wait(
-        projects.map(
-          (project) => ref.watch(
-            projectHealthSnapshotProvider(project.meta.id).future,
-          ),
-        ),
-      );
-
-      return queryProjectHealthOverviewEntries([
-        for (final entry in projects.indexed)
-          ProjectHealthOverviewEntry(
-            project: entry.$2,
-            snapshot: snapshots[entry.$1],
-          ),
-      ]);
     });
 
 /// Provider that fetches the project a task belongs to.

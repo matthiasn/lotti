@@ -87,15 +87,10 @@ Future<EvolutionSessionStats> evolutionSessionStats(
   final completed = typed
       .where((s) => s.status == EvolutionSessionStatus.completed)
       .length;
-  final abandoned = typed
-      .where((s) => s.status == EvolutionSessionStatus.abandoned)
-      .length;
   final approvalRate = total > 0 ? completed / total : 0.0;
 
   return EvolutionSessionStats(
     totalSessions: total,
-    completedCount: completed,
-    abandonedCount: abandoned,
     approvalRate: approvalRate,
   );
 }
@@ -104,14 +99,10 @@ Future<EvolutionSessionStats> evolutionSessionStats(
 class EvolutionSessionStats {
   const EvolutionSessionStats({
     required this.totalSessions,
-    required this.completedCount,
-    required this.abandonedCount,
     required this.approvalRate,
   });
 
   final int totalSessions;
-  final int completedCount;
-  final int abandonedCount;
   final double approvalRate;
 }
 

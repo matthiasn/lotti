@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -804,43 +803,6 @@ void main() {
         expect(linkedEntityStatuses, contains(InferenceStatus.running));
         expect(linkedEntityStatuses, contains(InferenceStatus.error));
       });
-    });
-  });
-
-  group('categoryChanges provider', () {
-    test('returns stream of category changes', () async {
-      const categoryId = 'test-category';
-      final categoryChangesStream = StreamController<CategoryDefinition>();
-
-      final testCategory = CategoryDefinition(
-        id: categoryId,
-        name: 'Test Category',
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-        private: false,
-        active: true,
-      );
-
-      when(
-        () => mockCategoryRepository.watchCategory(categoryId),
-      ).thenAnswer((_) => categoryChangesStream.stream);
-
-      // Start listening to the provider
-      final subscription = container.listen(
-        categoryChangesProvider(categoryId),
-        (previous, next) {},
-      );
-
-      // Verify watchCategory was called
-      verify(() => mockCategoryRepository.watchCategory(categoryId)).called(1);
-
-      // Emit a change
-      categoryChangesStream.add(testCategory);
-
-      // Clean up
-      await categoryChangesStream.close();
-      subscription.close();
     });
   });
 

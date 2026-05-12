@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
@@ -57,7 +56,6 @@ import 'package:matrix/matrix.dart';
 class AppScreenConstants {
   const AppScreenConstants._();
 
-  static const double navigationPadding = 34;
   static const double navigationTimeIndicatorBottom = 0;
   static const double navigationAudioIndicatorRight = 100;
 }
@@ -153,12 +151,7 @@ class _AppNavigationDestination {
 }
 
 class AppScreen extends ConsumerStatefulWidget {
-  const AppScreen({
-    super.key,
-    this.journalDb,
-  });
-
-  final JournalDb? journalDb;
+  const AppScreen({super.key});
 
   @override
   ConsumerState<AppScreen> createState() => _AppScreenState();
@@ -636,12 +629,10 @@ class MyBeamerApp extends ConsumerStatefulWidget {
     super.key,
     this.navService,
     this.userActivityService,
-    this.journalDb,
   });
 
   final NavService? navService;
   final UserActivityService? userActivityService;
-  final JournalDb? journalDb;
 
   @override
   ConsumerState<MyBeamerApp> createState() => _MyBeamerAppState();
@@ -660,7 +651,7 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
       initialPath: effectiveNavService.currentPath,
       locationBuilder: RoutesLocationBuilder(
         routes: {
-          '*': (context, state, data) => AppScreen(journalDb: widget.journalDb),
+          '*': (context, state, data) => const AppScreen(),
         },
       ).call,
     );

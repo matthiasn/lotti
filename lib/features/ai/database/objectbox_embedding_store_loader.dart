@@ -12,15 +12,6 @@ import 'package:path/path.dart' as p;
 
 Future<void>? _loadObjectBoxStoreLibraryFuture;
 
-Future<EmbeddingStore> openObjectBoxEmbeddingStore({
-  required String documentsPath,
-}) async {
-  await (_loadObjectBoxStoreLibraryFuture ??= _loadObjectBoxStoreLibrary());
-  return objectbox_store.ObjectBoxEmbeddingStore.open(
-    documentsPath: documentsPath,
-  );
-}
-
 Future<EmbeddingStore> openShardedEmbeddingStore({
   required String documentsPath,
 }) async {
