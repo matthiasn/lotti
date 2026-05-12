@@ -168,6 +168,14 @@ class QueuePipelineCoordinator {
   final Set<String> _pendingPathResurrections = <String>{};
   Timer? _attachmentPathFlushTimer;
 
+  /// Tracks an in-flight [_flushPendingPathResurrections] call so
+  /// [stop] can await it before tearing the queue down. Without this,
+  /// a flush kicked off by the debounce timer right before the
+  /// listener cancels could still be running its
+  /// `_queue.resurrectByPaths` call when the queue is disposed,
+  /// producing a "used after close" error on shutdown.
+  Future<void>? _attachmentPathFlushInFlight;
+
   /// Debounce window for [_pendingPathResurrections]. Tuned wide
   /// enough to fold an attachment download burst together (the
   /// observed bursts span 10–30 ms) but short enough that an isolated
@@ -404,6 +412,19 @@ class QueuePipelineCoordinator {
       _attachmentPathFlushTimer?.cancel();
       _attachmentPathFlushTimer = null;
       _pendingPathResurrections.clear();
+      // Wait for any flush already in flight before tearing the
+      // queue down further — `resurrectByPaths` opens a writer
+      // transaction and we must not race it against `_queue` /
+      // `_worker` disposal on the error path.
+      final pendingFlush = _attachmentPathFlushInFlight;
+      _attachmentPathFlushInFlight = null;
+      if (pendingFlush != null) {
+        try {
+          await pendingFlush;
+        } catch (_) {
+          // Already logged on the flush side.
+        }
+      }
       await _journalUpdateSub?.cancel();
       _journalUpdateSub = null;
       try {
@@ -566,14 +587,25 @@ class QueuePipelineCoordinator {
       await tryRun('attachmentPathSub', () async {
         await _attachmentPathSub?.cancel();
         _attachmentPathSub = null;
-        // Cancel the debounce timer and drop the in-flight batch: the
-        // attachment subscription is gone so there is no producer
-        // left, and the bulk resurrection would race with the rest of
-        // teardown (worker stop, queue dispose) that follows below.
+        // Cancel the debounce timer so no new flush is scheduled, and
+        // drop the still-pending accumulator since the subscription is
+        // gone. Any flush *already in flight* is awaited below so its
+        // `resurrectByPaths` writer transaction settles before
+        // `_queue` / `_worker` disposal — otherwise teardown can race
+        // a flush still mid-transaction and trip drift's "used after
+        // close" guard.
         _attachmentPathFlushTimer?.cancel();
         _attachmentPathFlushTimer = null;
         _pendingPathResurrections.clear();
       });
+      final pendingPathFlush = _attachmentPathFlushInFlight;
+      _attachmentPathFlushInFlight = null;
+      if (pendingPathFlush != null) {
+        await tryRun(
+          'attachmentPathFlush',
+          () async => pendingPathFlush,
+        );
+      }
       await tryRun('journalUpdateSub', () async {
         await _journalUpdateSub?.cancel();
         _journalUpdateSub = null;
@@ -752,7 +784,24 @@ class QueuePipelineCoordinator {
     _attachmentPathFlushTimer?.cancel();
     _attachmentPathFlushTimer = Timer(
       attachmentPathDebounce,
-      _flushPendingPathResurrections,
+      _kickPendingPathResurrectionFlush,
+    );
+  }
+
+  /// Starts a flush and records the resulting future on
+  /// [_attachmentPathFlushInFlight] so [stop] can await it before
+  /// disposing the queue. Clears the field once the flush settles —
+  /// using `identical` to avoid clobbering a newer in-flight future
+  /// scheduled by a follow-up path event.
+  void _kickPendingPathResurrectionFlush() {
+    final flush = _flushPendingPathResurrections();
+    _attachmentPathFlushInFlight = flush;
+    unawaited(
+      flush.whenComplete(() {
+        if (identical(_attachmentPathFlushInFlight, flush)) {
+          _attachmentPathFlushInFlight = null;
+        }
+      }),
     );
   }
 
@@ -764,7 +813,8 @@ class QueuePipelineCoordinator {
   Future<void> flushPendingPathResurrectionsForTest() {
     _attachmentPathFlushTimer?.cancel();
     _attachmentPathFlushTimer = null;
-    return _flushPendingPathResurrections();
+    _kickPendingPathResurrectionFlush();
+    return _attachmentPathFlushInFlight ?? Future<void>.value();
   }
 
   Future<void> _flushPendingPathResurrections() async {

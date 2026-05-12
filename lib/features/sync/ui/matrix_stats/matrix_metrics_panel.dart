@@ -14,8 +14,9 @@ import 'package:lotti/providers/service_providers.dart';
 /// exposing the refresh/rescan actions to the UI.
 ///
 /// Notes:
-/// - Polls every 2s when the app is active; updates the "Last updated" stamp
-///   only when the metrics signature changes to avoid visual jitter.
+/// - Polls every [MatrixSyncMetricsPanelState.pollInterval] (5s) when the
+///   app is active; updates the "Last updated" stamp only when the metrics
+///   signature changes to avoid visual jitter.
 /// - Refresh/Retry/Rescan actions invalidate the providers and force a single
 ///   refresh cycle so users get immediate feedback.
 class MatrixSyncMetricsPanel extends ConsumerStatefulWidget {

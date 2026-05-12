@@ -2229,6 +2229,36 @@ void main() {
           expect(result.keys, ['bulk-dup']);
         },
       );
+
+      test(
+        'chunks the IN-list past 900 entries so a caller passing many '
+        'ids never trips SQLite SQLITE_MAX_VARIABLE_NUMBER (default '
+        '999) — guards `_collectObservationPayloads` on a project '
+        'agent with thousands of pending observations',
+        () async {
+          // 1 800 = two full chunks at the 900-id cut-off.
+          const total = 1800;
+          const matchedSpan = 5;
+          for (var i = 0; i < matchedSpan; i++) {
+            await repo.upsertEntity(makeAgent(id: 'chunk-real-$i'));
+          }
+          final requestedIds = <String>[
+            for (var i = 0; i < total; i++) 'chunk-synthetic-$i',
+            for (var i = 0; i < matchedSpan; i++) 'chunk-real-$i',
+          ];
+
+          final result = await repo.getEntitiesByIds(requestedIds);
+
+          // Only the rows that actually exist come back, regardless of
+          // how big the input set was. The crucial check is that the
+          // call completes without a `SqliteException` from the
+          // host-variable cap.
+          expect(
+            result.keys.toSet(),
+            {for (var i = 0; i < matchedSpan; i++) 'chunk-real-$i'},
+          );
+        },
+      );
     });
 
     test('upsert overwrites existing entity with same ID', () async {

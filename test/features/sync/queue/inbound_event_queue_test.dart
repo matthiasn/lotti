@@ -1589,6 +1589,42 @@ void main() {
     );
 
     test(
+      'resurrectByPaths chunks the IN-list past 900 entries so a very '
+      'large catch-up batch (initial sync downloading thousands of '
+      'attachments) cannot trip SQLite SQLITE_MAX_VARIABLE_NUMBER '
+      '(default 999)',
+      () async {
+        const realPath = '/audio/2026-04-21/real.m4a.json';
+        await queue.enqueueLive(
+          _buildSyncEvent(
+            eventId: r'$real',
+            roomId: roomA,
+            originTsMs: 500,
+            content: <String, dynamic>{
+              'msgtype': syncMessageType,
+              'jsonPath': realPath,
+            },
+          ),
+        );
+        final batch = await queue.peekBatchReady();
+        await queue.markSkipped(batch.first, reason: 'pendingAttachment');
+
+        // 1 800 synthetic paths = two full chunks at the 900-cap, plus
+        // one real path embedded so we can confirm the row actually
+        // flips. The crucial guard is that the call completes — a
+        // pre-chunking version would raise SqliteException.
+        final manyPaths = <String>[
+          for (var i = 0; i < 1800; i++) '/synthetic/$i.json',
+          realPath,
+        ];
+
+        final resurrected = await queue.resurrectByPaths(manyPaths);
+        expect(resurrected, 1);
+        expect(await statusOf(batch.first.queueId), 'enqueued');
+      },
+    );
+
+    test(
       'resurrectAll flips every abandoned row under the hard cap back '
       'to enqueued — the "Retry all" Sync-Settings action',
       () async {

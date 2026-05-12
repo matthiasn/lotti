@@ -877,7 +877,10 @@ void main() {
           .get();
 
       final details = plan.map((row) => row.read<String>('detail')).join(' ');
-      expect(details, isNot(contains('SCAN outbox')));
+      // `SCAN outbox USING INDEX <name>` (e.g. the partial pending
+      // index) is a legitimate plan — only a bare base-table scan
+      // counts as a regression.
+      expect(details, isNot(matches(RegExp('SCAN outbox(?! USING)'))));
     });
 
     test(
@@ -2861,13 +2864,39 @@ void main() {
         );
         expect(
           plan,
-          isNot(contains('SCAN sync_sequence_log')),
+          isNot(matches(RegExp('SCAN sync_sequence_log(?! USING)'))),
           reason: 'probe must never fall back to a base-table scan',
         );
         expect(
           await database.hasActionableEntries(),
           isTrue,
           reason: 'one missing row among 200 terminals must still register',
+        );
+      },
+    );
+
+    test(
+      'status literals (1, 2) baked into the partial-index match used '
+      'by hasActionableEntries stay in sync with '
+      'SyncSequenceStatus.missing.index and .requested.index — '
+      '`customSelect` cannot reference the enum at compile time, so a '
+      'future enum reorder would silently probe the wrong rows. This '
+      'guard fails loudly instead (mirrors the OutboxStatus guard at '
+      'the end of this group).',
+      () {
+        expect(
+          SyncSequenceStatus.missing.index,
+          1,
+          reason:
+              'missing must be index 1 — used as a literal in the '
+              'hasActionableEntries / partial-index WHERE clauses.',
+        );
+        expect(
+          SyncSequenceStatus.requested.index,
+          2,
+          reason:
+              'requested must be index 2 — used as a literal in the '
+              'hasActionableEntries / partial-index WHERE clauses.',
         );
       },
     );
@@ -3589,8 +3618,11 @@ void main() {
         );
         expect(
           plan,
-          isNot(contains('SCAN outbox')),
-          reason: 'no full table scan once the planner can see the status set',
+          isNot(matches(RegExp('SCAN outbox(?! USING)'))),
+          reason:
+              'no base-table scan once the planner can see the status set '
+              '(an indexed `SCAN outbox USING INDEX <name>` plan is fine — '
+              'only bare `SCAN outbox` is a regression)',
         );
 
         final entries = await database.getPendingBackfillEntries();

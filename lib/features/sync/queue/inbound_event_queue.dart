@@ -758,9 +758,17 @@ class InboundQueue {
     );
   }
 
+  /// Maximum number of paths bound per `json_path IN (...)` chunk in
+  /// [resurrectByPaths]. SQLite's default `SQLITE_MAX_VARIABLE_NUMBER`
+  /// is 999; chunking at 900 leaves headroom for the implicit
+  /// `resurrection_count` parameter and any future additions to
+  /// `_resurrectWhere` without bumping into the cap.
+  static const int _resurrectByPathsChunkSize = 900;
+
   /// Bulk variant of [resurrectByPath] — flips abandoned rows whose
-  /// `json_path` is in [paths] back to `enqueued` in a single
-  /// SELECT + transactional UPDATE round-trip.
+  /// `json_path` is in [paths] back to `enqueued`. Issues one
+  /// SELECT + transactional UPDATE round-trip per
+  /// [_resurrectByPathsChunkSize] batch.
   ///
   /// Backs the coordinator's debounced `pathRecorded` subscriber: a
   /// burst of attachment downloads (matrix-sync catch-up) used to fan
@@ -773,19 +781,40 @@ class InboundQueue {
   /// into one `WHERE json_path IN (...)` query removes the wait
   /// chain entirely.
   ///
+  /// Chunking guards against SQLite's host-variable limit (default
+  /// 999) so a very large catch-up batch — e.g. an initial sync that
+  /// downloads thousands of attachments while abandoned ledger rows
+  /// were waiting — cannot trip the cap. Each chunk still resurrects
+  /// in one DB round-trip; the cumulative wall cost grows linearly
+  /// with chunk count, never exponentially.
+  ///
   /// Empty input returns 0 without touching the database. Duplicate
-  /// paths are deduplicated to keep the IN-list short.
+  /// paths are deduplicated to keep each IN-list short.
   Future<int> resurrectByPaths(
     Iterable<String> paths, {
     int hardCap = 50,
   }) async {
     final uniquePaths = paths.toSet();
     if (uniquePaths.isEmpty) return 0;
-    return _resurrectWhere(
-      (t) => t.jsonPath.isIn(uniquePaths),
-      hardCap: hardCap,
-      diagnostic: 'paths=${uniquePaths.length}',
-    );
+
+    final pathList = uniquePaths.toList(growable: false);
+    var totalResurrected = 0;
+    for (
+      var start = 0;
+      start < pathList.length;
+      start += _resurrectByPathsChunkSize
+    ) {
+      final end = start + _resurrectByPathsChunkSize > pathList.length
+          ? pathList.length
+          : start + _resurrectByPathsChunkSize;
+      final chunk = pathList.sublist(start, end);
+      totalResurrected += await _resurrectWhere(
+        (t) => t.jsonPath.isIn(chunk),
+        hardCap: hardCap,
+        diagnostic: 'paths=${chunk.length}',
+      );
+    }
+    return totalResurrected;
   }
 
   /// Resurrects every abandoned row for the current (and any other)
