@@ -18,6 +18,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   accent.
 
 ### Added
+- AI Settings FTUE modals redesigned to match the new design system. The
+  old `FtueSetupDialog` / `FtueResultDialog` are replaced by
+  `AiProviderSetupPreviewModal` and `AiProviderSetupResultModal`. The
+  preview modal lists each model the FTUE will create as a checkbox row
+  the user can untick — those `providerModelId`s are passed to
+  `runFtueSetupForType` as `excludedProviderModelIds` and the
+  per-provider setup helpers skip them at creation time, so the
+  success-modal model count reflects exactly what landed in the
+  database. Models the provider already owns appear in a read-only
+  "Already added" section so re-running the wizard doesn't pretend
+  they're new. Ollama short-circuits the preview because it has no
+  canonical model preset, and providers whose entire preset is already
+  configured skip straight to the result modal. The result modal
+  shows a compact post-setup summary — "{Provider} is connected. We
+  set things up for you." — with bulleted rows for added models,
+  created profile, and test category (created vs reused), an errors
+  block when present, and Review setup / Start using AI buttons. Both
+  modals use the existing app dark / light tokens instead of the
+  design's near-black, and pick up the per-provider accent from the
+  `colors.aiProvider.*` tokens added in the next bullet.
+- AI Settings FTUE backend now covers Anthropic and Ollama alongside
+  the existing Gemini / OpenAI / Mistral / Alibaba flows. Anthropic
+  setup seeds Claude Sonnet 4 (reasoning) and Claude Haiku 3.5 (fast)
+  plus a new `Anthropic Claude` default inference profile bound to a
+  fresh `Test Category Anthropic Enabled` test category. Ollama setup
+  installs the test category bound to the existing `Local (Ollama)`
+  profile and intentionally creates no model rows — Ollama serves
+  whatever the user has pulled locally, so the upcoming connect modal
+  will enumerate `/api/tags` and let the user pick from what's
+  actually installed. Both providers are now members of
+  `ftueSupportedProviderTypes`, dispatch through `runFtueSetupForType`,
+  and render via `AiProviderSetupPreviewModal` /
+  `AiProviderSetupResultModal`, so the FTUE flow fires end-to-end
+  after a key paste (Anthropic) or a localhost ping (Ollama). The
+  per-provider result types now share a sealed `AiFtueResult` base
+  class so the analyzer catches a missing arm when the next provider
+  is wired in.
+- Design-system color tokens for AI providers: `colors.aiProvider.{gemini,
+  openAi, anthropic, ollama}` each carry an accent + tinted-surface
+  pair in both light and dark variants, generated from `tokens.json`
+  through the existing token generator. Used by the upcoming
+  redesigned AI Settings surfaces (quick-add provider tiles,
+  provider cards, master/detail rail) so per-provider accents stay
+  consistent across mobile, desktop, and modal layers.
 - Sync conflict resolution screen rebuilt as an inline-diff picker.
   Tapping a conflict row now opens a dedicated page with a back chip
   + title + amber count pill in the header, lead copy, and an amber

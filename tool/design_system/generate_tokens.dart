@@ -197,6 +197,12 @@ final class _DesignTokenGenerator {
         jsonMap: _colorJson['diff'] as Map<String, dynamic>,
         path: const ['color', 'diff'],
       ),
+      _buildColorGroupNode(
+        fieldName: 'aiProvider',
+        className: 'DsColorsAiProvider',
+        jsonMap: _colorJson['aiProvider'] as Map<String, dynamic>,
+        path: const ['color', 'aiProvider'],
+      ),
     ];
 
     return _Node.group(

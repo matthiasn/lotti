@@ -682,6 +682,10 @@
   "agentTokenUsageWakeCount": "Wakes",
   "aiAssistantTitle": "Generate…",
   "aiBatchToggleTooltip": "Switch to standard recording",
+  "aiCapabilityChipImageGeneration": "Image generation",
+  "aiCapabilityChipImageRecognition": "Image recognition",
+  "aiCapabilityChipThinking": "Thinking",
+  "aiCapabilityChipTranscription": "Transcription",
   "aiCardEmptyProposals": "No open proposals · agent will surface new changes here",
   "aiCardHistoryToggle": "History · {count}",
   "@aiCardHistoryToggle": {
@@ -802,6 +806,107 @@
   "aiSettingsTabModels": "Models",
   "aiSettingsTabProfiles": "Profiles",
   "aiSettingsTabProviders": "Providers",
+  "aiSetupPreviewAcceptButton": "Accept & finish",
+  "aiSetupPreviewAlreadyAddedSectionLabel": "Already added",
+  "aiSetupPreviewCategoryFooter": "Set up a test category {categoryName} to try it out.",
+  "@aiSetupPreviewCategoryFooter": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupPreviewConnectedHeader": "{providerName} connected",
+  "@aiSetupPreviewConnectedHeader": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupPreviewCustomizeButton": "Customize",
+  "aiSetupPreviewLead": "Review what Lotti will add. Uncheck anything you don't want; you can always set it up later by hand.",
+  "aiSetupPreviewLiveBadge": "Live",
+  "aiSetupPreviewModalTitle": "{providerName} setup",
+  "@aiSetupPreviewModalTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupPreviewModelsSectionLabel": "Models",
+  "aiSetupPreviewProfileSectionLabel": "Inference profile",
+  "aiSetupPreviewProfileSetActiveBadge": "Set active",
+  "aiSetupResultBulletCategoryCreated": "Set up a test category {categoryName} to try it out",
+  "@aiSetupResultBulletCategoryCreated": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupResultBulletCategoryReused": "Reusing existing test category {categoryName}",
+  "@aiSetupResultBulletCategoryReused": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupResultBulletModels": "{count, plural, =1{Configured 1 model} other{Configured {count} models}}",
+  "@aiSetupResultBulletModels": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiSetupResultBulletProfile": "Created inference profile {profileName}",
+  "@aiSetupResultBulletProfile": {
+    "placeholders": {
+      "profileName": {
+        "type": "String",
+        "example": "Gemini Flash"
+      }
+    }
+  },
+  "aiSetupResultErrorsHeader": "{count, plural, =1{1 issue} other{{count} issues}} during setup",
+  "@aiSetupResultErrorsHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "aiSetupResultHeader": "{providerName} is connected",
+  "@aiSetupResultHeader": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupResultLead": "We set things up for you. AI features are ready to use in your journal.",
+  "aiSetupResultModalTitle": "{providerName} ready",
+  "@aiSetupResultModalTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupResultReviewSetupButton": "Review setup",
+  "aiSetupResultStartUsingButton": "Start using AI",
   "aiSetupWizardCreatesOptimized": "Creates optimized models, prompts, and a test category",
   "aiSetupWizardDescription": "Set up or refresh models, prompts, and test category for {providerName}",
   "@aiSetupWizardDescription": {

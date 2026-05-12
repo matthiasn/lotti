@@ -1108,6 +1108,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Přepnout na standardní nahrávání';
 
   @override
+  String get aiCapabilityChipImageGeneration => 'Generování obrázků';
+
+  @override
+  String get aiCapabilityChipImageRecognition => 'Rozpoznávání obrázků';
+
+  @override
+  String get aiCapabilityChipThinking => 'Uvažování';
+
+  @override
+  String get aiCapabilityChipTranscription => 'Přepis';
+
+  @override
   String get aiCardEmptyProposals =>
       'Žádné otevřené návrhy · agent zde zobrazí nové změny';
 
@@ -1410,6 +1422,105 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiSettingsTabProviders => 'Poskytovatelé';
+
+  @override
+  String get aiSetupPreviewAcceptButton => 'Přijmout a dokončit';
+
+  @override
+  String get aiSetupPreviewAlreadyAddedSectionLabel => 'Již přidané';
+
+  @override
+  String aiSetupPreviewCategoryFooter(String categoryName) {
+    return 'Vytvořit testovací kategorii $categoryName pro vyzkoušení.';
+  }
+
+  @override
+  String aiSetupPreviewConnectedHeader(String providerName) {
+    return '$providerName připojeno';
+  }
+
+  @override
+  String get aiSetupPreviewCustomizeButton => 'Přizpůsobit';
+
+  @override
+  String get aiSetupPreviewLead =>
+      'Zkontroluj, co Lotti přidá. Odškrtni, co nechceš — vždy to můžeš nastavit ručně později.';
+
+  @override
+  String get aiSetupPreviewLiveBadge => 'Živě';
+
+  @override
+  String aiSetupPreviewModalTitle(String providerName) {
+    return 'Nastavení $providerName';
+  }
+
+  @override
+  String get aiSetupPreviewModelsSectionLabel => 'Modely';
+
+  @override
+  String get aiSetupPreviewProfileSectionLabel => 'Inferenční profil';
+
+  @override
+  String get aiSetupPreviewProfileSetActiveBadge => 'Aktivovat';
+
+  @override
+  String aiSetupResultBulletCategoryCreated(String categoryName) {
+    return 'Vytvořena testovací kategorie $categoryName';
+  }
+
+  @override
+  String aiSetupResultBulletCategoryReused(String categoryName) {
+    return 'Použije se existující testovací kategorie $categoryName';
+  }
+
+  @override
+  String aiSetupResultBulletModels(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nakonfigurováno $count modelů',
+      few: 'Nakonfigurovány $count modely',
+      one: 'Nakonfigurován 1 model',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiSetupResultBulletProfile(String profileName) {
+    return 'Vytvořen inferenční profil $profileName';
+  }
+
+  @override
+  String aiSetupResultErrorsHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count problémů',
+      few: '$count problémy',
+      one: '1 problém',
+    );
+    return '$_temp0 při nastavení';
+  }
+
+  @override
+  String aiSetupResultHeader(String providerName) {
+    return '$providerName je připojeno';
+  }
+
+  @override
+  String get aiSetupResultLead =>
+      'Vše jsme za tebe nastavili. Funkce AI jsou připraveny v tvém deníku.';
+
+  @override
+  String aiSetupResultModalTitle(String providerName) {
+    return '$providerName připraveno';
+  }
+
+  @override
+  String get aiSetupResultReviewSetupButton => 'Zkontrolovat nastavení';
+
+  @override
+  String get aiSetupResultStartUsingButton => 'Začít používat AI';
 
   @override
   String get aiSetupWizardCreatesOptimized =>

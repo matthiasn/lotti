@@ -14,8 +14,8 @@ import 'package:lotti/features/ai/ui/settings/services/ftue_trigger_service.dart
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ftue_result_dialog.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ftue_setup_dialog.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_modal.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -25,61 +25,79 @@ import 'package:uuid/uuid.dart';
 
 /// Runs the FTUE setup for the given provider type.
 ///
-/// Returns the provider-specific result type, or null if the provider type
-/// is not supported for FTUE.
-Future<Object?> runFtueSetupForType({
+/// Returns an [AiFtueResult] subtype, or null if the provider type has no
+/// FTUE wired in. Any `providerModelId` in [excludedProviderModelIds] is
+/// skipped end-to-end — no row is created, so the result's
+/// `modelsCreated` count reflects exactly what landed in the database
+/// (no post-hoc deletion needed).
+Future<AiFtueResult?> runFtueSetupForType({
   required BuildContext context,
   required WidgetRef ref,
   required InferenceProviderType providerType,
   required AiConfigInferenceProvider config,
   required ProviderPromptSetupService setupService,
+  Set<String> excludedProviderModelIds = const {},
 }) async {
   return switch (providerType) {
     InferenceProviderType.alibaba => setupService.performAlibabaFtueSetup(
       context: context,
       ref: ref,
       provider: config,
+      excludedProviderModelIds: excludedProviderModelIds,
+    ),
+    InferenceProviderType.anthropic => setupService.performAnthropicFtueSetup(
+      context: context,
+      ref: ref,
+      provider: config,
+      excludedProviderModelIds: excludedProviderModelIds,
     ),
     InferenceProviderType.gemini => setupService.performGeminiFtueSetup(
       context: context,
       ref: ref,
       provider: config,
+      excludedProviderModelIds: excludedProviderModelIds,
+    ),
+    InferenceProviderType.ollama => setupService.performOllamaFtueSetup(
+      context: context,
+      ref: ref,
+      provider: config,
+      excludedProviderModelIds: excludedProviderModelIds,
     ),
     InferenceProviderType.openAi => setupService.performOpenAiFtueSetup(
       context: context,
       ref: ref,
       provider: config,
+      excludedProviderModelIds: excludedProviderModelIds,
     ),
     InferenceProviderType.mistral => setupService.performMistralFtueSetup(
       context: context,
       ref: ref,
       provider: config,
+      excludedProviderModelIds: excludedProviderModelIds,
     ),
     _ => null,
   };
 }
 
-/// Shows the appropriate FTUE result dialog based on result type.
-Future<void> showFtueResultDialog(BuildContext context, Object result) async {
-  switch (result) {
-    case AlibabaFtueResult():
-      await FtueResultDialog.showAlibaba(context, result: result);
-    case GeminiFtueResult():
-      await FtueResultDialog.show(context, result: result);
-    case OpenAiFtueResult():
-      await FtueResultDialog.showOpenAi(context, result: result);
-    case MistralFtueResult():
-      await FtueResultDialog.showMistral(context, result: result);
-  }
-}
-
-/// Performs the full FTUE setup workflow: confirmation dialog, setup, and result.
+/// Performs the full FTUE setup workflow: preview, setup, and result.
 ///
-/// This is the common workflow used by both the initial provider setup flow
-/// and the manual "Run Setup Wizard" button.
+/// 1. Opens `AiProviderSetupPreviewModal` so the user can untick proposed
+///    models before they're created. Already-configured models for the
+///    same provider show in a read-only section so re-running the wizard
+///    doesn't pretend they're new. Providers without an FTUE preset
+///    (Ollama) skip this modal entirely.
+/// 2. Runs `runFtueSetupForType` with the unticked set as
+///    `excludedProviderModelIds` — the per-provider helpers skip every
+///    excluded `providerModelId` at creation time, so the success-modal
+///    model count reflects exactly what landed in the database.
+/// 3. Opens `AiProviderSetupResultModal` with the FTUE result and
+///    returns the action the user picked.
 ///
-/// Returns true if the setup was run, false if cancelled or skipped.
-Future<bool> performFtueSetupWorkflow({
+/// Returns the [AiProviderSetupResultAction] the user chose in the
+/// result modal, or `null` if the workflow was cancelled or skipped
+/// before the result modal opened. Callers decide whether to act on
+/// the chosen action (e.g. pop the page on `startUsingAi`).
+Future<AiProviderSetupResultAction?> performFtueSetupWorkflow({
   required BuildContext context,
   required WidgetRef ref,
   required InferenceProviderType providerType,
@@ -88,15 +106,15 @@ Future<bool> performFtueSetupWorkflow({
   required String providerName,
   required bool Function() isMounted,
 }) async {
-  // Show confirmation dialog
-  final confirmed = await FtueSetupDialog.show(
-    context,
-    providerName: providerName,
+  final preview = await AiProviderSetupPreviewModal.show(
+    context: context,
+    ref: ref,
+    providerType: providerType,
+    providerId: config.id,
   );
 
-  if (!confirmed || !isMounted()) return false;
+  if (!preview.confirmed || !isMounted()) return null;
 
-  // Run the appropriate FTUE setup (isMounted() check above ensures context is valid)
   final result = await runFtueSetupForType(
     // ignore: use_build_context_synchronously
     context: context,
@@ -104,20 +122,16 @@ Future<bool> performFtueSetupWorkflow({
     providerType: providerType,
     config: config,
     setupService: setupService,
+    excludedProviderModelIds: preview.excludedProviderModelIds,
   );
 
-  // Return false if setup was skipped (unsupported provider type)
-  if (result == null) {
-    return false;
-  }
+  if (result == null || !isMounted()) return null;
 
-  if (isMounted()) {
-    // isMounted() check ensures context is still valid
+  return AiProviderSetupResultModal.showFor(
     // ignore: use_build_context_synchronously
-    await showFtueResultDialog(context, result);
-  }
-
-  return true;
+    context: context,
+    result: result,
+  );
 }
 
 class InferenceProviderEditPage extends ConsumerStatefulWidget {
@@ -905,7 +919,7 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
 
       if (!mounted) return;
 
-      await performFtueSetupWorkflow(
+      final action = await performFtueSetupWorkflow(
         context: context,
         ref: ref,
         providerType: widget.providerType,
@@ -914,6 +928,13 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
         providerName: _providerName,
         isMounted: () => mounted,
       );
+
+      // "Start using AI" exits the setup flow — pop the edit page so the
+      // user lands back at the settings list instead of staring at the
+      // provider form they just re-ran the wizard from.
+      if (action == AiProviderSetupResultAction.startUsingAi && mounted) {
+        Navigator.of(context).pop();
+      }
     } finally {
       if (mounted) {
         setState(() {

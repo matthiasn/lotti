@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -959,7 +957,6 @@ void main() {
       test('FTUE category constants have expected values', () {
         expect(ftueAlibabaCategoryName, 'Test Category Alibaba Enabled');
         expect(ftueAlibabaCategoryColor, '#FF6D00');
-        expect(ftueAlibabaColor, const Color(0xFFFF6D00));
       });
     });
 
@@ -1038,6 +1035,45 @@ void main() {
         expect(findMistralKnownModel(ftueMistralFlashModelId), isNotNull);
         expect(findMistralKnownModel(ftueMistralReasoningModelId), isNotNull);
         expect(findMistralKnownModel(ftueMistralAudioModelId), isNotNull);
+      });
+    });
+
+    group('Anthropic FTUE constants', () {
+      test('FTUE model constants resolve to entries in anthropicModels', () {
+        expect(
+          findAnthropicKnownModel(ftueAnthropicReasoningModelId),
+          isNotNull,
+        );
+        expect(findAnthropicKnownModel(ftueAnthropicFlashModelId), isNotNull);
+      });
+
+      test('getAnthropicFtueKnownModels returns both pairings', () {
+        final models = getAnthropicFtueKnownModels();
+        expect(models, isNotNull);
+        expect(
+          models!.reasoning.providerModelId,
+          equals(ftueAnthropicReasoningModelId),
+        );
+        expect(models.reasoning.isReasoningModel, isTrue);
+        expect(models.flash.providerModelId, equals(ftueAnthropicFlashModelId));
+        // Haiku is a fast model — not flagged as reasoning.
+        expect(models.flash.isReasoningModel, isFalse);
+      });
+
+      test('findAnthropicKnownModel returns null for unknown ids', () {
+        expect(findAnthropicKnownModel('not-a-real-claude-id'), isNull);
+      });
+    });
+
+    group('Ollama + Anthropic FTUE category constants', () {
+      test('Anthropic category name + color are wired', () {
+        expect(ftueAnthropicCategoryName, isNotEmpty);
+        expect(ftueAnthropicCategoryColor, startsWith('#'));
+      });
+
+      test('Ollama category name + color are wired', () {
+        expect(ftueOllamaCategoryName, isNotEmpty);
+        expect(ftueOllamaCategoryColor, startsWith('#'));
       });
     });
   });

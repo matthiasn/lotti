@@ -337,6 +337,10 @@
   "agentTokenUsageWakeCount": "Probuzení",
   "aiAssistantTitle": "Generovat…",
   "aiBatchToggleTooltip": "Přepnout na standardní nahrávání",
+  "aiCapabilityChipImageGeneration": "Generování obrázků",
+  "aiCapabilityChipImageRecognition": "Rozpoznávání obrázků",
+  "aiCapabilityChipThinking": "Uvažování",
+  "aiCapabilityChipTranscription": "Přepis",
   "aiCardEmptyProposals": "Žádné otevřené návrhy · agent zde zobrazí nové změny",
   "aiCardHistoryToggle": "Historie · {count}",
   "@aiCardHistoryToggle": {
@@ -457,6 +461,107 @@
   "aiSettingsTabModels": "Modely",
   "aiSettingsTabProfiles": "Profily",
   "aiSettingsTabProviders": "Poskytovatelé",
+  "aiSetupPreviewAcceptButton": "Přijmout a dokončit",
+  "aiSetupPreviewAlreadyAddedSectionLabel": "Již přidané",
+  "aiSetupPreviewCategoryFooter": "Vytvořit testovací kategorii {categoryName} pro vyzkoušení.",
+  "@aiSetupPreviewCategoryFooter": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupPreviewConnectedHeader": "{providerName} připojeno",
+  "@aiSetupPreviewConnectedHeader": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupPreviewCustomizeButton": "Přizpůsobit",
+  "aiSetupPreviewLead": "Zkontroluj, co Lotti přidá. Odškrtni, co nechceš — vždy to můžeš nastavit ručně později.",
+  "aiSetupPreviewLiveBadge": "Živě",
+  "aiSetupPreviewModalTitle": "Nastavení {providerName}",
+  "@aiSetupPreviewModalTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupPreviewModelsSectionLabel": "Modely",
+  "aiSetupPreviewProfileSectionLabel": "Inferenční profil",
+  "aiSetupPreviewProfileSetActiveBadge": "Aktivovat",
+  "aiSetupResultBulletCategoryCreated": "Vytvořena testovací kategorie {categoryName}",
+  "@aiSetupResultBulletCategoryCreated": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupResultBulletCategoryReused": "Použije se existující testovací kategorie {categoryName}",
+  "@aiSetupResultBulletCategoryReused": {
+    "placeholders": {
+      "categoryName": {
+        "type": "String",
+        "example": "Test Category Gemini Enabled"
+      }
+    }
+  },
+  "aiSetupResultBulletModels": "{count, plural, =1{Nakonfigurován 1 model} few{Nakonfigurovány {count} modely} other{Nakonfigurováno {count} modelů}}",
+  "@aiSetupResultBulletModels": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "aiSetupResultBulletProfile": "Vytvořen inferenční profil {profileName}",
+  "@aiSetupResultBulletProfile": {
+    "placeholders": {
+      "profileName": {
+        "type": "String",
+        "example": "Gemini Flash"
+      }
+    }
+  },
+  "aiSetupResultErrorsHeader": "{count, plural, =1{1 problém} few{{count} problémy} other{{count} problémů}} při nastavení",
+  "@aiSetupResultErrorsHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "1"
+      }
+    }
+  },
+  "aiSetupResultHeader": "{providerName} je připojeno",
+  "@aiSetupResultHeader": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupResultLead": "Vše jsme za tebe nastavili. Funkce AI jsou připraveny v tvém deníku.",
+  "aiSetupResultModalTitle": "{providerName} připraveno",
+  "@aiSetupResultModalTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
+  "aiSetupResultReviewSetupButton": "Zkontrolovat nastavení",
+  "aiSetupResultStartUsingButton": "Začít používat AI",
   "aiSetupWizardCreatesOptimized": "Vytváří optimalizované modely, výzvy a testovací kategorii",
   "aiSetupWizardDescription": "Nastavte nebo aktualizujte modely, výzvy a testovací kategorii pro {providerName}",
   "@aiSetupWizardDescription": {

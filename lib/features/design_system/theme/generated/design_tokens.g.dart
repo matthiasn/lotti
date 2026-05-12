@@ -138,6 +138,24 @@ const DsTokens dsTokensLight = DsTokens(
         surface: Color(0x2E1CA3E3),
       ),
     ),
+    aiProvider: DsColorsAiProvider(
+      gemini: DsColorsAiProviderGemini(
+        color: Color(0xFF2BA184),
+        surface: Color(0x242BA184),
+      ),
+      openAi: DsColorsAiProviderOpenAi(
+        color: Color(0xFFC97A55),
+        surface: Color(0x24C97A55),
+      ),
+      anthropic: DsColorsAiProviderAnthropic(
+        color: Color(0xFF4F7FCC),
+        surface: Color(0x244F7FCC),
+      ),
+      ollama: DsColorsAiProviderOllama(
+        color: Color(0xFF8E76D0),
+        surface: Color(0x248E76D0),
+      ),
+    ),
   ),
   typography: DsTypography(
     styles: DsTypographyStyles(
@@ -524,6 +542,24 @@ const DsTokens dsTokensDark = DsTokens(
       replaced: DsColorsDiffReplaced(
         color: Color(0xFFA8D2F8),
         surface: Color(0x3864B5F6),
+      ),
+    ),
+    aiProvider: DsColorsAiProvider(
+      gemini: DsColorsAiProviderGemini(
+        color: Color(0xFF5ED4B7),
+        surface: Color(0x2E5ED4B7),
+      ),
+      openAi: DsColorsAiProviderOpenAi(
+        color: Color(0xFFE69B7A),
+        surface: Color(0x2EE69B7A),
+      ),
+      anthropic: DsColorsAiProviderAnthropic(
+        color: Color(0xFF7AA7FF),
+        surface: Color(0x2E7AA7FF),
+      ),
+      ollama: DsColorsAiProviderOllama(
+        color: Color(0xFFC5B6F5),
+        surface: Color(0x2EC5B6F5),
       ),
     ),
   ),
@@ -2325,6 +2361,250 @@ class DsColorsDiff {
 }
 
 @immutable
+class DsColorsAiProviderGemini {
+  final Color color;
+  final Color surface;
+
+  const DsColorsAiProviderGemini({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsAiProviderGemini copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsAiProviderGemini(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsAiProviderGemini lerp(
+    covariant DsColorsAiProviderGemini? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsAiProviderGemini(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsAiProviderGemini &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsAiProviderOpenAi {
+  final Color color;
+  final Color surface;
+
+  const DsColorsAiProviderOpenAi({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsAiProviderOpenAi copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsAiProviderOpenAi(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsAiProviderOpenAi lerp(
+    covariant DsColorsAiProviderOpenAi? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsAiProviderOpenAi(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsAiProviderOpenAi &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsAiProviderAnthropic {
+  final Color color;
+  final Color surface;
+
+  const DsColorsAiProviderAnthropic({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsAiProviderAnthropic copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsAiProviderAnthropic(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsAiProviderAnthropic lerp(
+    covariant DsColorsAiProviderAnthropic? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsAiProviderAnthropic(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsAiProviderAnthropic &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsAiProviderOllama {
+  final Color color;
+  final Color surface;
+
+  const DsColorsAiProviderOllama({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsAiProviderOllama copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsAiProviderOllama(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsAiProviderOllama lerp(
+    covariant DsColorsAiProviderOllama? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsAiProviderOllama(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsAiProviderOllama &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
+class DsColorsAiProvider {
+  final DsColorsAiProviderGemini gemini;
+  final DsColorsAiProviderOpenAi openAi;
+  final DsColorsAiProviderAnthropic anthropic;
+  final DsColorsAiProviderOllama ollama;
+
+  const DsColorsAiProvider({
+    required this.gemini,
+    required this.openAi,
+    required this.anthropic,
+    required this.ollama,
+  });
+
+  DsColorsAiProvider copyWith({
+    DsColorsAiProviderGemini? gemini,
+    DsColorsAiProviderOpenAi? openAi,
+    DsColorsAiProviderAnthropic? anthropic,
+    DsColorsAiProviderOllama? ollama,
+  }) {
+    return DsColorsAiProvider(
+      gemini: gemini ?? this.gemini,
+      openAi: openAi ?? this.openAi,
+      anthropic: anthropic ?? this.anthropic,
+      ollama: ollama ?? this.ollama,
+    );
+  }
+
+  DsColorsAiProvider lerp(covariant DsColorsAiProvider? other, double t) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsAiProvider(
+      gemini: gemini.lerp(other.gemini, t),
+      openAi: openAi.lerp(other.openAi, t),
+      anthropic: anthropic.lerp(other.anthropic, t),
+      ollama: ollama.lerp(other.ollama, t),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsAiProvider &&
+        gemini == other.gemini &&
+        openAi == other.openAi &&
+        anthropic == other.anthropic &&
+        ollama == other.ollama;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([gemini, openAi, anthropic, ollama]);
+}
+
+@immutable
 class DsColors {
   final DsColorsText text;
   final DsColorsSurface surface;
@@ -2336,6 +2616,7 @@ class DsColors {
   final DsColorsProposalKind proposalKind;
   final DsColorsConflict conflict;
   final DsColorsDiff diff;
+  final DsColorsAiProvider aiProvider;
 
   const DsColors({
     required this.text,
@@ -2348,6 +2629,7 @@ class DsColors {
     required this.proposalKind,
     required this.conflict,
     required this.diff,
+    required this.aiProvider,
   });
 
   DsColors copyWith({
@@ -2361,6 +2643,7 @@ class DsColors {
     DsColorsProposalKind? proposalKind,
     DsColorsConflict? conflict,
     DsColorsDiff? diff,
+    DsColorsAiProvider? aiProvider,
   }) {
     return DsColors(
       text: text ?? this.text,
@@ -2373,6 +2656,7 @@ class DsColors {
       proposalKind: proposalKind ?? this.proposalKind,
       conflict: conflict ?? this.conflict,
       diff: diff ?? this.diff,
+      aiProvider: aiProvider ?? this.aiProvider,
     );
   }
 
@@ -2391,6 +2675,7 @@ class DsColors {
       proposalKind: proposalKind.lerp(other.proposalKind, t),
       conflict: conflict.lerp(other.conflict, t),
       diff: diff.lerp(other.diff, t),
+      aiProvider: aiProvider.lerp(other.aiProvider, t),
     );
   }
 
@@ -2409,7 +2694,8 @@ class DsColors {
         aiCard == other.aiCard &&
         proposalKind == other.proposalKind &&
         conflict == other.conflict &&
-        diff == other.diff;
+        diff == other.diff &&
+        aiProvider == other.aiProvider;
   }
 
   @override
@@ -2424,6 +2710,7 @@ class DsColors {
     proposalKind,
     conflict,
     diff,
+    aiProvider,
   ]);
 }
 

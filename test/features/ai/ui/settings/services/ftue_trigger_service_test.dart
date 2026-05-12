@@ -71,20 +71,20 @@ void main() {
         expect(service.isFtueSupported(InferenceProviderType.alibaba), isTrue);
       });
 
-      test('returns false for Ollama provider type', () {
+      test('returns true for Ollama provider type', () {
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        expect(service.isFtueSupported(InferenceProviderType.ollama), isFalse);
+        expect(service.isFtueSupported(InferenceProviderType.ollama), isTrue);
       });
 
-      test('returns false for Anthropic provider type', () {
+      test('returns true for Anthropic provider type', () {
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
         expect(
           service.isFtueSupported(InferenceProviderType.anthropic),
-          isFalse,
+          isTrue,
         );
       });
 
@@ -333,42 +333,49 @@ void main() {
         },
       );
 
-      test('returns skipUnsupportedProvider for Ollama provider', () async {
-        final provider = createProvider(
-          id: 'ollama-1',
-          type: InferenceProviderType.ollama,
-        );
+      test(
+        'returns shouldShowFtue when Ollama provider is first of its type',
+        () async {
+          final provider = createProvider(
+            id: 'ollama-1',
+            type: InferenceProviderType.ollama,
+          );
 
-        // Even if it's the only one, unsupported provider types skip FTUE
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
-        ).thenAnswer((_) async => [provider]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(provider);
+          final result = await service.shouldTriggerFtue(provider);
 
-        expect(result, equals(FtueTriggerResult.skipUnsupportedProvider));
-      });
+          expect(result, equals(FtueTriggerResult.shouldShowFtue));
+        },
+      );
 
-      test('returns skipUnsupportedProvider for Anthropic provider', () async {
-        final provider = createProvider(
-          id: 'anthropic-1',
-          type: InferenceProviderType.anthropic,
-        );
+      test(
+        'returns shouldShowFtue when Anthropic provider is first of its type',
+        () async {
+          final provider = createProvider(
+            id: 'anthropic-1',
+            type: InferenceProviderType.anthropic,
+          );
 
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
-        ).thenAnswer((_) async => [provider]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(provider);
+          final result = await service.shouldTriggerFtue(provider);
 
-        expect(result, equals(FtueTriggerResult.skipUnsupportedProvider));
-      });
+          expect(result, equals(FtueTriggerResult.shouldShowFtue));
+        },
+      );
 
       test(
         'returns skipUnsupportedProvider for genericOpenAi provider',
@@ -655,58 +662,36 @@ void main() {
     });
 
     group('ftueSupportedProviderTypes constant', () {
-      test('contains exactly 4 supported provider types', () {
-        expect(ftueSupportedProviderTypes.length, equals(4));
+      test('contains exactly 6 supported provider types', () {
+        expect(ftueSupportedProviderTypes.length, equals(6));
       });
 
-      test('contains Alibaba, Gemini, OpenAI, and Mistral', () {
-        expect(
-          ftueSupportedProviderTypes,
-          contains(InferenceProviderType.alibaba),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          contains(InferenceProviderType.gemini),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          contains(InferenceProviderType.openAi),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          contains(InferenceProviderType.mistral),
-        );
-      });
+      test(
+        'contains Alibaba, Anthropic, Gemini, Mistral, Ollama, and OpenAI',
+        () {
+          for (final type in const [
+            InferenceProviderType.alibaba,
+            InferenceProviderType.anthropic,
+            InferenceProviderType.gemini,
+            InferenceProviderType.mistral,
+            InferenceProviderType.ollama,
+            InferenceProviderType.openAi,
+          ]) {
+            expect(ftueSupportedProviderTypes, contains(type));
+          }
+        },
+      );
 
       test('does not contain unsupported types', () {
-        expect(
-          ftueSupportedProviderTypes,
-          isNot(contains(InferenceProviderType.ollama)),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          isNot(contains(InferenceProviderType.anthropic)),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          isNot(contains(InferenceProviderType.genericOpenAi)),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          isNot(contains(InferenceProviderType.whisper)),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          isNot(contains(InferenceProviderType.voxtral)),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          isNot(contains(InferenceProviderType.nebiusAiStudio)),
-        );
-        expect(
-          ftueSupportedProviderTypes,
-          isNot(contains(InferenceProviderType.openRouter)),
-        );
+        for (final type in const [
+          InferenceProviderType.genericOpenAi,
+          InferenceProviderType.whisper,
+          InferenceProviderType.voxtral,
+          InferenceProviderType.nebiusAiStudio,
+          InferenceProviderType.openRouter,
+        ]) {
+          expect(ftueSupportedProviderTypes, isNot(contains(type)));
+        }
       });
     });
 
@@ -733,12 +718,18 @@ void main() {
         );
       });
 
-      test('returns null for ollama provider type', () {
-        expect(InferenceProviderType.ollama.ftueDisplayName, isNull);
+      test('returns Ollama (local) for ollama provider type', () {
+        expect(
+          InferenceProviderType.ollama.ftueDisplayName,
+          equals('Ollama (local)'),
+        );
       });
 
-      test('returns null for anthropic provider type', () {
-        expect(InferenceProviderType.anthropic.ftueDisplayName, isNull);
+      test('returns Anthropic for anthropic provider type', () {
+        expect(
+          InferenceProviderType.anthropic.ftueDisplayName,
+          equals('Anthropic'),
+        );
       });
 
       test('returns null for genericOpenAi provider type', () {

@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart'
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
+import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -100,6 +101,7 @@ void main() {
         name: any(named: 'name'),
         color: any(named: 'color'),
         icon: any(named: 'icon'),
+        defaultProfileId: any(named: 'defaultProfileId'),
       ),
     ).thenAnswer(
       (invocation) async => CategoryDefinition(
@@ -150,6 +152,15 @@ void main() {
         whatsNewControllerProvider.overrideWith(_MockWhatsNewController.new),
       ],
       child: MaterialApp(
+        theme: ThemeData(
+          useMaterial3: true,
+          extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+        ),
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          extensions: const <ThemeExtension<dynamic>>[dsTokensDark],
+        ),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -830,10 +841,13 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Prompt setup dialog should appear
-      expect(find.text('Set Up AI Features?'), findsOneWidget);
+      // Prepopulation seeds all known Gemini models when the provider is
+      // added, so every FTUE preset row is already present and the
+      // preview modal short-circuits straight to the result modal.
+      expect(find.textContaining('Gemini is connected'), findsOneWidget);
+      expect(find.text('Start using AI'), findsOneWidget);
     });
 
     testWidgets(
@@ -845,7 +859,8 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
-        // Select Anthropic provider type (which doesn't have FTUE support)
+        // Select OpenRouter (truly unsupported — Anthropic and Ollama now
+        // both wire FTUE end-to-end as of the redesigned modals).
         await tester.tap(
           find.ancestor(
             of: find.text('OpenAI Compatible'),
@@ -854,13 +869,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final anthropicOption = find.text('Anthropic Claude');
-        await tester.ensureVisible(anthropicOption);
+        final openRouterOption = find.text('OpenRouter');
+        await tester.ensureVisible(openRouterOption);
         await tester.pump();
 
         await tester.tap(
           find.ancestor(
-            of: anthropicOption,
+            of: openRouterOption,
             matching: find.byType(InkWell),
           ),
         );
@@ -869,11 +884,11 @@ void main() {
         // Fill required fields
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'My Anthropic',
+          'My OpenRouter',
         );
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Enter your API key'),
-          'test-anthropic-key',
+          'test-openrouter-key',
         );
         await tester.pump();
 
@@ -883,10 +898,10 @@ void main() {
         await tester.pump();
 
         await tester.tap(saveButton);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        // Prompt setup dialog should NOT appear for non-Gemini/non-OpenAI providers
-        expect(find.text('Set Up AI Features?'), findsNothing);
+        // No FTUE preview modal for unsupported providers.
+        expect(find.text('Accept & finish'), findsNothing);
       },
     );
 
@@ -926,10 +941,10 @@ void main() {
         await tester.pump();
 
         await tester.tap(saveButton);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        // Prompt setup dialog should NOT appear for edits
-        expect(find.text('Set Up AI Features?'), findsNothing);
+        // No FTUE preview modal on edits.
+        expect(find.text('Accept & finish'), findsNothing);
       },
     );
 
@@ -992,16 +1007,16 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Confirm FTUE setup
-      expect(find.text('Set Up AI Features?'), findsOneWidget);
-      await tester.tap(find.text('Set Up'));
-      await tester.pump();
+      // Prepopulation seeds every known Gemini model on addConfig, so
+      // the FTUE preview is skipped and the result modal opens directly.
+      // Tap "Start using AI" to dismiss it.
+      expect(find.text('Start using AI'), findsOneWidget);
+      await tester.tap(find.text('Start using AI'));
+      await tester.pumpAndSettle();
 
       // Verify models were created and no prompts
-      // Model prepopulation creates all known Gemini models on addConfig,
-      // then FTUE verifies the 3 FTUE models already exist.
       final modelsCreated = savedConfigs.whereType<AiConfigModel>().length;
       expect(modelsCreated, equals(geminiModels.length));
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
@@ -1067,15 +1082,16 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Decline prompt setup
-      expect(find.text('Set Up AI Features?'), findsOneWidget);
-      await tester.tap(find.text('No Thanks'));
-      await tester.pump();
+      // Prepopulation skips the preview; the result modal opens directly.
+      // Tap "Review setup" — neither path creates any prompt rows.
+      expect(find.text('Review setup'), findsOneWidget);
+      await tester.tap(find.text('Review setup'));
+      await tester.pumpAndSettle();
 
-      // Dialog should close, no prompts created
-      expect(find.text('Set Up AI Features?'), findsNothing);
+      // Modal closes, no prompts ever get created.
+      expect(find.text('Review setup'), findsNothing);
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
       expect(promptsCreated, equals(0));
     });
@@ -1499,36 +1515,38 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      final ollamaProvider = AiConfig.inferenceProvider(
-        id: 'ollama-provider-id',
-        name: 'My Ollama',
-        baseUrl: 'http://localhost:11434/v1',
-        apiKey: '',
+      // OpenRouter is not in ftueSupportedProviderTypes (Ollama and
+      // Anthropic now are), so it stays the truly-unsupported case.
+      final openRouterProvider = AiConfig.inferenceProvider(
+        id: 'openrouter-provider-id',
+        name: 'My OpenRouter',
+        baseUrl: 'https://openrouter.ai/api/v1',
+        apiKey: 'test-openrouter-key',
         createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.ollama,
+        inferenceProviderType: InferenceProviderType.openRouter,
       );
 
       when(
-        () => mockRepository.getConfigById('ollama-provider-id'),
-      ).thenAnswer((_) async => ollamaProvider);
+        () => mockRepository.getConfigById('openrouter-provider-id'),
+      ).thenAnswer((_) async => openRouterProvider);
       when(
         () => mockRepository.watchConfigsByType(AiConfigType.model),
       ).thenAnswer((_) => Stream.value([]));
       when(
         () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
-      ).thenAnswer((_) async => [ollamaProvider]);
+      ).thenAnswer((_) async => [openRouterProvider]);
 
       await tester.pumpWidget(
         buildTestWidget(
-          configId: 'ollama-provider-id',
-          existingProviders: [ollamaProvider],
+          configId: 'openrouter-provider-id',
+          existingProviders: [openRouterProvider],
         ),
       );
       await tester.pumpAndSettle();
 
       final strings = l10n(tester);
 
-      // Should NOT show AI Setup Wizard section for Ollama
+      // Should NOT show AI Setup Wizard section for OpenRouter
       expect(find.text(strings.aiSetupWizardTitle), findsNothing);
     });
 
@@ -1587,15 +1605,17 @@ void main() {
       await tester.ensureVisible(runSetupButton);
       await tester.pump();
 
-      // Tap the Run Setup button
+      // Tap the Run Setup button. The new preview modal opens via a
+      // wolt-modal-sheet; pump explicitly to drive its route transition
+      // since the sheet's barrier animation never settles fully.
       await tester.tap(runSetupButton);
-      // Use pump with duration instead of pumpAndSettle to avoid timeout
-      // The dialog appears after async config fetch completes
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
-      // Confirmation dialog should appear (dialog uses hard-coded text currently)
-      expect(find.text('Set Up AI Features?'), findsOneWidget);
+      // The redesigned preview modal opens with the connected banner.
+      expect(find.textContaining('Gemini connected'), findsOneWidget);
+      expect(find.text('Accept & finish'), findsOneWidget);
     });
 
     testWidgets('displays all localized strings correctly', (
@@ -1759,10 +1779,12 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Prompt setup dialog should appear for OpenAI
-      expect(find.text('Set Up AI Features?'), findsOneWidget);
+      // Prepopulation seeds every known OpenAI model on addConfig, so
+      // the FTUE preview is skipped and the result modal opens directly.
+      expect(find.textContaining('OpenAI is connected'), findsOneWidget);
+      expect(find.text('Start using AI'), findsOneWidget);
     });
 
     testWidgets('shows prompt setup dialog after saving new Mistral provider', (
@@ -1825,10 +1847,12 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Prompt setup dialog should appear for Mistral
-      expect(find.text('Set Up AI Features?'), findsOneWidget);
+      // Prepopulation seeds every known Mistral model on addConfig, so
+      // the FTUE preview is skipped and the result modal opens directly.
+      expect(find.textContaining('Mistral is connected'), findsOneWidget);
+      expect(find.text('Start using AI'), findsOneWidget);
     });
 
     testWidgets(
@@ -1890,16 +1914,15 @@ void main() {
         await tester.pump();
 
         await tester.tap(saveButton);
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        // Confirm FTUE setup
-        expect(find.text('Set Up AI Features?'), findsOneWidget);
-        await tester.tap(find.text('Set Up'));
-        await tester.pump();
+        // Prepopulation seeds every known OpenAI model on addConfig, so
+        // the FTUE preview is skipped and the result modal opens directly.
+        expect(find.text('Start using AI'), findsOneWidget);
+        await tester.tap(find.text('Start using AI'));
+        await tester.pumpAndSettle();
 
         // Verify models were created and no prompts
-        // Model prepopulation creates all known OpenAI models on addConfig,
-        // then FTUE verifies the 4 FTUE models already exist.
         final modelsCreated = savedConfigs.whereType<AiConfigModel>().length;
         expect(modelsCreated, equals(openaiModels.length));
         final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;

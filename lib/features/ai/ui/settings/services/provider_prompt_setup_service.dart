@@ -35,9 +35,13 @@ class ProviderPromptSetupService {
 // FTUE (First Time User Experience) Setup
 // =============================================================================
 
-/// Result of the Gemini FTUE setup process.
-class GeminiFtueResult {
-  const GeminiFtueResult({
+/// Common shape for every per-provider FTUE result.
+///
+/// Declared `sealed` so callers (`runFtueSetupForType`,
+/// `AiProviderSetupResultData.from`) get exhaustive switch coverage when
+/// a new provider is wired in — the analyzer will flag any missing arm.
+sealed class AiFtueResult {
+  const AiFtueResult({
     required this.modelsCreated,
     required this.modelsVerified,
     required this.categoryCreated,
@@ -54,6 +58,26 @@ class GeminiFtueResult {
   final List<String> errors;
 
   int get totalModels => modelsCreated + modelsVerified;
+}
+
+/// Internal model-creation tally used by every per-provider setup helper.
+/// Replaces the previous typed `_<X>FtueModelResult` classes — none of the
+/// per-role fields were ever read outside the loop.
+typedef _FtueModelTally = ({
+  List<AiConfigModel> created,
+  List<AiConfigModel> verified,
+});
+
+/// Result of the Gemini FTUE setup process.
+class GeminiFtueResult extends AiFtueResult {
+  const GeminiFtueResult({
+    required super.modelsCreated,
+    required super.modelsVerified,
+    required super.categoryCreated,
+    super.categoryReused,
+    super.categoryName,
+    super.errors,
+  });
 }
 
 /// Extension to add Gemini FTUE functionality to ProviderPromptSetupService.
@@ -64,13 +88,15 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
   /// 1. Three models (Flash, Pro, Nano Banana Pro) if they don't exist
   /// 2. A test category with auto-selection configured
   ///
-  /// Returns [GeminiFtueResult] with details of what was created.
+  /// Any `providerModelId` in [excludedProviderModelIds] is skipped — it
+  /// is neither created nor verified. The caller (the preview modal)
+  /// uses this to honor user-unticked rows without a post-hoc delete.
   Future<GeminiFtueResult?> performGeminiFtueSetup({
     required BuildContext context,
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
+    Set<String> excludedProviderModelIds = const {},
   }) async {
-    // Only works with Gemini providers
     if (provider.inferenceProviderType != InferenceProviderType.gemini) {
       return null;
     }
@@ -78,13 +104,8 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     final repository = ref.read(aiConfigRepositoryProvider);
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
-    // Step 1: Create/verify models
-    final modelResult = await _ensureFtueModelsExist(
-      repository: repository,
-      providerId: provider.id,
-    );
-
-    if (modelResult == null) {
+    final knownModels = getFtueKnownModels();
+    if (knownModels == null) {
       return const GeminiFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
@@ -93,9 +114,21 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       );
     }
 
-    // Step 2: Create or update category
-    final (category, categoryWasCreated) = await _createOrReuseFtueCategory(
+    final modelResult = await _ensureModelsExist(
+      repository: repository,
+      providerId: provider.id,
+      modelConfigs: [
+        (known: knownModels.flash, id: ftueFlashModelId),
+        (known: knownModels.pro, id: ftueProModelId),
+        (known: knownModels.image, id: ftueImageModelId),
+      ],
+      excludedProviderModelIds: excludedProviderModelIds,
+    );
+
+    final (category, categoryWasCreated) = await _createOrReuseCategory(
       categoryRepository: categoryRepository,
+      categoryName: ftueGeminiCategoryName,
+      categoryColor: ftueGeminiCategoryColor,
     );
 
     return GeminiFtueResult(
@@ -106,126 +139,80 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       categoryName: category?.name,
     );
   }
-
-  /// Ensures the three FTUE models exist for the given provider.
-  Future<_FtueModelResult?> _ensureFtueModelsExist({
-    required AiConfigRepository repository,
-    required String providerId,
-  }) async {
-    final knownModels = getFtueKnownModels();
-    if (knownModels == null) {
-      return null;
-    }
-
-    final allModels = await repository.getConfigsByType(AiConfigType.model);
-    final providerModels = allModels
-        .whereType<AiConfigModel>()
-        .where((m) => m.inferenceProviderId == providerId)
-        .toList();
-
-    final created = <AiConfigModel>[];
-    final verified = <AiConfigModel>[];
-    const uuid = Uuid();
-
-    // Process each model type
-    final modelConfigs = [
-      (known: knownModels.flash, id: ftueFlashModelId),
-      (known: knownModels.pro, id: ftueProModelId),
-      (known: knownModels.image, id: ftueImageModelId),
-    ];
-
-    AiConfigModel? flashModel;
-    AiConfigModel? proModel;
-    AiConfigModel? imageModel;
-
-    for (final config in modelConfigs) {
-      // Check if model with same providerModelId already exists
-      final existing = providerModels.firstWhereOrNull(
-        (m) => m.providerModelId == config.id,
-      );
-
-      AiConfigModel model;
-      if (existing != null) {
-        verified.add(existing);
-        model = existing;
-      } else {
-        // Create new model
-        model = config.known.toAiConfigModel(
-          id: uuid.v4(),
-          inferenceProviderId: providerId,
-        );
-        await repository.saveConfig(model);
-        created.add(model);
-      }
-
-      // Assign to appropriate variable
-      if (config.id == ftueFlashModelId) {
-        flashModel = model;
-      } else if (config.id == ftueProModelId) {
-        proModel = model;
-      } else if (config.id == ftueImageModelId) {
-        imageModel = model;
-      }
-    }
-
-    if (flashModel == null || proModel == null || imageModel == null) {
-      return null;
-    }
-
-    return _FtueModelResult(
-      flash: flashModel,
-      pro: proModel,
-      image: imageModel,
-      created: created,
-      verified: verified,
-    );
-  }
-
-  /// Creates or reuses the FTUE test category.
-  ///
-  /// If the category already exists, it is reused as-is.
-  /// Returns a tuple of (category, wasCreated) where wasCreated is true if
-  /// a new category was created, false if an existing one was reused.
-  Future<(CategoryDefinition?, bool)> _createOrReuseFtueCategory({
-    required CategoryRepository categoryRepository,
-  }) async {
-    const categoryName = ftueGeminiCategoryName;
-
-    // Check if category already exists
-    final allCategories = await categoryRepository.getAllCategories();
-    final existingCategory = allCategories
-        .where((c) => c.name == categoryName && c.deletedAt == null)
-        .firstOrNull;
-
-    if (existingCategory != null) {
-      return (existingCategory, false); // false = reused, not created
-    }
-
-    // Create new category
-    final category = await categoryRepository.createCategory(
-      name: categoryName,
-      color: ftueGeminiCategoryColor,
-    );
-
-    return (category, true); // true = was created
-  }
 }
 
-/// Internal result class for model creation.
-class _FtueModelResult {
-  const _FtueModelResult({
-    required this.flash,
-    required this.pro,
-    required this.image,
-    required this.created,
-    required this.verified,
-  });
+/// Shared model-row reconciler used by every per-provider FTUE helper.
+///
+/// For each preset (known, providerModelId) entry:
+/// - if the user unticked the row, skip it entirely (no save, no count);
+/// - if a row already exists for the provider with that providerModelId,
+///   mark it `verified`;
+/// - otherwise create a fresh row, save it, and mark it `created`.
+Future<_FtueModelTally> _ensureModelsExist({
+  required AiConfigRepository repository,
+  required String providerId,
+  required List<({KnownModel known, String id})> modelConfigs,
+  Set<String> excludedProviderModelIds = const {},
+}) async {
+  final allModels = await repository.getConfigsByType(AiConfigType.model);
+  final providerModels = allModels
+      .whereType<AiConfigModel>()
+      .where((m) => m.inferenceProviderId == providerId)
+      .toList(growable: false);
 
-  final AiConfigModel flash;
-  final AiConfigModel pro;
-  final AiConfigModel image;
-  final List<AiConfigModel> created;
-  final List<AiConfigModel> verified;
+  final created = <AiConfigModel>[];
+  final verified = <AiConfigModel>[];
+  const uuid = Uuid();
+
+  for (final config in modelConfigs) {
+    if (excludedProviderModelIds.contains(config.id)) {
+      continue;
+    }
+
+    final existing = providerModels.firstWhereOrNull(
+      (m) => m.providerModelId == config.id,
+    );
+
+    if (existing != null) {
+      verified.add(existing);
+    } else {
+      final model = config.known.toAiConfigModel(
+        id: uuid.v4(),
+        inferenceProviderId: providerId,
+      );
+      await repository.saveConfig(model);
+      created.add(model);
+    }
+  }
+
+  return (created: created, verified: verified);
+}
+
+/// Shared "create or reuse the FTUE test category" helper. Looks up an
+/// existing (non-deleted) category by exact name; otherwise creates a
+/// fresh one with the given color and optional default profile.
+Future<(CategoryDefinition?, bool)> _createOrReuseCategory({
+  required CategoryRepository categoryRepository,
+  required String categoryName,
+  required String categoryColor,
+  String? defaultProfileId,
+}) async {
+  final allCategories = await categoryRepository.getAllCategories();
+  final existingCategory = allCategories
+      .where((c) => c.name == categoryName && c.deletedAt == null)
+      .firstOrNull;
+
+  if (existingCategory != null) {
+    return (existingCategory, false);
+  }
+
+  final category = await categoryRepository.createCategory(
+    name: categoryName,
+    color: categoryColor,
+    defaultProfileId: defaultProfileId,
+  );
+
+  return (category, true);
 }
 
 // =============================================================================
@@ -233,24 +220,15 @@ class _FtueModelResult {
 // =============================================================================
 
 /// Result of the OpenAI FTUE setup process.
-class OpenAiFtueResult {
+class OpenAiFtueResult extends AiFtueResult {
   const OpenAiFtueResult({
-    required this.modelsCreated,
-    required this.modelsVerified,
-    required this.categoryCreated,
-    this.categoryReused = false,
-    this.categoryName,
-    this.errors = const [],
+    required super.modelsCreated,
+    required super.modelsVerified,
+    required super.categoryCreated,
+    super.categoryReused,
+    super.categoryName,
+    super.errors,
   });
-
-  final int modelsCreated;
-  final int modelsVerified;
-  final bool categoryCreated;
-  final bool categoryReused;
-  final String? categoryName;
-  final List<String> errors;
-
-  int get totalModels => modelsCreated + modelsVerified;
 }
 
 /// Extension to add OpenAI FTUE functionality to ProviderPromptSetupService.
@@ -261,14 +239,12 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
   /// 1. Four models (Flash/GPT-5 Nano, Reasoning/GPT-5.2, Audio/GPT-4o
   ///    Transcribe, Image/GPT Image 1.5)
   /// 2. A test category with auto-selection configured
-  ///
-  /// Returns [OpenAiFtueResult] with details of what was created.
   Future<OpenAiFtueResult?> performOpenAiFtueSetup({
     required BuildContext context,
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
+    Set<String> excludedProviderModelIds = const {},
   }) async {
-    // Only works with OpenAI providers
     if (provider.inferenceProviderType != InferenceProviderType.openAi) {
       return null;
     }
@@ -276,13 +252,8 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     final repository = ref.read(aiConfigRepositoryProvider);
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
-    // Step 1: Create/verify models
-    final modelResult = await _ensureOpenAiFtueModelsExist(
-      repository: repository,
-      providerId: provider.id,
-    );
-
-    if (modelResult == null) {
+    final knownModels = getOpenAiFtueKnownModels();
+    if (knownModels == null) {
       return const OpenAiFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
@@ -291,12 +262,22 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       );
     }
 
-    // Step 2: Create or update category with auto-selection
-    final (
-      category,
-      categoryWasCreated,
-    ) = await _createOrReuseOpenAiFtueCategory(
+    final modelResult = await _ensureModelsExist(
+      repository: repository,
+      providerId: provider.id,
+      modelConfigs: [
+        (known: knownModels.flash, id: ftueOpenAiFlashModelId),
+        (known: knownModels.reasoning, id: ftueOpenAiReasoningModelId),
+        (known: knownModels.audio, id: ftueOpenAiAudioModelId),
+        (known: knownModels.image, id: ftueOpenAiImageModelId),
+      ],
+      excludedProviderModelIds: excludedProviderModelIds,
+    );
+
+    final (category, categoryWasCreated) = await _createOrReuseCategory(
       categoryRepository: categoryRepository,
+      categoryName: ftueOpenAiCategoryName,
+      categoryColor: ftueOpenAiCategoryColor,
     );
 
     return OpenAiFtueResult(
@@ -307,135 +288,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       categoryName: category?.name,
     );
   }
-
-  /// Ensures the four FTUE models exist for the given OpenAI provider.
-  Future<_OpenAiFtueModelResult?> _ensureOpenAiFtueModelsExist({
-    required AiConfigRepository repository,
-    required String providerId,
-  }) async {
-    final knownModels = getOpenAiFtueKnownModels();
-    if (knownModels == null) {
-      return null;
-    }
-
-    final allModels = await repository.getConfigsByType(AiConfigType.model);
-    final providerModels = allModels
-        .whereType<AiConfigModel>()
-        .where((m) => m.inferenceProviderId == providerId)
-        .toList();
-
-    final created = <AiConfigModel>[];
-    final verified = <AiConfigModel>[];
-    const uuid = Uuid();
-
-    // Process each model type
-    final modelConfigs = [
-      (known: knownModels.flash, id: ftueOpenAiFlashModelId),
-      (known: knownModels.reasoning, id: ftueOpenAiReasoningModelId),
-      (known: knownModels.audio, id: ftueOpenAiAudioModelId),
-      (known: knownModels.image, id: ftueOpenAiImageModelId),
-    ];
-
-    AiConfigModel? flashModel;
-    AiConfigModel? reasoningModel;
-    AiConfigModel? audioModel;
-    AiConfigModel? imageModel;
-
-    for (final config in modelConfigs) {
-      // Check if model with same providerModelId already exists
-      final existing = providerModels.firstWhereOrNull(
-        (m) => m.providerModelId == config.id,
-      );
-
-      AiConfigModel model;
-      if (existing != null) {
-        verified.add(existing);
-        model = existing;
-      } else {
-        // Create new model
-        model = config.known.toAiConfigModel(
-          id: uuid.v4(),
-          inferenceProviderId: providerId,
-        );
-        await repository.saveConfig(model);
-        created.add(model);
-      }
-
-      // Assign to appropriate variable
-      if (config.id == ftueOpenAiFlashModelId) {
-        flashModel = model;
-      } else if (config.id == ftueOpenAiReasoningModelId) {
-        reasoningModel = model;
-      } else if (config.id == ftueOpenAiAudioModelId) {
-        audioModel = model;
-      } else if (config.id == ftueOpenAiImageModelId) {
-        imageModel = model;
-      }
-    }
-
-    if (flashModel == null ||
-        reasoningModel == null ||
-        audioModel == null ||
-        imageModel == null) {
-      return null;
-    }
-
-    return _OpenAiFtueModelResult(
-      flash: flashModel,
-      reasoning: reasoningModel,
-      audio: audioModel,
-      image: imageModel,
-      created: created,
-      verified: verified,
-    );
-  }
-
-  /// Creates or reuses the FTUE test category for OpenAI.
-  ///
-  /// If the category already exists, it is reused as-is.
-  /// Returns a tuple of (category, wasCreated).
-  Future<(CategoryDefinition?, bool)> _createOrReuseOpenAiFtueCategory({
-    required CategoryRepository categoryRepository,
-  }) async {
-    const categoryName = ftueOpenAiCategoryName;
-
-    // Check if category already exists
-    final allCategories = await categoryRepository.getAllCategories();
-    final existingCategory = allCategories
-        .where((c) => c.name == categoryName && c.deletedAt == null)
-        .firstOrNull;
-
-    if (existingCategory != null) {
-      return (existingCategory, false);
-    }
-
-    // Create new category
-    final category = await categoryRepository.createCategory(
-      name: categoryName,
-      color: ftueOpenAiCategoryColor,
-    );
-
-    return (category, true);
-  }
-}
-
-/// Internal result class for OpenAI model creation.
-class _OpenAiFtueModelResult {
-  const _OpenAiFtueModelResult({
-    required this.flash,
-    required this.reasoning,
-    required this.audio,
-    required this.image,
-    required this.created,
-    required this.verified,
-  });
-
-  final AiConfigModel flash;
-  final AiConfigModel reasoning;
-  final AiConfigModel audio;
-  final AiConfigModel image;
-  final List<AiConfigModel> created;
-  final List<AiConfigModel> verified;
 }
 
 // =============================================================================
@@ -443,24 +295,15 @@ class _OpenAiFtueModelResult {
 // =============================================================================
 
 /// Result of the Mistral FTUE setup process.
-class MistralFtueResult {
+class MistralFtueResult extends AiFtueResult {
   const MistralFtueResult({
-    required this.modelsCreated,
-    required this.modelsVerified,
-    required this.categoryCreated,
-    this.categoryReused = false,
-    this.categoryName,
-    this.errors = const [],
+    required super.modelsCreated,
+    required super.modelsVerified,
+    required super.categoryCreated,
+    super.categoryReused,
+    super.categoryName,
+    super.errors,
   });
-
-  final int modelsCreated;
-  final int modelsVerified;
-  final bool categoryCreated;
-  final bool categoryReused;
-  final String? categoryName;
-  final List<String> errors;
-
-  int get totalModels => modelsCreated + modelsVerified;
 }
 
 /// Extension to add Mistral FTUE functionality to ProviderPromptSetupService.
@@ -471,14 +314,12 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   /// 1. Three models (Fast/Mistral Small, Reasoning/Magistral Medium,
   ///    Audio/Voxtral Mini)
   /// 2. A test category with auto-selection configured
-  ///
-  /// Returns [MistralFtueResult] with details of what was created.
   Future<MistralFtueResult?> performMistralFtueSetup({
     required BuildContext context,
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
+    Set<String> excludedProviderModelIds = const {},
   }) async {
-    // Only works with Mistral providers
     if (provider.inferenceProviderType != InferenceProviderType.mistral) {
       return null;
     }
@@ -486,13 +327,8 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     final repository = ref.read(aiConfigRepositoryProvider);
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
-    // Step 1: Create/verify models
-    final modelResult = await _ensureMistralFtueModelsExist(
-      repository: repository,
-      providerId: provider.id,
-    );
-
-    if (modelResult == null) {
+    final knownModels = getMistralFtueKnownModels();
+    if (knownModels == null) {
       return const MistralFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
@@ -501,12 +337,21 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       );
     }
 
-    // Step 2: Create or update category with auto-selection
-    final (
-      category,
-      categoryWasCreated,
-    ) = await _createOrReuseMistralFtueCategory(
+    final modelResult = await _ensureModelsExist(
+      repository: repository,
+      providerId: provider.id,
+      modelConfigs: [
+        (known: knownModels.flash, id: ftueMistralFlashModelId),
+        (known: knownModels.reasoning, id: ftueMistralReasoningModelId),
+        (known: knownModels.audio, id: ftueMistralAudioModelId),
+      ],
+      excludedProviderModelIds: excludedProviderModelIds,
+    );
+
+    final (category, categoryWasCreated) = await _createOrReuseCategory(
       categoryRepository: categoryRepository,
+      categoryName: ftueMistralCategoryName,
+      categoryColor: ftueMistralCategoryColor,
     );
 
     return MistralFtueResult(
@@ -517,126 +362,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       categoryName: category?.name,
     );
   }
-
-  /// Ensures the three FTUE models exist for the given Mistral provider.
-  Future<_MistralFtueModelResult?> _ensureMistralFtueModelsExist({
-    required AiConfigRepository repository,
-    required String providerId,
-  }) async {
-    final knownModels = getMistralFtueKnownModels();
-    if (knownModels == null) {
-      return null;
-    }
-
-    final allModels = await repository.getConfigsByType(AiConfigType.model);
-    final providerModels = allModels
-        .whereType<AiConfigModel>()
-        .where((m) => m.inferenceProviderId == providerId)
-        .toList();
-
-    final created = <AiConfigModel>[];
-    final verified = <AiConfigModel>[];
-    const uuid = Uuid();
-
-    // Process each model type
-    final modelConfigs = [
-      (known: knownModels.flash, id: ftueMistralFlashModelId),
-      (known: knownModels.reasoning, id: ftueMistralReasoningModelId),
-      (known: knownModels.audio, id: ftueMistralAudioModelId),
-    ];
-
-    AiConfigModel? flashModel;
-    AiConfigModel? reasoningModel;
-    AiConfigModel? audioModel;
-
-    for (final config in modelConfigs) {
-      // Check if model with same providerModelId already exists
-      final existing = providerModels.firstWhereOrNull(
-        (m) => m.providerModelId == config.id,
-      );
-
-      AiConfigModel model;
-      if (existing != null) {
-        verified.add(existing);
-        model = existing;
-      } else {
-        // Create new model
-        model = config.known.toAiConfigModel(
-          id: uuid.v4(),
-          inferenceProviderId: providerId,
-        );
-        await repository.saveConfig(model);
-        created.add(model);
-      }
-
-      // Assign to appropriate variable
-      switch (config.id) {
-        case ftueMistralFlashModelId:
-          flashModel = model;
-        case ftueMistralReasoningModelId:
-          reasoningModel = model;
-        case ftueMistralAudioModelId:
-          audioModel = model;
-      }
-    }
-
-    if (flashModel == null || reasoningModel == null || audioModel == null) {
-      return null;
-    }
-
-    return _MistralFtueModelResult(
-      flash: flashModel,
-      reasoning: reasoningModel,
-      audio: audioModel,
-      created: created,
-      verified: verified,
-    );
-  }
-
-  /// Creates or reuses the FTUE test category for Mistral.
-  ///
-  /// If the category already exists, it is reused as-is.
-  /// Returns a tuple of (category, wasCreated).
-  Future<(CategoryDefinition?, bool)> _createOrReuseMistralFtueCategory({
-    required CategoryRepository categoryRepository,
-  }) async {
-    const categoryName = ftueMistralCategoryName;
-
-    // Check if category already exists
-    final allCategories = await categoryRepository.getAllCategories();
-    final existingCategory = allCategories
-        .where((c) => c.name == categoryName && c.deletedAt == null)
-        .firstOrNull;
-
-    if (existingCategory != null) {
-      return (existingCategory, false);
-    }
-
-    // Create new category
-    final category = await categoryRepository.createCategory(
-      name: categoryName,
-      color: ftueMistralCategoryColor,
-    );
-
-    return (category, true);
-  }
-}
-
-/// Internal result class for Mistral model creation.
-class _MistralFtueModelResult {
-  const _MistralFtueModelResult({
-    required this.flash,
-    required this.reasoning,
-    required this.audio,
-    required this.created,
-    required this.verified,
-  });
-
-  final AiConfigModel flash;
-  final AiConfigModel reasoning;
-  final AiConfigModel audio;
-  final List<AiConfigModel> created;
-  final List<AiConfigModel> verified;
 }
 
 // =============================================================================
@@ -644,24 +369,15 @@ class _MistralFtueModelResult {
 // =============================================================================
 
 /// Result of the Alibaba FTUE setup process.
-class AlibabaFtueResult {
+class AlibabaFtueResult extends AiFtueResult {
   const AlibabaFtueResult({
-    required this.modelsCreated,
-    required this.modelsVerified,
-    required this.categoryCreated,
-    this.categoryReused = false,
-    this.categoryName,
-    this.errors = const [],
+    required super.modelsCreated,
+    required super.modelsVerified,
+    required super.categoryCreated,
+    super.categoryReused,
+    super.categoryName,
+    super.errors,
   });
-
-  final int modelsCreated;
-  final int modelsVerified;
-  final bool categoryCreated;
-  final bool categoryReused;
-  final String? categoryName;
-  final List<String> errors;
-
-  int get totalModels => modelsCreated + modelsVerified;
 }
 
 /// Extension to add Alibaba FTUE functionality to ProviderPromptSetupService.
@@ -671,18 +387,16 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   /// This creates:
   /// 1. Five models (Flash/Qwen Flash, Reasoning/Qwen 3.5 Plus,
   ///    Audio/Qwen3 Omni Flash, Vision/Qwen3 VL Flash, Image/Wan 2.6)
-  /// 2. A test category with auto-selection configured
+  /// 2. A test category bound to the seeded Chinese AI Profile
   ///
   /// The Chinese AI Profile (inference profile) is automatically created
   /// by ProfileSeedingService on app startup and links to these models.
-  ///
-  /// Returns [AlibabaFtueResult] with details of what was created.
   Future<AlibabaFtueResult?> performAlibabaFtueSetup({
     required BuildContext context,
     required WidgetRef ref,
     required AiConfigInferenceProvider provider,
+    Set<String> excludedProviderModelIds = const {},
   }) async {
-    // Only works with Alibaba providers
     if (provider.inferenceProviderType != InferenceProviderType.alibaba) {
       return null;
     }
@@ -690,13 +404,8 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     final repository = ref.read(aiConfigRepositoryProvider);
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
-    // Step 1: Create/verify models
-    final modelResult = await _ensureAlibabaFtueModelsExist(
-      repository: repository,
-      providerId: provider.id,
-    );
-
-    if (modelResult == null) {
+    final knownModels = getAlibabaFtueKnownModels();
+    if (knownModels == null) {
       return const AlibabaFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
@@ -705,12 +414,24 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
       );
     }
 
-    // Step 2: Create or update category with auto-selection
-    final (
-      category,
-      categoryWasCreated,
-    ) = await _createOrReuseAlibabaFtueCategory(
+    final modelResult = await _ensureModelsExist(
+      repository: repository,
+      providerId: provider.id,
+      modelConfigs: [
+        (known: knownModels.flash, id: ftueAlibabaFlashModelId),
+        (known: knownModels.reasoning, id: ftueAlibabaReasoningModelId),
+        (known: knownModels.audio, id: ftueAlibabaAudioModelId),
+        (known: knownModels.vision, id: ftueAlibabaVisionModelId),
+        (known: knownModels.image, id: ftueAlibabaImageModelId),
+      ],
+      excludedProviderModelIds: excludedProviderModelIds,
+    );
+
+    final (category, categoryWasCreated) = await _createOrReuseCategory(
       categoryRepository: categoryRepository,
+      categoryName: ftueAlibabaCategoryName,
+      categoryColor: ftueAlibabaCategoryColor,
+      defaultProfileId: profileAlibabaId,
     );
 
     return AlibabaFtueResult(
@@ -721,156 +442,138 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
       categoryName: category?.name,
     );
   }
+}
 
-  /// Ensures the five FTUE models exist for the given Alibaba provider.
-  Future<_AlibabaFtueModelResult?> _ensureAlibabaFtueModelsExist({
-    required AiConfigRepository repository,
-    required String providerId,
-  }) async {
-    final knownModels = getAlibabaFtueKnownModels();
-    if (knownModels == null) {
-      return null;
-    }
+// =============================================================================
+// Anthropic FTUE (First Time User Experience) Setup
+// =============================================================================
 
-    final allModels = await repository.getConfigsByType(AiConfigType.model);
-    final providerModels = allModels
-        .whereType<AiConfigModel>()
-        .where((m) => m.inferenceProviderId == providerId)
-        .toList();
+/// Result of the Anthropic FTUE setup process.
+class AnthropicFtueResult extends AiFtueResult {
+  const AnthropicFtueResult({
+    required super.modelsCreated,
+    required super.modelsVerified,
+    required super.categoryCreated,
+    super.categoryReused,
+    super.categoryName,
+    super.errors,
+  });
+}
 
-    final created = <AiConfigModel>[];
-    final verified = <AiConfigModel>[];
-    const uuid = Uuid();
-
-    // Enum-keyed map ensures the compiler catches missing roles.
-    final modelConfigs = {
-      _AlibabaModelRole.flash: (
-        known: knownModels.flash,
-        id: ftueAlibabaFlashModelId,
-      ),
-      _AlibabaModelRole.reasoning: (
-        known: knownModels.reasoning,
-        id: ftueAlibabaReasoningModelId,
-      ),
-      _AlibabaModelRole.audio: (
-        known: knownModels.audio,
-        id: ftueAlibabaAudioModelId,
-      ),
-      _AlibabaModelRole.vision: (
-        known: knownModels.vision,
-        id: ftueAlibabaVisionModelId,
-      ),
-      _AlibabaModelRole.image: (
-        known: knownModels.image,
-        id: ftueAlibabaImageModelId,
-      ),
-    };
-
-    final resolved = <_AlibabaModelRole, AiConfigModel>{};
-
-    for (final entry in modelConfigs.entries) {
-      final config = entry.value;
-
-      // Check if model with same providerModelId already exists
-      final existing = providerModels.firstWhereOrNull(
-        (m) => m.providerModelId == config.id,
-      );
-
-      AiConfigModel model;
-      if (existing != null) {
-        verified.add(existing);
-        model = existing;
-      } else {
-        model = config.known.toAiConfigModel(
-          id: uuid.v4(),
-          inferenceProviderId: providerId,
-        );
-        await repository.saveConfig(model);
-        created.add(model);
-      }
-
-      resolved[entry.key] = model;
-    }
-
-    // Verify all roles were resolved
-    final flash = resolved[_AlibabaModelRole.flash];
-    final reasoning = resolved[_AlibabaModelRole.reasoning];
-    final audio = resolved[_AlibabaModelRole.audio];
-    final vision = resolved[_AlibabaModelRole.vision];
-    final image = resolved[_AlibabaModelRole.image];
-
-    if (flash == null ||
-        reasoning == null ||
-        audio == null ||
-        vision == null ||
-        image == null) {
-      return null;
-    }
-
-    return _AlibabaFtueModelResult(
-      flash: flash,
-      reasoning: reasoning,
-      audio: audio,
-      vision: vision,
-      image: image,
-      created: created,
-      verified: verified,
-    );
-  }
-
-  /// Creates or reuses the FTUE test category for Alibaba.
+/// Extension to add Anthropic FTUE functionality to ProviderPromptSetupService.
+extension AnthropicFtueSetup on ProviderPromptSetupService {
+  /// Performs comprehensive FTUE setup for Anthropic providers.
   ///
-  /// If the category already exists, it is reused as-is.
-  /// Returns a tuple of (category, wasCreated).
-  Future<(CategoryDefinition?, bool)> _createOrReuseAlibabaFtueCategory({
-    required CategoryRepository categoryRepository,
+  /// Creates a reasoning model (Claude Sonnet 4) and a fast model
+  /// (Claude Haiku 3.5) along with the shared FTUE test category.
+  /// Anthropic ships no native transcription or image-generation models,
+  /// so those skill slots remain unbound on the seeded profile.
+  Future<AnthropicFtueResult?> performAnthropicFtueSetup({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AiConfigInferenceProvider provider,
+    Set<String> excludedProviderModelIds = const {},
   }) async {
-    const categoryName = ftueAlibabaCategoryName;
-
-    // Check if category already exists
-    final allCategories = await categoryRepository.getAllCategories();
-    final existingCategory = allCategories
-        .where((c) => c.name == categoryName && c.deletedAt == null)
-        .firstOrNull;
-
-    if (existingCategory != null) {
-      return (existingCategory, false);
+    if (provider.inferenceProviderType != InferenceProviderType.anthropic) {
+      return null;
     }
 
-    // Create new category with the Chinese AI Profile assigned
-    final category = await categoryRepository.createCategory(
-      name: categoryName,
-      color: ftueAlibabaCategoryColor,
-      defaultProfileId: profileAlibabaId,
+    final repository = ref.read(aiConfigRepositoryProvider);
+    final categoryRepository = ref.read(categoryRepositoryProvider);
+
+    final knownModels = getAnthropicFtueKnownModels();
+    if (knownModels == null) {
+      return const AnthropicFtueResult(
+        modelsCreated: 0,
+        modelsVerified: 0,
+        categoryCreated: false,
+        errors: ['Failed to find required Anthropic model configurations'],
+      );
+    }
+
+    final modelResult = await _ensureModelsExist(
+      repository: repository,
+      providerId: provider.id,
+      modelConfigs: [
+        (known: knownModels.reasoning, id: ftueAnthropicReasoningModelId),
+        (known: knownModels.flash, id: ftueAnthropicFlashModelId),
+      ],
+      excludedProviderModelIds: excludedProviderModelIds,
     );
 
-    return (category, true);
+    final (category, categoryWasCreated) = await _createOrReuseCategory(
+      categoryRepository: categoryRepository,
+      categoryName: ftueAnthropicCategoryName,
+      categoryColor: ftueAnthropicCategoryColor,
+      defaultProfileId: profileAnthropicId,
+    );
+
+    return AnthropicFtueResult(
+      modelsCreated: modelResult.created.length,
+      modelsVerified: modelResult.verified.length,
+      categoryCreated: categoryWasCreated,
+      categoryReused: !categoryWasCreated && category != null,
+      categoryName: category?.name,
+    );
   }
 }
 
-/// Model roles for Alibaba FTUE setup.
+// =============================================================================
+// Ollama FTUE (First Time User Experience) Setup
+// =============================================================================
+
+/// Result of the Ollama FTUE setup process.
 ///
-/// Using an enum instead of raw String keys ensures the compiler catches
-/// missing roles when the set of models changes.
-enum _AlibabaModelRole { flash, reasoning, audio, vision, image }
+/// Unlike the cloud providers, Ollama serves whatever models the user has
+/// pulled locally — there is no canonical set we can pre-create. PR-1 only
+/// installs the test category and the seeded `Local (Ollama)` profile; the
+/// new connect modal (PR-2) will hit `/api/tags` to enumerate the user's
+/// installed models and create rows for the ones they pick.
+class OllamaFtueResult extends AiFtueResult {
+  const OllamaFtueResult({
+    required super.categoryCreated,
+    super.categoryReused,
+    super.categoryName,
+    super.errors,
+  }) : super(modelsCreated: 0, modelsVerified: 0);
+}
 
-/// Internal result class for Alibaba model creation.
-class _AlibabaFtueModelResult {
-  const _AlibabaFtueModelResult({
-    required this.flash,
-    required this.reasoning,
-    required this.audio,
-    required this.vision,
-    required this.image,
-    required this.created,
-    required this.verified,
-  });
+/// Extension to add Ollama FTUE functionality to ProviderPromptSetupService.
+extension OllamaFtueSetup on ProviderPromptSetupService {
+  /// Performs FTUE setup for Ollama providers.
+  ///
+  /// Creates the shared FTUE test category bound to the seeded
+  /// `Local (Ollama)` profile. No models are created at this stage —
+  /// users pull whatever they want locally and the connect modal (PR-2)
+  /// will enumerate them via `/api/tags`.
+  ///
+  /// The [excludedProviderModelIds] parameter is unused (Ollama has no
+  /// preset to exclude from) but kept for signature symmetry with the
+  /// other per-provider helpers — `runFtueSetupForType` dispatches by
+  /// type and passes the same set to every arm.
+  Future<OllamaFtueResult?> performOllamaFtueSetup({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AiConfigInferenceProvider provider,
+    Set<String> excludedProviderModelIds = const {},
+  }) async {
+    if (provider.inferenceProviderType != InferenceProviderType.ollama) {
+      return null;
+    }
 
-  final AiConfigModel flash;
-  final AiConfigModel reasoning;
-  final AiConfigModel audio;
-  final AiConfigModel vision;
-  final AiConfigModel image;
-  final List<AiConfigModel> created;
-  final List<AiConfigModel> verified;
+    final categoryRepository = ref.read(categoryRepositoryProvider);
+
+    final (category, categoryWasCreated) = await _createOrReuseCategory(
+      categoryRepository: categoryRepository,
+      categoryName: ftueOllamaCategoryName,
+      categoryColor: ftueOllamaCategoryColor,
+      defaultProfileId: profileLocalId,
+    );
+
+    return OllamaFtueResult(
+      categoryCreated: categoryWasCreated,
+      categoryReused: !categoryWasCreated && category != null,
+      categoryName: category?.name,
+    );
+  }
 }

@@ -1119,6 +1119,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Passer à l\'enregistrement standard';
 
   @override
+  String get aiCapabilityChipImageGeneration => 'Génération d\'images';
+
+  @override
+  String get aiCapabilityChipImageRecognition => 'Reconnaissance d\'images';
+
+  @override
+  String get aiCapabilityChipThinking => 'Réflexion';
+
+  @override
+  String get aiCapabilityChipTranscription => 'Transcription';
+
+  @override
   String get aiCardEmptyProposals =>
       'Aucune proposition ouverte · l\'agent affichera ici les nouvelles modifications';
 
@@ -1422,6 +1434,103 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiSettingsTabProviders => 'Fournisseurs';
+
+  @override
+  String get aiSetupPreviewAcceptButton => 'Accepter et terminer';
+
+  @override
+  String get aiSetupPreviewAlreadyAddedSectionLabel => 'Déjà ajoutés';
+
+  @override
+  String aiSetupPreviewCategoryFooter(String categoryName) {
+    return 'Configure la catégorie de test $categoryName pour l\'essayer.';
+  }
+
+  @override
+  String aiSetupPreviewConnectedHeader(String providerName) {
+    return '$providerName connecté';
+  }
+
+  @override
+  String get aiSetupPreviewCustomizeButton => 'Personnaliser';
+
+  @override
+  String get aiSetupPreviewLead =>
+      'Vérifie ce que Lotti va ajouter. Décoche ce que tu ne veux pas ; tu pourras toujours le configurer manuellement plus tard.';
+
+  @override
+  String get aiSetupPreviewLiveBadge => 'En direct';
+
+  @override
+  String aiSetupPreviewModalTitle(String providerName) {
+    return 'Configuration $providerName';
+  }
+
+  @override
+  String get aiSetupPreviewModelsSectionLabel => 'Modèles';
+
+  @override
+  String get aiSetupPreviewProfileSectionLabel => 'Profil d\'inférence';
+
+  @override
+  String get aiSetupPreviewProfileSetActiveBadge => 'Activer';
+
+  @override
+  String aiSetupResultBulletCategoryCreated(String categoryName) {
+    return 'Catégorie de test $categoryName configurée pour l\'essayer';
+  }
+
+  @override
+  String aiSetupResultBulletCategoryReused(String categoryName) {
+    return 'Catégorie de test existante $categoryName réutilisée';
+  }
+
+  @override
+  String aiSetupResultBulletModels(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles configurés',
+      one: '1 modèle configuré',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiSetupResultBulletProfile(String profileName) {
+    return 'Profil d\'inférence $profileName créé';
+  }
+
+  @override
+  String aiSetupResultErrorsHeader(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count problèmes',
+      one: '1 problème',
+    );
+    return '$_temp0 lors de la configuration';
+  }
+
+  @override
+  String aiSetupResultHeader(String providerName) {
+    return '$providerName est connecté';
+  }
+
+  @override
+  String get aiSetupResultLead =>
+      'Nous avons tout configuré pour toi. Les fonctionnalités IA sont prêtes dans ton journal.';
+
+  @override
+  String aiSetupResultModalTitle(String providerName) {
+    return '$providerName prêt';
+  }
+
+  @override
+  String get aiSetupResultReviewSetupButton => 'Vérifier la configuration';
+
+  @override
+  String get aiSetupResultStartUsingButton => 'Commencer à utiliser l\'IA';
 
   @override
   String get aiSetupWizardCreatesOptimized =>
