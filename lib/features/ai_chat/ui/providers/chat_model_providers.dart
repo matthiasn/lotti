@@ -9,8 +9,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 /// - Model supports function calling
 /// - Model supports text input modality
 ///
-/// The provider does not inspect "reasoning" capability; it is exposed by
-/// `hasReasoningModelForCategoryProvider` below for UX decisions.
+/// The provider does not inspect "reasoning" capability; callers inspect
+/// `isReasoningModel` on individual models when they need UX differentiation.
 final FutureProviderFamily<List<AiConfigModel>, String>
 eligibleChatModelsForCategoryProvider = FutureProvider.autoDispose
     .family<List<AiConfigModel>, String>(
@@ -44,16 +44,5 @@ eligibleChatModelsForCategoryProvider = FutureProvider.autoDispose
         });
 
         return eligible;
-      },
-    );
-
-/// Whether at least one reasoning-capable eligible model exists for a category.
-final FutureProviderFamily<bool, String> hasReasoningModelForCategoryProvider =
-    FutureProvider.autoDispose.family<bool, String>(
-      (ref, categoryId) async {
-        final models = await ref.watch(
-          eligibleChatModelsForCategoryProvider(categoryId).future,
-        );
-        return models.any((m) => m.isReasoningModel);
       },
     );

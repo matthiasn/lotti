@@ -100,7 +100,6 @@ void main() {
           'Welcome to the evolution session!',
         );
         expect(data.isWaiting, isFalse);
-        expect(data.currentDirectives, 'You are a helpful agent.');
       });
 
       test('returns error state when startSession returns null', () async {
@@ -1761,31 +1760,6 @@ void main() {
       });
     });
 
-    group('build - version data', () {
-      test(
-        'sets currentDirectives to null when version is not found',
-        () async {
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(null);
-
-          container = createContainer(
-            versionOverride: (ref, id) async => null,
-          );
-          final data = await withClock(
-            testClock,
-            () => container.read(
-              evolutionChatStateProvider(kTestTemplateId).future,
-            ),
-          );
-
-          expect(data.currentDirectives, isNull);
-        },
-      );
-    });
   });
 
   group('EvolutionChatData', () {
@@ -1793,7 +1767,6 @@ void main() {
       const data = EvolutionChatData(
         sessionId: 'session-1',
         messages: [],
-        currentDirectives: 'original',
       );
 
       final updated = data.copyWith(isWaiting: true);
@@ -1801,17 +1774,6 @@ void main() {
       expect(updated.sessionId, 'session-1');
       expect(updated.messages, isEmpty);
       expect(updated.isWaiting, isTrue);
-      expect(updated.currentDirectives, 'original');
-    });
-
-    test('copyWith sets currentDirectives to null via function', () {
-      const data = EvolutionChatData(
-        messages: [],
-        currentDirectives: 'some directives',
-      );
-
-      final updated = data.copyWith(currentDirectives: () => null);
-      expect(updated.currentDirectives, isNull);
     });
   });
 

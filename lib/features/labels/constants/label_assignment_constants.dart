@@ -19,13 +19,3 @@ class LabelAssignmentConfig {
 /// Max number of labels the AI can assign per tool call.
 const int kMaxLabelsPerAssignment =
     LabelAssignmentConfig.maxLabelsPerAssignment;
-
-/// Number of labels to include in prompts by usage descending.
-const int kLabelsPromptTopUsageCount =
-    LabelAssignmentConfig.labelsPromptTopUsageCount;
-
-/// Number of additional labels to include alphabetically after top-usage.
-const int kLabelsPromptNextAlphaCount =
-    LabelAssignmentConfig.labelsPromptNextAlphaCount;
-
-// End of file

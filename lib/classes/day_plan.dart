@@ -151,8 +151,6 @@ class DerivedTimeBudget {
   final String categoryId;
   final Duration plannedDuration;
   final List<PlannedBlock> blocks;
-
-  int get plannedMinutes => plannedDuration.inMinutes;
 }
 
 /// Extension methods for DayPlanData.
@@ -165,13 +163,6 @@ extension DayPlanDataX on DayPlanData {
   List<PlannedBlock> blocksForCategory(String categoryId) =>
       plannedBlocks.where((block) => block.categoryId == categoryId).toList()
         ..sort((a, b) => a.startTime.compareTo(b.startTime));
-
-  /// Get total planned duration for a specific category.
-  Duration plannedDurationForCategory(String categoryId) =>
-      blocksForCategory(categoryId).fold(
-        Duration.zero,
-        (total, block) => total + block.duration,
-      );
 
   /// Get derived time budgets for all categories with blocks.
   List<DerivedTimeBudget> get derivedBudgets {
@@ -205,11 +196,6 @@ extension DayPlanDataX on DayPlanData {
     (total, block) => total + block.duration,
   );
 
-  /// Get pinned tasks for a specific category.
-  List<PinnedTaskRef> pinnedTasksForCategory(String categoryId) =>
-      pinnedTasks.where((ref) => ref.categoryId == categoryId).toList()
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
   /// Whether this plan has been agreed to.
   bool get isAgreed => status is DayPlanStatusAgreed;
 
@@ -218,15 +204,4 @@ extension DayPlanDataX on DayPlanData {
 
   /// Whether this plan is still a draft.
   bool get isDraft => status is DayPlanStatusDraft;
-
-  /// Whether the day has been marked complete.
-  bool get isComplete => completedAt != null;
-
-  /// Find a block by ID.
-  PlannedBlock? blockById(String id) {
-    for (final block in plannedBlocks) {
-      if (block.id == id) return block;
-    }
-    return null;
-  }
 }

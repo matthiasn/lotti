@@ -5,53 +5,7 @@ import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/status_indicator.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
-import 'package:lotti/widgets/misc/wolt_modal_config.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
-
-SliverWoltModalSheetPage unverifiedDevicesPage({
-  required BuildContext context,
-  required ValueNotifier<int> pageIndexNotifier,
-}) {
-  return ModalUtils.modalSheetPage(
-    context: context,
-    showCloseButton: true,
-    stickyActionBar: ColoredBox(
-      color: context.colorScheme.surface,
-      child: Padding(
-        padding: WoltModalConfig.pagePadding,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: LottiSecondaryButton(
-                label: context.messages.settingsMatrixPreviousPage,
-                onPressed: () =>
-                    pageIndexNotifier.value = pageIndexNotifier.value - 1,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: LottiPrimaryButton(
-                onPressed: () =>
-                    pageIndexNotifier.value = pageIndexNotifier.value + 1,
-                label: context.messages.settingsMatrixNextPage,
-                icon: MdiIcons.arrowRight,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-    title: context.messages.settingsMatrixUnverifiedDevicesPage,
-    padding: WoltModalConfig.pagePadding + const EdgeInsets.only(bottom: 80),
-    child: const UnverifiedDevices(),
-  );
-}
 
 class UnverifiedDevices extends ConsumerWidget {
   const UnverifiedDevices({super.key});

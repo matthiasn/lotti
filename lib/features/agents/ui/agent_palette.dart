@@ -31,12 +31,6 @@ class AgentPalette {
   /// AI / communication — cyan
   static const Color cyan = Color(0xFF00BCD4);
 
-  /// Timeliness / productive — yellow
-  static const Color yellow = Color(0xFFFFD93D);
-
-  /// Neutral / general — silver
-  static const Color silver = Color(0xFFC0C0C0);
-
   /// Dark elevated surface for card gradients
   static const Color surfaceDarkElevated = Color(0xFF2A2A3C);
 }

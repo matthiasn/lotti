@@ -9,11 +9,14 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
-/// Schema version for cached waveform payloads.
-const int _waveformCacheVersion = 1;
-const int audioWaveformCacheVersion = _waveformCacheVersion;
+/// Schema version for cached waveform payloads. Exposed for tests so they
+/// stay in sync with the production schema version without hardcoding it.
+@visibleForTesting
+const int audioWaveformCacheVersion = 1;
+const int _waveformCacheVersion = audioWaveformCacheVersion;
 
 /// Maximum number of cached waveform files retained on disk.
 const int _maxCacheEntries = 1000;

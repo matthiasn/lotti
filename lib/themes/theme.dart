@@ -229,10 +229,6 @@ class ModalTheme {
 
 const double inputBorderRadius = InputConstants.inputBorderRadius;
 
-const verticalModalSpacer = SizedBox(
-  height: SpacingConstants.verticalModalSpacerHeight,
-);
-
 InputDecoration inputDecoration({
   required ThemeData themeData,
   String? labelText,
@@ -378,20 +374,9 @@ const taskTitleStyle = TextStyle(
   fontSize: fontSizeLarge,
 );
 
-const multiSelectStyle = TextStyle(
-  fontWeight: FontWeight.w200, // Slightly bolder
-  fontSize: fontSizeLarge,
-);
-
 const chartTitleStyle = TextStyle(
   fontSize: fontSizeMedium,
   fontWeight: FontWeight.w400, // Slightly bolder
-);
-
-final TextStyle chartTitleStyleMonospace = chartTitleStyle.copyWith(
-  fontFeatures: [
-    const FontFeature.tabularFigures(),
-  ],
 );
 
 const habitTitleStyle = TextStyle(

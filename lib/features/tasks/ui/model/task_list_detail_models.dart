@@ -2,14 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
-enum TaskShowcaseDetailSection {
-  timer,
-  todo,
-  audio,
-  images,
-  linked,
-}
-
 class TaskShowcaseLabel {
   const TaskShowcaseLabel({
     required this.id,

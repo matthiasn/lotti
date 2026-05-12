@@ -326,49 +326,6 @@ void main() {
         expect(cat2Budget.blocks.length, equals(1));
       });
 
-      test('pinnedTasksForCategory returns sorted tasks', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          pinnedTasks: const [
-            PinnedTaskRef(taskId: 'task-3', categoryId: 'cat-1', sortOrder: 2),
-            PinnedTaskRef(taskId: 'task-1', categoryId: 'cat-1'),
-            PinnedTaskRef(taskId: 'task-2', categoryId: 'cat-1', sortOrder: 1),
-            PinnedTaskRef(taskId: 'task-4', categoryId: 'cat-2'),
-          ],
-        );
-
-        final tasks = data.pinnedTasksForCategory('cat-1');
-        expect(tasks.length, equals(3));
-        expect(tasks[0].taskId, equals('task-1'));
-        expect(tasks[1].taskId, equals('task-2'));
-        expect(tasks[2].taskId, equals('task-3'));
-      });
-
-      test('blockById finds correct block', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          plannedBlocks: [
-            PlannedBlock(
-              id: 'block-1',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 9),
-              endTime: DateTime(2026, 1, 14, 11),
-            ),
-            PlannedBlock(
-              id: 'block-2',
-              categoryId: 'cat-2',
-              startTime: DateTime(2026, 1, 14, 14),
-              endTime: DateTime(2026, 1, 14, 15),
-            ),
-          ],
-        );
-
-        expect(data.blockById('block-2')?.categoryId, equals('cat-2'));
-        expect(data.blockById('nonexistent'), isNull);
-      });
-
       test('status helper methods work correctly', () {
         final draft = DayPlanData(
           planDate: DateTime(2026, 1, 14),
@@ -396,61 +353,6 @@ void main() {
         expect(review.isDraft, isFalse);
         expect(review.isAgreed, isFalse);
         expect(review.needsReview, isTrue);
-      });
-
-      test('isComplete helper method works correctly', () {
-        final notComplete = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-        );
-        expect(notComplete.isComplete, isFalse);
-
-        final complete = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          completedAt: DateTime(2026, 1, 14, 18),
-        );
-        expect(complete.isComplete, isTrue);
-      });
-
-      test('plannedDurationForCategory calculates correctly', () {
-        final data = DayPlanData(
-          planDate: DateTime(2026, 1, 14),
-          status: const DayPlanStatus.draft(),
-          plannedBlocks: [
-            PlannedBlock(
-              id: 'block-1',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 9),
-              endTime: DateTime(2026, 1, 14, 11), // 2 hours
-            ),
-            PlannedBlock(
-              id: 'block-2',
-              categoryId: 'cat-1',
-              startTime: DateTime(2026, 1, 14, 14),
-              endTime: DateTime(2026, 1, 14, 14, 30), // 30 min
-            ),
-            PlannedBlock(
-              id: 'block-3',
-              categoryId: 'cat-2',
-              startTime: DateTime(2026, 1, 14, 12),
-              endTime: DateTime(2026, 1, 14, 13), // 1 hour
-            ),
-          ],
-        );
-
-        expect(
-          data.plannedDurationForCategory('cat-1'),
-          equals(const Duration(hours: 2, minutes: 30)),
-        );
-        expect(
-          data.plannedDurationForCategory('cat-2'),
-          equals(const Duration(hours: 1)),
-        );
-        expect(
-          data.plannedDurationForCategory('nonexistent'),
-          equals(Duration.zero),
-        );
       });
 
       test('categoryIds returns all unique categories', () {

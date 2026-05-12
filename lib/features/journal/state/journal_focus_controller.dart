@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'journal_focus_controller.g.dart';
@@ -51,19 +50,4 @@ class JournalFocusController extends _$JournalFocusController {
   void clearIntent() {
     state = null;
   }
-}
-
-/// Helper function to publish a journal focus intent
-void publishJournalFocus({
-  required String journalId,
-  required String entryId,
-  required WidgetRef ref,
-  double alignment = 0.0,
-}) {
-  ref
-      .read(journalFocusControllerProvider(id: journalId).notifier)
-      .publishJournalFocus(
-        entryId: entryId,
-        alignment: alignment,
-      );
 }

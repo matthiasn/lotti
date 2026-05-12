@@ -43,14 +43,6 @@ extension TaskPriorityExt on TaskPriority {
   /// Numerical rank used for ordering (lower is higher priority).
   int get rank => index; // 0..3
 
-  /// Human-readable label (non-localized) for use in fallback UI.
-  String get label => switch (this) {
-    TaskPriority.p0Urgent => 'Urgent',
-    TaskPriority.p1High => 'High',
-    TaskPriority.p2Medium => 'Medium',
-    TaskPriority.p3Low => 'Low',
-  };
-
   /// Color aligned with task status theme tokens.
   Color colorForBrightness(Brightness brightness) {
     final isLight = brightness == Brightness.light;
@@ -244,10 +236,6 @@ extension TaskStatusExtension on TaskStatus {
     TaskDone() => 'DONE',
     TaskRejected() => 'REJECTED',
   };
-
-  Color get color {
-    return colorForBrightness(Brightness.dark);
-  }
 
   Color colorForBrightness(Brightness brightness) {
     final isLight = brightness == Brightness.light;

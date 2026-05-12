@@ -18,7 +18,6 @@ import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -545,14 +544,6 @@ final triggerSkillProvider = FutureProvider.autoDispose
         }
       },
     );
-
-/// Provider to watch category changes
-final categoryChangesProvider = StreamProvider.autoDispose.family<void, String>(
-  (ref, categoryId) {
-    final categoryRepo = ref.watch(categoryRepositoryProvider);
-    return categoryRepo.watchCategory(categoryId).map((_) {});
-  },
-);
 
 /// Record type for trigger new inference parameters.
 typedef TriggerNewInferenceParams = ({

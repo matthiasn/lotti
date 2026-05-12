@@ -7,7 +7,6 @@ import 'package:lotti/features/daily_os/widgetbook/my_daily_widgetbook.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_picker.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -45,33 +44,6 @@ void main() {
           'Filter By Time Block',
           'Filtered',
         ],
-      );
-    });
-
-    test('selects compact, regular, and expanded density tiers', () {
-      expect(
-        myDailyTimelineBlockDensity(
-          tokens: dsTokensDark,
-          height: dsTokensDark.spacing.step9,
-          duration: const Duration(minutes: 30),
-        ),
-        MyDailyTimelineBlockDensity.compact,
-      );
-      expect(
-        myDailyTimelineBlockDensity(
-          tokens: dsTokensDark,
-          height: dsTokensDark.spacing.step10,
-          duration: const Duration(minutes: 60),
-        ),
-        MyDailyTimelineBlockDensity.regular,
-      );
-      expect(
-        myDailyTimelineBlockDensity(
-          tokens: dsTokensDark,
-          height: dsTokensDark.spacing.step10,
-          duration: const Duration(minutes: 95),
-        ),
-        MyDailyTimelineBlockDensity.expanded,
       );
     });
 

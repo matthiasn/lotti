@@ -47,9 +47,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_ai_inference_repository.g.dart';
 
-/// Minimum title length for AI suggestion to be applied
-const kMinExistingTitleLengthForAiSuggestion = 5;
-
 /// Result of audio preparation containing base64 data and format
 class PreparedAudio {
   const PreparedAudio({

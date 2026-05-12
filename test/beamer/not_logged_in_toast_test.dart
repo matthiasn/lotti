@@ -39,16 +39,14 @@ class _MockAiSetupPromptService extends AiSetupPromptService {
 
 // Simple test location for wrapping AppScreen
 class _TestLocation extends BeamLocation<BeamState> {
-  _TestLocation(super.routeInformation, {required this.db});
-
-  final JournalDb db;
+  _TestLocation(super.routeInformation);
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
     return [
-      BeamPage(
-        key: const ValueKey('test'),
-        child: AppScreen(journalDb: db),
+      const BeamPage(
+        key: ValueKey('test'),
+        child: AppScreen(),
       ),
     ];
   }
@@ -233,7 +231,7 @@ void main() {
     final routerDelegate = BeamerDelegate(
       setBrowserTabTitle: false,
       locationBuilder: (routeInformation, _) {
-        return _TestLocation(routeInformation, db: db);
+        return _TestLocation(routeInformation);
       },
     );
 
@@ -286,7 +284,7 @@ void main() {
     final routerDelegate2 = BeamerDelegate(
       setBrowserTabTitle: false,
       locationBuilder: (routeInformation, _) {
-        return _TestLocation(routeInformation, db: db);
+        return _TestLocation(routeInformation);
       },
     );
 
@@ -359,7 +357,7 @@ void main() {
     final routerDelegate = BeamerDelegate(
       setBrowserTabTitle: false,
       locationBuilder: (routeInformation, _) {
-        return _TestLocation(routeInformation, db: db);
+        return _TestLocation(routeInformation);
       },
     );
     await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
@@ -438,7 +436,7 @@ void main() {
     final routerDelegate = BeamerDelegate(
       setBrowserTabTitle: false,
       locationBuilder: (routeInformation, _) {
-        return _TestLocation(routeInformation, db: db);
+        return _TestLocation(routeInformation);
       },
     );
     await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -44,52 +42,6 @@ final labelsStreamProvider = StreamProvider<List<LabelDefinition>>((ref) {
     (labels) => _visibleLabels(labels, showPrivate),
   );
 });
-
-final labelsListControllerProvider =
-    NotifierProvider<LabelsListController, AsyncValue<List<LabelDefinition>>>(
-      LabelsListController.new,
-    );
-
-class LabelsListController extends Notifier<AsyncValue<List<LabelDefinition>>> {
-  late final LabelsRepository _repository;
-  StreamSubscription<List<LabelDefinition>>? _subscription;
-
-  @override
-  AsyncValue<List<LabelDefinition>> build() {
-    _repository = ref.watch(labelsRepositoryProvider);
-    final showPrivate = ref
-        .watch(showPrivateEntriesProvider)
-        .maybeWhen(
-          data: (value) => value,
-          orElse: () => false,
-        );
-
-    _subscription?.cancel();
-    _subscription = _repository.watchLabels().listen(
-      (labels) {
-        state = AsyncValue.data(_visibleLabels(labels, showPrivate));
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        state = AsyncValue.error(error, stackTrace);
-      },
-    );
-
-    ref.onDispose(() {
-      _subscription?.cancel();
-      _subscription = null;
-    });
-
-    return const AsyncValue<List<LabelDefinition>>.loading();
-  }
-
-  Future<void> deleteLabel(String id) async {
-    try {
-      await _repository.deleteLabel(id);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-    }
-  }
-}
 
 /// Reactive provider that computes the category-scoped set of available labels
 /// (global ∪ scoped-to-category) while preserving Riverpod reactivity.
