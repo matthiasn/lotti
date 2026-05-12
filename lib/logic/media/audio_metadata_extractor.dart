@@ -102,13 +102,6 @@ class AudioMetadataExtractor {
     return '$base.$extension';
   }
 
-  /// Checks if a file extension is a supported audio format.
-  ///
-  /// The extension should be provided without the leading dot.
-  static bool isSupported(String extension) {
-    return supportedExtensions.contains(extension.toLowerCase());
-  }
-
   /// Selects the appropriate audio metadata reader based on environment.
   ///
   /// In test environments (FLUTTER_TEST=true or [bypassMediaKitInTests]=true),

@@ -266,7 +266,6 @@ void main() {
             ),
             projectAgentSummaryProvider(projectId).overrideWith(
               (ref) async => ProjectAgentSummaryState(
-                agentId: agentId,
                 hasReport: true,
                 pendingProjectActivityAt: DateTime(2026, 4, 2, 11),
                 scheduledWakeAt: DateTime(2026, 4, 3, 6),

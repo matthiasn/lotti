@@ -65,30 +65,6 @@ void main() {
       verify(() => listener(null, const AsyncValue<LoginState?>.loading()));
     });
 
-    test('login calls login on MatrixService', () async {
-      // Setup mock behavior for login
-      when(
-        () => mockMatrixService.login(),
-      ).thenAnswer((_) => Future.value(true));
-
-      // Call login
-      await container.read(matrixLoginControllerProvider.notifier).login();
-
-      // Verify login was called
-      verify(() => mockMatrixService.login()).called(1);
-    });
-
-    test('logout calls logout on MatrixService', () async {
-      // Setup mock behavior for logout
-      when(() => mockMatrixService.logout()).thenAnswer((_) => Future.value());
-
-      // Call logout
-      await container.read(matrixLoginControllerProvider.notifier).logout();
-
-      // Verify logout was called
-      verify(() => mockMatrixService.logout()).called(1);
-    });
-
     test('controller state updates when login state changes', () async {
       // Add the loggedOut state to the stream
       loginStateController.add(LoginState.loggedOut);

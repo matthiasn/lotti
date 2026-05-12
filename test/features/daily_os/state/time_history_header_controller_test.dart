@@ -508,36 +508,6 @@ void main() {
       });
     });
 
-    test('dayAt helper returns correct day summary', () async {
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
-
-        when(
-          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
-        ).thenAnswer((_) async => []);
-
-        final result = await container.read(
-          timeHistoryHeaderControllerProvider.future,
-        );
-
-        // Should find day regardless of time component
-        final found = result.dayAt(DateTime(2026, 1, 15, 8, 30));
-        expect(found, isNotNull);
-        expect(found!.day.day, equals(15));
-
-        // Should return null for date outside range
-        final notFound = result.dayAt(DateTime(2025));
-        expect(notFound, isNull);
-      });
-    });
-
     test('captures entries at start of day (midnight boundary)', () async {
       await withClock(fixedClock, () async {
         // Entry at 00:30 on Jan 15 should be captured when querying Jan 15

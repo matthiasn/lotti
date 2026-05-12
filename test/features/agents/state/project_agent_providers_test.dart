@@ -56,7 +56,6 @@ void main() {
       'isSummaryOutdated is true when report exists and activity is pending',
       () {
         final state = ProjectAgentSummaryState(
-          agentId: 'agent-1',
           hasReport: true,
           pendingProjectActivityAt: DateTime(2026, 3, 22, 12),
         );
@@ -67,7 +66,6 @@ void main() {
 
     test('isSummaryOutdated is false when no pending activity', () {
       const state = ProjectAgentSummaryState(
-        agentId: 'agent-1',
         hasReport: true,
       );
 
@@ -76,7 +74,6 @@ void main() {
 
     test('isSummaryOutdated is false when no report', () {
       final state = ProjectAgentSummaryState(
-        agentId: 'agent-1',
         hasReport: false,
         pendingProjectActivityAt: DateTime(2026, 3, 22, 12),
       );
@@ -88,7 +85,6 @@ void main() {
       'isSummaryOutdated is false when both report and activity are absent',
       () {
         const state = ProjectAgentSummaryState(
-          agentId: 'agent-1',
           hasReport: false,
         );
 
@@ -100,13 +96,11 @@ void main() {
       final wake = DateTime(2026, 3, 23, 6);
       final pending = DateTime(2026, 3, 22, 12);
       final state = ProjectAgentSummaryState(
-        agentId: 'agent-42',
         hasReport: true,
         pendingProjectActivityAt: pending,
         scheduledWakeAt: wake,
       );
 
-      expect(state.agentId, 'agent-42');
       expect(state.hasReport, isTrue);
       expect(state.pendingProjectActivityAt, pending);
       expect(state.scheduledWakeAt, wake);
@@ -188,8 +182,7 @@ void main() {
       );
 
       expect(result, isNotNull);
-      expect(result!.agentId, agentId);
-      expect(result.hasReport, isTrue);
+      expect(result!.hasReport, isTrue);
       expect(result.pendingProjectActivityAt, pendingProjectActivityAt);
       expect(result.scheduledWakeAt, scheduledWakeAt);
       expect(result.isSummaryOutdated, isTrue);
@@ -221,8 +214,7 @@ void main() {
       );
 
       expect(result, isNotNull);
-      expect(result!.agentId, agentId);
-      expect(result.hasReport, isFalse);
+      expect(result!.hasReport, isFalse);
       expect(result.isSummaryOutdated, isFalse);
     });
   });

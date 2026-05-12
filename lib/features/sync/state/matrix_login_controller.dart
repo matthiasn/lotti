@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:matrix/matrix.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -9,15 +8,10 @@ part 'matrix_login_controller.g.dart';
 
 @riverpod
 class MatrixLoginController extends _$MatrixLoginController {
-  MatrixService get _matrixService => ref.read(matrixServiceProvider);
-
   @override
   Future<LoginState?> build() async {
     return ref.watch(loginStateStreamProvider).value;
   }
-
-  Future<void> login() => _matrixService.login();
-  Future<void> logout() => _matrixService.logout();
 }
 
 @riverpod

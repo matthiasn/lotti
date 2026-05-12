@@ -83,7 +83,6 @@ typedef _OngoingWakeExpectation = ({
   String agentId,
   String title,
   DateTime startedAt,
-  String id,
 });
 
 final _generatedProviderBase = DateTime(2026, 5, 22, 10, 30);
@@ -415,12 +414,10 @@ class _GeneratedOngoingWakeSpec {
   }
 
   _OngoingWakeExpectation expectedRecord(int index) {
-    final id = agentId(index);
     return (
-      agentId: id,
+      agentId: agentId(index),
       title: expectedTitle(index),
       startedAt: startedAt(index),
-      id: 'ongoing:$id',
     );
   }
 
@@ -925,7 +922,6 @@ void main() {
                 agentId: record.agentId,
                 title: record.title,
                 startedAt: record.startedAt,
-                id: record.id,
               ),
           ];
 
@@ -983,7 +979,6 @@ void main() {
       expect(records.single.agentId, 'agent-a');
       expect(records.single.title, 'Refine sidebar');
       expect(records.single.startedAt, fixed);
-      expect(records.single.id, 'ongoing:agent-a');
       verifyNever(() => mockAgentService.getAgent(any()));
     });
 

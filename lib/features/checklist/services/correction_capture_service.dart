@@ -79,11 +79,6 @@ class CorrectionCaptureNotifier extends _$CorrectionCaptureNotifier {
     }
     return false;
   }
-
-  /// Clears the state without cancelling (used after save completes).
-  void clear() {
-    state = null;
-  }
 }
 
 /// Represents a pending correction that hasn't been saved yet.
@@ -308,9 +303,6 @@ enum CorrectionCaptureResult {
   /// Correction is pending and will be saved after countdown.
   pending,
 
-  /// Correction was captured successfully (immediate save - legacy).
-  success,
-
   /// Skipped: No category ID available on the checklist item.
   noCategory,
 
@@ -325,7 +317,4 @@ enum CorrectionCaptureResult {
 
   /// Skipped: Category was not found in database.
   categoryNotFound,
-
-  /// Failed: Could not save to database.
-  saveFailed,
 }

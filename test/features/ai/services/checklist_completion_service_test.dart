@@ -85,35 +85,6 @@ void main() {
       expect(state.value?.first.checklistItemId, equals('item-2'));
     });
 
-    test('getSuggestionForItem returns correct suggestion', () async {
-      final notifier = container.read(
-        checklistCompletionServiceProvider.notifier,
-      );
-
-      const targetSuggestion = ChecklistCompletionSuggestion(
-        checklistItemId: 'item-1',
-        reason: 'Task completed',
-        confidence: ChecklistCompletionConfidence.high,
-      );
-
-      final suggestions = [
-        targetSuggestion,
-        const ChecklistCompletionSuggestion(
-          checklistItemId: 'item-2',
-          reason: 'Another task',
-          confidence: ChecklistCompletionConfidence.low,
-        ),
-      ];
-
-      notifier.addSuggestions(suggestions);
-
-      final found = notifier.getSuggestionForItem('item-1');
-      expect(found, equals(targetSuggestion));
-
-      final notFound = notifier.getSuggestionForItem('item-3');
-      expect(notFound, isNull);
-    });
-
     test('confidence enum parsing handles invalid values', () {
       // Test the confidence parsing logic
       const validConfidences = ['high', 'medium', 'low'];

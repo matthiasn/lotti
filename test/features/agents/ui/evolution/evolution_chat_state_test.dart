@@ -1759,7 +1759,6 @@ void main() {
         );
       });
     });
-
   });
 
   group('EvolutionChatData', () {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'matrix_stats_provider.g.dart';
@@ -75,9 +76,11 @@ class SyncMetricsHistory extends _$SyncMetricsHistory {
     return <String, List<int>>{};
   }
 
+  @visibleForTesting
   void clear() => state = <String, List<int>>{};
 
   /// Appends metrics values to history. Exposed for testing.
+  @visibleForTesting
   void appendFromMetrics(SyncMetrics metrics) {
     final map = metrics.toMap();
     const keys = ['processed', 'failures', 'retriesScheduled'];

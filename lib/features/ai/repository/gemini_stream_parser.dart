@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
+import 'package:meta/meta.dart';
 
 /// Incremental parser for mixed-format Gemini streaming payloads.
 ///
@@ -19,9 +20,7 @@ import 'package:lotti/features/ai/repository/gemini_utils.dart';
 ///
 /// The parser maintains internal buffer state between calls.
 class GeminiStreamParser {
-  GeminiStreamParser({this.verbose = false, this.maxBufferSize = 64 * 1024});
-
-  final bool verbose;
+  GeminiStreamParser({this.maxBufferSize = 64 * 1024});
 
   /// Maximum number of characters the internal buffer may hold.
   /// Defaults to 64KB to prevent unbounded growth when upstream framing is noisy.
@@ -124,5 +123,6 @@ class GeminiStreamParser {
   }
 
   /// Returns the current buffered, unparsed remainder (useful for testing).
+  @visibleForTesting
   String remainder() => _buffer.toString();
 }

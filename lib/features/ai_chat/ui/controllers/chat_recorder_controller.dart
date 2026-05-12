@@ -18,10 +18,7 @@ enum ChatRecorderErrorType {
   startFailed,
   noAudioFile,
   transcriptionFailed,
-  cleanupFailed,
   concurrentOperation,
-  storageFull,
-  fileCorruption,
 }
 
 class ChatRecorderState {

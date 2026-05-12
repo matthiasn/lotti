@@ -270,7 +270,6 @@ class ProjectAgentWorkflow {
         agentId: agentId,
         threadId: threadId,
         runKey: runKey,
-        projectId: projectId,
       );
 
       final tools = _buildToolDefinitions();

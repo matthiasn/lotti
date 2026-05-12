@@ -48,9 +48,7 @@ class ToolCallAccumulator {
     final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
     final toolCallId = hasExplicitId ? explicitId : _nextSyntheticToolCallId();
     _toolCalls[toolCallId] = _AccumulatedToolCall(
-      id: toolCallId,
       index: toolCallChunk.index ?? 0,
-      type: toolCallChunk.type?.toString() ?? 'function',
       functionName: toolCallChunk.function?.name ?? '',
       functionArguments: toolCallChunk.function?.arguments ?? '',
     );
@@ -100,9 +98,7 @@ class ToolCallAccumulator {
     ChatCompletionStreamMessageToolCallChunk chunk,
   ) {
     _toolCalls[toolCallId] = _AccumulatedToolCall(
-      id: toolCallId,
       index: chunk.index ?? _toolCalls.length,
-      type: chunk.type?.toString() ?? 'function',
       functionName: chunk.function?.name ?? '',
       functionArguments: chunk.function?.arguments ?? '',
     );
@@ -216,16 +212,12 @@ class ToolCallAccumulator {
 /// Internal data class representing an accumulated tool call.
 class _AccumulatedToolCall {
   const _AccumulatedToolCall({
-    required this.id,
     required this.index,
-    required this.type,
     required this.functionName,
     required this.functionArguments,
   });
 
-  final String id;
   final int index;
-  final String type;
   final String functionName;
   final String functionArguments;
 
@@ -234,9 +226,7 @@ class _AccumulatedToolCall {
     String? functionArguments,
   }) {
     return _AccumulatedToolCall(
-      id: id,
       index: index,
-      type: type,
       functionName: functionName ?? this.functionName,
       functionArguments: functionArguments ?? this.functionArguments,
     );

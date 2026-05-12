@@ -58,7 +58,6 @@ ImproverAgentWorkflow improverAgentWorkflow(Ref ref) {
     repository: ref.watch(agentRepositoryProvider),
     templateService: ref.watch(agentTemplateServiceProvider),
     syncService: ref.watch(agentSyncServiceProvider),
-    domainLogger: ref.watch(domainLoggerProvider),
   );
 }
 

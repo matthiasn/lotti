@@ -14,7 +14,6 @@ import 'package:lotti/widgets/charts/utils.dart';
 class MeasurablesBarChart extends ConsumerWidget {
   const MeasurablesBarChart({
     required this.measurableDataTypeId,
-    required this.dashboardId,
     required this.rangeStart,
     required this.rangeEnd,
     this.aggregationType,
@@ -24,7 +23,6 @@ class MeasurablesBarChart extends ConsumerWidget {
   });
 
   final String measurableDataTypeId;
-  final String? dashboardId;
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final bool enableCreate;

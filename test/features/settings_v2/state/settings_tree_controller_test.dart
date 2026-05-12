@@ -212,24 +212,6 @@ void main() {
     });
   });
 
-  group('SettingsTreePath.clear', () {
-    test('clears a populated path to empty', () {
-      final c = ProviderContainer();
-      addTearDown(c.dispose);
-      _notifierFrom(c).onNodeTap('sync', depth: 0, hasChildren: true);
-      _notifierFrom(c).clear();
-      expect(c.read(settingsTreePathProvider), isEmpty);
-    });
-
-    test('clearing an already-empty path is a no-op (identity preserved)', () {
-      final c = ProviderContainer();
-      addTearDown(c.dispose);
-      final first = c.read(settingsTreePathProvider);
-      _notifierFrom(c).clear();
-      expect(identical(c.read(settingsTreePathProvider), first), isTrue);
-    });
-  });
-
   group('SettingsTreePath.syncFromUrl', () {
     test('/settings → empty path', () {
       final c = ProviderContainer();

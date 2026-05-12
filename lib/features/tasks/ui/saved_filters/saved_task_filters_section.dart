@@ -12,7 +12,6 @@ class SavedTaskFiltersSectionKeys {
   const SavedTaskFiltersSectionKeys._();
 
   static const Key root = Key('saved-filters-section');
-  static const Key emptyState = Key('saved-filters-empty-state');
   static const Key list = Key('saved-filters-list');
 }
 

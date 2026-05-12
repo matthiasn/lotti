@@ -327,10 +327,10 @@ class _HeroBanner extends StatelessWidget {
           Image.network(
             imageUrl!,
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => _BannerFallback(version: version),
+            errorBuilder: (_, _, _) => const _BannerFallback(),
           )
         else
-          _BannerFallback(version: version),
+          const _BannerFallback(),
 
         // Gradient overlay for text legibility
         DecoratedBox(
@@ -364,9 +364,7 @@ class _HeroBanner extends StatelessWidget {
 
 /// Fallback display when banner image is unavailable.
 class _BannerFallback extends StatelessWidget {
-  const _BannerFallback({required this.version});
-
-  final String version;
+  const _BannerFallback();
 
   @override
   Widget build(BuildContext context) {

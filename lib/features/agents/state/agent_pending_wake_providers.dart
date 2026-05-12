@@ -126,8 +126,6 @@ class OngoingWakeRecord {
   /// running set churning.
   final String? subjectId;
   final DateTime startedAt;
-
-  String get id => 'ongoing:$agentId';
 }
 
 /// Stream over `WakeRunner.runningAgentIds` used to invalidate

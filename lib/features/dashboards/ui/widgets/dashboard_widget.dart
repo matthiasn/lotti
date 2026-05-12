@@ -39,7 +39,6 @@ class DashboardWidget extends ConsumerWidget {
         case final DashboardMeasurementItem measurement:
           return MeasurablesBarChart(
             measurableDataTypeId: measurement.id,
-            dashboardId: dashboardId,
             aggregationType: measurement.aggregationType,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,

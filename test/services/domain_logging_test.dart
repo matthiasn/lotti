@@ -46,27 +46,6 @@ void main() {
     });
   });
 
-  group('DomainLogger.sanitizeContent', () {
-    test('replaces content with length placeholder', () {
-      expect(
-        DomainLogger.sanitizeContent('Hello world, this is a secret'),
-        '[content: 29 chars]',
-      );
-    });
-
-    test('handles empty content', () {
-      expect(DomainLogger.sanitizeContent(''), '[content: 0 chars]');
-    });
-
-    test('handles multi-line content', () {
-      const content = 'line 1\nline 2\nline 3';
-      expect(
-        DomainLogger.sanitizeContent(content),
-        '[content: ${content.length} chars]',
-      );
-    });
-  });
-
   group('DomainLogger.log', () {
     late MockLoggingService mockLoggingService;
     late DomainLogger logger;

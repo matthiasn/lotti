@@ -245,28 +245,6 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     }
   }
 
-  void updateBasicSettings({
-    String? name,
-    String? color,
-    bool? private,
-    bool? active,
-    bool? favorite,
-  }) {
-    // This method is kept for backward compatibility but now just updates form fields
-    updateFormField(
-      name: name,
-      color: color,
-      private: private,
-      active: active,
-      favorite: favorite,
-    );
-  }
-
-  void updateDefaultLanguage(String? languageCode) {
-    // This method is kept for backward compatibility but now just updates form fields
-    updateFormField(defaultLanguageCode: languageCode);
-  }
-
   void updateSpeechDictionary(List<String> terms) {
     _updatePendingCategory(
       (c) => c.copyWith(speechDictionary: terms.isEmpty ? null : terms),

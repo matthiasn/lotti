@@ -305,18 +305,16 @@ void main() {
 
   group('CorrectionCaptureResult', () {
     test('has all expected values', () {
-      expect(CorrectionCaptureResult.values, hasLength(8));
+      expect(CorrectionCaptureResult.values, hasLength(6));
       expect(
         CorrectionCaptureResult.values,
         containsAll([
           CorrectionCaptureResult.pending,
-          CorrectionCaptureResult.success,
           CorrectionCaptureResult.noCategory,
           CorrectionCaptureResult.noChange,
           CorrectionCaptureResult.trivialChange,
           CorrectionCaptureResult.duplicate,
           CorrectionCaptureResult.categoryNotFound,
-          CorrectionCaptureResult.saveFailed,
         ]),
       );
     });
@@ -544,41 +542,6 @@ void main() {
         // If we get here without throwing, the test passes
         // The timer was properly cancelled on disposal
       });
-    });
-
-    test('clear clears state immediately', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final pending = PendingCorrection(
-        before: 'before',
-        after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
-        createdAt: DateTime(2024, 3, 15, 10, 34),
-      );
-
-      container
-          .read(correctionCaptureProvider.notifier)
-          .setPending(
-            pending: pending,
-            onSave: () async {},
-          );
-
-      // State should be set
-      expect(
-        container.read(correctionCaptureProvider),
-        equals(pending),
-      );
-
-      // Clear the state
-      container.read(correctionCaptureProvider.notifier).clear();
-
-      // State should be cleared
-      expect(
-        container.read(correctionCaptureProvider),
-        isNull,
-      );
     });
 
     test('setPending starts timer and cancel prevents onSave', () async {

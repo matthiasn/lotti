@@ -15,7 +15,6 @@ import '../../../mocks/mocks.dart';
 const _agentId = 'agent-001';
 const _threadId = 'thread-001';
 const _runKey = 'run-key-001';
-const _projectId = 'project-001';
 
 ChatCompletionMessageToolCall _makeToolCall({
   required String name,
@@ -50,7 +49,6 @@ void main() {
       agentId: _agentId,
       threadId: _threadId,
       runKey: _runKey,
-      projectId: _projectId,
     );
   });
 

@@ -49,8 +49,6 @@ class CategoryDetailsPage extends ConsumerStatefulWidget {
 
   final String? categoryId;
 
-  static const String routeName = '/settings/categories/details';
-
   bool get isCreateMode => categoryId == null;
 
   @override

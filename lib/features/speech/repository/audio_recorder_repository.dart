@@ -29,9 +29,6 @@ class AudioRecorderConstants {
   const AudioRecorderConstants._();
 
   // Recording configuration
-  static const int sampleRate = 48000;
-  static const bool autoGain = true;
-  static const String audioFileExtension = '.m4a';
   static const String audioDirectoryPrefix = '/audio/';
 
   // Date formats

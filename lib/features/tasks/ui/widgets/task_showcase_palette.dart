@@ -9,9 +9,6 @@ class TaskShowcasePalette {
   static Color surface(BuildContext context) =>
       context.designTokens.colors.background.level02;
 
-  static Color elevatedSurface(BuildContext context) =>
-      context.designTokens.colors.background.level03;
-
   static Color border(BuildContext context) =>
       context.designTokens.colors.decorative.level01;
 
