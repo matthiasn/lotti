@@ -94,7 +94,6 @@ class _ProjectDetailPaneState extends State<ProjectDetailPane> {
                           ? context.messages.agentReportNone
                           : widget.record.aiSummary,
                       fullContent: widget.record.reportContent,
-                      recommendations: widget.record.recommendations,
                       trailingLabel: showcaseUpdatedLabel(
                         context,
                         updatedAt: widget.record.reportUpdatedAt,

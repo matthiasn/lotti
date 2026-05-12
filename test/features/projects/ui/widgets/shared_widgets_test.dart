@@ -428,7 +428,6 @@ TLDR only.
 ## Details
 Longer report content.
 ''',
-              recommendations: ['Ship the fix'],
             ),
           ),
         );
@@ -456,7 +455,6 @@ Longer report content.
               title: 'AI Report',
               body: 'TLDR only.',
               fullContent: 'TLDR only.',
-              recommendations: ['Ship the fix'],
             ),
           ),
         );
@@ -485,7 +483,6 @@ Longer report content.
               title: 'AI Report',
               body: fullReport,
               fullContent: fullReport,
-              recommendations: [],
             ),
           ),
         );
@@ -509,7 +506,6 @@ Longer report content.
               title: 'AI Report',
               body: 'Short summary.',
               fullContent: fullReport,
-              recommendations: [],
             ),
           ),
         );
@@ -543,7 +539,6 @@ Longer report content.
             title: 'AI Report',
             body: 'TLDR only.',
             fullContent: 'TLDR only.',
-            recommendations: const [],
             onRefresh: () => refreshCount++,
           ),
         ),
@@ -565,7 +560,6 @@ Longer report content.
             title: 'AI Report',
             body: 'TLDR only.',
             fullContent: 'TLDR only.',
-            recommendations: const [],
             // Must be in the future relative to DateTime.now() because
             // _remainingSeconds() computes against the real clock.
             // ignore: avoid_redundant_argument_values
@@ -594,7 +588,6 @@ Longer report content.
                 title: 'AI Report',
                 body: 'TLDR only.',
                 fullContent: 'TLDR only.',
-                recommendations: const [],
                 nextWakeAt: nextWakeAt,
                 onRefresh: () {},
               ),
@@ -633,7 +626,6 @@ Longer report content.
               title: 'AI Report',
               body: 'TLDR only.',
               fullContent: 'TLDR only.',
-              recommendations: const [],
               nextWakeAt: nextWakeAt,
               onRefresh: () {},
             ),
@@ -672,7 +664,6 @@ Longer report content.
                 title: 'AI Report',
                 body: 'TLDR only.',
                 fullContent: 'TLDR only.',
-                recommendations: const [],
                 nextWakeAt: start.add(const Duration(seconds: 90)),
                 onRefresh: () {},
                 onCancelScheduledWake: () => cancelCount++,
@@ -707,7 +698,6 @@ Longer report content.
                 title: 'AI Report',
                 body: 'TLDR only.',
                 fullContent: 'TLDR only.',
-                recommendations: const [],
                 nextWakeAt: start.add(const Duration(seconds: 30)),
                 onRefresh: () {},
                 onCancelScheduledWake: () {},
@@ -738,7 +728,6 @@ Longer report content.
                 title: 'AI Report',
                 body: 'TLDR only.',
                 fullContent: 'TLDR only.',
-                recommendations: const [],
                 nextWakeAt: start.add(const Duration(seconds: 30)),
                 onRefresh: () {},
               ),
@@ -767,7 +756,6 @@ Longer report content.
                 title: 'AI Report',
                 body: 'TLDR only.',
                 fullContent: 'TLDR only.',
-                recommendations: const [],
                 nextWakeAt: start.subtract(const Duration(seconds: 5)),
                 onRefresh: () {},
               ),
@@ -780,32 +768,6 @@ Longer report content.
         });
       },
     );
-  });
-
-  group('RecommendationsList', () {
-    testWidgets('renders bullet items', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const RecommendationsList(
-            items: ['Do this', 'Do that'],
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Do this'), findsOneWidget);
-      expect(find.text('Do that'), findsOneWidget);
-      expect(find.text('•'), findsNWidgets(2));
-    });
-
-    testWidgets('renders empty when no items', (tester) async {
-      await tester.pumpWidget(
-        wrap(const RecommendationsList(items: [])),
-      );
-      await tester.pump();
-
-      expect(find.text('•'), findsNothing);
-    });
   });
 
   group('ShowcasePanel', () {
@@ -1135,7 +1097,6 @@ Longer report content.
             title: 'AI Report',
             body: 'Summary.',
             fullContent: 'Summary.',
-            recommendations: const [],
             onRefresh: () {},
             isRefreshing: true,
           ),
@@ -1157,7 +1118,6 @@ Longer report content.
             title: 'AI Report',
             body: 'Summary.',
             fullContent: 'Summary.',
-            recommendations: const [],
             // Use a far-future date so the countdown would be positive
             // if not for isRefreshing suppressing it.
             // ignore: avoid_redundant_argument_values
@@ -1183,7 +1143,6 @@ Longer report content.
             title: 'AI Report',
             body: 'Summary.',
             fullContent: 'Summary.',
-            recommendations: [],
             trailingLabel: 'Updated 5m ago',
           ),
         ),
@@ -1210,7 +1169,6 @@ Short TLDR.
 ## Analysis
 Detailed analysis section.
 ''',
-            recommendations: ['Fix the build', 'Add tests'],
             initiallyExpanded: true,
           ),
         ),
@@ -1231,7 +1189,6 @@ Detailed analysis section.
             title: 'AI Report',
             body: 'Only body text here.',
             fullContent: '',
-            recommendations: [],
           ),
         ),
       );
@@ -1524,7 +1481,6 @@ Short summary.
 ## Details
 Full details here.
 ''',
-            recommendations: [],
             initiallyExpanded: true,
           ),
         ),
@@ -1557,7 +1513,6 @@ Full details here.
               title: 'Report',
               body: 'Explicit summary.',
               fullContent: fullContent,
-              recommendations: [],
             ),
           ),
         );
@@ -1590,7 +1545,6 @@ Full details here.
             title: 'AI Report',
             body: 'Short summary.',
             fullContent: fullReport,
-            recommendations: [],
           ),
         ),
       );
@@ -1626,7 +1580,6 @@ Full details here.
               title: 'AI Report',
               body: 'Summary.',
               fullContent: fullReport,
-              recommendations: [],
             ),
           ),
         );

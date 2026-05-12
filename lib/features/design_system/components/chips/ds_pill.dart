@@ -181,25 +181,6 @@ class DsGhostChip extends StatelessWidget {
   }
 }
 
-/// 3×3 disc used in the meta row to separate "intrinsic" facts (priority,
-/// due, estimate) from "tagging" (labels).
-class DsDividerDot extends StatelessWidget {
-  const DsDividerDot({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      width: 3,
-      height: 3,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: tokens.colors.decorative.level02,
-      ),
-    );
-  }
-}
-
 /// Paints a dashed 1px border along an inset `RRect` matching [radius]. Used
 /// by [DsPill] for the muted variant. The dash pattern is `[4, 3]` — a
 /// well-spaced rhythm that reads as "ghost" without looking dotty at 24px

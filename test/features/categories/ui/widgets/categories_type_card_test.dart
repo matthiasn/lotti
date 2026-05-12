@@ -41,9 +41,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: CategoryTypeNavCard(
+          body: CategoryTypeCard(
             category,
-            index: 0,
+            onTap: () {},
           ),
         ),
       ),
@@ -91,9 +91,9 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CategoryTypeNavCard(
+            body: CategoryTypeCard(
               category,
-              index: 0,
+              onTap: () {},
             ),
           ),
         ),

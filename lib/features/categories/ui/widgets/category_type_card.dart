@@ -4,7 +4,6 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -59,25 +58,6 @@ class CategoryTypeCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class CategoryTypeNavCard extends StatelessWidget {
-  const CategoryTypeNavCard(
-    this.categoryDefinition, {
-    required this.index,
-    super.key,
-  });
-
-  final CategoryDefinition categoryDefinition;
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    return CategoryTypeCard(
-      categoryDefinition,
-      onTap: () => beamToNamed('/settings/categories/${categoryDefinition.id}'),
     );
   }
 }

@@ -104,9 +104,6 @@ void main() {
       await tester.tap(find.text('Option A'));
       await tester.pumpAndSettle();
 
-      // Should show radio button filled
-      expect(find.byType(RadioSelectionIndicator), findsNWidgets(3));
-
       // Select second option (should deselect first)
       await tester.tap(find.text('Option B'));
       await tester.pumpAndSettle();
@@ -370,9 +367,6 @@ class _TestSelectionModalState extends State<_TestSelectionModal> {
                 icon: Icons.category,
                 isSelected: isSelected,
                 onTap: () => _toggleOption(option),
-                selectionIndicator: widget.singleSelection
-                    ? RadioSelectionIndicator(isSelected: isSelected)
-                    : null,
               );
             },
           ),

@@ -52,28 +52,6 @@ int minutesFromDate(DateTime date, DateTime time) {
   return minutes.clamp(0, kMaxMinutesInDay);
 }
 
-/// Converts a Y position within a section to minutes from midnight.
-///
-/// [localY] is the Y position relative to the section's top edge.
-/// [sectionStartHour] is the hour where the section begins.
-///
-/// Returns minutes from midnight (0-1440).
-int positionToMinutes(double localY, int sectionStartHour) {
-  final minutesFromSectionStart = (localY / kHourHeight * 60).round();
-  return sectionStartHour * 60 + minutesFromSectionStart;
-}
-
-/// Converts minutes from midnight to a Y position within a section.
-///
-/// [minutes] is the time in minutes from midnight (0-1440).
-/// [sectionStartHour] is the hour where the section begins.
-///
-/// Returns the Y position relative to the section's top edge.
-double minutesToPosition(int minutes, int sectionStartHour) {
-  final minutesFromSectionStart = minutes - (sectionStartHour * 60);
-  return minutesFromSectionStart * kHourHeight / 60;
-}
-
 /// Snaps minutes to the nearest grid interval.
 ///
 /// [minutes] is the raw time in minutes from midnight.
@@ -83,19 +61,6 @@ double minutesToPosition(int minutes, int sectionStartHour) {
 int snapToGrid(int minutes, {int gridMinutes = kSnapToMinutes}) {
   final snapped = (minutes / gridMinutes).round() * gridMinutes;
   return snapped.clamp(0, kMaxMinutesInDay);
-}
-
-/// Clamps minutes to section bounds.
-///
-/// [minutes] is the time in minutes from midnight.
-/// [sectionStartHour] is the hour where the section begins.
-/// [sectionEndHour] is the hour where the section ends.
-///
-/// Returns minutes clamped to the section's time range.
-int clampToSection(int minutes, int sectionStartHour, int sectionEndHour) {
-  final minMinutes = sectionStartHour * 60;
-  final maxMinutes = sectionEndHour * 60;
-  return minutes.clamp(minMinutes, maxMinutes);
 }
 
 /// Calculates the delta in minutes from a Y position delta.

@@ -98,9 +98,6 @@ class TimelineFoldingState {
   /// List of compressed (foldable) time regions.
   final List<CompressedRegion> compressedRegions;
 
-  /// Whether the timeline has any compressed regions.
-  bool get hasCompressedRegions => compressedRegions.isNotEmpty;
-
   @override
   String toString() =>
       'TimelineFoldingState(visible: $visibleClusters, compressed: $compressedRegions)';
@@ -392,50 +389,6 @@ bool blockOverlapsCompressedRegion({
     }
   }
   return false;
-}
-
-/// Finds the visible section (cluster or expanded region) that contains a time.
-///
-/// Parameters:
-/// - [hour]: The hour to find.
-/// - [minute]: The minute within the hour.
-/// - [foldingState]: The calculated folding state.
-/// - [expandedRegions]: Set of startHour values for regions that are expanded.
-///
-/// Returns a record with the section's start and end hours, or null if in a
-/// compressed (non-expanded) region.
-({int startHour, int endHour})? findContainingSection({
-  required int hour,
-  required int minute,
-  required TimelineFoldingState foldingState,
-  required Set<int> expandedRegions,
-}) {
-  final timeMinutes = hour * 60 + minute;
-
-  // Check visible clusters first
-  for (final cluster in foldingState.visibleClusters) {
-    final clusterStartMinutes = cluster.startHour * 60;
-    final clusterEndMinutes = cluster.endHour * 60;
-
-    if (timeMinutes >= clusterStartMinutes && timeMinutes < clusterEndMinutes) {
-      return (startHour: cluster.startHour, endHour: cluster.endHour);
-    }
-  }
-
-  // Check expanded compressed regions
-  for (final region in foldingState.compressedRegions) {
-    if (!expandedRegions.contains(region.startHour)) continue;
-
-    final regionStartMinutes = region.startHour * 60;
-    final regionEndMinutes = region.endHour * 60;
-
-    if (timeMinutes >= regionStartMinutes && timeMinutes < regionEndMinutes) {
-      return (startHour: region.startHour, endHour: region.endHour);
-    }
-  }
-
-  // Time is in a compressed (non-expanded) region
-  return null;
 }
 
 /// Calculates the contiguous drag bounds for a block starting from a section.

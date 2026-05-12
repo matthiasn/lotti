@@ -3,9 +3,6 @@ import 'package:lotti/features/daily_os/ui/widgets/zigzag_fold_indicator.dart';
 import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// Width of the zigzag indicator on the left edge.
-const double kZigzagIndicatorWidth = 10;
-
 /// A widget that displays a compressed (folded) time region in the timeline.
 ///
 /// When tapped, it signals to expand the region to full height.

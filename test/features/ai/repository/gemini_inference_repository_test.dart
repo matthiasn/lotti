@@ -1664,19 +1664,9 @@ void main() {
 
       expect(collector.hasSignatures, isTrue);
       expect(collector.signatures.length, 2);
-      expect(collector.getSignature('tool_0'), 'sig-abc123');
-      expect(collector.getSignature('tool_1'), 'sig-def456');
-      expect(collector.getSignature('tool_2'), isNull);
-    });
-
-    test('clear removes all signatures', () {
-      final collector = ThoughtSignatureCollector();
-      collector.addSignature('tool_0', 'sig-abc123');
-      expect(collector.hasSignatures, isTrue);
-
-      collector.clear();
-      expect(collector.hasSignatures, isFalse);
-      expect(collector.signatures, isEmpty);
+      expect(collector.signatures['tool_0'], 'sig-abc123');
+      expect(collector.signatures['tool_1'], 'sig-def456');
+      expect(collector.signatures['tool_2'], isNull);
     });
 
     test('signatures map is unmodifiable', () {
@@ -1793,8 +1783,8 @@ void main() {
       // Collector should have both signatures
       expect(collector.hasSignatures, isTrue);
       expect(collector.signatures.length, 2);
-      expect(collector.getSignature('tool_turn0_0'), 'encrypted-sig-12345');
-      expect(collector.getSignature('tool_turn0_1'), 'encrypted-sig-67890');
+      expect(collector.signatures['tool_turn0_0'], 'encrypted-sig-12345');
+      expect(collector.signatures['tool_turn0_1'], 'encrypted-sig-67890');
     });
 
     test('handles function calls without signatures', () async {
@@ -1903,7 +1893,7 @@ void main() {
 
       // Signature should be captured from fallback
       expect(collector.hasSignatures, isTrue);
-      expect(collector.getSignature('tool_turn0_0'), 'fallback-sig-abc');
+      expect(collector.signatures['tool_turn0_0'], 'fallback-sig-abc');
     });
   });
 
@@ -2106,7 +2096,7 @@ void main() {
           .toList();
 
       expect(collector.hasSignatures, isTrue);
-      expect(collector.getSignature('tool_turn0_0'), 'new-sig-xyz');
+      expect(collector.signatures['tool_turn0_0'], 'new-sig-xyz');
     });
 
     test('emits thinking block in multi-turn mode', () async {
