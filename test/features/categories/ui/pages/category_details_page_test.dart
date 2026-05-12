@@ -673,11 +673,6 @@ void main() {
       });
     });
 
-    // TODO: Fix AI Settings Display tests - currently failing due to widget rendering issues
-    // group('AI Settings Display', () {
-    //   // Tests temporarily commented out
-    // });
-
     group('Form Validation', () {
       testWidgets('shows error for empty name on save', (tester) async {
         final streamController =

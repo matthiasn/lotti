@@ -166,8 +166,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // TODO: test that entry text is rendered
-
       // test task displays progress bar (now in Labels row)
       final progressBarFinder = find.byType(LinearProgressIndicator);
       if (progressBarFinder.evaluate().isNotEmpty) {

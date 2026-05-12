@@ -118,6 +118,12 @@ List<Observation> aggregateSumByHour(
 }
 
 List<String> getDayStrings(int rangeDays, DateTime rangeStart) {
+  // Clamp negative ranges (`rangeEnd < rangeStart`) to an empty list
+  // so every aggregate-by-day caller can hand us the raw
+  // `range.inDays` from a half-open `[rangeStart, rangeEnd)` window
+  // without having to guard upstream. `List<String>.generate` would
+  // otherwise throw `RangeError` on a negative length.
+  if (rangeDays <= 0) return const <String>[];
   return List<String>.generate(rangeDays, (days) {
     final day = rangeStart.add(Duration(days: days));
     return day.ymd;
@@ -132,6 +138,38 @@ List<String> daysInRange({
   return LinkedHashSet<String>.from(
     getDayStrings(range.inDays + 1, rangeStart),
   ).toList();
+}
+
+/// Average measurement value per day across `[rangeStart, rangeEnd)`.
+/// Days with no measurements are omitted from the output — emitting a
+/// zero observation would pull a mean chart line down on empty days.
+List<Observation> aggregateAvgByDay(
+  List<JournalEntity> entities, {
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  final range = rangeEnd.difference(rangeStart);
+  final dayStrings = getDayStrings(range.inDays, rangeStart);
+  final inDayBuckets = dayStrings.toSet();
+  final sumsByDay = <String, num>{};
+  final countsByDay = <String, int>{};
+
+  for (final entity in entities) {
+    if (entity is! MeasurementEntry) continue;
+    final dayString = entity.meta.dateFrom.ymd;
+    if (!inDayBuckets.contains(dayString)) continue;
+    sumsByDay[dayString] = (sumsByDay[dayString] ?? 0) + entity.data.value;
+    countsByDay[dayString] = (countsByDay[dayString] ?? 0) + 1;
+  }
+
+  final aggregated = <Observation>[];
+  for (final dayString in dayStrings) {
+    final count = countsByDay[dayString] ?? 0;
+    if (count == 0) continue;
+    final day = DateTime.parse(dayString);
+    aggregated.add(Observation(day, sumsByDay[dayString]! / count));
+  }
+  return aggregated;
 }
 
 List<Observation> aggregateMaxByDay(

@@ -149,13 +149,13 @@ class _ChecklistCardState extends State<ChecklistCard> {
       }
     }
 
-    // Legacy bool migration: true → openOnly, false → all.
+    // Legacy bool migration: true → openOnly, false → all. Rewrites
+    // as the new string form below on first read.
     final boolValue = await prefs.getBool(key);
     if (!mounted || boolValue == null) return;
     final migrated = boolValue ? ChecklistFilter.openOnly : ChecklistFilter.all;
     setState(() => _filter = migrated);
     // Persist as the new string format so future reads use the string path.
-    // TODO(cleanup): remove legacy bool migration after a few releases.
     await prefs.setString(key: key, value: migrated.name);
   }
 

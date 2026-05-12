@@ -184,14 +184,6 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   Stream<RoomInviteEvent> get invites => _inviteController.stream;
 
   @override
-  Stream<Event> timelineEvents(String roomId) {
-    // TODO: implement timeline streaming via Matrix SDK. For now the new
-    // architecture does not depend on this yet, so return an empty stream to
-    // keep the interface stable while we migrate call-sites.
-    return const Stream<Event>.empty();
-  }
-
-  @override
   Future<String> sendText({
     required String roomId,
     required String message,

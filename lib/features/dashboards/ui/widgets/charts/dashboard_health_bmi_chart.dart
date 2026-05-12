@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_bmi_data.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
@@ -13,7 +12,6 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/utils/date_utils_extension.dart';
 
 class BmiRangeLegend extends StatelessWidget {
   const BmiRangeLegend({
@@ -99,25 +97,6 @@ class BmiChartInfoWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
     final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
-
-    final heightEntries =
-        ref
-            .watch(
-              healthObservationsControllerProvider(
-                healthDataType: 'HealthDataType.HEIGHT',
-                rangeStart: DateTime(0),
-                rangeEnd: DateTime.now().dayAtMidnight.add(
-                  const Duration(days: 1),
-                ),
-              ),
-            )
-            .value ??
-        [];
-
-    final heightEntry = heightEntries.firstOrNull as QuantitativeEntry?;
-    // TODO: use, or remove entire chart
-    // ignore: unused_local_variable
-    final height = heightEntry?.data.value;
 
     return Positioned(
       top: 0,

@@ -217,9 +217,6 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockStopTimer).called(1);
-
-      // TODO: check that provider method is called instead
-      // verify(entryCubit.save).called(1);
     });
   });
 }

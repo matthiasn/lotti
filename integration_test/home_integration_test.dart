@@ -38,11 +38,13 @@ void main() {
           await tester.pumpAndSettle();
 
           final editor = find.byType(QuillEditor);
-          debugPrint(editor.toString());
-
-          // TODO: figure out how to enter text in flutter_quill
-          // String testText = 'test text: ${DateTime.now()}';
-          // await tester.enterText(editor, testText);
+          // Smoke check: the editor must actually mount on the page —
+          // the rest of this block depends on it being present. Quill
+          // does not accept `tester.enterText` directly (driving input
+          // requires reaching into the QuillController and calling
+          // `document.insert`), so deeper text-entry coverage lives in
+          // the unit tests for the editor widget itself.
+          expect(editor, findsOneWidget);
 
           await waitSeconds(1);
 

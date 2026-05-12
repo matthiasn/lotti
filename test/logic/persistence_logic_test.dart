@@ -43,6 +43,20 @@ import '../test_data/test_data.dart';
 // Create a FakeGeolocation class for registerFallbackValue
 class FakeGeolocation extends Fake implements Geolocation {}
 
+/// Asserts that the badge has been invalidated at least once since the
+/// last reset, then clears interactions so the next assertion only
+/// counts calls made after this boundary. Used at each save / status
+/// transition so a regression in any single path fails its own
+/// assertion instead of being masked by an earlier path's call. We use
+/// `greaterThanOrEqualTo(1)` (not exactly 1) because nested writes
+/// (geolocation hydration, label refresh) legitimately stack extra
+/// `_savedJournalEntity` invocations; the contract this guards is
+/// "badge gets invalidated on save", not exact call count.
+void _verifyAndResetBadge(MockNotificationService mock) {
+  verify(mock.updateBadge).called(greaterThanOrEqualTo(1));
+  clearInteractions(mock);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final secureStorageMock = MockSecureStorage();
@@ -205,6 +219,8 @@ void main() {
           testText,
         );
 
+        _verifyAndResetBadge(mockNotificationService);
+
         // update entry with new plaintext
         await getIt<PersistenceLogic>().updateJournalEntityText(
           textEntry.meta.id,
@@ -226,9 +242,7 @@ void main() {
         verify(
           () => mockFts5Db.insertText(any(), removePrevious: true),
         ).called(2);
-
-        // TODO: why is this failing suddenly?
-        //verify(mockNotificationService.updateBadge).called(2);
+        _verifyAndResetBadge(mockNotificationService);
       },
     );
 
@@ -320,6 +334,10 @@ void main() {
         1,
       );
 
+      // Boundary between the create call and the IN PROGRESS
+      // transition below — see `_verifyAndResetBadge` for the WHY.
+      clearInteractions(mockNotificationService);
+
       // update task with status 'IN PROGRESS'
       await getIt<PersistenceLogic>().updateTask(
         journalEntityId: task.meta.id,
@@ -333,8 +351,7 @@ void main() {
         ),
       );
 
-      // TODO: why is this failing suddenly?
-      //verify(mockNotificationService.updateBadge).called(1);
+      _verifyAndResetBadge(mockNotificationService);
       expect(await getIt<JournalDb>().getWipCount(), 1);
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
       expect(
@@ -355,8 +372,7 @@ void main() {
         ),
       );
 
-      // TODO: why is this failing suddenly?
-      //verify(mockNotificationService.updateBadge).called(1);
+      _verifyAndResetBadge(mockNotificationService);
 
       // expect task counts by status to be updated
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);

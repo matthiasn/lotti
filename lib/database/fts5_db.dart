@@ -34,7 +34,6 @@ class Fts5Db extends _$Fts5Db {
   }) async {
     final uuid = entry.meta.id;
 
-    // TODO: add test that previous entry is removed
     if (removePrevious) {
       await deleteEntry('"$uuid"');
     }
