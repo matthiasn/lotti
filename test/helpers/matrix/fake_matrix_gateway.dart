@@ -15,8 +15,6 @@ class FakeMatrixGateway implements MatrixSyncGateway {
       StreamController<LoginState>.broadcast();
   final StreamController<RoomInviteEvent> _inviteController =
       StreamController<RoomInviteEvent>.broadcast();
-  final StreamController<Event> _timelineController =
-      StreamController<Event>.broadcast();
   final StreamController<KeyVerification> _verificationController =
       StreamController<KeyVerification>.broadcast();
 
@@ -27,8 +25,6 @@ class FakeMatrixGateway implements MatrixSyncGateway {
   void emitLoginState(LoginState state) => _loginStateController.add(state);
 
   void emitInvite(RoomInviteEvent event) => _inviteController.add(event);
-
-  void emitTimeline(Event event) => _timelineController.add(event);
 
   void emitVerification(KeyVerification request) =>
       _verificationController.add(request);
@@ -82,9 +78,6 @@ class FakeMatrixGateway implements MatrixSyncGateway {
   Stream<RoomInviteEvent> get invites => _inviteController.stream;
 
   @override
-  Stream<Event> timelineEvents(String roomId) => _timelineController.stream;
-
-  @override
   Future<String> sendText({
     required String roomId,
     required String message,
@@ -131,7 +124,6 @@ class FakeMatrixGateway implements MatrixSyncGateway {
     disposed = true;
     await _loginStateController.close();
     await _inviteController.close();
-    await _timelineController.close();
     await _verificationController.close();
   }
 }

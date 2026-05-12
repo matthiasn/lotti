@@ -1,5 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+
+import '../../test_data/test_data.dart';
+
+MeasurementEntry _measurement({
+  required String id,
+  required DateTime at,
+  required num value,
+}) {
+  return testMeasurementChocolateEntry.copyWith(
+    meta: testMeasurementChocolateEntry.meta.copyWith(
+      id: id,
+      createdAt: at,
+      updatedAt: at,
+      dateFrom: at,
+      dateTo: at,
+    ),
+    data: testMeasurementChocolateEntry.data.copyWith(value: value),
+  );
+}
 
 void main() {
   group('Chart utils', () {
@@ -64,6 +84,67 @@ void main() {
         minutesToHhMm(null),
         '00:00',
       );
+    });
+  });
+
+  group('aggregateAvgByDay', () {
+    final rangeStart = DateTime(2024, 3, 10);
+    final rangeEnd = DateTime(2024, 3, 13);
+
+    test(
+      'averages multiple same-day measurements and emits one Observation '
+      'per day with measurements — empty days are skipped so the chart '
+      'is not pulled to zero on missing data',
+      () {
+        final result = aggregateAvgByDay(
+          [
+            _measurement(id: 'a', at: DateTime(2024, 3, 10, 9), value: 10),
+            _measurement(id: 'b', at: DateTime(2024, 3, 10, 18), value: 30),
+            _measurement(id: 'c', at: DateTime(2024, 3, 11, 12), value: 7),
+            // 2024-03-12 intentionally has no measurement.
+          ],
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        expect(result, hasLength(2));
+        final byDay = {
+          for (final obs in result) obs.dateTime.toIso8601String(): obs.value,
+        };
+        expect(byDay[DateTime(2024, 3, 10).toIso8601String()], 20.0);
+        expect(byDay[DateTime(2024, 3, 11).toIso8601String()], 7);
+        expect(
+          byDay.containsKey(DateTime(2024, 3, 12).toIso8601String()),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'ignores non-measurement entities so a task or text entry on the '
+      'same day does not perturb the average',
+      () {
+        final result = aggregateAvgByDay(
+          [
+            _measurement(id: 'a', at: DateTime(2024, 3, 10, 9), value: 5),
+            testTextEntry, // not a MeasurementEntry — must be skipped
+          ],
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        expect(result, hasLength(1));
+        expect(result.single.value, 5);
+      },
+    );
+
+    test('returns empty when input has no MeasurementEntry rows at all', () {
+      final result = aggregateAvgByDay(
+        [testTextEntry],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+      expect(result, isEmpty);
     });
   });
 }

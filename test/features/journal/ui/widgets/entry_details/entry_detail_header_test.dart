@@ -114,9 +114,6 @@ void main() {
 
       await tester.tap(starIconActiveFinder);
       await tester.pumpAndSettle();
-
-      // TODO: check that provider method is called instead
-      // verify(() => mockJournalDb.updateJournalEntity(any())).called(1);
     });
 
     testWidgets('tap flagged icon', (WidgetTester tester) async {
@@ -143,9 +140,6 @@ void main() {
 
       await tester.tap(flagIconFinder);
       await tester.pumpAndSettle();
-
-      // TODO: check that provider method is called instead
-      // verify(entryCubit.toggleFlagged).called(1);
     });
 
     testWidgets('tap private icon', (WidgetTester tester) async {
@@ -168,9 +162,6 @@ void main() {
 
       await tester.tap(lockIconFinder);
       await tester.pumpAndSettle();
-
-      // TODO: check that provider method is called instead
-      // verify(entryCubit.togglePrivate).called(1);
     });
 
     testWidgets('save button invisible when saved/clean', (

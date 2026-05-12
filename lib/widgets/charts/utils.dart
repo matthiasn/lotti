@@ -134,6 +134,39 @@ List<String> daysInRange({
   ).toList();
 }
 
+/// Average measurement value per day across [rangeStart, rangeEnd).
+///
+/// Mirrors [aggregateSumByDay] in shape but emits the mean of each day's
+/// measurement values. Days without any [MeasurementEntry] are skipped
+/// (returning a zero observation would distort the average chart by
+/// pulling the line down to zero on empty days; the sum/max variants
+/// keep zero buckets because zero is a meaningful aggregate for them
+/// but not for a mean).
+List<Observation> aggregateAvgByDay(
+  List<JournalEntity> entities, {
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  final sumsByDay = <String, num>{};
+  final countsByDay = <String, int>{};
+
+  for (final entity in entities) {
+    if (entity is! MeasurementEntry) continue;
+    final dayString = entity.meta.dateFrom.ymd;
+    sumsByDay[dayString] = (sumsByDay[dayString] ?? 0) + entity.data.value;
+    countsByDay[dayString] = (countsByDay[dayString] ?? 0) + 1;
+  }
+
+  final aggregated = <Observation>[];
+  for (final dayString in sumsByDay.keys) {
+    final day = DateTime.parse(dayString);
+    final count = countsByDay[dayString] ?? 0;
+    if (count == 0) continue;
+    aggregated.add(Observation(day, sumsByDay[dayString]! / count));
+  }
+  return aggregated;
+}
+
 List<Observation> aggregateMaxByDay(
   List<JournalEntity> entities, {
   required DateTime rangeStart,

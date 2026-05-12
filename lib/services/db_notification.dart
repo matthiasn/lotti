@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 class UpdateNotifications {
   UpdateNotifications();
@@ -25,23 +24,8 @@ class UpdateNotifications {
   /// trigger agent wakes — the source device already ran the agent.
   Stream<Set<String>> get localUpdateStream => _localController.stream;
 
-  // TODO(debug): remove after wake-loop investigation.
-  // Entity IDs to trace — any local notify() containing one of these
-  // will log the caller's stack trace.
-  final debugEntityIds = <String>{};
-
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
     if (_isDisposed) return;
-
-    if (!fromSync && debugEntityIds.isNotEmpty) {
-      final hit = affectedIds.intersection(debugEntityIds);
-      if (hit.isNotEmpty) {
-        developer.log(
-          'notify(local) hit=$hit — caller:\n${StackTrace.current}',
-          name: 'UpdateNotifications.DEBUG',
-        );
-      }
-    }
 
     if (fromSync) {
       _affectedIdsFromSync.addAll(affectedIds);

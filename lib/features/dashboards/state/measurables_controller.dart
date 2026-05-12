@@ -197,8 +197,11 @@ class MeasurableObservationsController
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       ),
-      // TODO: implement average
-      AggregationType.dailyAvg => <Observation>[],
+      AggregationType.dailyAvg => aggregateAvgByDay(
+        measurements,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
       AggregationType.hourlySum => aggregateSumByHour(
         measurements,
         rangeStart: rangeStart,

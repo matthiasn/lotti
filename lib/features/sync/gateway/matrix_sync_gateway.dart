@@ -45,10 +45,6 @@ abstract class MatrixSyncGateway {
   /// Stream of invites targeted at this client.
   Stream<RoomInviteEvent> get invites;
 
-  /// Stream of timeline events received for the specified room.
-  /// Note: Currently returns an empty stream; timeline streaming not yet implemented.
-  Stream<Event> timelineEvents(String roomId);
-
   /// Sends a text event to the given room and returns the event ID.
   Future<String> sendText({
     required String roomId,

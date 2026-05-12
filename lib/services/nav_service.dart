@@ -28,9 +28,6 @@ class NavService {
     _journalDb = journalDb ?? getIt<JournalDb>();
     _settingsDb = settingsDb ?? getIt<SettingsDb>();
 
-    // TODO: fix and bring back
-    // restoreRoute();
-
     _navigationFlagsSub =
         Rx.combineLatest4<
               bool,

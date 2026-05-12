@@ -470,10 +470,6 @@ void main() {
     );
   });
 
-  test('timelineEvents currently returns an empty stream', () async {
-    await expectLater(gateway.timelineEvents('!room:server'), emitsDone);
-  });
-
   test('sendText throws when room.sendEvent returns null', () async {
     final room = MockRoom();
     when(() => client.getRoomById('!room:server')).thenReturn(room);

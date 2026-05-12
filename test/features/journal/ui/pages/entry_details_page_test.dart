@@ -135,8 +135,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // TODO: test that entry text is rendered
-
       // test entry displays expected date
       expect(
         find.text(dfShorter.format(testTextEntry.meta.dateFrom)),
