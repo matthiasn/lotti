@@ -204,21 +204,4 @@ void main() {
       expect(taps, 1);
     });
   });
-
-  group('DsDividerDot', () {
-    testWidgets('measures 3×3', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Theme(
-            data: DesignSystemTheme.dark(),
-            child: const Scaffold(body: Center(child: DsDividerDot())),
-          ),
-        ),
-      );
-
-      final size = tester.getSize(find.byType(DsDividerDot));
-      expect(size.width, 3);
-      expect(size.height, 3);
-    });
-  });
 }

@@ -152,31 +152,6 @@ void main() {
       expect(find.byType(LineChart), findsNothing);
     });
   });
-
-  group('formatResolutionDuration', () {
-    test('formats minutes for < 1 hour', () {
-      expect(formatResolutionDuration(const Duration(minutes: 45)), '45m');
-      expect(formatResolutionDuration(const Duration(minutes: 5)), '5m');
-      expect(formatResolutionDuration(Duration.zero), '0m');
-    });
-
-    test('formats hours for 1h–24h', () {
-      expect(
-        formatResolutionDuration(const Duration(hours: 3, minutes: 30)),
-        '3.5h',
-      );
-      expect(formatResolutionDuration(const Duration(hours: 1)), '1.0h');
-      expect(formatResolutionDuration(const Duration(hours: 23)), '23.0h');
-    });
-
-    test('formats days for > 24h', () {
-      expect(formatResolutionDuration(const Duration(hours: 48)), '2.0d');
-      expect(
-        formatResolutionDuration(const Duration(hours: 36)),
-        '1.5d',
-      );
-    });
-  });
 }
 
 List<DailyResolutionBucket> _makeBuckets(int count) {

@@ -16,19 +16,3 @@ class ChatRepositoryException extends ChatException {
   @override
   String toString() => 'ChatRepositoryException: $message';
 }
-
-/// Exception thrown when processing AI responses fails
-class ChatProcessingException extends ChatException {
-  const ChatProcessingException(super.message, [super.cause]);
-
-  @override
-  String toString() => 'ChatProcessingException: $message';
-}
-
-/// Exception thrown when tool calls fail
-class ChatToolException extends ChatException {
-  const ChatToolException(super.message, [super.cause]);
-
-  @override
-  String toString() => 'ChatToolException: $message';
-}

@@ -34,69 +34,6 @@ void main() {
     });
   });
 
-  group('positionToMinutes', () {
-    test('converts 0 position at section start to section start minutes', () {
-      final minutes = positionToMinutes(0, 9); // Section starts at 9 AM
-      expect(minutes, equals(9 * 60)); // 540 minutes
-    });
-
-    test('converts position at 1 hour mark correctly', () {
-      // 40px = 1 hour at kHourHeight=40
-      final minutes = positionToMinutes(40, 9);
-      expect(minutes, equals(10 * 60)); // 10:00 AM = 600 minutes
-    });
-
-    test('converts position at 30 minutes correctly', () {
-      // 20px = 30 minutes at kHourHeight=40
-      final minutes = positionToMinutes(20, 9);
-      expect(minutes, equals(9 * 60 + 30)); // 9:30 AM = 570 minutes
-    });
-
-    test('converts position at 15 minutes correctly', () {
-      // 10px = 15 minutes
-      final minutes = positionToMinutes(10, 9);
-      expect(minutes, equals(9 * 60 + 15)); // 9:15 AM = 555 minutes
-    });
-
-    test('handles different section start hours', () {
-      final minutes = positionToMinutes(0, 14); // Section starts at 2 PM
-      expect(minutes, equals(14 * 60)); // 840 minutes
-    });
-
-    test('rounds to nearest minute', () {
-      // 5px = 7.5 minutes, should round to 8
-      final minutes = positionToMinutes(5, 0);
-      expect(minutes, equals(8));
-    });
-  });
-
-  group('minutesToPosition', () {
-    test('converts section start minutes to 0 position', () {
-      final position = minutesToPosition(9 * 60, 9); // 9:00 AM, section at 9
-      expect(position, equals(0.0));
-    });
-
-    test('converts 1 hour into section to 40px', () {
-      final position = minutesToPosition(10 * 60, 9); // 10:00 AM
-      expect(position, equals(40.0));
-    });
-
-    test('converts 30 minutes into section to 20px', () {
-      final position = minutesToPosition(9 * 60 + 30, 9); // 9:30 AM
-      expect(position, equals(20.0));
-    });
-
-    test('converts 15 minutes into section to 10px', () {
-      final position = minutesToPosition(9 * 60 + 15, 9); // 9:15 AM
-      expect(position, equals(10.0));
-    });
-
-    test('handles afternoon section correctly', () {
-      final position = minutesToPosition(15 * 60, 14); // 3 PM, section at 2 PM
-      expect(position, equals(40.0)); // 1 hour into section
-    });
-  });
-
   group('minutesFromDate', () {
     test('converts same-day time to minutes', () {
       final date = DateTime(2026, 1, 15);
@@ -153,46 +90,6 @@ void main() {
     test('snaps correctly around midnight', () {
       expect(snapToGrid(1438), equals(1440)); // 23:58 -> 24:00
       expect(snapToGrid(1437), equals(1435)); // 23:57 -> 23:55
-    });
-  });
-
-  group('clampToSection', () {
-    test('keeps value in middle of section unchanged', () {
-      final clamped = clampToSection(600, 9, 17); // 10:00 AM
-      expect(clamped, equals(600));
-    });
-
-    test('clamps value below section start to section start', () {
-      final clamped = clampToSection(500, 9, 17); // Before 9:00 AM
-      expect(clamped, equals(9 * 60)); // 540
-    });
-
-    test('clamps value above section end to section end', () {
-      final clamped = clampToSection(1100, 9, 17); // After 5:00 PM
-      expect(clamped, equals(17 * 60)); // 1020
-    });
-
-    test('keeps value at section start unchanged', () {
-      final clamped = clampToSection(540, 9, 17); // Exactly 9:00 AM
-      expect(clamped, equals(540));
-    });
-
-    test('keeps value at section end unchanged', () {
-      final clamped = clampToSection(1020, 9, 17); // Exactly 5:00 PM
-      expect(clamped, equals(1020));
-    });
-
-    test('handles early morning section', () {
-      final clamped = clampToSection(0, 0, 6);
-      expect(clamped, equals(0));
-
-      final clamped2 = clampToSection(400, 0, 6);
-      expect(clamped2, equals(360)); // 6:00 AM
-    });
-
-    test('handles late night section', () {
-      final clamped = clampToSection(1500, 22, 24);
-      expect(clamped, equals(1440)); // 24:00
     });
   });
 
@@ -294,21 +191,6 @@ void main() {
   });
 
   group('Round-trip conversions', () {
-    test('positionToMinutes and minutesToPosition are inverses', () {
-      const sectionStart = 9;
-
-      // Position -> Minutes -> Position
-      for (var position = 0.0; position <= 320; position += 10) {
-        final minutes = positionToMinutes(position, sectionStart);
-        final backToPosition = minutesToPosition(minutes, sectionStart);
-        expect(
-          backToPosition,
-          closeTo(position, 1.0),
-          reason: 'Round-trip failed for position $position',
-        );
-      }
-    });
-
     test('deltaToMinutes produces consistent results', () {
       // If we move 1 hour down (40px), we should get 60 minutes
       const delta = 40.0;
@@ -354,30 +236,6 @@ void main() {
       // Duration shrinks from 60 to 45 minutes
       final newDuration = originalEndMinutes - newStartMinutes;
       expect(newDuration, equals(45));
-    });
-
-    test('section boundary clamping', () {
-      const sectionStart = 9;
-      const sectionEnd = 12;
-      const blockDuration = 60; // 1 hour
-
-      // Try to move block starting at 9:00 up (before section)
-      var newStartMinutes = 8 * 60; // 8:00, before section
-      newStartMinutes = clampToSection(
-        newStartMinutes,
-        sectionStart,
-        sectionEnd,
-      ).clamp(sectionStart * 60, sectionEnd * 60 - blockDuration);
-      expect(newStartMinutes, equals(9 * 60)); // Clamped to 9:00
-
-      // Try to move block ending after section
-      var newStartMinutes2 = 11 * 60 + 30; // 11:30
-      final newEndMinutes2 =
-          newStartMinutes2 + blockDuration; // 12:30, after section
-      if (newEndMinutes2 > sectionEnd * 60) {
-        newStartMinutes2 = sectionEnd * 60 - blockDuration;
-      }
-      expect(newStartMinutes2, equals(11 * 60)); // 11:00, so end is 12:00
     });
   });
 }

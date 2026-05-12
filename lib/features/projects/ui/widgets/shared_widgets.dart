@@ -619,7 +619,6 @@ class ExpandableReportSection extends StatefulWidget {
     required this.title,
     required this.body,
     required this.fullContent,
-    required this.recommendations,
     this.trailingLabel,
     this.initiallyExpanded = false,
     this.nextWakeAt,
@@ -632,7 +631,6 @@ class ExpandableReportSection extends StatefulWidget {
   final String title;
   final String body;
   final String fullContent;
-  final List<String> recommendations;
   final String? trailingLabel;
   final bool initiallyExpanded;
   final DateTime? nextWakeAt;
@@ -987,49 +985,6 @@ class ShowcaseCountdownPill extends StatelessWidget {
           height: 1,
         ),
       ),
-    );
-  }
-}
-
-/// A bullet-point list of recommendation strings.
-class RecommendationsList extends StatelessWidget {
-  const RecommendationsList({required this.items, super.key});
-
-  final List<String> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: items
-          .map(
-            (item) => Padding(
-              padding: EdgeInsets.only(bottom: tokens.spacing.step1),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '•',
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: ShowcasePalette.teal(context),
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(
-                    child: Text(
-                      item,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: ShowcasePalette.mediumText(context),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-          .toList(),
     );
   }
 }

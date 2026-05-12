@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 
 class SettingsCard extends StatelessWidget {
@@ -45,46 +44,6 @@ class SettingsCard extends StatelessWidget {
         trailing: trailing,
         onTap: onTap,
       ),
-    );
-  }
-}
-
-class SettingsNavCard extends StatelessWidget {
-  const SettingsNavCard({
-    required this.path,
-    required this.title,
-    this.semanticsLabel,
-    super.key,
-    this.subtitle,
-    this.leading,
-    this.trailing,
-    this.backgroundColor = Colors.transparent,
-    this.contentPadding = const EdgeInsets.symmetric(
-      horizontal: 25,
-      vertical: 2,
-    ),
-  });
-
-  final String title;
-  final String? semanticsLabel;
-  final String path;
-  final Widget? subtitle;
-  final Widget? leading;
-  final Widget? trailing;
-  final EdgeInsets? contentPadding;
-  final Color? backgroundColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return SettingsCard(
-      title: title,
-      leading: leading,
-      trailing: trailing,
-      backgroundColor: backgroundColor,
-      contentPadding: contentPadding,
-      onTap: () => beamToNamed(path),
-      subtitle: subtitle,
-      semanticsLabel: semanticsLabel,
     );
   }
 }

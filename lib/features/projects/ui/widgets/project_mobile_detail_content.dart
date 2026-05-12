@@ -118,7 +118,6 @@ class _ProjectMobileDetailContentState
                                 ? context.messages.agentReportNone
                                 : widget.record.aiSummary,
                             fullContent: widget.record.reportContent,
-                            recommendations: widget.record.recommendations,
                             trailingLabel: showcaseUpdatedLabel(
                               context,
                               updatedAt: widget.record.reportUpdatedAt,

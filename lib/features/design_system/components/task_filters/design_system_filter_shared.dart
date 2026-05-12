@@ -372,26 +372,3 @@ class _DesignSystemFilterChoicePillState
     );
   }
 }
-
-class DesignSystemFilterDragHandle extends StatelessWidget {
-  const DesignSystemFilterDragHandle({
-    required this.color,
-    super.key,
-  });
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: DesignSystemFilterMetrics.handleWidth,
-        height: DesignSystemFilterMetrics.handleHeight,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ),
-    );
-  }
-}

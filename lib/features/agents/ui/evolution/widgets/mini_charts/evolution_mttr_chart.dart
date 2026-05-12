@@ -69,21 +69,3 @@ class EvolutionMttrChart extends StatelessWidget {
   /// Converts a duration to minutes for the Y-axis.
   static double _durationToMinutes(Duration d) => d.inMilliseconds / 60000.0;
 }
-
-/// Formats a duration for human display in chart labels / tooltips.
-///
-/// - < 1 hour → "45m"
-/// - 1h–24h → "3.5h"
-/// - > 24h → "2.1d"
-String formatResolutionDuration(Duration d) {
-  final totalMinutes = d.inMilliseconds / 60000.0;
-  if (totalMinutes < 60) {
-    return '${totalMinutes.round()}m';
-  }
-  final totalHours = totalMinutes / 60;
-  if (totalHours < 24) {
-    return '${totalHours.toStringAsFixed(1)}h';
-  }
-  final totalDays = totalHours / 24;
-  return '${totalDays.toStringAsFixed(1)}d';
-}

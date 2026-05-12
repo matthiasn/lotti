@@ -544,9 +544,6 @@ void main() {
                         icon: icons[index],
                         isSelected: selectedValue == option,
                         onTap: () {},
-                        selectionIndicator: RadioSelectionIndicator(
-                          isSelected: selectedValue == option,
-                        ),
                       );
                     },
                   ),
@@ -563,7 +560,6 @@ void main() {
       expect(find.byType(SelectionModalContent), findsOneWidget);
       expect(find.byType(SelectionOptionsList), findsOneWidget);
       expect(find.byType(SelectionOption), findsNWidgets(2));
-      expect(find.byType(RadioSelectionIndicator), findsNWidgets(2));
       expect(find.byType(SelectionSaveButton), findsOneWidget);
 
       // Verify content
