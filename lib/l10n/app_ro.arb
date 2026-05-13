@@ -554,6 +554,14 @@
       }
     }
   },
+  "aiPickProviderBadgeDesktopOnly": "DOAR DESKTOP",
+  "aiPickProviderBadgeNew": "NOU",
+  "aiPickProviderBadgeRecommended": "RECOMANDAT",
+  "aiPickProviderContinueButton": "Continuați",
+  "aiPickProviderDontShowAgainButton": "Nu mai afișați",
+  "aiPickProviderFooterHint": "Puteți adăuga mai mulți furnizori mai târziu în Setări → AI. Cheia dvs. API este stocată local.",
+  "aiPickProviderModalTitle": "Configurați funcțiile AI",
+  "aiPickProviderSubtitle": "Alegeți un furnizor pentru a începe. Vom configura modelele și un profil de pornire automat.",
   "aiProfileCardActiveBadge": "Activ",
   "aiProfileSlotModelMissing": "lipsește",
   "aiProviderAlibabaDescription": "Familia de modele Qwen de la Alibaba Cloud prin API-ul DashScope",

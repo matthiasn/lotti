@@ -394,6 +394,14 @@
       }
     }
   },
+  "aiPickProviderBadgeDesktopOnly": "POUZE DESKTOP",
+  "aiPickProviderBadgeNew": "NOVÉ",
+  "aiPickProviderBadgeRecommended": "DOPORUČENO",
+  "aiPickProviderContinueButton": "Pokračovat",
+  "aiPickProviderDontShowAgainButton": "Příště nezobrazovat",
+  "aiPickProviderFooterHint": "Další poskytovatele můžeš přidat později v Nastavení → AI. Tvůj API klíč je uložen lokálně.",
+  "aiPickProviderModalTitle": "Nastav AI funkce",
+  "aiPickProviderSubtitle": "Vyber poskytovatele a začni. Modely a počáteční profil nastavíme automaticky.",
   "aiProfileCardActiveBadge": "Aktivní",
   "aiProfileSlotModelMissing": "chybí",
   "aiProviderAlibabaDescription": "Rodina modelů Qwen od Alibaba Cloud přes DashScope API",

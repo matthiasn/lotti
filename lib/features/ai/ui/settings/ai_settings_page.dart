@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
@@ -14,14 +15,22 @@ import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.d
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_empty_view.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+
+/// `SettingsDb` key that suppresses the [AiPickProviderModal] FTUE
+/// prompt after the user taps "Don't show again". Lives at the page
+/// level (not on the modal) so the FAB handler can short-circuit
+/// straight to the create form without first instantiating the modal.
+const String kAiPickProviderDismissedKey = 'AI_PICK_PROVIDER_DISMISSED';
 
 /// Embeddable body alias for the Settings V2 detail pane.
 ///
@@ -234,7 +243,36 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   }
 
   Future<void> _handleAddProvider() async {
-    await _navigationService.navigateToCreateProvider(context);
+    // Short-circuit straight to the create form if the user has
+    // previously dismissed the pick-provider FTUE modal — they've
+    // told us they know the flow, so re-presenting the picker each
+    // time would be noise.
+    final settingsDb = getIt<SettingsDb>();
+    final dismissed =
+        await settingsDb.itemByKey(kAiPickProviderDismissedKey) == 'true';
+    if (!mounted) return;
+    if (dismissed) {
+      await _navigationService.navigateToCreateProvider(context);
+      return;
+    }
+
+    final result = await AiPickProviderModal.show(context: context);
+    if (!mounted) return;
+    switch (result.kind) {
+      case AiPickProviderResultKind.confirmed:
+        await _navigationService.navigateToCreateProvider(
+          context,
+          preselectedType: result.providerType,
+        );
+      case AiPickProviderResultKind.dontShowAgain:
+        // Persist the suppression flag — next FAB tap goes straight
+        // to the create form. We do NOT also push the form here:
+        // tapping "Don't show again" is a hide-this-prompt action,
+        // not an add-a-provider one.
+        await settingsDb.saveSettingsItem(kAiPickProviderDismissedKey, 'true');
+      case AiPickProviderResultKind.cancelled:
+        break;
+    }
   }
 
   /// Per-tab handler that the `AiSettingsFloatingActionButton`

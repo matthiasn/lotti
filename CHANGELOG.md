@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.999]
+### Added
+- AI Settings FTUE pick-provider modal. Tapping the "Add provider" FAB
+  on the AI Settings page now opens a centered `AiPickProviderModal`
+  first instead of jumping straight to the empty connect form. The
+  modal carries a `Set up AI features` title, a one-line subtitle,
+  and four big provider tiles (Gemini RECOMMENDED, OpenAI, Anthropic
+  NEW, Ollama DESKTOP ONLY) with radio-style selection. Footer hint
+  pins the reassuring "Your API key is stored locally" copy plus a
+  secondary `Don't show again` and a primary `Continue ▸`. Picking a
+  tile and hitting Continue routes to the connect form preselected to
+  that provider type. Tapping Don't show again writes a settings
+  flag (`AI_PICK_PROVIDER_DISMISSED`) so subsequent FAB taps go
+  straight to the form — the picker never harasses a user who has
+  told us they know the flow.
+
 ## [0.9.998]
 ### Fixed
 - Sync stack hot-path cleanup driven by the 2026-05-10/11/12 desktop

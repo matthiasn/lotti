@@ -2257,6 +2257,54 @@ abstract class AppLocalizations {
   /// **'Model \"{modelName}\" installed successfully!'**
   String aiOllamaModelInstalledSuccessfully(String modelName);
 
+  /// No description provided for @aiPickProviderBadgeDesktopOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'DESKTOP ONLY'**
+  String get aiPickProviderBadgeDesktopOnly;
+
+  /// No description provided for @aiPickProviderBadgeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get aiPickProviderBadgeNew;
+
+  /// No description provided for @aiPickProviderBadgeRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'RECOMMENDED'**
+  String get aiPickProviderBadgeRecommended;
+
+  /// No description provided for @aiPickProviderContinueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get aiPickProviderContinueButton;
+
+  /// No description provided for @aiPickProviderDontShowAgainButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show again'**
+  String get aiPickProviderDontShowAgainButton;
+
+  /// No description provided for @aiPickProviderFooterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can add more providers later in Settings → AI. Your API key is stored locally.'**
+  String get aiPickProviderFooterHint;
+
+  /// No description provided for @aiPickProviderModalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up AI features'**
+  String get aiPickProviderModalTitle;
+
+  /// No description provided for @aiPickProviderSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a provider to get started. We\'ll set up models and a starting profile automatically.'**
+  String get aiPickProviderSubtitle;
+
   /// No description provided for @aiProfileCardActiveBadge.
   ///
   /// In en, this message translates to:
