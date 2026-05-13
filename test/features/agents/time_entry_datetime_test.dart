@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 
+import '../../test_utils/glados_generators.dart';
+
 enum _InvalidLocalTimestampShape {
   monthZero,
   monthThirteen,
@@ -40,13 +42,13 @@ class _GeneratedLocalTimestamp {
   final int second;
   final bool withSeconds;
 
-  int get day => (daySeed % _daysInMonth(year, month)) + 1;
+  int get day => (daySeed % daysInMonth(year, month)) + 1;
 
   String get text {
-    final date = '${_fourDigits(year)}-${_twoDigits(month)}-${_twoDigits(day)}';
-    final time = '${_twoDigits(hour)}:${_twoDigits(minute)}';
+    final date = '${fourDigits(year)}-${twoDigits(month)}-${twoDigits(day)}';
+    final time = '${twoDigits(hour)}:${twoDigits(minute)}';
     if (!withSeconds) return '${date}T$time';
-    return '${date}T$time:${_twoDigits(second)}';
+    return '${date}T$time:${twoDigits(second)}';
   }
 
   DateTime get expected => DateTime(
@@ -85,7 +87,7 @@ class _GeneratedInvalidLocalTimestamp {
   final int minute;
   final int second;
 
-  int get _validDay => (daySeed % _daysInMonth(year, month)) + 1;
+  int get _validDay => (daySeed % daysInMonth(year, month)) + 1;
 
   String get text {
     final invalidMonth = switch (shape) {
@@ -95,8 +97,7 @@ class _GeneratedInvalidLocalTimestamp {
     };
     final invalidDay = switch (shape) {
       _InvalidLocalTimestampShape.dayZero => 0,
-      _InvalidLocalTimestampShape.dayAfterMonth =>
-        _daysInMonth(year, month) + 1,
+      _InvalidLocalTimestampShape.dayAfterMonth => daysInMonth(year, month) + 1,
       _ => _validDay,
     };
     final invalidHour = switch (shape) {
@@ -112,9 +113,9 @@ class _GeneratedInvalidLocalTimestamp {
       _ => second,
     };
 
-    return '${_fourDigits(year)}-${_twoDigits(invalidMonth)}-'
-        '${_twoDigits(invalidDay)}T${_twoDigits(invalidHour)}:'
-        '${_twoDigits(invalidMinute)}:${_twoDigits(invalidSecond)}';
+    return '${fourDigits(year)}-${twoDigits(invalidMonth)}-'
+        '${twoDigits(invalidDay)}T${twoDigits(invalidHour)}:'
+        '${twoDigits(invalidMinute)}:${twoDigits(invalidSecond)}';
   }
 
   @override
@@ -163,7 +164,7 @@ class _GeneratedTimeOfDay {
   final int minute;
 
   DateTime get value => DateTime(2026, 3, 17, hour, minute);
-  String get expected => '${_twoDigits(hour)}:${_twoDigits(minute)}';
+  String get expected => '${twoDigits(hour)}:${twoDigits(minute)}';
 
   @override
   String toString() {
@@ -258,14 +259,6 @@ extension _AnyTimeEntryDateTime on glados.Any {
         ),
       );
 }
-
-int _daysInMonth(int year, int month) {
-  final lastDay = DateTime(year, month + 1, 0);
-  return lastDay.day;
-}
-
-String _twoDigits(int value) => value.toString().padLeft(2, '0');
-String _fourDigits(int value) => value.toString().padLeft(4, '0');
 
 void main() {
   group('parseTimeEntryLocalDateTime', () {

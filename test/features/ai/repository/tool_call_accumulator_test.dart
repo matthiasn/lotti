@@ -119,51 +119,90 @@ extension _AnyToolCallAccumulatorScenarios on Any {
   );
 }
 
-void _processGeneratedIndexedStream(
-  ToolCallAccumulator accumulator,
-  _GeneratedToolCallStream scenario, {
-  required bool startWithEmptyIds,
-  required bool continueWithEmptyIds,
-}) {
-  for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
-    accumulator.processChunk(
-      ChatCompletionStreamResponseDelta(
-        toolCalls: [
-          ChatCompletionStreamMessageToolCallChunk(
-            index: callIndex,
-            id: startWithEmptyIds ? '' : scenario.idFor(callIndex),
-            type: ChatCompletionStreamMessageToolCallChunkType.function,
-            function: ChatCompletionStreamMessageFunctionCall(
-              name: scenario.nameFor(callIndex),
-              arguments: scenario.argumentPart(callIndex, 0),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+/// Test bench around a fresh [ToolCallAccumulator]. Encapsulates the two
+/// flows the property tests below use — feeding a multi-part indexed stream
+/// and asserting that the accumulated tool calls match the scenario's
+/// expected name → arguments mapping with a configurable id matcher.
+class _AccumulatorBench {
+  _AccumulatorBench() : _accumulator = ToolCallAccumulator();
 
-  for (var partIndex = 1; partIndex < scenario.maxPartCount; partIndex++) {
+  final ToolCallAccumulator _accumulator;
+
+  /// Feeds [scenario] into the accumulator as a parallel indexed stream:
+  /// one opening chunk per call (with optional empty id), then continuation
+  /// chunks that re-emit only the arguments at each subsequent part.
+  void runStream(
+    _GeneratedToolCallStream scenario, {
+    required bool startWithEmptyIds,
+    required bool continueWithEmptyIds,
+  }) {
     for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
-      if (partIndex >= scenario.argumentPartValuesByCall[callIndex].length) {
-        continue;
-      }
-
-      accumulator.processChunk(
+      _accumulator.processChunk(
         ChatCompletionStreamResponseDelta(
           toolCalls: [
             ChatCompletionStreamMessageToolCallChunk(
               index: callIndex,
-              id: continueWithEmptyIds ? '' : null,
+              id: startWithEmptyIds ? '' : scenario.idFor(callIndex),
+              type: ChatCompletionStreamMessageToolCallChunkType.function,
               function: ChatCompletionStreamMessageFunctionCall(
-                arguments: scenario.argumentPart(callIndex, partIndex),
+                name: scenario.nameFor(callIndex),
+                arguments: scenario.argumentPart(callIndex, 0),
               ),
             ),
           ],
         ),
       );
     }
+
+    for (var partIndex = 1; partIndex < scenario.maxPartCount; partIndex++) {
+      for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
+        if (partIndex >= scenario.argumentPartValuesByCall[callIndex].length) {
+          continue;
+        }
+
+        _accumulator.processChunk(
+          ChatCompletionStreamResponseDelta(
+            toolCalls: [
+              ChatCompletionStreamMessageToolCallChunk(
+                index: callIndex,
+                id: continueWithEmptyIds ? '' : null,
+                function: ChatCompletionStreamMessageFunctionCall(
+                  arguments: scenario.argumentPart(callIndex, partIndex),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
+
+  /// Asserts the post-run accumulator contains exactly one tool call per
+  /// `scenario.callCount`, that each call's arguments match the per-index
+  /// accumulation, and that ids satisfy [idMatcher]. Stream order is not
+  /// asserted because the property tests look the tool call up by name.
+  void expectStreamMatches(
+    _GeneratedToolCallStream scenario, {
+    required Matcher Function(int callIndex) idMatcher,
+    required String reasonForArguments,
+  }) {
+    final toolCalls = _accumulator.toToolCalls();
+    expect(toolCalls, hasLength(scenario.callCount));
+
+    for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
+      final toolCall = toolCalls.singleWhere(
+        (call) => call.function.name == scenario.nameFor(callIndex),
+      );
+      expect(toolCall.id, idMatcher(callIndex));
+      expect(
+        toolCall.function.arguments,
+        scenario.expectedArgumentsFor(callIndex),
+        reason: '$reasonForArguments for $scenario',
+      );
+    }
+  }
+
+  int get count => _accumulator.count;
 }
 
 void main() {
@@ -591,29 +630,19 @@ void main() {
       Glados(any.toolCallStream).test(
         'accumulates generated parallel indexed tool-call streams',
         (scenario) {
-          final generatedAccumulator = ToolCallAccumulator();
-          _processGeneratedIndexedStream(
-            generatedAccumulator,
+          final bench = _AccumulatorBench()
+            ..runStream(
+              scenario,
+              startWithEmptyIds: false,
+              continueWithEmptyIds: false,
+            );
+
+          expect(bench.count, scenario.callCount);
+          bench.expectStreamMatches(
             scenario,
-            startWithEmptyIds: false,
-            continueWithEmptyIds: false,
+            idMatcher: (callIndex) => equals(scenario.idFor(callIndex)),
+            reasonForArguments: 'Arguments should be appended by index',
           );
-
-          expect(generatedAccumulator.count, scenario.callCount);
-          final toolCalls = generatedAccumulator.toToolCalls();
-          expect(toolCalls, hasLength(scenario.callCount));
-
-          for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
-            final toolCall = toolCalls.singleWhere(
-              (call) => call.function.name == scenario.nameFor(callIndex),
-            );
-            expect(toolCall.id, scenario.idFor(callIndex));
-            expect(
-              toolCall.function.arguments,
-              scenario.expectedArgumentsFor(callIndex),
-              reason: 'Arguments should be appended by index for $scenario',
-            );
-          }
         },
         tags: 'glados',
       );
@@ -621,28 +650,17 @@ void main() {
       Glados(any.toolCallStream).test(
         'treats empty continuation IDs as missing IDs',
         (scenario) {
-          final generatedAccumulator = ToolCallAccumulator();
-          _processGeneratedIndexedStream(
-            generatedAccumulator,
-            scenario,
-            startWithEmptyIds: true,
-            continueWithEmptyIds: true,
-          );
-
-          final toolCalls = generatedAccumulator.toToolCalls();
-          expect(toolCalls, hasLength(scenario.callCount));
-
-          for (var callIndex = 0; callIndex < scenario.callCount; callIndex++) {
-            final toolCall = toolCalls.singleWhere(
-              (call) => call.function.name == scenario.nameFor(callIndex),
+          _AccumulatorBench()
+            ..runStream(
+              scenario,
+              startWithEmptyIds: true,
+              continueWithEmptyIds: true,
+            )
+            ..expectStreamMatches(
+              scenario,
+              idMatcher: (_) => startsWith('tool_'),
+              reasonForArguments: 'Empty continuation IDs should not split',
             );
-            expect(toolCall.id, startsWith('tool_'));
-            expect(
-              toolCall.function.arguments,
-              scenario.expectedArgumentsFor(callIndex),
-              reason: 'Empty continuation IDs should not split $scenario',
-            );
-          }
         },
         tags: 'glados',
       );

@@ -12,10 +12,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _MockEvent extends Mock implements Event {}
-
-class _MockRoom extends Mock implements Room {}
-
 Event _buildSyncEvent({
   required String eventId,
   required String roomId,
@@ -23,7 +19,7 @@ Event _buildSyncEvent({
   String type = EventTypes.Message,
   Map<String, dynamic>? content,
 }) {
-  final event = _MockEvent();
+  final event = MockEvent();
   final eventContent = content ?? <String, dynamic>{'msgtype': syncMessageType};
   when(() => event.eventId).thenReturn(eventId);
   when(() => event.roomId).thenReturn(roomId);
@@ -983,9 +979,9 @@ void main() {
       'materialises the stored rawJson into an Event against the given '
       'room so the worker-side apply path has the SDK object it needs',
       () async {
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomA);
-        final original = _MockEvent();
+        final original = MockEvent();
         final content = <String, dynamic>{'msgtype': syncMessageType};
         when(() => original.eventId).thenReturn(r'$mat');
         when(() => original.roomId).thenReturn(roomA);

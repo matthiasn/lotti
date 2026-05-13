@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/glados_generators.dart';
 
 enum _GeneratedCurrentDueDateKind { none, same, different }
 
@@ -39,10 +40,8 @@ class _GeneratedDueDateToolCallScenario {
   final bool repositorySucceeds;
   final int seed;
 
-  String get dateOnly {
-    return '$year-${month.toString().padLeft(2, '0')}-'
-        '${day.toString().padLeft(2, '0')}';
-  }
+  String get dateOnly =>
+      '${fourDigits(year)}-${twoDigits(month)}-${twoDigits(day)}';
 
   String? get rawDueDate {
     return switch (requestShape) {
@@ -50,7 +49,7 @@ class _GeneratedDueDateToolCallScenario {
       _GeneratedDueDateRequestShape.missing => null,
       _GeneratedDueDateRequestShape.empty => '',
       _GeneratedDueDateRequestShape.partial =>
-        '$year-${month.toString().padLeft(2, '0')}',
+        '${fourDigits(year)}-${twoDigits(month)}',
       _GeneratedDueDateRequestShape.fullIso => '${dateOnly}T10:30:00',
     };
   }
@@ -60,7 +59,7 @@ class _GeneratedDueDateToolCallScenario {
       return null;
     }
     if (month < 1 || month > 12) return null;
-    if (day < 1 || day > _daysInMonth(year, month)) return null;
+    if (day < 1 || day > daysInMonth(year, month)) return null;
     return DateTime(year, month, day);
   }
 
@@ -144,13 +143,6 @@ extension _AnyTaskDueDateHandlerScenario on glados.Any {
       seed: seed,
     ),
   );
-}
-
-int _daysInMonth(int year, int month) {
-  final firstOfNextMonth = month == 12
-      ? DateTime(year + 1)
-      : DateTime(year, month + 1);
-  return firstOfNextMonth.subtract(const Duration(days: 1)).day;
 }
 
 void main() {

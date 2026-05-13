@@ -10,8 +10,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _MockEvent extends Mock implements Event {}
-
 PreparedSyncEvent _preparedFor(Event event, SyncMessage msg) =>
     PreparedSyncEvent.forTesting(event: event, syncMessage: msg);
 
@@ -124,13 +122,13 @@ void main() {
   });
 
   late MockLoggingService logging;
-  late _MockEvent event;
+  late MockEvent event;
   late List<String> traces;
   late OutboxBundleUnpacker unpacker;
 
   setUp(() {
     logging = MockLoggingService();
-    event = _MockEvent();
+    event = MockEvent();
     traces = <String>[];
     when(
       () => logging.captureException(

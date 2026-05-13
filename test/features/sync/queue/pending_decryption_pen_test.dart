@@ -11,10 +11,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _MockEvent extends Mock implements Event {}
-
-class _MockRoom extends Mock implements Room {}
-
 Event _buildEvent({
   required String eventId,
   required String roomId,
@@ -22,7 +18,7 @@ Event _buildEvent({
   required String type,
   Map<String, dynamic>? content,
 }) {
-  final event = _MockEvent();
+  final event = MockEvent();
   final c = content ?? <String, dynamic>{'msgtype': syncMessageType};
   when(() => event.eventId).thenReturn(eventId);
   when(() => event.roomId).thenReturn(roomId);
@@ -234,7 +230,7 @@ void main() {
   late SyncDatabase db;
   late MockLoggingService logging;
   late InboundQueue queue;
-  late _MockRoom room;
+  late MockRoom room;
   const roomId = '!roomA:example.org';
 
   setUpAll(() {
@@ -245,7 +241,7 @@ void main() {
     db = SyncDatabase(inMemoryDatabase: true);
     logging = MockLoggingService();
     queue = InboundQueue(db: db, logging: logging);
-    room = _MockRoom();
+    room = MockRoom();
     when(() => room.id).thenReturn(roomId);
   });
 
@@ -518,7 +514,7 @@ void main() {
       final localDb = SyncDatabase(inMemoryDatabase: true);
       final localLogging = MockLoggingService();
       final localQueue = InboundQueue(db: localDb, logging: localLogging);
-      final localRoom = _MockRoom();
+      final localRoom = MockRoom();
       when(() => localRoom.id).thenReturn(roomId);
 
       try {

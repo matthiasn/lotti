@@ -19,13 +19,14 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
+// Local mock: the centralized `MockSyncEventProcessor` ships concrete
+// default `prepare`/`apply` overrides, so `when(() => processor.prepare(
+// event: any(named: 'event')))` would call the real method and leak the
+// unconsumed matcher. This file stubs both via `when()`, so it needs the
+// bare-Mock variant.
 class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
 
-class _MockRoom extends Mock implements Room {}
-
 class _MockPreparedSyncEvent extends Mock implements PreparedSyncEvent {}
-
-class _MockEvent extends Mock implements Event {}
 
 enum _GeneratedAdapterPrepareOutcome {
   ready,
@@ -248,11 +249,11 @@ void main() {
   late _MockSyncEventProcessor processor;
   late JournalDb journalDb;
   late MockLoggingService logging;
-  late _MockRoom room;
+  late MockRoom room;
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
-    registerFallbackValue(_MockEvent());
+    registerFallbackValue(MockEvent());
     registerFallbackValue(_MockPreparedSyncEvent());
   });
 
@@ -260,7 +261,7 @@ void main() {
     processor = _MockSyncEventProcessor();
     journalDb = JournalDb(inMemoryDatabase: true);
     logging = MockLoggingService();
-    room = _MockRoom();
+    room = MockRoom();
     when(() => room.id).thenReturn('!r:example.org');
   });
 
@@ -283,7 +284,7 @@ void main() {
       final localProcessor = _MockSyncEventProcessor();
       final localJournalDb = JournalDb(inMemoryDatabase: true);
       final localLogging = MockLoggingService();
-      final localRoom = _MockRoom();
+      final localRoom = MockRoom();
       when(() => localRoom.id).thenReturn('!r:example.org');
       final entry = _buildEntry(
         eventId: '\$generated-${scenario.slot}',

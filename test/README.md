@@ -62,6 +62,24 @@ extension _AnyMyType on Any {
 
 Combine via `combine2`/`combine3` for tuples, and prefer using existing generators (`any.int`, `any.dateTime`, etc.) over hand-rolled ones.
 
+### Conventions
+
+These conventions are followed across the existing Glados tests. New tests should follow them too unless there's a good reason not to.
+
+**Per-file vs. shared generators.** Default to a per-file private extension (`_AnyMyType on Any`). Lift a generator into `test/test_utils/glados_generators.dart` only when the same shape appears verbatim in three or more files — see the existing `isoDate`, `singleWhitespace`, and `daysInMonth` / `twoDigits` / `fourDigits` helpers there. A shared generator should be small, focused, and orthogonal to any one feature; if it has to grow new parameters every time a caller migrates, it isn't the right abstraction.
+
+**Value-class naming.** A generated value class is named `_GeneratedX` (e.g., `_GeneratedFollowUpScenario`, `_GeneratedAttachmentObservation`). Shape enums use `_GeneratedXShape` or `_GeneratedXKind`. Keep them private (`_`-prefixed) — they exist to feed one file's properties, not to be reused across files.
+
+**Combinator depth.** Glados ships `combine2` through `combine9`. Prefer a single flat `combineN` over nesting two smaller combinators: shrinking works best when each input dimension is its own primitive that the shrinker can reduce independently. If you find yourself packing several flags into one integer to fit a smaller combinator, expand to the larger one instead — the per-flag shrink behavior is worth the extra parameter.
+
+**`toString()` for shrunken-input legibility.** Every generated value class needs a `toString()` that names each input dimension. Glados prints this exact string when a property fails, so the failure message either reads like a debug record or like `Instance of '_GeneratedFooScenario'`. Pair this with `reason: '$scenario'` (or `reason: 'foo for $scenario'`) on the `expect` so shrunk failures land in the test output already labeled.
+
+**`tags: 'glados'` is enforced by convention, not the analyzer.** Every Glados invocation in this repo carries `tags: 'glados'`. There is no lint that fails on a missing tag — adding one without the tag silently routes it through the standard CI lane and slows everyone down. Mind the tag on copy-paste; check with `grep -L "tags: 'glados'" $(grep -rl 'Glados(' test/)` before opening a PR if you're touching many files.
+
+**Static vs. generated tests.** A handful of static `test('...', () { ... })` cases per file are useful as worked examples — they make a failure during local hacking land on a one-line concrete assertion rather than inside a 160-input Glados loop. Avoid keeping a static case for every variant the generator already covers; once the property exists, the static version is bloat that grows with the input space.
+
+**Mocks come from `test/mocks/mocks.dart`.** Do not declare `class _MockX extends Mock implements X {}` in a Glados test file when a `MockX` already exists there. The centralized mocks carry sensible default stubs (e.g., `MockEvent.originServerTs` returns a fixed `DateTime`) that one-off inline mocks lose. If a new mock is needed, add it to `test/mocks/mocks.dart` first.
+
 ## Fake Time Policy
 
 All tests in this codebase must use **deterministic time control** instead of real waits. This ensures:

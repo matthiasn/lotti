@@ -7,6 +7,8 @@ import 'package:lotti/features/sync/queue/attachment_aware_bootstrap_sink.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 BootstrapPageInfo _pageInfo({int pageIndex = 0, int totalEventsSoFar = 0}) {
   return BootstrapPageInfo(
     pageIndex: pageIndex,
@@ -16,8 +18,6 @@ BootstrapPageInfo _pageInfo({int pageIndex = 0, int totalEventsSoFar = 0}) {
     elapsed: Duration.zero,
   );
 }
-
-class _MockEvent extends Mock implements Event {}
 
 class _RecordingInnerSink implements BootstrapSink {
   final List<List<Event>> pages = <List<Event>>[];
@@ -44,7 +44,7 @@ class _RecordingInnerSink implements BootstrapSink {
 }
 
 Event _buildEvent(String id) {
-  final event = _MockEvent();
+  final event = MockEvent();
   when(() => event.eventId).thenReturn(id);
   return event;
 }

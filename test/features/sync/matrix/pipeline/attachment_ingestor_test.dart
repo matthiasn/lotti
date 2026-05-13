@@ -12,8 +12,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 
-class _MockEvent extends Mock implements Event {}
-
 Event _makeEvent({
   required String eventId,
   String? relativePath,
@@ -24,7 +22,7 @@ Event _makeEvent({
   void Function()? onDownload,
   Map<String, dynamic>? content,
 }) {
-  final e = _MockEvent();
+  final e = MockEvent();
   when(() => e.eventId).thenReturn(eventId);
   when(() => e.attachmentMimetype).thenReturn(mime);
   when(() => e.content).thenReturn(
