@@ -178,7 +178,12 @@ class AiProviderSetupResultModal extends StatelessWidget {
     final action =
         await ModalUtils.showSinglePageModal<AiProviderSetupResultAction>(
           context: context,
-          title: context.messages.aiSetupResultModalTitle(data.providerName),
+          title: context.messages.aiSetupResultModalTitle(
+            aiProviderDisplayName(
+              type: data.providerType,
+              messages: context.messages,
+            ),
+          ),
           builder: (modalCtx) => AiProviderSetupResultModal(data: data),
         );
     return action ?? AiProviderSetupResultAction.dismissed;
@@ -198,13 +203,17 @@ class AiProviderSetupResultModal extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final hasErrors = data.errors.isNotEmpty;
+    final localisedProviderName = aiProviderDisplayName(
+      type: data.providerType,
+      messages: messages,
+    );
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          messages.aiSetupResultHeader(data.providerName),
+          messages.aiSetupResultHeader(localisedProviderName),
           style: tokens.typography.styles.heading.heading3.copyWith(
             color: tokens.colors.text.highEmphasis,
             fontWeight: tokens.typography.weight.semiBold,

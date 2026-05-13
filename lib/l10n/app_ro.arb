@@ -497,8 +497,6 @@
   "agentTokenUsageWakeCount": "Treziri",
   "aiAssistantTitle": "Generează…",
   "aiBatchToggleTooltip": "Comutare la înregistrare standard",
-  "aiCardMenuActionDelete": "Ștergere",
-  "aiCardMenuActionEdit": "Editare",
   "aiCapabilityChipImageGeneration": "Generare de imagini",
   "aiCapabilityChipImageRecognition": "Recunoaștere de imagini",
   "aiCapabilityChipThinking": "Gândire",
@@ -512,6 +510,8 @@
       }
     }
   },
+  "aiCardMenuActionDelete": "Ștergere",
+  "aiCardMenuActionEdit": "Editare",
   "aiCardOpenAgentInternals": "Deschideți componentele interne ale agentului",
   "aiCardProposalConfirmed": "Confirmată",
   "aiCardProposalDismissed": "Respinsă",
@@ -789,6 +789,15 @@
       }
     }
   },
+  "aiSetupResultKnownModelsMissing": "Nu s-au putut găsi configurațiile de model necesare pentru {providerName}",
+  "@aiSetupResultKnownModelsMissing": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
   "aiSetupResultLead": "Am configurat totul pentru dvs. Funcțiile AI sunt gata de utilizat în jurnalul dvs.",
   "aiSetupResultModalTitle": "{providerName} gata",
   "@aiSetupResultModalTitle": {
@@ -817,8 +826,41 @@
   "aiSetupWizardTitle": "Asistent de configurare AI",
   "aiTaskSummaryTitle": "Rezumatul sarcinii AI",
   "apiKeyAddPageTitle": "Adaugă furnizor",
+  "apiKeyAuthenticationDescription": "Securizați conexiunea API",
+  "apiKeyAuthenticationTitle": "Autentificare",
+  "apiKeyAvailableModelsDescription": "Adăugați rapid modele preconfigurate pentru acest furnizor",
+  "apiKeyAvailableModelsTitle": "Modele disponibile",
+  "apiKeyBaseUrlLabel": "URL de bază",
+  "apiKeyDisplayNameHint": "Introduceți un nume prietenos",
+  "apiKeyDisplayNameLabel": "Nume afișat",
+  "apiKeyEditGoBackButton": "Înapoi",
   "apiKeyEditLoadError": "Eșec la încărcarea configurației cheii API",
+  "apiKeyEditLoadErrorRetry": "Vă rugăm să încercați din nou sau să contactați asistența",
   "apiKeyEditPageTitle": "Editează furnizor",
+  "apiKeyHideTooltip": "Ascunde cheia API",
+  "apiKeyInputHint": "Introduceți cheia API",
+  "apiKeyInputLabel": "Cheie API",
+  "apiKeyKnownModelInputLabel": "Intrare: {modalities}",
+  "@apiKeyKnownModelInputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyKnownModelOutputLabel": "Ieșire: {modalities}",
+  "@apiKeyKnownModelOutputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyProviderConfigDescription": "Configurați setările furnizorului dvs. de inferență AI",
+  "apiKeyProviderConfigTitle": "Configurare furnizor",
+  "apiKeyProviderTypeHint": "Selectați un tip de furnizor",
+  "apiKeyProviderTypeLabel": "Tip furnizor",
+  "apiKeyShowTooltip": "Arată cheia API",
   "audioRecordingCancel": "ANULARE",
   "audioRecordingListening": "Se ascultă...",
   "audioRecordingRealtime": "Transcriere în direct",
@@ -1664,6 +1706,15 @@
   "inferenceProfileDescriptionLabel": "Descriere",
   "inferenceProfileDesktopOnly": "Doar desktop",
   "inferenceProfileDesktopOnlyDescription": "Disponibil doar pe platformele desktop (ex. pentru modele locale)",
+  "inferenceProfileDetailLoadError": "Profilul nu a putut fi încărcat: {error}",
+  "@inferenceProfileDetailLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "inferenceProfileDetailNotFound": "Profil negăsit",
   "inferenceProfileEditTitle": "Editați profilul",
   "inferenceProfileImageGeneration": "Generare de imagini",
   "inferenceProfileImageRecognition": "Recunoaștere de imagini",
@@ -2222,10 +2273,16 @@
   "settingsAgentsSoulsSubtitle": "Personalități durabile ale agenților",
   "settingsAgentsStatsSubtitle": "Utilizarea tokenilor și activitate",
   "settingsAgentsTemplatesSubtitle": "Șabloane de agenți partajate",
+  "settingsAiModelsSubtitle": "Modele și capabilități per furnizor",
+  "settingsAiModelsTitle": "Modele",
   "settingsAiProfilesSubtitle": "Furnizori și modele",
   "settingsAiProfilesTitle": "Profiluri de inferență",
+  "settingsAiProvidersSubtitle": "Furnizori AI conectați și chei",
+  "settingsAiProvidersTitle": "Furnizori",
   "settingsAiSubtitle": "Configurați furnizorii AI, modelele și prompturile",
   "settingsAiTitle": "Setări AI",
+  "settingsBeamPageEditModelTitle": "Editare model",
+  "settingsBeamPageEditProfileTitle": "Editare profil",
   "settingsCategoriesCreateTitle": "Creare categorie",
   "settingsCategoriesDetailsLabel": "Detalii categorie",
   "settingsCategoriesEmptyState": "Nu s-au găsit categorii",

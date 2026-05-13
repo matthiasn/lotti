@@ -10,7 +10,9 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -84,9 +86,25 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
+  late MockNavService mockNavService;
+
   setUp(() async {
     mockRepository = MockAiConfigRepository();
     await setUpTestGetIt();
+
+    // The detail page reads `getIt<NavService>().desktopSelectedSettingsRoute`
+    // when the focus-flow fires (to decide whether to clean
+    // `?focusApiKey=true` from the URL); the model/profile-card taps
+    // also route through `nav_service.beamToNamed` for the desktop
+    // master/detail panel swap. Both call into the singleton, so we
+    // mock it here with a no-op `beamToNamed` and a notifier whose
+    // value is null (i.e. "not URL-mounted, no query to clean").
+    mockNavService = MockNavService();
+    when(
+      () => mockNavService.desktopSelectedSettingsRoute,
+    ).thenReturn(ValueNotifier<DesktopSettingsRoute?>(null));
+    when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+    getIt.registerSingleton<NavService>(mockNavService);
 
     modelsController = StreamController<List<AiConfig>>.broadcast();
     profilesController = StreamController<List<AiConfig>>.broadcast();
@@ -598,6 +616,111 @@ void main() {
     );
 
     testWidgets(
+      'focusApiKey=true with the desktop URL still carrying the '
+      '?focusApiKey=true query beams to the same path WITHOUT the query — '
+      'so a later remount (panel swap, back-nav, hot reload) does not '
+      're-open the edit form unprompted',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Stand the desktop route notifier on the URL the page would
+        // have been mounted from in production (with the Fix-flow query
+        // present). The detail page reads this to decide whether to
+        // beam the cleaned URL.
+        when(() => mockNavService.desktopSelectedSettingsRoute).thenReturn(
+          ValueNotifier<DesktopSettingsRoute?>(
+            (
+              path: '/settings/ai/provider/provider-1',
+              pathParameters: const <String, String>{
+                'providerId': 'provider-1',
+              },
+              queryParameters: const <String, String>{'focusApiKey': 'true'},
+            ),
+          ),
+        );
+
+        final provider = buildProvider();
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          focusApiKey: true,
+        );
+        await settleTimers(tester);
+
+        verify(
+          () => mockNavService.beamToNamed(
+            '/settings/ai/provider/provider-1',
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'focusApiKey=true with no desktop URL state (mobile or test direct '
+      'mount) still pushes the edit form but does NOT beam — there is no '
+      'URL to clean in that case, so the URL-cleanup branch is skipped',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider();
+        final spy = _PushSpy();
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          focusApiKey: true,
+          navigatorObservers: [spy],
+        );
+        await settleTimers(tester);
+
+        // Detail page push + edit form push.
+        expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        // No beam fired — the desktop route notifier value was null
+        // (the default in setUp), so the URL-clean branch is a no-op.
+        verifyNever(() => mockNavService.beamToNamed(any()));
+      },
+    );
+
+    testWidgets(
+      'focusApiKey=true with the desktop URL present but WITHOUT the '
+      '?focusApiKey=true query also skips the beam — the cleanup is gated '
+      'on the query actually being there, not on URL presence alone',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        when(() => mockNavService.desktopSelectedSettingsRoute).thenReturn(
+          ValueNotifier<DesktopSettingsRoute?>(
+            (
+              path: '/settings/ai/provider/provider-1',
+              pathParameters: const <String, String>{
+                'providerId': 'provider-1',
+              },
+              queryParameters: const <String, String>{},
+            ),
+          ),
+        );
+
+        final provider = buildProvider();
+        await pumpWith(
+          tester: tester,
+          provider: provider,
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+          focusApiKey: true,
+        );
+        await settleTimers(tester);
+
+        verifyNever(() => mockNavService.beamToNamed(any()));
+      },
+    );
+
+    testWidgets(
       'tapping the "Add model" button pushes a new route',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
@@ -624,64 +747,60 @@ void main() {
     );
 
     testWidgets(
-      'tapping a model card inside the Models section pushes a new route',
+      'tapping a model card beams to the per-model URL — model rows go '
+      'through the desktop master/detail panel swap, not Navigator.push',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
         final provider = buildProvider();
-        when(
-          () => mockRepository.getConfigById('m1'),
-        ).thenAnswer((_) async => null);
-
-        final spy = _PushSpy();
         await pumpWith(
           tester: tester,
           provider: provider,
-          models: [buildModel(id: 'm1', providerId: provider.id)],
+          models: [
+            buildModel(
+              id: 'm1',
+              providerId: provider.id,
+            ),
+          ],
           profiles: const <AiConfig>[],
-          navigatorObservers: [spy],
         );
-
-        expect(spy.pushed, hasLength(1));
 
         await tester.tap(find.byType(AiModelCard));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        verify(
+          () => mockNavService.beamToNamed('/settings/ai/model/m1'),
+        ).called(1);
         await settleTimers(tester);
       },
     );
 
     testWidgets(
-      'tapping the active-profile card pushes a new route',
+      'tapping the active-profile card beams to the per-profile URL — '
+      'profile rows go through the desktop master/detail panel swap, not '
+      'Navigator.push',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
         final provider = buildProvider();
-        when(
-          () => mockRepository.getConfigById('profile-1'),
-        ).thenAnswer((_) async => null);
-
-        final spy = _PushSpy();
         await pumpWith(
           tester: tester,
           provider: provider,
           models: [buildModel(id: 'm1', providerId: provider.id)],
           profiles: [buildProfile(isDefault: true)],
-          navigatorObservers: [spy],
         );
-
-        expect(spy.pushed, hasLength(1));
 
         await tester.ensureVisible(find.byType(AiProfileCard));
         await tester.tap(find.byType(AiProfileCard));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        verify(
+          () => mockNavService.beamToNamed('/settings/ai/profile/profile-1'),
+        ).called(1);
         await settleTimers(tester);
       },
     );

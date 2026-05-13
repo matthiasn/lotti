@@ -337,8 +337,6 @@
   "agentTokenUsageWakeCount": "Probuzení",
   "aiAssistantTitle": "Generovat…",
   "aiBatchToggleTooltip": "Přepnout na standardní nahrávání",
-  "aiCardMenuActionDelete": "Smazat",
-  "aiCardMenuActionEdit": "Upravit",
   "aiCapabilityChipImageGeneration": "Generování obrázků",
   "aiCapabilityChipImageRecognition": "Rozpoznávání obrázků",
   "aiCapabilityChipThinking": "Uvažování",
@@ -352,6 +350,8 @@
       }
     }
   },
+  "aiCardMenuActionDelete": "Smazat",
+  "aiCardMenuActionEdit": "Upravit",
   "aiCardOpenAgentInternals": "Otevřít interní informace agenta",
   "aiCardProposalConfirmed": "Potvrzeno",
   "aiCardProposalDismissed": "Zamítnuto",
@@ -629,6 +629,15 @@
       }
     }
   },
+  "aiSetupResultKnownModelsMissing": "Nepodařilo se najít požadované konfigurace modelů pro {providerName}",
+  "@aiSetupResultKnownModelsMissing": {
+    "placeholders": {
+      "providerName": {
+        "type": "String",
+        "example": "Google Gemini"
+      }
+    }
+  },
   "aiSetupResultLead": "Vše jsme za tebe nastavili. Funkce AI jsou připraveny v tvém deníku.",
   "aiSetupResultModalTitle": "{providerName} připraveno",
   "@aiSetupResultModalTitle": {
@@ -657,8 +666,41 @@
   "aiSetupWizardTitle": "Průvodce nastavením AI",
   "aiTaskSummaryTitle": "Shrnutí úkolu AI",
   "apiKeyAddPageTitle": "Přidat poskytovatele",
+  "apiKeyAuthenticationDescription": "Zabezpeč své připojení k API",
+  "apiKeyAuthenticationTitle": "Ověření",
+  "apiKeyAvailableModelsDescription": "Rychle přidej předkonfigurované modely pro tohoto poskytovatele",
+  "apiKeyAvailableModelsTitle": "Dostupné modely",
+  "apiKeyBaseUrlLabel": "Základní URL",
+  "apiKeyDisplayNameHint": "Zadej přívětivý název",
+  "apiKeyDisplayNameLabel": "Zobrazovaný název",
+  "apiKeyEditGoBackButton": "Zpět",
   "apiKeyEditLoadError": "Nepodařilo se načíst konfiguraci API klíče",
+  "apiKeyEditLoadErrorRetry": "Zkus to prosím znovu nebo kontaktuj podporu",
   "apiKeyEditPageTitle": "Upravit poskytovatele",
+  "apiKeyHideTooltip": "Skrýt API klíč",
+  "apiKeyInputHint": "Zadej svůj API klíč",
+  "apiKeyInputLabel": "API klíč",
+  "apiKeyKnownModelInputLabel": "Vstup: {modalities}",
+  "@apiKeyKnownModelInputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyKnownModelOutputLabel": "Výstup: {modalities}",
+  "@apiKeyKnownModelOutputLabel": {
+    "placeholders": {
+      "modalities": {
+        "type": "String"
+      }
+    }
+  },
+  "apiKeyProviderConfigDescription": "Nakonfiguruj nastavení poskytovatele AI inference",
+  "apiKeyProviderConfigTitle": "Konfigurace poskytovatele",
+  "apiKeyProviderTypeHint": "Vyber typ poskytovatele",
+  "apiKeyProviderTypeLabel": "Typ poskytovatele",
+  "apiKeyShowTooltip": "Zobrazit API klíč",
   "audioRecordingCancel": "ZRUŠIT",
   "audioRecordingListening": "Naslouchám...",
   "audioRecordingRealtime": "Živý přepis",
@@ -1469,6 +1511,15 @@
   "imagePromptGenerationFullPromptLabel": "Celý prompt obrázku:",
   "images": "Obrázky",
   "inactiveLabel": "Neaktivní",
+  "inferenceProfileDetailLoadError": "Profil se nepodařilo načíst: {error}",
+  "@inferenceProfileDetailLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "inferenceProfileDetailNotFound": "Profil nenalezen",
   "inferenceProfileSelectProfile": "Vyberte profil…",
   "inferenceProfileSkillModelRequired": "Vyžaduje nastavení modelu {slotName}",
   "@inferenceProfileSkillModelRequired": {
@@ -2014,10 +2065,16 @@
   "settingsAgentsSoulsSubtitle": "Dlouhodobé osobnosti agentů",
   "settingsAgentsStatsSubtitle": "Spotřeba tokenů a aktivita",
   "settingsAgentsTemplatesSubtitle": "Sdílené šablony agentů",
+  "settingsAiModelsSubtitle": "Modely a schopnosti podle poskytovatele",
+  "settingsAiModelsTitle": "Modely",
   "settingsAiProfilesSubtitle": "Poskytovatelé a modely",
   "settingsAiProfilesTitle": "Inferenční profily",
+  "settingsAiProvidersSubtitle": "Připojení poskytovatelé AI a klíče",
+  "settingsAiProvidersTitle": "Poskytovatelé",
   "settingsAiSubtitle": "Konfigurace poskytovatelů AI, modelů a promptů",
   "settingsAiTitle": "Nastavení AI",
+  "settingsBeamPageEditModelTitle": "Upravit model",
+  "settingsBeamPageEditProfileTitle": "Upravit profil",
   "settingsCategoriesCreateTitle": "Vytvořit kategorii",
   "settingsCategoriesDetailsLabel": "Detaily kategorie",
   "settingsCategoriesEmptyState": "Žádné kategorie nalezeny",

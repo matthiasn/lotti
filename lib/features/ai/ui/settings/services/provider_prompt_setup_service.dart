@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -105,14 +107,27 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
     final knownModels = getFtueKnownModels();
+    // coverage:ignore-start
+    // Defensive: `getFtueKnownModels()` only returns null if the
+    // canonical `geminiModels` const table is missing the FTUE model
+    // ids — unreachable in production, kept as a hard guard so a stale
+    // checkout fails loudly instead of seeding a broken config.
     if (knownModels == null) {
-      return const GeminiFtueResult(
+      return GeminiFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
         categoryCreated: false,
-        errors: ['Failed to find required Gemini model configurations'],
+        errors: [
+          context.messages.aiSetupResultKnownModelsMissing(
+            aiProviderDisplayName(
+              type: InferenceProviderType.gemini,
+              messages: context.messages,
+            ),
+          ),
+        ],
       );
     }
+    // coverage:ignore-end
 
     final modelResult = await _ensureModelsExist(
       repository: repository,
@@ -253,14 +268,25 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
     final knownModels = getOpenAiFtueKnownModels();
+    // coverage:ignore-start
+    // Defensive guard against a stale const lookup table — see the
+    // matching note on the Gemini helper above.
     if (knownModels == null) {
-      return const OpenAiFtueResult(
+      return OpenAiFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
         categoryCreated: false,
-        errors: ['Failed to find required OpenAI model configurations'],
+        errors: [
+          context.messages.aiSetupResultKnownModelsMissing(
+            aiProviderDisplayName(
+              type: InferenceProviderType.openAi,
+              messages: context.messages,
+            ),
+          ),
+        ],
       );
     }
+    // coverage:ignore-end
 
     final modelResult = await _ensureModelsExist(
       repository: repository,
@@ -328,14 +354,25 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
     final knownModels = getMistralFtueKnownModels();
+    // coverage:ignore-start
+    // Defensive guard against a stale const lookup table — see the
+    // matching note on the Gemini helper above.
     if (knownModels == null) {
-      return const MistralFtueResult(
+      return MistralFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
         categoryCreated: false,
-        errors: ['Failed to find required Mistral model configurations'],
+        errors: [
+          context.messages.aiSetupResultKnownModelsMissing(
+            aiProviderDisplayName(
+              type: InferenceProviderType.mistral,
+              messages: context.messages,
+            ),
+          ),
+        ],
       );
     }
+    // coverage:ignore-end
 
     final modelResult = await _ensureModelsExist(
       repository: repository,
@@ -405,14 +442,25 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
     final knownModels = getAlibabaFtueKnownModels();
+    // coverage:ignore-start
+    // Defensive guard against a stale const lookup table — see the
+    // matching note on the Gemini helper above.
     if (knownModels == null) {
-      return const AlibabaFtueResult(
+      return AlibabaFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
         categoryCreated: false,
-        errors: ['Failed to find required Alibaba model configurations'],
+        errors: [
+          context.messages.aiSetupResultKnownModelsMissing(
+            aiProviderDisplayName(
+              type: InferenceProviderType.alibaba,
+              messages: context.messages,
+            ),
+          ),
+        ],
       );
     }
+    // coverage:ignore-end
 
     final modelResult = await _ensureModelsExist(
       repository: repository,
@@ -482,14 +530,25 @@ extension AnthropicFtueSetup on ProviderPromptSetupService {
     final categoryRepository = ref.read(categoryRepositoryProvider);
 
     final knownModels = getAnthropicFtueKnownModels();
+    // coverage:ignore-start
+    // Defensive guard against a stale const lookup table — see the
+    // matching note on the Gemini helper above.
     if (knownModels == null) {
-      return const AnthropicFtueResult(
+      return AnthropicFtueResult(
         modelsCreated: 0,
         modelsVerified: 0,
         categoryCreated: false,
-        errors: ['Failed to find required Anthropic model configurations'],
+        errors: [
+          context.messages.aiSetupResultKnownModelsMissing(
+            aiProviderDisplayName(
+              type: InferenceProviderType.anthropic,
+              messages: context.messages,
+            ),
+          ),
+        ],
       );
     }
+    // coverage:ignore-end
 
     final modelResult = await _ensureModelsExist(
       repository: repository,

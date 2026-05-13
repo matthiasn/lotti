@@ -10,6 +10,8 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
@@ -21,15 +23,46 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
-/// Embeddable body alias for the Settings V2 detail pane. Same widget
-/// tree as the standalone page; PR-4 will swap the panel registry to
-/// a `DetailIdDispatch` so on desktop the right pane swaps to the
-/// provider detail page when a row is tapped.
+/// Embeddable body alias for the Settings V2 detail pane.
+///
+/// Same widget tree as the standalone page in its default form. The
+/// optional [initialTab] + [hideTabBar] params drive the per-leaf
+/// embedded mode the master/detail panel registry uses on desktop:
+/// when a specific tab is pinned and the tab bar is hidden, the
+/// panel slot renders only that tab's body so the sidebar leaves
+/// (Providers / Models / Profiles) each map to one focused view —
+/// no in-pane tab strip on top of the sidebar selection.
 class AiSettingsBody extends StatelessWidget {
-  const AiSettingsBody({super.key});
+  const AiSettingsBody({
+    this.initialTab,
+    this.hideTabBar = false,
+    this.hideHeader = false,
+    super.key,
+  });
+
+  /// Pre-selects a tab. When provided, [AiSettingsPage] seeds its
+  /// filter state and `TabController.index` from this value so the
+  /// matching tab's body renders without the user tapping anything.
+  final AiSettingsTab? initialTab;
+
+  /// Removes the in-pane tab bar widget when `true`. Used by the
+  /// per-leaf desktop panels — the sidebar already names the leaf, a
+  /// second tab strip on top would be redundant.
+  final bool hideTabBar;
+
+  /// Suppresses the in-pane `SettingsPageHeader` (the "< AI Settings"
+  /// title strip). Used by the desktop master/detail surface where
+  /// the panel chrome already shows the breadcrumb
+  /// "Settings > AI Settings > Providers" — repeating the title above
+  /// the search bar is redundant.
+  final bool hideHeader;
 
   @override
-  Widget build(BuildContext context) => const AiSettingsPage();
+  Widget build(BuildContext context) => AiSettingsPage(
+    initialTab: initialTab,
+    hideTabBar: hideTabBar,
+    hideHeader: hideHeader,
+  );
 }
 
 /// Main AI Settings page. Visual reference: the D1 PNGs at
@@ -52,7 +85,30 @@ class AiSettingsBody extends StatelessWidget {
 /// navigation service) is preserved verbatim from the v1 page; only
 /// the rendering layer is new.
 class AiSettingsPage extends ConsumerStatefulWidget {
-  const AiSettingsPage({super.key});
+  const AiSettingsPage({
+    this.initialTab,
+    this.hideTabBar = false,
+    this.hideHeader = false,
+    super.key,
+  });
+
+  /// Pre-selects a tab. Seeds the filter state and the
+  /// `TabController.index` so the matching body renders on first
+  /// frame; the page falls back to `AiSettingsFilterState.initial()`
+  /// when this is null (standalone mobile usage).
+  final AiSettingsTab? initialTab;
+
+  /// Suppresses the in-pane `AiSettingsTabBar`. Used by the v4 panel
+  /// registry so each desktop leaf (Providers / Models / Profiles)
+  /// renders only its focused tab body — the sidebar leaf itself
+  /// already names the view.
+  final bool hideTabBar;
+
+  /// Suppresses the in-pane `SettingsPageHeader`. Used by the v4
+  /// desktop panel registry — the master/detail chrome already
+  /// renders the breadcrumb so the duplicate title strip just
+  /// crowded the search bar.
+  final bool hideHeader;
 
   @override
   ConsumerState<AiSettingsPage> createState() => _AiSettingsPageState();
@@ -68,18 +124,43 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   final _navigationService = const AiSettingsNavigationService();
   final _deleteService = const AiConfigDeleteService();
 
-  AiSettingsFilterState _filterState = AiSettingsFilterState.initial();
+  late AiSettingsFilterState _filterState;
 
   Timer? _searchDebounceTimer;
 
   @override
   void initState() {
     super.initState();
+    final seededTab = widget.initialTab;
+    _filterState = seededTab == null
+        ? AiSettingsFilterState.initial()
+        : AiSettingsFilterState.initial().copyWith(activeTab: seededTab);
     _tabController = TabController(
       length: AiSettingsTab.values.length,
+      initialIndex: seededTab?.index ?? 0,
       vsync: this,
     )..addListener(_handleTabControllerChange);
     _searchController.addListener(_handleSearchChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant AiSettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The desktop master/detail surface reuses this page's State
+    // across leaf swaps (Providers / Models / Profiles); reapply
+    // `initialTab` so the visible tab, filter state, and per-tab FAB
+    // handler stay in sync. `initState` only fires on first mount,
+    // so without this the page would stay pinned to the seed tab.
+    final nextTab = widget.initialTab;
+    if (nextTab == null || nextTab == oldWidget.initialTab) return;
+    if (_filterState.activeTab != nextTab) {
+      setState(() {
+        _filterState = _filterState.copyWith(activeTab: nextTab);
+      });
+    }
+    if (_tabController.index != nextTab.index) {
+      _tabController.index = nextTab.index;
+    }
   }
 
   @override
@@ -156,6 +237,22 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     await _navigationService.navigateToCreateProvider(context);
   }
 
+  /// Per-tab handler that the `AiSettingsFloatingActionButton`
+  /// dispatches to. The FAB itself already owns the icon + semantic
+  /// label per active tab (`add_link` for providers,
+  /// `auto_awesome` for models, `tune` for profiles), so the page
+  /// just plumbs through the right `navigateToCreate*` call.
+  VoidCallback _activeTabAddHandler() {
+    switch (_filterState.activeTab) {
+      case AiSettingsTab.providers:
+        return _handleAddProvider;
+      case AiSettingsTab.models:
+        return () => _navigationService.navigateToCreateModel(context);
+      case AiSettingsTab.profiles:
+        return () => _navigationService.navigateToCreateProfile(context);
+    }
+  }
+
   /// Opens the provider edit page preselected to [type] — used by the
   /// four quick-add chips inside the empty-state "No providers yet"
   /// card. The form's existing save handler still runs the FTUE flow.
@@ -196,19 +293,34 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     final tokens = context.designTokens;
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
+      floatingActionButton: AiSettingsFloatingActionButton(
+        key: ValueKey('ai-settings-fab-${_filterState.activeTab.name}'),
+        activeTab: _filterState.activeTab,
+        onPressed: _activeTabAddHandler(),
+      ),
       body: CustomScrollView(
         controller: _scrollController,
         physics: const ClampingScrollPhysics(),
         slivers: [
-          SettingsPageHeader(
-            title: context.messages.aiSettingsPageTitle,
-            showBackButton: true,
-          ),
-          SliverToBoxAdapter(
-            child: AiSettingsHeaderBar(
-              searchController: _searchController,
-              onSearchClear: _handleSearchClear,
-              onAddProvider: _handleAddProvider,
+          if (!widget.hideHeader)
+            SettingsPageHeader(
+              title: context.messages.aiSettingsPageTitle,
+              showBackButton: true,
+            ),
+          SliverPadding(
+            // The page header sliver above contributes its own bottom
+            // padding to the search bar; when it's hidden (desktop
+            // master/detail) the search bar would otherwise sit flush
+            // against the panel chrome, so we add an explicit top
+            // breathing room from the design-system spacing scale.
+            padding: EdgeInsets.only(
+              top: widget.hideHeader ? tokens.spacing.step5 : 0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: AiSettingsHeaderBar(
+                searchController: _searchController,
+                onSearchClear: _handleSearchClear,
+              ),
             ),
           ),
           ..._buildBodySlivers(),
@@ -274,15 +386,16 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: AiSettingsTabBar(
-            tabController: _tabController,
-            providerCount: 0,
-            modelCount: models.length,
-            profileCount: profiles.length,
-            onTabChanged: _handleTabChange,
+        if (!widget.hideTabBar)
+          SliverToBoxAdapter(
+            child: AiSettingsTabBar(
+              tabController: _tabController,
+              providerCount: 0,
+              modelCount: models.length,
+              profileCount: profiles.length,
+              onTabChanged: _handleTabChange,
+            ),
           ),
-        ),
         SliverPadding(
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.step5,
@@ -298,16 +411,17 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     }
 
     return [
-      SliverToBoxAdapter(
-        child: AiSettingsTabBar(
-          tabController: _tabController,
-          providerCount: providers!.length,
-          modelCount: models.length,
-          profileCount: profiles.length,
-          onTabChanged: _handleTabChange,
+      if (!widget.hideTabBar)
+        SliverToBoxAdapter(
+          child: AiSettingsTabBar(
+            tabController: _tabController,
+            providerCount: providers!.length,
+            modelCount: models.length,
+            profileCount: profiles.length,
+            onTabChanged: _handleTabChange,
+          ),
         ),
-      ),
-      ..._buildActiveTabBody(providers, models, profiles),
+      ..._buildActiveTabBody(providers!, models, profiles),
     ];
   }
 
@@ -320,7 +434,43 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       case AiSettingsTab.providers:
         return [_buildProvidersGrid(providers, models)];
       case AiSettingsTab.models:
-        return [_buildModelsList(models, providers)];
+        return [
+          // Filter strip on the Models tab — same wiring main's
+          // `AiSettingsFixedHeader._buildFilterSection` uses: wrap
+          // `AiSettingsFilterChips` in a horizontal
+          // `SingleChildScrollView` so each of the widget's two
+          // inner `Wrap`s (providers row, capabilities row) gets
+          // unbounded width and lays every chip on a single line.
+          // On mobile the user swipes left/right to see overflowing
+          // chips instead of seeing them stack into 5+ rows. Padding
+          // tracks the design-system spacing scale (step5/step4)
+          // — main's literal `(20, 12, 20, 10)` predates token
+          // adoption and gets the same visual weight rounded to the
+          // nearest token step.
+          SliverToBoxAdapter(
+            child: Builder(
+              builder: (context) {
+                final tokens = context.designTokens;
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.step5,
+                    tokens.spacing.step4,
+                    tokens.spacing.step5,
+                    tokens.spacing.step4,
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: AiSettingsFilterChips(
+                      filterState: _filterState,
+                      onFilterChanged: _updateFilterState,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          _buildModelsList(models, providers),
+        ];
       case AiSettingsTab.profiles:
         return [_buildProfilesGrid(profiles, models, providers)];
     }

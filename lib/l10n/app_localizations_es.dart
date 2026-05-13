@@ -1112,12 +1112,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiBatchToggleTooltip => 'Cambiar a grabación estándar';
 
   @override
-  String get aiCardMenuActionDelete => 'Eliminar';
-
-  @override
-  String get aiCardMenuActionEdit => 'Editar';
-
-  @override
   String get aiCapabilityChipImageGeneration => 'Generación de imágenes';
 
   @override
@@ -1137,6 +1131,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String aiCardHistoryToggle(int count) {
     return 'Historial · $count';
   }
+
+  @override
+  String get aiCardMenuActionDelete => 'Eliminar';
+
+  @override
+  String get aiCardMenuActionEdit => 'Editar';
 
   @override
   String get aiCardOpenAgentInternals => 'Abrir interior del agente';
@@ -1700,6 +1700,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String aiSetupResultKnownModelsMissing(String providerName) {
+    return 'No se pudieron encontrar las configuraciones de modelo requeridas para $providerName';
+  }
+
+  @override
   String get aiSetupResultLead =>
       'Lo hemos configurado todo por ti. Las funciones de IA están listas para usar en tu diario.';
 
@@ -1746,11 +1751,75 @@ class AppLocalizationsEs extends AppLocalizations {
   String get apiKeyAddPageTitle => 'Añadir proveedor';
 
   @override
+  String get apiKeyAuthenticationDescription => 'Asegura tu conexión a la API';
+
+  @override
+  String get apiKeyAuthenticationTitle => 'Autenticación';
+
+  @override
+  String get apiKeyAvailableModelsDescription =>
+      'Añade rápidamente modelos preconfigurados para este proveedor';
+
+  @override
+  String get apiKeyAvailableModelsTitle => 'Modelos disponibles';
+
+  @override
+  String get apiKeyBaseUrlLabel => 'URL base';
+
+  @override
+  String get apiKeyDisplayNameHint => 'Introduce un nombre descriptivo';
+
+  @override
+  String get apiKeyDisplayNameLabel => 'Nombre para mostrar';
+
+  @override
+  String get apiKeyEditGoBackButton => 'Atrás';
+
+  @override
   String get apiKeyEditLoadError =>
       'Error al cargar la configuración de la clave API';
 
   @override
+  String get apiKeyEditLoadErrorRetry =>
+      'Inténtalo de nuevo o contacta con soporte';
+
+  @override
   String get apiKeyEditPageTitle => 'Editar proveedor';
+
+  @override
+  String get apiKeyHideTooltip => 'Ocultar clave API';
+
+  @override
+  String get apiKeyInputHint => 'Introduce tu clave API';
+
+  @override
+  String get apiKeyInputLabel => 'Clave API';
+
+  @override
+  String apiKeyKnownModelInputLabel(String modalities) {
+    return 'Entrada: $modalities';
+  }
+
+  @override
+  String apiKeyKnownModelOutputLabel(String modalities) {
+    return 'Salida: $modalities';
+  }
+
+  @override
+  String get apiKeyProviderConfigDescription =>
+      'Configura los ajustes de tu proveedor de inferencia de IA';
+
+  @override
+  String get apiKeyProviderConfigTitle => 'Configuración del proveedor';
+
+  @override
+  String get apiKeyProviderTypeHint => 'Selecciona un tipo de proveedor';
+
+  @override
+  String get apiKeyProviderTypeLabel => 'Tipo de proveedor';
+
+  @override
+  String get apiKeyShowTooltip => 'Mostrar clave API';
 
   @override
   String get audioRecordingCancel => 'CANCELAR';
@@ -3715,6 +3784,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo disponible en plataformas de escritorio (p. ej. para modelos locales)';
 
   @override
+  String inferenceProfileDetailLoadError(String error) {
+    return 'No se pudo cargar el perfil: $error';
+  }
+
+  @override
+  String get inferenceProfileDetailNotFound => 'Perfil no encontrado';
+
+  @override
   String get inferenceProfileEditTitle => 'Editar perfil';
 
   @override
@@ -5058,10 +5135,24 @@ class AppLocalizationsEs extends AppLocalizations {
       'Plantillas de agentes compartidas';
 
   @override
+  String get settingsAiModelsSubtitle =>
+      'Filas de modelos y capacidades por proveedor';
+
+  @override
+  String get settingsAiModelsTitle => 'Modelos';
+
+  @override
   String get settingsAiProfilesSubtitle => 'Proveedores y modelos';
 
   @override
   String get settingsAiProfilesTitle => 'Perfiles de inferencia';
+
+  @override
+  String get settingsAiProvidersSubtitle =>
+      'Proveedores de IA conectados y claves';
+
+  @override
+  String get settingsAiProvidersTitle => 'Proveedores';
 
   @override
   String get settingsAiSubtitle =>
@@ -5069,6 +5160,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsAiTitle => 'Configuración de AI';
+
+  @override
+  String get settingsBeamPageEditModelTitle => 'Editar modelo';
+
+  @override
+  String get settingsBeamPageEditProfileTitle => 'Editar perfil';
 
   @override
   String get settingsCategoriesCreateTitle => 'Crear categoría';

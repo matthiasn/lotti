@@ -301,5 +301,57 @@ void main() {
         );
       },
     );
+
+    /// Modular coverage for the connected-banner localised provider
+    /// name resolution. The preset's `providerName` is the English
+    /// brand alias used downstream by the result modal's accent map;
+    /// the banner header itself MUST surface the localised display
+    /// name (e.g. "Google Gemini") so the modal title and the banner
+    /// header agree on what the provider is called in the user's
+    /// locale.
+    testWidgets(
+      'banner header uses the localised AppLocalizations name '
+      '(aiProviderGeminiName) for Gemini, NOT the English-only preset '
+      'alias — guards against the regression where the title said '
+      '"Google Gemini" while the banner said "Gemini"',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiProviderSetupPreviewModal(
+              providerType: InferenceProviderType.gemini,
+              preset: geminiPreset,
+              existingModels: const <AiConfigModel>[],
+            ),
+          ),
+        );
+        await tester.pump();
+        // Banner copy: "{Google Gemini} connected"
+        expect(find.textContaining('Google Gemini'), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'banner header uses the localised AppLocalizations name for OpenAI '
+      '— covers the second per-provider arm of aiProviderDisplayName',
+      (tester) async {
+        final preset = AiProviderSetupPreviewModal.presetFor(
+          InferenceProviderType.openAi,
+        )!;
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiProviderSetupPreviewModal(
+              providerType: InferenceProviderType.openAi,
+              preset: preset,
+              existingModels: const <AiConfigModel>[],
+            ),
+          ),
+        );
+        await tester.pump();
+        // OpenAI's localized name is just "OpenAI" — but the banner
+        // copy must include "OpenAI connected" assembled by the
+        // localised template, not literal English-glued text.
+        expect(find.textContaining('OpenAI connected'), findsOneWidget);
+      },
+    );
   });
 }
