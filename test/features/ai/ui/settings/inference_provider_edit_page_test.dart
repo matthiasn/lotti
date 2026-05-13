@@ -105,6 +105,7 @@ void main() {
         color: any(named: 'color'),
         icon: any(named: 'icon'),
         defaultProfileId: any(named: 'defaultProfileId'),
+        defaultTemplateId: any(named: 'defaultTemplateId'),
       ),
     ).thenAnswer(
       (invocation) async => CategoryDefinition(

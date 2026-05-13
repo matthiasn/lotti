@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -144,6 +145,8 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       categoryRepository: categoryRepository,
       categoryName: ftueGeminiCategoryName,
       categoryColor: ftueGeminiCategoryColor,
+      defaultProfileId: profileGeminiFlashId,
+      defaultTemplateId: lauraTemplateId,
     );
 
     return GeminiFtueResult(
@@ -205,12 +208,14 @@ Future<_FtueModelTally> _ensureModelsExist({
 
 /// Shared "create or reuse the FTUE test category" helper. Looks up an
 /// existing (non-deleted) category by exact name; otherwise creates a
-/// fresh one with the given color and optional default profile.
+/// fresh one with the given color and the optional default profile +
+/// agent template bindings.
 Future<(CategoryDefinition?, bool)> _createOrReuseCategory({
   required CategoryRepository categoryRepository,
   required String categoryName,
   required String categoryColor,
   String? defaultProfileId,
+  String? defaultTemplateId,
 }) async {
   final allCategories = await categoryRepository.getAllCategories();
   final existingCategory = allCategories
@@ -225,6 +230,7 @@ Future<(CategoryDefinition?, bool)> _createOrReuseCategory({
     name: categoryName,
     color: categoryColor,
     defaultProfileId: defaultProfileId,
+    defaultTemplateId: defaultTemplateId,
   );
 
   return (category, true);

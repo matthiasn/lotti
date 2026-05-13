@@ -251,6 +251,38 @@ void main() {
         expect(result2.id, isNotEmpty);
         expect(result1.id, isNot(equals(result2.id)));
       });
+
+      test(
+        'forwards defaultProfileId and defaultTemplateId onto the persisted '
+        'CategoryDefinition — both are required by the FTUE flow so new '
+        'tasks in sample categories auto-route through the seeded profile '
+        'and auto-spawn the seeded agent template',
+        () async {
+          when(
+            () => mockPersistenceLogic.upsertEntityDefinition(any()),
+          ).thenAnswer((_) async => 1);
+
+          final result = await repository.createCategory(
+            name: 'Bound Category',
+            color: '#4285F4',
+            defaultProfileId: 'profile-id-123',
+            defaultTemplateId: 'template-id-456',
+          );
+
+          expect(result.defaultProfileId, equals('profile-id-123'));
+          expect(result.defaultTemplateId, equals('template-id-456'));
+
+          final captured =
+              verify(
+                    () => mockPersistenceLogic.upsertEntityDefinition(
+                      captureAny(),
+                    ),
+                  ).captured.single
+                  as CategoryDefinition;
+          expect(captured.defaultProfileId, equals('profile-id-123'));
+          expect(captured.defaultTemplateId, equals('template-id-456'));
+        },
+      );
     });
 
     group('getCategoryById', () {
