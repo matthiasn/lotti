@@ -1587,9 +1587,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSettingsModalityVision => 'Bild';
 
   @override
-  String get aiSettingsModelsFilterAllProviders => 'Alle Anbieter';
-
-  @override
   String get aiSettingsNoModelsConfigured => 'Keine AI-Modelle konfiguriert';
 
   @override

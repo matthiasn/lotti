@@ -1564,9 +1564,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSettingsModalityVision => 'Vision';
 
   @override
-  String get aiSettingsModelsFilterAllProviders => 'All providers';
-
-  @override
   String get aiSettingsNoModelsConfigured => 'No AI models configured';
 
   @override

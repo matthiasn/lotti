@@ -690,7 +690,6 @@
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Bild",
-  "aiSettingsModelsFilterAllProviders": "Alle Anbieter",
   "aiSettingsNoModelsConfigured": "Keine AI-Modelle konfiguriert",
   "aiSettingsNoProvidersConfigured": "Keine AI-Anbieter konfiguriert",
   "aiSettingsPageLead": "Richte KI-Anbieter ein, die Modelle, die Lotti nutzen kann, und die Inferenzprofile, die entscheiden, welches Modell welche Aufgabe übernimmt.",

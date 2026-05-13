@@ -690,7 +690,6 @@
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Texto",
   "aiSettingsModalityVision": "Visión",
-  "aiSettingsModelsFilterAllProviders": "Todos los proveedores",
   "aiSettingsNoModelsConfigured": "No hay modelos AI configurados",
   "aiSettingsNoProvidersConfigured": "No hay proveedores AI configurados",
   "aiSettingsPageLead": "Configura los proveedores de IA, los modelos que Lotti puede usar y los perfiles de inferencia que deciden qué modelo gestiona cada tarea.",

@@ -690,7 +690,6 @@
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Viziune",
-  "aiSettingsModelsFilterAllProviders": "Toți furnizorii",
   "aiSettingsNoModelsConfigured": "Niciun model AI configurat",
   "aiSettingsNoProvidersConfigured": "Niciun furnizor AI configurat",
   "aiSettingsPageLead": "Configurați furnizorii AI, modelele pe care Lotti le poate apela și profilurile de inferență care decid ce model gestionează fiecare sarcină.",

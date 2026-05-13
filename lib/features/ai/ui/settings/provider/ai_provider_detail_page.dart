@@ -13,7 +13,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -197,8 +196,9 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
               // swap, back-nav, hot reload) doesn't re-open the edit
               // form unprompted. Skipped when the page was mounted
               // directly (mobile/test) — there's no URL to clean.
-              final desktopRoute =
-                  getIt<NavService>().desktopSelectedSettingsRoute.value;
+              final desktopRoute = getIt<nav_service.NavService>()
+                  .desktopSelectedSettingsRoute
+                  .value;
               if (desktopRoute?.queryParameters['focusApiKey'] == 'true') {
                 nav_service.beamToNamed(
                   '/settings/ai/provider/${widget.providerId}',

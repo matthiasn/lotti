@@ -1594,9 +1594,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSettingsModalityVision => 'Viziune';
 
   @override
-  String get aiSettingsModelsFilterAllProviders => 'Toți furnizorii';
-
-  @override
   String get aiSettingsNoModelsConfigured => 'Niciun model AI configurat';
 
   @override

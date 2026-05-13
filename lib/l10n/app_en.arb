@@ -883,7 +883,6 @@
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Vision",
-  "aiSettingsModelsFilterAllProviders": "All providers",
   "aiSettingsNoModelsConfigured": "No AI models configured",
   "aiSettingsNoProvidersConfigured": "No AI providers configured",
   "aiSettingsPageLead": "Configure AI providers, the models Lotti can call, and the inference profiles that decide which model handles which task.",

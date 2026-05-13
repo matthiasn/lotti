@@ -1585,9 +1585,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSettingsModalityVision => 'Obraz';
 
   @override
-  String get aiSettingsModelsFilterAllProviders => 'Všichni poskytovatelé';
-
-  @override
   String get aiSettingsNoModelsConfigured =>
       'Nejsou nakonfigurovány žádné AI modely';
 

@@ -434,11 +434,6 @@ Widget _aiPanel(BuildContext context) => const AiPanelDispatch();
 /// Wraps the swap in an [AnimatedSwitcher] tuned to the same 180 ms
 /// cross-fade as `DetailIdDispatch` so the AI panel feels consistent
 /// with the other Settings V2 panels.
-///
-/// Exposed via `@visibleForTesting` so the panel-registry tests can
-/// inject a [listenable] without registering a real `NavService` in
-/// `get_it`.
-@visibleForTesting
 class AiPanelDispatch extends StatelessWidget {
   const AiPanelDispatch({this.listenable, super.key});
 
@@ -486,7 +481,6 @@ class AiPanelDispatch extends StatelessWidget {
 /// the previous element) and keys each detail page by a stable
 /// per-id [ValueKey] so successive detail rows tear down cleanly.
 @immutable
-@visibleForTesting
 class AiPanelSelection {
   const AiPanelSelection({required this.modeKey, required this.child});
 
@@ -502,7 +496,6 @@ class AiPanelSelection {
 /// and would force every dispatcher test to register a real
 /// repository. The widget calls this helper from its builder; the
 /// tests assert directly on the returned widget TYPE and `modeKey`.
-@visibleForTesting
 AiPanelSelection aiPanelSelectionFor(DesktopSettingsRoute? route) {
   final params = route?.pathParameters ?? const <String, String>{};
 

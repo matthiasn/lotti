@@ -2803,12 +2803,6 @@ abstract class AppLocalizations {
   /// **'Vision'**
   String get aiSettingsModalityVision;
 
-  /// No description provided for @aiSettingsModelsFilterAllProviders.
-  ///
-  /// In en, this message translates to:
-  /// **'All providers'**
-  String get aiSettingsModelsFilterAllProviders;
-
   /// No description provided for @aiSettingsNoModelsConfigured.
   ///
   /// In en, this message translates to:

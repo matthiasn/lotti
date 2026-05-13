@@ -530,7 +530,6 @@
   "aiSettingsModalityAudio": "Audio",
   "aiSettingsModalityText": "Text",
   "aiSettingsModalityVision": "Obraz",
-  "aiSettingsModelsFilterAllProviders": "Všichni poskytovatelé",
   "aiSettingsNoModelsConfigured": "Nejsou nakonfigurovány žádné AI modely",
   "aiSettingsNoProvidersConfigured": "Nejsou nakonfigurovány žádní poskytovatelé AI",
   "aiSettingsPageLead": "Nakonfiguruj AI poskytovatele, modely, které Lotti může volat, a inferenční profily, které rozhodují, který model zpracovává který úkol.",
