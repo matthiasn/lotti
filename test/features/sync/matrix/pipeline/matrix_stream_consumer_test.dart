@@ -18,8 +18,6 @@ class _MockSessionManager extends Mock implements MatrixSessionManager {}
 
 class _MockRoomManager extends Mock implements SyncRoomManager {}
 
-class _MockClient extends Mock implements Client {}
-
 class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {
   num? _ts;
   @override
@@ -132,7 +130,7 @@ void main() {
   late MockSettingsDb settings;
   late _MockSyncEventProcessor processor;
   late CachedStreamController<SyncUpdate> onSyncCtl;
-  late _MockClient client;
+  late MockMatrixClient client;
 
   setUp(() {
     session = _MockSessionManager();
@@ -140,7 +138,7 @@ void main() {
     logging = MockLoggingService();
     settings = MockSettingsDb();
     processor = _MockSyncEventProcessor();
-    client = _MockClient();
+    client = MockMatrixClient();
     onSyncCtl = CachedStreamController<SyncUpdate>();
 
     when(() => session.client).thenReturn(client);
@@ -306,7 +304,7 @@ void main() {
       final localLogging = MockLoggingService();
       final localSettings = MockSettingsDb();
       final localProcessor = _MockSyncEventProcessor();
-      final localClient = _MockClient();
+      final localClient = MockMatrixClient();
       final localOnSyncCtl = CachedStreamController<SyncUpdate>();
       var currentRoomReads = 0;
 

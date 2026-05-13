@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_utils/glados_generators.dart';
 
 enum _GeneratedFollowUpDueDateShape {
   absent,
@@ -44,10 +45,10 @@ class _GeneratedFollowUpDueDateScenario {
   final int daySeed;
   final int seed;
 
-  int get day => (daySeed % _daysInMonth(year, month)) + 1;
+  int get day => (daySeed % daysInMonth(year, month)) + 1;
 
   String get _validDate =>
-      '${_fourDigits(year)}-${_twoDigits(month)}-${_twoDigits(day)}';
+      '${fourDigits(year)}-${twoDigits(month)}-${twoDigits(day)}';
 
   Object? get rawDueDate => switch (shape) {
     _GeneratedFollowUpDueDateShape.absent => null,
@@ -57,14 +58,14 @@ class _GeneratedFollowUpDueDateScenario {
     _GeneratedFollowUpDueDateShape.timezoneDateTime =>
       '${_validDate}T09:30:00Z',
     _GeneratedFollowUpDueDateShape.monthZero =>
-      '${_fourDigits(year)}-00-${_twoDigits(day)}',
+      '${fourDigits(year)}-00-${twoDigits(day)}',
     _GeneratedFollowUpDueDateShape.monthThirteen =>
-      '${_fourDigits(year)}-13-${_twoDigits(day)}',
+      '${fourDigits(year)}-13-${twoDigits(day)}',
     _GeneratedFollowUpDueDateShape.dayZero =>
-      '${_fourDigits(year)}-${_twoDigits(month)}-00',
+      '${fourDigits(year)}-${twoDigits(month)}-00',
     _GeneratedFollowUpDueDateShape.dayAfterMonth =>
-      '${_fourDigits(year)}-${_twoDigits(month)}-'
-          '${_twoDigits(_daysInMonth(year, month) + 1)}',
+      '${fourDigits(year)}-${twoDigits(month)}-'
+          '${twoDigits(daysInMonth(year, month) + 1)}',
     _GeneratedFollowUpDueDateShape.nonString => seed,
   };
 
@@ -117,10 +118,6 @@ extension _AnyFollowUpDueDateScenario on glados.Any {
     ),
   );
 }
-
-int _daysInMonth(int year, int month) => DateTime(year, month + 1, 0).day;
-String _twoDigits(int value) => value.toString().padLeft(2, '0');
-String _fourDigits(int value) => value.toString().padLeft(4, '0');
 
 void main() {
   setUpAll(registerAllFallbackValues);

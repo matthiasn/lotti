@@ -19,10 +19,6 @@ class _MockGateway extends Mock implements MatrixSyncGateway {
 
 class _MockRoomManager extends Mock implements SyncRoomManager {}
 
-class _MockClient extends Mock implements Client {}
-
-class _MockRoom extends Mock implements Room {}
-
 class _GeneratedMatrixException extends Fake
     implements MatrixException, Exception {
   _GeneratedMatrixException(this.errcode);
@@ -155,7 +151,7 @@ void main() {
   late _MockGateway gateway;
   late _MockRoomManager roomManager;
   late MockLoggingService loggingService;
-  late _MockClient client;
+  late MockMatrixClient client;
   late MatrixSessionManager sessionManager;
 
   const testConfig = MatrixConfig(
@@ -173,11 +169,11 @@ void main() {
         password: 'fallback',
       ),
     );
-    registerFallbackValue(_MockClient());
+    registerFallbackValue(MockMatrixClient());
   });
 
   setUp(() {
-    client = _MockClient();
+    client = MockMatrixClient();
     gateway = _MockGateway(client);
     roomManager = _MockRoomManager();
     loggingService = MockLoggingService();
@@ -273,7 +269,7 @@ void main() {
           scenario,
         ) async {
           const persistedRoomId = '!persisted:example.org';
-          final client = _MockClient();
+          final client = MockMatrixClient();
           final gateway = _MockGateway(client);
           final roomManager = _MockRoomManager();
           final loggingService = MockLoggingService();
@@ -282,7 +278,7 @@ void main() {
             roomManager: roomManager,
             loggingService: loggingService,
           );
-          final room = _MockRoom();
+          final room = MockRoom();
           var loginCalled = false;
 
           when(

@@ -12,10 +12,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _MockClient extends Mock implements Client {}
-
-class _MockRoom extends Mock implements Room {}
-
 SyncUpdate _limitedSyncFor(String roomId, {String prevBatch = 'pb-1'}) {
   return SyncUpdate(
     nextBatch: 'next-1',
@@ -208,7 +204,7 @@ void main() {
   late SyncDatabase db;
   late MockLoggingService logging;
   late InboundQueue queue;
-  late _MockClient client;
+  late MockMatrixClient client;
   late CachedStreamController<SyncUpdate> syncCtl;
   const roomId = '!roomA:example.org';
 
@@ -220,7 +216,7 @@ void main() {
     db = SyncDatabase(inMemoryDatabase: true);
     logging = MockLoggingService();
     queue = InboundQueue(db: db, logging: logging);
-    client = _MockClient();
+    client = MockMatrixClient();
     syncCtl = CachedStreamController<SyncUpdate>();
     when(() => client.onSync).thenReturn(syncCtl);
   });
@@ -291,7 +287,7 @@ void main() {
     'missing timestamp invokes the runner with untilTimestamp=null — '
     'fresh client case walks the full visible history',
     () async {
-      final room = _MockRoom();
+      final room = MockRoom();
       when(() => room.id).thenReturn(roomId);
       final runner = _RecordingRunner();
       final coordinator = buildCoordinator(
@@ -317,7 +313,7 @@ void main() {
     'marker with anchor event id forwards both through to the runner — '
     'reconnect path prefers forward-walk anchored on last applied event',
     () async {
-      final room = _MockRoom();
+      final room = MockRoom();
       when(() => room.id).thenReturn(roomId);
       final runner = _RecordingRunner();
       final coordinator = BridgeCoordinator(
@@ -351,7 +347,7 @@ void main() {
     'marker with ts but no anchor falls back to the backward mode — '
     'cannot forward-walk without an event id to anchor on',
     () async {
-      final room = _MockRoom();
+      final room = MockRoom();
       when(() => room.id).thenReturn(roomId);
       final runner = _RecordingRunner();
       final coordinator = buildCoordinator(
@@ -378,7 +374,7 @@ void main() {
     'runner throwing is caught, logged, and counted as incomplete so '
     'the retry machinery still kicks in',
     () async {
-      final room = _MockRoom();
+      final room = MockRoom();
       when(() => room.id).thenReturn(roomId);
       final retried = Completer<void>();
       var callCount = 0;
@@ -462,7 +458,7 @@ void main() {
     'a second trigger that lands while a bridge is in-flight is coalesced '
     'into exactly one rerun after the in-flight pass completes',
     () async {
-      final room = _MockRoom();
+      final room = MockRoom();
       when(() => room.id).thenReturn(roomId);
       final firstCallGate = Completer<void>();
       final runner = _RecordingRunner()
@@ -503,7 +499,7 @@ void main() {
     'sync-room change between trigger and resolveRoom causes '
     'queue.bridge.skip reason=roomChanged — no cross-room catch-up',
     () async {
-      final otherRoom = _MockRoom();
+      final otherRoom = MockRoom();
       when(() => otherRoom.id).thenReturn('!otherRoom:example.org');
       final runner = _RecordingRunner();
       final coordinator = buildCoordinator(
@@ -530,10 +526,10 @@ void main() {
   ).test(
     'generated trigger streams only bridge the active room and preserve marker',
     (scenario) async {
-      final generatedClient = _MockClient();
+      final generatedClient = MockMatrixClient();
       final generatedSyncCtl = CachedStreamController<SyncUpdate>();
       final generatedLogging = MockLoggingService();
-      final generatedRoom = _MockRoom();
+      final generatedRoom = MockRoom();
       final runner = _RecordingRunner();
       when(() => generatedClient.onSync).thenReturn(generatedSyncCtl);
       when(() => generatedRoom.id).thenReturn(scenario.actualRoomId);
@@ -598,10 +594,10 @@ void main() {
   );
 
   group('retry outcomes', () {
-    late _MockRoom room;
+    late MockRoom room;
 
     setUp(() {
-      room = _MockRoom();
+      room = MockRoom();
       when(() => room.id).thenReturn(roomId);
     });
 

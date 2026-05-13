@@ -12,8 +12,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 
-class _MockClient extends Mock implements Client {}
-
 class _MockSessionManager extends Mock implements MatrixSessionManager {}
 
 class _MockRoomManager extends Mock implements SyncRoomManager {}
@@ -169,7 +167,7 @@ void main() {
         final sessionManager = _MockSessionManager();
         final roomManager = _MockRoomManager();
         final logging = MockLoggingService();
-        final client = _MockClient();
+        final client = MockMatrixClient();
         final syncController = CachedStreamController<SyncUpdate>();
         final loggedMessages = <String>[];
         var streamErrors = 0;

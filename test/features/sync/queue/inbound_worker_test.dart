@@ -10,17 +10,10 @@ import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class _MockEvent extends Mock implements Event {}
-
-class _MockRoom extends Mock implements Room {}
-
-class _MockVectorClockService extends Mock implements VectorClockService {}
 
 class _MockActivityGate extends Mock implements UserActivityGate {}
 
@@ -50,7 +43,7 @@ Event _buildSyncEvent({
   required String roomId,
   required int originTsMs,
 }) {
-  final event = _MockEvent();
+  final event = MockEvent();
   final content = <String, dynamic>{'msgtype': syncMessageType};
   when(() => event.eventId).thenReturn(eventId);
   when(() => event.roomId).thenReturn(roomId);
@@ -152,7 +145,7 @@ void main() {
   late MockLoggingService logging;
   late InboundQueue queue;
   late _SpySequenceLog sequenceLog;
-  late _MockRoom room;
+  late MockRoom room;
   const roomId = '!roomA:example.org';
 
   setUpAll(() {
@@ -165,10 +158,10 @@ void main() {
     queue = InboundQueue(db: db, logging: logging);
     sequenceLog = _SpySequenceLog(
       syncDatabase: db,
-      vectorClockService: _MockVectorClockService(),
+      vectorClockService: MockVectorClockService(),
       loggingService: logging,
     );
-    room = _MockRoom();
+    room = MockRoom();
     when(() => room.id).thenReturn(roomId);
   });
 
@@ -474,10 +467,10 @@ void main() {
       final localQueue = InboundQueue(db: localDb, logging: localLogging);
       final localSequenceLog = _SpySequenceLog(
         syncDatabase: localDb,
-        vectorClockService: _MockVectorClockService(),
+        vectorClockService: MockVectorClockService(),
         loggingService: localLogging,
       );
-      final localRoom = _MockRoom();
+      final localRoom = MockRoom();
       when(() => localRoom.id).thenReturn(roomId);
 
       var virtualNow = DateTime(2024);
@@ -635,7 +628,7 @@ void main() {
           logging: logging,
           decryptionPen: pen,
         );
-        final encrypted = _MockEvent();
+        final encrypted = MockEvent();
         when(() => encrypted.eventId).thenReturn(r'$enc1');
         when(() => encrypted.roomId).thenReturn(roomId);
         when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
@@ -775,7 +768,7 @@ void main() {
         });
         // Holding an encrypted event forces the pen.flushInto branch
         // which calls _resolveRoom() and blows up on the first call.
-        final enc = _MockEvent();
+        final enc = MockEvent();
         when(() => enc.eventId).thenReturn(r'$enc');
         when(() => enc.roomId).thenReturn(roomId);
         when(() => enc.type).thenReturn(EventTypes.Encrypted);

@@ -5,7 +5,6 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 // No internal SDK controllers in tests
@@ -16,10 +15,6 @@ import '../../../mocks/mocks.dart';
 // ignore_for_file: cascade_invocations, unnecessary_lambdas
 
 class _MockKeyVerification extends Mock implements KeyVerification {}
-
-class _MockMatrixService extends Mock implements MatrixService {}
-
-class _MockClient extends Mock implements Client {}
 
 class _MockDeviceKeys extends Mock implements DeviceKeys {}
 
@@ -397,17 +392,17 @@ void main() {
   });
 
   group('listenForKeyVerificationRequestsWithSubscription', () {
-    late _MockMatrixService service;
+    late MockMatrixService service;
     late MockLoggingService loggingService;
-    late _MockClient client;
+    late MockMatrixClient client;
     late StreamController<KeyVerificationRunner> runnerController;
     late StreamController<KeyVerification> requestController;
     late StreamController<KeyVerification> requestCachedController;
 
     setUp(() {
-      service = _MockMatrixService();
+      service = MockMatrixService();
       loggingService = MockLoggingService();
-      client = _MockClient();
+      client = MockMatrixClient();
       runnerController = StreamController<KeyVerificationRunner>.broadcast(
         sync: true,
       );
@@ -592,7 +587,7 @@ void main() {
 
   group('verifyMatrixDevice', () {
     test('starts verification and publishes runner state', () async {
-      final service = _MockMatrixService();
+      final service = MockMatrixService();
       final deviceKeys = _MockDeviceKeys();
       final verification = _MockKeyVerification();
       final runnerController =

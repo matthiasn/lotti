@@ -12,7 +12,6 @@ import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
-import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
@@ -20,7 +19,6 @@ import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
@@ -33,12 +31,6 @@ class _MockSessionManager extends Mock implements MatrixSessionManager {}
 
 class _MockRoomManager extends Mock implements SyncRoomManager {}
 
-class _MockEventProcessor extends Mock implements SyncEventProcessor {}
-
-class _MockSequenceLogService extends Mock implements SyncSequenceLogService {}
-
-class _MockQueue extends Mock implements InboundQueue {}
-
 class _MockWorker extends Mock implements InboundWorker {}
 
 class _MockBridge extends Mock implements BridgeCoordinator {}
@@ -46,14 +38,6 @@ class _MockBridge extends Mock implements BridgeCoordinator {}
 class _MockPen extends Mock implements PendingDecryptionPen {}
 
 class _MockSeeder extends Mock implements QueueMarkerSeeder {}
-
-class _MockEvent extends Mock implements Event {}
-
-class _MockClient extends Mock implements Client {}
-
-class _MockRoom extends Mock implements Room {}
-
-class _MockTimeline extends Mock implements Timeline {}
 
 /// Test double for [AttachmentIngestor] that records every `process()`
 /// call and optionally throws, without needing mocktail fallbacks for
@@ -441,22 +425,22 @@ void main() {
   late MockSettingsDb settingsDb;
   late _MockSessionManager sessionManager;
   late _MockRoomManager roomManager;
-  late _MockEventProcessor processor;
-  late _MockSequenceLogService sequenceLog;
+  late MockSyncEventProcessor processor;
+  late MockSyncSequenceLogService sequenceLog;
   late MockLoggingService logging;
-  late _MockQueue queue;
+  late MockInboundQueue queue;
   late _MockWorker worker;
   late _MockBridge bridge;
   late _MockPen pen;
   late _MockSeeder seeder;
   late StreamController<Event> timelineCtl;
   late CachedStreamController<SyncUpdate> syncCtl;
-  late _MockClient client;
+  late MockMatrixClient client;
   const roomId = '!roomA:example.org';
 
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
-    registerFallbackValue(_MockEvent());
+    registerFallbackValue(MockEvent());
   });
 
   setUp(() {
@@ -465,17 +449,17 @@ void main() {
     settingsDb = MockSettingsDb();
     sessionManager = _MockSessionManager();
     roomManager = _MockRoomManager();
-    processor = _MockEventProcessor();
-    sequenceLog = _MockSequenceLogService();
+    processor = MockSyncEventProcessor();
+    sequenceLog = MockSyncSequenceLogService();
     logging = MockLoggingService();
-    queue = _MockQueue();
+    queue = MockInboundQueue();
     worker = _MockWorker();
     bridge = _MockBridge();
     pen = _MockPen();
     seeder = _MockSeeder();
     timelineCtl = StreamController<Event>.broadcast(sync: true);
     syncCtl = CachedStreamController<SyncUpdate>();
-    client = _MockClient();
+    client = MockMatrixClient();
     when(() => client.onSync).thenReturn(syncCtl);
 
     when(
@@ -535,7 +519,7 @@ void main() {
   );
 
   Event buildEvent(String type) {
-    final e = _MockEvent();
+    final e = MockEvent();
     when(() => e.eventId).thenReturn(r'$a');
     when(() => e.roomId).thenReturn(roomId);
     when(() => e.type).thenReturn(type);
@@ -591,7 +575,7 @@ void main() {
       final coordinator = build();
       await coordinator.start();
 
-      final foreign = _MockEvent();
+      final foreign = MockEvent();
       when(() => foreign.eventId).thenReturn(r'$other');
       when(() => foreign.roomId).thenReturn('!someOtherRoom:example.org');
       when(() => foreign.type).thenReturn(EventTypes.Message);
@@ -615,15 +599,15 @@ void main() {
       final localSettingsDb = MockSettingsDb();
       final localSessionManager = _MockSessionManager();
       final localRoomManager = _MockRoomManager();
-      final localProcessor = _MockEventProcessor();
-      final localSequenceLog = _MockSequenceLogService();
+      final localProcessor = MockSyncEventProcessor();
+      final localSequenceLog = MockSyncSequenceLogService();
       final localLogging = MockLoggingService();
-      final localQueue = _MockQueue();
+      final localQueue = MockInboundQueue();
       final localWorker = _MockWorker();
       final localBridge = _MockBridge();
       final localPen = _MockPen();
       final localSeeder = _MockSeeder();
-      final localClient = _MockClient();
+      final localClient = MockMatrixClient();
       final localTimelineCtl = StreamController<Event>.broadcast(sync: true);
       final localSyncCtl = CachedStreamController<SyncUpdate>();
       final sentEventRegistry = SentEventRegistry();
@@ -723,7 +707,7 @@ void main() {
             sentEventRegistry.register(eventId);
           }
 
-          final event = _MockEvent();
+          final event = MockEvent();
           when(() => event.eventId).thenReturn(eventId);
           when(() => event.roomId).thenReturn(scenario.eventRoomIdAt(i));
           when(() => event.type).thenReturn(operation.type);
@@ -870,7 +854,7 @@ void main() {
   );
 
   test('handles onSync signal: postLoad called on partial room', () async {
-    final room = _MockRoom();
+    final room = MockRoom();
     when(() => room.partial).thenReturn(true);
     when(room.postLoad).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
@@ -890,7 +874,7 @@ void main() {
   test(
     'onSync does not call postLoad when room is already non-partial',
     () async {
-      final room = _MockRoom();
+      final room = MockRoom();
       when(() => room.partial).thenReturn(false);
       when(room.postLoad).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
@@ -941,8 +925,8 @@ void main() {
     test(
       'exits immediately when the server has no history',
       () async {
-        final room = _MockRoom();
-        final timeline = _MockTimeline();
+        final room = MockRoom();
+        final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
@@ -987,14 +971,14 @@ void main() {
           seederOverride: seeder,
         );
 
-        final room = _MockRoom();
-        final timeline = _MockTimeline();
+        final room = MockRoom();
+        final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
 
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.eventId).thenReturn(r'$bootstrap');
         when(() => event.roomId).thenReturn(roomId);
         when(() => event.type).thenReturn(EventTypes.Message);
@@ -1049,14 +1033,14 @@ void main() {
           seederOverride: seeder,
         );
 
-        final room = _MockRoom();
-        final timeline = _MockTimeline();
+        final room = MockRoom();
+        final timeline = MockTimeline();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
 
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.eventId).thenReturn(r'$bootstrap2');
         when(() => event.roomId).thenReturn(roomId);
         when(() => event.type).thenReturn(EventTypes.Message);
@@ -1092,7 +1076,7 @@ void main() {
   });
 
   test('postLoad error drops the marker so a later sync retries', () async {
-    final room = _MockRoom();
+    final room = MockRoom();
     when(() => room.partial).thenReturn(true);
     when(room.postLoad).thenThrow(StateError('sdk down'));
     when(() => roomManager.currentRoom).thenReturn(room);
@@ -1338,7 +1322,7 @@ void main() {
     test(
       'drainUntilEmpty flushes the pen before sampling stats',
       () async {
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => roomManager.currentRoom).thenReturn(room);
         when(() => pen.flushInto(queue: queue, room: room)).thenAnswer(
           (_) async =>
@@ -1367,16 +1351,16 @@ void main() {
         final localSettingsDb = MockSettingsDb();
         final localSessionManager = _MockSessionManager();
         final localRoomManager = _MockRoomManager();
-        final localProcessor = _MockEventProcessor();
-        final localSequenceLog = _MockSequenceLogService();
+        final localProcessor = MockSyncEventProcessor();
+        final localSequenceLog = MockSyncSequenceLogService();
         final localLogging = MockLoggingService();
-        final localQueue = _MockQueue();
+        final localQueue = MockInboundQueue();
         final localWorker = _MockWorker();
         final localBridge = _MockBridge();
         final localPen = _MockPen();
         final localSeeder = _MockSeeder();
-        final localClient = _MockClient();
-        final localRoom = _MockRoom();
+        final localClient = MockMatrixClient();
+        final localRoom = MockRoom();
         final localTimelineCtl = StreamController<Event>.broadcast(sync: true);
         final localSyncCtl = CachedStreamController<SyncUpdate>();
         final events = <String>[];
@@ -1606,9 +1590,9 @@ void main() {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final timeline = _MockTimeline();
+        final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
         when(() => timeline.canRequestHistory).thenReturn(false);
         when(timeline.cancelSubscriptions).thenAnswer((_) {});
@@ -1656,9 +1640,9 @@ void main() {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final timeline = _MockTimeline();
+        final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
         when(() => timeline.canRequestHistory).thenReturn(false);
         when(timeline.cancelSubscriptions).thenAnswer((_) {});
@@ -1715,9 +1699,9 @@ void main() {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final timeline = _MockTimeline();
+        final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
         when(() => timeline.canRequestHistory).thenReturn(false);
         when(timeline.cancelSubscriptions).thenAnswer((_) {});
@@ -1790,9 +1774,9 @@ void main() {
         final realQueue = InboundQueue(db: syncDb, logging: logging);
         addTearDown(realQueue.dispose);
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final timeline = _MockTimeline();
+        final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[]);
         when(() => timeline.canRequestHistory).thenReturn(false);
         when(timeline.cancelSubscriptions).thenAnswer((_) {});
@@ -1897,7 +1881,7 @@ void main() {
         );
         await coordinator.start();
 
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.attachmentMimetype).thenReturn('audio/m4a');
         when(() => event.content).thenReturn({
           'relativePath': 'audio/2026-04-21/foo.m4a.json',
@@ -1956,7 +1940,7 @@ void main() {
           'audio/2026-04-21/b.m4a.json',
           'images/2026-04-21/c.jpg.json',
         ]) {
-          final event = _MockEvent();
+          final event = MockEvent();
           when(() => event.attachmentMimetype).thenReturn('audio/m4a');
           when(() => event.content).thenReturn({'relativePath': path});
           when(() => event.eventId).thenReturn('\$ev-${path.hashCode}');
@@ -2032,7 +2016,7 @@ void main() {
         // accumulator drain into the bulk call. The mock now hangs
         // on `flushCompleter.future` so the flush is genuinely
         // in-flight when stop() runs.
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.attachmentMimetype).thenReturn('audio/m4a');
         when(() => event.content).thenReturn({
           'relativePath': 'audio/2026-04-21/foo.m4a.json',
@@ -2243,7 +2227,7 @@ void main() {
         );
         await coordinator.start();
 
-        final echoed = _MockEvent();
+        final echoed = MockEvent();
         when(() => echoed.eventId).thenReturn(r'$self-echo');
         when(() => echoed.roomId).thenReturn(roomId);
         when(() => echoed.type).thenReturn(EventTypes.Message);
@@ -2285,7 +2269,7 @@ void main() {
         );
         await coordinator.start();
 
-        final peer = _MockEvent();
+        final peer = MockEvent();
         when(() => peer.eventId).thenReturn(r'$peer-event');
         when(() => peer.roomId).thenReturn(roomId);
         when(() => peer.type).thenReturn(EventTypes.Message);
@@ -2339,7 +2323,7 @@ void main() {
         // Pending fake-sync: transaction id (not server-assigned),
         // status=sending — would otherwise bypass the registry entirely
         // because the registry never learns the transaction id.
-        final pending = _MockEvent();
+        final pending = MockEvent();
         when(() => pending.eventId).thenReturn('m1761234567890-txn-id');
         when(() => pending.roomId).thenReturn(roomId);
         when(() => pending.type).thenReturn(EventTypes.Message);
@@ -2349,14 +2333,14 @@ void main() {
         // registry is empty on this tick because the sender's
         // register() call has not run yet (it runs after sendEvent
         // returns, which is after this fake-sync fires).
-        final optimistic = _MockEvent();
+        final optimistic = MockEvent();
         when(() => optimistic.eventId).thenReturn(r'$server-assigned-id');
         when(() => optimistic.roomId).thenReturn(roomId);
         when(() => optimistic.type).thenReturn(EventTypes.Message);
         when(() => optimistic.status).thenReturn(EventStatus.sent);
 
         // Error fake-sync: send failed mid-flight.
-        final errored = _MockEvent();
+        final errored = MockEvent();
         when(() => errored.eventId).thenReturn('m-errored-txn');
         when(() => errored.roomId).thenReturn(roomId);
         when(() => errored.type).thenReturn(EventTypes.Message);
@@ -2407,7 +2391,7 @@ void main() {
         );
         await coordinator.start();
 
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.attachmentMimetype).thenReturn('audio/m4a');
         when(() => event.content).thenReturn({
           'relativePath': 'audio/2026-04-21/foo.m4a.json',
@@ -2490,16 +2474,16 @@ void main() {
   });
 
   group('gap-triggered unbounded bootstrap (barren-bridge recovery)', () {
-    // Shared helper: stubs a [_MockTimeline] with [events] and wires
+    // Shared helper: stubs a [MockTimeline] with [events] and wires
     // `requestHistory` so that each call either adds more events
     // (also below the boundary, so the sink can stay unproductive)
     // or flips `canRequestHistory` to false to end the walk.
-    _MockTimeline stubTimeline({
+    MockTimeline stubTimeline({
       required List<Event> events,
       required bool Function() canRequestHistory,
       required Future<void> Function(int historyCount) onRequestHistory,
     }) {
-      final tl = _MockTimeline();
+      final tl = MockTimeline();
       when(() => tl.events).thenAnswer((_) => events);
       when(() => tl.canRequestHistory).thenAnswer((_) => canRequestHistory());
       when(
@@ -2516,7 +2500,7 @@ void main() {
       required String id,
       required int tsMs,
     }) {
-      final e = _MockEvent();
+      final e = MockEvent();
       when(() => e.eventId).thenReturn(id);
       when(() => e.roomId).thenReturn(roomId);
       when(() => e.type).thenReturn(EventTypes.Message);
@@ -2573,7 +2557,7 @@ void main() {
         // to `boundaryContinuationCap` continuations — each still
         // producing boundary-crossing, 0-accepted pages. That is the
         // "barren" shape we want to detect.
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
         // `maybeStartGapRecovery` resolves the room via
         // `_resolveRoom`, which consults the room manager first and
@@ -2655,7 +2639,7 @@ void main() {
         // completion via `serverExhausted`: the event is emitted and
         // the SDK has no more history. That is a different stopReason
         // and must also clear the barren flag.
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
         final events = <Event>[buildSyncPayload(id: r'$e-prod', tsMs: 50)];
         final timeline = stubTimeline(
@@ -2696,7 +2680,7 @@ void main() {
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
         final timeline = stubTimeline(
           events: <Event>[],
@@ -2746,7 +2730,7 @@ void main() {
 
         final baseTime = DateTime(2026, 4, 21, 10);
         await withClock(Clock.fixed(baseTime), () async {
-          final room = _MockRoom();
+          final room = MockRoom();
           when(() => room.id).thenReturn(roomId);
           var historyCalls = 0;
           final events = <Event>[buildSyncPayload(id: r'$e-0', tsMs: 50)];
@@ -2798,7 +2782,7 @@ void main() {
         addTearDown(() async => coordinator.stop());
 
         // First: record the barren bridge.
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
         when(() => roomManager.currentRoom).thenReturn(room);
         var historyCalls = 0;
@@ -2890,10 +2874,10 @@ void main() {
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final timeline = _MockTimeline();
-        final anchor = _MockEvent();
+        final timeline = MockTimeline();
+        final anchor = MockEvent();
         when(() => anchor.eventId).thenReturn(r'$anchor');
         when(
           () => anchor.originServerTs,
@@ -2955,10 +2939,10 @@ void main() {
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
         // Forward-walk timeline: empty events (anchor unresolvable).
-        final forwardTl = _MockTimeline();
+        final forwardTl = MockTimeline();
         when(() => forwardTl.events).thenReturn(<Event>[]);
         when(() => forwardTl.canRequestFuture).thenReturn(true);
         when(forwardTl.cancelSubscriptions).thenAnswer((_) {});
@@ -2969,7 +2953,7 @@ void main() {
           ),
         ).thenAnswer((_) async => forwardTl);
         // Backward-walk timeline: empty, server-exhausted.
-        final backwardTl = _MockTimeline();
+        final backwardTl = MockTimeline();
         when(() => backwardTl.events).thenReturn(<Event>[]);
         when(() => backwardTl.canRequestHistory).thenReturn(false);
         when(backwardTl.cancelSubscriptions).thenAnswer((_) {});
@@ -3025,15 +3009,15 @@ void main() {
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final timeline = _MockTimeline();
-        final anchor = _MockEvent();
+        final timeline = MockTimeline();
+        final anchor = MockEvent();
         when(() => anchor.eventId).thenReturn(r'$anchor');
         when(
           () => anchor.originServerTs,
         ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
-        final e1 = _MockEvent();
+        final e1 = MockEvent();
         when(() => e1.eventId).thenReturn(r'$e1');
         when(
           () => e1.originServerTs,
@@ -3112,9 +3096,9 @@ void main() {
 
         // Phase 1 — prime the barren-bridge flag with a backward walk
         // that ends boundaryReached + 0 accepted.
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final barrenEvent = _MockEvent();
+        final barrenEvent = MockEvent();
         when(() => barrenEvent.eventId).thenReturn(r'$e-0');
         when(
           () => barrenEvent.originServerTs,
@@ -3130,7 +3114,7 @@ void main() {
           'content': <String, dynamic>{},
         });
         final barrenEvents = <Event>[barrenEvent];
-        final barrenTl = _MockTimeline();
+        final barrenTl = MockTimeline();
         when(() => barrenTl.events).thenAnswer((_) => barrenEvents);
         // Keep requesting history so the boundary-continuation cap
         // trips with totalAccepted==0 — that's the shape that flips
@@ -3142,7 +3126,7 @@ void main() {
               barrenTl.requestHistory(historyCount: any(named: 'historyCount')),
         ).thenAnswer((_) async {
           historyCalls++;
-          final e = _MockEvent();
+          final e = MockEvent();
           when(() => e.eventId).thenReturn(r'$e-$historyCalls');
           when(
             () => e.originServerTs,
@@ -3172,8 +3156,8 @@ void main() {
         expect(coordinator.hasBarrenBridgeSignal, isTrue);
 
         // Phase 2 — forward walk completes successfully.
-        final forwardTl = _MockTimeline();
-        final anchor = _MockEvent();
+        final forwardTl = MockTimeline();
+        final anchor = MockEvent();
         when(() => anchor.eventId).thenReturn(r'$anchor');
         when(
           () => anchor.originServerTs,
@@ -3235,14 +3219,14 @@ void main() {
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final anchor = _MockEvent();
+        final anchor = MockEvent();
         when(() => anchor.eventId).thenReturn(r'$anchor');
         when(
           () => anchor.originServerTs,
         ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
-        final e1 = _MockEvent();
+        final e1 = MockEvent();
         when(() => e1.eventId).thenReturn(r'$e1');
         when(
           () => e1.originServerTs,
@@ -3257,7 +3241,7 @@ void main() {
           'type': EventTypes.Message,
           'content': <String, dynamic>{},
         });
-        final timeline = _MockTimeline();
+        final timeline = MockTimeline();
         when(() => timeline.events).thenReturn(<Event>[anchor, e1]);
         when(() => timeline.canRequestFuture).thenReturn(false);
         when(timeline.cancelSubscriptions).thenAnswer((_) {});
@@ -3315,9 +3299,9 @@ void main() {
         await coordinator.start();
         addTearDown(() async => coordinator.stop());
 
-        final room = _MockRoom();
+        final room = MockRoom();
         when(() => room.id).thenReturn(roomId);
-        final e = _MockEvent();
+        final e = MockEvent();
         when(() => e.eventId).thenReturn(r'$e1');
         when(
           () => e.originServerTs,
@@ -3332,7 +3316,7 @@ void main() {
           'type': EventTypes.Message,
           'content': <String, dynamic>{},
         });
-        final tl = _MockTimeline();
+        final tl = MockTimeline();
         when(() => tl.events).thenReturn(<Event>[e]);
         when(() => tl.canRequestHistory).thenReturn(false);
         when(tl.cancelSubscriptions).thenAnswer((_) {});

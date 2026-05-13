@@ -12,16 +12,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _MockEvent extends Mock implements Event {}
-
-class _MockInboundQueue extends Mock implements InboundQueue {}
-
 Event _buildEvent({
   required String eventId,
   required int originTsMs,
   String roomId = '!roomA:example.org',
 }) {
-  final event = _MockEvent();
+  final event = MockEvent();
   final content = <String, dynamic>{'msgtype': syncMessageType};
   when(() => event.eventId).thenReturn(eventId);
   when(() => event.roomId).thenReturn(roomId);
@@ -316,7 +312,7 @@ void main() {
   ).test(
     'generated pages preserve accepted counts, cancellation, and timeouts',
     (scenario) async {
-      final generatedQueue = _MockInboundQueue();
+      final generatedQueue = MockInboundQueue();
       final generatedLogging = MockLoggingService();
       final cancelCompleter = Completer<void>();
       final appendedPages = <List<String>>[];
