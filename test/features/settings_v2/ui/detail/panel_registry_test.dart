@@ -258,6 +258,15 @@ void main() {
                 'sidebar leaf is the source of truth for which view '
                 'is active on desktop',
           );
+          expect(
+            pinned.hideHeader,
+            isTrue,
+            reason:
+                '${entry.key} must hide the in-pane SettingsPageHeader '
+                '— the master/detail breadcrumb already names the '
+                'panel, so the duplicate AI Settings title would just '
+                'crowd the search bar',
+          );
         }
 
         final agentsRoot = build('agents');
@@ -865,6 +874,7 @@ void main() {
         expect(selection.child, isA<AiSettingsBody>());
         final body = selection.child as AiSettingsBody;
         expect(body.hideTabBar, isTrue);
+        expect(body.hideHeader, isTrue);
         expect(body.initialTab, isNull);
         expect(selection.modeKey, 'list');
       },
@@ -881,7 +891,9 @@ void main() {
           queryParameters: <String, String>{},
         ));
         expect(selection.child, isA<AiSettingsBody>());
-        expect((selection.child as AiSettingsBody).hideTabBar, isTrue);
+        final body = selection.child as AiSettingsBody;
+        expect(body.hideTabBar, isTrue);
+        expect(body.hideHeader, isTrue);
         expect(selection.modeKey, 'list');
       },
     );

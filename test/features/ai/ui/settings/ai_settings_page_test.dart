@@ -14,11 +14,13 @@ import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -102,18 +104,19 @@ void main() {
 
   setUp(() async {
     mockRepository = MockAiConfigRepository();
-    await setUpTestGetIt();
-
     // The v4 nav service beams provider/model/profile-detail URLs
     // through `nav_service.beamToNamed`, which calls
     // `getIt<NavService>()`. Without this mock, every navigation test
-    // crashes with a missing-registration error.
+    // crashes with a missing-registration error. `setUpTestGetIt`
+    // already resets the locator, so binding through `additionalSetup`
+    // is enough — no need to re-check `isRegistered`.
     mockNavService = MockNavService();
     when(() => mockNavService.beamToNamed(any())).thenReturn(null);
-    if (getIt.isRegistered<NavService>()) {
-      getIt.unregister<NavService>();
-    }
-    getIt.registerSingleton<NavService>(mockNavService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<NavService>(mockNavService);
+      },
+    );
 
     providersController = StreamController<List<AiConfig>>.broadcast();
     modelsController = StreamController<List<AiConfig>>.broadcast();
@@ -1029,6 +1032,7 @@ void main() {
     Widget seededHarness({
       required AiSettingsTab initialTab,
       bool hideTabBar = false,
+      bool hideHeader = false,
       List<NavigatorObserver> navigatorObservers = const [],
     }) {
       return ProviderScope(
@@ -1051,6 +1055,7 @@ void main() {
           home: AiSettingsPage(
             initialTab: initialTab,
             hideTabBar: hideTabBar,
+            hideHeader: hideHeader,
           ),
         ),
       );
@@ -1063,12 +1068,14 @@ void main() {
       required List<AiConfig> models,
       required List<AiConfig> profiles,
       bool hideTabBar = false,
+      bool hideHeader = false,
       List<NavigatorObserver> navigatorObservers = const [],
     }) async {
       await tester.pumpWidget(
         seededHarness(
           initialTab: initialTab,
           hideTabBar: hideTabBar,
+          hideHeader: hideHeader,
           navigatorObservers: navigatorObservers,
         ),
       );
@@ -1155,6 +1162,55 @@ void main() {
         // Body still rendered — the page didn't collapse, it just
         // dropped the tab strip on top.
         expect(find.byType(AiProviderCard), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'hideHeader=true drops the in-pane `SettingsPageHeader` so the '
+      'desktop master/detail breadcrumb is the sole title affordance — '
+      'the search bar still renders and stays first in the scroll view',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.providers,
+          hideHeader: true,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        expect(find.byType(SettingsPageHeader), findsNothing);
+        // The search bar (and the rest of the page) still mounts so
+        // the panel isn't a blank slate.
+        expect(find.byType(AiSettingsHeaderBar), findsOneWidget);
+        expect(find.byType(AiProviderCard), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'hideHeader=false keeps the in-pane `SettingsPageHeader` mounted — '
+      'the mobile / standalone surface still needs the title strip + back '
+      'button because there is no breadcrumb above it',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.providers,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        expect(find.byType(SettingsPageHeader), findsOneWidget);
       },
     );
 

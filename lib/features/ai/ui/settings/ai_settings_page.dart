@@ -33,7 +33,12 @@ import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 /// (Providers / Models / Profiles) each map to one focused view —
 /// no in-pane tab strip on top of the sidebar selection.
 class AiSettingsBody extends StatelessWidget {
-  const AiSettingsBody({this.initialTab, this.hideTabBar = false, super.key});
+  const AiSettingsBody({
+    this.initialTab,
+    this.hideTabBar = false,
+    this.hideHeader = false,
+    super.key,
+  });
 
   /// Pre-selects a tab. When provided, [AiSettingsPage] seeds its
   /// filter state and `TabController.index` from this value so the
@@ -45,9 +50,19 @@ class AiSettingsBody extends StatelessWidget {
   /// second tab strip on top would be redundant.
   final bool hideTabBar;
 
+  /// Suppresses the in-pane `SettingsPageHeader` (the "< AI Settings"
+  /// title strip). Used by the desktop master/detail surface where
+  /// the panel chrome already shows the breadcrumb
+  /// "Settings > AI Settings > Providers" — repeating the title above
+  /// the search bar is redundant.
+  final bool hideHeader;
+
   @override
-  Widget build(BuildContext context) =>
-      AiSettingsPage(initialTab: initialTab, hideTabBar: hideTabBar);
+  Widget build(BuildContext context) => AiSettingsPage(
+    initialTab: initialTab,
+    hideTabBar: hideTabBar,
+    hideHeader: hideHeader,
+  );
 }
 
 /// Main AI Settings page. Visual reference: the D1 PNGs at
@@ -73,6 +88,7 @@ class AiSettingsPage extends ConsumerStatefulWidget {
   const AiSettingsPage({
     this.initialTab,
     this.hideTabBar = false,
+    this.hideHeader = false,
     super.key,
   });
 
@@ -87,6 +103,12 @@ class AiSettingsPage extends ConsumerStatefulWidget {
   /// renders only its focused tab body — the sidebar leaf itself
   /// already names the view.
   final bool hideTabBar;
+
+  /// Suppresses the in-pane `SettingsPageHeader`. Used by the v4
+  /// desktop panel registry — the master/detail chrome already
+  /// renders the breadcrumb so the duplicate title strip just
+  /// crowded the search bar.
+  final bool hideHeader;
 
   @override
   ConsumerState<AiSettingsPage> createState() => _AiSettingsPageState();
@@ -280,14 +302,25 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         controller: _scrollController,
         physics: const ClampingScrollPhysics(),
         slivers: [
-          SettingsPageHeader(
-            title: context.messages.aiSettingsPageTitle,
-            showBackButton: true,
-          ),
-          SliverToBoxAdapter(
-            child: AiSettingsHeaderBar(
-              searchController: _searchController,
-              onSearchClear: _handleSearchClear,
+          if (!widget.hideHeader)
+            SettingsPageHeader(
+              title: context.messages.aiSettingsPageTitle,
+              showBackButton: true,
+            ),
+          SliverPadding(
+            // The page header sliver above contributes its own bottom
+            // padding to the search bar; when it's hidden (desktop
+            // master/detail) the search bar would otherwise sit flush
+            // against the panel chrome, so we add an explicit top
+            // breathing room from the design-system spacing scale.
+            padding: EdgeInsets.only(
+              top: widget.hideHeader ? tokens.spacing.step5 : 0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: AiSettingsHeaderBar(
+                searchController: _searchController,
+                onSearchClear: _handleSearchClear,
+              ),
             ),
           ),
           ..._buildBodySlivers(),

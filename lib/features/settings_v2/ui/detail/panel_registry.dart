@@ -542,25 +542,37 @@ AiPanelSelection aiPanelSelectionFor(DesktopSettingsRoute? route) {
   // entirely (Beamer routes `/settings/ai` to `AiSettingsPage()`
   // directly, which keeps its TabBar because the sidebar doesn't
   // exist on phone-sized viewports).
+  // `hideHeader: true` drops the in-pane "< AI Settings" strip on
+  // desktop — the master/detail breadcrumb already names the panel,
+  // so the duplicate header was just crowding the search bar.
   return const AiPanelSelection(
     modeKey: 'list',
-    child: AiSettingsBody(hideTabBar: true),
+    child: AiSettingsBody(hideTabBar: true, hideHeader: true),
   );
 }
 
 // Per-leaf desktop bodies for the AI sidebar children. Each renders
-// `AiSettingsBody` pinned to one tab with the in-pane TabBar hidden so
-// the sidebar leaf naming isn't duplicated above the list. The
-// `ai-profiles` panel now points at the v3 profiles tab body — the
-// legacy `InferenceProfilesBody` is still kept around for any direct
-// `/settings/ai/profiles` deep-links in older bookmarks, but the v2
-// panel registry no longer uses it.
-Widget _aiProvidersPanel(BuildContext context) =>
-    const AiSettingsBody(initialTab: AiSettingsTab.providers, hideTabBar: true);
-Widget _aiModelsPanel(BuildContext context) =>
-    const AiSettingsBody(initialTab: AiSettingsTab.models, hideTabBar: true);
-Widget _aiProfilesPanel(BuildContext context) =>
-    const AiSettingsBody(initialTab: AiSettingsTab.profiles, hideTabBar: true);
+// `AiSettingsBody` pinned to one tab with the in-pane TabBar AND the
+// page header hidden so the sidebar leaf / breadcrumb naming isn't
+// duplicated above the list. The `ai-profiles` panel now points at
+// the v3 profiles tab body — the legacy `InferenceProfilesBody` is
+// still kept around for any direct `/settings/ai/profiles` deep-links
+// in older bookmarks, but the v2 panel registry no longer uses it.
+Widget _aiProvidersPanel(BuildContext context) => const AiSettingsBody(
+  initialTab: AiSettingsTab.providers,
+  hideTabBar: true,
+  hideHeader: true,
+);
+Widget _aiModelsPanel(BuildContext context) => const AiSettingsBody(
+  initialTab: AiSettingsTab.models,
+  hideTabBar: true,
+  hideHeader: true,
+);
+Widget _aiProfilesPanel(BuildContext context) => const AiSettingsBody(
+  initialTab: AiSettingsTab.profiles,
+  hideTabBar: true,
+  hideHeader: true,
+);
 Widget _agentsPanel(BuildContext context) => const AgentSettingsBody();
 
 // Stats and pending-wakes are read-only views with no detail/create
