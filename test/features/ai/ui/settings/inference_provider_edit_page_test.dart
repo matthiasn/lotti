@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,7 @@ import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -1288,6 +1291,66 @@ void main() {
       ).called(1);
     });
 
+    testWidgets(
+      'renders the in-flight spinner inside the add button while saveConfig '
+      'is still pending — covers the `_isAdding` branch of `_KnownModelTile` '
+      'that the existing happy-path test skips by completing saveConfig '
+      'synchronously',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final geminiProvider = AiConfig.inferenceProvider(
+          id: 'gemini-provider-id',
+          name: 'My Gemini',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+
+        when(
+          () => mockRepository.getConfigById('gemini-provider-id'),
+        ).thenAnswer((_) async => geminiProvider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([]));
+
+        // Hold saveConfig open so the tile stays in `_isAdding = true`
+        // long enough for the spinner branch to render.
+        final saveCompleter = Completer<void>();
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenAnswer((_) => saveCompleter.future);
+
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'gemini-provider-id'),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.ensureVisible(find.text('Available Models'));
+        await tester.pump();
+
+        final addButton = find.byIcon(Icons.add_rounded).first;
+        await tester.ensureVisible(addButton);
+        await tester.pump();
+        await tester.tap(addButton);
+        // One pump to flush the setState that flips `_isAdding` to true.
+        // The pending `saveConfig` future keeps `_isAdding` latched until
+        // we complete it below, so a CircularProgressIndicator must be
+        // visible somewhere in the tree at this point.
+        await tester.pump();
+
+        expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
+
+        // Drain the pending future so the finally arm flips `_isAdding`
+        // back to false and the spinner unmounts; otherwise the pending
+        // Future would trip the framework's leak guard on teardown.
+        saveCompleter.complete();
+        await tester.pumpAndSettle();
+      },
+    );
+
     testWidgets('shows modality chips for known models', (
       WidgetTester tester,
     ) async {
@@ -1329,8 +1392,11 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        // Create a custom provider type that doesn't have known models defined
-        // Using genericOpenAi which should have some models
+        // `genericOpenAi` represents an arbitrary OpenAI-compatible
+        // endpoint with no curated catalog, so it is intentionally
+        // absent from `knownModelsByProvider`. The Available Models
+        // section must hide entirely in that case — there's nothing
+        // to quick-add.
         final customProvider = AiConfig.inferenceProvider(
           id: 'custom-provider-id',
           name: 'Custom Provider',
@@ -1352,8 +1418,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // genericOpenAi has known models, so it should show
-        expect(find.text('Available Models'), findsOneWidget);
+        expect(find.text('Available Models'), findsNothing);
       },
     );
   });
@@ -2024,6 +2089,111 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(strings.commonError), findsAtLeastNWidgets(1));
+      },
+    );
+
+    testWidgets(
+      'forwards the failure to LoggingService.captureException with the '
+      '`.add` subDomain on a NEW provider — covers the inner try arm '
+      '(success path through the LoggingService call) that the existing '
+      'save-error tests skip because they leave LoggingService '
+      'unregistered',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final mockLoggingService = MockLoggingService();
+        stubLoggingService(mockLoggingService);
+        if (getIt.isRegistered<LoggingService>()) {
+          getIt.unregister<LoggingService>();
+        }
+        getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenThrow(Exception('boom'));
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        await tester.enterText(
+          find.widgetWithText(TextFormField, strings.apiKeyDisplayNameHint),
+          'My Provider',
+        );
+        await tester.pump();
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'https://api.example.com'),
+          'https://api.example.com/v1',
+        );
+        await tester.pump();
+        await tester.enterText(
+          find.widgetWithText(TextFormField, strings.apiKeyInputHint),
+          'sk-secret',
+        );
+        await tester.pump();
+
+        await tester.ensureVisible(find.text('Save'));
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: 'AI_CONFIG',
+            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSave.add',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'forwards the failure to LoggingService.captureException with the '
+      '`.update` subDomain on an EXISTING provider — same ternary branch, '
+      'opposite arm',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final mockLoggingService = MockLoggingService();
+        stubLoggingService(mockLoggingService);
+        if (getIt.isRegistered<LoggingService>()) {
+          getIt.unregister<LoggingService>();
+        }
+        getIt.registerSingleton<LoggingService>(mockLoggingService);
+
+        when(
+          () => mockRepository.saveConfig(any()),
+        ).thenThrow(Exception('boom'));
+
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'test-provider-id'),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Test Provider'),
+          'Renamed Provider',
+        );
+        await tester.pump();
+
+        await tester.ensureVisible(find.text('Save'));
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: 'AI_CONFIG',
+            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSave.update',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       },
     );
   });

@@ -7,9 +7,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/ui/inference_profile_form.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -1011,6 +1016,389 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(spy.pushed.length, greaterThan(baseline));
+      },
+    );
+  });
+
+  /// Coverage for the constructor-level `initialTab` seed used by the v4
+  /// desktop panel registry (`_aiProvidersPanel` / `_aiModelsPanel` /
+  /// `_aiProfilesPanel`). Each panel mounts `AiSettingsBody` pinned to
+  /// a specific tab; without the seed branch the page would always
+  /// open on Providers regardless of which sidebar leaf was clicked.
+  group('AiSettingsPage — initialTab seeding', () {
+    Widget seededHarness({
+      required AiSettingsTab initialTab,
+      bool hideTabBar = false,
+      List<NavigatorObserver> navigatorObservers = const [],
+    }) {
+      return ProviderScope(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+        child: MaterialApp(
+          navigatorObservers: navigatorObservers,
+          theme: ThemeData(
+            useMaterial3: true,
+            extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+          ),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: AiSettingsPage(
+            initialTab: initialTab,
+            hideTabBar: hideTabBar,
+          ),
+        ),
+      );
+    }
+
+    Future<void> pumpSeeded({
+      required WidgetTester tester,
+      required AiSettingsTab initialTab,
+      required List<AiConfig> providers,
+      required List<AiConfig> models,
+      required List<AiConfig> profiles,
+      bool hideTabBar = false,
+      List<NavigatorObserver> navigatorObservers = const [],
+    }) async {
+      await tester.pumpWidget(
+        seededHarness(
+          initialTab: initialTab,
+          hideTabBar: hideTabBar,
+          navigatorObservers: navigatorObservers,
+        ),
+      );
+      providersController.add(providers);
+      await tester.pump();
+      await tester.pump();
+      modelsController.add(models);
+      profilesController.add(profiles);
+      await tester.pump();
+      await tester.pump();
+      // Flush the ticker timers that mount with the shared header /
+      // cards' InkWells; otherwise the framework's "no pending Timer"
+      // guard trips on teardown — same workaround the rest of this
+      // file uses via `settleTimers`.
+      await settleTimers(tester);
+    }
+
+    testWidgets(
+      'initialTab=AiSettingsTab.models seeds the Models tab body on first '
+      'frame — the page never lands on Providers and then animates over',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.models,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: [buildModel(id: 'm1', providerId: 'p1')],
+          profiles: const <AiConfig>[],
+        );
+
+        // The Models tab body renders `AiModelCard`s; the Providers
+        // body would have rendered `AiProviderCard`s. Asserting the
+        // model card type is the cheapest proof the seeded tab won.
+        expect(find.byType(AiModelCard), findsOneWidget);
+        expect(find.byType(AiProviderCard), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'initialTab=AiSettingsTab.profiles seeds the Profiles tab body so '
+      'the desktop "AI > Profiles" leaf lands directly on profile cards',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.profiles,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: [buildModel(id: 'm1', providerId: 'p1')],
+          profiles: [buildProfile(id: 'profile-1', thinking: 'm1')],
+        );
+
+        expect(find.byType(AiProfileCard), findsOneWidget);
+        expect(find.byType(AiProviderCard), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'hideTabBar=true removes the in-pane `AiSettingsTabBar` so the '
+      'desktop sidebar leaf is the sole "which view am I on?" affordance',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.providers,
+          hideTabBar: true,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        expect(find.byType(AiSettingsTabBar), findsNothing);
+        // Body still rendered — the page didn't collapse, it just
+        // dropped the tab strip on top.
+        expect(find.byType(AiProviderCard), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'FAB seeded on the Models tab dispatches to navigateToCreateModel — '
+      'covers the Models arm of `_activeTabAddHandler`. Invoking the FAB '
+      'callback directly (instead of tapping the InkWell) keeps the test '
+      'robust against viewport / hit-test offsets — what we are verifying '
+      'is which handler the page wired up, not whether the design-system '
+      'FAB widget is hit-testable.',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.models,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        final fab = tester.widget<AiSettingsFloatingActionButton>(
+          find.byType(AiSettingsFloatingActionButton),
+        );
+        expect(fab.activeTab, AiSettingsTab.models);
+        fab.onPressed();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(InferenceModelEditPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'FAB seeded on the Profiles tab dispatches to navigateToCreateProfile '
+      '— covers the Profiles arm of `_activeTabAddHandler`',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.profiles,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: [buildModel(id: 'm1', providerId: 'p1')],
+          profiles: const <AiConfig>[],
+        );
+
+        final fab = tester.widget<AiSettingsFloatingActionButton>(
+          find.byType(AiSettingsFloatingActionButton),
+        );
+        expect(fab.activeTab, AiSettingsTab.profiles);
+        fab.onPressed();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(InferenceProfileForm), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'FAB seeded on the Providers tab dispatches to navigateToCreateProvider '
+      '— sanity-check that the Providers arm still works alongside the new '
+      'Models/Profiles arms',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.providers,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        final fab = tester.widget<AiSettingsFloatingActionButton>(
+          find.byType(AiSettingsFloatingActionButton),
+        );
+        expect(fab.activeTab, AiSettingsTab.providers);
+        fab.onPressed();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(InferenceProviderEditPage), findsOneWidget);
+      },
+    );
+  });
+
+  /// Coverage for `didUpdateWidget`'s `initialTab` re-application. The
+  /// defensive path runs whenever an ancestor rebuilds the page with a
+  /// new `initialTab` while reusing the same Element — exercised here
+  /// via a `StatefulBuilder` that swaps the prop between pumps.
+  group('AiSettingsPage — didUpdateWidget re-seeds initialTab', () {
+    testWidgets(
+      'swapping initialTab from Providers to Profiles updates both the '
+      'rendered tab body and the FAB handler — proves the controller '
+      'index AND the filter state are kept in sync',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        var currentTab = AiSettingsTab.providers;
+        late StateSetter rebuildHarness;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: StatefulBuilder(
+                builder: (context, setState) {
+                  rebuildHarness = setState;
+                  return AiSettingsPage(initialTab: currentTab);
+                },
+              ),
+            ),
+          ),
+        );
+        providersController.add([
+          buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+        ]);
+        await tester.pump();
+        await tester.pump();
+        modelsController.add([buildModel(id: 'm1', providerId: 'p1')]);
+        profilesController.add([buildProfile(id: 'profile-1', thinking: 'm1')]);
+        await tester.pump();
+        await tester.pump();
+        await settleTimers(tester);
+
+        // Sanity: page starts on Providers — provider card visible,
+        // profile card absent.
+        expect(find.byType(AiProviderCard), findsOneWidget);
+        expect(find.byType(AiProfileCard), findsNothing);
+
+        // Rebuild the harness with a different `initialTab`. The
+        // `StatefulBuilder` keeps the surrounding Element identity
+        // stable, so `AiSettingsPage` reconciles into `didUpdateWidget`
+        // rather than mounting a fresh State.
+        rebuildHarness(() {
+          currentTab = AiSettingsTab.profiles;
+        });
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Tab body swapped to Profiles.
+        expect(find.byType(AiProfileCard), findsOneWidget);
+        expect(find.byType(AiProviderCard), findsNothing);
+
+        // And the FAB handler was reapplied — invoking the callback
+        // directly bypasses any FAB hit-test offset issues that the
+        // existing tests work around with `warnIfMissed: false`.
+        final fab = tester.widget<AiSettingsFloatingActionButton>(
+          find.byType(AiSettingsFloatingActionButton),
+        );
+        expect(fab.activeTab, AiSettingsTab.profiles);
+        fab.onPressed();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(InferenceProfileForm), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'rebuilding with the SAME initialTab is a no-op — the early `return` '
+      'guard in didUpdateWidget skips the filter state + tab controller '
+      'updates so the page does not churn on innocuous parent rebuilds',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        const startTab = AiSettingsTab.models;
+        var currentTab = startTab;
+        late StateSetter rebuildHarness;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: StatefulBuilder(
+                builder: (context, setState) {
+                  rebuildHarness = setState;
+                  return AiSettingsPage(initialTab: currentTab);
+                },
+              ),
+            ),
+          ),
+        );
+        providersController.add([
+          buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+        ]);
+        await tester.pump();
+        modelsController.add([buildModel(id: 'm1', providerId: 'p1')]);
+        profilesController.add(const <AiConfig>[]);
+        await tester.pump();
+        await tester.pump();
+        await settleTimers(tester);
+
+        expect(find.byType(AiModelCard), findsOneWidget);
+
+        // Trigger a rebuild with the SAME tab — didUpdateWidget should
+        // bail out at the early return without touching state.
+        rebuildHarness(() {
+          currentTab = startTab;
+        });
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Still on Models, no flicker, no other tab body bleeds in.
+        expect(find.byType(AiModelCard), findsOneWidget);
+        expect(find.byType(AiProviderCard), findsNothing);
+        expect(find.byType(AiProfileCard), findsNothing);
       },
     );
   });

@@ -507,6 +507,10 @@ void main() {
 
     group('knownModelsByProvider', () {
       test('should contain all provider types', () {
+        // `genericOpenAi` is intentionally absent: it represents an
+        // arbitrary OpenAI-compatible endpoint where Lotti cannot
+        // assume a fixed model catalog. Every concrete provider with
+        // a curated model list belongs here.
         expect(
           knownModelsByProvider.keys.toSet(),
           containsAll([
@@ -515,7 +519,6 @@ void main() {
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
-            InferenceProviderType.genericOpenAi,
             InferenceProviderType.anthropic,
             InferenceProviderType.openRouter,
             InferenceProviderType.whisper,
