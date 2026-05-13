@@ -123,6 +123,60 @@ void main() {
       expect(find.text('Save'), findsOneWidget);
     });
 
+    testWidgets(
+      'AppBar back arrow routes through popAiSettingsDetail — when the '
+      'form is pushed onto a navigator, tapping the arrow pops the route '
+      'and the outer launcher button is visible again (proves the leading '
+      "IconButton is wired to the shared back affordance, not Material's "
+      'default `Navigator.maybePop()` which would no-op on desktop '
+      'master/detail).',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const InferenceProfileForm(),
+                      ),
+                    ),
+                    child: const Text('open-form'),
+                  ),
+                ),
+              ),
+            ),
+            overrides: [
+              inferenceProfileControllerProvider.overrideWith(
+                () => fakeProfileController,
+              ),
+              aiConfigByTypeControllerProvider(
+                configType: AiConfigType.model,
+              ).overrideWith(() => _FakeAiConfigByTypeController(const [])),
+              aiConfigByTypeControllerProvider(
+                configType: AiConfigType.inferenceProvider,
+              ).overrideWith(() => _FakeAiConfigByTypeController(const [])),
+            ],
+          ),
+        );
+
+        await tester.tap(find.text('open-form'));
+        await tester.pumpAndSettle();
+
+        // The form is now mounted; confirm by finding its create title.
+        expect(find.text('Create Profile'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.pumpAndSettle();
+
+        // After back-tap the route should have popped: outer button
+        // visible again, form gone.
+        expect(find.text('open-form'), findsOneWidget);
+        expect(find.text('Create Profile'), findsNothing);
+      },
+    );
+
     testWidgets('validates name is required', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();

@@ -6,8 +6,10 @@ import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -108,21 +110,44 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.light
-          ? context.colorScheme.surfaceContainerLowest
-          : context.colorScheme.scrim,
+      backgroundColor: tokens.colors.background.level01,
       appBar: AppBar(
+        backgroundColor: tokens.colors.background.level01,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        // Explicit `leading` so the back arrow routes through
+        // `popAiSettingsDetail` instead of Material's default
+        // `Navigator.maybePop()`. On the desktop master/detail
+        // surface this page lives inside the panel slot and isn't on
+        // the Navigator stack, so the default arrow would silently
+        // no-op — the helper falls back to beaming `/settings/ai`.
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          // Overriding `leading` drops the AppBar's default
+          // Material-localized tooltip; re-supply it so screen
+          // readers and long-press hover hints stay parity-clean
+          // with the other AI-settings detail pages.
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => popAiSettingsDetail(context),
+        ),
         title: Text(
           _isEditing
-              ? context.messages.inferenceProfileEditTitle
-              : context.messages.inferenceProfileCreateTitle,
+              ? messages.inferenceProfileEditTitle
+              : messages.inferenceProfileCreateTitle,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
+            fontWeight: tokens.typography.weight.semiBold,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _save,
-            child: Text(context.messages.inferenceProfileSaveButton),
+            child: Text(messages.inferenceProfileSaveButton),
           ),
+          SizedBox(width: tokens.spacing.step2),
         ],
       ),
       body: Form(
@@ -130,14 +155,15 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         child: ListView(
           // Pad the bottom by the height the app's bottom nav bar
           // occupies (zero on desktop, ~88pt on mobile with the home
-          // indicator) plus the page's normal 16-pt padding so the
-          // last form section always clears the nav bar on mobile
-          // instead of slipping behind it.
+          // indicator) plus the page's normal padding so the last
+          // form section always clears the nav bar on mobile instead
+          // of slipping behind it.
           padding: EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            16 + DesignSystemBottomNavigationBar.occupiedHeight(context),
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step5 +
+                DesignSystemBottomNavigationBar.occupiedHeight(context),
           ),
           children: [
             TextFormField(
@@ -380,7 +406,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
           .saveProfile(profile);
 
       if (mounted) {
-        Navigator.of(context).pop();
+        await popAiSettingsDetail(context);
       }
     } catch (_) {
       if (mounted) {

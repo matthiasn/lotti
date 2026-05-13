@@ -7,7 +7,9 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -109,7 +111,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: messages.aiProviderDetailBackTooltip,
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => popAiSettingsDetail(context),
         ),
         title: Text(
           messages.aiProviderDetailPageTitle,
@@ -249,7 +251,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
       config: provider,
     );
     if (!removed || !mounted) return;
-    await Navigator.of(context).maybePop();
+    await popAiSettingsDetail(context);
   }
 }
 
@@ -407,14 +409,28 @@ class _HeaderStrip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  displayName,
-                  style: tokens.typography.styles.heading.heading3.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                    fontWeight: tokens.typography.weight.semiBold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        style: tokens.typography.styles.heading.heading3
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                              fontWeight: tokens.typography.weight.semiBold,
+                            ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isProviderDraft(provider)) ...[
+                      SizedBox(width: tokens.spacing.step3),
+                      DesignSystemBadge.outlined(
+                        label: messages.aiProviderCardDraftBadge,
+                        tone: DesignSystemBadgeTone.secondary,
+                      ),
+                    ],
+                  ],
                 ),
                 if (visual.tagline.isNotEmpty) ...[
                   SizedBox(height: tokens.spacing.step1),

@@ -568,6 +568,7 @@
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "La famille d'assistants AI Claude d'Anthropic",
   "aiProviderAnthropicName": "Anthropic Claude",
+  "aiProviderCardDraftBadge": "BROUILLON",
   "aiProviderCardFixButton": "Corriger",
   "aiProviderCardMenuTooltip": "Plus d'actions",
   "aiProviderCardModelCount": "{count, plural, =1{1 modèle} other{{count} modèles}}",

@@ -256,6 +256,66 @@ void main() {
     );
   });
 
+  group('aiProviderKeyConsoleUrl', () {
+    test(
+      'cloud providers that have a public API-key console resolve to their '
+      'documented host (the form renders these as a "Get a key at …" link)',
+      () {
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.gemini),
+          equals('aistudio.google.com'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.openAi),
+          equals('platform.openai.com'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.anthropic),
+          equals('console.anthropic.com'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.mistral),
+          equals('console.mistral.ai'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.alibaba),
+          equals('dashscope.console.aliyun.com'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.openRouter),
+          equals('openrouter.ai'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.nebiusAiStudio),
+          equals('studio.nebius.ai'),
+        );
+      },
+    );
+
+    test(
+      'local-only providers (Ollama / Whisper / Voxtral), generic OpenAI '
+      '(arbitrary user-supplied endpoint), and a null type resolve to null '
+      '— there is no public console URL to link to.',
+      () {
+        for (final type in const [
+          InferenceProviderType.ollama,
+          InferenceProviderType.whisper,
+          InferenceProviderType.voxtral,
+          InferenceProviderType.genericOpenAi,
+        ]) {
+          expect(
+            aiProviderKeyConsoleUrl(type),
+            isNull,
+            reason:
+                '$type has no hosted key console, so the form should not '
+                'render a "Get a key at …" link for it.',
+          );
+        }
+        expect(aiProviderKeyConsoleUrl(null), isNull);
+      },
+    );
+  });
+
   group('aiProviderVisual', () {
     test(
       'bundles accent + surface + displayName + tagline into one record',

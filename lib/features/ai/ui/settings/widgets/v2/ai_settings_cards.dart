@@ -126,6 +126,7 @@ class AiProviderCard extends StatelessWidget {
                 surface: visual.surface,
                 providerType: provider.inferenceProviderType,
                 menuActions: menuActions,
+                isDraft: isProviderDraft(provider),
               ),
               SizedBox(height: tokens.spacing.step3),
               Text(
@@ -171,22 +172,32 @@ class AiProviderCard extends StatelessWidget {
 }
 
 /// Top row of a provider / profile card: colored icon square on the
-/// left, three-dot overflow menu on the right.
+/// left, optional `DRAFT` badge in the middle (only when [isDraft] is
+/// true), three-dot overflow menu on the right.
+///
+/// The badge lets a half-configured provider (cloud row saved via
+/// "Save as draft" with no API key yet) be told apart from a fully
+/// set-up one with the same display name — important when the user
+/// connects the same provider twice.
 class _CardHeaderRow extends StatelessWidget {
   const _CardHeaderRow({
     required this.accent,
     required this.surface,
     required this.providerType,
     required this.menuActions,
+    this.isDraft = false,
   });
 
   final Color accent;
   final Color surface;
   final InferenceProviderType? providerType;
   final List<AiCardMenuAction> menuActions;
+  final bool isDraft;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     return Row(
       children: [
         _ProviderIconTile(
@@ -194,6 +205,13 @@ class _CardHeaderRow extends StatelessWidget {
           surface: surface,
           providerType: providerType,
         ),
+        if (isDraft) ...[
+          SizedBox(width: tokens.spacing.step2),
+          DesignSystemBadge.outlined(
+            label: messages.aiProviderCardDraftBadge,
+            tone: DesignSystemBadgeTone.secondary,
+          ),
+        ],
         const Spacer(),
         AiCardActionMenuButton(actions: menuActions),
       ],

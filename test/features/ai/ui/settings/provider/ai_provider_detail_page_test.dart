@@ -891,6 +891,82 @@ void main() {
         await settleTimers(tester);
       },
     );
+
+    testWidgets(
+      'AppBar back arrow routes through popAiSettingsDetail — when the '
+      'page is pushed onto a navigator, tapping the arrow pops the route '
+      'and the outer launcher button is visible again (proves the leading '
+      "IconButton is wired to the shared back affordance, not Material's "
+      'default `Navigator.maybePop()` which would no-op on desktop '
+      'master/detail).',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final provider = buildProvider();
+        when(
+          () => mockRepository.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const AiProviderDetailPage(
+                            providerId: 'provider-1',
+                          ),
+                        ),
+                      ),
+                      child: const Text('open-provider-detail'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('open-provider-detail'));
+        await tester.pumpAndSettle();
+        // Drain the async getConfigById future + the stream-fed model
+        // and profile lists.
+        modelsController.add(const <AiConfig>[]);
+        profilesController.add(const <AiConfig>[]);
+        await tester.pumpAndSettle();
+
+        // The detail page is now mounted.
+        expect(find.byType(AiProviderDetailPage), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.pumpAndSettle();
+
+        // After back-tap the route should have popped: outer button
+        // visible again, detail page gone.
+        expect(find.text('open-provider-detail'), findsOneWidget);
+        expect(find.byType(AiProviderDetailPage), findsNothing);
+
+        await settleTimers(tester);
+      },
+    );
   });
 }
 

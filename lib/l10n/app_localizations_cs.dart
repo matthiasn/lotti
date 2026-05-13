@@ -1293,6 +1293,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderAnthropicName => 'Anthropic Claude';
 
   @override
+  String get aiProviderCardDraftBadge => 'KONCEPT';
+
+  @override
   String get aiProviderCardFixButton => 'Opravit';
 
   @override

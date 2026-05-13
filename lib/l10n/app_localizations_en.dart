@@ -1281,6 +1281,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderAnthropicName => 'Anthropic Claude';
 
   @override
+  String get aiProviderCardDraftBadge => 'DRAFT';
+
+  @override
   String get aiProviderCardFixButton => 'Fix';
 
   @override

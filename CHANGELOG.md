@@ -19,8 +19,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   flag (`AI_PICK_PROVIDER_DISMISSED`) so subsequent FAB taps go
   straight to the form — the picker never harasses a user who has
   told us they know the flow.
+- DRAFT badge on half-configured provider cards and on the provider
+  detail header. A cloud provider with no API key yet (saved via the
+  upcoming "Save as draft" affordance, or one whose key was later
+  cleared) renders a secondary-toned `DRAFT` outlined badge next to
+  the provider icon on `AiProviderCard` and inline with the
+  display name on `_HeaderStrip`. Local providers (Ollama, Whisper,
+  Voxtral) never need a key, so they are never reported as drafts.
+  Surfaces in [[ai-provider-visual]] via the new `isProviderDraft`
+  helper so the cards and the detail page share one source of truth.
+- `popAiSettingsDetail()` back-affordance shared by all AI Settings
+  detail pages (`AiProviderDetailPage`, `InferenceModelEditPage`,
+  `InferenceProfileForm`). On mobile / pushed stacks it pops; on the
+  desktop master/detail panel where the page sits in the panel slot
+  (not on the Navigator stack) it falls back to beaming
+  `/settings/ai`. Fixes the "back button does nothing" regression on
+  the desktop surface that previously left users stuck on a detail
+  page with no exit. Defensive guard means widget tests using a
+  bare `MaterialApp.home` no longer crash on the GetIt lookup —
+  the helper bails out silently when no NavService is registered.
 
-## [0.9.998]
+### Changed
+- Inference profile form chrome aligned with the rest of the AI
+  Settings v5 pages (model edit + provider detail). Scaffold and
+  AppBar now use `tokens.colors.background.level01` (the AI Settings
+  surface tone) instead of the light theme's
+  `surfaceContainerLowest` / dark theme's `scrim` pair, the AppBar
+  is flat (`elevation: 0`, `scrolledUnderElevation: 0`), the title
+  uses `subtitle1` typography, and the page padding is token-driven
+  (`spacing.step5`).
+
 ### Fixed
 - Sync stack hot-path cleanup driven by the 2026-05-10/11/12 desktop
   slow- and super-slow-query logs. Eight load-bearing offenders folded
