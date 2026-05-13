@@ -68,7 +68,6 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.nebiusAiStudio: nebiusModels,
   InferenceProviderType.ollama: ollamaModels,
   InferenceProviderType.openAi: openaiModels,
-  InferenceProviderType.genericOpenAi: genericOpenAiModels,
   InferenceProviderType.anthropic: anthropicModels,
   InferenceProviderType.openRouter: openRouterModels,
   InferenceProviderType.whisper: whisperModels,
@@ -194,26 +193,6 @@ const List<KnownModel> geminiModels = [
     supportsFunctionCalling: true,
     description:
         'Fast and efficient Gemini 3 model optimized for speed and cost-effectiveness with multimodal capabilities',
-  ),
-  KnownModel(
-    providerModelId: 'models/gemini-2.5-pro',
-    name: 'Gemini 2.5 Pro',
-    inputModalities: [Modality.text, Modality.image, Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description:
-        'Latest Gemini Pro with enhanced multimodal and reasoning capabilities',
-  ),
-  KnownModel(
-    providerModelId: 'models/gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
-    inputModalities: [Modality.text, Modality.image, Modality.audio],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description:
-        'Fast multimodal model with reasoning capabilities optimized for speed',
   ),
 ];
 
@@ -370,53 +349,6 @@ const List<KnownModel> anthropicModels = [
     supportsFunctionCalling: true,
     description: 'Intelligence at blazing speeds',
     maxCompletionTokens: 2000,
-  ),
-];
-
-/// Generic OpenAI-compatible models (for custom endpoints like AI proxies)
-///
-/// These models work with any OpenAI-compatible API endpoint, including:
-/// - AI Proxy (our Gemini proxy with billing tracking)
-/// - Local LLM servers (LM Studio, LocalAI, etc.)
-/// - Other cloud providers with OpenAI-compatible APIs
-const List<KnownModel> genericOpenAiModels = [
-  KnownModel(
-    providerModelId: 'gemini-pro',
-    name: 'Gemini Pro (via Proxy)',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description: 'Gemini 2.5 Pro via AI Proxy with billing tracking',
-  ),
-  KnownModel(
-    providerModelId: 'gemini-flash',
-    name: 'Gemini Flash (via Proxy)',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description: 'Gemini 2.5 Flash via AI Proxy with billing tracking',
-  ),
-  KnownModel(
-    providerModelId: 'gpt-4',
-    name: 'GPT-4 Compatible',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    supportsFunctionCalling: true,
-    description:
-        'OpenAI GPT-4 or compatible model (maps to Gemini 2.5 Pro in AI Proxy)',
-  ),
-  KnownModel(
-    providerModelId: 'gpt-3.5-turbo',
-    name: 'GPT-3.5 Compatible',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    supportsFunctionCalling: true,
-    description:
-        'OpenAI GPT-3.5 or compatible model (maps to Gemini 2.5 Flash in AI Proxy)',
   ),
 ];
 
