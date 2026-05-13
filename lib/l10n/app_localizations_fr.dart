@@ -1365,6 +1365,59 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderCardStatusOfflineShort => 'Hors ligne';
 
   @override
+  String get aiProviderConnectBackToProviders => 'Retour aux fournisseurs';
+
+  @override
+  String get aiProviderConnectBreadcrumbAdd => 'Ajouter un fournisseur';
+
+  @override
+  String get aiProviderConnectFieldBaseUrlHint =>
+      'Laisse vide pour utiliser le point de terminaison officiel';
+
+  @override
+  String get aiProviderConnectFieldBaseUrlLabelOptional =>
+      'URL de base (optionnel)';
+
+  @override
+  String get aiProviderConnectFieldDisplayNameHint =>
+      'Affiché dans ta liste de fournisseurs';
+
+  @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Obtiens une clé sur $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Masquée';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Ta clé API ne quitte jamais ton appareil.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Connecter $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Enregistrer et continuer';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Enregistrer comme brouillon';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Enregistré comme brouillon';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Choisir le fournisseur';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Connecter';
+
+  @override
+  String get aiProviderConnectStepReview => 'Vérifier';
+
+  @override
   String get aiProviderDetailActiveProfileTitle => 'Profil actif';
 
   @override

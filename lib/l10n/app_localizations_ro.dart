@@ -1366,6 +1366,59 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderCardStatusOfflineShort => 'Deconectat';
 
   @override
+  String get aiProviderConnectBackToProviders => 'Înapoi la furnizori';
+
+  @override
+  String get aiProviderConnectBreadcrumbAdd => 'Adăugați furnizor';
+
+  @override
+  String get aiProviderConnectFieldBaseUrlHint =>
+      'Lăsați necompletat pentru a folosi punctul final oficial';
+
+  @override
+  String get aiProviderConnectFieldBaseUrlLabelOptional =>
+      'URL de bază (opțional)';
+
+  @override
+  String get aiProviderConnectFieldDisplayNameHint =>
+      'Apare în lista dvs. de furnizori';
+
+  @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Obțineți o cheie la $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Ascunsă';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Cheia dvs. API nu părăsește niciodată dispozitivul.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Conectați $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Salvează și continuă';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Salvează ca schiță';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Salvat ca schiță';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Alegeți furnizorul';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Conectați';
+
+  @override
+  String get aiProviderConnectStepReview => 'Verificați';
+
+  @override
   String get aiProviderDetailActiveProfileTitle => 'Profil activ';
 
   @override

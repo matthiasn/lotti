@@ -1339,6 +1339,59 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderCardStatusOfflineShort => 'Offline';
 
   @override
+  String get aiProviderConnectBackToProviders => 'Back to providers';
+
+  @override
+  String get aiProviderConnectBreadcrumbAdd => 'Add provider';
+
+  @override
+  String get aiProviderConnectFieldBaseUrlHint =>
+      'Leave blank to use the official endpoint';
+
+  @override
+  String get aiProviderConnectFieldBaseUrlLabelOptional =>
+      'Base URL (optional)';
+
+  @override
+  String get aiProviderConnectFieldDisplayNameHint =>
+      'Shown in your provider list';
+
+  @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Get a key at $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Hidden';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Your API key never leaves your device.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Connect $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Save & continue';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Save as draft';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Saved as draft';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Choose provider';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Connect';
+
+  @override
+  String get aiProviderConnectStepReview => 'Review';
+
+  @override
   String get aiProviderDetailActiveProfileTitle => 'Active profile';
 
   @override

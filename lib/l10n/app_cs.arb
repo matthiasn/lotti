@@ -450,6 +450,35 @@
   "aiProviderCardStatusInvalidKey": "Neplatný klíč",
   "aiProviderCardStatusOffline": "Offline · Ujisti se, že Ollama běží",
   "aiProviderCardStatusOfflineShort": "Offline",
+  "aiProviderConnectBackToProviders": "Zpět na poskytovatele",
+  "aiProviderConnectBreadcrumbAdd": "Přidat poskytovatele",
+  "aiProviderConnectFieldBaseUrlHint": "Ponech prázdné pro použití oficiálního koncového bodu",
+  "aiProviderConnectFieldBaseUrlLabelOptional": "Základní URL (volitelné)",
+  "aiProviderConnectFieldDisplayNameHint": "Zobrazí se v tvém seznamu poskytovatelů",
+  "aiProviderConnectKeyHelperLink": "Klíč získáš na {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Skryto",
+  "aiProviderConnectKeyPrivacyHint": "Tvůj API klíč nikdy neopustí toto zařízení.",
+  "aiProviderConnectPageTitle": "Připojit {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Uložit a pokračovat",
+  "aiProviderConnectSaveAsDraft": "Uložit jako koncept",
+  "aiProviderConnectSavedAsDraftToast": "Uloženo jako koncept",
+  "aiProviderConnectStepChoose": "Vyber poskytovatele",
+  "aiProviderConnectStepConnect": "Připojit",
+  "aiProviderConnectStepReview": "Zkontrolovat",
   "aiProviderDetailActiveProfileTitle": "Aktivní profil",
   "aiProviderDetailAddModelButton": "Přidat model",
   "aiProviderDetailApiKeyLabel": "API klíč",

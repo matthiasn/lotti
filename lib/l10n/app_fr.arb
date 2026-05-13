@@ -610,6 +610,35 @@
   "aiProviderCardStatusInvalidKey": "Clé invalide",
   "aiProviderCardStatusOffline": "Hors ligne · Vérifie qu'Ollama est en cours d'exécution",
   "aiProviderCardStatusOfflineShort": "Hors ligne",
+  "aiProviderConnectBackToProviders": "Retour aux fournisseurs",
+  "aiProviderConnectBreadcrumbAdd": "Ajouter un fournisseur",
+  "aiProviderConnectFieldBaseUrlHint": "Laisse vide pour utiliser le point de terminaison officiel",
+  "aiProviderConnectFieldBaseUrlLabelOptional": "URL de base (optionnel)",
+  "aiProviderConnectFieldDisplayNameHint": "Affiché dans ta liste de fournisseurs",
+  "aiProviderConnectKeyHelperLink": "Obtiens une clé sur {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Masquée",
+  "aiProviderConnectKeyPrivacyHint": "Ta clé API ne quitte jamais ton appareil.",
+  "aiProviderConnectPageTitle": "Connecter {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Enregistrer et continuer",
+  "aiProviderConnectSaveAsDraft": "Enregistrer comme brouillon",
+  "aiProviderConnectSavedAsDraftToast": "Enregistré comme brouillon",
+  "aiProviderConnectStepChoose": "Choisir le fournisseur",
+  "aiProviderConnectStepConnect": "Connecter",
+  "aiProviderConnectStepReview": "Vérifier",
   "aiProviderDetailActiveProfileTitle": "Profil actif",
   "aiProviderDetailAddModelButton": "Ajouter un modèle",
   "aiProviderDetailApiKeyLabel": "Clé API",

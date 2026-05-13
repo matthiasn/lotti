@@ -205,7 +205,20 @@ void main() {
 
       await pumpInferenceProviderPageQuick(tester, buildTestWidget());
 
-      expect(find.text('Add Provider'), findsOneWidget);
+      // The legacy SliverAppBar title "Add Provider" is gone in the
+      // create flow. Instead the chrome rendered above the form
+      // surfaces the localised "Connect <provider name>" header card
+      // for the default `genericOpenAi` selection.
+      final strings = l10n(tester);
+      expect(find.text('Add Provider'), findsNothing);
+      expect(
+        find.text(
+          strings.aiProviderConnectPageTitle(
+            strings.aiProviderGenericOpenAiName,
+          ),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('displays correct title for existing provider', (
@@ -269,8 +282,10 @@ void main() {
 
       await pumpInferenceProviderPage(tester, buildTestWidget());
 
-      // Initially save button should be disabled
-      final saveButton = find.text('Save');
+      // The create-mode footer surfaces the new "Save & continue"
+      // primary action; "Save" is gone from this branch.
+      final strings = l10n(tester);
+      final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       expect(saveButton, findsOneWidget);
 
       // Fill in required fields (genericOpenAi now requires API key)
@@ -306,16 +321,24 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
+      // The in-form provider-type picker only exists in EDIT mode in the
+      // v5 layout (in CREATE mode the user picks the type via
+      // `AiPickProviderModal` BEFORE the form opens, and the form is
+      // pre-seeded). Exercise the picker through the edit-flow seed
+      // (`configId: 'test-provider-id'`) so `_ProviderTypeField` and
+      // its tap-to-open-modal behavior are present.
+      await tester.pumpWidget(
+        buildTestWidget(configId: 'test-provider-id'),
+      );
       await tester.pumpAndSettle();
 
-      // Find and tap the provider type field
-      final providerTypeField = find.text('OpenAI Compatible');
-      expect(providerTypeField, findsOneWidget);
+      // Tap the InkWell that wraps the dropdown caret in
+      // `_ProviderTypeField` — that is the only tap target that
+      // actually opens the picker.
       await tester.tap(
         find.ancestor(
-          of: providerTypeField,
-          matching: find.byType(GestureDetector),
+          of: find.byIcon(Icons.arrow_drop_down_rounded),
+          matching: find.byType(InkWell),
         ),
       );
       await tester.pumpAndSettle();
@@ -346,16 +369,31 @@ void main() {
       expect(find.byIcon(Icons.visibility_off_rounded), findsOneWidget);
     });
 
-    testWidgets('has cancel and save buttons', (WidgetTester tester) async {
+    testWidgets('has back, save-as-draft and save-and-continue buttons', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Verify both buttons exist
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Save'), findsOneWidget);
+      // The legacy two-button FormBottomBar (Cancel + Save) is gone
+      // from the create flow. The new `_AddProviderFooterBar` renders
+      // three DesignSystemButtons: Back to providers / Save as draft /
+      // Save & continue.
+      final strings = l10n(tester);
+      expect(find.text('Cancel'), findsNothing);
+      expect(find.text('Save'), findsNothing);
+      expect(
+        find.text(strings.aiProviderConnectBackToProviders),
+        findsOneWidget,
+      );
+      expect(find.text(strings.aiProviderConnectSaveAsDraft), findsOneWidget);
+      expect(
+        find.text(strings.aiProviderConnectSaveAndContinue),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows error state when loading fails', (
@@ -423,14 +461,33 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
+      // The in-form provider-type picker (and its `_ProviderTypeField`
+      // tap target) only exists in EDIT mode in the v5 layout. Seed an
+      // existing OpenAI-Compatible provider so we can switch its type
+      // and verify the URL is re-seeded.
+      final genericProvider = AiConfig.inferenceProvider(
+        id: 'generic-provider-id',
+        name: 'Generic',
+        baseUrl: 'https://api.example.com',
+        apiKey: 'k',
+        createdAt: DateTime(2024, 3, 15),
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+      when(
+        () => mockRepository.getConfigById('generic-provider-id'),
+      ).thenAnswer((_) async => genericProvider);
+
+      await tester.pumpWidget(
+        buildTestWidget(configId: 'generic-provider-id'),
+      );
       await tester.pumpAndSettle();
 
-      // Open provider type modal
+      // Open provider type modal via the dropdown caret InkWell — the
+      // styled box is wrapped in an InkWell now (not GestureDetector).
       await tester.tap(
         find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
+          of: find.byIcon(Icons.arrow_drop_down_rounded),
+          matching: find.byType(InkWell),
         ),
       );
       await tester.pumpAndSettle();
@@ -537,79 +594,69 @@ void main() {
       },
     );
 
-    testWidgets('shows API key field for OpenAI provider', (
-      WidgetTester tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets(
+      'shows API key field for OpenAI provider — v5 flow preselects the '
+      'provider type via the pick-provider modal, so the harness lands '
+      'directly in create-mode form with the flat-field API key row',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 768));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(preselectedType: InferenceProviderType.openAi),
+        );
+        await tester.pumpAndSettle();
 
-      // Open provider type selection modal
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pumpAndSettle();
+        // The flat-field layout surfaces "API KEY" as the FlatField
+        // caption (uppercased localised label) and the field's hint
+        // text inside the TextFormField. The legacy `Authentication`
+        // section header is gone in create mode by design.
+        final strings = l10n(tester);
+        expect(
+          find.text(strings.apiKeyInputLabel.toUpperCase()),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(TextFormField, strings.apiKeyInputHint),
+          findsOneWidget,
+        );
+      },
+    );
 
-      // Select OpenAI
-      final openAiOption = find.text('OpenAI').first;
-      // Ensure OpenAI option is visible before tapping
-      await tester.ensureVisible(openAiOption);
-      await tester.pump();
+    testWidgets(
+      'shows API key field for Anthropic provider — same harness pattern: '
+      'preselectedType in the constructor mirrors how the production '
+      'pick-provider modal hands a chosen tile to the connect form',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 768));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.tap(
-        find.ancestor(
-          of: openAiOption,
-          matching: find.byType(InkWell),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(preselectedType: InferenceProviderType.anthropic),
+        );
+        await tester.pumpAndSettle();
 
-      // API key field should be visible
-      expect(find.text('Authentication'), findsOneWidget);
-      expect(find.text('API Key'), findsOneWidget);
-      expect(find.text('Secure your API connection'), findsOneWidget);
-      expect(find.byIcon(Icons.key_rounded), findsOneWidget);
-    });
-
-    testWidgets('shows API key field for Anthropic provider', (
-      WidgetTester tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Open provider type selection modal
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Select Anthropic
-      final anthropicOption = find.text('Anthropic Claude');
-      await tester.tap(
-        find.ancestor(
-          of: anthropicOption,
-          matching: find.byType(InkWell),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // API key field should be visible
-      expect(find.text('Authentication'), findsOneWidget);
-      expect(find.text('API Key'), findsOneWidget);
-      expect(find.text('Secure your API connection'), findsOneWidget);
-      expect(find.byIcon(Icons.key_rounded), findsOneWidget);
-    });
+        final strings = l10n(tester);
+        expect(
+          find.text(strings.apiKeyInputLabel.toUpperCase()),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(TextFormField, strings.apiKeyInputHint),
+          findsOneWidget,
+        );
+        // The provider hero card renders "Connect Anthropic Claude" via
+        // the localised connect-page-title template.
+        expect(
+          find.text(
+            strings.aiProviderConnectPageTitle(
+              strings.aiProviderAnthropicName,
+            ),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('API key field visibility changes when switching providers', (
       WidgetTester tester,
@@ -691,44 +738,31 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Select Ollama
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
+      // v5 flow: the pick-provider modal sends preselectedType into
+      // the form. Seed `ollama` directly to land in create-mode form
+      // pre-pointed at the Ollama config (no in-form provider picker
+      // tap, which no longer exists).
+      await tester.pumpWidget(
+        buildTestWidget(preselectedType: InferenceProviderType.ollama),
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(
-        find.ancestor(
-          of: find.text('Ollama'),
-          matching: find.byType(InkWell),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Fill only name and URL (no API key needed)
+      // Fill only name (no API key needed for Ollama).
+      final strings = l10n(tester);
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        find.widgetWithText(TextFormField, strings.apiKeyDisplayNameHint),
         'My Local Ollama',
       );
-      // URL should already be pre-filled for Ollama
       await tester.pumpAndSettle();
 
-      // Scroll to save button
-      final saveButton = find.text('Save');
+      final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
       await tester.pump();
-
-      // Should be able to save without API key
       await tester.tap(saveButton);
       await tester.pump();
 
-      // Verify save was called (may be called multiple times due to model pre-population)
+      // Verify save was called (may be called multiple times due to
+      // model pre-population).
       verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
     });
 
@@ -738,48 +772,30 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1024, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget());
+      // v5: the in-form provider switcher is gone in create mode.
+      // This test split into two preselected harnesses — the OpenAI
+      // case (API key required) is covered above by "shows API key
+      // field for OpenAI provider". Here we only assert the Ollama
+      // arm of the original test: a preselected-Ollama create form
+      // saves without an API key.
+      await tester.pumpWidget(
+        buildTestWidget(preselectedType: InferenceProviderType.ollama),
+      );
       await tester.pumpAndSettle();
 
-      // For OpenAI, should require API key
+      final strings = l10n(tester);
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Enter a friendly name'),
-        'OpenAI Test',
+        find.widgetWithText(TextFormField, strings.apiKeyDisplayNameHint),
+        'My Ollama',
       );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'https://api.example.com'),
-        'https://api.openai.com/v1',
-      );
-      // Don't enter API key
       await tester.pumpAndSettle();
 
-      // Try to save - should fail because API key is required
-      final saveButton = find.text('Save');
+      final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
       await tester.pump();
-
-      // Now switch to Ollama
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(
-        find.ancestor(
-          of: find.text('Ollama'),
-          matching: find.byType(InkWell),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should now be able to save without API key
       await tester.tap(saveButton);
       await tester.pump();
 
-      // Verify save was called for Ollama without API key (may be called multiple times due to model pre-population)
       verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
     });
   });
@@ -803,28 +819,14 @@ void main() {
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Select Gemini provider type
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Find and tap Gemini option
-      final geminiOption = find.text('Google Gemini');
-      await tester.ensureVisible(geminiOption);
-      await tester.pump();
-
-      await tester.tap(
-        find.ancestor(
-          of: geminiOption,
-          matching: find.byType(InkWell),
-        ),
+      // V5 create flow: the provider type is picked in the
+      // `AiPickProviderModal` BEFORE the form opens, so the form is
+      // seeded via `preselectedType` and the in-form picker no longer
+      // exists. Seed Gemini directly instead of trying to switch types
+      // via a GestureDetector that the create-mode chrome doesn't
+      // render.
+      await tester.pumpWidget(
+        buildTestWidget(preselectedType: InferenceProviderType.gemini),
       );
       await tester.pumpAndSettle();
 
@@ -839,8 +841,10 @@ void main() {
       );
       await tester.pump();
 
-      // Scroll to save button and tap
-      final saveButton = find.text('Save');
+      // Scroll to save button and tap. Create-mode now exposes
+      // "Save & continue" as the FTUE-firing primary action.
+      final strings = l10n(tester);
+      final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
       await tester.pump();
 
@@ -860,28 +864,13 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        // Select OpenRouter (truly unsupported — Anthropic and Ollama now
-        // both wire FTUE end-to-end as of the redesigned modals).
-        await tester.tap(
-          find.ancestor(
-            of: find.text('OpenAI Compatible'),
-            matching: find.byType(GestureDetector),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final openRouterOption = find.text('OpenRouter');
-        await tester.ensureVisible(openRouterOption);
-        await tester.pump();
-
-        await tester.tap(
-          find.ancestor(
-            of: openRouterOption,
-            matching: find.byType(InkWell),
-          ),
+        // OpenRouter is the only truly unsupported provider — Anthropic
+        // and Ollama both wire FTUE end-to-end as of the redesigned
+        // modals. V5 seeds the provider type via the pick-provider
+        // modal, so the create form takes its type via `preselectedType`
+        // instead of letting the user switch in-form.
+        await tester.pumpWidget(
+          buildTestWidget(preselectedType: InferenceProviderType.openRouter),
         );
         await tester.pumpAndSettle();
 
@@ -896,8 +885,9 @@ void main() {
         );
         await tester.pump();
 
-        // Scroll to save button and tap
-        final saveButton = find.text('Save');
+        // Scroll to save button and tap (create-mode footer label).
+        final strings = l10n(tester);
+        final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
         await tester.ensureVisible(saveButton);
         await tester.pump();
 
@@ -970,27 +960,12 @@ void main() {
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Select Gemini
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final geminiOption = find.text('Google Gemini');
-      await tester.ensureVisible(geminiOption);
-      await tester.pump();
-
-      await tester.tap(
-        find.ancestor(
-          of: geminiOption,
-          matching: find.byType(InkWell),
-        ),
+      // V5 create flow seeds Gemini via `preselectedType` instead of
+      // letting the user switch in-form — see the equivalent seed pattern
+      // in the "shows prompt setup dialog after saving new Gemini
+      // provider" test for the rationale.
+      await tester.pumpWidget(
+        buildTestWidget(preselectedType: InferenceProviderType.gemini),
       );
       await tester.pumpAndSettle();
 
@@ -1005,8 +980,9 @@ void main() {
       );
       await tester.pump();
 
-      // Save
-      final saveButton = find.text('Save');
+      // Save (create-mode footer label).
+      final strings = l10n(tester);
+      final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
       await tester.pump();
 
@@ -1045,27 +1021,9 @@ void main() {
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Select Gemini
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final geminiOption = find.text('Google Gemini');
-      await tester.ensureVisible(geminiOption);
-      await tester.pump();
-
-      await tester.tap(
-        find.ancestor(
-          of: geminiOption,
-          matching: find.byType(InkWell),
-        ),
+      // V5 create flow seeds Gemini via `preselectedType`.
+      await tester.pumpWidget(
+        buildTestWidget(preselectedType: InferenceProviderType.gemini),
       );
       await tester.pumpAndSettle();
 
@@ -1080,8 +1038,9 @@ void main() {
       );
       await tester.pump();
 
-      // Save
-      final saveButton = find.text('Save');
+      // Save (create-mode footer label).
+      final strings = l10n(tester);
+      final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
       await tester.pump();
 
@@ -1809,28 +1768,9 @@ void main() {
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Select OpenAI provider type
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Find and tap OpenAI option
-      final openAiOption = find.text('OpenAI').first;
-      await tester.ensureVisible(openAiOption);
-      await tester.pump();
-
-      await tester.tap(
-        find.ancestor(
-          of: openAiOption,
-          matching: find.byType(InkWell),
-        ),
+      // V5 create flow seeds OpenAI via `preselectedType`.
+      await tester.pumpWidget(
+        buildTestWidget(preselectedType: InferenceProviderType.openAi),
       );
       await tester.pumpAndSettle();
 
@@ -1845,8 +1785,9 @@ void main() {
       );
       await tester.pump();
 
-      // Scroll to save button and tap
-      final saveButton = find.text('Save');
+      // Scroll to save button and tap (create-mode footer label).
+      final strings = l10n(tester);
+      final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
       await tester.pump();
 
@@ -1877,28 +1818,9 @@ void main() {
         (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
       );
 
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Select Mistral provider type
-      await tester.tap(
-        find.ancestor(
-          of: find.text('OpenAI Compatible'),
-          matching: find.byType(GestureDetector),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Find and tap Mistral option (displayed as 'Mistral' not 'Mistral AI')
-      final mistralOption = find.text('Mistral');
-      await tester.ensureVisible(mistralOption);
-      await tester.pump();
-
-      await tester.tap(
-        find.ancestor(
-          of: mistralOption,
-          matching: find.byType(InkWell),
-        ),
+      // V5 create flow seeds Mistral via `preselectedType`.
+      await tester.pumpWidget(
+        buildTestWidget(preselectedType: InferenceProviderType.mistral),
       );
       await tester.pumpAndSettle();
 
@@ -1913,8 +1835,9 @@ void main() {
       );
       await tester.pump();
 
-      // Scroll to save button and tap
-      final saveButton = find.text('Save');
+      // Scroll to save button and tap (create-mode footer label).
+      final strings = l10n(tester);
+      final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
       await tester.pump();
 
@@ -1945,27 +1868,9 @@ void main() {
           (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
         );
 
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        // Select OpenAI
-        await tester.tap(
-          find.ancestor(
-            of: find.text('OpenAI Compatible'),
-            matching: find.byType(GestureDetector),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final openAiOption = find.text('OpenAI').first;
-        await tester.ensureVisible(openAiOption);
-        await tester.pump();
-
-        await tester.tap(
-          find.ancestor(
-            of: openAiOption,
-            matching: find.byType(InkWell),
-          ),
+        // V5 create flow seeds OpenAI via `preselectedType`.
+        await tester.pumpWidget(
+          buildTestWidget(preselectedType: InferenceProviderType.openAi),
         );
         await tester.pumpAndSettle();
 
@@ -1980,8 +1885,9 @@ void main() {
         );
         await tester.pump();
 
-        // Save
-        final saveButton = find.text('Save');
+        // Save (create-mode footer label).
+        final strings = l10n(tester);
+        final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
         await tester.ensureVisible(saveButton);
         await tester.pump();
 
@@ -2041,8 +1947,13 @@ void main() {
         );
         await tester.pump();
 
-        await tester.ensureVisible(find.text('Save'));
-        await tester.tap(find.text('Save'));
+        // Create-mode primary action is "Save & continue" — wired
+        // straight to `handleSave`, the same entry point the legacy
+        // FormBottomBar used. Tapping it must still surface the
+        // commonError toast on a write failure.
+        final saveLabel = find.text(strings.aiProviderConnectSaveAndContinue);
+        await tester.ensureVisible(saveLabel);
+        await tester.tap(saveLabel);
         await tester.pump();
         // Drain the awaited future so the catch + finally fire.
         await tester.pump(const Duration(milliseconds: 50));
@@ -2134,8 +2045,10 @@ void main() {
         );
         await tester.pump();
 
-        await tester.ensureVisible(find.text('Save'));
-        await tester.tap(find.text('Save'));
+        // Create-mode primary action label.
+        final saveLabel = find.text(strings.aiProviderConnectSaveAndContinue);
+        await tester.ensureVisible(saveLabel);
+        await tester.tap(saveLabel);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
         await tester.pumpAndSettle();
@@ -2210,22 +2123,39 @@ void main() {
     testWidgets(
       'tapping the field opens the provider type selection modal — the '
       'GestureDetector wrap was replaced with an InkWell on the styled '
-      'box, but the tap behavior must remain identical',
+      'box, but the tap behavior must remain identical. `_ProviderTypeField` '
+      'is only rendered in EDIT mode (v5 create-flow commits to the type '
+      'picked in the pick-provider modal), so the harness seeds `configId` '
+      'to exercise the edit-mode chrome where the field still lives.',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'test-provider-id'),
+        );
         await tester.pumpAndSettle();
 
-        // The default provider type label is OpenAI Compatible. Tap
-        // the field — the InkWell is the visible tap target.
-        await tester.tap(find.text('OpenAI Compatible'));
+        // Tap the field's dropdown caret — the only tap target inside
+        // `_ProviderTypeField` that opens the picker.
+        await tester.tap(
+          find.ancestor(
+            of: find.byIcon(Icons.arrow_drop_down_rounded),
+            matching: find.byType(InkWell),
+          ),
+        );
         await tester.pumpAndSettle();
 
-        // The provider-type selection modal exposes the OpenAI option
-        // as a list row, which is only present when the modal is open.
-        expect(find.text('OpenAI'), findsAtLeastNWidgets(1));
+        // The provider-type selection modal exposes "Anthropic Claude"
+        // (the localised display name) as a list row that is only
+        // present when the modal is open. Picked rather than OpenAI
+        // because the seeded test provider is OpenAI — the OpenAI row
+        // would otherwise be ambiguous with the field's current value.
+        final strings = l10n(tester);
+        expect(
+          find.text(strings.aiProviderAnthropicName),
+          findsAtLeastNWidgets(1),
+        );
       },
     );
 
@@ -2254,12 +2184,16 @@ void main() {
     testWidgets(
       'surfaces a Semantics button for the field so accessibility tools '
       'can announce + activate the type picker — the InkWell-based '
-      'replacement must not regress on a11y',
+      'replacement must not regress on a11y. Edit mode (configId set) is '
+      'where `_ProviderTypeField` still renders after the v5 create-mode '
+      'rewrite.',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'test-provider-id'),
+        );
         await tester.pumpAndSettle();
 
         final strings = l10n(tester);
@@ -2277,12 +2211,11 @@ void main() {
             )
             .toList();
         expect(semanticsWidgets, hasLength(1));
-        // The default provider type for a new provider is
-        // OpenAI Compatible (genericOpenAi), surfaced through the
-        // localized display name.
+        // The seeded `testProvider` is openAi → the field's value is
+        // the localised OpenAI name.
         expect(
           semanticsWidgets.first.properties.value,
-          strings.aiProviderGenericOpenAiName,
+          strings.aiProviderOpenAiName,
         );
       },
     );
@@ -2292,12 +2225,16 @@ void main() {
       'a styled InkWell, not an AbsorbPointer(AiTextField(controller: '
       'TextEditingController(...))) — exercising the prior leaky pattern '
       'would surface as a TextField widget in the tree, so this guard '
-      'asserts no TextField appears in the Provider Configuration card.',
+      'asserts no TextField appears inside the field. Runs in EDIT mode '
+      'because `_ProviderTypeField` is no longer rendered in the v5 '
+      'create chrome.',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'test-provider-id'),
+        );
         await tester.pumpAndSettle();
 
         final strings = l10n(tester);

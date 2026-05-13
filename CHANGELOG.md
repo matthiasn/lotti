@@ -48,7 +48,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is flat (`elevation: 0`, `scrolledUnderElevation: 0`), the title
   uses `subtitle1` typography, and the page padding is token-driven
   (`spacing.step5`).
+- "Add provider" connect-form chrome redesigned to match the typed
+  three-step flow. The legacy `Add Provider` SliverAppBar title is
+  replaced in create mode by `_CreateModeChrome`: a breadcrumb row
+  (`Settings › AI Settings › Add provider › <provider name>`, shown
+  on viewports ≥ 720 px), a step indicator
+  (`Choose provider › Connect › Review` with Connect highlighted),
+  and a provider-tinted hero card pulled from `aiProviderVisual`
+  carrying the localised `Connect <provider>` headline and tagline.
+  Below the form the legacy `FormBottomBar` is swapped for an
+  `_AddProviderFooterBar` with three actions: `Back to providers`
+  (back-arrow tertiary), `Save as draft` (secondary, fires save
+  WITHOUT the FTUE preview/result modal flow), `Save & continue ▸`
+  (primary, keeps the existing FTUE setup workflow that lands the
+  user on the connected-models success modal). Edit mode keeps the
+  legacy chrome unchanged.
+- Mobile responsiveness for the new chrome. The connect form's
+  breadcrumb row and the tappable `Choose provider` step both drop
+  on phone-sized viewports — the AppBar back-arrow already covers
+  the same affordance, so re-rendering the breadcrumb chip on top of
+  the form would just crowd the layout. The header card and step
+  indicator stay; the footer's three buttons reflow onto multiple
+  rows via `Wrap` instead of overflowing.
 
+## [0.9.998]
 ### Fixed
 - Sync stack hot-path cleanup driven by the 2026-05-10/11/12 desktop
   slow- and super-slow-query logs. Eight load-bearing offenders folded

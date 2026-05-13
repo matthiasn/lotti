@@ -13,12 +13,14 @@ import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
 import 'package:lotti/features/ai/ui/settings/services/ftue_trigger_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -235,8 +237,20 @@ class _InferenceProviderEditPageState
         formState.isValid &&
         (widget.configId == null || formState.isDirty);
 
-    // Create save handler that can be used by both app bar action and keyboard shortcut
-    Future<void> handleSave() async {
+    // Save & continue requires the full form to validate (display
+    // name, API key for cloud providers, base URL shape). Save as
+    // draft uses the looser check below so the user can persist a
+    // partial config and finish later — that's what "draft" means.
+    final hasNameForDraft =
+        formState != null && formState.name.value.trim().isNotEmpty;
+    final canSaveAsDraft =
+        widget.configId == null && hasNameForDraft && !_isSaving;
+
+    // Create save handler that can be used by both app bar action and keyboard shortcut.
+    // [fireFtueWorkflow] is `false` when the user invokes "Save as draft" from
+    // the v5 footer — the row gets persisted but the FTUE preview/result
+    // modal flow is skipped so the user can come back later to seed models.
+    Future<void> handleSave({bool fireFtueWorkflow = true}) async {
       if (!isFormValid || _isSaving) return;
 
       setState(() => _isSaving = true);
@@ -250,7 +264,10 @@ class _InferenceProviderEditPageState
 
           // Offer to set up default prompts for supported providers
           // Only show FTUE if this is the first provider of this type
-          if (context.mounted && config is AiConfigInferenceProvider) {
+          // AND the caller didn't explicitly opt out (Save as draft).
+          if (fireFtueWorkflow &&
+              context.mounted &&
+              config is AiConfigInferenceProvider) {
             await _offerFtueSetupIfFirstProvider(config);
           }
         } else {
@@ -258,7 +275,7 @@ class _InferenceProviderEditPageState
         }
 
         if (context.mounted) {
-          Navigator.of(context).pop();
+          await popAiSettingsDetail(context);
         }
       } catch (error, stackTrace) {
         // Forward the failure to the app's LoggingService so production
@@ -297,7 +314,65 @@ class _InferenceProviderEditPageState
       }
     }
 
+    // Looser save path used by the v5 footer's "Save as draft" button.
+    // The user has signalled "I'll come back later" so we persist the
+    // partially-filled config (name + provider type are enough — base
+    // URL falls back to the provider default, API key may be empty
+    // and stays empty until the user returns) and surface a toast so
+    // the silent pop doesn't feel like the tap was lost. FTUE
+    // workflow is intentionally skipped — no test category, no model
+    // seeding, no preview/result modal — that's the whole point of
+    // a draft.
+    Future<void> handleSaveDraft() async {
+      // Both conditions imply formState is non-null:
+      //   - canSaveAsDraft was computed with `formState != null`
+      //     (folded through `hasNameForDraft`)
+      //   - Dart's flow analysis propagates the promotion through
+      //     these final boolean locals into the closure body, so
+      //     `formState.toAiConfig()` below is sound without a `!`
+      //     cast — adding a redundant `formState == null` check
+      //     here would trigger an `unnecessary_null_comparison`
+      //     warning.
+      if (_isSaving || !canSaveAsDraft) return;
+      setState(() => _isSaving = true);
+      try {
+        final config = formState.toAiConfig();
+        final controller = ref.read(_formProvider.notifier);
+        await controller.addConfig(config);
+        if (context.mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.success,
+            title: context.messages.aiProviderConnectSavedAsDraftToast,
+          );
+          await popAiSettingsDetail(context);
+        }
+      } catch (error, stackTrace) {
+        try {
+          getIt<LoggingService>().captureException(
+            error,
+            domain: 'AI_CONFIG',
+            subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.handleSaveDraft',
+            stackTrace: stackTrace,
+          );
+        } catch (_) {
+          // LoggingService not registered (tests) — ignore.
+        }
+        if (context.mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.commonError,
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isSaving = false);
+        }
+      }
+    }
+
     final tokens = context.designTokens;
+    final isCreate = widget.configId == null;
+    final providerType = formState?.inferenceProviderType;
 
     return CallbackShortcuts(
       bindings: {
@@ -308,17 +383,26 @@ class _InferenceProviderEditPageState
         },
       },
       child: Scaffold(
-        backgroundColor: context.colorScheme.surface,
+        // v5 alignment: route the page background through the design
+        // tokens (background.level01) so the connect form sits on the
+        // same surface as `AiProviderDetailPage`, `AiSettingsPage`,
+        // and the rest of the AI surfaces — `colorScheme.surface` is
+        // off the design palette and visibly drifts on dark mode.
+        backgroundColor: tokens.colors.background.level01,
         body: Column(
           children: [
             Expanded(
               child: CustomScrollView(
                 slivers: [
-                  // Clean App Bar
+                  // App bar — for create mode the title is the
+                  // breadcrumb chip (rendered below as part of the
+                  // form chrome), so the bar collapses to a back
+                  // arrow only. For edit mode the legacy "Edit
+                  // Provider" title remains.
                   SliverAppBar(
-                    expandedHeight: 100,
+                    expandedHeight: isCreate ? kToolbarHeight : 100,
                     pinned: true,
-                    backgroundColor: context.colorScheme.surface,
+                    backgroundColor: tokens.colors.background.level01,
                     surfaceTintColor: Colors.transparent,
                     elevation: 0,
                     leading: IconButton(
@@ -327,24 +411,40 @@ class _InferenceProviderEditPageState
                         color: context.colorScheme.onSurface,
                         size: 28,
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => popAiSettingsDetail(context),
                     ),
-                    flexibleSpace: FlexibleSpaceBar(
-                      titlePadding: EdgeInsets.only(
-                        bottom: tokens.spacing.step5,
-                      ),
-                      title: Text(
-                        widget.configId == null
-                            ? context.messages.apiKeyAddPageTitle
-                            : context.messages.apiKeyEditPageTitle,
-                        style: tokens.typography.styles.heading.heading3
-                            .copyWith(
-                              color: context.colorScheme.onSurface,
-                              fontWeight: tokens.typography.weight.semiBold,
+                    flexibleSpace: isCreate
+                        ? null
+                        : FlexibleSpaceBar(
+                            titlePadding: EdgeInsets.only(
+                              bottom: tokens.spacing.step5,
                             ),
+                            title: Text(
+                              context.messages.apiKeyEditPageTitle,
+                              style: tokens.typography.styles.heading.heading3
+                                  .copyWith(
+                                    color: context.colorScheme.onSurface,
+                                    fontWeight:
+                                        tokens.typography.weight.semiBold,
+                                  ),
+                            ),
+                          ),
+                  ),
+                  if (isCreate && providerType != null)
+                    SliverToBoxAdapter(
+                      child: _CreateModeChrome(
+                        providerType: providerType,
+                        onChooseProvider: () {
+                          // Same affordance as the back arrow — the
+                          // user wants to revisit the picker. We
+                          // pop (or beam to /settings/ai on desktop
+                          // where the page lives in a panel slot)
+                          // so the FAB handler in the settings page
+                          // can re-open the modal.
+                          popAiSettingsDetail(context);
+                        },
                       ),
                     ),
-                  ),
                   // Form Content
                   SliverToBoxAdapter(
                     child: switch (configAsync) {
@@ -368,14 +468,27 @@ class _InferenceProviderEditPageState
                 ],
               ),
             ),
-            // Fixed bottom bar
-            FormBottomBar(
-              onSave: isFormValid && !_isSaving ? handleSave : null,
-              onCancel: () => Navigator.of(context).pop(),
-              isFormValid: isFormValid,
-              isDirty: widget.configId == null || (formState?.isDirty ?? false),
-              isLoading: _isSaving,
-            ),
+            // Fixed bottom bar — create mode uses the v5 three-button
+            // footer (Back to providers / Save as draft / Save &
+            // continue); edit mode keeps the legacy two-button bar.
+            if (isCreate)
+              _AddProviderFooterBar(
+                onBack: () => popAiSettingsDetail(context),
+                onSaveDraft: handleSaveDraft,
+                onSaveAndContinue: handleSave,
+                canSaveDraft: canSaveAsDraft,
+                canSaveAndContinue: isFormValid,
+                isSaving: _isSaving,
+              )
+            else
+              FormBottomBar(
+                onSave: isFormValid && !_isSaving ? handleSave : null,
+                onCancel: () => popAiSettingsDetail(context),
+                isFormValid: isFormValid,
+                isDirty:
+                    widget.configId == null || (formState?.isDirty ?? false),
+                isLoading: _isSaving,
+              ),
           ],
         ),
       ),
@@ -402,7 +515,94 @@ class _InferenceProviderEditPageState
     }
 
     final formController = ref.read(_formProvider.notifier);
+    final isCreate = widget.configId == null;
+    final needsApiKey = !ProviderConfig.noApiKeyRequired.contains(
+      formState.inferenceProviderType,
+    );
+    final apiKeySuffix = IconButton(
+      icon: Icon(
+        _showApiKey ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+        color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+      ),
+      onPressed: () => setState(() {
+        _showApiKey = !_showApiKey;
+      }),
+      tooltip: _showApiKey
+          ? messages.apiKeyHideTooltip
+          : messages.apiKeyShowTooltip,
+    );
 
+    if (isCreate) {
+      // v5 flat-field layout matching the screenshot at
+      // /Desktop/Screenshot 2026-05-13 at 17.09.21: caption-above-field
+      // rows with right-side hints, the API-key helper link, and the
+      // privacy hint. No `AiFormSection` wrappers — sections collapse
+      // to simple stacked fields per the design. The live
+      // connection-check strip lands in a follow-up PR; this PR only
+      // ships the visual chrome.
+      return Padding(
+        padding: EdgeInsets.all(tokens.spacing.step6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _FlatField(
+              label: messages.apiKeyDisplayNameLabel,
+              hintRight: messages.aiProviderConnectFieldDisplayNameHint,
+              child: AiTextField(
+                label: '',
+                hint: messages.apiKeyDisplayNameHint,
+                controller: formController.nameController,
+                onChanged: formController.nameChanged,
+                validator: (_) => formState.name.error?.displayMessage,
+              ),
+            ),
+            if (needsApiKey) ...[
+              SizedBox(height: tokens.spacing.step6),
+              _FlatField(
+                label: messages.apiKeyInputLabel,
+                hintRight:
+                    aiProviderKeyConsoleUrl(
+                          formState.inferenceProviderType,
+                        ) !=
+                        null
+                    ? messages.aiProviderConnectKeyHelperLink(
+                        aiProviderKeyConsoleUrl(
+                          formState.inferenceProviderType,
+                        )!,
+                      )
+                    : null,
+                hintRightTone: _FlatFieldHintTone.link,
+                child: AiTextField(
+                  label: '',
+                  hint: messages.apiKeyInputHint,
+                  controller: formController.apiKeyController,
+                  focusNode: _apiKeyFocusNode,
+                  onChanged: formController.apiKeyChanged,
+                  validator: (_) => formState.apiKey.error?.displayMessage,
+                  obscureText: !_showApiKey,
+                  suffixIcon: apiKeySuffix,
+                ),
+              ),
+            ],
+            SizedBox(height: tokens.spacing.step6),
+            _FlatField(
+              label: messages.aiProviderConnectFieldBaseUrlLabelOptional,
+              hintRight: messages.aiProviderConnectFieldBaseUrlHint,
+              child: AiTextField(
+                label: '',
+                hint: 'https://api.example.com',
+                controller: formController.baseUrlController,
+                onChanged: formController.baseUrlChanged,
+                validator: (_) => formState.baseUrl.error?.displayMessage,
+                keyboardType: TextInputType.url,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Edit mode — keep the legacy section-based layout untouched.
     return Padding(
       padding: EdgeInsets.all(tokens.spacing.step6),
       child: Column(
@@ -413,9 +613,6 @@ class _InferenceProviderEditPageState
             icon: Icons.settings_rounded,
             description: messages.apiKeyProviderConfigDescription,
             children: [
-              // Provider Type Selection — read-only field. Uses a
-              // gesture-tappable styled box (no `TextEditingController`)
-              // so we don't allocate a fresh controller on every rebuild.
               _ProviderTypeField(
                 label: messages.apiKeyProviderTypeLabel,
                 value: formState.inferenceProviderType.displayName(context),
@@ -423,8 +620,6 @@ class _InferenceProviderEditPageState
                 onTap: () => _showProviderTypeModal(context),
               ),
               SizedBox(height: tokens.spacing.step6),
-
-              // Display Name
               AiTextField(
                 label: messages.apiKeyDisplayNameLabel,
                 hint: messages.apiKeyDisplayNameHint,
@@ -434,8 +629,6 @@ class _InferenceProviderEditPageState
                 prefixIcon: Icons.label_outline_rounded,
               ),
               SizedBox(height: tokens.spacing.step6),
-
-              // Base URL
               AiTextField(
                 label: messages.apiKeyBaseUrlLabel,
                 hint: 'https://api.example.com',
@@ -449,16 +642,12 @@ class _InferenceProviderEditPageState
           ),
           SizedBox(height: tokens.spacing.step7),
 
-          // Authentication Section - Only show for providers that require API key
-          if (!ProviderConfig.noApiKeyRequired.contains(
-            formState.inferenceProviderType,
-          )) ...[
+          if (needsApiKey) ...[
             AiFormSection(
               title: messages.apiKeyAuthenticationTitle,
               icon: Icons.security_rounded,
               description: messages.apiKeyAuthenticationDescription,
               children: [
-                // API Key
                 AiTextField(
                   label: messages.apiKeyInputLabel,
                   hint: messages.apiKeyInputHint,
@@ -468,22 +657,7 @@ class _InferenceProviderEditPageState
                   validator: (_) => formState.apiKey.error?.displayMessage,
                   obscureText: !_showApiKey,
                   prefixIcon: Icons.key_rounded,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _showApiKey
-                          ? Icons.visibility_off_rounded
-                          : Icons.visibility_rounded,
-                      color: context.colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.6,
-                      ),
-                    ),
-                    onPressed: () => setState(() {
-                      _showApiKey = !_showApiKey;
-                    }),
-                    tooltip: _showApiKey
-                        ? messages.apiKeyHideTooltip
-                        : messages.apiKeyShowTooltip,
-                  ),
+                  suffixIcon: apiKeySuffix,
                 ),
               ],
             ),
@@ -616,7 +790,7 @@ class _InferenceProviderEditPageState
             SizedBox(height: tokens.spacing.step6),
             LottiSecondaryButton(
               label: messages.apiKeyEditGoBackButton,
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => popAiSettingsDetail(context),
               icon: Icons.arrow_back_rounded,
             ),
           ],
@@ -659,7 +833,7 @@ class _ProviderTypeField extends StatelessWidget {
         type: MaterialType.transparency,
         child: Ink(
           decoration: BoxDecoration(
-            color: context.colorScheme.surface,
+            color: tokens.colors.background.level02,
             borderRadius: radius,
             border: Border.all(
               color: context.colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -1119,7 +1293,7 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
       // user lands back at the settings list instead of staring at the
       // provider form they just re-ran the wizard from.
       if (action == AiProviderSetupResultAction.startUsingAi && mounted) {
-        Navigator.of(context).pop();
+        await popAiSettingsDetail(context);
       }
     } finally {
       if (mounted) {
@@ -1313,6 +1487,399 @@ class _ModalityChip extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Container that stacks the create-mode chrome — breadcrumbs, step
+/// indicator, and the provider-tinted hero card — above the form.
+/// Encapsulates the responsive logic so the build path stays clean:
+/// the page just plugs in `_CreateModeChrome(providerType: …)` and the
+/// helper picks the right padding + spacing per viewport. Wide
+/// (>= 720) viewports keep the breadcrumbs row visible; narrower
+/// surfaces drop them because the AppBar leading-back arrow already
+/// expresses the same navigation intent.
+class _CreateModeChrome extends StatelessWidget {
+  const _CreateModeChrome({
+    required this.providerType,
+    required this.onChooseProvider,
+  });
+
+  final InferenceProviderType providerType;
+  final VoidCallback onChooseProvider;
+
+  /// Breakpoint above which the breadcrumb row + the tappable
+  /// "Choose provider" step are shown. Below this width the AppBar
+  /// back-arrow IS the primary back affordance, and showing a second
+  /// crumb-row on a phone-sized viewport would just crowd the form.
+  static const double _wideBreakpoint = 720;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = width >= _wideBreakpoint;
+    final providerName = aiProviderDisplayName(
+      type: providerType,
+      messages: messages,
+    );
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step6,
+        tokens.spacing.step3,
+        tokens.spacing.step6,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isWide) ...[
+            _AddProviderBreadcrumbs(providerName: providerName),
+            SizedBox(height: tokens.spacing.step4),
+          ],
+          _AddProviderStepIndicator(
+            onChoosePressed: isWide ? onChooseProvider : null,
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          _AddProviderHeaderCard(providerType: providerType),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact breadcrumb strip rendered above the form when adding a new
+/// provider. Mirrors the desktop reference design:
+/// `Settings › AI Settings › Add provider › [provider name]`. On
+/// narrow viewports the component truncates earlier crumbs to the
+/// available width — the last (provider name) crumb is always visible
+/// because it's the most location-specific.
+class _AddProviderBreadcrumbs extends StatelessWidget {
+  const _AddProviderBreadcrumbs({required this.providerName});
+
+  final String providerName;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final caption = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+    );
+    final activeCaption = caption.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      fontWeight: tokens.typography.weight.semiBold,
+    );
+    final separator = Padding(
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+      child: Text('›', style: caption),
+    );
+    return DefaultTextStyle.merge(
+      style: caption,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(messages.settingsThemingTitle, style: caption),
+          separator,
+          Text(messages.settingsAiTitle, style: caption),
+          separator,
+          Text(messages.aiProviderConnectBreadcrumbAdd, style: caption),
+          separator,
+          Text(providerName, style: activeCaption),
+        ],
+      ),
+    );
+  }
+}
+
+/// Three-step horizontal indicator: "Choose provider › Connect ›
+/// Review". The active step is bold + accent-coloured. The
+/// `Choose provider` step renders as a back-affordance link on
+/// desktop so the user can jump back to the picker without losing
+/// the form state — mobile preserves the same back navigation via
+/// the AppBar's leading arrow.
+class _AddProviderStepIndicator extends StatelessWidget {
+  const _AddProviderStepIndicator({this.onChoosePressed});
+
+  /// Tap callback for the first step. When `null` the step is
+  /// rendered as plain text (mobile) — back navigation is handled by
+  /// the AppBar arrow, so a duplicate affordance would just be
+  /// crowding.
+  final VoidCallback? onChoosePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final inactiveStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+    final activeStyle = inactiveStyle.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      fontWeight: tokens.typography.weight.semiBold,
+    );
+    final separator = Padding(
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+      child: Icon(
+        Icons.chevron_right_rounded,
+        size: tokens.spacing.step5,
+        color: tokens.colors.text.lowEmphasis,
+      ),
+    );
+    final chooseLabel = messages.aiProviderConnectStepChoose;
+    final chooseWidget = onChoosePressed == null
+        ? Text(chooseLabel, style: inactiveStyle)
+        : Semantics(
+            button: true,
+            child: InkWell(
+              onTap: onChoosePressed,
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step2,
+                  vertical: tokens.spacing.step1,
+                ),
+                child: Text(chooseLabel, style: inactiveStyle),
+              ),
+            ),
+          );
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        chooseWidget,
+        separator,
+        Text(messages.aiProviderConnectStepConnect, style: activeStyle),
+        separator,
+        Text(messages.aiProviderConnectStepReview, style: inactiveStyle),
+      ],
+    );
+  }
+}
+
+/// Provider-tinted hero card sitting above the form fields. Carries
+/// the provider's icon in a tinted square + the localised
+/// `Connect <provider name>` title + the provider's tagline. The
+/// accent + surface come from `aiProviderVisual` so the same
+/// per-provider chrome the rest of the AI Settings surface uses is
+/// reproduced here without re-declaring colours.
+class _AddProviderHeaderCard extends StatelessWidget {
+  const _AddProviderHeaderCard({required this.providerType});
+
+  final InferenceProviderType providerType;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final accent = aiProviderAccent(type: providerType, tokens: tokens);
+    final surface = aiProviderSurface(type: providerType, tokens: tokens);
+    final providerName = aiProviderDisplayName(
+      type: providerType,
+      messages: messages,
+    );
+    final tagline = aiProviderTagline(type: providerType, messages: messages);
+    return Container(
+      padding: EdgeInsets.all(tokens.spacing.step5),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        border: Border.all(color: accent.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: tokens.spacing.step9,
+            height: tokens.spacing.step9,
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(tokens.radii.m),
+            ),
+            child: Icon(
+              aiProviderIcon(providerType),
+              color: accent,
+              size: tokens.spacing.step7,
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step5),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  messages.aiProviderConnectPageTitle(providerName),
+                  style: tokens.typography.styles.heading.heading3.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                    fontWeight: tokens.typography.weight.semiBold,
+                  ),
+                ),
+                if (tagline.isNotEmpty) ...[
+                  SizedBox(height: tokens.spacing.step2),
+                  Text(
+                    tagline,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Footer action row used in the create flow: Back to providers /
+/// Save as draft / Save & continue. The three buttons reflow onto
+/// multiple rows on narrow viewports via `Wrap`.
+class _AddProviderFooterBar extends StatelessWidget {
+  const _AddProviderFooterBar({
+    required this.onBack,
+    required this.onSaveDraft,
+    required this.onSaveAndContinue,
+    required this.canSaveDraft,
+    required this.canSaveAndContinue,
+    required this.isSaving,
+  });
+
+  final VoidCallback onBack;
+  final VoidCallback? onSaveDraft;
+  final VoidCallback? onSaveAndContinue;
+
+  /// Loose gate for the draft button — true as soon as the form has
+  /// the minimum fields a draft needs (display name + preselected
+  /// provider type). Distinct from [canSaveAndContinue] because the
+  /// draft path is allowed to persist a partial config that wouldn't
+  /// pass full validation.
+  final bool canSaveDraft;
+
+  /// Strict gate for the primary CTA — requires the form to fully
+  /// validate (display name, API key for cloud providers, base URL
+  /// shape) before the FTUE workflow is allowed to fire.
+  final bool canSaveAndContinue;
+  final bool isSaving;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step6,
+        vertical: tokens.spacing.step4,
+      ),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level01,
+        border: Border(
+          top: BorderSide(
+            color: tokens.colors.decorative.level01,
+          ),
+        ),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: tokens.spacing.step3,
+        runSpacing: tokens.spacing.step3,
+        children: [
+          DesignSystemButton(
+            label: messages.aiProviderConnectBackToProviders,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.large,
+            leadingIcon: Icons.arrow_back_rounded,
+            onPressed: isSaving ? null : onBack,
+          ),
+          Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step3,
+            children: [
+              DesignSystemButton(
+                label: messages.aiProviderConnectSaveAsDraft,
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
+                onPressed: canSaveDraft && !isSaving ? onSaveDraft : null,
+              ),
+              DesignSystemButton(
+                label: messages.aiProviderConnectSaveAndContinue,
+                size: DesignSystemButtonSize.large,
+                trailingIcon: Icons.arrow_forward_rounded,
+                onPressed: canSaveAndContinue && !isSaving
+                    ? onSaveAndContinue
+                    : null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tone for the right-hand hint text in a [_FlatField]. `helper`
+/// renders as a low-emphasis caption; `link` renders as a colored
+/// interactive accent so the user reads it as a clickable URL even
+/// though we don't currently wire a launch handler (the design
+/// surfaces the URL as a hint, not a tap target — the user knows
+/// where to go).
+enum _FlatFieldHintTone { helper, link }
+
+/// Flat row used in the create-mode form: a CAPITAL caption on the
+/// left, an optional right-hand hint, and the field widget below.
+/// Replaces the legacy `AiFormSection` wrapper for the redesigned
+/// connect form so the layout matches the reference screenshot
+/// (caption + right-hand hint + field, with no surrounding card).
+class _FlatField extends StatelessWidget {
+  const _FlatField({
+    required this.label,
+    required this.child,
+    this.hintRight,
+    this.hintRightTone = _FlatFieldHintTone.helper,
+  });
+
+  final String label;
+  final Widget child;
+  final String? hintRight;
+  final _FlatFieldHintTone hintRightTone;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final captionStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+      letterSpacing: 1.2,
+      fontWeight: tokens.typography.weight.semiBold,
+    );
+    final hintStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: hintRightTone == _FlatFieldHintTone.link
+          ? tokens.colors.interactive.enabled
+          : tokens.colors.text.mediumEmphasis,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(label.toUpperCase(), style: captionStyle),
+            ),
+            if (hintRight != null && hintRight!.isNotEmpty)
+              Flexible(
+                child: Text(
+                  hintRight!,
+                  style: hintStyle,
+                  textAlign: TextAlign.end,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        child,
+      ],
     );
   }
 }
