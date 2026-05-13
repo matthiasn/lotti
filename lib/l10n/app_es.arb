@@ -615,6 +615,48 @@
   "aiProviderConnectFieldBaseUrlHint": "Déjalo en blanco para usar el endpoint oficial",
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL base (opcional)",
   "aiProviderConnectFieldDisplayNameHint": "Se mostrará en tu lista de proveedores",
+  "aiProviderConnectionCheckingLabel": "Comprobando la clave, listando los modelos disponibles…",
+  "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
+  "@aiProviderConnectionFailedHttpDetail": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedNetworkDetail": "{message}",
+  "@aiProviderConnectionFailedNetworkDetail": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedTitle": "No se pudo conectar con {providerName}. Revisa la clave o tu red.",
+  "@aiProviderConnectionFailedTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionRetestButton": "Volver a probar",
+  "aiProviderConnectionRetryButton": "Reintentar",
+  "aiProviderConnectionVerifiedSubtitle": "{count, plural, =1{1 modelo disponible en tu cuenta · respondió en {ms} ms} other{{count} modelos disponibles en tu cuenta · respondió en {ms} ms}}",
+  "@aiProviderConnectionVerifiedSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "aiProviderConnectionVerifiedTitle": "Conexión verificada",
   "aiProviderConnectKeyHelperLink": "Consigue una clave en {url}",
   "@aiProviderConnectKeyHelperLink": {
     "placeholders": {

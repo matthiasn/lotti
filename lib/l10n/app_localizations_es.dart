@@ -1375,6 +1375,45 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se mostrará en tu lista de proveedores';
 
   @override
+  String get aiProviderConnectionCheckingLabel =>
+      'Comprobando la clave, listando los modelos disponibles…';
+
+  @override
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
+  }
+
+  @override
+  String aiProviderConnectionFailedNetworkDetail(String message) {
+    return '$message';
+  }
+
+  @override
+  String aiProviderConnectionFailedTitle(String providerName) {
+    return 'No se pudo conectar con $providerName. Revisa la clave o tu red.';
+  }
+
+  @override
+  String get aiProviderConnectionRetestButton => 'Volver a probar';
+
+  @override
+  String get aiProviderConnectionRetryButton => 'Reintentar';
+
+  @override
+  String aiProviderConnectionVerifiedSubtitle(int count, int ms) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modelos disponibles en tu cuenta · respondió en $ms ms',
+      one: '1 modelo disponible en tu cuenta · respondió en $ms ms',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderConnectionVerifiedTitle => 'Conexión verificada';
+
+  @override
   String aiProviderConnectKeyHelperLink(String url) {
     return 'Consigue una clave en $url';
   }

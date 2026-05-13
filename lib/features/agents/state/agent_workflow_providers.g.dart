@@ -121,7 +121,7 @@ final class ImproverAgentWorkflowProvider
 }
 
 String _$improverAgentWorkflowHash() =>
-    r'aebcb692a46b2ad9d8e1460fcbbeba38fe49ec95';
+    r'ea4fd8b8856d6388e508ec0519ec27b92c092675';
 
 /// The task agent workflow with all dependencies resolved.
 

@@ -84,6 +84,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Salvați` register to stay consistent with the rest of the
   Romanian AI Settings flow, and the base-URL hint replaces the
   stilted `punctul final oficial` with `punctul final implicit`.
+- Live API-key verification on the connect form. A new
+  `ConnectionVerifierService` probes the provider's `/models`
+  endpoint with the entered key 600 ms after the user stops typing
+  in the API-key or Base URL field. Surfaces in a
+  `_ConnectionStatusStrip` below Base URL with one of four faces:
+  - `Idle`: nothing rendered (the strip claims no vertical space
+    until the user has typed enough to trigger a probe).
+  - `Checking`: translucent surface with a spinner and the
+    "Checking key, listing available models…" caption.
+  - `Verified(modelCount, latency)`: green tinted card with the
+    "Connection verified · N models available · responded in X ms"
+    subtitle and a `Re-test` button.
+  - `Failed(http|network)`: warning-tinted card with the failure
+    reason and a `Retry` button.
+  Per-provider probes share an `_OpenAiCompatibleProbe` for Gemini
+  / OpenAI / Mistral / Alibaba / OpenRouter / Nebius (Bearer auth on
+  `<baseUrl>/models`) — Gemini is routed through this shape because
+  its app-configured base URL is its OpenAI-compatible
+  `/v1beta/openai` endpoint, so building a custom `?key=` query
+  against the same base would resolve to
+  `/v1beta/openai/v1/models?key=…` and Gemini would answer 400.
+  Anthropic uses a dedicated probe with `x-api-key` + the
+  `anthropic-version` header. Ollama probes `/api/tags` with no
+  Authorization header. A generation guard prevents stale slow
+  responses from overwriting a freshly fired Re-test.
+- 8 new ARB keys × 6 locales for the verifier strip
+  (Checking / Verified title+subtitle / Failed http+network
+  titles+details / Re-test / Retry).
 
 ## [0.9.998]
 ### Fixed

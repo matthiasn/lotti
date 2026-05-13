@@ -133,7 +133,7 @@ final class SyncMetricsHistoryProvider
 }
 
 String _$syncMetricsHistoryHash() =>
-    r'2bb3df3395b734f737e9f4732157a18c91c38d9c';
+    r'50726338f9d9edc7d5a347f3122a2fdf1d9acb22';
 
 /// Rolling in-memory history for a few KPI metrics to power sparklines.
 /// Kept UI-side to avoid coupling to the pipeline internals.

@@ -1357,6 +1357,45 @@ class AppLocalizationsEn extends AppLocalizations {
       'Shown in your provider list';
 
   @override
+  String get aiProviderConnectionCheckingLabel =>
+      'Checking key, listing available models…';
+
+  @override
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
+  }
+
+  @override
+  String aiProviderConnectionFailedNetworkDetail(String message) {
+    return '$message';
+  }
+
+  @override
+  String aiProviderConnectionFailedTitle(String providerName) {
+    return 'Couldn\'t reach $providerName. Check the key or your network.';
+  }
+
+  @override
+  String get aiProviderConnectionRetestButton => 'Re-test';
+
+  @override
+  String get aiProviderConnectionRetryButton => 'Retry';
+
+  @override
+  String aiProviderConnectionVerifiedSubtitle(int count, int ms) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count models available on your account · responded in ${ms}ms',
+      one: '1 model available on your account · responded in ${ms}ms',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderConnectionVerifiedTitle => 'Connection verified';
+
+  @override
   String aiProviderConnectKeyHelperLink(String url) {
     return 'Get a key at $url';
   }

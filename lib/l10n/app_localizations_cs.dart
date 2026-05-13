@@ -1372,6 +1372,46 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazí se v tvém seznamu poskytovatelů';
 
   @override
+  String get aiProviderConnectionCheckingLabel =>
+      'Ověřuji klíč, načítám dostupné modely…';
+
+  @override
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
+  }
+
+  @override
+  String aiProviderConnectionFailedNetworkDetail(String message) {
+    return '$message';
+  }
+
+  @override
+  String aiProviderConnectionFailedTitle(String providerName) {
+    return 'Nelze se připojit k $providerName. Zkontroluj klíč nebo síť.';
+  }
+
+  @override
+  String get aiProviderConnectionRetestButton => 'Otestovat znovu';
+
+  @override
+  String get aiProviderConnectionRetryButton => 'Zkusit znovu';
+
+  @override
+  String aiProviderConnectionVerifiedSubtitle(int count, int ms) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modelů dostupných na tvém účtu · odpověď za $ms ms',
+      few: '$count modely dostupné na tvém účtu · odpověď za $ms ms',
+      one: '1 model dostupný na tvém účtu · odpověď za $ms ms',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderConnectionVerifiedTitle => 'Připojení ověřeno';
+
+  @override
   String aiProviderConnectKeyHelperLink(String url) {
     return 'Klíč získáš na $url';
   }

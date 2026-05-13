@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
+import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ftue_trigger_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -25,6 +28,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -174,6 +178,12 @@ class _InferenceProviderEditPageState
   bool _isSaving = false;
   final FocusNode _apiKeyFocusNode = FocusNode();
 
+  /// Debounce timer for the live connection verifier. Fires the probe
+  /// 600 ms after the user stops typing in the API key or base URL
+  /// so we don't hammer the provider on every keystroke. Cancelled
+  /// + reset on each input change and in `dispose()`.
+  Timer? _connectionVerifyDebounce;
+
   /// Set once the Fix-flow has actually focused + scrolled the API key
   /// field, so the retry in `build` stops once it has succeeded. The
   /// retry exists because the form's first frame can render a loading
@@ -185,8 +195,56 @@ class _InferenceProviderEditPageState
 
   @override
   void dispose() {
+    _connectionVerifyDebounce?.cancel();
     _apiKeyFocusNode.dispose();
     super.dispose();
+  }
+
+  /// Schedule a debounced live verification of the API key against the
+  /// provider's `/models` endpoint. The 600 ms window keeps the form
+  /// from probing on every keystroke while the user is typing — the
+  /// probe fires once the field has been still long enough for the
+  /// input to look intentional. Cancels any pending probe so the
+  /// latest input wins.
+  void _scheduleConnectionVerify({
+    required InferenceProviderType providerType,
+    required String apiKey,
+    required String baseUrl,
+  }) {
+    _connectionVerifyDebounce?.cancel();
+    if (apiKey.trim().isEmpty && providerType != InferenceProviderType.ollama) {
+      // Empty key → reset the strip to idle so the previous probe's
+      // outcome doesn't linger across a clear.
+      ref
+          .read(connectionVerifierControllerProvider(providerType).notifier)
+          .reset();
+      return;
+    }
+    _connectionVerifyDebounce = Timer(
+      const Duration(milliseconds: 600),
+      () {
+        if (!mounted) return;
+        ref
+            .read(
+              connectionVerifierControllerProvider(providerType).notifier,
+            )
+            .verify(baseUrl: baseUrl, apiKey: apiKey);
+      },
+    );
+  }
+
+  /// Fire the verifier immediately (no debounce) — bound to the
+  /// strip's Re-test / Retry buttons so the user gets an instant
+  /// response when they explicitly request a probe.
+  void _retryConnectionVerify({
+    required InferenceProviderType providerType,
+    required String apiKey,
+    required String baseUrl,
+  }) {
+    _connectionVerifyDebounce?.cancel();
+    ref
+        .read(connectionVerifierControllerProvider(providerType).notifier)
+        .verify(baseUrl: baseUrl, apiKey: apiKey);
   }
 
   /// Re-runs every build until the API-key section is actually
@@ -536,11 +594,10 @@ class _InferenceProviderEditPageState
     if (isCreate) {
       // v5 flat-field layout matching the screenshot at
       // /Desktop/Screenshot 2026-05-13 at 17.09.21: caption-above-field
-      // rows with right-side hints, the API-key helper link, and the
-      // privacy hint. No `AiFormSection` wrappers — sections collapse
-      // to simple stacked fields per the design. The live
-      // connection-check strip lands in a follow-up PR; this PR only
-      // ships the visual chrome.
+      // rows with right-side hints, the API-key helper link, the
+      // privacy hint, and the live `_ConnectionStatusStrip` below
+      // Base URL. No `AiFormSection` wrappers — sections collapse to
+      // simple stacked fields per the design.
       return Padding(
         padding: EdgeInsets.all(tokens.spacing.step6),
         child: Column(
@@ -576,7 +633,14 @@ class _InferenceProviderEditPageState
                       hint: messages.apiKeyInputHint,
                       controller: formController.apiKeyController,
                       focusNode: _apiKeyFocusNode,
-                      onChanged: formController.apiKeyChanged,
+                      onChanged: (value) {
+                        formController.apiKeyChanged(value);
+                        _scheduleConnectionVerify(
+                          providerType: formState.inferenceProviderType,
+                          apiKey: value,
+                          baseUrl: formController.baseUrlController.text,
+                        );
+                      },
                       validator: (_) => formState.apiKey.error?.displayMessage,
                       obscureText: !_showApiKey,
                       suffixIcon: apiKeySuffix,
@@ -593,9 +657,36 @@ class _InferenceProviderEditPageState
                 label: '',
                 hint: 'https://api.example.com',
                 controller: formController.baseUrlController,
-                onChanged: formController.baseUrlChanged,
+                onChanged: (value) {
+                  formController.baseUrlChanged(value);
+                  _scheduleConnectionVerify(
+                    providerType: formState.inferenceProviderType,
+                    apiKey: formController.apiKeyController.text,
+                    baseUrl: value,
+                  );
+                },
                 validator: (_) => formState.baseUrl.error?.displayMessage,
                 keyboardType: TextInputType.url,
+              ),
+            ),
+            // Only carve out the gap when the strip below is actually
+            // going to render — when no probe has run, the strip
+            // collapses to `SizedBox.shrink()` and a fixed gap above
+            // it would leave a phantom void of whitespace between the
+            // base-URL field and the privacy hint.
+            if (ref.watch(
+                  connectionVerifierControllerProvider(
+                    formState.inferenceProviderType,
+                  ),
+                )
+                is! ConnectionCheckIdle)
+              SizedBox(height: tokens.spacing.step5),
+            _ConnectionStatusStrip(
+              providerType: formState.inferenceProviderType,
+              onRetest: () => _retryConnectionVerify(
+                providerType: formState.inferenceProviderType,
+                apiKey: formController.apiKeyController.text,
+                baseUrl: formController.baseUrlController.text,
               ),
             ),
           ],
@@ -1919,5 +2010,240 @@ class _FlatField extends StatelessWidget {
       if (uri == null || !uri.hasScheme) return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+/// Live "Connection check" strip rendered below the Base URL field in
+/// create mode. Watches the per-provider
+/// [ConnectionVerifierController] state and surfaces one of four
+/// faces:
+///
+/// - [ConnectionCheckIdle]: nothing rendered (the strip slot reserves
+///   no vertical space when there is no probe to show — the form
+///   stays tight when the user hasn't entered a key).
+/// - [ConnectionCheckChecking]: a translucent surface with a
+///   `CircularProgressIndicator` and the "Checking key…" caption.
+/// - [ConnectionCheckVerified]: a green tinted card with a check icon,
+///   the localised "Connection verified · N models · responded in Xms"
+///   subtitle, and a Re-test button.
+/// - [ConnectionCheckFailedHttp] / [ConnectionCheckFailedNetwork]: a
+///   warning-tinted card with the failure reason and a Retry button.
+class _ConnectionStatusStrip extends ConsumerWidget {
+  const _ConnectionStatusStrip({
+    required this.providerType,
+    required this.onRetest,
+  });
+
+  final InferenceProviderType providerType;
+  final VoidCallback onRetest;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final state = ref.watch(
+      connectionVerifierControllerProvider(providerType),
+    );
+
+    switch (state) {
+      case ConnectionCheckIdle():
+        return const SizedBox.shrink();
+
+      case ConnectionCheckChecking():
+        return _StripShell(
+          background: tokens.colors.background.level02,
+          border: tokens.colors.decorative.level01,
+          child: Row(
+            children: [
+              SizedBox(
+                width: tokens.spacing.step5,
+                height: tokens.spacing.step5,
+                child: const CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  messages.aiProviderConnectionCheckingLabel,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+      case final ConnectionCheckVerified verified:
+        final success = tokens.colors.alert.success.defaultColor;
+        return _StripShell(
+          background: success.withValues(alpha: 0.10),
+          border: success.withValues(alpha: 0.32),
+          child: Row(
+            children: [
+              Container(
+                width: tokens.spacing.step6,
+                height: tokens.spacing.step6,
+                decoration: BoxDecoration(
+                  color: success,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_rounded,
+                  size: tokens.spacing.step5,
+                  color: tokens.colors.text.onInteractiveAlert,
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      messages.aiProviderConnectionVerifiedTitle,
+                      style: tokens.typography.styles.subtitle.subtitle2
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                            fontWeight: tokens.typography.weight.semiBold,
+                          ),
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      messages.aiProviderConnectionVerifiedSubtitle(
+                        verified.modelCount,
+                        verified.latency.inMilliseconds,
+                      ),
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              DesignSystemButton(
+                label: messages.aiProviderConnectionRetestButton,
+                variant: DesignSystemButtonVariant.tertiary,
+                onPressed: onRetest,
+              ),
+            ],
+          ),
+        );
+
+      case final ConnectionCheckFailedHttp failed:
+        return _failedStrip(
+          tokens: tokens,
+          messages: messages,
+          title: messages.aiProviderConnectionFailedTitle(
+            aiProviderDisplayName(type: providerType, messages: messages),
+          ),
+          detail: messages.aiProviderConnectionFailedHttpDetail(
+            failed.status,
+            failed.message,
+          ),
+          onRetry: onRetest,
+        );
+
+      case final ConnectionCheckFailedNetwork failed:
+        return _failedStrip(
+          tokens: tokens,
+          messages: messages,
+          title: messages.aiProviderConnectionFailedTitle(
+            aiProviderDisplayName(type: providerType, messages: messages),
+          ),
+          detail: messages.aiProviderConnectionFailedNetworkDetail(
+            failed.message,
+          ),
+          onRetry: onRetest,
+        );
+    }
+  }
+
+  Widget _failedStrip({
+    required DsTokens tokens,
+    required AppLocalizations messages,
+    required String title,
+    required String detail,
+    required VoidCallback onRetry,
+  }) {
+    final danger = tokens.colors.alert.error.defaultColor;
+    return _StripShell(
+      background: danger.withValues(alpha: 0.10),
+      border: danger.withValues(alpha: 0.32),
+      child: Row(
+        children: [
+          Container(
+            width: tokens.spacing.step6,
+            height: tokens.spacing.step6,
+            decoration: BoxDecoration(color: danger, shape: BoxShape.circle),
+            child: Icon(
+              Icons.close_rounded,
+              size: tokens.spacing.step5,
+              color: tokens.colors.text.onInteractiveAlert,
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                    fontWeight: tokens.typography.weight.semiBold,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  detail,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          DesignSystemButton(
+            label: messages.aiProviderConnectionRetryButton,
+            variant: DesignSystemButtonVariant.tertiary,
+            onPressed: onRetry,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StripShell extends StatelessWidget {
+  const _StripShell({
+    required this.background,
+    required this.border,
+    required this.child,
+  });
+
+  final Color background;
+  final Color border;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step4,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(color: border),
+      ),
+      child: child,
+    );
   }
 }

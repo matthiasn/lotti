@@ -39,7 +39,7 @@ final class ChecklistCompletionServiceProvider
 }
 
 String _$checklistCompletionServiceHash() =>
-    r'325f3b15abd863d11de14f0d5386023a9ee14ef9';
+    r'6d27ba5cfbc1cb79bd6357fbe2207da3c67da1f5';
 
 abstract class _$ChecklistCompletionService
     extends $AsyncNotifier<List<ChecklistCompletionSuggestion>> {
