@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -78,6 +79,143 @@ void main() {
       expect(result.errors, contains('Error 1'));
       expect(result.errors, contains('Error 2'));
     });
+  });
+
+  /// Regression coverage for the FTUE category bindings. The "Test
+  /// Category Gemini Enabled" sample category must land in the database
+  /// with BOTH the default inference profile and the default agent
+  /// template bound — without those, tasks created in the category
+  /// can't auto-route to the seeded profile or auto-spawn the Laura
+  /// task agent, which is the whole point of the FTUE flow.
+  group('Gemini FTUE Setup - performGeminiFtueSetup', () {
+    late ProviderPromptSetupService setupService;
+    late MockAiConfigRepository mockRepository;
+    late MockCategoryRepository mockCategoryRepository;
+    late AiConfigInferenceProvider geminiProvider;
+
+    setUpAll(() {
+      registerFallbackValue(
+        AiConfig.model(
+          id: 'fallback-model',
+          name: 'Fallback',
+          providerModelId: 'fallback',
+          inferenceProviderId: 'fallback',
+          createdAt: DateTime(2024, 3, 15),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      registerFallbackValue(
+        CategoryDefinition(
+          id: 'fallback-category',
+          name: 'Fallback',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
+    });
+
+    setUp(() {
+      setupService = const ProviderPromptSetupService();
+      mockRepository = MockAiConfigRepository();
+      mockCategoryRepository = MockCategoryRepository();
+
+      geminiProvider = AiTestDataFactory.createTestProvider(
+        id: 'gemini-provider-id',
+        name: 'Gemini',
+        type: InferenceProviderType.gemini,
+        apiKey: 'test-gemini-key',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      );
+    });
+
+    Widget createGeminiFtueTestWidget({
+      required Future<GeminiFtueResult?> Function(BuildContext, WidgetRef)
+      onPressed,
+    }) {
+      return ProviderScope(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                return ElevatedButton(
+                  onPressed: () async {
+                    await onPressed(context, ref);
+                  },
+                  child: const Text('Test'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets(
+      'creates the sample category bound to the seeded Gemini Flash '
+      'profile AND the Laura task agent template — both bindings are '
+      'what make new tasks in the category route to AI handlers and '
+      'auto-spawn an agent without any extra setup',
+      (tester) async {
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => <AiConfig>[]);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer((_) async => <CategoryDefinition>[]);
+        when(
+          () => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            defaultProfileId: any(named: 'defaultProfileId'),
+            defaultTemplateId: any(named: 'defaultTemplateId'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: ftueGeminiCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ),
+        );
+
+        await tester.pumpWidget(
+          createGeminiFtueTestWidget(
+            onPressed: (context, ref) async {
+              return setupService.performGeminiFtueSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Test'));
+        await tester.pump();
+
+        verify(
+          () => mockCategoryRepository.createCategory(
+            name: ftueGeminiCategoryName,
+            color: ftueGeminiCategoryColor,
+            defaultProfileId: profileGeminiFlashId,
+            defaultTemplateId: lauraTemplateId,
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('OpenAiFtueResult', () {
@@ -246,6 +384,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -330,6 +469,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -416,6 +556,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       );
     });
@@ -587,6 +728,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -665,6 +807,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -751,6 +894,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       );
     });
@@ -770,6 +914,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -807,6 +952,7 @@ void main() {
           name: 'Test Category Mistral Enabled',
           color: '#FF7000', // Mistral Orange
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).called(1);
     });
@@ -978,6 +1124,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -1068,6 +1215,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -1154,6 +1302,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       );
     });
@@ -1173,6 +1322,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -1210,6 +1360,8 @@ void main() {
           name: ftueAlibabaCategoryName,
           color: '#FF6D00', // Alibaba Orange
           defaultProfileId: profileAlibabaId,
+          // ignore: avoid_redundant_argument_values
+          defaultTemplateId: null,
         ),
       ).called(1);
     });
@@ -1336,6 +1488,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       ).thenAnswer(
         (_) async => CategoryDefinition(
@@ -1488,6 +1641,8 @@ void main() {
             name: ftueAnthropicCategoryName,
             color: ftueAnthropicCategoryColor,
             defaultProfileId: profileAnthropicId,
+            // ignore: avoid_redundant_argument_values
+            defaultTemplateId: null,
           ),
         ).called(1);
       },
@@ -1638,6 +1793,8 @@ void main() {
             name: ftueOllamaCategoryName,
             color: ftueOllamaCategoryColor,
             defaultProfileId: profileLocalId,
+            // ignore: avoid_redundant_argument_values
+            defaultTemplateId: null,
           ),
         ).called(1);
       },
@@ -1685,6 +1842,7 @@ void main() {
           name: any(named: 'name'),
           color: any(named: 'color'),
           defaultProfileId: any(named: 'defaultProfileId'),
+          defaultTemplateId: any(named: 'defaultTemplateId'),
         ),
       );
     });
