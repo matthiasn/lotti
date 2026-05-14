@@ -554,6 +554,14 @@
       }
     }
   },
+  "aiPickProviderBadgeDesktopOnly": "BUREAU UNIQUEMENT",
+  "aiPickProviderBadgeNew": "NOUVEAU",
+  "aiPickProviderBadgeRecommended": "RECOMMANDÉ",
+  "aiPickProviderContinueButton": "Continuer",
+  "aiPickProviderDontShowAgainButton": "Ne plus afficher",
+  "aiPickProviderFooterHint": "Tu peux ajouter d'autres fournisseurs plus tard dans Paramètres → IA. Ta clé API est stockée localement.",
+  "aiPickProviderModalTitle": "Configure les fonctionnalités IA",
+  "aiPickProviderSubtitle": "Choisis un fournisseur pour commencer. Nous configurerons automatiquement les modèles et un profil de départ.",
   "aiProfileCardActiveBadge": "Actif",
   "aiProfileSlotModelMissing": "manquant",
   "aiProviderAlibabaDescription": "La famille de modèles Qwen d'Alibaba Cloud via l'API DashScope",

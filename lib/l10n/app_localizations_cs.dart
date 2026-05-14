@@ -1247,6 +1247,32 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get aiPickProviderBadgeDesktopOnly => 'POUZE DESKTOP';
+
+  @override
+  String get aiPickProviderBadgeNew => 'NOVÉ';
+
+  @override
+  String get aiPickProviderBadgeRecommended => 'DOPORUČENO';
+
+  @override
+  String get aiPickProviderContinueButton => 'Pokračovat';
+
+  @override
+  String get aiPickProviderDontShowAgainButton => 'Příště nezobrazovat';
+
+  @override
+  String get aiPickProviderFooterHint =>
+      'Další poskytovatele můžeš přidat později v Nastavení → AI. Tvůj API klíč je uložen lokálně.';
+
+  @override
+  String get aiPickProviderModalTitle => 'Nastav AI funkce';
+
+  @override
+  String get aiPickProviderSubtitle =>
+      'Vyber poskytovatele a začni. Modely a počáteční profil nastavíme automaticky.';
+
+  @override
   String get aiProfileCardActiveBadge => 'Aktivní';
 
   @override

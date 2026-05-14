@@ -1260,6 +1260,32 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get aiPickProviderBadgeDesktopOnly => 'BUREAU UNIQUEMENT';
+
+  @override
+  String get aiPickProviderBadgeNew => 'NOUVEAU';
+
+  @override
+  String get aiPickProviderBadgeRecommended => 'RECOMMANDÉ';
+
+  @override
+  String get aiPickProviderContinueButton => 'Continuer';
+
+  @override
+  String get aiPickProviderDontShowAgainButton => 'Ne plus afficher';
+
+  @override
+  String get aiPickProviderFooterHint =>
+      'Tu peux ajouter d\'autres fournisseurs plus tard dans Paramètres → IA. Ta clé API est stockée localement.';
+
+  @override
+  String get aiPickProviderModalTitle => 'Configure les fonctionnalités IA';
+
+  @override
+  String get aiPickProviderSubtitle =>
+      'Choisis un fournisseur pour commencer. Nous configurerons automatiquement les modèles et un profil de départ.';
+
+  @override
   String get aiProfileCardActiveBadge => 'Actif';
 
   @override

@@ -1255,6 +1255,32 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get aiPickProviderBadgeDesktopOnly => 'NUR DESKTOP';
+
+  @override
+  String get aiPickProviderBadgeNew => 'NEU';
+
+  @override
+  String get aiPickProviderBadgeRecommended => 'EMPFOHLEN';
+
+  @override
+  String get aiPickProviderContinueButton => 'Weiter';
+
+  @override
+  String get aiPickProviderDontShowAgainButton => 'Nicht mehr anzeigen';
+
+  @override
+  String get aiPickProviderFooterHint =>
+      'Du kannst später in Einstellungen → KI weitere Anbieter hinzufügen. Dein API-Schlüssel wird lokal gespeichert.';
+
+  @override
+  String get aiPickProviderModalTitle => 'KI-Funktionen einrichten';
+
+  @override
+  String get aiPickProviderSubtitle =>
+      'Wähl einen Anbieter zum Loslegen. Wir richten Modelle und ein Startprofil automatisch für dich ein.';
+
+  @override
   String get aiProfileCardActiveBadge => 'Aktiv';
 
   @override

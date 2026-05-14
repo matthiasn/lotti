@@ -1259,6 +1259,32 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get aiPickProviderBadgeDesktopOnly => 'DOAR DESKTOP';
+
+  @override
+  String get aiPickProviderBadgeNew => 'NOU';
+
+  @override
+  String get aiPickProviderBadgeRecommended => 'RECOMANDAT';
+
+  @override
+  String get aiPickProviderContinueButton => 'Continuați';
+
+  @override
+  String get aiPickProviderDontShowAgainButton => 'Nu mai afișați';
+
+  @override
+  String get aiPickProviderFooterHint =>
+      'Puteți adăuga mai mulți furnizori mai târziu în Setări → AI. Cheia dvs. API este stocată local.';
+
+  @override
+  String get aiPickProviderModalTitle => 'Configurați funcțiile AI';
+
+  @override
+  String get aiPickProviderSubtitle =>
+      'Alegeți un furnizor pentru a începe. Vom configura modelele și un profil de pornire automat.';
+
+  @override
   String get aiProfileCardActiveBadge => 'Activ';
 
   @override

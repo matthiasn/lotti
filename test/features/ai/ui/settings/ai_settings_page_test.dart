@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
@@ -1277,9 +1278,11 @@ void main() {
     );
 
     testWidgets(
-      'FAB seeded on the Providers tab dispatches to navigateToCreateProvider '
-      '— sanity-check that the Providers arm still works alongside the new '
-      'Models/Profiles arms',
+      'FAB seeded on the Providers tab opens the AiPickProviderModal '
+      'first, then Continue routes to the InferenceProviderEditPage '
+      'preselected to the picked provider type — the new FTUE flow '
+      'wraps the legacy navigateToCreateProvider call instead of '
+      'replacing it',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -1299,9 +1302,25 @@ void main() {
         );
         expect(fab.activeTab, AiSettingsTab.providers);
         fab.onPressed();
+        // Drain the SettingsDb read + modal mount.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Pick-provider modal is now in the tree; the legacy edit
+        // page is not yet pushed.
+        expect(find.byType(AiPickProviderModal), findsOneWidget);
+        expect(find.byType(InferenceProviderEditPage), findsNothing);
+
+        // Tap Continue (default selection is the first non-disabled
+        // tile — Gemini in the default lineup).
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(AiPickProviderModal)),
+        )!;
+        await tester.tap(find.text(messages.aiPickProviderContinueButton));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
+        // Now the edit page is pushed.
         expect(find.byType(InferenceProviderEditPage), findsOneWidget);
       },
     );
