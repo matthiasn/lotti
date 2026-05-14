@@ -212,23 +212,29 @@ class _InferenceProviderEditPageState
     required String baseUrl,
   }) {
     _connectionVerifyDebounce?.cancel();
+    final controller = ref.read(
+      connectionVerifierControllerProvider(providerType).notifier,
+    );
+    // Invalidate any in-flight probe up front. Cancelling the debounce
+    // timer alone leaves an already-started probe alive — its
+    // post-await write would briefly render a stale state for the
+    // previous credentials until the next debounced probe completes.
+    // `invalidate()` bumps the generation guard inside the controller
+    // without touching visible state, so the in-flight probe's
+    // `myGen != _generation` check drops its result.
     if (apiKey.trim().isEmpty && providerType != InferenceProviderType.ollama) {
       // Empty key → reset the strip to idle so the previous probe's
-      // outcome doesn't linger across a clear.
-      ref
-          .read(connectionVerifierControllerProvider(providerType).notifier)
-          .reset();
+      // outcome doesn't linger across a clear. `reset()` already bumps
+      // the generation guard, so any in-flight probe is invalidated.
+      controller.reset();
       return;
     }
+    controller.invalidate();
     _connectionVerifyDebounce = Timer(
       const Duration(milliseconds: 600),
       () {
         if (!mounted) return;
-        ref
-            .read(
-              connectionVerifierControllerProvider(providerType).notifier,
-            )
-            .verify(baseUrl: baseUrl, apiKey: apiKey);
+        controller.verify(baseUrl: baseUrl, apiKey: apiKey);
       },
     );
   }
@@ -2145,15 +2151,29 @@ class _ConnectionStatusStrip extends ConsumerWidget {
         );
 
       case final ConnectionCheckFailedNetwork failed:
+        // Pick the localized detail string by the failure code so
+        // service-layer constants (timeout / invalid base URL / bad
+        // response shape) stay l10n-aware. Raw platform exception
+        // messages still flow through the generic `network` arm.
+        final detail = switch (failed.code) {
+          ConnectionFailureCode.timeout =>
+            messages.aiProviderConnectionFailedTimeoutDetail,
+          ConnectionFailureCode.invalidBaseUrl =>
+            messages.aiProviderConnectionFailedInvalidBaseUrlDetail,
+          ConnectionFailureCode.badResponseShape =>
+            messages.aiProviderConnectionFailedBadResponseDetail(
+              failed.message,
+            ),
+          ConnectionFailureCode.network =>
+            messages.aiProviderConnectionFailedNetworkDetail(failed.message),
+        };
         return _failedStrip(
           tokens: tokens,
           messages: messages,
           title: messages.aiProviderConnectionFailedTitle(
             aiProviderDisplayName(type: providerType, messages: messages),
           ),
-          detail: messages.aiProviderConnectionFailedNetworkDetail(
-            failed.message,
-          ),
+          detail: detail,
           onRetry: onRetest,
         );
     }

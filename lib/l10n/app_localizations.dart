@@ -2449,11 +2449,29 @@ abstract class AppLocalizations {
   /// **'HTTP {status} · {message}'**
   String aiProviderConnectionFailedHttpDetail(int status, String message);
 
+  /// No description provided for @aiProviderConnectionFailedBadResponseDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected response shape: {type}'**
+  String aiProviderConnectionFailedBadResponseDetail(String type);
+
+  /// No description provided for @aiProviderConnectionFailedInvalidBaseUrlDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL must include http(s) scheme and host (e.g. https://api.example.com)'**
+  String get aiProviderConnectionFailedInvalidBaseUrlDetail;
+
   /// No description provided for @aiProviderConnectionFailedNetworkDetail.
   ///
   /// In en, this message translates to:
   /// **'{message}'**
   String aiProviderConnectionFailedNetworkDetail(String message);
+
+  /// No description provided for @aiProviderConnectionFailedTimeoutDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Request timed out'**
+  String get aiProviderConnectionFailedTimeoutDetail;
 
   /// No description provided for @aiProviderConnectionFailedTitle.
   ///

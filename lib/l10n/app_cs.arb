@@ -467,6 +467,15 @@
       }
     }
   },
+  "aiProviderConnectionFailedBadResponseDetail": "Neočekávaný tvar odpovědi: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedInvalidBaseUrlDetail": "Základní URL musí obsahovat schéma http(s) a hostitele (např. https://api.example.com)",
   "aiProviderConnectionFailedNetworkDetail": "{message}",
   "@aiProviderConnectionFailedNetworkDetail": {
     "placeholders": {
@@ -475,6 +484,7 @@
       }
     }
   },
+  "aiProviderConnectionFailedTimeoutDetail": "Požadavek vypršel",
   "aiProviderConnectionFailedTitle": "Nelze se připojit k {providerName}. Zkontroluj klíč nebo síť.",
   "@aiProviderConnectionFailedTitle": {
     "placeholders": {

@@ -812,6 +812,15 @@
       }
     }
   },
+  "aiProviderConnectionFailedBadResponseDetail": "Unexpected response shape: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedInvalidBaseUrlDetail": "Base URL must include http(s) scheme and host (e.g. https://api.example.com)",
   "aiProviderConnectionFailedNetworkDetail": "{message}",
   "@aiProviderConnectionFailedNetworkDetail": {
     "placeholders": {
@@ -820,6 +829,7 @@
       }
     }
   },
+  "aiProviderConnectionFailedTimeoutDetail": "Request timed out",
   "aiProviderConnectionFailedTitle": "Couldn't reach {providerName}. Check the key or your network.",
   "@aiProviderConnectionFailedTitle": {
     "placeholders": {

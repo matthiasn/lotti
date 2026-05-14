@@ -627,6 +627,15 @@
       }
     }
   },
+  "aiProviderConnectionFailedBadResponseDetail": "Formă de răspuns neașteptată: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedInvalidBaseUrlDetail": "URL-ul de bază trebuie să includă schema http(s) și gazda (de ex. https://api.example.com)",
   "aiProviderConnectionFailedNetworkDetail": "{message}",
   "@aiProviderConnectionFailedNetworkDetail": {
     "placeholders": {
@@ -635,6 +644,7 @@
       }
     }
   },
+  "aiProviderConnectionFailedTimeoutDetail": "Cererea a expirat",
   "aiProviderConnectionFailedTitle": "Nu s-a putut accesa {providerName}. Verificați cheia sau rețeaua dvs.",
   "@aiProviderConnectionFailedTitle": {
     "placeholders": {

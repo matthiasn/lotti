@@ -1381,9 +1381,21 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Neočekávaný tvar odpovědi: $type';
+  }
+
+  @override
+  String get aiProviderConnectionFailedInvalidBaseUrlDetail =>
+      'Základní URL musí obsahovat schéma http(s) a hostitele (např. https://api.example.com)';
+
+  @override
   String aiProviderConnectionFailedNetworkDetail(String message) {
     return '$message';
   }
+
+  @override
+  String get aiProviderConnectionFailedTimeoutDetail => 'Požadavek vypršel';
 
   @override
   String aiProviderConnectionFailedTitle(String providerName) {

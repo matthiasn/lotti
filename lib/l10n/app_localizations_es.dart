@@ -1384,9 +1384,22 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Forma de respuesta inesperada: $type';
+  }
+
+  @override
+  String get aiProviderConnectionFailedInvalidBaseUrlDetail =>
+      'La URL base debe incluir un esquema http(s) y un host (p. ej. https://api.example.com)';
+
+  @override
   String aiProviderConnectionFailedNetworkDetail(String message) {
     return '$message';
   }
+
+  @override
+  String get aiProviderConnectionFailedTimeoutDetail =>
+      'Se agotó el tiempo de espera';
 
   @override
   String aiProviderConnectionFailedTitle(String providerName) {

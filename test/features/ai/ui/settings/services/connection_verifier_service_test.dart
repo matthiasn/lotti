@@ -273,6 +273,12 @@ void main() {
             );
         final state = _readState(container, InferenceProviderType.gemini);
         expect(state, isA<ConnectionCheckFailedNetwork>());
+        // The UI maps `timeout` to a localized "Request timed out" detail,
+        // so the service must surface the code for the dispatch to work.
+        expect(
+          (state as ConnectionCheckFailedNetwork).code,
+          ConnectionFailureCode.timeout,
+        );
       },
     );
 
@@ -400,6 +406,47 @@ void main() {
     });
 
     test(
+      "invalidate() drops the in-flight probe's post-await write without "
+      'touching visible state — lets the form schedule a fresh debounced '
+      'probe without flickering through the previous result',
+      () async {
+        // Slow probe: held open by a Completer until the test releases
+        // it, mimicking a real HTTP roundtrip in progress.
+        final pending = Completer<http.Response>();
+        final container = _makeContainer(
+          client: MockClient((req) async => pending.future),
+        );
+        addTearDown(container.dispose);
+        addTearDown(_keepAlive(container, InferenceProviderType.openAi));
+
+        final notifier = container.read(
+          connectionVerifierControllerProvider(
+            InferenceProviderType.openAi,
+          ).notifier,
+        );
+        // Fire the probe — it parks on `pending.future`.
+        final inFlight = notifier.verify(
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'sk-test',
+        );
+        // Bump the generation guard while the probe is mid-flight.
+        notifier.invalidate();
+        // Release the slow probe — its post-await `state = result`
+        // should be dropped because `myGen != _generation`.
+        pending.complete(
+          http.Response(jsonEncode({'data': <Object>[]}), 200),
+        );
+        await inFlight;
+        // The strip stays in `Checking` (the state set before await)
+        // — neither `Verified` nor `FailedNetwork` lands.
+        expect(
+          _readState(container, InferenceProviderType.openAi),
+          isA<ConnectionCheckChecking>(),
+        );
+      },
+    );
+
+    test(
       'verify() with a whitespace-only API key short-circuits to idle '
       'for cloud providers — pasted-with-stray-space keys are treated '
       'the same as a blank field rather than firing a probe that would '
@@ -483,8 +530,8 @@ void main() {
         final state = _readState(container, InferenceProviderType.openAi);
         expect(state, isA<ConnectionCheckFailedNetwork>());
         expect(
-          (state as ConnectionCheckFailedNetwork).message,
-          contains('http(s) scheme'),
+          (state as ConnectionCheckFailedNetwork).code,
+          ConnectionFailureCode.invalidBaseUrl,
         );
       },
     );
@@ -513,8 +560,8 @@ void main() {
         final state = _readState(container, InferenceProviderType.openAi);
         expect(state, isA<ConnectionCheckFailedNetwork>());
         expect(
-          (state as ConnectionCheckFailedNetwork).message,
-          contains('http(s) scheme'),
+          (state as ConnectionCheckFailedNetwork).code,
+          ConnectionFailureCode.invalidBaseUrl,
         );
       },
     );

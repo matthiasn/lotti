@@ -1393,9 +1393,21 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Formă de răspuns neașteptată: $type';
+  }
+
+  @override
+  String get aiProviderConnectionFailedInvalidBaseUrlDetail =>
+      'URL-ul de bază trebuie să includă schema http(s) și gazda (de ex. https://api.example.com)';
+
+  @override
   String aiProviderConnectionFailedNetworkDetail(String message) {
     return '$message';
   }
+
+  @override
+  String get aiProviderConnectionFailedTimeoutDetail => 'Cererea a expirat';
 
   @override
   String aiProviderConnectionFailedTitle(String providerName) {

@@ -2856,7 +2856,11 @@ void main() {
 
         final strings = l10n(tester);
         expect(
-          find.text(strings.aiProviderConnectionFailedTitle('OpenAI')),
+          find.text(
+            strings.aiProviderConnectionFailedTitle(
+              strings.aiProviderOpenAiName,
+            ),
+          ),
           findsOneWidget,
         );
         expect(
@@ -2896,7 +2900,11 @@ void main() {
 
         final strings = l10n(tester);
         expect(
-          find.text(strings.aiProviderConnectionFailedTitle('OpenAI')),
+          find.text(
+            strings.aiProviderConnectionFailedTitle(
+              strings.aiProviderOpenAiName,
+            ),
+          ),
           findsOneWidget,
         );
         expect(
@@ -2963,9 +2971,15 @@ void main() {
         await tester.ensureVisible(retry);
         await tester.pumpAndSettle();
         await tester.tap(retry);
-        await tester.pumpAndSettle();
-        // Second probe fired immediately, no debounce wait.
+        // Process the tap WITHOUT advancing time — the retry handler
+        // must fire the probe synchronously, no 600 ms debounce wait.
+        await tester.pump();
         expect(probe.calls, 2);
+        // And critically: no extra probe should fire later (would
+        // signal an accidental debounce reintroduction).
+        await tester.pump(const Duration(milliseconds: 700));
+        expect(probe.calls, 2);
+        await tester.pumpAndSettle();
       },
     );
   });

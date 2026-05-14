@@ -48,13 +48,44 @@ class ConnectionCheckFailedHttp extends ConnectionCheckState {
   final String message;
 }
 
+/// Discriminator on [ConnectionCheckFailedNetwork] so the UI layer
+/// can pick a localized detail string. Cases:
+///
+/// - [network]: raw exception message from `dart:io` / `package:http`
+///   (DNS, connection refused, TLS handshake, …). The `message` field
+///   on [ConnectionCheckFailedNetwork] carries the underlying error
+///   text — these strings come from the platform / SDK and aren't
+///   localized by Lotti.
+/// - [timeout]: probe didn't return within the configured timeout.
+///   UI renders a localized "Request timed out" line; `message` is
+///   ignored.
+/// - [invalidBaseUrl]: the user-entered base URL parses but lacks a
+///   scheme/host needed by `http.Client`. UI renders a localized hint
+///   that explains the expected `https://host` shape.
+/// - [badResponseShape]: provider returned 2xx but the JSON wasn't a
+///   `Map` or `List`. `message` carries the runtime type so the UI
+///   can interpolate it.
+enum ConnectionFailureCode {
+  network,
+  timeout,
+  invalidBaseUrl,
+  badResponseShape,
+}
+
 /// Probe failed before the provider returned an HTTP response —
-/// timeout, DNS, no route to host, etc. Surfaces only the underlying
-/// exception's message because there is no status code to report.
+/// timeout, DNS, no route to host, etc. The [code] discriminator lets
+/// the UI layer map the failure to a localized detail string;
+/// `message` carries either a raw platform exception (for
+/// [ConnectionFailureCode.network]) or the runtime type for
+/// [ConnectionFailureCode.badResponseShape].
 class ConnectionCheckFailedNetwork extends ConnectionCheckState {
-  const ConnectionCheckFailedNetwork({required this.message});
+  const ConnectionCheckFailedNetwork({
+    required this.message,
+    this.code = ConnectionFailureCode.network,
+  });
 
   final String message;
+  final ConnectionFailureCode code;
 }
 
 /// Per-provider HTTP probe. Implementations hit the canonical
@@ -158,7 +189,12 @@ class ConnectionVerifierController extends _$ConnectionVerifierController {
     // — the form's hint says "paste your API key" and a stray space
     // pasted from the clipboard shouldn't trigger a probe that will
     // 401 anyway. Ollama is the lone exception: it accepts no key.
-    if (apiKey.trim().isEmpty && providerType != InferenceProviderType.ollama) {
+    // The trimmed value is also what gets forwarded to the probe, so
+    // a pasted key with a trailing newline doesn't get sent over the
+    // wire with the whitespace intact (which would fail auth even
+    // though the underlying credential is valid).
+    final normalizedKey = apiKey.trim();
+    if (normalizedKey.isEmpty && providerType != InferenceProviderType.ollama) {
       state = const ConnectionCheckIdle();
       return;
     }
@@ -175,8 +211,15 @@ class ConnectionVerifierController extends _$ConnectionVerifierController {
     final Uri parsedBase;
     try {
       parsedBase = Uri.parse(effectiveBase);
-    } on FormatException catch (e) {
-      state = ConnectionCheckFailedNetwork(message: e.message);
+    } on FormatException {
+      // Same root cause as the scheme/host guard below — the URL is
+      // malformed. Route it through the localized `invalidBaseUrl`
+      // hint instead of leaking the raw Dart `FormatException`
+      // message ("Invalid argument(s): …") to the user.
+      state = const ConnectionCheckFailedNetwork(
+        message: '',
+        code: ConnectionFailureCode.invalidBaseUrl,
+      );
       return;
     }
     // Reject URIs that parsed but lack the structure `http.Client`
@@ -189,9 +232,8 @@ class ConnectionVerifierController extends _$ConnectionVerifierController {
     final scheme = parsedBase.scheme.toLowerCase();
     if ((scheme != 'http' && scheme != 'https') || parsedBase.host.isEmpty) {
       state = const ConnectionCheckFailedNetwork(
-        message:
-            'Base URL must include http(s) scheme and host '
-            '(e.g. https://api.example.com)',
+        message: '',
+        code: ConnectionFailureCode.invalidBaseUrl,
       );
       return;
     }
@@ -204,7 +246,7 @@ class ConnectionVerifierController extends _$ConnectionVerifierController {
     try {
       final result = await probe.probe(
         baseUri: parsedBase,
-        apiKey: apiKey,
+        apiKey: normalizedKey,
         timeout: timeout,
         client: client,
       );
@@ -228,6 +270,17 @@ class ConnectionVerifierController extends _$ConnectionVerifierController {
   void reset() {
     _generation++;
     state = const ConnectionCheckIdle();
+  }
+
+  /// Bump the generation guard without touching `state`. Lets the
+  /// caller invalidate any in-flight probe (its post-await write will
+  /// be dropped because `myGen != _generation`) while leaving the
+  /// visible strip alone — useful when the user types another
+  /// character mid-probe and we want the next debounced probe to
+  /// supersede the in-flight one without a Checking → previous-result
+  /// flicker.
+  void invalidate() {
+    _generation++;
   }
 }
 
@@ -268,7 +321,8 @@ Future<ConnectionCheckState> _runProbe({
           );
         }
         return ConnectionCheckFailedNetwork(
-          message: 'Unexpected response shape: ${decoded.runtimeType}',
+          message: '${decoded.runtimeType}',
+          code: ConnectionFailureCode.badResponseShape,
         );
       } on FormatException catch (e) {
         return ConnectionCheckFailedNetwork(message: e.message);
@@ -279,7 +333,10 @@ Future<ConnectionCheckState> _runProbe({
       message: _extractErrorMessage(response.body),
     );
   } on TimeoutException {
-    return const ConnectionCheckFailedNetwork(message: 'Request timed out');
+    return const ConnectionCheckFailedNetwork(
+      message: '',
+      code: ConnectionFailureCode.timeout,
+    );
   } on Exception catch (e) {
     // Network-style failures (SocketException, HandshakeException, etc.)
     // — surface the message but don't swallow programmer errors.

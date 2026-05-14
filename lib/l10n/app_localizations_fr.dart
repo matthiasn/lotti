@@ -1392,9 +1392,21 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Forme de réponse inattendue : $type';
+  }
+
+  @override
+  String get aiProviderConnectionFailedInvalidBaseUrlDetail =>
+      'L\'URL de base doit inclure un schéma http(s) et un hôte (par ex. https://api.example.com)';
+
+  @override
   String aiProviderConnectionFailedNetworkDetail(String message) {
     return '$message';
   }
+
+  @override
+  String get aiProviderConnectionFailedTimeoutDetail => 'La requête a expiré';
 
   @override
   String aiProviderConnectionFailedTitle(String providerName) {
