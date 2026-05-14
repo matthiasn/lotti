@@ -2341,6 +2341,12 @@ abstract class AppLocalizations {
   /// **'Anthropic Claude'**
   String get aiProviderAnthropicName;
 
+  /// No description provided for @aiProviderCardDraftBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'DRAFT'**
+  String get aiProviderCardDraftBadge;
+
   /// No description provided for @aiProviderCardFixButton.
   ///
   /// In en, this message translates to:

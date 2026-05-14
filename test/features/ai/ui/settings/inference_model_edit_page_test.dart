@@ -255,6 +255,65 @@ void main() {
     });
 
     testWidgets(
+      'AppBar back arrow routes through popAiSettingsDetail — when the '
+      'page is pushed onto a navigator, tapping the arrow pops the route '
+      'and the outer launcher button is visible again (proves the leading '
+      "IconButton is wired to the shared back affordance, not Material's "
+      'default `Navigator.maybePop()` which would no-op on desktop '
+      'master/detail).',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: Center(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const InferenceModelEditPage(),
+                        ),
+                      ),
+                      child: const Text('open-model-edit'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('open-model-edit'));
+        await tester.pumpAndSettle();
+
+        // The model-edit page is now mounted.
+        expect(find.byType(InferenceModelEditPage), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+        await tester.pumpAndSettle();
+
+        // After back-tap the route should have popped: outer button
+        // visible again, page gone.
+        expect(find.text('open-model-edit'), findsOneWidget);
+        expect(find.byType(InferenceModelEditPage), findsNothing);
+      },
+    );
+
+    testWidgets(
       'editing the display name and tapping Save calls saveConfig',
       (tester) async {
         await tester.pumpWidget(buildTestWidget(configId: 'test-model-id'));

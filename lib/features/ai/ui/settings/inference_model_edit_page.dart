@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/settings/inference_model_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/modality_selection_modal.dart';
@@ -75,7 +76,7 @@ class _InferenceModelEditPageState
           await controller.updateConfig(config);
         }
         if (context.mounted) {
-          Navigator.of(context).pop();
+          await popAiSettingsDetail(context);
         }
       } catch (_) {
         if (mounted) {
@@ -100,7 +101,7 @@ class _InferenceModelEditPageState
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             tooltip: messages.modelEditBackTooltip,
-            onPressed: () => Navigator.of(context).maybePop(),
+            onPressed: () => popAiSettingsDetail(context),
           ),
           title: Text(
             widget.configId == null

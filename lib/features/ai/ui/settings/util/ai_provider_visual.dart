@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -110,6 +111,52 @@ List<String> modelCapabilityLabels({
     out.add(messages.aiCapabilityChipImageGeneration);
   }
   return out;
+}
+
+/// Returns `true` when [provider] looks like a draft saved via the
+/// connect form's "Save as draft" affordance — i.e. a cloud provider
+/// row with no API key yet. Local providers (Ollama, Whisper, Voxtral)
+/// never need a key, so they're never reported as drafts. The flag
+/// is consumed by the AI Settings provider card and the provider
+/// detail page header to render a "DRAFT" badge so the user can tell
+/// half-configured providers apart from fully-set-up ones.
+bool isProviderDraft(AiConfigInferenceProvider provider) {
+  if (ProviderConfig.noApiKeyRequired.contains(
+    provider.inferenceProviderType,
+  )) {
+    return false;
+  }
+  return provider.apiKey.trim().isEmpty;
+}
+
+/// Returns the **bare host** of the public console where the user
+/// can obtain an API key for [type], or `null` when no such page
+/// exists (Ollama runs locally; whisper/voxtral are local-only).
+///
+/// Powers the "Get a key at …" hint rendered next to the API-key
+/// field on the connect form. The host-only form is intentional:
+/// the connect form displays this as static text inside the field's
+/// right-hand caption (a visual cue, not a tap target — see
+/// `_FlatFieldHintTone.link`), and a fully-qualified `https://…`
+/// would only bloat the caption ("Get a key at https://aistudio…").
+/// If a future surface needs to launch the URL, prepend `https://`
+/// at that call site (or introduce a paired `…ConsoleUri` helper)
+/// rather than changing the display contract here.
+///
+/// Hosts are centralised in one switch arm so any future provider
+/// rename or moved console URL touches one place instead of the
+/// form widget.
+String? aiProviderKeyConsoleUrl(InferenceProviderType? type) {
+  return switch (type) {
+    InferenceProviderType.gemini => 'aistudio.google.com',
+    InferenceProviderType.openAi => 'platform.openai.com',
+    InferenceProviderType.anthropic => 'console.anthropic.com',
+    InferenceProviderType.mistral => 'console.mistral.ai',
+    InferenceProviderType.alibaba => 'dashscope.console.aliyun.com',
+    InferenceProviderType.openRouter => 'openrouter.ai',
+    InferenceProviderType.nebiusAiStudio => 'studio.nebius.ai',
+    _ => null,
+  };
 }
 
 /// Provider-type icon used by the cards' leading tile and the empty
