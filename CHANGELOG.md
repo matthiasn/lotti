@@ -70,6 +70,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the form would just crowd the layout. The header card and step
   indicator stay; the footer's three buttons reflow onto multiple
   rows via `Wrap` instead of overflowing.
+- API-key "Get a key at <console>" hint on the connect form is now a
+  real link target — taps wire through `url_launcher` to open the
+  provider's console in the system browser (`https://` is prepended
+  for the bare-host URLs stored in `aiProviderKeyConsoleUrl`). The
+  hint is also marked as `Semantics(link: true)` and underlined so
+  screen readers announce it as a link, not a plain caption.
+- Connect-form breadcrumb root crumb now reads `Settings` (using the
+  canonical `settingsV2DetailRootCrumb` key, same as the Settings V2
+  top-crumbs widget) instead of the unrelated `Theming` label that
+  previously surfaced. Romanian CTAs (`Save and continue`,
+  `Save as draft`, `Saved as draft`) were retoned to the formal
+  `Salvați` register to stay consistent with the rest of the
+  Romanian AI Settings flow, and the base-URL hint replaces the
+  stilted `punctul final oficial` with `punctul final implicit`.
 
 ## [0.9.998]
 ### Fixed

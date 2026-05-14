@@ -1373,7 +1373,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderConnectFieldBaseUrlHint =>
-      'Lăsați necompletat pentru a folosi punctul final oficial';
+      'Lăsați necompletat pentru a folosi punctul final implicit';
 
   @override
   String get aiProviderConnectFieldBaseUrlLabelOptional =>
@@ -1401,13 +1401,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get aiProviderConnectSaveAndContinue => 'Salvează și continuă';
+  String get aiProviderConnectSaveAndContinue => 'Salvați și continuați';
 
   @override
-  String get aiProviderConnectSaveAsDraft => 'Salvează ca schiță';
+  String get aiProviderConnectSaveAsDraft => 'Salvați ca schiță';
 
   @override
-  String get aiProviderConnectSavedAsDraftToast => 'Salvat ca schiță';
+  String get aiProviderConnectSavedAsDraftToast => 'Salvată ca schiță';
 
   @override
   String get aiProviderConnectStepChoose => 'Alegeți furnizorul';

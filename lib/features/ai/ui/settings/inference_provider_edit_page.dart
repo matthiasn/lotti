@@ -29,6 +29,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 /// Runs the FTUE setup for the given provider type.
@@ -558,30 +559,30 @@ class _InferenceProviderEditPageState
             ),
             if (needsApiKey) ...[
               SizedBox(height: tokens.spacing.step6),
-              _FlatField(
-                label: messages.apiKeyInputLabel,
-                hintRight:
-                    aiProviderKeyConsoleUrl(
-                          formState.inferenceProviderType,
-                        ) !=
-                        null
-                    ? messages.aiProviderConnectKeyHelperLink(
-                        aiProviderKeyConsoleUrl(
-                          formState.inferenceProviderType,
-                        )!,
-                      )
-                    : null,
-                hintRightTone: _FlatFieldHintTone.link,
-                child: AiTextField(
-                  label: '',
-                  hint: messages.apiKeyInputHint,
-                  controller: formController.apiKeyController,
-                  focusNode: _apiKeyFocusNode,
-                  onChanged: formController.apiKeyChanged,
-                  validator: (_) => formState.apiKey.error?.displayMessage,
-                  obscureText: !_showApiKey,
-                  suffixIcon: apiKeySuffix,
-                ),
+              Builder(
+                builder: (context) {
+                  final consoleUrl = aiProviderKeyConsoleUrl(
+                    formState.inferenceProviderType,
+                  );
+                  return _FlatField(
+                    label: messages.apiKeyInputLabel,
+                    hintRight: consoleUrl != null
+                        ? messages.aiProviderConnectKeyHelperLink(consoleUrl)
+                        : null,
+                    hintRightTone: _FlatFieldHintTone.link,
+                    hintRightUrl: consoleUrl,
+                    child: AiTextField(
+                      label: '',
+                      hint: messages.apiKeyInputHint,
+                      controller: formController.apiKeyController,
+                      focusNode: _apiKeyFocusNode,
+                      onChanged: formController.apiKeyChanged,
+                      validator: (_) => formState.apiKey.error?.displayMessage,
+                      obscureText: !_showApiKey,
+                      suffixIcon: apiKeySuffix,
+                    ),
+                  );
+                },
               ),
             ],
             SizedBox(height: tokens.spacing.step6),
@@ -1580,7 +1581,7 @@ class _AddProviderBreadcrumbs extends StatelessWidget {
       child: Wrap(
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text(messages.settingsThemingTitle, style: caption),
+          Text(messages.settingsV2DetailRootCrumb, style: caption),
           separator,
           Text(messages.settingsAiTitle, style: caption),
           separator,
@@ -1820,11 +1821,10 @@ class _AddProviderFooterBar extends StatelessWidget {
 }
 
 /// Tone for the right-hand hint text in a [_FlatField]. `helper`
-/// renders as a low-emphasis caption; `link` renders as a colored
-/// interactive accent so the user reads it as a clickable URL even
-/// though we don't currently wire a launch handler (the design
-/// surfaces the URL as a hint, not a tap target — the user knows
-/// where to go).
+/// renders as a low-emphasis caption; `link` renders as an accent-
+/// coloured, underlined string. When a `hintRightUrl` is supplied
+/// alongside the `link` tone, the hint becomes a real tap target
+/// that opens the URL in an external browser.
 enum _FlatFieldHintTone { helper, link }
 
 /// Flat row used in the create-mode form: a CAPITAL caption on the
@@ -1838,12 +1838,17 @@ class _FlatField extends StatelessWidget {
     required this.child,
     this.hintRight,
     this.hintRightTone = _FlatFieldHintTone.helper,
+    this.hintRightUrl,
   });
 
   final String label;
   final Widget child;
   final String? hintRight;
   final _FlatFieldHintTone hintRightTone;
+
+  /// Optional URL launched when the user taps the right-hand hint.
+  /// Only honored when [hintRightTone] is `_FlatFieldHintTone.link`.
+  final String? hintRightUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -1853,10 +1858,14 @@ class _FlatField extends StatelessWidget {
       letterSpacing: 1.2,
       fontWeight: tokens.typography.weight.semiBold,
     );
+    final isLink = hintRightTone == _FlatFieldHintTone.link;
     final hintStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: hintRightTone == _FlatFieldHintTone.link
+      color: isLink
           ? tokens.colors.interactive.enabled
           : tokens.colors.text.mediumEmphasis,
+      decoration: isLink && hintRightUrl != null
+          ? TextDecoration.underline
+          : TextDecoration.none,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1867,19 +1876,48 @@ class _FlatField extends StatelessWidget {
               child: Text(label.toUpperCase(), style: captionStyle),
             ),
             if (hintRight != null && hintRight!.isNotEmpty)
-              Flexible(
-                child: Text(
-                  hintRight!,
-                  style: hintStyle,
-                  textAlign: TextAlign.end,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              Flexible(child: _buildHintRight(hintStyle)),
           ],
         ),
         SizedBox(height: tokens.spacing.step2),
         child,
       ],
     );
+  }
+
+  Widget _buildHintRight(TextStyle style) {
+    final text = Text(
+      hintRight!,
+      style: style,
+      textAlign: TextAlign.end,
+      overflow: TextOverflow.ellipsis,
+    );
+    final url = hintRightUrl;
+    if (hintRightTone != _FlatFieldHintTone.link || url == null) {
+      return text;
+    }
+    return Semantics(
+      link: true,
+      child: InkWell(
+        onTap: () => _launchHintUrl(url),
+        mouseCursor: SystemMouseCursors.click,
+        child: text,
+      ),
+    );
+  }
+
+  Future<void> _launchHintUrl(String url) async {
+    // Console URLs in `aiProviderKeyConsoleUrl` are stored as bare
+    // hosts (e.g. `platform.openai.com`) so the rendered hint stays
+    // compact. Prepend `https://` when the parsed URI lacks a scheme
+    // so the launcher receives a fully-qualified target instead of
+    // bailing out on the `hasScheme` guard.
+    var uri = Uri.tryParse(url);
+    if (uri == null) return;
+    if (!uri.hasScheme) {
+      uri = Uri.tryParse('https://$url');
+      if (uri == null || !uri.hasScheme) return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }

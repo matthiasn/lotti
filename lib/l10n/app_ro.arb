@@ -612,7 +612,7 @@
   "aiProviderCardStatusOfflineShort": "Deconectat",
   "aiProviderConnectBackToProviders": "Înapoi la furnizori",
   "aiProviderConnectBreadcrumbAdd": "Adăugați furnizor",
-  "aiProviderConnectFieldBaseUrlHint": "Lăsați necompletat pentru a folosi punctul final oficial",
+  "aiProviderConnectFieldBaseUrlHint": "Lăsați necompletat pentru a folosi punctul final implicit",
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL de bază (opțional)",
   "aiProviderConnectFieldDisplayNameHint": "Apare în lista dvs. de furnizori",
   "aiProviderConnectKeyHelperLink": "Obțineți o cheie la {url}",
@@ -633,9 +633,9 @@
       }
     }
   },
-  "aiProviderConnectSaveAndContinue": "Salvează și continuă",
-  "aiProviderConnectSaveAsDraft": "Salvează ca schiță",
-  "aiProviderConnectSavedAsDraftToast": "Salvat ca schiță",
+  "aiProviderConnectSaveAndContinue": "Salvați și continuați",
+  "aiProviderConnectSaveAsDraft": "Salvați ca schiță",
+  "aiProviderConnectSavedAsDraftToast": "Salvată ca schiță",
   "aiProviderConnectStepChoose": "Alegeți furnizorul",
   "aiProviderConnectStepConnect": "Conectați",
   "aiProviderConnectStepReview": "Verificați",
