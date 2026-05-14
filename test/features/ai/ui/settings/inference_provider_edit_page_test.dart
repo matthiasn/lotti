@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
@@ -144,6 +147,7 @@ void main() {
     InferenceProviderType? preselectedType,
     List<AiConfig>? existingProviders,
     bool focusApiKey = false,
+    List<Override> additionalOverrides = const [],
   }) {
     // Set up provider count mock if existingProviders is provided
     if (existingProviders != null) {
@@ -157,6 +161,7 @@ void main() {
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
         whatsNewControllerProvider.overrideWith(_MockWhatsNewController.new),
+        ...additionalOverrides,
       ],
       child: MaterialApp(
         theme: ThemeData(
@@ -2710,4 +2715,405 @@ void main() {
       },
     );
   });
+
+  group('Live connection verifier — strip rendering + wiring', () {
+    // Override the verifier's probe registry so we never touch the
+    // network. Each test seeds the probe with the state it wants the
+    // strip to render — verified / failed http / failed network /
+    // checking (delayed) — and the controller's real `verify()` lands
+    // the canned state in Riverpod.
+    List<Override> verifierOverridesFor({required _RecordingProbe probe}) => [
+      connectionProbeRegistryProvider.overrideWithValue(
+        <InferenceProviderType, ConnectionProbe>{
+          InferenceProviderType.openAi: probe,
+        },
+      ),
+      // Cheap MockClient — never invoked because the fake probe
+      // short-circuits before reaching it, but the verifier
+      // requires *some* client factory.
+      connectionVerifierClientProvider.overrideWithValue(_NoopClient.new),
+      connectionVerifierTimeoutProvider.overrideWithValue(
+        const Duration(milliseconds: 200),
+      ),
+    ];
+
+    // Drive the page to a state where the API-key field is rendered
+    // (create mode with a preselected type) and type a key so the
+    // debounce timer schedules a probe.
+    Future<void> typeApiKeyAndFlushDebounce(
+      WidgetTester tester, {
+      String key = 'sk-test',
+    }) async {
+      // The API-key field is the second TextField in the create chrome
+      // (after Display name). The hint text is the only stable handle
+      // since both fields share the same Material layout.
+      final strings = l10n(tester);
+      final apiKeyField = find.widgetWithText(
+        TextField,
+        strings.apiKeyInputHint,
+      );
+      expect(apiKeyField, findsOneWidget);
+      await tester.enterText(apiKeyField, key);
+      // Advance past the 600 ms debounce so the verifier fires.
+      await tester.pump(const Duration(milliseconds: 700));
+      // Let the probe future complete + the rebuild settle.
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'Checking state renders a spinner + the localised checking '
+      'label — proves the strip dispatches to the in-flight branch '
+      'while the probe is awaiting',
+      (tester) async {
+        // A probe that never completes leaves the controller in
+        // Checking. We pump just past the debounce but NOT through
+        // the probe's future so the Checking state is visible.
+        final probe = _RecordingProbe.delayed();
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final strings = l10n(tester);
+        final apiKeyField = find.widgetWithText(
+          TextField,
+          strings.apiKeyInputHint,
+        );
+        await tester.enterText(apiKeyField, 'sk-test');
+        // Past the debounce, before the (forever-pending) probe future
+        // resolves.
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pump();
+        expect(probe.calls, 1);
+        expect(
+          find.text(strings.aiProviderConnectionCheckingLabel),
+          findsOneWidget,
+        );
+        expect(find.byType(CircularProgressIndicator), findsWidgets);
+        // Resolve so the test tear-down doesn't trip on pending timers.
+        probe.completeWith(const ConnectionCheckIdle());
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Verified state renders the success title + a model-count + '
+      'latency subtitle so the user can see at a glance that the key '
+      'works AND how snappy the provider is',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckVerified(
+            modelCount: 12,
+            latency: Duration(milliseconds: 42),
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(probe.calls, 1);
+        expect(
+          find.text(strings.aiProviderConnectionVerifiedTitle),
+          findsOneWidget,
+        );
+        // The subtitle is a plural template — assert on the rendered
+        // text rather than the raw template so the assertion stays
+        // honest about what the user actually sees.
+        expect(
+          find.text(strings.aiProviderConnectionVerifiedSubtitle(12, 42)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'FailedHttp state renders the localised failure title with the '
+      'provider display name interpolated AND the HTTP status + '
+      'provider message in the detail subtitle',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedHttp(
+            status: 401,
+            message: 'Invalid API key',
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(
+          find.text(
+            strings.aiProviderConnectionFailedTitle(
+              strings.aiProviderOpenAiName,
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            strings.aiProviderConnectionFailedHttpDetail(
+              401,
+              'Invalid API key',
+            ),
+          ),
+          findsOneWidget,
+        );
+        // The retry button is rendered (separate from the verified
+        // strip's Re-test button).
+        expect(
+          find.text(strings.aiProviderConnectionRetryButton),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'FailedNetwork state renders the same failure title shape, with '
+      'the network error message interpolated into the detail row '
+      '(no HTTP code, since there was no response)',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedNetwork(message: 'Request timed out'),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(
+          find.text(
+            strings.aiProviderConnectionFailedTitle(
+              strings.aiProviderOpenAiName,
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            strings.aiProviderConnectionFailedNetworkDetail(
+              'Request timed out',
+            ),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'FailedNetwork.timeout renders the localized "Request timed out" '
+      'detail — covers the timeout arm of the failure-code switch in '
+      '_ConnectionStatusStrip (distinct from the raw-network arm)',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedNetwork(
+            message: '',
+            code: ConnectionFailureCode.timeout,
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(
+          find.text(strings.aiProviderConnectionFailedTimeoutDetail),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'FailedNetwork.invalidBaseUrl renders the localized invalid-URL '
+      'hint — covers the invalidBaseUrl switch arm so the user sees the '
+      'shape-explaining line instead of a raw FormatException message',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedNetwork(
+            message: '',
+            code: ConnectionFailureCode.invalidBaseUrl,
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(
+          find.text(strings.aiProviderConnectionFailedInvalidBaseUrlDetail),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'FailedNetwork.badResponseShape renders the localized "Unexpected '
+      'response shape: {type}" detail with the runtime type interpolated '
+      '— covers the badResponseShape switch arm',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedNetwork(
+            message: 'String',
+            code: ConnectionFailureCode.badResponseShape,
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(
+          find.text(
+            strings.aiProviderConnectionFailedBadResponseDetail('String'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'typing in the API-key field debounces the probe — the first '
+      'keystroke does NOT fire immediately, only after the 600 ms '
+      'debounce window elapses without a fresh keystroke',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(const ConnectionCheckIdle());
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        final apiKeyField = find.widgetWithText(
+          TextField,
+          strings.apiKeyInputHint,
+        );
+        await tester.enterText(apiKeyField, 'sk-');
+        // 300 ms in: still inside the debounce window, no probe yet.
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(probe.calls, 0);
+        // Cross the 600 ms threshold.
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
+        expect(probe.calls, 1);
+      },
+    );
+
+    testWidgets(
+      'tapping Re-test on a failed strip fires the verifier '
+      'immediately (no debounce) — the user has explicitly asked, so '
+      'the spinner snaps back on right away',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedNetwork(message: 'Request timed out'),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+        expect(probe.calls, 1);
+
+        final strings = l10n(tester);
+        final retry = find.text(strings.aiProviderConnectionRetryButton);
+        await tester.ensureVisible(retry);
+        await tester.pumpAndSettle();
+        await tester.tap(retry);
+        // Process the tap WITHOUT advancing time — the retry handler
+        // must fire the probe synchronously, no 600 ms debounce wait.
+        await tester.pump();
+        expect(probe.calls, 2);
+        // And critically: no extra probe should fire later (would
+        // signal an accidental debounce reintroduction).
+        await tester.pump(const Duration(milliseconds: 700));
+        expect(probe.calls, 2);
+        await tester.pumpAndSettle();
+      },
+    );
+  });
+}
+
+/// Fake `ConnectionProbe` for widget tests — records call counts and
+/// either returns a canned state synchronously (`.fixed`) or holds the
+/// future open until `completeWith` is called (`.delayed`, for the
+/// Checking-state test that needs to observe the in-flight branch).
+class _RecordingProbe implements ConnectionProbe {
+  _RecordingProbe._({this.fixedResult, this.delayed = false});
+
+  _RecordingProbe.fixed(ConnectionCheckState result)
+    : this._(fixedResult: result);
+
+  _RecordingProbe.delayed() : this._(delayed: true);
+
+  final ConnectionCheckState? fixedResult;
+  final bool delayed;
+  int calls = 0;
+  Completer<ConnectionCheckState>? _pending;
+
+  @override
+  Future<ConnectionCheckState> probe({
+    required Uri baseUri,
+    required String apiKey,
+    required Duration timeout,
+    required http.Client client,
+  }) {
+    calls++;
+    if (fixedResult != null) {
+      return Future.value(fixedResult);
+    }
+    _pending = Completer<ConnectionCheckState>();
+    return _pending!.future;
+  }
+
+  void completeWith(ConnectionCheckState state) {
+    _pending?.complete(state);
+  }
+}
+
+/// Trivial `http.Client` placeholder so the verifier's client-factory
+/// dependency resolves. The fake probe short-circuits before this is
+/// ever invoked.
+class _NoopClient extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    throw UnimplementedError('_NoopClient.send should not be invoked');
+  }
 }

@@ -1377,6 +1377,58 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wird in deiner Anbieterliste angezeigt';
 
   @override
+  String get aiProviderConnectionCheckingLabel =>
+      'Schlüssel wird geprüft, verfügbare Modelle werden geladen…';
+
+  @override
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
+  }
+
+  @override
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Unerwartete Antwortform: $type';
+  }
+
+  @override
+  String get aiProviderConnectionFailedInvalidBaseUrlDetail =>
+      'Die Basis-URL muss ein http(s)-Schema und einen Host enthalten (z. B. https://api.example.com)';
+
+  @override
+  String aiProviderConnectionFailedNetworkDetail(String message) {
+    return '$message';
+  }
+
+  @override
+  String get aiProviderConnectionFailedTimeoutDetail =>
+      'Zeitüberschreitung bei der Anfrage';
+
+  @override
+  String aiProviderConnectionFailedTitle(String providerName) {
+    return '$providerName ist nicht erreichbar. Prüfe den Schlüssel oder dein Netzwerk.';
+  }
+
+  @override
+  String get aiProviderConnectionRetestButton => 'Erneut testen';
+
+  @override
+  String get aiProviderConnectionRetryButton => 'Erneut versuchen';
+
+  @override
+  String aiProviderConnectionVerifiedSubtitle(int count, int ms) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Modelle für dein Konto verfügbar · Antwort in $ms ms',
+      one: '1 Modell für dein Konto verfügbar · Antwort in $ms ms',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderConnectionVerifiedTitle => 'Verbindung bestätigt';
+
+  @override
   String aiProviderConnectKeyHelperLink(String url) {
     return 'Schlüssel holen auf $url';
   }

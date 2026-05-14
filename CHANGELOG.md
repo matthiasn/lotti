@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1000]
+### Added
+- Live API-key verification on the AI provider connect form. As
+  soon as you stop typing in the API key or Base URL field, the
+  form checks the credentials against the provider's API and
+  shows a status strip below the Base URL with one of three
+  outcomes: a spinner while the check runs, a green confirmation
+  with the number of models the key can see and the response
+  time, or a warning row explaining what went wrong (invalid key,
+  network error, timeout, unreachable host) with a Retry button.
+  Covers Gemini, OpenAI, Anthropic, Mistral, Alibaba, OpenRouter,
+  Nebius, and Ollama out of the box — no more "save the form,
+  hope the key works, find out the next time you try to chat".
+
 ## [0.9.999]
 ### Added
 - AI Settings FTUE pick-provider modal. Tapping the "Add provider" FAB

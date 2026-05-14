@@ -2437,6 +2437,72 @@ abstract class AppLocalizations {
   /// **'Shown in your provider list'**
   String get aiProviderConnectFieldDisplayNameHint;
 
+  /// No description provided for @aiProviderConnectionCheckingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking key, listing available models…'**
+  String get aiProviderConnectionCheckingLabel;
+
+  /// No description provided for @aiProviderConnectionFailedHttpDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP {status} · {message}'**
+  String aiProviderConnectionFailedHttpDetail(int status, String message);
+
+  /// No description provided for @aiProviderConnectionFailedBadResponseDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected response shape: {type}'**
+  String aiProviderConnectionFailedBadResponseDetail(String type);
+
+  /// No description provided for @aiProviderConnectionFailedInvalidBaseUrlDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL must include http(s) scheme and host (e.g. https://api.example.com)'**
+  String get aiProviderConnectionFailedInvalidBaseUrlDetail;
+
+  /// No description provided for @aiProviderConnectionFailedNetworkDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'{message}'**
+  String aiProviderConnectionFailedNetworkDetail(String message);
+
+  /// No description provided for @aiProviderConnectionFailedTimeoutDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Request timed out'**
+  String get aiProviderConnectionFailedTimeoutDetail;
+
+  /// No description provided for @aiProviderConnectionFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach {providerName}. Check the key or your network.'**
+  String aiProviderConnectionFailedTitle(String providerName);
+
+  /// No description provided for @aiProviderConnectionRetestButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-test'**
+  String get aiProviderConnectionRetestButton;
+
+  /// No description provided for @aiProviderConnectionRetryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get aiProviderConnectionRetryButton;
+
+  /// No description provided for @aiProviderConnectionVerifiedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 model available on your account · responded in {ms}ms} other{{count} models available on your account · responded in {ms}ms}}'**
+  String aiProviderConnectionVerifiedSubtitle(int count, int ms);
+
+  /// No description provided for @aiProviderConnectionVerifiedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection verified'**
+  String get aiProviderConnectionVerifiedTitle;
+
   /// No description provided for @aiProviderConnectKeyHelperLink.
   ///
   /// In en, this message translates to:

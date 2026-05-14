@@ -615,6 +615,58 @@
   "aiProviderConnectFieldBaseUrlHint": "Leer lassen, um den offiziellen Endpunkt zu verwenden",
   "aiProviderConnectFieldBaseUrlLabelOptional": "Basis-URL (optional)",
   "aiProviderConnectFieldDisplayNameHint": "Wird in deiner Anbieterliste angezeigt",
+  "aiProviderConnectionCheckingLabel": "Schlüssel wird geprüft, verfügbare Modelle werden geladen…",
+  "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
+  "@aiProviderConnectionFailedHttpDetail": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedBadResponseDetail": "Unerwartete Antwortform: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedInvalidBaseUrlDetail": "Die Basis-URL muss ein http(s)-Schema und einen Host enthalten (z. B. https://api.example.com)",
+  "aiProviderConnectionFailedNetworkDetail": "{message}",
+  "@aiProviderConnectionFailedNetworkDetail": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedTimeoutDetail": "Zeitüberschreitung bei der Anfrage",
+  "aiProviderConnectionFailedTitle": "{providerName} ist nicht erreichbar. Prüfe den Schlüssel oder dein Netzwerk.",
+  "@aiProviderConnectionFailedTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionRetestButton": "Erneut testen",
+  "aiProviderConnectionRetryButton": "Erneut versuchen",
+  "aiProviderConnectionVerifiedSubtitle": "{count, plural, =1{1 Modell für dein Konto verfügbar · Antwort in {ms} ms} other{{count} Modelle für dein Konto verfügbar · Antwort in {ms} ms}}",
+  "@aiProviderConnectionVerifiedSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "aiProviderConnectionVerifiedTitle": "Verbindung bestätigt",
   "aiProviderConnectKeyHelperLink": "Schlüssel holen auf {url}",
   "@aiProviderConnectKeyHelperLink": {
     "placeholders": {

@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1000" date="2026-05-14">
+      <description>
+          <p>Live API-key verification on the AI provider connect form. As soon as you stop typing in the API key or Base URL field, the form checks the credentials against the provider's API and shows a status strip below the Base URL with one of three outcomes: a spinner while the check runs, a green confirmation with the number of models the key can see and the response time, or a warning row explaining what went wrong (invalid key, network error, timeout, unreachable host) with a Retry button. Covers Gemini, OpenAI, Anthropic, Mistral, Alibaba, OpenRouter, Nebius, and Ollama out of the box — no more saving the form and hoping the key works.</p>
+      </description>
+    </release>
     <release version="0.9.999" date="2026-05-13">
       <description>
           <p>AI Settings FTUE pick-provider modal. Tapping the Add provider button on the AI Settings page now opens a centered AiPickProviderModal first instead of jumping straight to the empty connect form. The modal carries a Set up AI features title, a one-line subtitle, and four big provider tiles (Gemini RECOMMENDED, OpenAI, Anthropic NEW, Ollama DESKTOP ONLY) with radio-style selection. Footer hint pins the reassuring Your API key is stored locally copy plus a secondary Don't show again and a primary Continue button. Picking a tile and hitting Continue routes to the connect form preselected to that provider type. Tapping Don't show again writes a settings flag (AI_PICK_PROVIDER_DISMISSED) so subsequent FAB taps go straight to the form.</p>

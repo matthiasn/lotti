@@ -34,7 +34,7 @@ final class MatrixLoginControllerProvider
 }
 
 String _$matrixLoginControllerHash() =>
-    r'c8dc0869b85df72976c8abffe680c1064e518ae2';
+    r'8567b161fd14b4ea7e5d876f56fb97d18abc5551';
 
 abstract class _$MatrixLoginController extends $AsyncNotifier<LoginState?> {
   FutureOr<LoginState?> build();

@@ -615,6 +615,58 @@
   "aiProviderConnectFieldBaseUrlHint": "Déjalo en blanco para usar el endpoint oficial",
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL base (opcional)",
   "aiProviderConnectFieldDisplayNameHint": "Se mostrará en tu lista de proveedores",
+  "aiProviderConnectionCheckingLabel": "Comprobando la clave, listando los modelos disponibles…",
+  "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
+  "@aiProviderConnectionFailedHttpDetail": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedBadResponseDetail": "Forma de respuesta inesperada: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedInvalidBaseUrlDetail": "La URL base debe incluir un esquema http(s) y un host (p. ej. https://api.example.com)",
+  "aiProviderConnectionFailedNetworkDetail": "{message}",
+  "@aiProviderConnectionFailedNetworkDetail": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedTimeoutDetail": "Se agotó el tiempo de espera",
+  "aiProviderConnectionFailedTitle": "No se pudo conectar con {providerName}. Revisa la clave o tu red.",
+  "@aiProviderConnectionFailedTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionRetestButton": "Volver a probar",
+  "aiProviderConnectionRetryButton": "Reintentar",
+  "aiProviderConnectionVerifiedSubtitle": "{count, plural, =1{1 modelo disponible en tu cuenta · respondió en {ms} ms} other{{count} modelos disponibles en tu cuenta · respondió en {ms} ms}}",
+  "@aiProviderConnectionVerifiedSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "aiProviderConnectionVerifiedTitle": "Conexión verificada",
   "aiProviderConnectKeyHelperLink": "Consigue una clave en {url}",
   "@aiProviderConnectKeyHelperLink": {
     "placeholders": {

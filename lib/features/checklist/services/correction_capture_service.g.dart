@@ -101,7 +101,7 @@ final class CorrectionCaptureNotifierProvider
 }
 
 String _$correctionCaptureNotifierHash() =>
-    r'ed14d115ddb7914c2e4594fffdeb3ba2277d54d7';
+    r'f8e4fe8b2398549528603a516f93d3df67d58313';
 
 /// Notifier for pending correction with countdown.
 /// UI watches this to show the snackbar with undo functionality.

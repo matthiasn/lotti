@@ -1384,6 +1384,58 @@ class AppLocalizationsRo extends AppLocalizations {
       'Apare în lista dvs. de furnizori';
 
   @override
+  String get aiProviderConnectionCheckingLabel =>
+      'Se verifică cheia, se listează modelele disponibile…';
+
+  @override
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
+  }
+
+  @override
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Formă de răspuns neașteptată: $type';
+  }
+
+  @override
+  String get aiProviderConnectionFailedInvalidBaseUrlDetail =>
+      'URL-ul de bază trebuie să includă schema http(s) și gazda (de ex. https://api.example.com)';
+
+  @override
+  String aiProviderConnectionFailedNetworkDetail(String message) {
+    return '$message';
+  }
+
+  @override
+  String get aiProviderConnectionFailedTimeoutDetail => 'Cererea a expirat';
+
+  @override
+  String aiProviderConnectionFailedTitle(String providerName) {
+    return 'Nu s-a putut accesa $providerName. Verificați cheia sau rețeaua dvs.';
+  }
+
+  @override
+  String get aiProviderConnectionRetestButton => 'Retestați';
+
+  @override
+  String get aiProviderConnectionRetryButton => 'Reîncercați';
+
+  @override
+  String aiProviderConnectionVerifiedSubtitle(int count, int ms) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de modele disponibile în contul dvs. · răspuns în $ms ms',
+      few: '$count modele disponibile în contul dvs. · răspuns în $ms ms',
+      one: '1 model disponibil în contul dvs. · răspuns în $ms ms',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get aiProviderConnectionVerifiedTitle => 'Conexiune verificată';
+
+  @override
   String aiProviderConnectKeyHelperLink(String url) {
     return 'Obțineți o cheie la $url';
   }

@@ -800,6 +800,58 @@
   "aiProviderConnectFieldBaseUrlHint": "Leave blank to use the official endpoint",
   "aiProviderConnectFieldBaseUrlLabelOptional": "Base URL (optional)",
   "aiProviderConnectFieldDisplayNameHint": "Shown in your provider list",
+  "aiProviderConnectionCheckingLabel": "Checking key, listing available models…",
+  "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
+  "@aiProviderConnectionFailedHttpDetail": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedBadResponseDetail": "Unexpected response shape: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedInvalidBaseUrlDetail": "Base URL must include http(s) scheme and host (e.g. https://api.example.com)",
+  "aiProviderConnectionFailedNetworkDetail": "{message}",
+  "@aiProviderConnectionFailedNetworkDetail": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedTimeoutDetail": "Request timed out",
+  "aiProviderConnectionFailedTitle": "Couldn't reach {providerName}. Check the key or your network.",
+  "@aiProviderConnectionFailedTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionRetestButton": "Re-test",
+  "aiProviderConnectionRetryButton": "Retry",
+  "aiProviderConnectionVerifiedSubtitle": "{count, plural, =1{1 model available on your account · responded in {ms}ms} other{{count} models available on your account · responded in {ms}ms}}",
+  "@aiProviderConnectionVerifiedSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "aiProviderConnectionVerifiedTitle": "Connection verified",
   "aiProviderConnectKeyHelperLink": "Get a key at {url}",
   "@aiProviderConnectKeyHelperLink": {
     "placeholders": {

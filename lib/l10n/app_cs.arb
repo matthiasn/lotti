@@ -455,6 +455,58 @@
   "aiProviderConnectFieldBaseUrlHint": "Ponech prázdné pro použití oficiálního koncového bodu",
   "aiProviderConnectFieldBaseUrlLabelOptional": "Základní URL (volitelné)",
   "aiProviderConnectFieldDisplayNameHint": "Zobrazí se v tvém seznamu poskytovatelů",
+  "aiProviderConnectionCheckingLabel": "Ověřuji klíč, načítám dostupné modely…",
+  "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
+  "@aiProviderConnectionFailedHttpDetail": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedBadResponseDetail": "Neočekávaný tvar odpovědi: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedInvalidBaseUrlDetail": "Základní URL musí obsahovat schéma http(s) a hostitele (např. https://api.example.com)",
+  "aiProviderConnectionFailedNetworkDetail": "{message}",
+  "@aiProviderConnectionFailedNetworkDetail": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionFailedTimeoutDetail": "Požadavek vypršel",
+  "aiProviderConnectionFailedTitle": "Nelze se připojit k {providerName}. Zkontroluj klíč nebo síť.",
+  "@aiProviderConnectionFailedTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectionRetestButton": "Otestovat znovu",
+  "aiProviderConnectionRetryButton": "Zkusit znovu",
+  "aiProviderConnectionVerifiedSubtitle": "{count, plural, =1{1 model dostupný na tvém účtu · odpověď za {ms} ms} few{{count} modely dostupné na tvém účtu · odpověď za {ms} ms} other{{count} modelů dostupných na tvém účtu · odpověď za {ms} ms}}",
+  "@aiProviderConnectionVerifiedSubtitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "aiProviderConnectionVerifiedTitle": "Připojení ověřeno",
   "aiProviderConnectKeyHelperLink": "Klíč získáš na {url}",
   "@aiProviderConnectKeyHelperLink": {
     "placeholders": {
