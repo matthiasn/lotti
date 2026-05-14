@@ -747,5 +747,273 @@ void main() {
         expect((state as ConnectionCheckVerified).modelCount, 3);
       },
     );
+
+    test(
+      'verify() routes Uri.parse FormatException to invalidBaseUrl — '
+      'a malformed base URL (e.g. `https://[::1`) trips `Uri.parse` '
+      'before the scheme/host guard, so the FormatException arm needs '
+      'to surface the same localized invalid-base-URL code as the guard',
+      () async {
+        var calls = 0;
+        final container = _makeContainer(
+          client: MockClient((req) async {
+            calls++;
+            return http.Response('{}', 200);
+          }),
+        );
+        addTearDown(container.dispose);
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.openAi,
+              ).notifier,
+            )
+            // Unterminated IPv6 literal — `Uri.parse` throws FormatException.
+            .verify(baseUrl: 'https://[::1', apiKey: 'k');
+        expect(calls, 0);
+        final state = _readState(container, InferenceProviderType.openAi);
+        expect(state, isA<ConnectionCheckFailedNetwork>());
+        expect(
+          (state as ConnectionCheckFailedNetwork).code,
+          ConnectionFailureCode.invalidBaseUrl,
+        );
+      },
+    );
+
+    test(
+      '_runProbe catches Exceptions raised by the HTTP client — '
+      'SocketException-style failures (DNS, connection refused, TLS '
+      'handshake) thrown from the underlying `http.Client.get` land on '
+      'FailedNetwork.network with the platform error string preserved '
+      'in the message',
+      () async {
+        final container = _makeContainer(
+          client: MockClient((req) async {
+            throw const _StubNetworkException(
+              'connection refused (probe helper arm)',
+            );
+          }),
+        );
+        addTearDown(container.dispose);
+        addTearDown(_keepAlive(container, InferenceProviderType.openAi));
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.openAi,
+              ).notifier,
+            )
+            .verify(baseUrl: 'https://api.openai.com/v1', apiKey: 'k');
+        final state = _readState(container, InferenceProviderType.openAi);
+        expect(state, isA<ConnectionCheckFailedNetwork>());
+        expect(
+          (state as ConnectionCheckFailedNetwork).code,
+          ConnectionFailureCode.network,
+        );
+        expect(state.message, contains('connection refused'));
+      },
+    );
+
+    test(
+      'verify() catches Exceptions from probe.probe() — a synchronous '
+      'throw inside the per-provider probe lands on FailedNetwork with '
+      'the network code (raw platform error stays in the message). The '
+      'MockClient route gets caught inside `_runProbe`, so this test '
+      'wires up a fake probe that throws directly to exercise the outer '
+      'controller-level catch arm in `verify()`.',
+      () async {
+        final container = _makeContainer(
+          client: MockClient((req) async => http.Response('{}', 200)),
+          probes: const <InferenceProviderType, ConnectionProbe>{
+            InferenceProviderType.openAi: _ThrowingProbe(
+              _StubNetworkException('controller-level failure'),
+            ),
+          },
+        );
+        addTearDown(container.dispose);
+        addTearDown(_keepAlive(container, InferenceProviderType.openAi));
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.openAi,
+              ).notifier,
+            )
+            .verify(baseUrl: 'https://api.openai.com/v1', apiKey: 'k');
+        final state = _readState(container, InferenceProviderType.openAi);
+        expect(state, isA<ConnectionCheckFailedNetwork>());
+        expect(
+          (state as ConnectionCheckFailedNetwork).code,
+          ConnectionFailureCode.network,
+        );
+        expect(state.message, contains('controller-level failure'));
+      },
+    );
+
+    test(
+      'verify() forwards a trimmed API key to the probe — pasted keys '
+      'with trailing whitespace fail auth even when the underlying '
+      'credential is valid; the verifier must strip whitespace before '
+      'sending so the request goes out with the canonical credential',
+      () async {
+        String? sentAuthHeader;
+        final container = _makeContainer(
+          client: MockClient((req) async {
+            sentAuthHeader = req.headers['Authorization'];
+            return http.Response(jsonEncode({'data': <Object>[]}), 200);
+          }),
+        );
+        addTearDown(container.dispose);
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.openAi,
+              ).notifier,
+            )
+            .verify(
+              baseUrl: 'https://api.openai.com/v1',
+              apiKey: '  sk-trim-me\n',
+            );
+        expect(sentAuthHeader, 'Bearer sk-trim-me');
+      },
+    );
+
+    test(
+      'probe payload that is neither Map nor List (e.g. JSON `"a string"`) '
+      'lands on FailedNetwork.badResponseShape — provider returned 2xx '
+      'but the body shape is something we cannot interpret as a model list',
+      () async {
+        final container = _makeContainer(
+          client: MockClient(
+            (req) async => http.Response('"unexpected"', 200),
+          ),
+        );
+        addTearDown(container.dispose);
+        addTearDown(_keepAlive(container, InferenceProviderType.openAi));
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.openAi,
+              ).notifier,
+            )
+            .verify(
+              baseUrl: 'https://api.openai.com/v1',
+              apiKey: 'sk-test',
+            );
+        final state = _readState(container, InferenceProviderType.openAi);
+        expect(state, isA<ConnectionCheckFailedNetwork>());
+        expect(
+          (state as ConnectionCheckFailedNetwork).code,
+          ConnectionFailureCode.badResponseShape,
+        );
+        // The runtime type of the decoded payload is carried in the
+        // message so the UI can interpolate it into the localized
+        // `Unexpected response shape: {type}` line.
+        expect(state.message, contains('String'));
+      },
+    );
   });
+
+  group('_extractErrorMessage — provider error parsing', () {
+    // The non-2xx HTTP arm is covered above; this group locks in the
+    // body-parsing branches separately so each fallback path is
+    // explicit.
+
+    test(
+      'extracts a top-level `error: "plain string"` body — some providers '
+      '(e.g. older Ollama versions) return the error as a flat string '
+      'instead of the OpenAI-style {error: {message: ...}} envelope',
+      () async {
+        final container = _makeContainer(
+          client: MockClient(
+            (req) async => http.Response(
+              jsonEncode({'error': 'flat string error'}),
+              401,
+            ),
+          ),
+        );
+        addTearDown(container.dispose);
+        addTearDown(_keepAlive(container, InferenceProviderType.openAi));
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.openAi,
+              ).notifier,
+            )
+            .verify(
+              baseUrl: 'https://api.openai.com/v1',
+              apiKey: 'sk-test',
+            );
+        final state = _readState(container, InferenceProviderType.openAi);
+        expect(state, isA<ConnectionCheckFailedHttp>());
+        expect(
+          (state as ConnectionCheckFailedHttp).message,
+          'flat string error',
+        );
+      },
+    );
+
+    test(
+      'falls back to top-level `message` when there is no `error` key — '
+      'some providers (e.g. Anthropic on certain 4xx responses) put the '
+      'error message directly under `message`',
+      () async {
+        final container = _makeContainer(
+          client: MockClient(
+            (req) async => http.Response(
+              jsonEncode({'message': 'top-level message'}),
+              403,
+            ),
+          ),
+        );
+        addTearDown(container.dispose);
+        addTearDown(_keepAlive(container, InferenceProviderType.openAi));
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.openAi,
+              ).notifier,
+            )
+            .verify(
+              baseUrl: 'https://api.openai.com/v1',
+              apiKey: 'sk-test',
+            );
+        final state = _readState(container, InferenceProviderType.openAi);
+        expect(state, isA<ConnectionCheckFailedHttp>());
+        expect(
+          (state as ConnectionCheckFailedHttp).message,
+          'top-level message',
+        );
+      },
+    );
+  });
+}
+
+/// Stand-in Exception thrown from a MockClient handler so the
+/// controller's `on Exception` arm can be exercised without pulling in
+/// `dart:io`-specific types (`SocketException` etc., which a pure
+/// MockClient wouldn't otherwise raise).
+class _StubNetworkException implements Exception {
+  const _StubNetworkException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'StubNetworkException: $message';
+}
+
+/// Fake probe that always throws its configured Exception. Used to
+/// reach `verify()`'s outer `on Exception` arm — `_runProbe` catches
+/// MockClient exceptions inside the helper, so a probe-level throw is
+/// the only way to bubble up to the controller's catch.
+class _ThrowingProbe implements ConnectionProbe {
+  const _ThrowingProbe(this.error);
+  final Exception error;
+
+  @override
+  Future<ConnectionCheckState> probe({
+    required Uri baseUri,
+    required String apiKey,
+    required Duration timeout,
+    required http.Client client,
+  }) async {
+    throw error;
+  }
 }

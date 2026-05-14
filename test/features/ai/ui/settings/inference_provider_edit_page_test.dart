@@ -2919,6 +2919,92 @@ void main() {
     );
 
     testWidgets(
+      'FailedNetwork.timeout renders the localized "Request timed out" '
+      'detail — covers the timeout arm of the failure-code switch in '
+      '_ConnectionStatusStrip (distinct from the raw-network arm)',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedNetwork(
+            message: '',
+            code: ConnectionFailureCode.timeout,
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(
+          find.text(strings.aiProviderConnectionFailedTimeoutDetail),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'FailedNetwork.invalidBaseUrl renders the localized invalid-URL '
+      'hint — covers the invalidBaseUrl switch arm so the user sees the '
+      'shape-explaining line instead of a raw FormatException message',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedNetwork(
+            message: '',
+            code: ConnectionFailureCode.invalidBaseUrl,
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(
+          find.text(strings.aiProviderConnectionFailedInvalidBaseUrlDetail),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'FailedNetwork.badResponseShape renders the localized "Unexpected '
+      'response shape: {type}" detail with the runtime type interpolated '
+      '— covers the badResponseShape switch arm',
+      (tester) async {
+        final probe = _RecordingProbe.fixed(
+          const ConnectionCheckFailedNetwork(
+            message: 'String',
+            code: ConnectionFailureCode.badResponseShape,
+          ),
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.openAi,
+            additionalOverrides: verifierOverridesFor(probe: probe),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await typeApiKeyAndFlushDebounce(tester);
+
+        final strings = l10n(tester);
+        expect(
+          find.text(
+            strings.aiProviderConnectionFailedBadResponseDetail('String'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'typing in the API-key field debounces the probe — the first '
       'keystroke does NOT fire immediately, only after the 600 ms '
       'debounce window elapses without a fresh keystroke',
