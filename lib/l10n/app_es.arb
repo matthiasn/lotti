@@ -610,6 +610,35 @@
   "aiProviderCardStatusInvalidKey": "Clave no válida",
   "aiProviderCardStatusOffline": "Desconectado · Asegúrate de que Ollama esté en ejecución",
   "aiProviderCardStatusOfflineShort": "Desconectado",
+  "aiProviderConnectBackToProviders": "Volver a proveedores",
+  "aiProviderConnectBreadcrumbAdd": "Añadir proveedor",
+  "aiProviderConnectFieldBaseUrlHint": "Déjalo en blanco para usar el endpoint oficial",
+  "aiProviderConnectFieldBaseUrlLabelOptional": "URL base (opcional)",
+  "aiProviderConnectFieldDisplayNameHint": "Se mostrará en tu lista de proveedores",
+  "aiProviderConnectKeyHelperLink": "Consigue una clave en {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Oculta",
+  "aiProviderConnectKeyPrivacyHint": "Tu clave API nunca sale de tu dispositivo.",
+  "aiProviderConnectPageTitle": "Conectar {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Guardar y continuar",
+  "aiProviderConnectSaveAsDraft": "Guardar como borrador",
+  "aiProviderConnectSavedAsDraftToast": "Guardado como borrador",
+  "aiProviderConnectStepChoose": "Elegir proveedor",
+  "aiProviderConnectStepConnect": "Conectar",
+  "aiProviderConnectStepReview": "Revisar",
   "aiProviderDetailActiveProfileTitle": "Perfil activo",
   "aiProviderDetailAddModelButton": "Añadir modelo",
   "aiProviderDetailApiKeyLabel": "Clave API",

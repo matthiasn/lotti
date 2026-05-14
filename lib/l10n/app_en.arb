@@ -795,6 +795,35 @@
   "aiProviderCardStatusInvalidKey": "Invalid key",
   "aiProviderCardStatusOffline": "Offline · Make sure Ollama is running",
   "aiProviderCardStatusOfflineShort": "Offline",
+  "aiProviderConnectBackToProviders": "Back to providers",
+  "aiProviderConnectBreadcrumbAdd": "Add provider",
+  "aiProviderConnectFieldBaseUrlHint": "Leave blank to use the official endpoint",
+  "aiProviderConnectFieldBaseUrlLabelOptional": "Base URL (optional)",
+  "aiProviderConnectFieldDisplayNameHint": "Shown in your provider list",
+  "aiProviderConnectKeyHelperLink": "Get a key at {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Hidden",
+  "aiProviderConnectKeyPrivacyHint": "Your API key never leaves your device.",
+  "aiProviderConnectPageTitle": "Connect {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Save & continue",
+  "aiProviderConnectSaveAsDraft": "Save as draft",
+  "aiProviderConnectSavedAsDraftToast": "Saved as draft",
+  "aiProviderConnectStepChoose": "Choose provider",
+  "aiProviderConnectStepConnect": "Connect",
+  "aiProviderConnectStepReview": "Review",
   "aiProviderDetailActiveProfileTitle": "Active profile",
   "aiProviderDetailAddModelButton": "Add model",
   "aiProviderDetailApiKeyLabel": "API key",

@@ -610,6 +610,35 @@
   "aiProviderCardStatusInvalidKey": "Cheie nevalidă",
   "aiProviderCardStatusOffline": "Deconectat · Asigurați-vă că Ollama rulează",
   "aiProviderCardStatusOfflineShort": "Deconectat",
+  "aiProviderConnectBackToProviders": "Înapoi la furnizori",
+  "aiProviderConnectBreadcrumbAdd": "Adăugați furnizor",
+  "aiProviderConnectFieldBaseUrlHint": "Lăsați necompletat pentru a folosi punctul final implicit",
+  "aiProviderConnectFieldBaseUrlLabelOptional": "URL de bază (opțional)",
+  "aiProviderConnectFieldDisplayNameHint": "Apare în lista dvs. de furnizori",
+  "aiProviderConnectKeyHelperLink": "Obțineți o cheie la {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Ascunsă",
+  "aiProviderConnectKeyPrivacyHint": "Cheia dvs. API nu părăsește niciodată dispozitivul.",
+  "aiProviderConnectPageTitle": "Conectați {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Salvați și continuați",
+  "aiProviderConnectSaveAsDraft": "Salvați ca schiță",
+  "aiProviderConnectSavedAsDraftToast": "Salvată ca schiță",
+  "aiProviderConnectStepChoose": "Alegeți furnizorul",
+  "aiProviderConnectStepConnect": "Conectați",
+  "aiProviderConnectStepReview": "Verificați",
   "aiProviderDetailActiveProfileTitle": "Profil activ",
   "aiProviderDetailAddModelButton": "Adaugă model",
   "aiProviderDetailApiKeyLabel": "Cheie API",

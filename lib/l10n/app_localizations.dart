@@ -2407,6 +2407,96 @@ abstract class AppLocalizations {
   /// **'Offline'**
   String get aiProviderCardStatusOfflineShort;
 
+  /// No description provided for @aiProviderConnectBackToProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to providers'**
+  String get aiProviderConnectBackToProviders;
+
+  /// No description provided for @aiProviderConnectBreadcrumbAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add provider'**
+  String get aiProviderConnectBreadcrumbAdd;
+
+  /// No description provided for @aiProviderConnectFieldBaseUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to use the official endpoint'**
+  String get aiProviderConnectFieldBaseUrlHint;
+
+  /// No description provided for @aiProviderConnectFieldBaseUrlLabelOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL (optional)'**
+  String get aiProviderConnectFieldBaseUrlLabelOptional;
+
+  /// No description provided for @aiProviderConnectFieldDisplayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown in your provider list'**
+  String get aiProviderConnectFieldDisplayNameHint;
+
+  /// No description provided for @aiProviderConnectKeyHelperLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a key at {url}'**
+  String aiProviderConnectKeyHelperLink(String url);
+
+  /// No description provided for @aiProviderConnectKeyHiddenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get aiProviderConnectKeyHiddenLabel;
+
+  /// No description provided for @aiProviderConnectKeyPrivacyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your API key never leaves your device.'**
+  String get aiProviderConnectKeyPrivacyHint;
+
+  /// No description provided for @aiProviderConnectPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect {providerName}'**
+  String aiProviderConnectPageTitle(String providerName);
+
+  /// No description provided for @aiProviderConnectSaveAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & continue'**
+  String get aiProviderConnectSaveAndContinue;
+
+  /// No description provided for @aiProviderConnectSaveAsDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as draft'**
+  String get aiProviderConnectSaveAsDraft;
+
+  /// No description provided for @aiProviderConnectSavedAsDraftToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved as draft'**
+  String get aiProviderConnectSavedAsDraftToast;
+
+  /// No description provided for @aiProviderConnectStepChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose provider'**
+  String get aiProviderConnectStepChoose;
+
+  /// No description provided for @aiProviderConnectStepConnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get aiProviderConnectStepConnect;
+
+  /// No description provided for @aiProviderConnectStepReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get aiProviderConnectStepReview;
+
   /// No description provided for @aiProviderDetailActiveProfileTitle.
   ///
   /// In en, this message translates to:

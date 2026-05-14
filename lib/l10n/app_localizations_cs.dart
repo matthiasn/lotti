@@ -1354,6 +1354,59 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderCardStatusOfflineShort => 'Offline';
 
   @override
+  String get aiProviderConnectBackToProviders => 'Zpět na poskytovatele';
+
+  @override
+  String get aiProviderConnectBreadcrumbAdd => 'Přidat poskytovatele';
+
+  @override
+  String get aiProviderConnectFieldBaseUrlHint =>
+      'Ponech prázdné pro použití oficiálního koncového bodu';
+
+  @override
+  String get aiProviderConnectFieldBaseUrlLabelOptional =>
+      'Základní URL (volitelné)';
+
+  @override
+  String get aiProviderConnectFieldDisplayNameHint =>
+      'Zobrazí se v tvém seznamu poskytovatelů';
+
+  @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Klíč získáš na $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Skryto';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Tvůj API klíč nikdy neopustí toto zařízení.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Připojit $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Uložit a pokračovat';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Uložit jako koncept';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Uloženo jako koncept';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Vyber poskytovatele';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Připojit';
+
+  @override
+  String get aiProviderConnectStepReview => 'Zkontrolovat';
+
+  @override
   String get aiProviderDetailActiveProfileTitle => 'Aktivní profil';
 
   @override
