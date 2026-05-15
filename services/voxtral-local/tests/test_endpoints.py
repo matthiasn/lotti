@@ -372,3 +372,125 @@ class TestStreamingSupport:
         from main import _transcribe_single
 
         assert inspect.iscoroutinefunction(_transcribe_single)
+
+
+class _FakeTokenizer:
+    """Deterministic stand-in for the Voxtral tokenizer.
+
+    Avoids loading 3B+ model files just to verify the helper's
+    bookkeeping: which terms are kept, which variants are registered,
+    and which single-token entries are correctly skipped.
+    """
+
+    def __init__(self, table):
+        self._table = table
+
+    def encode(self, text, add_special_tokens=False):  # noqa: ARG002
+        assert add_special_tokens is False
+        return list(self._table[text])
+
+
+class TestBuildSequenceBias:
+    """Tests for the speech-dictionary -> `sequence_bias` helper."""
+
+    def test_returns_none_when_no_terms(self):
+        from main import _build_sequence_bias
+
+        assert (
+            _build_sequence_bias(terms=None, tokenizer=_FakeTokenizer({}), bias=2.0)
+            is None
+        )
+        assert (
+            _build_sequence_bias(terms=[], tokenizer=_FakeTokenizer({}), bias=2.0)
+            is None
+        )
+
+    def test_returns_none_when_bias_is_zero(self):
+        from main import _build_sequence_bias
+
+        result = _build_sequence_bias(
+            terms=["Flutter"],
+            tokenizer=_FakeTokenizer({"Flutter": [1, 2], " Flutter": [3, 4]}),
+            bias=0.0,
+        )
+        assert result is None
+
+    def test_registers_multi_token_variants(self):
+        """Both bare and leading-space tokenizations are registered when
+        each tokenizes to ≥2 ids."""
+        from main import _build_sequence_bias
+
+        tokenizer = _FakeTokenizer(
+            {"Riverpod": [201, 202], " Riverpod": [200, 202]}
+        )
+        result = _build_sequence_bias(
+            terms=["Riverpod"], tokenizer=tokenizer, bias=2.0
+        )
+        assert result == {(201, 202): 2.0, (200, 202): 2.0}
+
+    def test_skips_single_token_variants(self):
+        """Single-token entries match the empty prefix and would bias
+        the token globally, so they must be skipped."""
+        from main import _build_sequence_bias
+
+        # `" Flutter"` collapses to a single merged token in the real
+        # Mistral tokenizer; only the bare variant should be biased.
+        tokenizer = _FakeTokenizer(
+            {"Flutter": [101, 102], " Flutter": [107651]}
+        )
+        result = _build_sequence_bias(
+            terms=["Flutter"], tokenizer=tokenizer, bias=2.0
+        )
+        assert result == {(101, 102): 2.0}
+
+    def test_returns_none_when_every_variant_is_single_token(self):
+        """If neither variant is biasable, the helper returns None so
+        the caller can skip wiring `sequence_bias` into `generate()`."""
+        from main import _build_sequence_bias
+
+        tokenizer = _FakeTokenizer({"X": [50], " X": [60]})
+        result = _build_sequence_bias(
+            terms=["X"], tokenizer=tokenizer, bias=2.0
+        )
+        assert result is None
+
+    def test_strips_and_skips_empty_terms(self):
+        """Whitespace-only or empty entries don't reach the tokenizer."""
+        from main import _build_sequence_bias
+
+        tokenizer = _FakeTokenizer(
+            {
+                "Flutter": [101, 102],
+                " Flutter": [99, 100],
+                "": [],
+                " ": [1],
+            }
+        )
+        result = _build_sequence_bias(
+            terms=["Flutter", "   ", "", "  Flutter  "],
+            tokenizer=tokenizer,
+            bias=2.0,
+        )
+        # "  Flutter  " strips to "Flutter" — duplicate of the first
+        # entry, so the result remains a single bias entry per variant.
+        assert result == {(101, 102): 2.0, (99, 100): 2.0}
+
+    def test_combines_multiple_terms(self):
+        from main import _build_sequence_bias
+
+        tokenizer = _FakeTokenizer(
+            {
+                "Flutter": [101, 102],
+                " Flutter": [99],  # single token, skipped
+                "Riverpod": [201, 202],
+                " Riverpod": [200, 202],
+            }
+        )
+        result = _build_sequence_bias(
+            terms=["Flutter", "Riverpod"], tokenizer=tokenizer, bias=3.5
+        )
+        assert result == {
+            (101, 102): 3.5,
+            (201, 202): 3.5,
+            (200, 202): 3.5,
+        }

@@ -104,6 +104,11 @@ class VoxtralInferenceRepository {
   ///   language: Optional language hint (auto-detected if not specified)
   ///   stream: Whether to stream tokens (default: true). When false, returns
   ///     a single response after complete transcription.
+  ///   speechDictionaryTerms: Optional list of domain-specific spellings the
+  ///     local server biases at generation time via `sequence_bias`. Sent in
+  ///     the request body as `speech_dictionary` only when non-empty; the
+  ///     server skips terms whose space-prefixed variant collapses to a
+  ///     single token, so coverage is partial by design.
   ///
   /// Returns:
   ///   Stream of chat completion responses. In streaming mode, yields multiple
@@ -122,6 +127,7 @@ class VoxtralInferenceRepository {
     Duration? timeout,
     String? language,
     bool stream = true,
+    List<String>? speechDictionaryTerms,
   }) async* {
     // Validate required inputs
     if (model.isEmpty) {
@@ -176,6 +182,14 @@ class VoxtralInferenceRepository {
     // Add language hint if provided
     if (language != null && language.isNotEmpty && language != 'auto') {
       requestBody['language'] = language;
+    }
+
+    // Forward speech-dictionary terms to the local server for
+    // `sequence_bias`-based biasing during generation. Only sent when
+    // non-empty so older server versions that don't recognise the
+    // field can ignore it via Pydantic's default-None behaviour.
+    if (speechDictionaryTerms != null && speechDictionaryTerms.isNotEmpty) {
+      requestBody['speech_dictionary'] = speechDictionaryTerms;
     }
 
     try {
