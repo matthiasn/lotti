@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/logging_service.dart';
 
 /// State object for unified AI inference
@@ -351,19 +353,35 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }
 }
 
+/// Record type identifying an entity together with its optional parent task,
+/// used as the key for skill-availability providers.
+///
+/// `linkedFromId` is the parent task id if the entry is linked from a task;
+/// `null` for standalone entries.
+typedef SkillsAvailabilityParams = ({String entityId, String? linkedFromId});
+
 /// Provider to get available skills for a given entity.
 ///
-/// Filters skills from the built-in skill registry by matching the entity
-/// type to the skill's `requiredInputModalities`:
-/// - [Modality.audio] → entity must be [JournalAudio]
-/// - [Modality.image] → entity must be [JournalImage]
-/// - [Modality.text] → entity can be any type with text content
-///   (`JournalAudio` always satisfies this via its transcript)
+/// Filters skills from the built-in skill registry by:
+/// 1. Matching the entity type to the skill's `requiredInputModalities`:
+///    - [Modality.audio] → entity must be [JournalAudio]
+///    - [Modality.image] → entity must be [JournalImage]
+///    - [Modality.text] → entity must be one of the four text-bearing
+///      surfaces the AI popup is rendered on today
+///      ([JournalEntry], [JournalAudio] via its transcript, [Task]
+///      via title/notes, [JournalImage] via its overlay text). Other
+///      [JournalEntity] variants (measurements, ratings, workouts,
+///      etc.) carry no free-form text and are filtered out.
+/// 2. Filtering out skills whose `contextPolicy` is
+///    [ContextPolicy.fullTask] when the entity has no task context — i.e.
+///    the entity itself is not a [Task] and `linkedFromId` is `null`.
+///    Standalone entries cannot satisfy a full-task context, so those
+///    skills are hidden rather than offered and then silently no-oped.
 final availableSkillsForEntityProvider = FutureProvider.autoDispose
-    .family<List<AiConfigSkill>, String>(
-      (ref, entityId) async {
+    .family<List<AiConfigSkill>, SkillsAvailabilityParams>(
+      (ref, params) async {
         final entryState = ref
-            .watch(entryControllerProvider(id: entityId))
+            .watch(entryControllerProvider(id: params.entityId))
             .value;
         final entity = entryState?.entry;
         if (entity == null) return [];
@@ -379,13 +397,27 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
           SkillType.imageGeneration,
         };
 
+        final hasTaskContext = entity is Task || params.linkedFromId != null;
+        final hasText =
+            entity is JournalEntry ||
+            entity is JournalAudio ||
+            entity is Task ||
+            entity is JournalImage;
+
         return registry.where((skill) {
           if (!supportedTypes.contains(skill.skillType)) return false;
+          if (!hasTaskContext &&
+              skill.contextPolicy == ContextPolicy.fullTask) {
+            return false;
+          }
           final modalities = skill.requiredInputModalities;
           if (modalities.contains(Modality.audio) && entity is! JournalAudio) {
             return false;
           }
           if (modalities.contains(Modality.image) && entity is! JournalImage) {
+            return false;
+          }
+          if (modalities.contains(Modality.text) && !hasText) {
             return false;
           }
           return true;
@@ -395,10 +427,10 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
 
 /// Provider to check if there are any AI skills available for an entity.
 final hasAvailableSkillsProvider = FutureProvider.autoDispose
-    .family<bool, String>(
-      (ref, entityId) async {
+    .family<bool, SkillsAvailabilityParams>(
+      (ref, params) async {
         final skills = await ref.watch(
-          availableSkillsForEntityProvider(entityId).future,
+          availableSkillsForEntityProvider(params).future,
         );
         return skills.isNotEmpty;
       },
@@ -443,25 +475,51 @@ final triggerSkillProvider = FutureProvider.autoDispose
             return;
           }
 
-          // Resolve the profile for the linked task.
-          if (params.linkedTaskId == null) {
+          // Defensive guard: a skill that needs full task context cannot run
+          // without a linked task. The popup filter hides these skills for
+          // standalone entries, so reaching this branch indicates a caller
+          // bug — fail loudly rather than silently no-op.
+          if (params.linkedTaskId == null &&
+              skill.contextPolicy == ContextPolicy.fullTask) {
             loggingService.captureEvent(
               'Skipping ${params.skillId} for ${params.entityId}: '
-              'no linked task',
+              'skill requires full task context but no linked task',
               domain: 'UnifiedAiController',
               subDomain: 'triggerSkillProvider',
             );
             return;
           }
 
+          // Resolve the inference profile. For task-linked entries we use the
+          // task's agent / inherited profile; for standalone entries we fall
+          // back to the entry category's `defaultProfileId`.
           final resolver = ref.read(profileAutomationResolverProvider);
-          final resolvedProfile = await resolver.resolveForTask(
-            params.linkedTaskId!,
-          );
+          ResolvedProfile? resolvedProfile;
+          if (params.linkedTaskId != null) {
+            resolvedProfile = await resolver.resolveForTask(
+              params.linkedTaskId!,
+            );
+          } else {
+            final entity = await ref
+                .read(journalDbProvider)
+                .journalEntityById(params.entityId);
+            final categoryId = entity?.categoryId;
+            if (categoryId == null) {
+              loggingService.captureEvent(
+                'Skipping ${params.skillId} for ${params.entityId}: '
+                'no linked task and entry has no category',
+                domain: 'UnifiedAiController',
+                subDomain: 'triggerSkillProvider',
+              );
+              return;
+            }
+            resolvedProfile = await resolver.resolveForCategory(categoryId);
+          }
+
           if (resolvedProfile == null) {
             loggingService.captureEvent(
-              'Skipping ${params.skillId} for ${params.linkedTaskId}: '
-              'no profile configured',
+              'Skipping ${params.skillId} for ${params.entityId} '
+              '(linkedTaskId=${params.linkedTaskId}): no profile configured',
               domain: 'UnifiedAiController',
               subDomain: 'triggerSkillProvider',
             );
@@ -469,7 +527,8 @@ final triggerSkillProvider = FutureProvider.autoDispose
           }
 
           developer.log(
-            'triggerSkill: resolved profile for ${params.linkedTaskId}, '
+            'triggerSkill: resolved profile for ${params.entityId} '
+            '(linkedTaskId=${params.linkedTaskId}), '
             'running ${skill.skillType}',
             name: 'UnifiedAiController',
           );

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -506,7 +508,10 @@ void main() {
       );
 
       final hasSkills = await testContainer.read(
-        hasAvailableSkillsProvider(audioEntity.id).future,
+        hasAvailableSkillsProvider((
+          entityId: audioEntity.id,
+          linkedFromId: null,
+        )).future,
       );
 
       expect(hasSkills, true);
@@ -536,7 +541,10 @@ void main() {
       );
 
       final hasSkills = await testContainer.read(
-        hasAvailableSkillsProvider(journalEntry.id).future,
+        hasAvailableSkillsProvider((
+          entityId: journalEntry.id,
+          linkedFromId: null,
+        )).future,
       );
 
       expect(hasSkills, false);
@@ -876,7 +884,10 @@ void main() {
         );
 
         final skills = await testContainer.read(
-          availableSkillsForEntityProvider(audioEntity.id).future,
+          availableSkillsForEntityProvider((
+            entityId: audioEntity.id,
+            linkedFromId: null,
+          )).future,
         );
 
         // Both transcription and promptGeneration pass the filter for
@@ -932,7 +943,10 @@ void main() {
         );
 
         final skills = await testContainer.read(
-          availableSkillsForEntityProvider(imageEntity.id).future,
+          availableSkillsForEntityProvider((
+            entityId: imageEntity.id,
+            linkedFromId: null,
+          )).future,
         );
 
         // Only imageAnalysis passes — promptGeneration requires audio
@@ -993,7 +1007,10 @@ void main() {
       );
 
       final skills = await testContainer.read(
-        availableSkillsForEntityProvider(taskEntity.id).future,
+        availableSkillsForEntityProvider((
+          entityId: taskEntity.id,
+          linkedFromId: null,
+        )).future,
       );
 
       // Both audio-only skills are filtered out for Task entities —
@@ -1043,7 +1060,10 @@ void main() {
       );
 
       final skills = await testContainer.read(
-        availableSkillsForEntityProvider(taskEntity.id).future,
+        availableSkillsForEntityProvider((
+          entityId: taskEntity.id,
+          linkedFromId: null,
+        )).future,
       );
 
       expect(skills, isEmpty);
@@ -1084,10 +1104,251 @@ void main() {
       );
 
       final skills = await testContainer.read(
-        availableSkillsForEntityProvider(taskEntity.id).future,
+        availableSkillsForEntityProvider((
+          entityId: taskEntity.id,
+          linkedFromId: null,
+        )).future,
       );
 
       expect(skills, isEmpty);
+    });
+
+    test(
+      'filters out text-modality skills for non-text entities '
+      '(measurements, ratings, etc.)',
+      () async {
+        // MeasurementEntry carries numeric data, no free-form text — text
+        // skills should be hidden.
+        final measurementEntity = MeasurementEntry(
+          meta: Metadata(
+            id: 'measure-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: MeasurementData(
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            value: 42,
+            dataTypeId: 'weight-kg',
+          ),
+        );
+
+        final textSkill = createSkill(
+          id: 'skill-text-only',
+          name: 'Generate Coding Prompt',
+          skillType: SkillType.promptGeneration,
+          modalities: [Modality.text],
+        );
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([textSkill]),
+            createEntryControllerOverride(measurementEntity),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          entryControllerProvider(id: measurementEntity.id).future,
+        );
+
+        final skills = await testContainer.read(
+          availableSkillsForEntityProvider((
+            entityId: measurementEntity.id,
+            linkedFromId: null,
+          )).future,
+        );
+        // No skills survive — the measurement entry can't satisfy text
+        // modality.
+        expect(skills, isEmpty);
+      },
+    );
+
+    test(
+      'keeps text-modality skills for the four text-bearing surfaces',
+      () async {
+        final textSkill = createSkill(
+          id: 'skill-text-only',
+          name: 'Generate Coding Prompt',
+          skillType: SkillType.promptGeneration,
+          modalities: [Modality.text],
+        );
+
+        Future<List<AiConfigSkill>> readFor(JournalEntity entity) async {
+          final c = ProviderContainer(
+            overrides: [
+              skillRegistryProvider.overrideWithValue([textSkill]),
+              createEntryControllerOverride(entity),
+            ],
+          );
+          containersToDispose.add(c);
+          await c.read(entryControllerProvider(id: entity.id).future);
+          return c.read(
+            availableSkillsForEntityProvider((
+              entityId: entity.id,
+              linkedFromId: null,
+            )).future,
+          );
+        }
+
+        final journalEntry = JournalEntry(
+          meta: Metadata(
+            id: 'entry-text',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+        );
+        final audio = JournalAudio(
+          meta: Metadata(
+            id: 'audio-text',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            audioFile: 'a.mp3',
+            audioDirectory: '/x',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+        final task = Task(
+          meta: Metadata(
+            id: 'task-text',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 0,
+            ),
+            title: 'T',
+            statusHistory: [],
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+        );
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'image-text',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: ImageData(
+            capturedAt: DateTime(2024, 3, 15),
+            imageId: 'img-1',
+            imageFile: 't.jpg',
+            imageDirectory: '/x',
+          ),
+        );
+
+        expect((await readFor(journalEntry)).map((s) => s.id), [
+          'skill-text-only',
+        ]);
+        expect((await readFor(audio)).map((s) => s.id), ['skill-text-only']);
+        expect((await readFor(task)).map((s) => s.id), ['skill-text-only']);
+        expect((await readFor(image)).map((s) => s.id), ['skill-text-only']);
+      },
+    );
+
+    test('hides fullTask skills for standalone audio entries', () async {
+      final audioEntity = JournalAudio(
+        meta: Metadata(
+          id: 'audio-standalone',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: AudioData(
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          audioFile: 'a.mp3',
+          audioDirectory: '/x',
+          duration: const Duration(seconds: 30),
+        ),
+      );
+
+      final plainTranscribe = createSkill(
+        id: 'skill-transcribe-plain',
+        name: 'Transcribe',
+        skillType: SkillType.transcription,
+        modalities: [Modality.audio],
+      );
+      final taskContextTranscribe =
+          AiConfig.skill(
+                id: 'skill-transcribe-task',
+                name: 'Transcribe (Task Context)',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.transcription,
+                requiredInputModalities: [Modality.audio],
+                contextPolicy: ContextPolicy.fullTask,
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+      final coverArt =
+          AiConfig.skill(
+                id: 'skill-cover-art',
+                name: 'Cover Art',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.imageGeneration,
+                requiredInputModalities: [Modality.text],
+                contextPolicy: ContextPolicy.fullTask,
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          skillRegistryProvider.overrideWithValue([
+            plainTranscribe,
+            taskContextTranscribe,
+            coverArt,
+          ]),
+          createEntryControllerOverride(audioEntity),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      await testContainer.read(
+        entryControllerProvider(id: audioEntity.id).future,
+      );
+
+      final standaloneSkills = await testContainer.read(
+        availableSkillsForEntityProvider((
+          entityId: audioEntity.id,
+          linkedFromId: null,
+        )).future,
+      );
+      expect(standaloneSkills.map((s) => s.id), ['skill-transcribe-plain']);
+
+      // With a linked task, the full-task skills are no longer hidden — the
+      // text-only cover-art skill still passes for an audio entity because
+      // it accepts text modality.
+      final linkedSkills = await testContainer.read(
+        availableSkillsForEntityProvider((
+          entityId: audioEntity.id,
+          linkedFromId: 'task-99',
+        )).future,
+      );
+      expect(
+        linkedSkills.map((s) => s.id),
+        containsAll(['skill-transcribe-plain', 'skill-transcribe-task']),
+      );
     });
 
     test('returns empty list when entity not found', () async {
@@ -1102,7 +1363,10 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
-      final provider = availableSkillsForEntityProvider('nonexistent');
+      final provider = availableSkillsForEntityProvider((
+        entityId: 'nonexistent',
+        linkedFromId: null,
+      ));
       final completer = Completer<void>();
       testContainer.listen(provider, (_, next) {
         if (next.hasValue && !completer.isCompleted) completer.complete();
@@ -1146,40 +1410,68 @@ void main() {
       verifyZeroInteractions(mockRunner);
     });
 
-    test('returns early when no linkedTaskId provided', () async {
-      final skill =
-          AiConfig.skill(
-                id: 'skill-1',
-                name: 'Test Skill',
-                createdAt: DateTime(2024, 3, 15),
-                skillType: SkillType.transcription,
-                requiredInputModalities: [Modality.audio],
-                systemInstructions: 'System',
-                userInstructions: 'User',
-              )
-              as AiConfigSkill;
+    test(
+      'returns early when no linkedTaskId and entity has no category',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-1',
+                  name: 'Test Skill',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: [Modality.audio],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
 
-      final testContainer = ProviderContainer(
-        overrides: [
-          skillRegistryProvider.overrideWithValue([skill]),
-          profileAutomationResolverProvider.overrideWithValue(mockResolver),
-          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
-        ],
-      );
-      containersToDispose.add(testContainer);
+        // Standalone audio entry with no category — no profile resolvable.
+        final audioEntity = JournalAudio(
+          meta: Metadata(
+            id: 'entity-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            audioFile: 'test.mp3',
+            audioDirectory: '/test',
+            duration: const Duration(minutes: 1),
+          ),
+        );
+        when(
+          () => mockJournalDb.journalEntityById('entity-1'),
+        ).thenAnswer((_) async => audioEntity);
 
-      await testContainer.read(
-        triggerSkillProvider((
-          entityId: 'entity-1',
-          skillId: 'skill-1',
-          linkedTaskId: null,
-          referenceImages: null,
-        )).future,
-      );
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
 
-      // Should return early without invoking the runner
-      verifyZeroInteractions(mockRunner);
-    });
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'entity-1',
+            skillId: 'skill-1',
+            linkedTaskId: null,
+            referenceImages: null,
+          )).future,
+        );
+
+        // Should return early without invoking the runner.
+        verifyZeroInteractions(mockRunner);
+        verifyNever(
+          () => mockResolver.resolveForCategory(any()),
+        );
+      },
+    );
 
     test('returns early when no profile configured for task', () async {
       final skill =
@@ -1299,6 +1591,153 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'resolves via category and runs transcription for standalone audio',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-transcribe',
+                  name: 'Transcription',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: [Modality.audio],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final audioEntity = JournalAudio(
+          meta: Metadata(
+            id: 'standalone-audio-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            categoryId: 'cat-journal',
+          ),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            audioFile: 'voice.mp3',
+            audioDirectory: '/recordings',
+            duration: const Duration(minutes: 2),
+          ),
+        );
+
+        final thinkingProvider =
+            AiConfig.inferenceProvider(
+                  id: 'ollama-prov',
+                  name: 'Ollama',
+                  inferenceProviderType: InferenceProviderType.ollama,
+                  apiKey: '',
+                  baseUrl: 'http://localhost:11434',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+        final transcriptionProvider =
+            AiConfig.inferenceProvider(
+                  id: 'ollama-voxtral',
+                  name: 'Ollama (Voxtral)',
+                  inferenceProviderType: InferenceProviderType.ollama,
+                  apiKey: '',
+                  baseUrl: 'http://localhost:11434',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+        final resolvedProfile = ResolvedProfile(
+          thinkingModelId: 'thinking-model',
+          thinkingProvider: thinkingProvider,
+          transcriptionModelId: 'voxtral',
+          transcriptionProvider: transcriptionProvider,
+        );
+
+        when(
+          () => mockJournalDb.journalEntityById('standalone-audio-1'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockResolver.resolveForCategory('cat-journal'),
+        ).thenAnswer((_) async => resolvedProfile);
+        when(
+          () => mockRunner.runTranscription(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'standalone-audio-1',
+            skillId: 'skill-transcribe',
+            linkedTaskId: null,
+            referenceImages: null,
+          )).future,
+        );
+
+        verify(
+          () => mockResolver.resolveForCategory('cat-journal'),
+        ).called(1);
+        verifyNever(() => mockResolver.resolveForTask(any()));
+        verify(
+          () => mockRunner.runTranscription(
+            audioEntryId: 'standalone-audio-1',
+            automationResult: any(named: 'automationResult'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'aborts standalone fullTask skill without invoking resolver',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-cover-art',
+                  name: 'Cover Art',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.imageGeneration,
+                  requiredInputModalities: [Modality.text],
+                  contextPolicy: ContextPolicy.fullTask,
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'standalone-audio-2',
+            skillId: 'skill-cover-art',
+            linkedTaskId: null,
+            referenceImages: null,
+          )).future,
+        );
+
+        verifyZeroInteractions(mockRunner);
+        verifyNever(() => mockResolver.resolveForTask(any()));
+        verifyNever(() => mockResolver.resolveForCategory(any()));
+      },
+    );
 
     test('successfully routes image analysis skill to runner', () async {
       final skill =

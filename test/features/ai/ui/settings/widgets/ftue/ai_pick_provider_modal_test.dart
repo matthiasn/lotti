@@ -18,7 +18,7 @@ void main() {
   group('AiPickProviderModal.defaultTiles — static spec', () {
     test(
       'lineup matches the design: '
-      'Gemini → OpenAI → Anthropic → Alibaba → Ollama',
+      'Gemini → OpenAI → Anthropic → Alibaba → Ollama → Voxtral',
       () {
         expect(
           AiPickProviderModal.defaultTiles.map((t) => t.providerType).toList(),
@@ -28,6 +28,7 @@ void main() {
             InferenceProviderType.anthropic,
             InferenceProviderType.alibaba,
             InferenceProviderType.ollama,
+            InferenceProviderType.voxtral,
           ],
         );
       },
@@ -57,6 +58,13 @@ void main() {
     test('Ollama carries the DESKTOP ONLY badge', () {
       final spec = AiPickProviderModal.defaultTiles.firstWhere(
         (t) => t.providerType == InferenceProviderType.ollama,
+      );
+      expect(spec.badge, AiPickProviderBadge.desktopOnly);
+    });
+
+    test('Voxtral carries the DESKTOP ONLY badge', () {
+      final spec = AiPickProviderModal.defaultTiles.firstWhere(
+        (t) => t.providerType == InferenceProviderType.voxtral,
       );
       expect(spec.badge, AiPickProviderBadge.desktopOnly);
     });
@@ -136,11 +144,12 @@ void main() {
 
     testWidgets(
       'renders one DesignSystemBadge per badged tile '
-      '(Gemini RECOMMENDED, Anthropic NEW, Alibaba NEW, Ollama DESKTOP ONLY) '
-      '— four badges total because OpenAI is intentionally un-badged',
+      '(Gemini RECOMMENDED, Anthropic NEW, Alibaba NEW, '
+      'Ollama DESKTOP ONLY, Voxtral DESKTOP ONLY) — five badges total '
+      'because OpenAI is intentionally un-badged',
       (tester) async {
         await pumpModal(tester);
-        expect(find.byType(DesignSystemBadge), findsNWidgets(4));
+        expect(find.byType(DesignSystemBadge), findsNWidgets(5));
       },
     );
 
@@ -169,6 +178,11 @@ void main() {
       'Continue pops the modal with confirmed(<initialSelection>) '
       'when the user has not changed the radio',
       (tester) async {
+        // Six tiles + footer + action row exceed the default 800x600 test
+        // viewport — bump it so the Continue button is hit-testable.
+        // Production renders inside WoltModalSheet which scrolls.
+        await tester.binding.setSurfaceSize(const Size(800, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         AiPickProviderResult? captured;
         await tester.pumpWidget(
           makeTestableWidget(
@@ -208,6 +222,8 @@ void main() {
       'Continue carries the LATEST radio selection — proves the modal '
       'forwards the picked tile, not the seeded one',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         AiPickProviderResult? captured;
         await tester.pumpWidget(
           makeTestableWidget(
@@ -249,6 +265,8 @@ void main() {
       'providerType is forwarded because the user is opting out, not '
       'picking',
       (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
         AiPickProviderResult? captured;
         await tester.pumpWidget(
           makeTestableWidget(

@@ -259,12 +259,14 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailableSkillsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(true)),
-            availableSkillsForEntityProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(testSkills)),
+            hasAvailableSkillsProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value(true)),
+            availableSkillsForEntityProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value(testSkills)),
           ],
         ),
       );
@@ -285,9 +287,10 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailableSkillsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(false)),
+            hasAvailableSkillsProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value(false)),
           ],
         ),
       );
@@ -311,9 +314,10 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailableSkillsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => completer.future),
+            hasAvailableSkillsProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => completer.future),
           ],
         ),
       );
@@ -339,9 +343,10 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailableSkillsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.error('Test error')),
+            hasAvailableSkillsProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.error('Test error')),
           ],
         ),
       );
@@ -363,12 +368,14 @@ void main() {
             linkedFromId: 'linked-from-1',
           ),
           overrides: [
-            hasAvailableSkillsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(true)),
-            availableSkillsForEntityProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(testSkills)),
+            hasAvailableSkillsProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: 'linked-from-1',
+            )).overrideWith((ref) => Future.value(true)),
+            availableSkillsForEntityProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: 'linked-from-1',
+            )).overrideWith((ref) => Future.value(testSkills)),
           ],
         ),
       );
@@ -396,9 +403,10 @@ void main() {
             onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availableSkillsForEntityProvider(
-              testAudioEntity.id,
-            ).overrideWith((ref) => Future.value(skills)),
+            availableSkillsForEntityProvider((
+              entityId: testAudioEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value(skills)),
           ],
         ),
       );
@@ -424,9 +432,10 @@ void main() {
             onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availableSkillsForEntityProvider(
-              testAudioEntity.id,
-            ).overrideWith((ref) => Future.value(testSkills)),
+            availableSkillsForEntityProvider((
+              entityId: testAudioEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value(testSkills)),
           ],
         ),
       );
@@ -450,9 +459,10 @@ void main() {
             onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availableSkillsForEntityProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([])),
+            availableSkillsForEntityProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value([])),
           ],
         ),
       );
@@ -479,9 +489,10 @@ void main() {
             },
           ),
           overrides: [
-            availableSkillsForEntityProvider(
-              testAudioEntity.id,
-            ).overrideWith(
+            availableSkillsForEntityProvider((
+              entityId: testAudioEntity.id,
+              linkedFromId: null,
+            )).overrideWith(
               (ref) => Future.value([testSkills.first]),
             ),
           ],
@@ -522,7 +533,10 @@ void main() {
             onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availableSkillsForEntityProvider(testAudioEntity.id).overrideWith(
+            availableSkillsForEntityProvider((
+              entityId: testAudioEntity.id,
+              linkedFromId: null,
+            )).overrideWith(
               (ref) => Future.value([skillWithoutDescription]),
             ),
           ],
@@ -561,9 +575,10 @@ void main() {
             onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availableSkillsForEntityProvider(
-              testAudioEntity.id,
-            ).overrideWith((ref) => Future.value([longDescriptionSkill])),
+            availableSkillsForEntityProvider((
+              entityId: testAudioEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value([longDescriptionSkill])),
           ],
         ),
       );
@@ -602,9 +617,10 @@ void main() {
               onSkillSelected: (_) async {},
             ),
             overrides: [
-              availableSkillsForEntityProvider(
-                testAudioEntity.id,
-              ).overrideWith((ref) => Future.value(testSkills)),
+              availableSkillsForEntityProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(testSkills)),
             ],
           ),
         );
@@ -660,9 +676,10 @@ void main() {
               },
             ),
             overrides: [
-              availableSkillsForEntityProvider(
-                testAudioEntity.id,
-              ).overrideWith((ref) => Future.value(testSkills)),
+              availableSkillsForEntityProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(testSkills)),
             ],
           ),
         );
@@ -707,7 +724,10 @@ void main() {
             },
           ),
           overrides: [
-            availableSkillsForEntityProvider(testTaskEntity.id).overrideWith(
+            availableSkillsForEntityProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith(
               (ref) => Future.value(testSkills.take(2).toList()),
             ),
           ],
@@ -748,7 +768,10 @@ void main() {
             },
           ),
           overrides: [
-            availableSkillsForEntityProvider(testTaskEntity.id).overrideWith(
+            availableSkillsForEntityProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith(
               (ref) => skillsCompleter.future,
             ),
           ],
@@ -796,9 +819,10 @@ void main() {
             },
           ),
           overrides: [
-            availableSkillsForEntityProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([testSkills.first])),
+            availableSkillsForEntityProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value([testSkills.first])),
           ],
         ),
       );
@@ -825,12 +849,14 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailableSkillsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(true)),
-            availableSkillsForEntityProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([testSkills.last])),
+            hasAvailableSkillsProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value(true)),
+            availableSkillsForEntityProvider((
+              entityId: testTaskEntity.id,
+              linkedFromId: null,
+            )).overrideWith((ref) => Future.value([testSkills.last])),
           ],
         ),
       );
@@ -880,12 +906,14 @@ void main() {
               linkedFromId: null,
             ),
             overrides: [
-              hasAvailableSkillsProvider(
-                testAudioEntity.id,
-              ).overrideWith((ref) => Future.value(true)),
-              availableSkillsForEntityProvider(
-                testAudioEntity.id,
-              ).overrideWith(
+              hasAvailableSkillsProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith(
                 (ref) => Future.value([imageGenSkill]),
               ),
             ],
@@ -960,12 +988,14 @@ void main() {
               linkedFromId: null,
             ),
             overrides: [
-              hasAvailableSkillsProvider(
-                testAudioEntity.id,
-              ).overrideWith((ref) => Future.value(true)),
-              availableSkillsForEntityProvider(
-                testAudioEntity.id,
-              ).overrideWith(
+              hasAvailableSkillsProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider((
+                entityId: testAudioEntity.id,
+                linkedFromId: null,
+              )).overrideWith(
                 (ref) => Future.value([imageGenSkill]),
               ),
             ],

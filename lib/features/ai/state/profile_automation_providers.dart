@@ -30,6 +30,12 @@ ProfileAutomationResolver profileAutomationResolver(Ref ref) {
       if (entity is Task) return entity.data.profileId;
       return null;
     },
+    categoryProfileLookup: (categoryId) async {
+      final category = await ref
+          .read(journalDbProvider)
+          .getCategoryById(categoryId);
+      return category?.defaultProfileId;
+    },
   );
 }
 

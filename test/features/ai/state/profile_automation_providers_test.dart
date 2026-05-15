@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -199,6 +200,97 @@ void main() {
       final container = createContainer();
       final resolver = container.read(profileAutomationResolverProvider);
       final result = await resolver.resolveForTask('gone');
+      expect(result, isNull);
+    });
+  });
+
+  group('categoryProfileLookup via resolveForCategory', () {
+    late MockJournalDb mockDb;
+    late MockAiConfigRepository mockAiConfigRepo;
+
+    setUp(() {
+      mockDb = MockJournalDb();
+      mockAiConfigRepo = MockAiConfigRepository();
+      when(
+        () => mockAiConfigRepo.getConfigById(any()),
+      ).thenAnswer((_) async => null);
+    });
+
+    ProviderContainer createContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+          agentTemplateServiceProvider.overrideWithValue(
+            MockAgentTemplateService(),
+          ),
+          journalDbProvider.overrideWithValue(mockDb),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    CategoryDefinition makeCategory({String? defaultProfileId}) {
+      return CategoryDefinition(
+        id: 'cat-1',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        name: 'Journal',
+        vectorClock: null,
+        private: false,
+        active: true,
+        defaultProfileId: defaultProfileId,
+      );
+    }
+
+    test(
+      'resolveForCategory queries the DB and forwards defaultProfileId',
+      () async {
+        when(
+          () => mockDb.getCategoryById('cat-1'),
+        ).thenAnswer((_) async => makeCategory(defaultProfileId: 'profile-x'));
+
+        final container = createContainer();
+        final resolver = container.read(profileAutomationResolverProvider);
+        // The profile-x lookup returns null (mockAiConfigRepo default), so the
+        // resolver returns null — but the closure ran, covering the lines.
+        final result = await resolver.resolveForCategory('cat-1');
+
+        verify(() => mockDb.getCategoryById('cat-1')).called(1);
+        verify(() => mockAiConfigRepo.getConfigById('profile-x')).called(1);
+        expect(result, isNull);
+      },
+    );
+
+    test(
+      'resolveForCategory returns null when category has no defaultProfileId',
+      () async {
+        when(
+          () => mockDb.getCategoryById('cat-no-profile'),
+        ).thenAnswer((_) async => makeCategory());
+
+        final container = createContainer();
+        final resolver = container.read(profileAutomationResolverProvider);
+        final result = await resolver.resolveForCategory('cat-no-profile');
+
+        verify(() => mockDb.getCategoryById('cat-no-profile')).called(1);
+        verifyNever(() => mockAiConfigRepo.getConfigById(any()));
+        expect(result, isNull);
+      },
+    );
+
+    test('resolveForCategory returns null when category not found', () async {
+      when(
+        () => mockDb.getCategoryById('cat-missing'),
+      ).thenAnswer((_) async => null);
+
+      final container = createContainer();
+      final resolver = container.read(profileAutomationResolverProvider);
+      final result = await resolver.resolveForCategory('cat-missing');
+
+      verify(() => mockDb.getCategoryById('cat-missing')).called(1);
+      verifyNever(() => mockAiConfigRepo.getConfigById(any()));
       expect(result, isNull);
     });
   });
