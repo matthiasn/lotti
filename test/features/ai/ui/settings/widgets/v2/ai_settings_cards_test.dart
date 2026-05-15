@@ -138,6 +138,53 @@ void main() {
         equals(AiProviderCardStatus.offline),
       );
     });
+
+    // Local providers (`ProviderConfig.noApiKeyRequired`) all share the
+    // base-URL + model-count gate. Voxtral and Whisper used to fall
+    // through the cloud branch and surface `invalidKey` because they
+    // never carry an API key — same shape as Ollama, different enum.
+    for (final type in const [
+      InferenceProviderType.voxtral,
+      InferenceProviderType.whisper,
+    ]) {
+      test('$type with base URL + at least one model → connected', () {
+        expect(
+          AiProviderCard.statusFor(
+            provider: _provider(
+              type: type,
+              apiKey: '',
+              baseUrl: 'http://localhost:11344',
+            ),
+            modelCount: 2,
+          ),
+          equals(AiProviderCardStatus.connected),
+        );
+      });
+
+      test('$type with no models → offline (never invalidKey)', () {
+        expect(
+          AiProviderCard.statusFor(
+            provider: _provider(
+              type: type,
+              apiKey: '',
+              baseUrl: 'http://localhost:11344',
+            ),
+            modelCount: 0,
+          ),
+          equals(AiProviderCardStatus.offline),
+        );
+      });
+
+      test('$type with blank base URL → offline (never invalidKey)', () {
+        expect(
+          AiProviderCard.statusFor(
+            provider: _provider(type: type, apiKey: '', baseUrl: ''),
+            modelCount: 5,
+          ),
+          equals(AiProviderCardStatus.offline),
+        );
+      });
+    }
   });
 
   group('AiProviderCard rendering', () {

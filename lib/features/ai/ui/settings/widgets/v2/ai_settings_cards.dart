@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
@@ -11,14 +12,18 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// the redesigned settings page can determine locally — no live
 /// network probe in PR-3 — so the values are deliberately coarse:
 ///
-/// - `connected`: API key (or base URL for Ollama) is present and
-///   at least one model row exists. The card renders the model-count
+/// - `connected`: a cloud provider has a non-blank API key and a
+///   local provider (Ollama / Voxtral / Whisper — see
+///   [ProviderConfig.noApiKeyRequired]) has both a non-blank base URL
+///   and at least one model row. The card renders the model-count
 ///   tail on the right of the status row.
 /// - `invalidKey`: cloud provider with no / blank API key. Generic
 ///   on purpose so missing / wrong / revoked / 401 / 403 all read
-///   the same.
-/// - `offline`: Ollama variant — base URL is set but no model rows
-///   exist yet, which mirrors the "server not running" failure mode.
+///   the same. Local providers never reach this state — they don't
+///   accept an API key at all.
+/// - `offline`: local provider variant — base URL is missing or no
+///   model rows exist yet, which mirrors the "server not running"
+///   failure mode.
 enum AiProviderCardStatus { connected, invalidKey, offline }
 
 /// 2-column grid card for the redesigned Providers tab.
@@ -81,15 +86,16 @@ class AiProviderCard extends StatelessWidget {
     required AiConfigInferenceProvider provider,
     required int modelCount,
   }) {
-    final isOllama =
-        provider.inferenceProviderType == InferenceProviderType.ollama;
-    final hasKey = provider.apiKey.trim().isNotEmpty;
-    if (isOllama) {
+    final isLocal = ProviderConfig.noApiKeyRequired.contains(
+      provider.inferenceProviderType,
+    );
+    if (isLocal) {
       if (modelCount == 0 || provider.baseUrl.trim().isEmpty) {
         return AiProviderCardStatus.offline;
       }
       return AiProviderCardStatus.connected;
     }
+    final hasKey = provider.apiKey.trim().isNotEmpty;
     if (!hasKey) return AiProviderCardStatus.invalidKey;
     return AiProviderCardStatus.connected;
   }

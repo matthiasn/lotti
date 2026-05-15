@@ -96,6 +96,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   seeded Ollama charcoal `#0F172A`) and bright ones alike.
 
 ### Fixed
+- Voxtral (local) and Whisper (local) provider cards and detail-page
+  status pills no longer report "Invalid key". Both providers run
+  locally and accept no API key, but `AiProviderCard.statusFor` only
+  exempted Ollama — any provider type without an API key fell through
+  the cloud branch and surfaced the error pill regardless of whether
+  the user had a working base URL and model rows. The check now uses
+  `ProviderConfig.noApiKeyRequired` (the same source of truth that
+  hides the API-key field on the connect form), so Ollama, Voxtral,
+  and Whisper share the same gate: `connected` when the base URL is
+  set and at least one model row exists, `offline` otherwise. The
+  Profiles tab Active badge inherits the fix automatically — a
+  Voxtral provider with models can now light up its profile.
 - Speech recognition (and other entry-level AI skills) now run on
   standalone audio/text/image entries that have no parent task,
   using the entry category's default inference profile. Previously
