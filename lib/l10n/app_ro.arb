@@ -752,6 +752,7 @@
   "aiProviderSetupOptionGeminiDescription": "Modele multimodale cu transcriere audio. Necesită cheie API.",
   "aiProviderSetupOptionMistralDescription": "AI europeană cu raționament (Magistral) și audio (Voxtral).",
   "aiProviderSetupOptionOpenAiDescription": "Modele GPT pentru chat și raționament. Necesită cheie API cu credit.",
+  "aiProviderTaglineAlibaba": "Modele Qwen · multimodal · context lung",
   "aiProviderTaglineAnthropic": "Familia Claude · context lung",
   "aiProviderTaglineGemini": "Multimodal · transcriere audio",
   "aiProviderTaglineOllama": "Rulează local · fără apeluri în cloud",

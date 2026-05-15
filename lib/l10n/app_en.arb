@@ -945,6 +945,7 @@
   "aiProviderSetupOptionGeminiDescription": "Multimodal models with audio transcription. Requires API key.",
   "aiProviderSetupOptionMistralDescription": "European AI with reasoning (Magistral) and audio (Voxtral) models.",
   "aiProviderSetupOptionOpenAiDescription": "GPT models for chat and reasoning. Requires API key with credits.",
+  "aiProviderTaglineAlibaba": "Qwen models · multimodal · long context",
   "aiProviderTaglineAnthropic": "Claude family · long context",
   "aiProviderTaglineGemini": "Multimodal · audio transcription",
   "aiProviderTaglineOllama": "Runs locally · no cloud calls",

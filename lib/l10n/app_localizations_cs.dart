@@ -1623,6 +1623,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'GPT modely pro chat a uvažování. Vyžaduje API klíč s kreditem.';
 
   @override
+  String get aiProviderTaglineAlibaba =>
+      'Modely Qwen · multimodální · dlouhý kontext';
+
+  @override
   String get aiProviderTaglineAnthropic => 'Rodina Claude · dlouhý kontext';
 
   @override

@@ -155,6 +155,10 @@ const DsTokens dsTokensLight = DsTokens(
         color: Color(0xFF8E76D0),
         surface: Color(0x248E76D0),
       ),
+      alibaba: DsColorsAiProviderAlibaba(
+        color: Color(0xFFE0762A),
+        surface: Color(0x24E0762A),
+      ),
     ),
   ),
   typography: DsTypography(
@@ -560,6 +564,10 @@ const DsTokens dsTokensDark = DsTokens(
       ollama: DsColorsAiProviderOllama(
         color: Color(0xFFC5B6F5),
         surface: Color(0x2EC5B6F5),
+      ),
+      alibaba: DsColorsAiProviderAlibaba(
+        color: Color(0xFFFFA868),
+        surface: Color(0x2EFFA868),
       ),
     ),
   ),
@@ -2549,17 +2557,66 @@ class DsColorsAiProviderOllama {
 }
 
 @immutable
+class DsColorsAiProviderAlibaba {
+  final Color color;
+  final Color surface;
+
+  const DsColorsAiProviderAlibaba({
+    required this.color,
+    required this.surface,
+  });
+
+  DsColorsAiProviderAlibaba copyWith({
+    Color? color,
+    Color? surface,
+  }) {
+    return DsColorsAiProviderAlibaba(
+      color: color ?? this.color,
+      surface: surface ?? this.surface,
+    );
+  }
+
+  DsColorsAiProviderAlibaba lerp(
+    covariant DsColorsAiProviderAlibaba? other,
+    double t,
+  ) {
+    if (other == null) {
+      return this;
+    }
+    return DsColorsAiProviderAlibaba(
+      color: Color.lerp(color, other.color, t) ?? color,
+      surface: Color.lerp(surface, other.surface, t) ?? surface,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is DsColorsAiProviderAlibaba &&
+        color == other.color &&
+        surface == other.surface;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([color, surface]);
+}
+
+@immutable
 class DsColorsAiProvider {
   final DsColorsAiProviderGemini gemini;
   final DsColorsAiProviderOpenAi openAi;
   final DsColorsAiProviderAnthropic anthropic;
   final DsColorsAiProviderOllama ollama;
+  final DsColorsAiProviderAlibaba alibaba;
 
   const DsColorsAiProvider({
     required this.gemini,
     required this.openAi,
     required this.anthropic,
     required this.ollama,
+    required this.alibaba,
   });
 
   DsColorsAiProvider copyWith({
@@ -2567,12 +2624,14 @@ class DsColorsAiProvider {
     DsColorsAiProviderOpenAi? openAi,
     DsColorsAiProviderAnthropic? anthropic,
     DsColorsAiProviderOllama? ollama,
+    DsColorsAiProviderAlibaba? alibaba,
   }) {
     return DsColorsAiProvider(
       gemini: gemini ?? this.gemini,
       openAi: openAi ?? this.openAi,
       anthropic: anthropic ?? this.anthropic,
       ollama: ollama ?? this.ollama,
+      alibaba: alibaba ?? this.alibaba,
     );
   }
 
@@ -2585,6 +2644,7 @@ class DsColorsAiProvider {
       openAi: openAi.lerp(other.openAi, t),
       anthropic: anthropic.lerp(other.anthropic, t),
       ollama: ollama.lerp(other.ollama, t),
+      alibaba: alibaba.lerp(other.alibaba, t),
     );
   }
 
@@ -2597,11 +2657,13 @@ class DsColorsAiProvider {
         gemini == other.gemini &&
         openAi == other.openAi &&
         anthropic == other.anthropic &&
-        ollama == other.ollama;
+        ollama == other.ollama &&
+        alibaba == other.alibaba;
   }
 
   @override
-  int get hashCode => Object.hashAll([gemini, openAi, anthropic, ollama]);
+  int get hashCode =>
+      Object.hashAll([gemini, openAi, anthropic, ollama, alibaba]);
 }
 
 @immutable

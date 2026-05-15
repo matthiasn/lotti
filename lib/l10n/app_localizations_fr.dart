@@ -1631,6 +1631,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Modèles GPT pour chat et raisonnement. Nécessite une clé API avec crédits.';
 
   @override
+  String get aiProviderTaglineAlibaba =>
+      'Modèles Qwen · multimodal · contexte long';
+
+  @override
   String get aiProviderTaglineAnthropic => 'Famille Claude · contexte long';
 
   @override
