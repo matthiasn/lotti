@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -1426,6 +1427,69 @@ void main() {
         'Refine sidebar',
       );
     });
+
+    test(
+      're-emits the live title on every entry-update notification, even when '
+      'successive notifications carry the same payload. Regression for the '
+      'bug where `_entryUpdateProvider` mapped emissions to `void`, so '
+      '`AsyncData<void>(null) == AsyncData<void>(null)` and Riverpod silently '
+      'dropped every notification after the first — leaving a blank task '
+      'newly renamed by an agent stuck on the "Task Agent" fallback in the '
+      'sidebar wake row.',
+      () {
+        fakeAsync((async) {
+          final notifications = UpdateNotifications();
+          final container = ProviderContainer(
+            overrides: [
+              journalDbProvider.overrideWithValue(mockJournalDb),
+              updateNotificationsProvider.overrideWithValue(notifications),
+            ],
+          );
+          addTearDown(() {
+            notifications.dispose();
+            container.dispose();
+          });
+
+          var currentTitle = '';
+          when(() => mockJournalDb.journalEntityById('task-1')).thenAnswer(
+            (_) async => makeTestTask(id: 'task-1', title: currentTitle),
+          );
+
+          final observed = <AsyncValue<String?>>[];
+          final sub = container.listen<AsyncValue<String?>>(
+            pendingWakeTargetTitleProvider('task-1'),
+            (_, next) => observed.add(next),
+            fireImmediately: true,
+          );
+          addTearDown(sub.close);
+
+          // Initial read: empty title trims to null.
+          async.flushMicrotasks();
+          expect(observed.last, const AsyncData<String?>(null));
+
+          // First rename — provider re-evaluates and picks up the new title.
+          currentTitle = 'First rename';
+          notifications.notify({'task-1'});
+          async
+            ..elapse(const Duration(milliseconds: 150))
+            ..flushMicrotasks();
+          expect(observed.last, const AsyncData<String?>('First rename'));
+
+          // Second rename on the same entry ID. With the old `void` payload
+          // this emission compared equal to the previous one and was deduped
+          // away; the provider would not re-run and `observed.last` would
+          // still read 'First rename'. With the `Set<String>` payload each
+          // emission is identity-distinct, so the provider re-evaluates and
+          // we see 'Second rename'.
+          currentTitle = 'Second rename';
+          notifications.notify({'task-1'});
+          async
+            ..elapse(const Duration(milliseconds: 150))
+            ..flushMicrotasks();
+          expect(observed.last, const AsyncData<String?>('Second rename'));
+        });
+      },
+    );
   });
 
   group('hourlyWakeActivityProvider', () {
