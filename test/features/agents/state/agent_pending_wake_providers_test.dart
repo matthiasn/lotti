@@ -1429,13 +1429,7 @@ void main() {
     });
 
     test(
-      're-emits the live title on every entry-update notification, even when '
-      'successive notifications carry the same payload. Regression for the '
-      'bug where `_entryUpdateProvider` mapped emissions to `void`, so '
-      '`AsyncData<void>(null) == AsyncData<void>(null)` and Riverpod silently '
-      'dropped every notification after the first — leaving a blank task '
-      'newly renamed by an agent stuck on the "Task Agent" fallback in the '
-      'sidebar wake row.',
+      're-emits the live title on repeated UI-only task notifications',
       () {
         fakeAsync((async) {
           final notifications = UpdateNotifications();
@@ -1467,26 +1461,29 @@ void main() {
           async.flushMicrotasks();
           expect(observed.last, const AsyncData<String?>(null));
 
-          // First rename — provider re-evaluates and picks up the new title.
-          currentTitle = 'First rename';
-          notifications.notify({'task-1'});
+          // First UI-only rename from an agent wake re-evaluates the provider.
+          currentTitle = 'Task Laura renamed once';
+          notifications.notifyUiOnly({'task-1'});
           async
             ..elapse(const Duration(milliseconds: 150))
             ..flushMicrotasks();
-          expect(observed.last, const AsyncData<String?>('First rename'));
+          expect(
+            observed.last,
+            const AsyncData<String?>('Task Laura renamed once'),
+          );
 
           // Second rename on the same entry ID. With the old `void` payload
           // this emission compared equal to the previous one and was deduped
-          // away; the provider would not re-run and `observed.last` would
-          // still read 'First rename'. With the `Set<String>` payload each
-          // emission is identity-distinct, so the provider re-evaluates and
-          // we see 'Second rename'.
-          currentTitle = 'Second rename';
-          notifications.notify({'task-1'});
+          // away, leaving the sidebar wake row stuck on the previous title.
+          currentTitle = 'Task Laura renamed twice';
+          notifications.notifyUiOnly({'task-1'});
           async
             ..elapse(const Duration(milliseconds: 150))
             ..flushMicrotasks();
-          expect(observed.last, const AsyncData<String?>('Second rename'));
+          expect(
+            observed.last,
+            const AsyncData<String?>('Task Laura renamed twice'),
+          );
         });
       },
     );

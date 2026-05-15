@@ -17,7 +17,6 @@ import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
-import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -91,7 +90,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   int _computeRemainingSeconds(DateTime? nextWakeAt) {
     if (nextWakeAt == null) return 0;
     final remaining = nextWakeAt.difference(clock.now()).inSeconds;
-    return remaining.clamp(0, WakeOrchestrator.throttleWindow.inSeconds);
+    return remaining <= 0 ? 0 : remaining;
   }
 
   void _openInternals({String? agentName}) {

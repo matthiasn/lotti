@@ -25,6 +25,7 @@ class AgentSubscription {
     required this.agentId,
     required this.matchEntityIds,
     this.predicate,
+    this.deferPropagatedMatches = true,
   });
 
   /// Unique subscription identifier (stable across restarts).
@@ -39,6 +40,15 @@ class AgentSubscription {
   /// Optional fine-grained filter applied after the initial token match.
   /// Receives the full batch of matched tokens; return `true` to proceed.
   final bool Function(Set<String> tokens)? predicate;
+
+  /// Whether a match made only through [propagatedNotification] should use the
+  /// conservative daily-digest deferral instead of the normal short throttle.
+  ///
+  /// Project-agent subscriptions keep this enabled so linked-task churn marks
+  /// a project stale without spending tokens immediately. Task-agent
+  /// subscriptions disable it: child-entry/task-context changes should update
+  /// the task agent on the normal coalesced wake path.
+  final bool deferPropagatedMatches;
 }
 
 /// Checks whether a task (by ID) has meaningful content (at least one linked
@@ -451,8 +461,10 @@ class WakeOrchestrator {
       //    (token in tokens AND propagated::token NOT in tokens). A
       //    "propagated" match means the token only arrived via parent
       //    fan-out or a link side-effect (propagated::token in tokens).
-      //    Pure-propagated matches defer the wake to the next 06:00; any
-      //    direct match keeps the existing fast-throttle behaviour.
+      //    Pure-propagated matches can opt into daily-digest deferral; any
+      //    direct match, and task-agent subscriptions that disable the
+      //    propagated deferral policy, keep the existing fast-throttle
+      //    behaviour.
       final matched = tokens.intersection(sub.matchEntityIds);
       final propagatedMatched = sub.matchEntityIds
           .where((id) => tokens.contains(propagatedNotification(id)))
@@ -494,9 +506,12 @@ class WakeOrchestrator {
       final predicate = sub.predicate;
       if (predicate != null && !predicate(allMatched)) continue;
 
-      // The provenance bit drives both the queued job's [hasDirectMatch]
-      // flag and the throttle-gate escalation below.
-      final isDirect = trueDirect.isNotEmpty;
+      // The fast-drain bit drives both the queued job's [hasDirectMatch] flag
+      // and the throttle-gate escalation below. Task-agent subscriptions
+      // deliberately treat propagated child updates as fast-drain updates so
+      // task titles/summaries do not wait until the next daily digest slot.
+      final usesFastThrottle =
+          trueDirect.isNotEmpty || !sub.deferPropagatedMatches;
 
       // 4. During-execution gate: when the agent is actively executing,
       //    silently queue the notification for the drain re-check instead
@@ -511,7 +526,7 @@ class WakeOrchestrator {
         final merged = queue.mergeTokens(
           sub.agentId,
           allMatched,
-          isDirect: isDirect,
+          isDirect: usesFastThrottle,
         );
         if (!merged) {
           final counter = _wakeCounters[sub.agentId] ?? 0;
@@ -530,14 +545,14 @@ class WakeOrchestrator {
               triggerTokens: Set<String>.from(allMatched),
               reasonId: sub.id,
               createdAt: clock.now(),
-              hasDirectMatch: isDirect,
+              hasDirectMatch: usesFastThrottle,
             ),
           );
         }
         _log(
           '${DomainLogger.sanitizeId(sub.agentId)} executing — '
           '${merged ? 'merged tokens into queued job' : 'queued for drain re-check'} '
-          '(direct=$isDirect)',
+          '(fastThrottle=$usesFastThrottle)',
           subDomain: 'running',
         );
         continue;
@@ -551,19 +566,19 @@ class WakeOrchestrator {
         final merged = queue.mergeTokens(
           sub.agentId,
           allMatched,
-          isDirect: isDirect,
+          isDirect: usesFastThrottle,
         );
         // Escalate the deadline when a direct match arrives on top of a
         // morning-deferred slot — leaving the user's edit waiting until
         // 06:00 because earlier propagation already armed a long timer
         // would defeat the entire policy.
-        if (isDirect && deadline != null) {
+        if (usesFastThrottle && deadline != null) {
           final immediate = clock.now().add(throttleWindow);
           if (immediate.isBefore(deadline)) {
             _log(
               'escalating ${DomainLogger.sanitizeId(sub.agentId)} '
               'deadline from $deadline to $immediate '
-              '(direct match arrived during propagated deferral)',
+              '(fast-throttle match arrived during propagated deferral)',
               subDomain: 'throttle',
             );
             unawaited(_setThrottleDeadline(sub.agentId));
@@ -598,12 +613,16 @@ class WakeOrchestrator {
         triggerTokens: Set<String>.from(allMatched),
         reasonId: sub.id,
         createdAt: clock.now(),
-        hasDirectMatch: isDirect,
+        hasDirectMatch: usesFastThrottle,
       );
 
       // Attempt to merge tokens into an existing queued job for this agent
       // before enqueuing a new one; this coalesces rapid-fire notifications.
-      if (!queue.mergeTokens(sub.agentId, allMatched, isDirect: isDirect)) {
+      if (!queue.mergeTokens(
+        sub.agentId,
+        allMatched,
+        isDirect: usesFastThrottle,
+      )) {
         queue.enqueue(job);
       }
 
@@ -624,17 +643,19 @@ class WakeOrchestrator {
       }
 
       // Defer-first: instead of dispatching immediately, set a throttle
-      // deadline and schedule a deferred drain. Direct matches use the
-      // standard 120 s coalescing window; pure-propagated matches (e.g.
-      // a parent task's agent waking on a child entry edit, or a project
-      // agent waking on `linkTaskToProject`) defer to the next 06:00 so
-      // the agent doesn't burn LLM tokens on every incidental fan-out.
-      final morningDeadline = trueDirect.isEmpty
-          ? nextOccurrenceOf(
-              now,
-              hour: AgentSchedules.projectDailyDigestHour,
-            )
-          : null;
+      // deadline and schedule a deferred drain. Fast-throttle matches use the
+      // standard 120 s coalescing window; pure-propagated matches from
+      // subscriptions that opted into digest deferral use the next 06:00 so
+      // project agents do not burn LLM tokens on every incidental fan-out.
+      final DateTime? morningDeadline;
+      if (!usesFastThrottle && trueDirect.isEmpty) {
+        morningDeadline = nextOccurrenceOf(
+          now,
+          hour: AgentSchedules.projectDailyDigestHour,
+        );
+      } else {
+        morningDeadline = null;
+      }
       unawaited(
         _setThrottleDeadline(sub.agentId, customDeadline: morningDeadline),
       );
@@ -1085,13 +1106,12 @@ class WakeOrchestrator {
         // Set the throttle deadline for subscription-triggered wakes so
         // that rapid-fire mutations don't cause excessive LLM calls.
         //
-        // If the queue holds only propagated-only jobs for this agent
-        // (e.g. fan-outs that arrived while the executor was running),
-        // honour the morning policy for the drain instead of bouncing
-        // them into a 120 s post-throttle that would force them to fire
-        // at the next minute mark. A direct-bearing queued job — or an
-        // empty queue — keeps the standard 120 s cooldown so subsequent
-        // user edits land within the throttle window.
+        // If the queue holds only digest-deferred propagated jobs for this
+        // agent (e.g. project fan-outs that arrived while the executor was
+        // running), honour the morning policy for the drain instead of
+        // bouncing them into a 120 s post-throttle. A fast-bearing queued job
+        // — direct edit or task-agent propagated child update — keeps the
+        // standard 120 s cooldown so user-visible task edits land promptly.
         if (job.reason == WakeReason.subscription.name) {
           final hasDirectQueued = queue.hasDirectQueuedJobFor(job.agentId);
           final hasAnyQueued = queue.hasQueuedJobFor(job.agentId);

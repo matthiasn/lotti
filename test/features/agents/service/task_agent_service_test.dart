@@ -508,6 +508,11 @@ void main() {
         expect(subscriptions, hasLength(1), reason: '$scenario');
         expect(subscriptions.single.agentId, agentId, reason: '$scenario');
         expect(subscriptions.single.matchEntityIds, {taskId});
+        expect(
+          subscriptions.single.deferPropagatedMatches,
+          isFalse,
+          reason: '$scenario',
+        );
         verify(
           () => generatedOrchestrator.setAwaitingContent(
             agentId,
@@ -597,6 +602,7 @@ void main() {
         expect(sub.agentId, 'agent-1');
         expect(sub.matchEntityIds, contains('task-1'));
         expect(sub.id, 'agent-1_task_task-1');
+        expect(sub.deferPropagatedMatches, isFalse);
 
         // Verify initial wake was enqueued
         verify(

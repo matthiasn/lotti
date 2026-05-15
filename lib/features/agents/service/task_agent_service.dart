@@ -263,6 +263,7 @@ class TaskAgentService {
         id: '${agentId}_task_$taskId',
         agentId: agentId,
         matchEntityIds: {taskId},
+        deferPropagatedMatches: false,
       ),
     );
   }

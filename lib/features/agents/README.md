@@ -137,22 +137,25 @@ not sink behind the floating app-shell nav on narrow layouts.
 `SidebarWakeQueue` (`lib/features/agents/ui/sidebar_wake_queue.dart`) is a
 compact ambient surface that lives in the desktop sidebar's `aboveSettings`
 slot. It watches the same `pendingWakeRecordsProvider` as the full Pending
-Wakes page, surfacing the next two wakes inline so the queue is visible
+Wakes page, surfacing running wakes plus the next three scheduled wakes within
+the one-hour sidebar lookahead so the queue is visible
 without leaving whatever tab the operator is on:
 
-- a `WAKES N` mono header with the total count,
-- up to two compact rows — agent avatar, display name, and a per-row ETA
-  (`now` once due, `mm:ss` under an hour, `Xh MMm` beyond, switching to the
-  warning colour inside the last five minutes),
-- a `+N more →` link that switches to the Settings tab and beams to
+- a `WAKES N` mono header with the visible count and an open-in-new icon,
+- one row per currently running wake with the linked task/project title and
+  live elapsed time,
+- up to three compact scheduled rows with the linked task/project title and a
+  per-row ETA (`now` once due, `mm:ss` inside the one-hour lookahead,
+  switching to the warning colour inside the last five minutes),
+- the header link switches to the Settings tab and beams to
   `/settings/agents/pending-wakes` for the full list.
 
-Each row owns its own one-second countdown timer (same pattern as the cards
-on the full page) and re-derives the remaining seconds from `clock.now()` on
-every tick, so it does not drift when frames arrive late. The block hides
-itself when the queue is empty so the rail collapses cleanly with no
-layout shift. The collapsed (icon-only) sidebar suppresses the slot — the
-header and rows would not fit the narrow column.
+Rows are driven by the page-scoped `wakeCountdownTickerProvider`, so the
+sidebar shares one one-second ticker instead of spawning a timer per row. Wakes
+outside the one-hour lookahead stay out of the inline sidebar and remain
+visible on the full Wake Cycles page. The collapsed (icon-only) sidebar
+suppresses the slot because the header and rows would not fit the narrow
+column.
 
 ```mermaid
 flowchart LR
@@ -160,7 +163,7 @@ flowchart LR
   Provider --> WakeBlock[SidebarWakeQueue<br/>aboveSettings slot]
   Provider --> WakesPage[Pending Wakes page<br/>full list view]
   WakeBlock -->|tap row| InstanceRoute[/settings/agents/instances/agentId/]
-  WakeBlock -->|tap +N more| WakesPage
+  WakeBlock -->|tap header| WakesPage
 ```
 
 ## Persistence Model
@@ -343,8 +346,12 @@ The persisted wake reasons are:
 - `reanalysis`
 - `scheduled`
 
-Subscription-driven wakes are throttled with a 120 second window. Manual wakes
-(`creation`, `reanalysis`, and scheduled jobs enqueued manually by
+Subscription-driven wakes are throttled with a 120 second window. A
+subscription can opt into daily-digest deferral for propagated-only matches;
+project-agent subscriptions use that path so linked-task churn waits for the
+scheduled project digest, while task-agent subscriptions opt out so child-entry
+and task-context updates refresh on the normal 120 second coalesced wake path.
+Manual wakes (`creation`, `reanalysis`, and scheduled jobs enqueued manually by
 `ScheduledWakeManager`) bypass subscription matching and that throttle path.
 
 Task agents that were auto-provisioned from category defaults can start with
@@ -941,8 +948,9 @@ agent runtime produces:
 - the wake-cycle affordances directly in the header: a running spinner
   while a wake is in flight, otherwise a refresh icon button (calls
   `TaskAgentService.triggerReanalysis`) when no wake is scheduled, or
-  a play button + countdown pill (`m:ss`) + cancel button (calls
-  `cancelScheduledWake`) while one is.
+  a play button + countdown pill (`m:ss` below one hour, `h:mm:ss` once
+  the hour cell is needed) + cancel button (calls `cancelScheduledWake`)
+  while one is.
 
 The card is the only entry point in `task_form.dart`; the legacy
 `AgentSuggestionsPanel` is gone.

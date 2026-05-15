@@ -33,10 +33,12 @@ class WakeJob {
   /// Wall-clock time the job was created (not persisted; in-memory only).
   final DateTime createdAt;
 
-  /// `true` when at least one trigger that contributed to this job was a
-  /// direct edit (the agent's own entity changed), `false` when every
-  /// contributing trigger was a propagated fan-out (parent IDs added by
-  /// `parentLinkedEntityIds`, link-side-effect project tokens, …).
+  /// `true` when at least one trigger that contributed to this job should use
+  /// the fast throttle path: either a direct edit (the agent's own entity
+  /// changed) or a subscription that explicitly treats propagated child
+  /// updates as fast enough for the normal coalescing window. `false` when
+  /// every contributing trigger was a propagated fan-out that opted into the
+  /// daily-digest deferral policy.
   ///
   /// Manual / creation / reanalysis wakes are direct by definition and
   /// keep the default `true`. Subscription wakes carry the orchestrator's
@@ -81,9 +83,9 @@ class WakeQueue {
   ///
   /// When [isDirect] is `true`, also upgrades the job's
   /// [WakeJob.hasDirectMatch] to `true` — a direct match coalescing onto a
-  /// previously propagated-only deferred job must not stay deferred to the
-  /// next morning. The upgrade is monotonic: a subsequent propagated-only
-  /// merge cannot downgrade a direct job back to propagated-only.
+  /// previously daily-deferred job must not stay deferred to the next morning.
+  /// The upgrade is monotonic: a subsequent digest-deferred merge cannot
+  /// downgrade a fast-drain job back to propagated-only.
   ///
   /// Returns `true` when a matching job was found and updated, `false`
   /// otherwise.
@@ -103,10 +105,11 @@ class WakeQueue {
   }
 
   /// Whether any queued job for [agentId] carries at least one direct
-  /// match. The orchestrator uses this when picking the post-execution
-  /// throttle deadline: an empty queue or a propagated-only queue defers
-  /// the next drain to the next 06:00; a direct-bearing queue keeps the
-  /// 120 s cooldown so the user sees their edit reflected promptly.
+  /// fast-throttle match. The orchestrator uses this when picking the
+  /// post-execution throttle deadline: an empty queue or a digest-deferred
+  /// propagated-only queue defers the next drain to the next 06:00; a
+  /// fast-bearing queue keeps the 120 s cooldown so the user sees task edits
+  /// reflected promptly.
   bool hasDirectQueuedJobFor(String agentId) =>
       _queue.any((job) => job.agentId == agentId && job.hasDirectMatch);
 

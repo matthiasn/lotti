@@ -590,24 +590,24 @@ Longer report content.
     testWidgets('renders a countdown pill when the next run is scheduled', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        wrap(
-          ExpandableReportSection(
-            title: 'AI Report',
-            body: 'TLDR only.',
-            fullContent: 'TLDR only.',
-            // Must be in the future relative to DateTime.now() because
-            // _remainingSeconds() computes against the real clock.
-            // ignore: avoid_redundant_argument_values
-            nextWakeAt: DateTime(2099, 1, 1),
-            onRefresh: () {},
+      final start = DateTime(2024, 3, 15, 12);
+      await withClock(Clock.fixed(start), () async {
+        await tester.pumpWidget(
+          wrap(
+            ExpandableReportSection(
+              title: 'AI Report',
+              body: 'TLDR only.',
+              fullContent: 'TLDR only.',
+              nextWakeAt: start.add(const Duration(seconds: 90)),
+              onRefresh: () {},
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
-      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+        expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
+        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+      });
     });
 
     testWidgets(
@@ -889,7 +889,11 @@ Longer report content.
     test('formats mixed minutes and seconds', () {
       expect(formatCountdown(90), '1:30');
       expect(formatCountdown(125), '2:05');
-      expect(formatCountdown(3661), '61:01');
+    });
+
+    test('formats hour-scale durations with an hour cell', () {
+      expect(formatCountdown(3661), '1:01:01');
+      expect(formatCountdown(5 * 3600 + 39 * 60 + 14), '5:39:14');
     });
   });
 

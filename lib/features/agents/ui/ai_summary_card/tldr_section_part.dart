@@ -339,10 +339,14 @@ class _CountdownPillState extends State<_CountdownPill>
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final compact = widget.compact;
+    final countdownText = formatCountdown(countdownSeconds);
+    final pillWidth = countdownText.length > 5
+        ? (compact ? 64.0 : 72.0)
+        : (compact ? 44.0 : 52.0);
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4),
       child: Container(
-        width: compact ? 44 : 52,
+        width: pillWidth,
         padding: EdgeInsets.symmetric(
           horizontal: compact ? 6 : 8,
           vertical: compact ? 2 : 3,
@@ -353,7 +357,7 @@ class _CountdownPillState extends State<_CountdownPill>
           border: Border.all(color: ai.border),
         ),
         child: Text(
-          formatCountdown(countdownSeconds),
+          countdownText,
           textAlign: TextAlign.center,
           style: tokens.typography.styles.others.caption.copyWith(
             color: ai.accent,
