@@ -100,15 +100,15 @@ class AiSettingsFtueBanner extends StatelessWidget {
 /// │      Add one to unlock transcription, image recognition,      │
 /// │            image generation, and semantic search.             │
 /// │                                                               │
-/// │      [ 🟢 Gemini ]  [ 🟠 OpenAI ]  [ 🔵 Anthropic ]  [ 🟣 Ollama ] │
+/// │ [ 🟢 Gemini ] [ 🟠 OpenAI ] [ 🔵 Anthropic ] [ 🟧 Alibaba ] [ 🟣 Ollama ] │
 /// └──────────────────────────────────────────────────────────────┘
 /// ```
 ///
-/// One row of four compact provider chips inside a single wrapper —
-/// NOT a 2×2 grid of large tiles. Each chip taps into
+/// One row of five compact provider chips inside a single wrapper —
+/// NOT a grid of large tiles. Each chip taps into
 /// `InferenceProviderEditPage(preselectedType: ...)` so the user lands
-/// on the connect form with one tap. Mistral and Alibaba are reachable
-/// from the page-level "+ Add provider" button.
+/// on the connect form with one tap. Mistral is reachable from the
+/// page-level "+ Add provider" button.
 class AiSettingsNoProvidersCard extends StatelessWidget {
   const AiSettingsNoProvidersCard({
     required this.onProviderChipTap,
@@ -121,6 +121,7 @@ class AiSettingsNoProvidersCard extends StatelessWidget {
     InferenceProviderType.gemini,
     InferenceProviderType.openAi,
     InferenceProviderType.anthropic,
+    InferenceProviderType.alibaba,
     InferenceProviderType.ollama,
   ];
 
@@ -156,7 +157,7 @@ class AiSettingsNoProvidersCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step5),
-          // Wrap so the four chips fold to a second row on tight
+          // Wrap so the five chips fold to a second row on tight
           // viewports rather than overflowing. On the desktop pane
           // they fit on one line at the design's measured widths.
           Wrap(

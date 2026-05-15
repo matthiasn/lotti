@@ -1633,6 +1633,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Modele GPT pentru chat și raționament. Necesită cheie API cu credit.';
 
   @override
+  String get aiProviderTaglineAlibaba =>
+      'Modele Qwen · multimodal · context lung';
+
+  @override
   String get aiProviderTaglineAnthropic => 'Familia Claude · context lung';
 
   @override

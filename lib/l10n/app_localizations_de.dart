@@ -1625,6 +1625,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'GPT-Modelle für Chat und Reasoning. Erfordert API-Schlüssel mit Guthaben.';
 
   @override
+  String get aiProviderTaglineAlibaba =>
+      'Qwen-Modelle · multimodal · langer Kontext';
+
+  @override
   String get aiProviderTaglineAnthropic => 'Claude-Familie · langer Kontext';
 
   @override

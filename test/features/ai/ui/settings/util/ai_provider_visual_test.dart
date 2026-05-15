@@ -24,33 +24,41 @@ void main() {
       }
     });
 
-    test('Gemini / OpenAI / Anthropic / Ollama accents are distinct', () {
-      final accents = {
-        aiProviderAccent(
-          type: InferenceProviderType.gemini,
-          tokens: dsTokensDark,
-        ),
-        aiProviderAccent(
-          type: InferenceProviderType.openAi,
-          tokens: dsTokensDark,
-        ),
-        aiProviderAccent(
-          type: InferenceProviderType.anthropic,
-          tokens: dsTokensDark,
-        ),
-        aiProviderAccent(
-          type: InferenceProviderType.ollama,
-          tokens: dsTokensDark,
-        ),
-      };
-      expect(
-        accents.length,
-        equals(4),
-        reason:
-            'The four first-class providers must each carry a distinct '
-            'accent so the cards / tiles / rail are differentiable at a glance.',
-      );
-    });
+    test(
+      'Gemini / OpenAI / Anthropic / Ollama / Alibaba accents are distinct',
+      () {
+        final accents = {
+          aiProviderAccent(
+            type: InferenceProviderType.gemini,
+            tokens: dsTokensDark,
+          ),
+          aiProviderAccent(
+            type: InferenceProviderType.openAi,
+            tokens: dsTokensDark,
+          ),
+          aiProviderAccent(
+            type: InferenceProviderType.anthropic,
+            tokens: dsTokensDark,
+          ),
+          aiProviderAccent(
+            type: InferenceProviderType.ollama,
+            tokens: dsTokensDark,
+          ),
+          aiProviderAccent(
+            type: InferenceProviderType.alibaba,
+            tokens: dsTokensDark,
+          ),
+        };
+        expect(
+          accents.length,
+          equals(5),
+          reason:
+              'The five first-class providers must each carry a distinct '
+              'accent so the cards / tiles / rail are differentiable at a '
+              'glance.',
+        );
+      },
+    );
 
     test(
       'unsupported provider types resolve to the neutral interactive '
@@ -61,7 +69,6 @@ void main() {
         for (final type in const [
           InferenceProviderType.mistral,
           InferenceProviderType.openRouter,
-          InferenceProviderType.alibaba,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.genericOpenAi,
         ]) {
@@ -71,6 +78,28 @@ void main() {
             reason: '$type should fall back to interactive.enabled',
           );
         }
+      },
+    );
+
+    test(
+      'Alibaba now carries its own brand accent, not the neutral fallback',
+      () {
+        final alibabaAccent = aiProviderAccent(
+          type: InferenceProviderType.alibaba,
+          tokens: dsTokensDark,
+        );
+        expect(
+          alibabaAccent,
+          equals(dsTokensDark.colors.aiProvider.alibaba.color),
+          reason:
+              'Alibaba was promoted to a first-class FTUE tile and now has '
+              'its own brand token rather than the interactive.enabled '
+              'fallback.',
+        );
+        expect(
+          alibabaAccent,
+          isNot(equals(dsTokensDark.colors.interactive.enabled)),
+        );
       },
     );
 
@@ -93,6 +122,7 @@ void main() {
           InferenceProviderType.openAi,
           InferenceProviderType.anthropic,
           InferenceProviderType.ollama,
+          InferenceProviderType.alibaba,
         ]) {
           final lightAccent = aiProviderAccent(
             type: type,
@@ -157,13 +187,14 @@ void main() {
 
   group('aiProviderTagline', () {
     test(
-      'only the four first-class providers carry taglines — others return empty',
+      'only the five first-class providers carry taglines — others return empty',
       () {
         const expectingTagline = {
           InferenceProviderType.gemini,
           InferenceProviderType.openAi,
           InferenceProviderType.anthropic,
           InferenceProviderType.ollama,
+          InferenceProviderType.alibaba,
         };
         for (final type in InferenceProviderType.values) {
           final tagline = aiProviderTagline(type: type, messages: messages);

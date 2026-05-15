@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Covers Gemini, OpenAI, Anthropic, Mistral, Alibaba, OpenRouter,
   Nebius, and Ollama out of the box — no more "save the form,
   hope the key works, find out the next time you try to chat".
+- Alibaba Cloud (Qwen) promoted to a first-class FTUE option.
+  The pick-provider modal now carries a fifth tile for Alibaba
+  with the NEW badge, sitting between Anthropic and Ollama, and
+  the zero-providers state card adds a matching fifth chip in
+  the same position. Alibaba also gets its own brand-orange
+  accent token (light `#E0762A` / dark `#FFA868`) and a tagline
+  ("Qwen models · multimodal · long context") so its tile and
+  cards no longer fall back to the neutral interactive accent.
+  Translations land in all six locales (informal tone).
 
 ### Changed
 - AI Settings delete confirmations now use the same design-system

@@ -12,8 +12,8 @@ import 'package:lotti/l10n/app_localizations.dart';
 /// Keeps per-type assignments centralised so the tabs, the empty
 /// state, the master/detail rail, and the detail page can't drift on
 /// "what colour is Anthropic" or "what's Ollama's tagline". Providers
-/// without a dedicated brand token (Mistral, Alibaba, OpenRouter, etc.)
-/// fall back to a neutral interactive accent rather than impersonating
+/// without a dedicated brand token (Mistral, OpenRouter, etc.) fall
+/// back to a neutral interactive accent rather than impersonating
 /// Gemini's teal, so a Mistral card never looks like a Gemini card.
 class AiProviderVisual {
   const AiProviderVisual({
@@ -63,6 +63,7 @@ Color aiProviderAccent({
     InferenceProviderType.openAi => tokens.colors.aiProvider.openAi.color,
     InferenceProviderType.anthropic => tokens.colors.aiProvider.anthropic.color,
     InferenceProviderType.ollama => tokens.colors.aiProvider.ollama.color,
+    InferenceProviderType.alibaba => tokens.colors.aiProvider.alibaba.color,
     _ => tokens.colors.interactive.enabled,
   };
 }
@@ -82,6 +83,7 @@ Color aiProviderSurface({
     InferenceProviderType.anthropic =>
       tokens.colors.aiProvider.anthropic.surface,
     InferenceProviderType.ollama => tokens.colors.aiProvider.ollama.surface,
+    InferenceProviderType.alibaba => tokens.colors.aiProvider.alibaba.surface,
     _ => tokens.colors.interactive.enabled.withValues(alpha: 0.14),
   };
 }
@@ -214,6 +216,7 @@ String aiProviderTagline({
     InferenceProviderType.openAi => messages.aiProviderTaglineOpenAi,
     InferenceProviderType.anthropic => messages.aiProviderTaglineAnthropic,
     InferenceProviderType.ollama => messages.aiProviderTaglineOllama,
+    InferenceProviderType.alibaba => messages.aiProviderTaglineAlibaba,
     _ => '',
   };
 }

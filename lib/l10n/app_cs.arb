@@ -592,6 +592,7 @@
   "aiProviderSetupOptionGeminiDescription": "Multimodální modely s přepisem zvuku. Vyžaduje API klíč.",
   "aiProviderSetupOptionMistralDescription": "Evropská AI s uvažováním (Magistral) a zvukem (Voxtral).",
   "aiProviderSetupOptionOpenAiDescription": "GPT modely pro chat a uvažování. Vyžaduje API klíč s kreditem.",
+  "aiProviderTaglineAlibaba": "Modely Qwen · multimodální · dlouhý kontext",
   "aiProviderTaglineAnthropic": "Rodina Claude · dlouhý kontext",
   "aiProviderTaglineGemini": "Multimodální · přepis zvuku",
   "aiProviderTaglineOllama": "Běží lokálně · bez cloudových volání",

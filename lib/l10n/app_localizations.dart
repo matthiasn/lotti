@@ -2827,6 +2827,12 @@ abstract class AppLocalizations {
   /// **'GPT models for chat and reasoning. Requires API key with credits.'**
   String get aiProviderSetupOptionOpenAiDescription;
 
+  /// No description provided for @aiProviderTaglineAlibaba.
+  ///
+  /// In en, this message translates to:
+  /// **'Qwen models · multimodal · long context'**
+  String get aiProviderTaglineAlibaba;
+
   /// No description provided for @aiProviderTaglineAnthropic.
   ///
   /// In en, this message translates to:

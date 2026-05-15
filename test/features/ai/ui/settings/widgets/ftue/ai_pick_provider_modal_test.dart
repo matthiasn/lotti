@@ -16,17 +16,22 @@ AppLocalizations _l10n(WidgetTester tester) =>
 
 void main() {
   group('AiPickProviderModal.defaultTiles — static spec', () {
-    test('lineup matches the design: Gemini → OpenAI → Anthropic → Ollama', () {
-      expect(
-        AiPickProviderModal.defaultTiles.map((t) => t.providerType).toList(),
-        [
-          InferenceProviderType.gemini,
-          InferenceProviderType.openAi,
-          InferenceProviderType.anthropic,
-          InferenceProviderType.ollama,
-        ],
-      );
-    });
+    test(
+      'lineup matches the design: '
+      'Gemini → OpenAI → Anthropic → Alibaba → Ollama',
+      () {
+        expect(
+          AiPickProviderModal.defaultTiles.map((t) => t.providerType).toList(),
+          [
+            InferenceProviderType.gemini,
+            InferenceProviderType.openAi,
+            InferenceProviderType.anthropic,
+            InferenceProviderType.alibaba,
+            InferenceProviderType.ollama,
+          ],
+        );
+      },
+    );
 
     test('Gemini carries the RECOMMENDED badge (per the design)', () {
       final spec = AiPickProviderModal.defaultTiles.firstWhere(
@@ -38,6 +43,13 @@ void main() {
     test('Anthropic carries the NEW badge', () {
       final spec = AiPickProviderModal.defaultTiles.firstWhere(
         (t) => t.providerType == InferenceProviderType.anthropic,
+      );
+      expect(spec.badge, AiPickProviderBadge.newcomer);
+    });
+
+    test('Alibaba carries the NEW badge', () {
+      final spec = AiPickProviderModal.defaultTiles.firstWhere(
+        (t) => t.providerType == InferenceProviderType.alibaba,
       );
       expect(spec.badge, AiPickProviderBadge.newcomer);
     });
@@ -123,12 +135,12 @@ void main() {
     );
 
     testWidgets(
-      'renders one DesignSystemBadge per badged tile (Gemini RECOMMENDED, '
-      'Anthropic NEW, Ollama DESKTOP ONLY) — three badges total because '
-      'OpenAI is intentionally un-badged',
+      'renders one DesignSystemBadge per badged tile '
+      '(Gemini RECOMMENDED, Anthropic NEW, Alibaba NEW, Ollama DESKTOP ONLY) '
+      '— four badges total because OpenAI is intentionally un-badged',
       (tester) async {
         await pumpModal(tester);
-        expect(find.byType(DesignSystemBadge), findsNWidgets(3));
+        expect(find.byType(DesignSystemBadge), findsNWidgets(4));
       },
     );
 

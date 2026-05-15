@@ -71,9 +71,9 @@ class AiPickProviderTileSpec {
 enum AiPickProviderBadge { recommended, newcomer, desktopOnly }
 
 /// FTUE entry-point modal: "Set up AI features". Centered sheet with
-/// four provider tiles (Gemini RECOMMENDED / OpenAI / Anthropic NEW /
-/// Ollama DESKTOP ONLY), a Don't-show-again secondary action, and a
-/// primary Continue button that surfaces the user's pick.
+/// five provider tiles (Gemini RECOMMENDED / OpenAI / Anthropic NEW /
+/// Alibaba NEW / Ollama DESKTOP ONLY), a Don't-show-again secondary
+/// action, and a primary Continue button that surfaces the user's pick.
 ///
 /// Replaces the legacy `ProviderTypeSelectionModal` for the FTUE
 /// flow — that modal is still used by the in-form provider type
@@ -99,9 +99,10 @@ class AiPickProviderModal extends StatefulWidget {
   });
 
   /// Default tile lineup matching the design: Gemini (RECOMMENDED) →
-  /// OpenAI → Anthropic (NEW) → Ollama (DESKTOP ONLY). Exposed as a
-  /// static so tests can re-use the same spec the modal ships with
-  /// without instantiating the widget.
+  /// OpenAI → Anthropic (NEW) → Alibaba (NEW) → Ollama (DESKTOP ONLY).
+  /// Alibaba lands before Ollama so the local/desktop option stays
+  /// last in the list. Exposed as a static so tests can re-use the
+  /// same spec the modal ships with without instantiating the widget.
   static const List<AiPickProviderTileSpec> defaultTiles =
       <AiPickProviderTileSpec>[
         AiPickProviderTileSpec(
@@ -111,6 +112,10 @@ class AiPickProviderModal extends StatefulWidget {
         AiPickProviderTileSpec(providerType: InferenceProviderType.openAi),
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.anthropic,
+          badge: AiPickProviderBadge.newcomer,
+        ),
+        AiPickProviderTileSpec(
+          providerType: InferenceProviderType.alibaba,
           badge: AiPickProviderBadge.newcomer,
         ),
         AiPickProviderTileSpec(

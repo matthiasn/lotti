@@ -38,7 +38,8 @@ void main() {
   group('AiSettingsNoProvidersCard', () {
     testWidgets(
       'renders the No-providers title + subtitle + a chip for each of the '
-      'four first-class providers (Gemini / OpenAI / Anthropic / Ollama)',
+      'five first-class providers '
+      '(Gemini / OpenAI / Anthropic / Alibaba / Ollama)',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(
@@ -54,6 +55,7 @@ void main() {
         expect(find.text('Google Gemini'), findsOneWidget);
         expect(find.text('OpenAI'), findsOneWidget);
         expect(find.text('Anthropic Claude'), findsOneWidget);
+        expect(find.text('Alibaba Cloud (Qwen)'), findsOneWidget);
         expect(find.text('Ollama'), findsOneWidget);
       },
     );
