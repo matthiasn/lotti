@@ -26,6 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ("Qwen models · multimodal · long context") so its tile and
   cards no longer fall back to the neutral interactive accent.
   Translations land in all six locales (informal tone).
+- Voxtral (local) tile in the AI Settings pick-provider modal,
+  added as the sixth tile (after Ollama) with the same
+  `DESKTOP ONLY` badge. Picking it routes to the connect form
+  preselected to `InferenceProviderType.voxtral` with the
+  default base URL (`http://localhost:11344`) prefilled and no
+  API key required. Until this release there was no UI
+  affordance to add a Voxtral provider, even though the rest of
+  the runtime (repository, default URL, known models, chip +
+  visual) has supported it for some time.
 
 ### Changed
 - AI Settings delete confirmations now use the same design-system
@@ -52,6 +61,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   background brightness instead of a fixed palette colour, so
   the label stays legible on dark category colours (e.g. the
   seeded Ollama charcoal `#0F172A`) and bright ones alike.
+
+### Fixed
+- Speech recognition (and other entry-level AI skills) now run on
+  standalone audio/text/image entries that have no parent task,
+  using the entry category's default inference profile. Previously
+  the AI popup-menu trigger silently no-oped whenever an entry had
+  no linked task, so users with a category configured for Ollama +
+  Voxtral could open the menu and tap Transcribe with no
+  feedback and no transcription. `ProfileAutomationResolver` gains
+  a `resolveForCategory()` path reading `CategoryDefinition`'s
+  `defaultProfileId`, and `triggerSkillProvider` falls back to it
+  when `linkedTaskId` is null. The popup also hides skills whose
+  `contextPolicy` requires the full task (cover art, coding /
+  design / research prompts, image analysis and transcription "in
+  Task Context" variants) for standalone entries, and now applies
+  the same fail-closed rule to `Modality.text` skills — those are
+  only offered on the four text-bearing entity surfaces the popup
+  actually renders on (`JournalEntry`, `JournalAudio`, `Task`,
+  `JournalImage`), matching the existing audio/image-modality
+  branches.
 
 ## [0.9.999]
 ### Added

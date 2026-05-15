@@ -35,7 +35,10 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasPromptsAsync = ref.watch(
-      hasAvailableSkillsProvider(journalEntity.id),
+      hasAvailableSkillsProvider((
+        entityId: journalEntity.id,
+        linkedFromId: linkedFromId,
+      )),
     );
 
     // Use hasValue to preserve the icon during refresh states.
@@ -245,13 +248,15 @@ class _UnifiedAiSkillsListState extends ConsumerState<UnifiedAiSkillsList> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
+    final params = (
+      entityId: widget.journalEntity.id,
+      linkedFromId: widget.linkedFromId,
+    );
+
     // React to provider changes via ref.listen so the build method stays
     // pure: drop hover state when the hovered skill is no longer in the
     // refreshed list (e.g., flag toggle removes a skill while hovered).
-    ref.listen(availableSkillsForEntityProvider(widget.journalEntity.id), (
-      previous,
-      next,
-    ) {
+    ref.listen(availableSkillsForEntityProvider(params), (previous, next) {
       final skills = next.value ?? const <AiConfigSkill>[];
       if (_hoveredSkillId != null &&
           !skills.any((skill) => skill.id == _hoveredSkillId) &&
@@ -261,10 +266,7 @@ class _UnifiedAiSkillsListState extends ConsumerState<UnifiedAiSkillsList> {
     });
 
     final skills =
-        ref
-            .watch(availableSkillsForEntityProvider(widget.journalEntity.id))
-            .value ??
-        [];
+        ref.watch(availableSkillsForEntityProvider(params)).value ?? [];
 
     if (skills.isEmpty) {
       return const SizedBox.shrink();

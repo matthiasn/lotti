@@ -10,7 +10,12 @@ const _logTag = 'ProfileAutomationResolver';
 /// Callback that returns the `profileId` stored on a task, or `null`.
 typedef TaskProfileLookup = Future<String?> Function(String taskId);
 
-/// Resolves the inference profile for a task's agent.
+/// Callback that returns the default `profileId` stored on a category, or
+/// `null` when the category has none configured.
+typedef CategoryProfileLookup = Future<String?> Function(String categoryId);
+
+/// Resolves the inference profile for a task's agent — or, for entries that
+/// have no parent task, for the entry's category.
 ///
 /// Wraps [ProfileResolver] with the extra step of looking up the task's agent
 /// identity, template, and version — then delegates to
@@ -20,22 +25,29 @@ typedef TaskProfileLookup = Future<String?> Function(String taskId);
 /// task carries an inherited `profileId` (from its category), the resolver
 /// falls back to direct profile resolution via [ProfileResolver.resolveByProfileId].
 ///
-/// Returns `null` if no profile can be resolved through either path.
+/// Standalone entries (audio notes, image notes) skip the task and resolve
+/// directly via [resolveForCategory], reading the category's
+/// `defaultProfileId`.
+///
+/// Returns `null` if no profile can be resolved through any path.
 class ProfileAutomationResolver {
   const ProfileAutomationResolver({
     required TaskAgentService taskAgentService,
     required AgentTemplateService templateService,
     required ProfileResolver profileResolver,
     TaskProfileLookup? taskProfileLookup,
+    CategoryProfileLookup? categoryProfileLookup,
   }) : _taskAgentService = taskAgentService,
        _templateService = templateService,
        _profileResolver = profileResolver,
-       _taskProfileLookup = taskProfileLookup;
+       _taskProfileLookup = taskProfileLookup,
+       _categoryProfileLookup = categoryProfileLookup;
 
   final TaskAgentService _taskAgentService;
   final AgentTemplateService _templateService;
   final ProfileResolver _profileResolver;
   final TaskProfileLookup? _taskProfileLookup;
+  final CategoryProfileLookup? _categoryProfileLookup;
 
   /// Resolves the profile for the given [taskId]'s agent.
   ///
@@ -50,6 +62,32 @@ class ProfileAutomationResolver {
 
     // 2. Fall back to the task's own profileId (inherited from category).
     return _resolveViaTaskProfile(taskId);
+  }
+
+  /// Resolves the profile from a category's `defaultProfileId`.
+  ///
+  /// Used for entries that have no parent task — the category's configured
+  /// inference profile is the only signal available. Returns `null` if no
+  /// lookup is wired, the category has no `defaultProfileId`, or the resolved
+  /// profile config cannot be loaded.
+  Future<ResolvedProfile?> resolveForCategory(String categoryId) async {
+    final lookup = _categoryProfileLookup;
+    if (lookup == null) return null;
+
+    final profileId = await lookup(categoryId);
+    if (profileId == null) {
+      developer.log(
+        'No defaultProfileId for category $categoryId',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    developer.log(
+      'Using category defaultProfileId $profileId for category $categoryId',
+      name: _logTag,
+    );
+    return _profileResolver.resolveByProfileId(profileId);
   }
 
   Future<ResolvedProfile?> _resolveViaAgent(String taskId) async {

@@ -149,7 +149,12 @@ In practice the builder may also inject:
 
 ## Profile Resolution
 
-`ProfileResolver` is the shared resolution engine for agent wakes. `ProfileAutomationResolver` wraps it for task-linked automation and adds one extra fallback to a task-level `profileId`.
+`ProfileResolver` is the shared resolution engine for agent wakes. `ProfileAutomationResolver` wraps it for skill execution and offers two entry points:
+
+- `resolveForTask(taskId)` — task-linked execution. Tries the agent path, then falls back to the task's own `profileId`.
+- `resolveForCategory(categoryId)` — standalone entries (no parent task). Reads `CategoryDefinition.defaultProfileId` and resolves it directly through `ProfileResolver.resolveByProfileId`.
+
+`triggerSkillProvider` selects between the two: when `linkedTaskId` is non-null it calls `resolveForTask`; otherwise it looks up the entry, reads its `categoryId`, and calls `resolveForCategory`. Skills whose `contextPolicy` is `fullTask` are filtered out of the popup for standalone entries (see [Skill Filtering](#skill-filtering) below), so the standalone branch only runs `dictionaryOnly` / `taskSummary` / `none` skills.
 
 Resolution order for the agent path:
 
@@ -158,19 +163,30 @@ Resolution order for the agent path:
 3. `AgentTemplateEntity.profileId`
 4. legacy fallback: `version.modelId ?? template.modelId`
 
-Resolution order for task automation:
+Resolution order for `resolveForTask`:
 
 1. try the agent path above
 2. if that fails, try the task's own `profileId`
+
+Resolution for `resolveForCategory`:
+
+1. read `CategoryDefinition.defaultProfileId`
+2. resolve it through `ProfileResolver.resolveByProfileId`
 
 Only the thinking slot is fatal. Optional slots resolve best-effort.
 
 ```mermaid
 flowchart TD
-  Task["Task-linked execution"] --> AutoResolve["ProfileAutomationResolver"]
-  AutoResolve --> AgentPath{"Agent/template available?"}
+  Trigger["triggerSkillProvider"] --> HasTask{"linkedTaskId != null?"}
+
+  HasTask -->|yes| TaskBranch["resolveForTask(taskId)"]
+  HasTask -->|no| CategoryBranch["Look up entity → resolveForCategory(entity.categoryId)"]
+
+  TaskBranch --> AgentPath{"Agent/template available?"}
   AgentPath -->|yes| ProfileResolve["ProfileResolver.resolve()"]
   AgentPath -->|no| TaskProfile["resolveByProfileId(task.profileId)"]
+
+  CategoryBranch --> CategoryProfile["resolveByProfileId(category.defaultProfileId)"]
 
   ProfileResolve --> Chain["agent profile -> version profile -> template profile -> legacy modelId"]
   Chain --> Thinking{"Thinking slot resolves?"}
@@ -178,7 +194,17 @@ flowchart TD
   Thinking -->|yes| Optional["Resolve optional slots if configured"]
   Optional --> Result["ResolvedProfile"]
   TaskProfile --> Result
+  CategoryProfile --> Result
 ```
+
+### Skill Filtering
+
+`availableSkillsForEntityProvider((entityId, linkedFromId))` filters the skill registry per entity. The popup uses it (via `hasAvailableSkillsProvider`) to decide what to show:
+
+- Modality filter — `Modality.audio` only matches `JournalAudio`, `Modality.image` only matches `JournalImage`, `Modality.text` matches any entity with text content (`JournalAudio` qualifies via its transcript).
+- Task-context filter — a skill is considered to "need a task" iff `contextPolicy == ContextPolicy.fullTask`. When the entity is not a `Task` and `linkedFromId` is null (a standalone entry), these skills are hidden. Same skill on a task or on an entry linked from a task remains visible.
+
+The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Task Context)`, `Generate Cover Art`, the coding/design/research prompt generators) are therefore hidden for standalone entries; only their plain counterparts (`Transcribe Audio`, `Analyze Image`) show up. `triggerSkillProvider` also has a defensive guard: a `fullTask` skill triggered without a `linkedTaskId` is captured as an event and aborted — the popup should never offer one in that state, so reaching it is a caller bug.
 
 ## Conversation and Tool Calling
 

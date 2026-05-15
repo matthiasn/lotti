@@ -525,4 +525,78 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('resolveForCategory', () {
+    test('resolves via category defaultProfileId when lookup wired', () async {
+      final resolverWithCategory = ProfileAutomationResolver(
+        taskAgentService: mockTaskAgentService,
+        templateService: mockTemplateService,
+        profileResolver: mockProfileResolver,
+        categoryProfileLookup: (categoryId) async {
+          if (categoryId == 'cat-journal') return 'category-profile-1';
+          return null;
+        },
+      );
+      final resolvedProfile = makeResolvedProfile();
+      when(
+        () => mockProfileResolver.resolveByProfileId('category-profile-1'),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      final result = await resolverWithCategory.resolveForCategory(
+        'cat-journal',
+      );
+
+      expect(result, equals(resolvedProfile));
+      verify(
+        () => mockProfileResolver.resolveByProfileId('category-profile-1'),
+      ).called(1);
+      // Agent path must not be consulted for the category fallback.
+      verifyNever(
+        () => mockTaskAgentService.getTaskAgentForTask(any()),
+      );
+    });
+
+    test('returns null when no category lookup is configured', () async {
+      final result = await resolver.resolveForCategory('cat-journal');
+
+      expect(result, isNull);
+      verifyNever(
+        () => mockProfileResolver.resolveByProfileId(any()),
+      );
+    });
+
+    test('returns null when category has no defaultProfileId', () async {
+      final resolverWithCategory = ProfileAutomationResolver(
+        taskAgentService: mockTaskAgentService,
+        templateService: mockTemplateService,
+        profileResolver: mockProfileResolver,
+        categoryProfileLookup: (_) async => null,
+      );
+
+      final result = await resolverWithCategory.resolveForCategory(
+        'cat-no-profile',
+      );
+
+      expect(result, isNull);
+      verifyNever(
+        () => mockProfileResolver.resolveByProfileId(any()),
+      );
+    });
+
+    test('returns null when profile cannot be loaded', () async {
+      final resolverWithCategory = ProfileAutomationResolver(
+        taskAgentService: mockTaskAgentService,
+        templateService: mockTemplateService,
+        profileResolver: mockProfileResolver,
+        categoryProfileLookup: (_) async => 'broken-profile',
+      );
+      when(
+        () => mockProfileResolver.resolveByProfileId('broken-profile'),
+      ).thenAnswer((_) async => null);
+
+      final result = await resolverWithCategory.resolveForCategory('cat');
+
+      expect(result, isNull);
+    });
+  });
 }
