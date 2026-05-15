@@ -1905,9 +1905,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get aiSetupResultReviewSetupButton => 'Verificați configurarea';
-
-  @override
   String get aiSetupResultStartUsingButton => 'Începeți să utilizați AI';
 
   @override

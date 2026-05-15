@@ -1898,9 +1898,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get aiSetupResultReviewSetupButton => 'Zkontrolovat nastavení';
-
-  @override
   String get aiSetupResultStartUsingButton => 'Začít používat AI';
 
   @override

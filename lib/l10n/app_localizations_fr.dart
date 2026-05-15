@@ -1903,9 +1903,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get aiSetupResultReviewSetupButton => 'Vérifier la configuration';
-
-  @override
   String get aiSetupResultStartUsingButton => 'Commencer à utiliser l\'IA';
 
   @override

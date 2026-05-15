@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
@@ -14,6 +15,7 @@ import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
@@ -1322,6 +1324,71 @@ void main() {
 
         // Now the edit page is pushed.
         expect(find.byType(InferenceProviderEditPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'FAB on the Providers tab — when the user previously tapped '
+      "'Don't show again' on the FTUE picker — opens the legacy "
+      'ProviderTypeSelectionModal (which lists every InferenceProviderType '
+      'including Ollama) instead of stranding the user on a '
+      'genericOpenAi-prefilled connect form. Picking Ollama routes to '
+      'InferenceProviderEditPage with preselectedType: ollama. Regression '
+      'guard for the reported "second provider only offers OpenAI-compatible" '
+      'bug',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        // Seed the dismiss flag so the FAB handler short-circuits past
+        // the rich AiPickProviderModal. The default MockSettingsDb stub
+        // returns null for every key; override only the dismiss key so
+        // the rest of the SettingsDb reads in the page continue to
+        // resolve cleanly.
+        final mockSettingsDb = getIt<SettingsDb>() as MockSettingsDb;
+        when(
+          () => mockSettingsDb.itemByKey(kAiPickProviderDismissedKey),
+        ).thenAnswer((_) async => 'true');
+
+        await pumpSeeded(
+          tester: tester,
+          initialTab: AiSettingsTab.providers,
+          providers: [
+            buildProvider(id: 'p1', type: InferenceProviderType.gemini),
+          ],
+          models: const <AiConfig>[],
+          profiles: const <AiConfig>[],
+        );
+
+        final fab = tester.widget<AiSettingsFloatingActionButton>(
+          find.byType(AiSettingsFloatingActionButton),
+        );
+        fab.onPressed();
+        // Drain the SettingsDb read + Wolt modal mount.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The legacy type-picker is now visible. The FTUE picker is
+        // NOT — that's the whole point of the dismiss flag.
+        expect(find.byType(ProviderTypeSelectionModal), findsOneWidget);
+        expect(find.byType(AiPickProviderModal), findsNothing);
+        // Sanity: the legacy modal renders every type including the
+        // ones the FTUE picker doesn't surface as branded tiles.
+        expect(find.text('Ollama'), findsOneWidget);
+
+        await tester.tap(find.text('Ollama'));
+        // Drain the pop + the subsequent navigateToCreateProvider push.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The connect form is now pushed, preselected to Ollama —
+        // the exact path the FTUE picker would have taken for an
+        // un-dismissed user. Proves the dismiss flag no longer
+        // strands the user on a genericOpenAi-default form.
+        final editPage = tester.widget<InferenceProviderEditPage>(
+          find.byType(InferenceProviderEditPage),
+        );
+        expect(editPage.preselectedType, InferenceProviderType.ollama);
       },
     );
   });

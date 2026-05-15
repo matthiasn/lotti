@@ -1895,9 +1895,6 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get aiSetupResultReviewSetupButton => 'Revisar configuración';
-
-  @override
   String get aiSetupResultStartUsingButton => 'Empezar a usar IA';
 
   @override

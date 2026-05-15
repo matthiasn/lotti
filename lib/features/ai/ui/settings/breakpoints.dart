@@ -17,3 +17,14 @@ const double aiSettingsGridColumnBreakpoint = 700;
 /// field + the "+ Add provider" CTA side-by-side and stacks them
 /// vertically.
 const double aiSettingsHeaderStackBreakpoint = 600;
+
+/// Inner-modal width above which the FTUE result modal switches from
+/// the mobile bottom-sheet (CTA fills the row) to the desktop / tablet
+/// dialog (CTA pinned to the right edge with a comfortable cap).
+const double aiSetupResultDesktopBreakpoint = 480;
+
+/// Cap on the FTUE result modal's CTA width on the desktop / tablet
+/// dialog. Below the cap the button hugs the right edge of the modal;
+/// above it the button stops stretching so it doesn't read as a
+/// form-save bar.
+const double aiSetupResultDesktopCtaMaxWidth = 280;

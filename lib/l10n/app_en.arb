@@ -1120,7 +1120,6 @@
       }
     }
   },
-  "aiSetupResultReviewSetupButton": "Review setup",
   "aiSetupResultStartUsingButton": "Start using AI",
   "aiSetupWizardCreatesOptimized": "Creates optimized models, prompts, and a test category",
   "aiSetupWizardDescription": "Set up or refresh models, prompts, and test category for {providerName}",

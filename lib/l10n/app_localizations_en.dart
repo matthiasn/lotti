@@ -1872,9 +1872,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get aiSetupResultReviewSetupButton => 'Review setup';
-
-  @override
   String get aiSetupResultStartUsingButton => 'Start using AI';
 
   @override

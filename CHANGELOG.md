@@ -80,8 +80,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   background brightness instead of a fixed palette colour, so
   the label stays legible on dark category colours (e.g. the
   seeded Ollama charcoal `#0F172A`) and bright ones alike.
+- AI provider setup-result modal (the post-FTUE
+  "{Provider} is connected" sheet) now ships a single
+  "Start using AI" CTA instead of a secondary "Review setup"
+  button alongside it. The CTA fills the row on mobile-width
+  surfaces and pins to the right with a comfortable cap on
+  desktop / tablet dialog widths, so the one-button footer
+  reads as a deliberate primary action at every breakpoint.
 
 ### Fixed
+- Adding a second provider after tapping "Don't show again" on the
+  FTUE pick-provider modal no longer strands the user on a
+  `genericOpenAi`-prefilled connect form. The dismiss flag
+  (`AI_PICK_PROVIDER_DISMISSED`) was routing every subsequent
+  "+ Add provider" tap to `navigateToCreateProvider(context)` with
+  no `preselectedType`, and `InferenceProviderFormController.build`
+  defaults to `genericOpenAi` in that case — so users who'd set up
+  Gemini first and then wanted Ollama saw an "OpenAI-compatible
+  setup" with no surfaced way to switch types. The handler now
+  routes dismissed users through the legacy
+  `ProviderTypeSelectionModal` (a new `showForResult` entry point
+  resolves with the picked type via a `Completer`) which lists
+  every `InferenceProviderType` including Ollama, Voxtral, Whisper,
+  OpenRouter, Nebius, and the generic OpenAI fallback — so the
+  "start with Gemini, then add Ollama" workflow now works the
+  same regardless of whether the dismiss flag is set.
 - Speech recognition (and other entry-level AI skills) now run on
   standalone audio/text/image entries that have no parent task,
   using the entry category's default inference profile. Previously

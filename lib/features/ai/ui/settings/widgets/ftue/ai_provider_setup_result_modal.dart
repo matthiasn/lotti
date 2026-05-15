@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -9,9 +10,6 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Action the user picked in the result modal.
 enum AiProviderSetupResultAction {
-  /// `Review setup` — caller should navigate to the AI Settings page.
-  reviewSetup,
-
   /// `Start using AI` — caller should close the FTUE flow and return
   /// the user to wherever they were before opening it.
   startUsingAi,
@@ -159,9 +157,8 @@ class AiProviderSetupResultData {
 /// - Created inference profile {Profile}
 /// - Set up test category {Category} to try it out
 ///
-/// Footer: `Review setup` (jumps to AI Settings) and `Start using AI`
-/// (closes the flow). Errors render in a tinted section below the
-/// bullets when present.
+/// Footer: a single `Start using AI` CTA that closes the flow.
+/// Errors render in a tinted section below the bullets when present.
 ///
 /// Replaces the old `FtueResultDialog`.
 class AiProviderSetupResultModal extends StatelessWidget {
@@ -259,9 +256,6 @@ class AiProviderSetupResultModal extends StatelessWidget {
         ],
         SizedBox(height: tokens.spacing.step6),
         _Actions(
-          onReviewSetup: () => Navigator.of(context).pop(
-            AiProviderSetupResultAction.reviewSetup,
-          ),
           onStart: () => Navigator.of(context).pop(
             AiProviderSetupResultAction.startUsingAi,
           ),
@@ -358,34 +352,40 @@ class _ErrorsBlock extends StatelessWidget {
 }
 
 class _Actions extends StatelessWidget {
-  const _Actions({required this.onReviewSetup, required this.onStart});
+  const _Actions({required this.onStart});
 
-  final VoidCallback onReviewSetup;
   final VoidCallback onStart;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final messages = context.messages;
-    // Use Wrap so the two buttons reflow onto a second line on narrow
-    // surfaces instead of overflowing the modal's content width.
-    return Wrap(
-      alignment: WrapAlignment.end,
-      spacing: tokens.spacing.step3,
-      runSpacing: tokens.spacing.step3,
-      children: [
-        DesignSystemButton(
-          label: messages.aiSetupResultReviewSetupButton,
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.large,
-          onPressed: onReviewSetup,
-        ),
-        DesignSystemButton(
-          label: messages.aiSetupResultStartUsingButton,
-          size: DesignSystemButtonSize.large,
-          onPressed: onStart,
-        ),
-      ],
+    final button = DesignSystemButton(
+      label: messages.aiSetupResultStartUsingButton,
+      size: DesignSystemButtonSize.large,
+      onPressed: onStart,
+    );
+    // Above [aiSetupResultDesktopBreakpoint] the modal is the desktop /
+    // tablet dialog rather than the mobile bottom-sheet, so the CTA
+    // gets pinned to the right edge with a comfortable cap instead of
+    // stretching to the full modal width (which reads as a "form save"
+    // bar at that size). Below it, the CTA fills the row — the
+    // standard mobile primary-button pattern.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= aiSetupResultDesktopBreakpoint) {
+          return Align(
+            alignment: Alignment.centerRight,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: 160,
+                maxWidth: aiSetupResultDesktopCtaMaxWidth,
+              ),
+              child: button,
+            ),
+          );
+        }
+        return SizedBox(width: double.infinity, child: button);
+      },
     );
   }
 }

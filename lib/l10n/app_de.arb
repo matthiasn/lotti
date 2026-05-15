@@ -927,7 +927,6 @@
       }
     }
   },
-  "aiSetupResultReviewSetupButton": "Einrichtung prüfen",
   "aiSetupResultStartUsingButton": "KI verwenden",
   "aiSetupWizardCreatesOptimized": "Erstellt optimierte Modelle, Prompts und eine Testkategorie",
   "aiSetupWizardDescription": "Modelle, Prompts und Testkategorie für {providerName} einrichten oder aktualisieren",
