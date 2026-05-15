@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
+import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_filter_chips.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
@@ -629,14 +630,19 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     final providerIdByModelProviderModelId = <String, String>{
       for (final m in models) m.providerModelId: m.inferenceProviderId,
     };
+    // A profile earns the Active badge iff it's the winning candidate
+    // for at least one configured provider — same rule the detail
+    // page uses for its "Active profile" section.
+    final activeProfileIds = activeProfileIdsForProviders(
+      providers: providers,
+      models: models,
+      profiles: profiles,
+    );
 
     AiProfileCard buildCard(AiConfigInferenceProfile profile) {
       return AiProfileCard(
         profile: profile,
-        // PR-3 approximation: seeded `isDefault: true` profiles wear
-        // the Active badge. The full active-profile concept (one
-        // active per device or per provider) is a separate ticket.
-        isActive: profile.isDefault,
+        isActive: activeProfileIds.contains(profile.id),
         providerTypeFor: () => _providerTypeForProfile(
           profile,
           providerIdByModelProviderModelId,

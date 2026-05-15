@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
+import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
@@ -178,7 +179,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
             orElse: () => const <AiConfigModel>[],
           );
           final activeProfile = profilesAsync.maybeWhen(
-            data: (rows) => _pickActiveProfileForProvider(
+            data: (rows) => pickActiveProfileForProvider(
               profiles: rows.whereType<AiConfigInferenceProfile>().toList(),
               providerModels: models,
             ),
@@ -253,44 +254,6 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
     if (!removed || !mounted) return;
     await popAiSettingsDetail(context);
   }
-}
-
-/// Picks the inference profile that best represents the "active
-/// profile for this provider". Heuristic:
-/// 1. If any default-marked profile has at least one of its slots
-///    pointing at a model owned by [providerModels], that's the
-///    winner.
-/// 2. Otherwise, the first profile whose slots reference one of
-///    [providerModels].
-/// 3. Returns null if no profile touches any of the provider's
-///    models — keeps the active-profile section from showing a
-///    misleading "active" tile for a provider that isn't actually
-///    wired into any profile yet.
-AiConfigInferenceProfile? _pickActiveProfileForProvider({
-  required List<AiConfigInferenceProfile> profiles,
-  required List<AiConfigModel> providerModels,
-}) {
-  if (providerModels.isEmpty || profiles.isEmpty) return null;
-  final providerModelIds = providerModels.map((m) => m.providerModelId).toSet();
-
-  bool touchesProvider(AiConfigInferenceProfile p) {
-    final slots = <String?>[
-      p.thinkingModelId,
-      p.thinkingHighEndModelId,
-      p.imageRecognitionModelId,
-      p.transcriptionModelId,
-      p.imageGenerationModelId,
-    ];
-    return slots.any(
-      (slot) => slot != null && providerModelIds.contains(slot),
-    );
-  }
-
-  final defaults = profiles.where((p) => p.isDefault).where(touchesProvider);
-  if (defaults.isNotEmpty) return defaults.first;
-  final anyMatching = profiles.where(touchesProvider);
-  if (anyMatching.isNotEmpty) return anyMatching.first;
-  return null;
 }
 
 class _DetailBody extends StatelessWidget {
@@ -703,7 +666,10 @@ class _ActiveProfileSection extends StatelessWidget {
       title: messages.aiProviderDetailActiveProfileTitle,
       child: AiProfileCard(
         profile: profile,
-        isActive: profile.isDefault,
+        // The section only renders when [pickActiveProfileForProvider]
+        // has already chosen this profile for this provider, so the
+        // Active badge always applies here.
+        isActive: true,
         providerTypeFor: () => providerType,
         modelLookup: (id) => modelNamesById[id],
         onTap: () => onProfileTap(profile),
