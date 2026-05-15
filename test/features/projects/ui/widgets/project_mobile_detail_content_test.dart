@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -182,29 +183,29 @@ void main() {
       (
         tester,
       ) async {
-        final record = makeTestProjectRecord(
-          reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
-          // Must be in the future relative to DateTime.now() because the
-          // widget's _remainingSeconds() computes against the real clock.
-          // ignore: avoid_redundant_argument_values
-          reportNextWakeAt: DateTime(2099, 1, 1),
-        );
+        final now = DateTime(2026, 3, 28, 1, 18);
+        await withClock(Clock.fixed(now), () async {
+          final record = makeTestProjectRecord(
+            reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
+            reportNextWakeAt: now.add(const Duration(seconds: 90)),
+          );
 
-        await tester.pumpWidget(
-          wrap(
-            ProjectMobileDetailContent(
-              record: record,
-              currentTime: DateTime(2026, 3, 28, 1, 18),
-              onRefreshReport: () {},
+          await tester.pumpWidget(
+            wrap(
+              ProjectMobileDetailContent(
+                record: record,
+                currentTime: now,
+                onRefreshReport: () {},
+              ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-        expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
-        expect(find.textContaining('Updated 1m ago'), findsOneWidget);
-        expect(find.textContaining('↻'), findsNothing);
+          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+          expect(find.byType(ShowcaseCountdownPill), findsOneWidget);
+          expect(find.textContaining('Updated 1m ago'), findsOneWidget);
+          expect(find.textContaining('↻'), findsNothing);
+        });
       },
     );
 
@@ -214,37 +215,39 @@ void main() {
       'the same callback the project details page wires up',
       (tester) async {
         var cancelCount = 0;
-        final record = makeTestProjectRecord(
-          reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
-          // ignore: avoid_redundant_argument_values
-          reportNextWakeAt: DateTime(2099, 1, 1),
-        );
+        final now = DateTime(2026, 3, 28, 1, 18);
+        await withClock(Clock.fixed(now), () async {
+          final record = makeTestProjectRecord(
+            reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
+            reportNextWakeAt: now.add(const Duration(seconds: 90)),
+          );
 
-        await tester.pumpWidget(
-          wrap(
-            ProjectMobileDetailContent(
-              record: record,
-              currentTime: DateTime(2026, 3, 28, 1, 18),
-              onRefreshReport: () {},
-              onCancelScheduledReportWake: () => cancelCount++,
+          await tester.pumpWidget(
+            wrap(
+              ProjectMobileDetailContent(
+                record: record,
+                currentTime: now,
+                onRefreshReport: () {},
+                onCancelScheduledReportWake: () => cancelCount++,
+              ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        // Verify the prop reached the inner widget (catches a wiring bug
-        // earlier than tapping would).
-        final report = tester.widget<ExpandableReportSection>(
-          find.byType(ExpandableReportSection),
-        );
-        expect(report.onCancelScheduledWake, isNotNull);
+          // Verify the prop reached the inner widget (catches a wiring bug
+          // earlier than tapping would).
+          final report = tester.widget<ExpandableReportSection>(
+            find.byType(ExpandableReportSection),
+          );
+          expect(report.onCancelScheduledWake, isNotNull);
 
-        // Then prove the callback is the same one we passed by invoking
-        // it via the inner widget — `find.byIcon(Icons.close_rounded)`
-        // would also match the X on individual recommendation tiles, so
-        // we drive the report-section callback directly.
-        report.onCancelScheduledWake!();
-        expect(cancelCount, 1);
+          // Then prove the callback is the same one we passed by invoking
+          // it via the inner widget — `find.byIcon(Icons.close_rounded)`
+          // would also match the X on individual recommendation tiles, so
+          // we drive the report-section callback directly.
+          report.onCancelScheduledWake!();
+          expect(cancelCount, 1);
+        });
       },
     );
 
@@ -252,27 +255,29 @@ void main() {
       'leaves the ExpandableReportSection cancel callback null when the '
       'page does not pass onCancelScheduledReportWake (no agent identity)',
       (tester) async {
-        final record = makeTestProjectRecord(
-          reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
-          // ignore: avoid_redundant_argument_values
-          reportNextWakeAt: DateTime(2099, 1, 1),
-        );
+        final now = DateTime(2026, 3, 28, 1, 18);
+        await withClock(Clock.fixed(now), () async {
+          final record = makeTestProjectRecord(
+            reportUpdatedAt: DateTime(2026, 3, 28, 1, 17),
+            reportNextWakeAt: now.add(const Duration(seconds: 90)),
+          );
 
-        await tester.pumpWidget(
-          wrap(
-            ProjectMobileDetailContent(
-              record: record,
-              currentTime: DateTime(2026, 3, 28, 1, 18),
-              onRefreshReport: () {},
+          await tester.pumpWidget(
+            wrap(
+              ProjectMobileDetailContent(
+                record: record,
+                currentTime: now,
+                onRefreshReport: () {},
+              ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        final report = tester.widget<ExpandableReportSection>(
-          find.byType(ExpandableReportSection),
-        );
-        expect(report.onCancelScheduledWake, isNull);
+          final report = tester.widget<ExpandableReportSection>(
+            find.byType(ExpandableReportSection),
+          );
+          expect(report.onCancelScheduledWake, isNull);
+        });
       },
     );
   });

@@ -201,6 +201,9 @@ The detail pages pull from a few separate inputs:
 - summary freshness and scheduled wake state
 - active recommendation entities
 - derived `ProjectRecord` presentation data
+- project-agent wake controls on the report section, including a refresh
+  action, optional cancel action, and a countdown label formatted as `m:ss`
+  below one hour or `h:mm:ss` once an hour cell is needed
 
 ```mermaid
 flowchart LR

@@ -919,11 +919,18 @@ String showcaseUpdatedLabel(
       .replaceAll(' ↻', '');
 }
 
-/// Formats a countdown as `m:ss` for display.
+/// Formats a countdown as `m:ss` below one hour and `h:mm:ss` once an hour
+/// cell is needed.
 String formatCountdown(int totalSeconds) {
-  final minutes = totalSeconds ~/ 60;
-  final seconds = totalSeconds % 60;
-  return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  final clamped = totalSeconds < 0 ? 0 : totalSeconds;
+  final hours = clamped ~/ 3600;
+  final minutes = (clamped % 3600) ~/ 60;
+  final seconds = clamped % 60;
+  final ss = seconds.toString().padLeft(2, '0');
+  if (hours == 0) {
+    return '$minutes:$ss';
+  }
+  return '$hours:${minutes.toString().padLeft(2, '0')}:$ss';
 }
 
 class _ReportCountdownPill extends StatefulWidget {

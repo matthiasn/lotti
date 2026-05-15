@@ -416,6 +416,11 @@ void main() {
           {projectEntityUpdateNotification(projectId)},
           reason: '$scenario',
         );
+        expect(
+          subscriptions.single.deferPropagatedMatches,
+          isTrue,
+          reason: '$scenario',
+        );
         verify(
           () => generatedOrchestrator.enqueueManualWake(
             agentId: agentId,
@@ -501,6 +506,7 @@ void main() {
           subscription.matchEntityIds,
           {projectEntityUpdateNotification('project-1')},
         );
+        expect(subscription.deferPropagatedMatches, isTrue);
 
         // Verify creation wake was enqueued.
         verify(

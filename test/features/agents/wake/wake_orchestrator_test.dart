@@ -4562,6 +4562,62 @@ void main() {
       );
 
       test(
+        'a task-agent propagated match can opt out of the 06:00 deferral '
+        'and use the standard 120 s throttle window',
+        () {
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(
+                  makeSub(
+                    matchEntityIds: {'task-child-update'},
+                    deferPropagatedMatches: false,
+                  ),
+                );
+
+              when(
+                () => mockRepository.getAgentState('agent-1'),
+              ).thenAnswer(
+                (_) async =>
+                    AgentDomainEntity.agentState(
+                          id: 'state-1',
+                          agentId: 'agent-1',
+                          revision: 0,
+                          slots: const AgentSlots(),
+                          updatedAt: now,
+                          vectorClock: null,
+                        )
+                        as AgentStateEntity,
+              );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              emitTokens(async, controller, {
+                propagatedNotification('task-child-update'),
+              });
+
+              final captured = verify(
+                () => mockRepository.upsertEntity(captureAny()),
+              ).captured;
+              final state = captured.last as AgentStateEntity;
+              expect(
+                state.nextWakeAt,
+                now.add(const Duration(seconds: 120)),
+                reason:
+                    'task-agent child updates should refresh on the normal '
+                    'coalesced wake path, not wait until 06:00',
+              );
+              expect(queue.hasDirectQueuedJobFor('agent-1'), isTrue);
+            });
+          });
+        },
+      );
+
+      test(
         'a direct match keeps the existing 120 s throttle window even when '
         'an unrelated propagated token sits alongside it in the same batch',
         () {

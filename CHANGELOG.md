@@ -94,6 +94,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status pills no longer report "Invalid key". The status helper only
   exempted Ollama; it now uses `ProviderConfig.noApiKeyRequired`, so
   all three local providers share the same base-URL + model-count gate.
+- Agent wake-cycle countdowns now switch to `h:mm:ss` once a scheduled wake is
+  more than an hour away, so next-morning wake deadlines no longer appear as
+  giant minute counts like `385:20` in task/project AI report cards. Task-agent
+  propagated updates also use the normal 120-second coalesced wake path instead
+  of being pushed to the next 06:00 digest slot, and live wake titles now update
+  across repeated agent-originated task title changes.
 - Speech recognition (and other entry-level AI skills) now run on
   standalone audio/text/image entries that have no parent task,
   using the entry category's default inference profile. Previously

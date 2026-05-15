@@ -60,13 +60,9 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
 });
 
 // Returns the raw `Set<String>` from `UpdateNotifications` rather than
-// `void`: Riverpod deduplicates `AsyncData` values using `==`, and
-// `AsyncData<void>(null) == AsyncData<void>(null)` is true — so a
-// `Stream<void>` would only notify watchers on the very first
-// emission and silently drop every subsequent one. Each emitted set
-// is identity-distinct, so `pendingWakeTargetTitleProvider` actually
-// re-runs when the linked task is renamed after a previously-blank
-// title. Same fix shape as `agentUpdateStreamProvider`.
+// `void`: Riverpod deduplicates `AsyncData` values using `==`, and repeated
+// `AsyncData<void>(null)` emissions compare equal. Keeping the emitted set
+// lets `pendingWakeTargetTitleProvider` re-run for every linked-entry update.
 final StreamProviderFamily<Set<String>, String> _entryUpdateProvider =
     StreamProvider.autoDispose.family<Set<String>, String>((
       ref,

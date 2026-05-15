@@ -234,6 +234,7 @@ extension _AgentHandlers on SyncEventProcessor {
               id: '${resolvedEntity.agentId}_task_${link.toId}',
               agentId: resolvedEntity.agentId,
               matchEntityIds: {link.toId},
+              deferPropagatedMatches: false,
             ),
           );
         }
@@ -324,6 +325,7 @@ extension _AgentHandlers on SyncEventProcessor {
                 id: subscriptionId,
                 agentId: resolvedLink.fromId,
                 matchEntityIds: {resolvedLink.toId},
+                deferPropagatedMatches: false,
               ),
             );
           }

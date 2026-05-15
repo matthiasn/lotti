@@ -69,6 +69,31 @@ void main() {
       });
     });
 
+    testWidgets('long scheduled wake countdown uses h:mm:ss format', (
+      tester,
+    ) async {
+      final now = DateTime(2026, 5, 4, 23, 20, 46);
+      await withClock(Clock.fixed(now), () async {
+        final state = makeTestState(
+          nextWakeAt: now.add(
+            const Duration(hours: 5, minutes: 39, seconds: 14),
+          ),
+        );
+        final bench = AgentTestBench(
+          state: state,
+          report: makeTestReport(tldr: 'Tldr line.'),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(find.text('5:39:14'), findsOneWidget);
+        expect(find.text('339:14'), findsNothing);
+      });
+    });
+
     testWidgets('cancel-timer button cancels the scheduled wake', (
       tester,
     ) async {

@@ -16,12 +16,14 @@ AgentSubscription makeSub({
   String agentId = 'agent-1',
   Set<String> matchEntityIds = const {'entity-1'},
   bool Function(Set<String> tokens)? predicate,
+  bool deferPropagatedMatches = true,
 }) {
   return AgentSubscription(
     id: id,
     agentId: agentId,
     matchEntityIds: matchEntityIds,
     predicate: predicate,
+    deferPropagatedMatches: deferPropagatedMatches,
   );
 }
 
