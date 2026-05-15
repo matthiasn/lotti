@@ -1215,6 +1215,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Utiliser le raisonnement';
 
   @override
+  String aiDeleteToastCascadeDescription(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modèles aussi supprimés : $names',
+      one: '1 modèle aussi supprimé : $names',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiDeleteToastErrorTitle(String name) {
+    return 'Impossible de supprimer $name';
+  }
+
+  @override
+  String get aiDeleteToastModelTitle => 'Modèle supprimé';
+
+  @override
+  String get aiDeleteToastProfileTitle => 'Profil supprimé';
+
+  @override
+  String get aiDeleteToastPromptTitle => 'Prompt supprimé';
+
+  @override
+  String get aiDeleteToastProviderTitle => 'Fournisseur supprimé';
+
+  @override
+  String get aiDeleteToastSkillTitle => 'Compétence supprimée';
+
+  @override
+  String get aiDeleteToastUndoAction => 'Annuler';
+
+  @override
   String get aiFormCancel => 'Annuler';
 
   @override
@@ -1387,13 +1421,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vérification de la clé, liste des modèles disponibles…';
 
   @override
-  String aiProviderConnectionFailedHttpDetail(int status, String message) {
-    return 'HTTP $status · $message';
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Forme de réponse inattendue : $type';
   }
 
   @override
-  String aiProviderConnectionFailedBadResponseDetail(String type) {
-    return 'Forme de réponse inattendue : $type';
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
   }
 
   @override
@@ -1585,19 +1619,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderTaglineAnthropic =>
-      'Claude Sonnet · raisonnement à long contexte';
+  String get aiProviderSetupOptionGeminiDescription =>
+      'Modèles multimodaux avec transcription audio. Nécessite une clé API.';
 
   @override
-  String get aiProviderTaglineGemini =>
-      'Offre gratuite · multimodal · transcription audio';
+  String get aiProviderSetupOptionMistralDescription =>
+      'IA européenne avec raisonnement (Magistral) et audio (Voxtral).';
+
+  @override
+  String get aiProviderSetupOptionOpenAiDescription =>
+      'Modèles GPT pour chat et raisonnement. Nécessite une clé API avec crédits.';
+
+  @override
+  String get aiProviderTaglineAnthropic => 'Famille Claude · contexte long';
+
+  @override
+  String get aiProviderTaglineGemini => 'Multimodal · transcription audio';
 
   @override
   String get aiProviderTaglineOllama =>
-      'S\'exécute sur ton Mac · zéro appel cloud';
+      'S\'exécute en local · aucun appel cloud';
 
   @override
-  String get aiProviderTaglineOpenAi => 'Raisonnement phare · famille GPT-5.2';
+  String get aiProviderTaglineOpenAi => 'Famille GPT · vision + raisonnement';
 
   @override
   String get aiProviderUnknownName => 'Fournisseur d\'IA';

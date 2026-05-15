@@ -654,7 +654,12 @@ class AiProfileCard extends StatelessWidget {
                     providerType: providerType,
                   ),
                   SizedBox(width: iconGap),
-                  Flexible(
+                  // `Expanded` (instead of `Flexible + Spacer`) claims
+                  // every pixel between the icon and the trailing
+                  // menu, so the `⋯` always pins to the card's right
+                  // edge — matching the provider card and avoiding
+                  // the "menu floats next to a long name" look.
+                  Expanded(
                     child: Text(
                       profile.name,
                       style: tokens.typography.styles.subtitle.subtitle1
@@ -672,7 +677,6 @@ class AiProfileCard extends StatelessWidget {
                       tone: DesignSystemBadgeTone.success,
                     ),
                   ],
-                  const Spacer(),
                   AiCardActionMenuButton(actions: menuActions),
                 ],
               ),

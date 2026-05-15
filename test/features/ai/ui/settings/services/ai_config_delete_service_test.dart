@@ -126,9 +126,12 @@ void main() {
             ),
           ).called(1);
 
-          // Check snackbar appears
-          expect(find.text('Provider deleted successfully'), findsOneWidget);
-          expect(find.text('2 associated models deleted'), findsOneWidget);
+          // Check DS toast appears with cascade description
+          expect(find.text('Provider deleted'), findsOneWidget);
+          expect(
+            find.text('Also removed 2 models: Model 1, Model 2'),
+            findsOneWidget,
+          );
           expect(find.text('Undo'), findsOneWidget);
         },
       );
@@ -164,7 +167,7 @@ void main() {
         verifyNever(
           () => mockRepository.deleteInferenceProviderWithModels(any()),
         );
-        expect(find.text('Provider deleted successfully'), findsNothing);
+        expect(find.text('Provider deleted'), findsNothing);
       });
     });
 
@@ -203,7 +206,7 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(() => mockRepository.deleteConfig(testModel.id)).called(1);
-        expect(find.text('Model deleted successfully'), findsOneWidget);
+        expect(find.text('Model deleted'), findsOneWidget);
         expect(find.text('Undo'), findsOneWidget);
       });
     });
@@ -243,7 +246,7 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(() => mockRepository.deleteConfig(testPrompt.id)).called(1);
-        expect(find.text('Prompt deleted successfully'), findsOneWidget);
+        expect(find.text('Prompt deleted'), findsOneWidget);
         expect(find.text('Undo'), findsOneWidget);
       });
     });
@@ -288,7 +291,7 @@ void main() {
         // Assert
         expect(result, isTrue);
         verify(() => mockRepository.deleteConfig(testProfile.id)).called(1);
-        expect(find.text('Profile deleted successfully'), findsOneWidget);
+        expect(find.text('Profile deleted'), findsOneWidget);
         expect(find.text('Undo'), findsOneWidget);
       });
 
@@ -365,7 +368,10 @@ void main() {
 
         // Assert
         expect(result, isFalse);
-        expect(find.text('Failed to delete ${testModel.name}'), findsOneWidget);
+        expect(
+          find.text("Couldn't delete ${testModel.name}"),
+          findsOneWidget,
+        );
         expect(find.text('Exception: $errorMessage'), findsOneWidget);
       });
 
@@ -405,7 +411,7 @@ void main() {
         // Assert
         expect(result, isFalse);
         expect(
-          find.text('Failed to delete ${testProvider.name}'),
+          find.text("Couldn't delete ${testProvider.name}"),
           findsOneWidget,
         );
       });
@@ -440,7 +446,12 @@ void main() {
         await tester.tap(find.text('Delete Model'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        // Mirror the DS toast messenger tests: schedule a frame to
+        // resolve the tap, then advance the clock past the dialog
+        // dismiss + SnackBar slide-in animations. We can't settle
+        // because the toast's countdown animation runs the full 5 s.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
 
         // Undo the deletion
         await tester.tap(find.text('Undo'));
@@ -486,7 +497,8 @@ void main() {
         await tester.tap(find.text('Delete Provider'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
 
         // Undo the deletion
         await tester.tap(find.text('Undo'));
@@ -532,7 +544,8 @@ void main() {
         await tester.tap(find.text('Delete Model'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
         await tester.tap(find.text('Undo'));
         await tester.pumpAndSettle();
 
@@ -649,9 +662,9 @@ void main() {
       );
     });
 
-    group('Snackbar UI and Behavior', () {
+    group('DS Toast UI and Behavior', () {
       testWidgets(
-        'should display provider deletion snackbar with cascade info',
+        'should display provider deletion toast with cascade description',
         (WidgetTester tester) async {
           // Arrange
           final cascadeResult = CascadeDeletionResult(
@@ -682,66 +695,80 @@ void main() {
           await tester.tap(find.text('Delete Provider'));
           await tester.pumpAndSettle();
           await tester.tap(find.text('Delete'));
-          await tester.pumpAndSettle();
+          // Don't fully settle — the countdown timer never stops, so
+          // pumpAndSettle would time out. A single frame is enough for
+          // the toast to render.
+          await tester.pump();
 
-          // Assert snackbar content
-          expect(find.byIcon(Icons.delete_forever_outlined), findsOneWidget);
-          expect(find.text('Provider deleted successfully'), findsOneWidget);
-          expect(find.text('2 associated models deleted'), findsOneWidget);
-          expect(find.text('Model 1'), findsOneWidget);
-          expect(find.text('Model 2'), findsOneWidget);
+          // Assert DS toast content
+          expect(find.text('Provider deleted'), findsOneWidget);
+          expect(
+            find.text('Also removed 2 models: Model 1, Model 2'),
+            findsOneWidget,
+          );
           expect(find.text('Undo'), findsOneWidget);
+          // Success/warning tone glyph from the DS toast spec.
+          expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
         },
       );
 
-      testWidgets('should handle many associated models in snackbar', (
-        WidgetTester tester,
-      ) async {
-        // Arrange - Create many associated models
-        final manyModels = List.generate(
-          6,
-          (index) => AiTestDataFactory.createTestModel(
-            id: 'model-$index',
-            name: 'Model $index',
-            inferenceProviderId: testProvider.id,
-          ),
-        );
+      testWidgets(
+        'should list every model name in cascade description, even when many',
+        (WidgetTester tester) async {
+          // Arrange — many associated models. The DS toast description
+          // is a single string; visual ellipsis is purely cosmetic, so
+          // the full joined list still matches `find.text`.
+          final manyModels = List.generate(
+            6,
+            (index) => AiTestDataFactory.createTestModel(
+              id: 'model-$index',
+              name: 'Model $index',
+              inferenceProviderId: testProvider.id,
+            ),
+          );
 
-        final cascadeResult = CascadeDeletionResult(
-          deletedModels: manyModels,
-          providerName: testProvider.name,
-        );
+          final cascadeResult = CascadeDeletionResult(
+            deletedModels: manyModels,
+            providerName: testProvider.name,
+          );
 
-        when(
-          () =>
-              mockRepository.deleteInferenceProviderWithModels(testProvider.id),
-        ).thenAnswer((_) async => cascadeResult);
+          when(
+            () => mockRepository.deleteInferenceProviderWithModels(
+              testProvider.id,
+            ),
+          ).thenAnswer((_) async => cascadeResult);
 
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Delete Provider'),
-            onPressed: (context, ref) async {
-              await deleteService.deleteConfig(
-                context: context,
-                ref: ref,
-                config: testProvider,
-              );
-            },
-          ),
-        );
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Provider'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testProvider,
+                );
+              },
+            ),
+          );
 
-        // Act
-        await tester.tap(find.text('Delete Provider'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+          // Act
+          await tester.tap(find.text('Delete Provider'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete'));
+          await tester.pump();
 
-        // Assert - Should show truncated list
-        expect(find.text('6 associated models deleted'), findsOneWidget);
-        expect(find.text('Model 0, Model 1 and 4 more'), findsOneWidget);
-      });
+          // Assert: description carries the joined list of all 6 names.
+          expect(
+            find.text(
+              'Also removed 6 models: Model 0, Model 1, Model 2, Model 3, '
+              'Model 4, Model 5',
+            ),
+            findsOneWidget,
+          );
+        },
+      );
 
-      testWidgets('should display error snackbar with correct styling', (
+      testWidgets('should display error toast with error tone', (
         WidgetTester tester,
       ) async {
         // Arrange
@@ -767,11 +794,15 @@ void main() {
         await tester.tap(find.text('Delete Model'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        // Assert error snackbar
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
-        expect(find.text('Failed to delete ${testModel.name}'), findsOneWidget);
+        // Assert error DS toast: error-tone glyph + localized title +
+        // error detail in the description.
+        expect(find.byIcon(Icons.error_rounded), findsOneWidget);
+        expect(
+          find.text("Couldn't delete ${testModel.name}"),
+          findsOneWidget,
+        );
         expect(find.text('Exception: $errorMessage'), findsOneWidget);
       });
     });
@@ -837,11 +868,12 @@ void main() {
           await tester.tap(find.text('Delete Provider'));
           await tester.pumpAndSettle();
           await tester.tap(find.text('Delete'));
-          await tester.pumpAndSettle();
+          await tester.pump();
 
-          // Assert - Should not show cascade information
-          expect(find.text('Provider deleted successfully'), findsOneWidget);
-          expect(find.text('associated models deleted'), findsNothing);
+          // Assert - Title fires, but no cascade description because
+          // no models were associated with the provider.
+          expect(find.text('Provider deleted'), findsOneWidget);
+          expect(find.textContaining('Also removed'), findsNothing);
         },
       );
     });

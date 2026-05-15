@@ -373,6 +373,31 @@
   "aiConfigSelectProviderModalTitle": "Vyberte poskytovatele inferencí",
   "aiConfigSelectProviderTypeModalTitle": "Vyberte typ poskytovatele",
   "aiConfigUseReasoningFieldLabel": "Použít uvažování",
+  "aiDeleteToastCascadeDescription": "{count, plural, =1{Odebrán také 1 model: {names}} few{Odebrány také {count} modely: {names}} other{Odebráno také {count} modelů: {names}}}",
+  "@aiDeleteToastCascadeDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastErrorTitle": "Nepodařilo se smazat {name}",
+  "@aiDeleteToastErrorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastModelTitle": "Model smazán",
+  "aiDeleteToastProfileTitle": "Profil smazán",
+  "aiDeleteToastPromptTitle": "Prompt smazán",
+  "aiDeleteToastProviderTitle": "Poskytovatel smazán",
+  "aiDeleteToastSkillTitle": "Dovednost smazána",
+  "aiDeleteToastUndoAction": "Zpět",
   "aiFormCancel": "Zrušit",
   "aiFormFixErrors": "Prosím, opravte chyby před uložením",
   "aiFormNoChanges": "Žádné neuložené změny",
@@ -456,6 +481,14 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Základní URL (volitelné)",
   "aiProviderConnectFieldDisplayNameHint": "Zobrazí se v tvém seznamu poskytovatelů",
   "aiProviderConnectionCheckingLabel": "Ověřuji klíč, načítám dostupné modely…",
+  "aiProviderConnectionFailedBadResponseDetail": "Neočekávaný tvar odpovědi: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
   "@aiProviderConnectionFailedHttpDetail": {
     "placeholders": {
@@ -463,14 +496,6 @@
         "type": "int"
       },
       "message": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectionFailedBadResponseDetail": "Neočekávaný tvar odpovědi: {type}",
-  "@aiProviderConnectionFailedBadResponseDetail": {
-    "placeholders": {
-      "type": {
         "type": "String"
       }
     }
@@ -564,10 +589,13 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "Modely OpenRouter",
   "aiProviderOpenRouterName": "OpenRouter",
-  "aiProviderTaglineAnthropic": "Claude Sonnet · uvažování s dlouhým kontextem",
-  "aiProviderTaglineGemini": "Bezplatná úroveň · multimodální · přepis zvuku",
-  "aiProviderTaglineOllama": "Běží na tvém Macu · žádné cloudové volání",
-  "aiProviderTaglineOpenAi": "Špičkové uvažování · řada GPT-5.2",
+  "aiProviderSetupOptionGeminiDescription": "Multimodální modely s přepisem zvuku. Vyžaduje API klíč.",
+  "aiProviderSetupOptionMistralDescription": "Evropská AI s uvažováním (Magistral) a zvukem (Voxtral).",
+  "aiProviderSetupOptionOpenAiDescription": "GPT modely pro chat a uvažování. Vyžaduje API klíč s kreditem.",
+  "aiProviderTaglineAnthropic": "Rodina Claude · dlouhý kontext",
+  "aiProviderTaglineGemini": "Multimodální · přepis zvuku",
+  "aiProviderTaglineOllama": "Běží lokálně · bez cloudových volání",
+  "aiProviderTaglineOpenAi": "Rodina GPT · vize + uvažování",
   "aiProviderUnknownName": "AI poskytovatel",
   "aiProviderVoxtralDescription": "Lokální přepis Voxtral (až 30 min zvuku, 13 jazyků)",
   "aiProviderVoxtralName": "Voxtral (lokální)",

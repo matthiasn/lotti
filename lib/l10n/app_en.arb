@@ -718,6 +718,31 @@
   "aiConfigSelectProviderModalTitle": "Select Inference Provider",
   "aiConfigSelectProviderTypeModalTitle": "Select Provider Type",
   "aiConfigUseReasoningFieldLabel": "Use Reasoning",
+  "aiDeleteToastCascadeDescription": "{count, plural, =1{Also removed 1 model: {names}} other{Also removed {count} models: {names}}}",
+  "@aiDeleteToastCascadeDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastErrorTitle": "Couldn't delete {name}",
+  "@aiDeleteToastErrorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastModelTitle": "Model deleted",
+  "aiDeleteToastProfileTitle": "Profile deleted",
+  "aiDeleteToastPromptTitle": "Prompt deleted",
+  "aiDeleteToastProviderTitle": "Provider deleted",
+  "aiDeleteToastSkillTitle": "Skill deleted",
+  "aiDeleteToastUndoAction": "Undo",
   "aiFormCancel": "Cancel",
   "aiFormFixErrors": "Please fix errors before saving",
   "aiFormNoChanges": "No unsaved changes",
@@ -801,6 +826,14 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Base URL (optional)",
   "aiProviderConnectFieldDisplayNameHint": "Shown in your provider list",
   "aiProviderConnectionCheckingLabel": "Checking key, listing available models…",
+  "aiProviderConnectionFailedBadResponseDetail": "Unexpected response shape: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
   "@aiProviderConnectionFailedHttpDetail": {
     "placeholders": {
@@ -808,14 +841,6 @@
         "type": "int"
       },
       "message": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectionFailedBadResponseDetail": "Unexpected response shape: {type}",
-  "@aiProviderConnectionFailedBadResponseDetail": {
-    "placeholders": {
-      "type": {
         "type": "String"
       }
     }
@@ -917,10 +942,13 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "OpenRouter's models",
   "aiProviderOpenRouterName": "OpenRouter",
-  "aiProviderTaglineAnthropic": "Claude Sonnet · long-context reasoning",
-  "aiProviderTaglineGemini": "Free tier · multimodal · audio transcription",
-  "aiProviderTaglineOllama": "Runs on your Mac · zero cloud calls",
-  "aiProviderTaglineOpenAi": "Flagship reasoning · GPT-5.2 family",
+  "aiProviderSetupOptionGeminiDescription": "Multimodal models with audio transcription. Requires API key.",
+  "aiProviderSetupOptionMistralDescription": "European AI with reasoning (Magistral) and audio (Voxtral) models.",
+  "aiProviderSetupOptionOpenAiDescription": "GPT models for chat and reasoning. Requires API key with credits.",
+  "aiProviderTaglineAnthropic": "Claude family · long context",
+  "aiProviderTaglineGemini": "Multimodal · audio transcription",
+  "aiProviderTaglineOllama": "Runs locally · no cloud calls",
+  "aiProviderTaglineOpenAi": "GPT family · vision + reasoning",
   "aiProviderUnknownName": "AI provider",
   "aiProviderVoxtralDescription": "Local Voxtral transcription (up to 30 min audio, 13 languages)",
   "aiProviderVoxtralName": "Voxtral (local)",

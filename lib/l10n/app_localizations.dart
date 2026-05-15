@@ -2173,6 +2173,54 @@ abstract class AppLocalizations {
   /// **'Use Reasoning'**
   String get aiConfigUseReasoningFieldLabel;
 
+  /// No description provided for @aiDeleteToastCascadeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Also removed 1 model: {names}} other{Also removed {count} models: {names}}}'**
+  String aiDeleteToastCascadeDescription(int count, String names);
+
+  /// No description provided for @aiDeleteToastErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete {name}'**
+  String aiDeleteToastErrorTitle(String name);
+
+  /// No description provided for @aiDeleteToastModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model deleted'**
+  String get aiDeleteToastModelTitle;
+
+  /// No description provided for @aiDeleteToastProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile deleted'**
+  String get aiDeleteToastProfileTitle;
+
+  /// No description provided for @aiDeleteToastPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt deleted'**
+  String get aiDeleteToastPromptTitle;
+
+  /// No description provided for @aiDeleteToastProviderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider deleted'**
+  String get aiDeleteToastProviderTitle;
+
+  /// No description provided for @aiDeleteToastSkillTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill deleted'**
+  String get aiDeleteToastSkillTitle;
+
+  /// No description provided for @aiDeleteToastUndoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get aiDeleteToastUndoAction;
+
   /// No description provided for @aiFormCancel.
   ///
   /// In en, this message translates to:
@@ -2443,17 +2491,17 @@ abstract class AppLocalizations {
   /// **'Checking key, listing available models…'**
   String get aiProviderConnectionCheckingLabel;
 
-  /// No description provided for @aiProviderConnectionFailedHttpDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'HTTP {status} · {message}'**
-  String aiProviderConnectionFailedHttpDetail(int status, String message);
-
   /// No description provided for @aiProviderConnectionFailedBadResponseDetail.
   ///
   /// In en, this message translates to:
   /// **'Unexpected response shape: {type}'**
   String aiProviderConnectionFailedBadResponseDetail(String type);
+
+  /// No description provided for @aiProviderConnectionFailedHttpDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP {status} · {message}'**
+  String aiProviderConnectionFailedHttpDetail(int status, String message);
 
   /// No description provided for @aiProviderConnectionFailedInvalidBaseUrlDetail.
   ///
@@ -2761,28 +2809,46 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
+  /// No description provided for @aiProviderSetupOptionGeminiDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Multimodal models with audio transcription. Requires API key.'**
+  String get aiProviderSetupOptionGeminiDescription;
+
+  /// No description provided for @aiProviderSetupOptionMistralDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'European AI with reasoning (Magistral) and audio (Voxtral) models.'**
+  String get aiProviderSetupOptionMistralDescription;
+
+  /// No description provided for @aiProviderSetupOptionOpenAiDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'GPT models for chat and reasoning. Requires API key with credits.'**
+  String get aiProviderSetupOptionOpenAiDescription;
+
   /// No description provided for @aiProviderTaglineAnthropic.
   ///
   /// In en, this message translates to:
-  /// **'Claude Sonnet · long-context reasoning'**
+  /// **'Claude family · long context'**
   String get aiProviderTaglineAnthropic;
 
   /// No description provided for @aiProviderTaglineGemini.
   ///
   /// In en, this message translates to:
-  /// **'Free tier · multimodal · audio transcription'**
+  /// **'Multimodal · audio transcription'**
   String get aiProviderTaglineGemini;
 
   /// No description provided for @aiProviderTaglineOllama.
   ///
   /// In en, this message translates to:
-  /// **'Runs on your Mac · zero cloud calls'**
+  /// **'Runs locally · no cloud calls'**
   String get aiProviderTaglineOllama;
 
   /// No description provided for @aiProviderTaglineOpenAi.
   ///
   /// In en, this message translates to:
-  /// **'Flagship reasoning · GPT-5.2 family'**
+  /// **'GPT family · vision + reasoning'**
   String get aiProviderTaglineOpenAi;
 
   /// No description provided for @aiProviderUnknownName.

@@ -533,6 +533,31 @@
   "aiConfigSelectProviderModalTitle": "Sélectionner un fournisseur d'inférence",
   "aiConfigSelectProviderTypeModalTitle": "Sélectionner le type de fournisseur",
   "aiConfigUseReasoningFieldLabel": "Utiliser le raisonnement",
+  "aiDeleteToastCascadeDescription": "{count, plural, =1{1 modèle aussi supprimé : {names}} other{{count} modèles aussi supprimés : {names}}}",
+  "@aiDeleteToastCascadeDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastErrorTitle": "Impossible de supprimer {name}",
+  "@aiDeleteToastErrorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastModelTitle": "Modèle supprimé",
+  "aiDeleteToastProfileTitle": "Profil supprimé",
+  "aiDeleteToastPromptTitle": "Prompt supprimé",
+  "aiDeleteToastProviderTitle": "Fournisseur supprimé",
+  "aiDeleteToastSkillTitle": "Compétence supprimée",
+  "aiDeleteToastUndoAction": "Annuler",
   "aiFormCancel": "Annuler",
   "aiFormFixErrors": "Corrige les erreurs avant d'enregistrer",
   "aiFormNoChanges": "Aucune modification non enregistrée",
@@ -616,6 +641,14 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL de base (optionnel)",
   "aiProviderConnectFieldDisplayNameHint": "Affiché dans ta liste de fournisseurs",
   "aiProviderConnectionCheckingLabel": "Vérification de la clé, liste des modèles disponibles…",
+  "aiProviderConnectionFailedBadResponseDetail": "Forme de réponse inattendue : {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
   "@aiProviderConnectionFailedHttpDetail": {
     "placeholders": {
@@ -623,14 +656,6 @@
         "type": "int"
       },
       "message": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectionFailedBadResponseDetail": "Forme de réponse inattendue : {type}",
-  "@aiProviderConnectionFailedBadResponseDetail": {
-    "placeholders": {
-      "type": {
         "type": "String"
       }
     }
@@ -724,10 +749,13 @@
   "aiProviderOpenAiName": "OpenAI",
   "aiProviderOpenRouterDescription": "Modèles d'OpenRouter",
   "aiProviderOpenRouterName": "OpenRouter",
-  "aiProviderTaglineAnthropic": "Claude Sonnet · raisonnement à long contexte",
-  "aiProviderTaglineGemini": "Offre gratuite · multimodal · transcription audio",
-  "aiProviderTaglineOllama": "S'exécute sur ton Mac · zéro appel cloud",
-  "aiProviderTaglineOpenAi": "Raisonnement phare · famille GPT-5.2",
+  "aiProviderSetupOptionGeminiDescription": "Modèles multimodaux avec transcription audio. Nécessite une clé API.",
+  "aiProviderSetupOptionMistralDescription": "IA européenne avec raisonnement (Magistral) et audio (Voxtral).",
+  "aiProviderSetupOptionOpenAiDescription": "Modèles GPT pour chat et raisonnement. Nécessite une clé API avec crédits.",
+  "aiProviderTaglineAnthropic": "Famille Claude · contexte long",
+  "aiProviderTaglineGemini": "Multimodal · transcription audio",
+  "aiProviderTaglineOllama": "S'exécute en local · aucun appel cloud",
+  "aiProviderTaglineOpenAi": "Famille GPT · vision + raisonnement",
   "aiProviderUnknownName": "Fournisseur d'IA",
   "aiProviderVoxtralDescription": "Transcription Voxtral locale (jusqu'à 30 min d'audio, 13 langues)",
   "aiProviderVoxtralName": "Voxtral (local)",

@@ -1203,6 +1203,41 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Použít uvažování';
 
   @override
+  String aiDeleteToastCascadeDescription(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Odebráno také $count modelů: $names',
+      few: 'Odebrány také $count modely: $names',
+      one: 'Odebrán také 1 model: $names',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiDeleteToastErrorTitle(String name) {
+    return 'Nepodařilo se smazat $name';
+  }
+
+  @override
+  String get aiDeleteToastModelTitle => 'Model smazán';
+
+  @override
+  String get aiDeleteToastProfileTitle => 'Profil smazán';
+
+  @override
+  String get aiDeleteToastPromptTitle => 'Prompt smazán';
+
+  @override
+  String get aiDeleteToastProviderTitle => 'Poskytovatel smazán';
+
+  @override
+  String get aiDeleteToastSkillTitle => 'Dovednost smazána';
+
+  @override
+  String get aiDeleteToastUndoAction => 'Zpět';
+
+  @override
   String get aiFormCancel => 'Zrušit';
 
   @override
@@ -1376,13 +1411,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Ověřuji klíč, načítám dostupné modely…';
 
   @override
-  String aiProviderConnectionFailedHttpDetail(int status, String message) {
-    return 'HTTP $status · $message';
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Neočekávaný tvar odpovědi: $type';
   }
 
   @override
-  String aiProviderConnectionFailedBadResponseDetail(String type) {
-    return 'Neočekávaný tvar odpovědi: $type';
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
   }
 
   @override
@@ -1576,19 +1611,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderTaglineAnthropic =>
-      'Claude Sonnet · uvažování s dlouhým kontextem';
+  String get aiProviderSetupOptionGeminiDescription =>
+      'Multimodální modely s přepisem zvuku. Vyžaduje API klíč.';
 
   @override
-  String get aiProviderTaglineGemini =>
-      'Bezplatná úroveň · multimodální · přepis zvuku';
+  String get aiProviderSetupOptionMistralDescription =>
+      'Evropská AI s uvažováním (Magistral) a zvukem (Voxtral).';
 
   @override
-  String get aiProviderTaglineOllama =>
-      'Běží na tvém Macu · žádné cloudové volání';
+  String get aiProviderSetupOptionOpenAiDescription =>
+      'GPT modely pro chat a uvažování. Vyžaduje API klíč s kreditem.';
 
   @override
-  String get aiProviderTaglineOpenAi => 'Špičkové uvažování · řada GPT-5.2';
+  String get aiProviderTaglineAnthropic => 'Rodina Claude · dlouhý kontext';
+
+  @override
+  String get aiProviderTaglineGemini => 'Multimodální · přepis zvuku';
+
+  @override
+  String get aiProviderTaglineOllama => 'Běží lokálně · bez cloudových volání';
+
+  @override
+  String get aiProviderTaglineOpenAi => 'Rodina GPT · vize + uvažování';
 
   @override
   String get aiProviderUnknownName => 'AI poskytovatel';

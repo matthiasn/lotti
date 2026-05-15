@@ -78,6 +78,42 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
       expect(find.byIcon(Icons.work), findsOneWidget);
     });
+
+    testWidgets('uses white text on a near-black background', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          const CategoryTag(
+            label: 'Ollama',
+            icon: Icons.computer,
+            // Seeded "Ollama Charcoal" (#0F172A) — the case that prompted
+            // the contrast-aware foreground flip.
+            color: Color(0xFF0F172A),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final label = tester.widget<Text>(find.text('Ollama'));
+      expect(label.style?.color, equals(Colors.white));
+      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.computer));
+      expect(iconWidget.color, equals(Colors.white));
+    });
+
+    testWidgets('uses black text on a near-white background', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          const CategoryTag(
+            label: 'Pale',
+            icon: Icons.label,
+            color: Color(0xFFF8FAFC),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final label = tester.widget<Text>(find.text('Pale'));
+      expect(label.style?.color, equals(Colors.black));
+    });
   });
 
   group('ProjectHealthBandTag', () {

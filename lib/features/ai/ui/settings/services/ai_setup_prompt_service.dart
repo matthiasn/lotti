@@ -1,8 +1,10 @@
+import 'package:flutter/widgets.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ai_setup_prompt_service.g.dart';
@@ -19,19 +21,19 @@ enum AiProviderOption {
 
 /// Extension to get display properties for AI provider options
 extension AiProviderOptionExtension on AiProviderOption {
-  String get displayName => switch (this) {
-    AiProviderOption.gemini => 'Google Gemini',
-    AiProviderOption.openAi => 'OpenAI',
-    AiProviderOption.mistral => 'Mistral AI',
+  String displayName(BuildContext context) => switch (this) {
+    AiProviderOption.gemini => context.messages.aiProviderGeminiName,
+    AiProviderOption.openAi => context.messages.aiProviderOpenAiName,
+    AiProviderOption.mistral => context.messages.aiProviderMistralName,
   };
 
-  String get description => switch (this) {
+  String description(BuildContext context) => switch (this) {
     AiProviderOption.gemini =>
-      'Free tier available. Best for multimodal tasks including audio transcription.',
+      context.messages.aiProviderSetupOptionGeminiDescription,
     AiProviderOption.openAi =>
-      'Powerful reasoning models. Requires API key with credits.',
+      context.messages.aiProviderSetupOptionOpenAiDescription,
     AiProviderOption.mistral =>
-      'European AI with strong reasoning (Magistral) and audio (Voxtral) models.',
+      context.messages.aiProviderSetupOptionMistralDescription,
   };
 
   InferenceProviderType get inferenceProviderType => switch (this) {

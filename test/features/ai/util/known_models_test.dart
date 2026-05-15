@@ -603,6 +603,19 @@ void main() {
         expect(model.inputModalities, contains(Modality.image));
       });
 
+      test(
+        'Qwen 3.6 35B-A3B Coding (NVFP4) is a text-only reasoning model',
+        () {
+          final model = ollamaModels.firstWhere(
+            (m) => m.providerModelId == 'qwen3.6:35b-a3b-coding-nvfp4',
+          );
+          expect(model.isReasoningModel, isTrue);
+          expect(model.supportsFunctionCalling, isTrue);
+          expect(model.inputModalities, equals([Modality.text]));
+          expect(model.outputModalities, equals([Modality.text]));
+        },
+      );
+
       test('should not contain removed models', () {
         final modelIds = ollamaModels.map((m) => m.providerModelId).toSet();
         expect(modelIds, isNot(contains('qwen3:8b')));
