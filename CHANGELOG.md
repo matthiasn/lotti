@@ -37,6 +37,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   visual) has supported it for some time.
 
 ### Changed
+- `ProfileSeedingService.seedDefaults()` is now strictly seed-on-create:
+  it writes a default profile only when no row exists for that ID, and
+  never reconciles existing rows back to the bundled values. User edits
+  to a seeded profile (e.g. swapping the Ollama thinking model, flipping
+  `isDefault` off, renaming the profile) now survive every restart and
+  app upgrade. Previously the seeder ran a drift check on every launch
+  and overwrote `thinkingModelId`, `imageRecognitionModelId`,
+  `transcriptionModelId`, `imageGenerationModelId`, `isDefault`, and
+  `desktopOnly` whenever they differed from the seed targets, which
+  reverted user edits to the Ollama profile (and any other default)
+  silently on startup. Updating a bundled default in code therefore now
+  only affects fresh installs; existing installs keep what the user has.
+  `upgradeExisting()` is unchanged — it remains a one-time backfill that
+  only fills empty `skillAssignments`, never overwriting non-empty ones.
 - AI Settings delete confirmations now use the same design-system
   toaster that the checklist row uses (warning tone, 5-second
   countdown bar, Undo action), replacing three custom hand-rolled

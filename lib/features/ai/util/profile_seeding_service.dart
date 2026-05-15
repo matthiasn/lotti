@@ -36,8 +36,10 @@ const _mistralSkillAssignments = [
 
 /// Seeds default inference profiles into the AI config database.
 ///
-/// Follows the same idempotent pattern as `AgentTemplateService.seedDefaults()`:
-/// checks each profile by ID and skips if it already exists.
+/// Strictly seed-on-create: each profile is checked by ID and only written
+/// when missing. Existing profiles are never overwritten — user edits to
+/// model slots, flags, names, and skill assignments survive across restarts
+/// and app upgrades.
 class ProfileSeedingService {
   const ProfileSeedingService({
     required AiConfigRepository aiConfigRepository,
@@ -47,51 +49,23 @@ class ProfileSeedingService {
 
   /// Seeds all default profiles. Safe to call multiple times.
   ///
-  /// For new profiles, creates them. For existing default profiles whose
-  /// model IDs have changed in code, updates them to match.
+  /// Only creates profiles that do not already exist by ID. Existing
+  /// profiles — even if their model IDs or flags differ from the seed
+  /// targets in code — are left untouched. This preserves user edits to
+  /// the bundled defaults (e.g. swapping the Ollama profile's thinking
+  /// model) across app restarts.
   Future<void> seedDefaults() async {
     var seededCount = 0;
-    var updatedCount = 0;
 
     for (final profile in defaultProfiles) {
       final existing = await _repo.getConfigById(profile.id);
-
-      if (existing == null) {
-        await _repo.saveConfig(profile);
-        seededCount++;
-        continue;
-      }
-
-      // Update existing default profiles if model IDs or flags have drifted.
-      // Only reconcile profiles marked as `isDefault` — user-created
-      // profiles are never touched.
-      // Skill assignments are NOT compared here — user edits to automation
-      // toggles are preserved. Skill backfill is handled by upgradeExisting().
-      if (existing is AiConfigInferenceProfile &&
-          existing.isDefault &&
-          _hasProfileDrift(existing, profile)) {
-        // Start from the existing record to preserve user-editable fields
-        // (name, description, skillAssignments, thinkingHighEndModelId,
-        // timestamps) and only overwrite the specific fields that are
-        // checked by _hasProfileDrift.
-        final updated = existing.copyWith(
-          thinkingModelId: profile.thinkingModelId,
-          imageRecognitionModelId: profile.imageRecognitionModelId,
-          transcriptionModelId: profile.transcriptionModelId,
-          imageGenerationModelId: profile.imageGenerationModelId,
-          isDefault: profile.isDefault,
-          desktopOnly: profile.desktopOnly,
-        );
-        await _repo.saveConfig(updated);
-        updatedCount++;
-      }
+      if (existing != null) continue;
+      await _repo.saveConfig(profile);
+      seededCount++;
     }
 
-    if (seededCount > 0 || updatedCount > 0) {
-      developer.log(
-        'Profiles: seeded $seededCount, updated $updatedCount',
-        name: _logTag,
-      );
+    if (seededCount > 0) {
+      developer.log('Profiles: seeded $seededCount', name: _logTag);
     }
   }
 
@@ -137,24 +111,6 @@ class ProfileSeedingService {
         name: _logTag,
       );
     }
-  }
-
-  /// Returns true when any model ID or flag in [existing] differs from
-  /// [target].
-  ///
-  /// Intentionally excludes `skillAssignments` — user edits to automation
-  /// toggles must survive app updates. Skill backfill is a one-time operation
-  /// handled by [upgradeExisting].
-  static bool _hasProfileDrift(
-    AiConfigInferenceProfile existing,
-    AiConfigInferenceProfile target,
-  ) {
-    return existing.thinkingModelId != target.thinkingModelId ||
-        existing.imageRecognitionModelId != target.imageRecognitionModelId ||
-        existing.transcriptionModelId != target.transcriptionModelId ||
-        existing.imageGenerationModelId != target.imageGenerationModelId ||
-        existing.isDefault != target.isDefault ||
-        existing.desktopOnly != target.desktopOnly;
   }
 
   /// Returns true when the profile has the model slot required by [skillType].
