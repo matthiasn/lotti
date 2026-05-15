@@ -1611,19 +1611,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderTaglineAnthropic =>
-      'Claude Sonnet · uvažování s dlouhým kontextem';
+  String get aiProviderSetupOptionGeminiDescription =>
+      'Multimodální modely s přepisem zvuku. Vyžaduje API klíč.';
 
   @override
-  String get aiProviderTaglineGemini =>
-      'Bezplatná úroveň · multimodální · přepis zvuku';
+  String get aiProviderSetupOptionMistralDescription =>
+      'Evropská AI s uvažováním (Magistral) a zvukem (Voxtral).';
 
   @override
-  String get aiProviderTaglineOllama =>
-      'Běží na tvém Macu · žádné cloudové volání';
+  String get aiProviderSetupOptionOpenAiDescription =>
+      'GPT modely pro chat a uvažování. Vyžaduje API klíč s kreditem.';
 
   @override
-  String get aiProviderTaglineOpenAi => 'Špičkové uvažování · řada GPT-5.2';
+  String get aiProviderTaglineAnthropic => 'Rodina Claude · dlouhý kontext';
+
+  @override
+  String get aiProviderTaglineGemini => 'Multimodální · přepis zvuku';
+
+  @override
+  String get aiProviderTaglineOllama => 'Běží lokálně · bez cloudových volání';
+
+  @override
+  String get aiProviderTaglineOpenAi => 'Rodina GPT · vize + uvažování';
 
   @override
   String get aiProviderUnknownName => 'AI poskytovatel';

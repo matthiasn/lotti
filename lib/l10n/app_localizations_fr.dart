@@ -1619,19 +1619,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderTaglineAnthropic =>
-      'Claude Sonnet · raisonnement à long contexte';
+  String get aiProviderSetupOptionGeminiDescription =>
+      'Modèles multimodaux avec transcription audio. Nécessite une clé API.';
 
   @override
-  String get aiProviderTaglineGemini =>
-      'Offre gratuite · multimodal · transcription audio';
+  String get aiProviderSetupOptionMistralDescription =>
+      'IA européenne avec raisonnement (Magistral) et audio (Voxtral).';
+
+  @override
+  String get aiProviderSetupOptionOpenAiDescription =>
+      'Modèles GPT pour chat et raisonnement. Nécessite une clé API avec crédits.';
+
+  @override
+  String get aiProviderTaglineAnthropic => 'Famille Claude · contexte long';
+
+  @override
+  String get aiProviderTaglineGemini => 'Multimodal · transcription audio';
 
   @override
   String get aiProviderTaglineOllama =>
-      'S\'exécute sur ton Mac · zéro appel cloud';
+      'S\'exécute en local · aucun appel cloud';
 
   @override
-  String get aiProviderTaglineOpenAi => 'Raisonnement phare · famille GPT-5.2';
+  String get aiProviderTaglineOpenAi => 'Famille GPT · vision + raisonnement';
 
   @override
   String get aiProviderUnknownName => 'Fournisseur d\'IA';

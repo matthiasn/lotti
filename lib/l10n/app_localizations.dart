@@ -2809,28 +2809,46 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
+  /// No description provided for @aiProviderSetupOptionGeminiDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Multimodal models with audio transcription. Requires API key.'**
+  String get aiProviderSetupOptionGeminiDescription;
+
+  /// No description provided for @aiProviderSetupOptionMistralDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'European AI with reasoning (Magistral) and audio (Voxtral) models.'**
+  String get aiProviderSetupOptionMistralDescription;
+
+  /// No description provided for @aiProviderSetupOptionOpenAiDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'GPT models for chat and reasoning. Requires API key with credits.'**
+  String get aiProviderSetupOptionOpenAiDescription;
+
   /// No description provided for @aiProviderTaglineAnthropic.
   ///
   /// In en, this message translates to:
-  /// **'Claude Sonnet · long-context reasoning'**
+  /// **'Claude family · long context'**
   String get aiProviderTaglineAnthropic;
 
   /// No description provided for @aiProviderTaglineGemini.
   ///
   /// In en, this message translates to:
-  /// **'Free tier · multimodal · audio transcription'**
+  /// **'Multimodal · audio transcription'**
   String get aiProviderTaglineGemini;
 
   /// No description provided for @aiProviderTaglineOllama.
   ///
   /// In en, this message translates to:
-  /// **'Runs on your Mac · zero cloud calls'**
+  /// **'Runs locally · no cloud calls'**
   String get aiProviderTaglineOllama;
 
   /// No description provided for @aiProviderTaglineOpenAi.
   ///
   /// In en, this message translates to:
-  /// **'Flagship reasoning · GPT-5.2 family'**
+  /// **'GPT family · vision + reasoning'**
   String get aiProviderTaglineOpenAi;
 
   /// No description provided for @aiProviderUnknownName.

@@ -1621,19 +1621,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
-  String get aiProviderTaglineAnthropic =>
-      'Claude Sonnet · raționament cu context lung';
+  String get aiProviderSetupOptionGeminiDescription =>
+      'Modele multimodale cu transcriere audio. Necesită cheie API.';
 
   @override
-  String get aiProviderTaglineGemini =>
-      'Nivel gratuit · multimodal · transcriere audio';
+  String get aiProviderSetupOptionMistralDescription =>
+      'AI europeană cu raționament (Magistral) și audio (Voxtral).';
 
   @override
-  String get aiProviderTaglineOllama =>
-      'Rulează pe Mac-ul dvs. · zero apeluri în cloud';
+  String get aiProviderSetupOptionOpenAiDescription =>
+      'Modele GPT pentru chat și raționament. Necesită cheie API cu credit.';
 
   @override
-  String get aiProviderTaglineOpenAi => 'Raționament de top · familia GPT-5.2';
+  String get aiProviderTaglineAnthropic => 'Familia Claude · context lung';
+
+  @override
+  String get aiProviderTaglineGemini => 'Multimodal · transcriere audio';
+
+  @override
+  String get aiProviderTaglineOllama => 'Rulează local · fără apeluri în cloud';
+
+  @override
+  String get aiProviderTaglineOpenAi => 'Familia GPT · vision + raționament';
 
   @override
   String get aiProviderUnknownName => 'Furnizor AI';

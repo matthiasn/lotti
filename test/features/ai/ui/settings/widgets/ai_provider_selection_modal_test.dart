@@ -1,22 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+
+const _localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+  AppLocalizations.delegate,
+  FormBuilderLocalizations.delegate,
+  GlobalMaterialLocalizations.delegate,
+  GlobalWidgetsLocalizations.delegate,
+  GlobalCupertinoLocalizations.delegate,
+];
+
+MaterialApp _appWithModal({
+  required void Function(InferenceProviderType) onProviderSelected,
+  required VoidCallback onDismiss,
+}) {
+  return MaterialApp(
+    localizationsDelegates: _localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Scaffold(
+      body: AiProviderSelectionModal(
+        onProviderSelected: onProviderSelected,
+        onDismiss: onDismiss,
+      ),
+    ),
+  );
+}
+
+MaterialApp _appWithOpenButton(WidgetBuilder buttonBuilder) {
+  return MaterialApp(
+    localizationsDelegates: _localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Builder(builder: buttonBuilder),
+  );
+}
+
+String _geminiDescription(BuildContext context) =>
+    AppLocalizations.of(context)!.aiProviderSetupOptionGeminiDescription;
+String _openAiDescription(BuildContext context) =>
+    AppLocalizations.of(context)!.aiProviderSetupOptionOpenAiDescription;
+String _mistralDescription(BuildContext context) =>
+    AppLocalizations.of(context)!.aiProviderSetupOptionMistralDescription;
 
 void main() {
   group('AiProviderSelectionModal', () {
     testWidgets('displays title and provider options', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AiProviderSelectionModal(
-              onProviderSelected: (_) {},
-              onDismiss: () {},
-            ),
-          ),
-        ),
+        _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),
       );
 
       expect(find.text('Set Up AI Features'), findsOneWidget);
@@ -26,48 +61,25 @@ void main() {
       );
       expect(find.text('Google Gemini'), findsOneWidget);
       expect(find.text('OpenAI'), findsOneWidget);
-      expect(find.text('Mistral AI'), findsOneWidget);
+      expect(find.text('Mistral'), findsOneWidget);
     });
 
     testWidgets('displays provider descriptions', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AiProviderSelectionModal(
-              onProviderSelected: (_) {},
-              onDismiss: () {},
-            ),
-          ),
-        ),
+        _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),
       );
 
-      // Uses descriptions from AiProviderOption extension
-      expect(
-        find.text(AiProviderOption.gemini.description),
-        findsOneWidget,
-      );
-      expect(
-        find.text(AiProviderOption.openAi.description),
-        findsOneWidget,
-      );
-      expect(
-        find.text(AiProviderOption.mistral.description),
-        findsOneWidget,
-      );
+      final context = tester.element(find.byType(AiProviderSelectionModal));
+      expect(find.text(_geminiDescription(context)), findsOneWidget);
+      expect(find.text(_openAiDescription(context)), findsOneWidget);
+      expect(find.text(_mistralDescription(context)), findsOneWidget);
     });
 
     testWidgets('Continue button is disabled when no provider selected', (
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AiProviderSelectionModal(
-              onProviderSelected: (_) {},
-              onDismiss: () {},
-            ),
-          ),
-        ),
+        _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),
       );
 
       // LottiPrimaryButton wraps an ElevatedButton
@@ -81,14 +93,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AiProviderSelectionModal(
-              onProviderSelected: (_) {},
-              onDismiss: () {},
-            ),
-          ),
-        ),
+        _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),
       );
 
       // Tap on Gemini option
@@ -107,18 +112,16 @@ void main() {
       InferenceProviderType? selectedType;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () async {
-                await AiProviderSelectionModal.show(
-                  context,
-                  onProviderSelected: (type) => selectedType = type,
-                  onDismiss: () {},
-                );
-              },
-              child: const Text('Open Modal'),
-            ),
+        _appWithOpenButton(
+          (context) => ElevatedButton(
+            onPressed: () async {
+              await AiProviderSelectionModal.show(
+                context,
+                onProviderSelected: (type) => selectedType = type,
+                onDismiss: () {},
+              );
+            },
+            child: const Text('Open Modal'),
           ),
         ),
       );
@@ -143,18 +146,16 @@ void main() {
       InferenceProviderType? selectedType;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () async {
-                await AiProviderSelectionModal.show(
-                  context,
-                  onProviderSelected: (type) => selectedType = type,
-                  onDismiss: () {},
-                );
-              },
-              child: const Text('Open Modal'),
-            ),
+        _appWithOpenButton(
+          (context) => ElevatedButton(
+            onPressed: () async {
+              await AiProviderSelectionModal.show(
+                context,
+                onProviderSelected: (type) => selectedType = type,
+                onDismiss: () {},
+              );
+            },
+            child: const Text('Open Modal'),
           ),
         ),
       );
@@ -179,18 +180,16 @@ void main() {
       InferenceProviderType? selectedType;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () async {
-                await AiProviderSelectionModal.show(
-                  context,
-                  onProviderSelected: (type) => selectedType = type,
-                  onDismiss: () {},
-                );
-              },
-              child: const Text('Open Modal'),
-            ),
+        _appWithOpenButton(
+          (context) => ElevatedButton(
+            onPressed: () async {
+              await AiProviderSelectionModal.show(
+                context,
+                onProviderSelected: (type) => selectedType = type,
+                onDismiss: () {},
+              );
+            },
+            child: const Text('Open Modal'),
           ),
         ),
       );
@@ -199,7 +198,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select Mistral
-      await tester.tap(find.text('Mistral AI'));
+      await tester.tap(find.text('Mistral'));
       await tester.pumpAndSettle();
 
       // Tap Continue
@@ -213,18 +212,16 @@ void main() {
       var dismissed = false;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () async {
-                await AiProviderSelectionModal.show(
-                  context,
-                  onProviderSelected: (_) {},
-                  onDismiss: () => dismissed = true,
-                );
-              },
-              child: const Text('Open Modal'),
-            ),
+        _appWithOpenButton(
+          (context) => ElevatedButton(
+            onPressed: () async {
+              await AiProviderSelectionModal.show(
+                context,
+                onProviderSelected: (_) {},
+                onDismiss: () => dismissed = true,
+              );
+            },
+            child: const Text('Open Modal'),
           ),
         ),
       );
@@ -242,14 +239,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AiProviderSelectionModal(
-              onProviderSelected: (_) {},
-              onDismiss: () {},
-            ),
-          ),
-        ),
+        _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),
       );
 
       expect(
@@ -262,14 +252,7 @@ void main() {
 
     testWidgets('selecting a provider updates radio button', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AiProviderSelectionModal(
-              onProviderSelected: (_) {},
-              onDismiss: () {},
-            ),
-          ),
-        ),
+        _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),
       );
 
       // Initially no radio is selected - check RadioGroup's groupValue

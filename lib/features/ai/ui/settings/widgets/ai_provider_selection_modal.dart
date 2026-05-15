@@ -200,14 +200,14 @@ class _AiProviderSelectionModalState extends State<AiProviderSelectionModal> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    option.displayName,
+                    option.displayName(context),
                     style: context.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    option.description,
+                    option.description(context),
                     style: context.textTheme.bodySmall?.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),

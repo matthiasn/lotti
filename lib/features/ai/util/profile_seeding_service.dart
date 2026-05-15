@@ -265,7 +265,7 @@ class ProfileSeedingService {
     AiConfigInferenceProfile(
       id: profileLocalPowerId,
       name: 'Local Power (Ollama)',
-      thinkingModelId: 'qwen3.5:27b',
+      thinkingModelId: 'qwen3.6:35b-a3b-coding-nvfp4',
       imageRecognitionModelId: 'qwen3.5:27b',
       desktopOnly: true,
       createdAt: DateTime(2026),

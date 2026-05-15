@@ -33,6 +33,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Profile cards in AI Settings now pin the `⋯` overflow menu to
   the far right of the card header — matching the provider cards
   — instead of letting it drift next to longer profile names.
+- The "Local Power (Ollama)" seeded profile now uses
+  `qwen3.6:35b-a3b-coding-nvfp4` (35B MoE / ~3B active, NVFP4
+  quant, 22GB download, 256K context, text-only) as the thinking
+  model, with `qwen3.5:27b` retained as the image-recognition
+  model. The Qwen 3.6 coding MoE is also added to the known
+  Ollama model list so it can be selected from the model picker.
+- Category tags now pick black or white text based on the
+  background brightness instead of a fixed palette colour, so
+  the label stays legible on dark category colours (e.g. the
+  seeded Ollama charcoal `#0F172A`) and bright ones alike.
 
 ## [0.9.999]
 ### Added

@@ -32,11 +32,20 @@ class CategoryTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // User-defined category colors span the full hue/luminance space —
+    // a fixed palette text colour collapses to illegible on near-black
+    // or near-white backgrounds. Flip to black/white based on the
+    // estimated background brightness, mirroring the same pattern used
+    // by the category icon tiles in `categories_list_page.dart`.
+    final foreground =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
     final child = _ShowcaseMetaTag(
       label: label,
       icon: icon,
       backgroundColor: color,
-      foregroundColor: ShowcasePalette.tagText(context),
+      foregroundColor: foreground,
     );
 
     if (onTap == null) {

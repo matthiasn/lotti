@@ -25,6 +25,11 @@ lib/features/ai/ui/settings/
 ├── ai_settings_filter_service.dart         # Filtering business logic
 ├── ai_settings_navigation_service.dart     # Navigation logic
 ├── ai_config_card.dart                     # Reusable config card component
+├── services/
+│   ├── ai_config_delete_service.dart       # Delete + cascade + undo (DS toast)
+│   ├── connection_verifier_service.dart    # Live API-key verification
+│   ├── ftue_trigger_service.dart           # First-time UX gating
+│   └── provider_prompt_setup_service.dart  # Provider FTUE prompt setup
 ├── widgets/
 │   ├── ai_settings_search_bar.dart         # Search input component
 │   ├── ai_settings_tab_bar.dart            # Tab navigation component
@@ -36,7 +41,8 @@ lib/features/ai/ui/settings/
 │   ├── config_error_state.dart             # Error state UI
 │   ├── config_loading_state.dart           # Loading state UI
 │   ├── dismiss_background.dart             # Swipe-to-delete background
-│   └── dismissible_config_card.dart        # Dismissible card wrapper
+│   ├── dismissible_config_card.dart        # Dismissible card wrapper
+│   └── v2/                                 # Redesigned card chrome
 └── README.md                               # This documentation
 ```
 
@@ -227,6 +233,43 @@ Centralized navigation logic for AI configuration editing.
 final navigationService = AiSettingsNavigationService();
 await navigationService.navigateToConfigEdit(context, config);
 ```
+
+#### `AiConfigDeleteService`
+Single entry point for deleting any `AiConfig` variant. Pairs a
+confirmation modal with a design-system warning toast that carries a
+5-second undo window. For `AiConfigInferenceProvider` the repository
+cascades the delete to associated models; the cascaded model names are
+folded into the toast description via `aiDeleteToastCascadeDescription`
+(localized plural).
+
+```dart
+const AiConfigDeleteService().deleteConfig(
+  context: context,
+  ref: ref,
+  config: config,
+);
+```
+
+**Delete lifecycle:**
+
+```mermaid
+stateDiagram-v2
+    [*] --> Confirm: deleteConfig()
+    Confirm --> Idle: cancel
+    Confirm --> Deleting: confirm
+    Deleting --> Toast: success
+    Deleting --> ErrorToast: throws
+    Toast --> Restored: tap Undo (<=5s)
+    Toast --> Gone: countdown expires / dismiss
+    ErrorToast --> Idle: countdown expires / dismiss
+    Restored --> Idle
+    Gone --> [*]
+```
+
+Provider deletes pass the `CascadeDeletionResult` through to the undo
+handler so the provider *and* every cascaded model are re-saved on
+undo. Other variants restore the single config. Undo failures are
+logged via `LoggingService` under `AI_CONFIG / DELETE_SERVICE`.
 
 ## Key Features
 

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -240,14 +243,71 @@ void main() {
   });
 
   group('AiProviderOption', () {
-    test('displayName returns correct names', () {
-      expect(AiProviderOption.gemini.displayName, equals('Google Gemini'));
-      expect(AiProviderOption.openAi.displayName, equals('OpenAI'));
+    testWidgets('displayName returns the localized provider name', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              expect(
+                AiProviderOption.gemini.displayName(context),
+                equals('Google Gemini'),
+              );
+              expect(
+                AiProviderOption.openAi.displayName(context),
+                equals('OpenAI'),
+              );
+              expect(
+                AiProviderOption.mistral.displayName(context),
+                equals('Mistral'),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
     });
 
-    test('description returns non-empty strings', () {
-      expect(AiProviderOption.gemini.description, isNotEmpty);
-      expect(AiProviderOption.openAi.description, isNotEmpty);
+    testWidgets('description returns the localized setup-option description', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              final messages = AppLocalizations.of(context)!;
+              expect(
+                AiProviderOption.gemini.description(context),
+                equals(messages.aiProviderSetupOptionGeminiDescription),
+              );
+              expect(
+                AiProviderOption.openAi.description(context),
+                equals(messages.aiProviderSetupOptionOpenAiDescription),
+              );
+              expect(
+                AiProviderOption.mistral.description(context),
+                equals(messages.aiProviderSetupOptionMistralDescription),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
     });
 
     test('inferenceProviderType returns correct types', () {
@@ -258,6 +318,10 @@ void main() {
       expect(
         AiProviderOption.openAi.inferenceProviderType,
         equals(InferenceProviderType.openAi),
+      );
+      expect(
+        AiProviderOption.mistral.inferenceProviderType,
+        equals(InferenceProviderType.mistral),
       );
     });
   });

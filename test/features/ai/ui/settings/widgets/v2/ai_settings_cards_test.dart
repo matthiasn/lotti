@@ -161,7 +161,7 @@ void main() {
         await tester.pump();
         expect(find.text('My Google Gemini'), findsOneWidget);
         expect(
-          find.textContaining('multimodal'),
+          find.textContaining('Multimodal'),
           findsOneWidget,
           reason: 'Gemini tagline should render',
         );

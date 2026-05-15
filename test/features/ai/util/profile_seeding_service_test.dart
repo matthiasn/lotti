@@ -237,7 +237,7 @@ void main() {
 
       expect(powerProfile.desktopOnly, isTrue);
       expect(powerProfile.name, 'Local Power (Ollama)');
-      expect(powerProfile.thinkingModelId, 'qwen3.5:27b');
+      expect(powerProfile.thinkingModelId, 'qwen3.6:35b-a3b-coding-nvfp4');
       expect(powerProfile.imageRecognitionModelId, 'qwen3.5:27b');
       expect(powerProfile.isDefault, isFalse);
     });
@@ -281,7 +281,8 @@ void main() {
         for (final config in capturedConfigs) {
           final profile = config as AiConfigInferenceProfile;
           if (profile.id == profileLocalPowerId) {
-            // Local Power is opt-in until Qwen3.5:27b tool-calling stabilises.
+            // Local Power is opt-in until the Qwen3.6 coding MoE
+            // tool-calling path stabilises.
             expect(
               profile.isDefault,
               isFalse,

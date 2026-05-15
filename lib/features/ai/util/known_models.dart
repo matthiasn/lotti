@@ -262,6 +262,20 @@ const List<KnownModel> ollamaModels = [
         '17GB download, ~22GB RAM. 256K context. '
         'Best local model for higher-end devices (22GB+ RAM).',
   ),
+  // Qwen 3.6 — MoE reasoning/coding model, text-only. Pair with
+  // Qwen 3.5 27B for image recognition in the Local Power profile.
+  KnownModel(
+    providerModelId: 'qwen3.6:35b-a3b-coding-nvfp4',
+    name: 'Qwen 3.6 35B-A3B Coding (NVFP4)',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'MoE reasoning/coding model: 35B total, ~3B active. '
+        '22GB download (NVFP4 quant). 256K context. '
+        'Text-only — pair with Qwen 3.5 27B for image recognition.',
+  ),
 
   // Embeddings
   KnownModel(

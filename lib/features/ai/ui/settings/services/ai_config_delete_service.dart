@@ -23,14 +23,13 @@ const kAiDeleteToastDuration = Duration(seconds: 5);
 /// underlying error detail before deciding what to do next.
 const kAiDeleteErrorToastDuration = Duration(seconds: 6);
 
-/// Service that handles stylish delete operations for AI configurations
+/// Service that handles delete operations for AI configurations
 ///
 /// This service provides a unified interface for deleting AI configurations
-/// with enhanced Series A quality styling, proper confirmation modals,
-/// cascading deletes, and undo functionality.
+/// with proper confirmation modals, cascading deletes, and undo functionality.
 ///
 /// **Features:**
-/// - Stylish confirmation modals with contextual warnings
+/// - Confirmation modals with contextual warnings
 /// - Cascading delete for providers (removes associated models)
 /// - Design-system toasts with undo functionality
 /// - Proper error handling and user feedback
@@ -106,7 +105,7 @@ class AiConfigDeleteService {
     }
   }
 
-  /// Shows a stylish confirmation modal for delete operations
+  /// Shows a confirmation modal for delete operations
   Future<bool> _showDeleteConfirmation(
     BuildContext context,
     AiConfig config,
