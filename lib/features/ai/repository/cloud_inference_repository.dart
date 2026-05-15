@@ -368,7 +368,6 @@ class CloudInferenceRepository {
         prompt: prompt,
         maxCompletionTokens: maxCompletionTokens,
         stream: stream,
-        speechDictionaryTerms: speechDictionaryTerms,
       );
     }
 

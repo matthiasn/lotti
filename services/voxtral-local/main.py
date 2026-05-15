@@ -113,15 +113,6 @@ class TranscriptionRequest(BaseModel):
     language: Optional[str] = Field(None, description="Language hint (auto-detected)")
     prompt: Optional[str] = Field(None, description="Context prompt for transcription")
     temperature: float = 0.0
-    speech_dictionary: Optional[List[str]] = Field(
-        None,
-        description=(
-            "Domain-specific spellings biased via `generate(sequence_bias=...)`. "
-            "Each term's multi-token variants (bare and leading-space) are "
-            "registered; single-token variants are skipped to avoid corrupting "
-            "unrelated text."
-        ),
-    )
 
 
 class ChatCompletionRequest(BaseModel):
@@ -134,15 +125,6 @@ class ChatCompletionRequest(BaseModel):
     stream: bool = False
     audio: Optional[str] = Field(None, description="Base64-encoded audio data")
     language: Optional[str] = Field(None, description="Language hint")
-    speech_dictionary: Optional[List[str]] = Field(
-        None,
-        description=(
-            "Domain-specific spellings biased via `generate(sequence_bias=...)`. "
-            "Each term's multi-token variants (bare and leading-space) are "
-            "registered; single-token variants are skipped to avoid corrupting "
-            "unrelated text."
-        ),
-    )
 
 
 class ModelPullRequest(BaseModel):
@@ -215,15 +197,11 @@ async def transcribe_audio(request: TranscriptionRequest) -> Dict[str, Any]:
 
         # Handle chunked vs single audio
         if isinstance(result[0], list):
-            audio_chunks, _ = result
-            transcription = await _process_chunks(
-                audio_chunks, request.speech_dictionary, request.language, req_id
-            )
+            audio_chunks, prompt = result
+            transcription = await _process_chunks(audio_chunks, prompt, request.language, req_id)
         else:
-            audio_array, _ = result
-            transcription = await _transcribe_single(
-                audio_array, request.speech_dictionary, request.language, req_id
-            )
+            audio_array, prompt = result
+            transcription = await _transcribe_single(audio_array, prompt, request.language, req_id)
 
         t2 = time.perf_counter()
         logger.info(
@@ -307,9 +285,7 @@ async def chat_completion(
             if request.stream:
                 # Stream each chunk's transcription as it completes
                 return StreamingResponse(
-                    _stream_transcription(
-                        result, request, request.speech_dictionary, req_id, t0
-                    ),
+                    _stream_transcription(result, request, context_prompt, req_id, t0),
                     media_type="text/event-stream",
                     headers={
                         "Cache-Control": "no-cache",
@@ -320,14 +296,14 @@ async def chat_completion(
             else:
                 # Non-streaming: process all and return single response
                 if isinstance(result[0], list):
-                    audio_chunks, _ = result
+                    audio_chunks, prompt = result
                     transcription = await _process_chunks(
-                        audio_chunks, request.speech_dictionary, request.language, req_id
+                        audio_chunks, prompt, request.language, req_id
                     )
                 else:
-                    audio_array, _ = result
+                    audio_array, prompt = result
                     transcription = await _transcribe_single(
-                        audio_array, request.speech_dictionary, request.language, req_id
+                        audio_array, prompt, request.language, req_id
                     )
 
                 t2 = time.perf_counter()
@@ -371,7 +347,7 @@ async def chat_completion(
 async def _stream_transcription(
     result: Union[Tuple[NDArray[np.float32], str], Tuple[List[NDArray[np.float32]], str]],
     request: ChatCompletionRequest,
-    dictionary: Optional[List[str]],
+    context_prompt: Optional[str],
     req_id: str,
     t0: float,
 ) -> Any:
@@ -387,7 +363,7 @@ async def _stream_transcription(
 
         if isinstance(result[0], list):
             # Multiple chunks - stream tokens within each chunk
-            audio_chunks, _ = result  # audio_processor's combined_prompt is unused
+            audio_chunks, _ = result  # Ignore prompt from audio processor, use context_prompt
             total_chunks = len(audio_chunks)
             logger.info(
                 f"[REQ {req_id}] Streaming {total_chunks} audio chunks with token-by-token output"
@@ -399,7 +375,7 @@ async def _stream_transcription(
                     first_token_in_chunk = True
 
                     async for token in _transcribe_streaming(
-                        chunk, dictionary, request.language, req_id
+                        chunk, context_prompt, request.language, req_id
                     ):
                         if token:
                             # Add space separator before first token of non-first chunks
@@ -449,11 +425,11 @@ async def _stream_transcription(
 
         else:
             # Single audio segment - stream token by token
-            audio_array, _ = result  # audio_processor's combined_prompt is unused
+            audio_array, _ = result  # Ignore prompt from audio processor, use context_prompt
             logger.info(f"[REQ {req_id}] Starting token-by-token streaming")
 
             async for token in _transcribe_streaming(
-                audio_array, dictionary, request.language, req_id
+                audio_array, context_prompt, request.language, req_id
             ):
                 if token:
                     event_data = {
@@ -515,52 +491,26 @@ async def _stream_transcription(
         yield "data: [DONE]\n\n"
 
 
-def _build_sequence_bias(
-    terms: Optional[List[str]],
-    tokenizer: Any,
-    bias: float,
-) -> Optional[Dict[Tuple[int, ...], float]]:
-    """Build a `sequence_bias` dict for `model.generate(...)` from a list
-    of speech-dictionary terms.
+def _audio_array_to_base64(audio_array: NDArray[np.float32], sample_rate: int) -> str:
+    """Convert numpy audio array to base64-encoded WAV."""
+    import base64
+    import io
 
-    For each term we register both the bare tokenization (`"Flutter"`)
-    and the leading-space variant (`" Flutter"`), because Mistral-family
-    tokenizers produce different sequences for word-initial vs.
-    mid-sentence positions.
+    import soundfile as sf
 
-    Sequences of fewer than two tokens are skipped: `sequence_bias`
-    applies the bias whenever the prefix of the sequence matches the
-    last generated tokens, so a single-token entry matches an empty
-    prefix on every step and biases that token globally — which
-    corrupts unrelated text. Terms whose space-prefixed variant
-    collapses to a single token (e.g. `" Flutter"` -> one merged
-    vocab id) therefore cannot be biased on that path; the bare
-    variant still covers transcript-start and post-newline cases.
-    """
-    if not terms or bias == 0.0:
-        return None
-
-    sequence_bias: Dict[Tuple[int, ...], float] = {}
-    for raw in terms:
-        term = raw.strip()
-        if not term:
-            continue
-        for variant in (term, f" {term}"):
-            ids = tokenizer.encode(variant, add_special_tokens=False)
-            if len(ids) >= 2:
-                sequence_bias[tuple(ids)] = bias
-    return sequence_bias or None
+    buffer = io.BytesIO()
+    sf.write(buffer, audio_array, sample_rate, format="WAV")
+    buffer.seek(0)
+    return base64.b64encode(buffer.read()).decode("utf-8")
 
 
 async def _transcribe_single(
     audio_array: NDArray[np.float32],
-    dictionary: Optional[List[str]],
+    context: Optional[str],
     language: Optional[str],
     req_id: str,
 ) -> str:
-    """Transcribe a single audio array, optionally biased toward a
-    speech-dictionary's spellings via `generate(..., sequence_bias=...)`.
-    """
+    """Transcribe a single audio array with optional context."""
     logger.info(f"[REQ {req_id}] Transcribing single audio segment")
 
     # Ensure audio is float32 and 1D
@@ -575,24 +525,28 @@ async def _transcribe_single(
     if max_val > 1.0:
         audio_array = audio_array / max_val
 
-    # Use VoxtralProcessor.apply_transcription_request — Voxtral's
-    # dedicated transcription mode. The chat-template path inserts
-    # segment markers like `[from 0 minutes 0 seconds to 15 seconds]`
-    # into the decoded output; this path does not. Dictionary biasing
-    # is applied below via `sequence_bias` on `generate(...)`.
-    logger.info(f"[REQ {req_id}] Building transcription request")
-    # `format` must be a list whose length matches `audio` after the
-    # processor's internal `make_list_of_audio(...)` wraps a single
-    # ndarray into a one-element list — passing a bare "wav" string
-    # trips `len(format)` validation in `apply_transcription_request`.
-    inputs = model_manager.processor.apply_transcription_request(
-        audio=audio_array,
-        model_id=model_manager.model_id,
-        language=language,
-        sampling_rate=ServiceConfig.AUDIO_SAMPLE_RATE,
-        format=["wav"],
-        return_tensors="pt",
-    )
+    # Build simple transcription instruction
+    if context and context.strip():
+        transcription_instruction = f"Speech dictionary:\n{context}\n\nTranscribe this audio in its original language. NEVER translate. Use exact spellings from the dictionary. Output ONLY the transcription, no intro."
+    else:
+        transcription_instruction = "Transcribe this audio in its original language. NEVER translate. Output ONLY the transcription, no intro."
+
+    # Convert audio to base64 for the chat template
+    audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
+
+    # Build conversation for Voxtral - audio first to prime language
+    conversation = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "audio", "base64": audio_base64},
+                {"type": "text", "text": transcription_instruction},
+            ],
+        },
+    ]
+
+    logger.info(f"[REQ {req_id}] Transcribing with chat template")
+    inputs = model_manager.processor.apply_chat_template(conversation)
 
     # Calculate audio duration and cap max_new_tokens accordingly
     # ~4 tokens per second of speech + buffer, prevents infinite loops on short audio
@@ -609,20 +563,6 @@ async def _transcribe_single(
         f"[REQ {req_id}] Audio duration: {audio_duration_sec:.1f}s, max_tokens: {max_tokens_for_audio}, timeout: {timeout_sec:.0f}s"
     )
 
-    # Build sequence_bias outside the inference thread — tokenization is
-    # cheap, runs on the event loop, and a non-trivial result is logged
-    # for visibility into which terms actually take effect.
-    sequence_bias = _build_sequence_bias(
-        terms=dictionary,
-        tokenizer=model_manager.processor.tokenizer,
-        bias=ServiceConfig.SPEECH_DICTIONARY_BIAS,
-    )
-    if sequence_bias:
-        logger.info(
-            f"[REQ {req_id}] sequence_bias: {len(sequence_bias)} multi-token "
-            f"variant(s) biased by {ServiceConfig.SPEECH_DICTIONARY_BIAS:+}"
-        )
-
     # Run blocking inference in thread pool to avoid blocking event loop
     # This allows SSE events to be sent between chunks
     def _run_inference():
@@ -632,8 +572,6 @@ async def _transcribe_single(
         # Generate with duration-based token limit
         gen_config = ServiceConfig.get_generation_config("transcription")
         gen_config["max_new_tokens"] = min(gen_config["max_new_tokens"], max_tokens_for_audio)
-        if sequence_bias:
-            gen_config["sequence_bias"] = sequence_bias
 
         t0 = time.perf_counter()
         with torch.inference_mode():
@@ -672,14 +610,11 @@ async def _transcribe_single(
 
 async def _transcribe_streaming(
     audio_array: NDArray[np.float32],
-    dictionary: Optional[List[str]],
+    context: Optional[str],
     language: Optional[str],
     req_id: str,
 ):
-    """Streaming twin of `_transcribe_single` — same shape, same
-    optional dictionary biasing, token-by-token output instead of a
-    single decode at the end.
-    """
+    """Transcribe audio with true token-by-token streaming."""
     logger.info(f"[REQ {req_id}] Starting streaming transcription")
 
     # Ensure audio is float32 and 1D
@@ -693,6 +628,26 @@ async def _transcribe_streaming(
     max_val = np.abs(audio_array).max()
     if max_val > 1.0:
         audio_array = audio_array / max_val
+
+    # Build simple transcription instruction
+    if context and context.strip():
+        transcription_instruction = f"Speech dictionary:\n{context}\n\nTranscribe this audio in its original language. NEVER translate. Use exact spellings from the dictionary. Output ONLY the transcription, no intro."
+    else:
+        transcription_instruction = "Transcribe this audio in its original language. NEVER translate. Output ONLY the transcription, no intro."
+
+    # Convert audio to base64 for the chat template
+    audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
+
+    # Build conversation for Voxtral - audio first to prime language
+    conversation = [
+        {
+            "role": "user",
+            "content": [
+                {"type": "audio", "base64": audio_base64},
+                {"type": "text", "text": transcription_instruction},
+            ],
+        },
+    ]
 
     # Calculate audio duration and cap max_new_tokens accordingly
     audio_duration_sec = len(audio_array) / ServiceConfig.AUDIO_SAMPLE_RATE
@@ -708,19 +663,8 @@ async def _transcribe_streaming(
         f"[REQ {req_id}] Streaming: audio {audio_duration_sec:.1f}s, max_tokens: {max_tokens_for_audio}, timeout: {timeout_sec:.0f}s"
     )
 
-    logger.info(f"[REQ {req_id}] Building transcription request for streaming")
-    # `format` must be a list whose length matches `audio` after the
-    # processor's internal `make_list_of_audio(...)` wraps a single
-    # ndarray into a one-element list — passing a bare "wav" string
-    # trips `len(format)` validation in `apply_transcription_request`.
-    inputs = model_manager.processor.apply_transcription_request(
-        audio=audio_array,
-        model_id=model_manager.model_id,
-        language=language,
-        sampling_rate=ServiceConfig.AUDIO_SAMPLE_RATE,
-        format=["wav"],
-        return_tensors="pt",
-    )
+    logger.info(f"[REQ {req_id}] Applying chat template for streaming")
+    inputs = model_manager.processor.apply_chat_template(conversation)
 
     # Create streamer for token-by-token output
     streamer = TextIteratorStreamer(
@@ -736,17 +680,6 @@ async def _transcribe_streaming(
     gen_config = ServiceConfig.get_generation_config("transcription")
     gen_config["max_new_tokens"] = min(gen_config["max_new_tokens"], max_tokens_for_audio)
     gen_config["streamer"] = streamer
-    sequence_bias = _build_sequence_bias(
-        terms=dictionary,
-        tokenizer=model_manager.processor.tokenizer,
-        bias=ServiceConfig.SPEECH_DICTIONARY_BIAS,
-    )
-    if sequence_bias:
-        gen_config["sequence_bias"] = sequence_bias
-        logger.info(
-            f"[REQ {req_id}] sequence_bias: {len(sequence_bias)} multi-token "
-            f"variant(s) biased by {ServiceConfig.SPEECH_DICTIONARY_BIAS:+}"
-        )
 
     # Start generation in background thread
     def _generate():
@@ -802,7 +735,7 @@ async def _transcribe_streaming(
 
 async def _process_chunks(
     chunks: List[NDArray[np.float32]],
-    dictionary: Optional[List[str]],
+    prompt: str,
     language: Optional[str],
     req_id: str,
 ) -> str:
@@ -813,9 +746,7 @@ async def _process_chunks(
     for i, chunk in enumerate(chunks):
         try:
             logger.info(f"[REQ {req_id}] Processing chunk {i+1}/{len(chunks)}")
-            chunk_transcription = await _transcribe_single(
-                chunk, dictionary, language, req_id
-            )
+            chunk_transcription = await _transcribe_single(chunk, prompt, language, req_id)
             if chunk_transcription.strip():
                 transcriptions.append(chunk_transcription.strip())
         except Exception as e:

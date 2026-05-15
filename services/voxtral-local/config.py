@@ -73,14 +73,6 @@ class ServiceConfig:
         os.getenv("GENERATION_TIMEOUT_MULTIPLIER", "0.5")
     )  # 0.5x audio duration
 
-    # Logit bias applied to each speech-dictionary term's tokenized form
-    # at generation time via `sequence_bias`. Positive values nudge the
-    # model toward dictionary spellings without forcing them; ~2.0 is a
-    # safe default. Raise if the bias is too weak to take effect for your
-    # vocabulary, lower if dictionary terms appear in transcripts of
-    # audio that did not actually contain them.
-    SPEECH_DICTIONARY_BIAS = float(os.getenv("SPEECH_DICTIONARY_BIAS", "2.0"))
-
     # API settings
     MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "2"))
     REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "900"))  # 15 min for long audio
