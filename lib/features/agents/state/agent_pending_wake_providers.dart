@@ -76,8 +76,25 @@ final StreamProviderFamily<Set<String>, String> _entryUpdateProvider =
       return notifications.updateStream.where((ids) => ids.contains(entryId));
     });
 
+// `autoDispose` so each entryId's cached title and its underlying
+// `_entryUpdateProvider` stream subscription release as soon as the
+// last watcher leaves the tree. Without it both providers would pin
+// for every task/project ID the app ever queried — each adding a
+// permanent `where`-filtered listener on the global update stream.
+//
+// Two call patterns rely on this provider, both compatible with
+// autoDispose:
+//   1. Widgets (`_OngoingWakeRow`, `_WakeRow`) `ref.watch` it while
+//      the row is mounted — subscription keeps it alive; teardown
+//      releases it.
+//   2. `_resolveOngoingRecord` does a one-shot `ref.read(...).future`
+//      to seed the snapshot title, with no lingering subscription.
+//      The provider disposes after the read; the renderer's later
+//      `ref.watch` instantiates a fresh entry and triggers one extra
+//      `journalEntityById` lookup on first render — acceptable, since
+//      the snapshot path only runs when the running-agent set changes.
 final FutureProviderFamily<String?, String?> pendingWakeTargetTitleProvider =
-    FutureProvider.family<String?, String?>((
+    FutureProvider.autoDispose.family<String?, String?>((
       ref,
       String? entryId,
     ) async {
