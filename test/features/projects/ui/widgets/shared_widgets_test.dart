@@ -895,6 +895,11 @@ Longer report content.
       expect(formatCountdown(3661), '1:01:01');
       expect(formatCountdown(5 * 3600 + 39 * 60 + 14), '5:39:14');
     });
+
+    test('clamps negative input to zero', () {
+      expect(formatCountdown(-1), '0:00');
+      expect(formatCountdown(-3661), '0:00');
+    });
   });
 
   group('showcaseUpdatedLabel', () {

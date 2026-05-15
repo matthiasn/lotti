@@ -648,7 +648,7 @@ class WakeOrchestrator {
       // subscriptions that opted into digest deferral use the next 06:00 so
       // project agents do not burn LLM tokens on every incidental fan-out.
       final DateTime? morningDeadline;
-      if (!usesFastThrottle && trueDirect.isEmpty) {
+      if (!usesFastThrottle) {
         morningDeadline = nextOccurrenceOf(
           now,
           hour: AgentSchedules.projectDailyDigestHour,

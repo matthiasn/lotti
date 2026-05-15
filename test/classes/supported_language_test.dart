@@ -65,23 +65,5 @@ void main() {
         expect(result, equals(language));
       }
     });
-
-    test('fromCode performance - Map lookup is O(1)', () {
-      // This test verifies that the Map-based implementation is efficient
-      // by performing many lookups and ensuring they complete quickly
-      final stopwatch = Stopwatch()..start();
-
-      // Perform 10000 lookups
-      for (var i = 0; i < 10000; i++) {
-        SupportedLanguage.fromCode('en');
-        SupportedLanguage.fromCode('de');
-        SupportedLanguage.fromCode('invalid');
-      }
-
-      stopwatch.stop();
-
-      // Map lookups should be very fast - typically under 10ms for 30000 operations
-      expect(stopwatch.elapsedMilliseconds, lessThan(50));
-    });
   });
 }

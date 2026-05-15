@@ -145,13 +145,13 @@ without leaving whatever tab the operator is on:
 - one row per currently running wake with the linked task/project title and
   live elapsed time,
 - up to three compact scheduled rows with the linked task/project title and a
-  per-row ETA (`now` once due, `mm:ss` inside the one-hour lookahead,
+  per-row ETA (`now` once due, `m:ss` inside the one-hour lookahead,
   switching to the warning colour inside the last five minutes),
 - the header link switches to the Settings tab and beams to
   `/settings/agents/pending-wakes` for the full list.
 
 Rows are driven by the page-scoped `wakeCountdownTickerProvider`, so the
-sidebar shares one one-second ticker instead of spawning a timer per row. Wakes
+sidebar shares a one-second ticker instead of spawning a timer per row. Wakes
 outside the one-hour lookahead stay out of the inline sidebar and remain
 visible on the full Wake Cycles page. The collapsed (icon-only) sidebar
 suppresses the slot because the header and rows would not fit the narrow
@@ -346,11 +346,11 @@ The persisted wake reasons are:
 - `reanalysis`
 - `scheduled`
 
-Subscription-driven wakes are throttled with a 120 second window. A
+Subscription-driven wakes are throttled with a 120-second window. A
 subscription can opt into daily-digest deferral for propagated-only matches;
 project-agent subscriptions use that path so linked-task churn waits for the
 scheduled project digest, while task-agent subscriptions opt out so child-entry
-and task-context updates refresh on the normal 120 second coalesced wake path.
+and task-context updates refresh on the normal 120-second coalesced wake path.
 Manual wakes (`creation`, `reanalysis`, and scheduled jobs enqueued manually by
 `ScheduledWakeManager`) bypass subscription matching and that throttle path.
 
