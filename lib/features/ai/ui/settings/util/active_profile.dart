@@ -23,26 +23,21 @@ AiConfigInferenceProfile? pickActiveProfileForProvider({
   if (providerModels.isEmpty || profiles.isEmpty) return null;
   final providerModelIds = providerModels.map((m) => m.providerModelId).toSet();
 
-  bool touchesProvider(AiConfigInferenceProfile p) {
-    final slots = <String?>[
-      p.thinkingModelId,
-      p.thinkingHighEndModelId,
-      p.imageRecognitionModelId,
-      p.transcriptionModelId,
-      p.imageGenerationModelId,
-    ];
-    return slots.any(
-      (slot) => slot != null && providerModelIds.contains(slot),
-    );
-  }
+  AiConfigInferenceProfile? firstTouching;
+  for (final p in profiles) {
+    final touches =
+        providerModelIds.contains(p.thinkingModelId) ||
+        providerModelIds.contains(p.thinkingHighEndModelId) ||
+        providerModelIds.contains(p.imageRecognitionModelId) ||
+        providerModelIds.contains(p.transcriptionModelId) ||
+        providerModelIds.contains(p.imageGenerationModelId);
 
-  for (final p in profiles) {
-    if (p.isDefault && touchesProvider(p)) return p;
+    if (touches) {
+      if (p.isDefault) return p;
+      firstTouching ??= p;
+    }
   }
-  for (final p in profiles) {
-    if (touchesProvider(p)) return p;
-  }
-  return null;
+  return firstTouching;
 }
 
 /// Returns the set of profile ids that are the "active profile" for at
@@ -61,9 +56,9 @@ Set<String> activeProfileIdsForProviders({
   if (providers.isEmpty || profiles.isEmpty) return const <String>{};
   final modelsByProviderId = <String, List<AiConfigModel>>{};
   for (final model in models) {
-    modelsByProviderId
-        .putIfAbsent(model.inferenceProviderId, () => <AiConfigModel>[])
-        .add(model);
+    (modelsByProviderId[model.inferenceProviderId] ??= <AiConfigModel>[]).add(
+      model,
+    );
   }
   final activeIds = <String>{};
   for (final provider in providers) {

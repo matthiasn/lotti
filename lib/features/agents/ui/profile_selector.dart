@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
@@ -157,11 +159,13 @@ class _ProfilePickerContent extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               profile.thinkingModelId,
-                              style: context.textTheme.bodySmall?.copyWith(
+                              style: monoMetaStyle(
+                                context.designTokens,
+                                context.designTokens.colors,
+                                base: context.textTheme.bodySmall,
                                 color: context.colorScheme.onSurface.withValues(
                                   alpha: 0.6,
                                 ),
-                                fontFamily: 'monospace',
                               ),
                             ),
                           ],

@@ -292,13 +292,14 @@ Grounded implementation notes:
 
 ## Seeded Defaults
 
-`ProfileSeedingService` currently seeds these profiles:
+`ProfileSeedingService.seedDefaults()` currently seeds these profiles:
 
 - `Gemini Flash`
 - `Gemini Pro`
 - `OpenAI`
 - `Mistral (EU)`
 - `Chinese AI Profile`
+- `Anthropic Claude`
 - `Local (Ollama)`
 - `Local Power (Ollama)`
 
@@ -307,6 +308,10 @@ Operational details from the seeded definitions:
 - the two local profiles are `desktopOnly`
 - `Local (Ollama)` ships with image-analysis automation but no transcription slot
 - `Local Power (Ollama)` currently ships with no default skill assignments
+
+`seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Once a profile exists, the seeder never touches it again — user edits to model slots, the `isDefault` flag, names, descriptions, and skill assignments survive every restart and app upgrade. Updating a bundled default in code (e.g. swapping the Ollama thinking model) therefore only affects fresh installs; existing installs keep whatever the user has.
+
+`upgradeExisting()` is a one-time backfill that adds default `skillAssignments` to existing default profiles whose `skillAssignments` are still empty (legacy installs from before the field existed). It only ever fills empties — non-empty assignment lists are preserved.
 
 `skills/built_in_skills.dart` currently exposes nine built-in skills:
 

@@ -69,91 +69,89 @@ void main() {
       verify(() => mockRepo.saveConfig(any())).called(7);
     });
 
-    test('is fully idempotent — no saves when all exist and match', () async {
-      // Return a profile that matches the seed target for each ID so no
-      // drift is detected. Use updatedAt != null to simulate user ownership
-      // which also blocks updates.
-      when(() => mockRepo.getConfigById(any())).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: 'existing',
-          name: 'Existing',
-          thinkingModelId: 'some-model',
-          createdAt: DateTime(2026),
-          updatedAt: DateTime(2026, 2), // user-edited → never overwritten
-        ),
-      );
-
-      await service.seedDefaults();
-
-      verifyNever(() => mockRepo.saveConfig(any()));
-    });
-
-    test('updates existing default profile when model IDs drift', () async {
-      // Local profile exists but has old model ID.
-      when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: profileLocalId,
-          name: 'Local (Ollama)',
-          thinkingModelId: 'qwen3:8b', // old model
-          imageRecognitionModelId: 'qwen3.5:9b', // matches current
-          isDefault: true,
-          desktopOnly: true,
-          createdAt: DateTime(2026),
-        ),
-      );
-
-      await service.seedDefaults();
-
-      // Should save the updated local profile (+ 7 new ones).
-      verify(() => mockRepo.saveConfig(any())).called(8);
-    });
-
     test(
-      'updates default profile even if updatedAt is set',
+      'is fully idempotent — no saves when all profiles already exist',
       () async {
-        // Default profiles are always reconciled when drifted, regardless
-        // of updatedAt — since saveConfig always sets updatedAt, the old
-        // updatedAt == null gate was unreachable.
-        when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
+        // Any non-null result from getConfigById short-circuits the seed.
+        // The seeder is strictly seed-on-create; existing rows are never
+        // touched regardless of their contents.
+        when(() => mockRepo.getConfigById(any())).thenAnswer(
           (_) async => AiConfig.inferenceProfile(
-            id: profileLocalId,
-            name: 'Local (Ollama)',
-            thinkingModelId: 'qwen3:8b', // old model, drifted
-            imageRecognitionModelId: 'qwen3.5:9b',
-            isDefault: true,
-            desktopOnly: true,
+            id: 'existing',
+            name: 'Existing',
+            thinkingModelId: 'some-model',
             createdAt: DateTime(2026),
-            updatedAt: DateTime(2026, 3),
           ),
         );
 
         await service.seedDefaults();
 
-        // 7 new profiles + 1 updated (drifted local profile).
-        verify(() => mockRepo.saveConfig(any())).called(8);
+        verifyNever(() => mockRepo.saveConfig(any()));
       },
     );
 
-    test('does not update non-default profile even if drifted', () async {
-      // Non-default profiles are user-created and never touched by seeding.
-      when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: profileLocalId,
-          name: 'Local (Ollama)',
-          thinkingModelId: 'qwen3.5:9b',
-          imageRecognitionModelId: 'qwen3.5:9b',
-          desktopOnly: true,
-          createdAt: DateTime(2026),
-          // isDefault defaults to false — seed target has isDefault true,
-          // but existing is not default so it should not be updated.
-        ),
-      );
+    test(
+      'preserves user-edited model IDs on existing default profile — '
+      'seed-on-create only, never overwrites',
+      () async {
+        // Local profile exists with a user-swapped thinking model that
+        // does NOT match the seed target. Pre-change, this would have
+        // been clobbered back to the bundled default on every restart.
+        when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: profileLocalId,
+            name: 'Local (Ollama)',
+            thinkingModelId: 'qwen3:8b', // user-edited, drifts from seed
+            imageRecognitionModelId: 'qwen3.5:9b',
+            isDefault: true,
+            desktopOnly: true,
+            createdAt: DateTime(2026),
+          ),
+        );
 
-      await service.seedDefaults();
+        await service.seedDefaults();
 
-      // 7 new profiles only (local not updated — not isDefault).
-      verify(() => mockRepo.saveConfig(any())).called(7);
-    });
+        // Only the 7 missing profiles get written. The existing Local
+        // profile is left untouched — user edit survives.
+        verify(() => mockRepo.saveConfig(any())).called(7);
+        verifyNever(
+          () => mockRepo.saveConfig(
+            any(
+              that: isA<AiConfigInferenceProfile>().having(
+                (p) => p.id,
+                'id',
+                profileLocalId,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'preserves user-toggled isDefault flag on existing profile',
+      () async {
+        // User flipped isDefault off on the Local profile. Seed target
+        // has isDefault: true — must not be re-asserted.
+        when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: profileLocalId,
+            name: 'Local (Ollama)',
+            thinkingModelId: 'qwen3.5:9b',
+            imageRecognitionModelId: 'qwen3.5:9b',
+            desktopOnly: true,
+            createdAt: DateTime(2026),
+            // isDefault defaults to false.
+          ),
+        );
+
+        await service.seedDefaults();
+
+        // 7 new profiles only — the Local profile is not re-asserted to
+        // isDefault: true.
+        verify(() => mockRepo.saveConfig(any())).called(7);
+      },
+    );
 
     test('seeds profiles with correct IDs', () async {
       await service.seedDefaults();
@@ -173,50 +171,29 @@ void main() {
       }
     });
 
-    test('does not update default profile when all slots match', () async {
-      // Local profile exists with matching model IDs and skill assignments.
-      when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: profileLocalId,
-          name: 'Local (Ollama)',
-          thinkingModelId: 'qwen3.5:9b',
-          imageRecognitionModelId: 'qwen3.5:9b',
-          skillAssignments: const [
-            SkillAssignment(
-              skillId: skillImageAnalysisContextId,
-              automate: true,
-            ),
-          ],
-          isDefault: true,
-          desktopOnly: true,
-          createdAt: DateTime(2026),
-        ),
-      );
+    test(
+      'does not touch existing default profile, drift or no drift',
+      () async {
+        // Existing profile drifts on imageRecognitionModelId — pre-change
+        // this would have been reconciled. Now: left alone.
+        when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: profileLocalId,
+            name: 'Local (Ollama)',
+            thinkingModelId: 'qwen3.5:9b',
+            imageRecognitionModelId: 'old-vision-model', // drifted
+            isDefault: true,
+            desktopOnly: true,
+            createdAt: DateTime(2026),
+          ),
+        );
 
-      await service.seedDefaults();
+        await service.seedDefaults();
 
-      // 7 new profiles saved (local skipped — no drift).
-      verify(() => mockRepo.saveConfig(any())).called(7);
-    });
-
-    test('detects drift on imageRecognitionModelId', () async {
-      when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
-        (_) async => AiConfig.inferenceProfile(
-          id: profileLocalId,
-          name: 'Local (Ollama)',
-          thinkingModelId: 'qwen3.5:9b',
-          imageRecognitionModelId: 'old-vision-model', // drifted
-          isDefault: true,
-          desktopOnly: true,
-          createdAt: DateTime(2026),
-        ),
-      );
-
-      await service.seedDefaults();
-
-      // 8 saves: 7 new + 1 updated local profile.
-      verify(() => mockRepo.saveConfig(any())).called(8);
-    });
+        // 7 new profiles only — Local profile preserved as-is.
+        verify(() => mockRepo.saveConfig(any())).called(7);
+      },
+    );
 
     test('local power profile has correct configuration', () async {
       final capturedConfigs = <AiConfig>[];
