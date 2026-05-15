@@ -51,6 +51,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Profile cards in AI Settings now pin the `⋯` overflow menu to
   the far right of the card header — matching the provider cards
   — instead of letting it drift next to longer profile names.
+- AI Settings Profiles tab Active badge now reflects whether the
+  profile is the winning candidate for at least one configured
+  provider — the same rule the provider detail page already uses
+  for its "Active profile" section. Previously the badge was
+  wired to `profile.isDefault`, which the seeder stamps on every
+  shipped profile, so every seeded card lit up the green badge
+  regardless of whether the user had actually wired the
+  underlying provider. The picker logic moved into a new
+  `lib/features/ai/ui/settings/util/active_profile.dart` so both
+  surfaces consume the same definition; the detail page's
+  Active-profile card also now shows the badge unconditionally
+  (it can no longer fall off the card because of an unrelated
+  `isDefault` flag flip). "Configured" mirrors
+  `AiProviderCardStatus.statusFor` returning `connected`: cloud
+  providers need a non-empty API key (drafts are skipped, even
+  when their model rows survived the API-key clear), and Ollama
+  needs a non-empty base URL plus at least one model row. The
+  badge can no longer light up while the underlying provider
+  card reads "Invalid key" or "Offline".
 - The "Local Power (Ollama)" seeded profile now uses
   `qwen3.6:35b-a3b-coding-nvfp4` (35B MoE / ~3B active, NVFP4
   quant, 22GB download, 256K context, text-only) as the thinking
