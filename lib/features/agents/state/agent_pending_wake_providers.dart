@@ -59,20 +59,42 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
   return records;
 });
 
-final StreamProviderFamily<void, String> _entryUpdateProvider = StreamProvider
-    .autoDispose
-    .family<void, String>((
+// Returns the raw `Set<String>` from `UpdateNotifications` rather than
+// `void`: Riverpod deduplicates `AsyncData` values using `==`, and
+// `AsyncData<void>(null) == AsyncData<void>(null)` is true — so a
+// `Stream<void>` would only notify watchers on the very first
+// emission and silently drop every subsequent one. Each emitted set
+// is identity-distinct, so `pendingWakeTargetTitleProvider` actually
+// re-runs when the linked task is renamed after a previously-blank
+// title. Same fix shape as `agentUpdateStreamProvider`.
+final StreamProviderFamily<Set<String>, String> _entryUpdateProvider =
+    StreamProvider.autoDispose.family<Set<String>, String>((
       ref,
       entryId,
     ) {
       final notifications = ref.watch(updateNotificationsProvider);
-      return notifications.updateStream
-          .where((ids) => ids.contains(entryId))
-          .map<void>((_) {});
+      return notifications.updateStream.where((ids) => ids.contains(entryId));
     });
 
+// `autoDispose` so each entryId's cached title and its underlying
+// `_entryUpdateProvider` stream subscription release as soon as the
+// last watcher leaves the tree. Without it both providers would pin
+// for every task/project ID the app ever queried — each adding a
+// permanent `where`-filtered listener on the global update stream.
+//
+// Two call patterns rely on this provider, both compatible with
+// autoDispose:
+//   1. Widgets (`_OngoingWakeRow`, `_WakeRow`) `ref.watch` it while
+//      the row is mounted — subscription keeps it alive; teardown
+//      releases it.
+//   2. `_resolveOngoingRecord` does a one-shot `ref.read(...).future`
+//      to seed the snapshot title, with no lingering subscription.
+//      The provider disposes after the read; the renderer's later
+//      `ref.watch` instantiates a fresh entry and triggers one extra
+//      `journalEntityById` lookup on first render — acceptable, since
+//      the snapshot path only runs when the running-agent set changes.
 final FutureProviderFamily<String?, String?> pendingWakeTargetTitleProvider =
-    FutureProvider.family<String?, String?>((
+    FutureProvider.autoDispose.family<String?, String?>((
       ref,
       String? entryId,
     ) async {
