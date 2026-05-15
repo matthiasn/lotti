@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import sys
 import time
 import uuid
@@ -504,6 +505,176 @@ def _audio_array_to_base64(audio_array: NDArray[np.float32], sample_rate: int) -
     return base64.b64encode(buffer.read()).decode("utf-8")
 
 
+# Matches Voxtral's chat-template segment markers, e.g.
+# `[from 0 minutes 0 seconds to 15 seconds]`,
+# `[from 1 minute 30 seconds to 2 minutes]`. Scoped to brackets whose
+# inner text begins with `from`, so legitimate `[inaudible]`/`[laughs]`
+# style annotations the model might emit are preserved.
+_VOXTRAL_TIMESTAMP_RE = re.compile(r"\[from\b[^\]]*\]")
+
+
+# ISO 639-1 codes → English language names used in the transcription
+# instruction. We need the human-readable name in the prompt because
+# Voxtral has been observed to ignore raw codes ("de") but follow
+# explicit language names ("German"). Codes outside this map fall
+# through as-is (best-effort).
+_LANGUAGE_NAMES: Dict[str, str] = {
+    "de": "German",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "it": "Italian",
+    "nl": "Dutch",
+    "pl": "Polish",
+    "pt": "Portuguese",
+    "ro": "Romanian",
+    "cs": "Czech",
+    "ru": "Russian",
+    "sv": "Swedish",
+    "tr": "Turkish",
+    "uk": "Ukrainian",
+    "da": "Danish",
+    "fi": "Finnish",
+    "no": "Norwegian",
+    "ja": "Japanese",
+    "zh": "Chinese",
+    "ko": "Korean",
+    "ar": "Arabic",
+}
+
+
+def _build_transcription_instruction(
+    context: Optional[str],
+    language: Optional[str],
+) -> str:
+    """Assemble the chat-template user message for transcription.
+
+    Order matters: the language-handling rules come first, before the
+    speech dictionary. The previous shape (dictionary first, then
+    "transcribe in original language") let the Latin-script proper
+    nouns in the dictionary pull the model into translating non-English
+    audio into English — observed live with a German recording whose
+    dictionary was a mix of German and Persian names, transcribed
+    entirely in English. Two countermeasures here:
+
+    * Lead with explicit detect-then-transcribe rules so the model
+      anchors on the audio's language before reading any context.
+    * Tell the model literally that the dictionary is NOT a language
+      hint — Latin-script names alone are enough to bias output toward
+      English unless this is called out.
+
+    When a `language` is provided (auto-detect disabled) we replace the
+    detect step with an explicit "transcribe in {language}" directive.
+    The display name comes from `_LANGUAGE_NAMES` because Voxtral
+    follows full names ("German") more reliably than ISO codes ("de").
+    """
+    parts: List[str] = []
+
+    if language and language.lower() != "auto":
+        lang_display = _LANGUAGE_NAMES.get(language.lower(), language)
+        parts.append(
+            f"CRITICAL: Transcribe this audio in {lang_display}. "
+            f"Output ONLY {lang_display} text. "
+            "Do NOT translate to any other language."
+        )
+    else:
+        parts.append(
+            "RULES (in order):\n"
+            "1. Detect the language being spoken in the audio.\n"
+            "2. Transcribe in that EXACT language — German stays "
+            "German, French stays French, English stays English.\n"
+            "3. NEVER translate. Output the speaker's own words in "
+            "the speaker's own language."
+        )
+
+    if context and context.strip():
+        parts.append(
+            "Proper nouns to recognise (use these spellings when the "
+            "audio matches phonetically). This list is NOT a language "
+            "hint — transcribe in the audio's language, not the "
+            f"language these names happen to be written in:\n{context}"
+        )
+
+    parts.append("Output ONLY the transcription, no intro or comments.")
+    return "\n\n".join(parts)
+
+
+def _strip_voxtral_timestamps(text: str) -> str:
+    """Remove Voxtral's `[from … to …]` segment markers and tidy the
+    whitespace they leave behind. Used on the fully-decoded transcript
+    in the non-streaming path.
+    """
+    cleaned = _VOXTRAL_TIMESTAMP_RE.sub("", text)
+    # Collapse the holes the markers leave: double spaces, trailing
+    # spaces before newlines, and triple-or-more newlines.
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r" *\n", "\n", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
+class _TimestampStripper:
+    """Stream-safe filter that elides Voxtral's `[from … to …]` segment
+    markers as text arrives token-by-token.
+
+    The full regex doesn't work in a streaming context because a marker
+    can be split across two token batches. Instead this holds a small
+    buffer whenever an unclosed `[` is in flight:
+
+    * Outside a bracket — pass characters through directly.
+    * Inside a bracket — buffer until either `]` (decide whether to drop
+      the block based on its prefix) or the buffer grows past a sanity
+      limit (assume it isn't a timestamp and flush as-is).
+
+    `flush()` releases anything still held when the stream ends.
+    """
+
+    _MAX_BRACKET_BUFFER = 200  # characters; far longer than any real timestamp
+
+    def __init__(self) -> None:
+        self._held = ""
+        self._in_bracket = False
+
+    def feed(self, text: str) -> str:
+        """Consume new text, return the portion safe to emit now."""
+        out: List[str] = []
+        for ch in text:
+            if self._in_bracket:
+                self._held += ch
+                if ch == "]":
+                    inner = self._held[1:-1].lstrip().lower()
+                    if inner.startswith("from"):
+                        # Voxtral segment marker — drop the whole block.
+                        self._held = ""
+                        self._in_bracket = False
+                    else:
+                        # Some other bracketed annotation — keep it.
+                        out.append(self._held)
+                        self._held = ""
+                        self._in_bracket = False
+                elif len(self._held) > self._MAX_BRACKET_BUFFER:
+                    # Sanity bail-out: flush the buffer, treat as not a
+                    # timestamp so we don't silently swallow real text.
+                    out.append(self._held)
+                    self._held = ""
+                    self._in_bracket = False
+            elif ch == "[":
+                self._in_bracket = True
+                self._held = "["
+            else:
+                out.append(ch)
+        return "".join(out)
+
+    def flush(self) -> str:
+        """Release any text still held at end-of-stream."""
+        if self._in_bracket:
+            out = self._held
+            self._held = ""
+            self._in_bracket = False
+            return out
+        return ""
+
+
 async def _transcribe_single(
     audio_array: NDArray[np.float32],
     context: Optional[str],
@@ -525,11 +696,10 @@ async def _transcribe_single(
     if max_val > 1.0:
         audio_array = audio_array / max_val
 
-    # Build simple transcription instruction
-    if context and context.strip():
-        transcription_instruction = f"Speech dictionary:\n{context}\n\nTranscribe this audio in its original language. NEVER translate. Use exact spellings from the dictionary. Output ONLY the transcription, no intro."
-    else:
-        transcription_instruction = "Transcribe this audio in its original language. NEVER translate. Output ONLY the transcription, no intro."
+    transcription_instruction = _build_transcription_instruction(
+        context=context,
+        language=language,
+    )
 
     # Convert audio to base64 for the chat template
     audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
@@ -594,7 +764,11 @@ async def _transcribe_single(
             f"({new_tokens/max(0.001, t1-t0):.1f} tok/s)"
         )
 
-        return transcription.strip()
+        # The chat-template path emits segment markers between audio
+        # segments (`[from 0 minutes 0 seconds to 15 seconds]`). The
+        # dictionary biasing relies on this path, so we strip the
+        # markers on the way out rather than disabling the path.
+        return _strip_voxtral_timestamps(transcription)
 
     # Run in thread pool with timeout to prevent hangs
     try:
@@ -629,11 +803,10 @@ async def _transcribe_streaming(
     if max_val > 1.0:
         audio_array = audio_array / max_val
 
-    # Build simple transcription instruction
-    if context and context.strip():
-        transcription_instruction = f"Speech dictionary:\n{context}\n\nTranscribe this audio in its original language. NEVER translate. Use exact spellings from the dictionary. Output ONLY the transcription, no intro."
-    else:
-        transcription_instruction = "Transcribe this audio in its original language. NEVER translate. Output ONLY the transcription, no intro."
+    transcription_instruction = _build_transcription_instruction(
+        context=context,
+        language=language,
+    )
 
     # Convert audio to base64 for the chat template
     audio_base64 = _audio_array_to_base64(audio_array, ServiceConfig.AUDIO_SAMPLE_RATE)
@@ -694,9 +867,19 @@ async def _transcribe_streaming(
     token_count = 0
     batch_size = 6
     token_buffer = []
+    # Inline stripper that elides `[from … to …]` segment markers as
+    # text arrives. The full-regex path used in `_transcribe_single`
+    # doesn't apply here because markers can span token-batch
+    # boundaries; the stripper holds back text after an unclosed `[`
+    # until it can decide.
+    stripper = _TimestampStripper()
     t0 = time.perf_counter()
     deadline = t0 + timeout_sec
     timed_out = False
+
+    def _emit(raw: str) -> Optional[str]:
+        safe = stripper.feed(raw)
+        return safe or None
 
     for text in streamer:
         # Check timeout
@@ -711,12 +894,22 @@ async def _transcribe_streaming(
 
             # Yield when we have enough tokens
             if len(token_buffer) >= batch_size:
-                yield "".join(token_buffer)
+                safe = _emit("".join(token_buffer))
                 token_buffer = []
+                if safe:
+                    yield safe
 
     # Yield any remaining tokens
     if token_buffer:
-        yield "".join(token_buffer)
+        safe = _emit("".join(token_buffer))
+        if safe:
+            yield safe
+
+    # Release anything still buffered inside an unfinished bracket so
+    # nothing gets silently swallowed at end-of-stream.
+    tail = stripper.flush()
+    if tail:
+        yield tail
 
     # If timed out, yield error indicator
     if timed_out:
