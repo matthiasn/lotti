@@ -767,7 +767,6 @@
       }
     }
   },
-  "aiSetupResultReviewSetupButton": "Zkontrolovat nastavení",
   "aiSetupResultStartUsingButton": "Začít používat AI",
   "aiSetupWizardCreatesOptimized": "Vytváří optimalizované modely, výzvy a testovací kategorii",
   "aiSetupWizardDescription": "Nastavte nebo aktualizujte modely, výzvy a testovací kategorii pro {providerName}",

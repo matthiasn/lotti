@@ -1057,13 +1057,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Prepopulation skips the preview; the result modal opens directly.
-      // Tap "Review setup" — neither path creates any prompt rows.
-      expect(find.text('Review setup'), findsOneWidget);
-      await tester.tap(find.text('Review setup'));
+      // Dismiss via "Start using AI" — neither path creates any prompt rows.
+      expect(find.text('Start using AI'), findsOneWidget);
+      await tester.tap(find.text('Start using AI'));
       await tester.pumpAndSettle();
 
       // Modal closes, no prompts ever get created.
-      expect(find.text('Review setup'), findsNothing);
+      expect(find.text('Start using AI'), findsNothing);
       final promptsCreated = savedConfigs.whereType<AiConfigPrompt>().length;
       expect(promptsCreated, equals(0));
     });

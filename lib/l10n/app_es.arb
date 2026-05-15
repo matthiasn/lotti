@@ -927,7 +927,6 @@
       }
     }
   },
-  "aiSetupResultReviewSetupButton": "Revisar configuración",
   "aiSetupResultStartUsingButton": "Empezar a usar IA",
   "aiSetupWizardCreatesOptimized": "Crea modelos, prompts y una categoría de prueba optimizados",
   "aiSetupWizardDescription": "Configurar o actualizar modelos, prompts y categoría de prueba para {providerName}",

@@ -1,5 +1,5 @@
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_status.dart';
 
 /// Picks the inference profile that best represents the "active
 /// profile for this provider". Heuristic:
@@ -45,7 +45,7 @@ AiConfigInferenceProfile? pickActiveProfileForProvider({
 /// badge: a profile is badged iff some configured provider would treat
 /// it as its active profile on the provider detail page.
 ///
-/// "Configured" delegates to [AiProviderCard.statusFor] returning
+/// "Configured" delegates to [aiProviderCardStatusFor] returning
 /// `connected` — same definition the provider card's status pill uses,
 /// so the badge and the pill can never disagree.
 Set<String> activeProfileIdsForProviders({
@@ -74,14 +74,14 @@ Set<String> activeProfileIdsForProviders({
   return activeIds;
 }
 
-/// Delegates to [AiProviderCard.statusFor] so the badge uses the exact
+/// Delegates to [aiProviderCardStatusFor] so the badge uses the exact
 /// same "connected" definition the provider card's status pill does —
 /// single source of truth, no parallel implementation to drift.
 bool _isProviderConfigured(
   AiConfigInferenceProvider provider,
   List<AiConfigModel> providerModels,
 ) {
-  return AiProviderCard.statusFor(
+  return aiProviderCardStatusFor(
         provider: provider,
         modelCount: providerModels.length,
       ) ==

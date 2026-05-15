@@ -927,7 +927,6 @@
       }
     }
   },
-  "aiSetupResultReviewSetupButton": "Verificați configurarea",
   "aiSetupResultStartUsingButton": "Începeți să utilizați AI",
   "aiSetupWizardCreatesOptimized": "Creează modele, prompturi și o categorie de test optimizate",
   "aiSetupWizardDescription": "Configurează sau actualizează modele, prompturi și categoria de test pentru {providerName}",
