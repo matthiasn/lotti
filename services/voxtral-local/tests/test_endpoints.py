@@ -372,3 +372,206 @@ class TestStreamingSupport:
         from main import _transcribe_single
 
         assert inspect.iscoroutinefunction(_transcribe_single)
+
+
+class TestBuildTranscriptionInstruction:
+    """Tests for the transcription user-message builder.
+
+    These pin the *shape* of the prompt — order matters for Voxtral:
+    the no-translate / language directive must lead so the dictionary
+    text doesn't pull the model toward English."""
+
+    def test_no_language_falls_back_to_detect_then_transcribe_rules(self):
+        from main import _build_transcription_instruction
+
+        out = _build_transcription_instruction(context=None, language=None)
+        first_block = out.split("\n\n", 1)[0]
+        # Detect-then-transcribe chain, with explicit no-translate.
+        assert "Detect the language" in first_block
+        assert "Transcribe in that EXACT language" in first_block
+        assert "NEVER translate" in first_block
+        # No dictionary block when context is missing.
+        assert "Proper nouns" not in out
+
+    def test_auto_language_uses_the_same_fallback(self):
+        from main import _build_transcription_instruction
+
+        out = _build_transcription_instruction(context=None, language="auto")
+        assert "Detect the language" in out.split("\n\n", 1)[0]
+
+    def test_iso_code_resolves_to_language_name(self):
+        from main import _build_transcription_instruction
+
+        out = _build_transcription_instruction(context=None, language="de")
+        first_block = out.split("\n\n", 1)[0]
+        # The German hint must be named explicitly; Voxtral has been
+        # seen to ignore the raw ISO code.
+        assert "German" in first_block
+        assert "Transcribe this audio in German" in first_block
+        assert "Do NOT translate" in first_block
+
+    def test_unknown_iso_code_passes_through(self):
+        """Codes not in the language-name table pass through as-is so
+        downstream Voxtral can still try."""
+        from main import _build_transcription_instruction
+
+        out = _build_transcription_instruction(context=None, language="xx")
+        assert "Transcribe this audio in xx" in out
+
+    def test_language_directive_leads_before_dictionary(self):
+        """Regression: dictionary in front of the directive lets the
+        model drift into English. Directive must come first."""
+        from main import _build_transcription_instruction
+
+        out = _build_transcription_instruction(
+            context="Bijan\nRike\nLotti",
+            language="de",
+        )
+        directive_idx = out.find("Transcribe this audio in German")
+        dictionary_idx = out.find("Bijan")
+        assert directive_idx >= 0 and dictionary_idx >= 0
+        assert directive_idx < dictionary_idx, (
+            f"language directive should precede the dictionary block; "
+            f"got directive@{directive_idx} dictionary@{dictionary_idx}"
+        )
+
+    def test_dictionary_block_omitted_for_empty_context(self):
+        from main import _build_transcription_instruction
+
+        for empty in (None, "", "   ", "\n"):
+            out = _build_transcription_instruction(
+                context=empty, language="de"
+            )
+            assert "Proper nouns" not in out
+
+
+class TestStripVoxtralTimestamps:
+    """Tests for the non-streaming `[from … to …]` regex stripper."""
+
+    def test_strips_single_marker(self):
+        from main import _strip_voxtral_timestamps
+
+        text = "[from 0 minutes 0 seconds to 15 seconds] Hello world."
+        assert _strip_voxtral_timestamps(text) == "Hello world."
+
+    def test_strips_multiple_markers(self):
+        from main import _strip_voxtral_timestamps
+
+        text = (
+            "[from 0 seconds to 15 seconds] First segment. "
+            "[from 15 seconds to 30 seconds] Second segment."
+        )
+        assert (
+            _strip_voxtral_timestamps(text) == "First segment. Second segment."
+        )
+
+    def test_collapses_whitespace_left_behind(self):
+        from main import _strip_voxtral_timestamps
+
+        # Marker on its own line should leave a single blank, not three.
+        text = "Para one.\n\n[from 0 seconds to 5 seconds]\n\nPara two."
+        assert _strip_voxtral_timestamps(text) == "Para one.\n\nPara two."
+
+    def test_preserves_non_timestamp_brackets(self):
+        """Annotations like `[inaudible]` and `[laughs]` must survive —
+        the regex only matches brackets whose inner text starts with
+        `from`.
+        """
+        from main import _strip_voxtral_timestamps
+
+        text = "She said hello [inaudible] then [laughs] left."
+        assert (
+            _strip_voxtral_timestamps(text)
+            == "She said hello [inaudible] then [laughs] left."
+        )
+
+    def test_handles_empty_and_unmarked_text(self):
+        from main import _strip_voxtral_timestamps
+
+        assert _strip_voxtral_timestamps("") == ""
+        assert _strip_voxtral_timestamps("Plain text.") == "Plain text."
+
+
+class TestTimestampStripper:
+    """Tests for the streaming filter that survives marker splits
+    across token-batch boundaries."""
+
+    def test_passes_text_with_no_brackets_unchanged(self):
+        from main import _TimestampStripper
+
+        s = _TimestampStripper()
+        assert s.feed("Hello world.") == "Hello world."
+        assert s.flush() == ""
+
+    def test_strips_marker_within_a_single_feed(self):
+        from main import _TimestampStripper
+
+        s = _TimestampStripper()
+        out = s.feed("[from 0 seconds to 15 seconds] hello")
+        assert out == " hello"
+        assert s.flush() == ""
+
+    def test_strips_marker_split_across_two_feeds(self):
+        """A marker split mid-token must still be elided — the whole
+        point of the streaming stripper."""
+        from main import _TimestampStripper
+
+        s = _TimestampStripper()
+        first = s.feed("Hello [from 0 sec")
+        second = s.feed("onds to 15 seconds] world.")
+        # Nothing past the `[` should emit until the close-bracket
+        # arrives and the prefix is examined.
+        assert first == "Hello "
+        assert second == " world."
+        assert s.flush() == ""
+
+    def test_strips_marker_split_into_many_pieces(self):
+        from main import _TimestampStripper
+
+        s = _TimestampStripper()
+        out = "".join(
+            [
+                s.feed("a"),
+                s.feed("["),
+                s.feed("from"),
+                s.feed(" 0 to 5 seconds"),
+                s.feed("]"),
+                s.feed("b"),
+            ]
+        )
+        assert out == "ab"
+        assert s.flush() == ""
+
+    def test_preserves_non_from_brackets(self):
+        from main import _TimestampStripper
+
+        s = _TimestampStripper()
+        out = s.feed("She said [inaudible] hello.")
+        assert out == "She said [inaudible] hello."
+        assert s.flush() == ""
+
+    def test_flushes_unclosed_bracket_at_end_of_stream(self):
+        """If the stream ends mid-bracket we must not silently drop the
+        held text — flush returns it so the consumer sees the original
+        characters."""
+        from main import _TimestampStripper
+
+        s = _TimestampStripper()
+        out = s.feed("Hello [from 0 sec")
+        assert out == "Hello "
+        # Stream ends before the close-bracket arrives.
+        assert s.flush() == "[from 0 sec"
+
+    def test_long_unclosed_bracket_bails_out_safely(self):
+        """A very long stretch of text after `[` without a close-bracket
+        triggers the sanity bail-out and gets flushed as-is rather than
+        held indefinitely."""
+        from main import _TimestampStripper
+
+        s = _TimestampStripper()
+        payload = "[" + "x" * 250
+        out = s.feed(payload)
+        # When the cap trips, the entire held buffer flushes — so the
+        # consumer sees every character we held.
+        assert out == payload
+        assert s.flush() == ""
