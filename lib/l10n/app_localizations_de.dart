@@ -1209,6 +1209,40 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Schlussfolgerung verwenden';
 
   @override
+  String aiDeleteToastCascadeDescription(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Außerdem entfernt: $count Modelle ($names)',
+      one: 'Außerdem entfernt: 1 Modell ($names)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiDeleteToastErrorTitle(String name) {
+    return 'Löschen von $name fehlgeschlagen';
+  }
+
+  @override
+  String get aiDeleteToastModelTitle => 'Modell gelöscht';
+
+  @override
+  String get aiDeleteToastProfileTitle => 'Profil gelöscht';
+
+  @override
+  String get aiDeleteToastPromptTitle => 'Prompt gelöscht';
+
+  @override
+  String get aiDeleteToastProviderTitle => 'Anbieter gelöscht';
+
+  @override
+  String get aiDeleteToastSkillTitle => 'Fähigkeit gelöscht';
+
+  @override
+  String get aiDeleteToastUndoAction => 'Rückgängig';
+
+  @override
   String get aiFormCancel => 'Abbrechen';
 
   @override
@@ -1381,13 +1415,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Schlüssel wird geprüft, verfügbare Modelle werden geladen…';
 
   @override
-  String aiProviderConnectionFailedHttpDetail(int status, String message) {
-    return 'HTTP $status · $message';
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Unerwartete Antwortform: $type';
   }
 
   @override
-  String aiProviderConnectionFailedBadResponseDetail(String type) {
-    return 'Unerwartete Antwortform: $type';
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
   }
 
   @override

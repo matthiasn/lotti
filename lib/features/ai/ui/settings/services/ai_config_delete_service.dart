@@ -3,12 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+
+/// Undo window for the delete toast. Matches the checklist row's delete
+/// pattern so the destructive-undoable feedback feels uniform across the
+/// app.
+const kAiDeleteToastDuration = Duration(seconds: 5);
+
+/// Dwell time for the error toast. Slightly longer than the success
+/// window because the user has to read both the failure title and the
+/// underlying error detail before deciding what to do next.
+const kAiDeleteErrorToastDuration = Duration(seconds: 6);
 
 /// Service that handles stylish delete operations for AI configurations
 ///
@@ -19,7 +32,7 @@ import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 /// **Features:**
 /// - Stylish confirmation modals with contextual warnings
 /// - Cascading delete for providers (removes associated models)
-/// - Enhanced snackbars with undo functionality
+/// - Design-system toasts with undo functionality
 /// - Proper error handling and user feedback
 /// - Consistent theming across all delete operations
 ///
@@ -41,11 +54,11 @@ class AiConfigDeleteService {
   /// This method handles the complete delete flow:
   /// 1. Shows confirmation modal
   /// 2. Performs delete operation (with cascading for providers)
-  /// 3. Shows success snackbar with undo functionality
+  /// 3. Shows success DS toast with undo functionality
   /// 4. Handles errors gracefully
   ///
   /// **Parameters:**
-  /// - [context]: BuildContext for navigation and snackbars
+  /// - [context]: BuildContext for navigation and toasts
   /// - [ref]: WidgetRef for accessing providers
   /// - [config]: The configuration to delete
   ///
@@ -71,41 +84,23 @@ class AiConfigDeleteService {
             config.id,
           );
           if (context.mounted) {
-            _showProviderDeletedSnackbar(context, ref, config, result);
+            _showDeletedToast(context, ref, config, cascade: result);
           }
           return true;
 
         case AiConfigModel():
-          await repository.deleteConfig(config.id);
-          if (context.mounted) {
-            _showConfigDeletedSnackbar(context, ref, config);
-          }
-          return true;
-
         case AiConfigPrompt():
-          await repository.deleteConfig(config.id);
-          if (context.mounted) {
-            _showConfigDeletedSnackbar(context, ref, config);
-          }
-          return true;
-
         case AiConfigInferenceProfile():
-          await repository.deleteConfig(config.id);
-          if (context.mounted) {
-            _showConfigDeletedSnackbar(context, ref, config);
-          }
-          return true;
-
         case AiConfigSkill():
           await repository.deleteConfig(config.id);
           if (context.mounted) {
-            _showConfigDeletedSnackbar(context, ref, config);
+            _showDeletedToast(context, ref, config);
           }
           return true;
       }
     } catch (error) {
       if (context.mounted) {
-        _showErrorSnackbar(context, config, error);
+        _showErrorToast(context, config, error);
       }
       return false;
     }
@@ -306,256 +301,59 @@ class AiConfigDeleteService {
         false;
   }
 
-  /// Shows success snackbar for provider deletion with cascade information
-  void _showProviderDeletedSnackbar(
+  /// Shows the design-system toast for a successful delete, with the
+  /// checklist-style 5 s undo window. When [cascade] is provided and
+  /// non-empty (only for provider deletions) the toast description
+  /// lists the model names that were cascaded — the DS toast caps the
+  /// description at two lines, so long lists ellipsize naturally.
+  void _showDeletedToast(
     BuildContext context,
     WidgetRef ref,
-    AiConfigInferenceProvider provider,
-    CascadeDeletionResult result,
-  ) {
-    final hasDeletedModels = result.deletedModels.isNotEmpty;
+    AiConfig config, {
+    CascadeDeletionResult? cascade,
+  }) {
+    final messenger = ScaffoldMessenger.of(context);
+    final messages = context.messages;
+    final cascadeModels = cascade?.deletedModels ?? const [];
+    final description = cascadeModels.isEmpty
+        ? null
+        : messages.aiDeleteToastCascadeDescription(
+            cascadeModels.length,
+            cascadeModels.map((m) => m.name).join(', '),
+          );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: context.colorScheme.inversePrimary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        duration: const Duration(seconds: 6),
-        dismissDirection: DismissDirection.down,
-        content: Container(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Main deletion message
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(
-                      Icons.delete_forever_outlined,
-                      color: context.colorScheme.error,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Provider deleted successfully',
-                      style: context.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: context.colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              // Cascade information
-              if (hasDeletedModels) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.analytics_outlined,
-                            color: context.colorScheme.primary,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${result.deletedModels.length} associated ${result.deletedModels.length == 1 ? 'model' : 'models'} deleted',
-                            style: context.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                              color: context.colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (result.deletedModels.length <= 4) ...[
-                        const SizedBox(height: 8),
-                        ...result.deletedModels.map(
-                          (model) => Padding(
-                            padding: const EdgeInsets.only(left: 24, top: 2),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: context.colorScheme.onSurfaceVariant,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    model.name,
-                                    style: context.textTheme.bodySmall
-                                        ?.copyWith(
-                                          fontFamily: 'monospace',
-                                          color: context
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                        ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ] else ...[
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 24),
-                          child: Text(
-                            '${result.deletedModels.take(2).map((m) => m.name).join(', ')} and ${result.deletedModels.length - 2} more',
-                            style: context.textTheme.bodySmall?.copyWith(
-                              color: context.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        action: SnackBarAction(
-          label: 'Undo',
-          textColor: context.colorScheme.primary,
-          onPressed: () => _undoProviderDeletion(ref, provider, result),
-        ),
+    messenger.showDesignSystemToast(
+      tone: DesignSystemToastTone.warning,
+      title: _toastTitle(messages, config),
+      description: description,
+      duration: kAiDeleteToastDuration,
+      countdown: true,
+      replaceCurrent: true,
+      action: ToastAction(
+        label: messages.aiDeleteToastUndoAction,
+        onPressed: () {
+          if (config is AiConfigInferenceProvider && cascade != null) {
+            _undoProviderDeletion(ref, config, cascade);
+          } else {
+            _undoConfigDeletion(ref, config);
+          }
+          messenger.hideCurrentSnackBar();
+        },
       ),
     );
   }
 
-  /// Shows success snackbar for model/prompt deletion
-  void _showConfigDeletedSnackbar(
-    BuildContext context,
-    WidgetRef ref,
-    AiConfig config,
-  ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: context.colorScheme.inversePrimary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        duration: const Duration(seconds: 5),
-        dismissDirection: DismissDirection.down,
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: context.colorScheme.error.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Icon(
-                Icons.delete_forever_outlined,
-                color: context.colorScheme.error,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '${_getConfigTypeName(config)} deleted successfully',
-                style: context.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: context.colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ],
-        ),
-        action: SnackBarAction(
-          label: 'Undo',
-          textColor: context.colorScheme.primary,
-          onPressed: () => _undoConfigDeletion(ref, config),
-        ),
-      ),
-    );
-  }
-
-  /// Shows error snackbar when deletion fails
-  void _showErrorSnackbar(
-    BuildContext context,
-    AiConfig config,
-    Object error,
-  ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: context.colorScheme.errorContainer,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        duration: const Duration(seconds: 6),
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: context.colorScheme.error.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Icon(
-                Icons.error_outline,
-                color: context.colorScheme.error,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Failed to delete ${config.name}',
-                    style: context.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: context.colorScheme.onErrorContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    error.toString(),
-                    style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onErrorContainer.withValues(
-                        alpha: 0.8,
-                      ),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+  /// Shows the design-system error toast when a delete operation fails.
+  /// Captures the messenger up-front to mirror [_showDeletedToast] —
+  /// both paths go through `ScaffoldMessengerState.showDesignSystemToast`
+  /// so the invocation style stays uniform across this service.
+  void _showErrorToast(BuildContext context, AiConfig config, Object error) {
+    ScaffoldMessenger.of(context).showDesignSystemToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.aiDeleteToastErrorTitle(config.name),
+      description: error.toString(),
+      duration: kAiDeleteErrorToastDuration,
+      replaceCurrent: true,
     );
   }
 
@@ -648,13 +446,13 @@ class AiConfigDeleteService {
     };
   }
 
-  String _getConfigTypeName(AiConfig config) {
+  String _toastTitle(AppLocalizations messages, AiConfig config) {
     return switch (config) {
-      AiConfigInferenceProvider() => 'Provider',
-      AiConfigModel() => 'Model',
-      AiConfigPrompt() => 'Prompt',
-      AiConfigInferenceProfile() => 'Profile',
-      AiConfigSkill() => 'Skill',
+      AiConfigInferenceProvider() => messages.aiDeleteToastProviderTitle,
+      AiConfigModel() => messages.aiDeleteToastModelTitle,
+      AiConfigPrompt() => messages.aiDeleteToastPromptTitle,
+      AiConfigInferenceProfile() => messages.aiDeleteToastProfileTitle,
+      AiConfigSkill() => messages.aiDeleteToastSkillTitle,
     };
   }
 }

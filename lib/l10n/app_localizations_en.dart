@@ -1191,6 +1191,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Use Reasoning';
 
   @override
+  String aiDeleteToastCascadeDescription(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Also removed $count models: $names',
+      one: 'Also removed 1 model: $names',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiDeleteToastErrorTitle(String name) {
+    return 'Couldn\'t delete $name';
+  }
+
+  @override
+  String get aiDeleteToastModelTitle => 'Model deleted';
+
+  @override
+  String get aiDeleteToastProfileTitle => 'Profile deleted';
+
+  @override
+  String get aiDeleteToastPromptTitle => 'Prompt deleted';
+
+  @override
+  String get aiDeleteToastProviderTitle => 'Provider deleted';
+
+  @override
+  String get aiDeleteToastSkillTitle => 'Skill deleted';
+
+  @override
+  String get aiDeleteToastUndoAction => 'Undo';
+
+  @override
   String get aiFormCancel => 'Cancel';
 
   @override
@@ -1361,13 +1395,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Checking key, listing available models…';
 
   @override
-  String aiProviderConnectionFailedHttpDetail(int status, String message) {
-    return 'HTTP $status · $message';
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Unexpected response shape: $type';
   }
 
   @override
-  String aiProviderConnectionFailedBadResponseDetail(String type) {
-    return 'Unexpected response shape: $type';
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
   }
 
   @override

@@ -35,6 +35,8 @@
     <release version="0.9.1000" date="2026-05-14">
       <description>
           <p>Live API-key verification on the AI provider connect form. As soon as you stop typing in the API key or Base URL field, the form checks the credentials against the provider's API and shows a status strip below the Base URL with one of three outcomes: a spinner while the check runs, a green confirmation with the number of models the key can see and the response time, or a warning row explaining what went wrong (invalid key, network error, timeout, unreachable host) with a Retry button. Covers Gemini, OpenAI, Anthropic, Mistral, Alibaba, OpenRouter, Nebius, and Ollama out of the box — no more saving the form and hoping the key works.</p>
+          <p>AI Settings delete confirmations now use the same design-system toaster that the checklist row uses (warning tone, 5-second countdown bar, Undo action), replacing three custom hand-rolled SnackBars for provider, model, profile, prompt, and skill deletions plus the failure path. The provider cascade list, previously rendered as a custom bullet block inside the SnackBar, now collapses into the toast description so long lists ellipsize naturally. All copy moved into the new aiDeleteToast localization keys across English, Czech, German, Spanish, French, and Romanian (informal register).</p>
+          <p>Profile cards in AI Settings now pin the overflow menu to the far right of the card header — matching the provider cards — instead of letting it drift next to longer profile names.</p>
       </description>
     </release>
     <release version="0.9.999" date="2026-05-13">

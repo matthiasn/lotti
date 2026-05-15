@@ -533,6 +533,31 @@
   "aiConfigSelectProviderModalTitle": "Selectați furnizorul de inferență",
   "aiConfigSelectProviderTypeModalTitle": "Selectați tipul de furnizor",
   "aiConfigUseReasoningFieldLabel": "Folosește raționamentul",
+  "aiDeleteToastCascadeDescription": "{count, plural, =1{Am eliminat și 1 model: {names}} few{Am eliminat și {count} modele: {names}} other{Am eliminat și {count} de modele: {names}}}",
+  "@aiDeleteToastCascadeDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastErrorTitle": "Nu am putut șterge {name}",
+  "@aiDeleteToastErrorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastModelTitle": "Model șters",
+  "aiDeleteToastProfileTitle": "Profil șters",
+  "aiDeleteToastPromptTitle": "Prompt șters",
+  "aiDeleteToastProviderTitle": "Furnizor șters",
+  "aiDeleteToastSkillTitle": "Abilitate ștearsă",
+  "aiDeleteToastUndoAction": "Anulează",
   "aiFormCancel": "Anulează",
   "aiFormFixErrors": "Vă rugăm să corectați erorile înainte de salvare",
   "aiFormNoChanges": "Nu există modificări nesalvate",
@@ -616,6 +641,14 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL de bază (opțional)",
   "aiProviderConnectFieldDisplayNameHint": "Apare în lista dvs. de furnizori",
   "aiProviderConnectionCheckingLabel": "Se verifică cheia, se listează modelele disponibile…",
+  "aiProviderConnectionFailedBadResponseDetail": "Formă de răspuns neașteptată: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
   "@aiProviderConnectionFailedHttpDetail": {
     "placeholders": {
@@ -623,14 +656,6 @@
         "type": "int"
       },
       "message": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectionFailedBadResponseDetail": "Formă de răspuns neașteptată: {type}",
-  "@aiProviderConnectionFailedBadResponseDetail": {
-    "placeholders": {
-      "type": {
         "type": "String"
       }
     }

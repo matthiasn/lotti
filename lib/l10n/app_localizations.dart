@@ -2173,6 +2173,54 @@ abstract class AppLocalizations {
   /// **'Use Reasoning'**
   String get aiConfigUseReasoningFieldLabel;
 
+  /// No description provided for @aiDeleteToastCascadeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Also removed 1 model: {names}} other{Also removed {count} models: {names}}}'**
+  String aiDeleteToastCascadeDescription(int count, String names);
+
+  /// No description provided for @aiDeleteToastErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete {name}'**
+  String aiDeleteToastErrorTitle(String name);
+
+  /// No description provided for @aiDeleteToastModelTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Model deleted'**
+  String get aiDeleteToastModelTitle;
+
+  /// No description provided for @aiDeleteToastProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile deleted'**
+  String get aiDeleteToastProfileTitle;
+
+  /// No description provided for @aiDeleteToastPromptTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt deleted'**
+  String get aiDeleteToastPromptTitle;
+
+  /// No description provided for @aiDeleteToastProviderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider deleted'**
+  String get aiDeleteToastProviderTitle;
+
+  /// No description provided for @aiDeleteToastSkillTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill deleted'**
+  String get aiDeleteToastSkillTitle;
+
+  /// No description provided for @aiDeleteToastUndoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get aiDeleteToastUndoAction;
+
   /// No description provided for @aiFormCancel.
   ///
   /// In en, this message translates to:
@@ -2443,17 +2491,17 @@ abstract class AppLocalizations {
   /// **'Checking key, listing available models…'**
   String get aiProviderConnectionCheckingLabel;
 
-  /// No description provided for @aiProviderConnectionFailedHttpDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'HTTP {status} · {message}'**
-  String aiProviderConnectionFailedHttpDetail(int status, String message);
-
   /// No description provided for @aiProviderConnectionFailedBadResponseDetail.
   ///
   /// In en, this message translates to:
   /// **'Unexpected response shape: {type}'**
   String aiProviderConnectionFailedBadResponseDetail(String type);
+
+  /// No description provided for @aiProviderConnectionFailedHttpDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP {status} · {message}'**
+  String aiProviderConnectionFailedHttpDetail(int status, String message);
 
   /// No description provided for @aiProviderConnectionFailedInvalidBaseUrlDetail.
   ///

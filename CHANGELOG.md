@@ -18,6 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Nebius, and Ollama out of the box — no more "save the form,
   hope the key works, find out the next time you try to chat".
 
+### Changed
+- AI Settings delete confirmations now use the same design-system
+  toaster that the checklist row uses (warning tone, 5-second
+  countdown bar, Undo action), replacing three custom hand-rolled
+  SnackBars for provider / model / profile / prompt / skill
+  deletions and a fourth for delete failures. The provider
+  cascade list, previously rendered as a custom bullet block
+  inside the SnackBar, now collapses into the toast description
+  ("Also removed 2 models: gpt-4-turbo, claude-3.5-sonnet") so
+  long lists ellipsize naturally. All copy moved into the
+  `aiDeleteToast*` localization keys across English, Czech,
+  German, Spanish, French, and Romanian (informal register).
+- Profile cards in AI Settings now pin the `⋯` overflow menu to
+  the far right of the card header — matching the provider cards
+  — instead of letting it drift next to longer profile names.
+
 ## [0.9.999]
 ### Added
 - AI Settings FTUE pick-provider modal. Tapping the "Add provider" FAB

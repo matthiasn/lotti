@@ -533,6 +533,31 @@
   "aiConfigSelectProviderModalTitle": "Sélectionner un fournisseur d'inférence",
   "aiConfigSelectProviderTypeModalTitle": "Sélectionner le type de fournisseur",
   "aiConfigUseReasoningFieldLabel": "Utiliser le raisonnement",
+  "aiDeleteToastCascadeDescription": "{count, plural, =1{1 modèle aussi supprimé : {names}} other{{count} modèles aussi supprimés : {names}}}",
+  "@aiDeleteToastCascadeDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastErrorTitle": "Impossible de supprimer {name}",
+  "@aiDeleteToastErrorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastModelTitle": "Modèle supprimé",
+  "aiDeleteToastProfileTitle": "Profil supprimé",
+  "aiDeleteToastPromptTitle": "Prompt supprimé",
+  "aiDeleteToastProviderTitle": "Fournisseur supprimé",
+  "aiDeleteToastSkillTitle": "Compétence supprimée",
+  "aiDeleteToastUndoAction": "Annuler",
   "aiFormCancel": "Annuler",
   "aiFormFixErrors": "Corrige les erreurs avant d'enregistrer",
   "aiFormNoChanges": "Aucune modification non enregistrée",
@@ -616,6 +641,14 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL de base (optionnel)",
   "aiProviderConnectFieldDisplayNameHint": "Affiché dans ta liste de fournisseurs",
   "aiProviderConnectionCheckingLabel": "Vérification de la clé, liste des modèles disponibles…",
+  "aiProviderConnectionFailedBadResponseDetail": "Forme de réponse inattendue : {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
   "@aiProviderConnectionFailedHttpDetail": {
     "placeholders": {
@@ -623,14 +656,6 @@
         "type": "int"
       },
       "message": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectionFailedBadResponseDetail": "Forme de réponse inattendue : {type}",
-  "@aiProviderConnectionFailedBadResponseDetail": {
-    "placeholders": {
-      "type": {
         "type": "String"
       }
     }

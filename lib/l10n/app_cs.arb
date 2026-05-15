@@ -373,6 +373,31 @@
   "aiConfigSelectProviderModalTitle": "Vyberte poskytovatele inferencí",
   "aiConfigSelectProviderTypeModalTitle": "Vyberte typ poskytovatele",
   "aiConfigUseReasoningFieldLabel": "Použít uvažování",
+  "aiDeleteToastCascadeDescription": "{count, plural, =1{Odebrán také 1 model: {names}} few{Odebrány také {count} modely: {names}} other{Odebráno také {count} modelů: {names}}}",
+  "@aiDeleteToastCascadeDescription": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastErrorTitle": "Nepodařilo se smazat {name}",
+  "@aiDeleteToastErrorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiDeleteToastModelTitle": "Model smazán",
+  "aiDeleteToastProfileTitle": "Profil smazán",
+  "aiDeleteToastPromptTitle": "Prompt smazán",
+  "aiDeleteToastProviderTitle": "Poskytovatel smazán",
+  "aiDeleteToastSkillTitle": "Dovednost smazána",
+  "aiDeleteToastUndoAction": "Zpět",
   "aiFormCancel": "Zrušit",
   "aiFormFixErrors": "Prosím, opravte chyby před uložením",
   "aiFormNoChanges": "Žádné neuložené změny",
@@ -456,6 +481,14 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Základní URL (volitelné)",
   "aiProviderConnectFieldDisplayNameHint": "Zobrazí se v tvém seznamu poskytovatelů",
   "aiProviderConnectionCheckingLabel": "Ověřuji klíč, načítám dostupné modely…",
+  "aiProviderConnectionFailedBadResponseDetail": "Neočekávaný tvar odpovědi: {type}",
+  "@aiProviderConnectionFailedBadResponseDetail": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
   "aiProviderConnectionFailedHttpDetail": "HTTP {status} · {message}",
   "@aiProviderConnectionFailedHttpDetail": {
     "placeholders": {
@@ -463,14 +496,6 @@
         "type": "int"
       },
       "message": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectionFailedBadResponseDetail": "Neočekávaný tvar odpovědi: {type}",
-  "@aiProviderConnectionFailedBadResponseDetail": {
-    "placeholders": {
-      "type": {
         "type": "String"
       }
     }

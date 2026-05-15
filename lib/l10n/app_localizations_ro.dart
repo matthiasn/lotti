@@ -1214,6 +1214,41 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiConfigUseReasoningFieldLabel => 'Folosește raționamentul';
 
   @override
+  String aiDeleteToastCascadeDescription(int count, String names) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Am eliminat și $count de modele: $names',
+      few: 'Am eliminat și $count modele: $names',
+      one: 'Am eliminat și 1 model: $names',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String aiDeleteToastErrorTitle(String name) {
+    return 'Nu am putut șterge $name';
+  }
+
+  @override
+  String get aiDeleteToastModelTitle => 'Model șters';
+
+  @override
+  String get aiDeleteToastProfileTitle => 'Profil șters';
+
+  @override
+  String get aiDeleteToastPromptTitle => 'Prompt șters';
+
+  @override
+  String get aiDeleteToastProviderTitle => 'Furnizor șters';
+
+  @override
+  String get aiDeleteToastSkillTitle => 'Abilitate ștearsă';
+
+  @override
+  String get aiDeleteToastUndoAction => 'Anulează';
+
+  @override
   String get aiFormCancel => 'Anulează';
 
   @override
@@ -1388,13 +1423,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se verifică cheia, se listează modelele disponibile…';
 
   @override
-  String aiProviderConnectionFailedHttpDetail(int status, String message) {
-    return 'HTTP $status · $message';
+  String aiProviderConnectionFailedBadResponseDetail(String type) {
+    return 'Formă de răspuns neașteptată: $type';
   }
 
   @override
-  String aiProviderConnectionFailedBadResponseDetail(String type) {
-    return 'Formă de răspuns neașteptată: $type';
+  String aiProviderConnectionFailedHttpDetail(int status, String message) {
+    return 'HTTP $status · $message';
   }
 
   @override
