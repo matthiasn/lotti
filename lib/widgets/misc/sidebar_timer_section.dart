@@ -170,7 +170,7 @@ class _SidebarTimerCard extends StatelessWidget {
           onTap: onTapBody,
           child: Padding(
             padding: EdgeInsets.fromLTRB(
-              tokens.spacing.step5,
+              tokens.spacing.step4,
               tokens.spacing.step3,
               tokens.spacing.step3,
               tokens.spacing.step3,

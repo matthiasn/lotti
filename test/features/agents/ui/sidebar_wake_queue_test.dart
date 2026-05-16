@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
@@ -67,9 +68,9 @@ void main() {
   });
 
   testWidgets(
-    'while wakes are loading, the queue surfaces the empty header (so '
-    'enabling the section gives the user immediate feedback) but does not '
-    'render any wake rows yet',
+    'renders nothing while wakes are still loading — the queue stays '
+    'hidden until there is actionable work, so enabling the section does '
+    'not add a chrome-only card above Settings',
     (tester) async {
       final completer = Completer<List<PendingWakeRecord>>();
       await tester.pumpWidget(
@@ -85,13 +86,9 @@ void main() {
       final element = tester.element(find.byType(SidebarWakeQueue));
       expect(
         find.text(element.messages.sidebarWakesHeader.toUpperCase()),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.text('0'), findsOneWidget);
-      // The trailing link icon in the header is the path to the full
-      // Wake Cycles page; it stays visible even before the queue
-      // resolves.
-      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
 
       completer.complete(const []);
       await tester.pumpAndSettle();
@@ -99,9 +96,9 @@ void main() {
   );
 
   testWidgets(
-    'renders an empty header and link icon when no wakes are pending '
-    '— matches the design handoff "no layout shift when empty, just hide '
-    'rows, keep header"',
+    'renders nothing when no wakes are pending — the empty-zero header was '
+    'noise above Settings, so the card is hidden until at least one wake '
+    'is queued',
     (tester) async {
       await tester.pumpWidget(buildSubject(const []));
       await tester.pumpAndSettle();
@@ -109,13 +106,10 @@ void main() {
       final element = tester.element(find.byType(SidebarWakeQueue));
       expect(
         find.text(element.messages.sidebarWakesHeader.toUpperCase()),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.text('0'), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
-      // Just the header InkWell — the per-row trailing link was
-      // removed in favour of the right-aligned header icon.
-      expect(find.byType(InkWell), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
+      expect(find.byType(InkWell), findsNothing);
     },
   );
 
@@ -153,7 +147,7 @@ void main() {
           ),
         ]),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
     });
 
     final element = tester.element(find.byType(SidebarWakeQueue));
@@ -195,7 +189,7 @@ void main() {
           ),
         ]),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
     });
 
     final element = tester.element(find.byType(SidebarWakeQueue));
@@ -225,11 +219,11 @@ void main() {
           ),
         ]),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
     });
 
     await tester.tap(find.text('Laura'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(captured, '/settings/agents/instances/agent-xyz');
   });
@@ -240,11 +234,21 @@ void main() {
       String? captured;
       SidebarWakeQueueTestHooks.navigatorOverride = (path) => captured = path;
 
-      await tester.pumpWidget(buildSubject(const []));
-      await tester.pumpAndSettle();
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject([
+            makeWake(
+              agentId: 'a-1',
+              displayName: 'Laura',
+              eta: const Duration(seconds: 28),
+            ),
+          ]),
+        );
+        await tester.pumpAndSettle();
+      });
 
       await tester.tap(find.byIcon(Icons.open_in_new_rounded));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(captured, kSidebarWakeQueueListRoute);
     },
@@ -270,14 +274,14 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
         find.byTooltip(element.messages.sidebarWakesCancelTooltip),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       verify(() => agentService.cancelPendingWake('agent-pending')).called(1);
       verifyNever(() => agentService.clearScheduledWake(any()));
@@ -333,8 +337,8 @@ void main() {
         // Two pumps: one for the initial build, one for the title
         // futures to settle and the row to rebuild with the resolved
         // project title.
-        await tester.pump();
-        await tester.pump();
+        await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
       });
 
       expect(find.text('Platform refresh'), findsOneWidget);
@@ -380,10 +384,10 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         controller.add('GLaDOS');
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('GLaDOS'), findsOneWidget);
         expect(find.text('Task Agent'), findsNothing);
       });
@@ -416,7 +420,7 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
@@ -469,11 +473,11 @@ void main() {
             ),
           ]),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       await tester.tap(find.text('Laura'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       verify(() => mockNav.setIndex(6)).called(1);
       verify(
@@ -519,11 +523,11 @@ void main() {
             ),
           ]),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       await tester.tap(find.text('Kit'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       verifyNever(() => mockNav.setIndex(any()));
       expect(mockDelegate.beamed, ['/settings/agents/instances/agent-stay']);
@@ -556,11 +560,21 @@ void main() {
         }
       });
 
-      await tester.pumpWidget(buildSubject(const []));
-      await tester.pumpAndSettle();
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject([
+            makeWake(
+              agentId: 'a-1',
+              displayName: 'Laura',
+              eta: const Duration(seconds: 28),
+            ),
+          ]),
+        );
+        await tester.pumpAndSettle();
+      });
 
       await tester.tap(find.byIcon(Icons.open_in_new_rounded));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       verify(() => mockNav.setIndex(6)).called(1);
       verify(
@@ -594,20 +608,24 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
         find.byTooltip(element.messages.sidebarWakesCancelTooltip),
       );
+      // Single-frame pump: pumpAndSettle would hang on the spinner.
       await tester.pump();
 
       // Spinner is visible while the cancel future is in flight.
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       completer.complete();
-      await tester.pumpAndSettle();
+      // Single-frame pumps clear the spinner without waiting for the
+      // 1Hz countdown ticker (which never settles).
+      await tester.pump();
+      await tester.pump();
 
       // Spinner clears once the cancel resolves.
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -637,7 +655,7 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
@@ -678,13 +696,14 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
         find.byTooltip(element.messages.sidebarWakesCancelTooltip),
       );
+      // Single-frame pump: pumpAndSettle would hang on the spinner.
       await tester.pump();
 
       // Spinner is now showing; the tooltip target is gone because
@@ -699,6 +718,7 @@ void main() {
       await tester.tapAt(
         tester.getCenter(find.byType(CircularProgressIndicator)),
       );
+      // Single-frame pumps: pumpAndSettle would hang on the spinner.
       await tester.pump();
 
       // Still in flight — service called exactly once so far.
@@ -707,7 +727,8 @@ void main() {
       ).called(1);
 
       completer.complete();
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       // No additional invocation after the in-flight call settles.
       verifyNever(() => agentService.clearScheduledWake(any()));
@@ -731,7 +752,7 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       // Header includes the running wake in the count.
@@ -762,13 +783,15 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
         find.byTooltip(element.messages.sidebarWakesCancelTooltip),
       );
+      // Single-frame pump: pumpAndSettle would hang on the spinner that
+      // replaces the × once the abort signal is delivered.
       await tester.pump();
 
       verify(() => agentService.abortRunningWake('agent-running')).called(1);
@@ -799,14 +822,14 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       final cancelTooltip = element.messages.sidebarWakesCancelTooltip;
 
       await tester.tap(find.byTooltip(cancelTooltip));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       verify(
         () => agentService.abortRunningWake('agent-already-stopped'),
@@ -843,7 +866,7 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
@@ -851,6 +874,7 @@ void main() {
 
       // First tap fires abort + flips _cancelling → spinner replaces ×.
       await tester.tap(find.byTooltip(cancelTooltip));
+      // Single-frame pump: pumpAndSettle would hang on the spinner.
       await tester.pump();
 
       verify(() => agentService.abortRunningWake('agent-running')).called(1);
@@ -902,10 +926,10 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         controller.add('GLaDOS');
-        await tester.pump();
+        await tester.pumpAndSettle();
         expect(find.text('GLaDOS'), findsOneWidget);
         expect(find.text('snapshot fallback'), findsNothing);
       });
@@ -947,7 +971,7 @@ void main() {
               ],
             ),
           );
-          await tester.pump();
+          await tester.pumpAndSettle();
         });
       }
 
@@ -984,11 +1008,11 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
+        await tester.pumpAndSettle();
       });
 
       await tester.tap(find.text('Live wake'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(captured, '/settings/agents/instances/agent-running');
     },
@@ -999,6 +1023,136 @@ void main() {
   // name + ETA + cancel ×. The avatar-specific behaviour tests
   // (`?` fallback, emoji-rune handling) are intentionally gone with
   // it; they verified a widget that no longer exists.
+
+  group('sidebarWakeQueueHasVisibleContent', () {
+    Future<bool> evaluate(
+      WidgetTester tester, {
+      List<PendingWakeRecord> wakes = const [],
+      List<OngoingWakeRecord> ongoing = const [],
+      bool wakesLoading = false,
+      bool ongoingLoading = false,
+    }) async {
+      late bool result;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            pendingWakeRecordsProvider.overrideWith(
+              (ref) async {
+                if (wakesLoading) {
+                  return Completer<List<PendingWakeRecord>>().future;
+                }
+                return wakes;
+              },
+            ),
+            ongoingWakeRecordsProvider.overrideWith(
+              (ref) async {
+                if (ongoingLoading) {
+                  return Completer<List<OngoingWakeRecord>>().future;
+                }
+                return ongoing;
+              },
+            ),
+          ],
+          child: Consumer(
+            builder: (context, ref, _) {
+              result = sidebarWakeQueueHasVisibleContent(ref);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      return result;
+    }
+
+    testWidgets(
+      'returns false while both providers are still loading — the helper '
+      'must treat null AsyncValues as empty so the composer does not '
+      'reserve a phantom spacer above the timer card',
+      (tester) async {
+        final visible = await evaluate(
+          tester,
+          wakesLoading: true,
+          ongoingLoading: true,
+        );
+        expect(visible, isFalse);
+      },
+    );
+
+    testWidgets(
+      'returns false when both providers resolve to empty lists',
+      (tester) async {
+        final visible = await evaluate(tester);
+        expect(visible, isFalse);
+      },
+    );
+
+    testWidgets(
+      'returns true when an ongoing wake is active, even with no pending '
+      'records — the ongoing branch short-circuits before the cutoff scan',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final visible = await evaluate(
+            tester,
+            ongoing: [
+              OngoingWakeRecord(
+                agentId: 'agent-running',
+                title: 'Refine sidebar',
+                startedAt: fixedNow.subtract(const Duration(seconds: 5)),
+              ),
+            ],
+          );
+          expect(visible, isTrue);
+        });
+      },
+    );
+
+    testWidgets(
+      'returns true when at least one pending wake falls inside the '
+      '1h lookahead window',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final visible = await evaluate(
+            tester,
+            wakes: [
+              makeWake(
+                agentId: 'a-1',
+                displayName: 'Laura',
+                eta: const Duration(minutes: 5),
+              ),
+            ],
+          );
+          expect(visible, isTrue);
+        });
+      },
+    );
+
+    testWidgets(
+      'returns false when every pending wake is past the 1h lookahead '
+      'cutoff — those rows are hidden from the sidebar, so the composer '
+      'must not reserve a spacer for them',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final visible = await evaluate(
+            tester,
+            wakes: [
+              makeWake(
+                agentId: 'a-1',
+                displayName: 'Laura',
+                eta: const Duration(hours: 9),
+              ),
+              makeWake(
+                agentId: 'a-2',
+                displayName: 'Iris',
+                eta: const Duration(hours: 12),
+              ),
+            ],
+          );
+          expect(visible, isFalse);
+        });
+      },
+    );
+  });
 }
 
 /// Captures `beamToNamed` calls without spinning up a real Beamer

@@ -2894,7 +2894,6 @@ void main() {
               generatedQueue.enqueue(
                 makeJob(
                   runKey: 'generated-post-run-main',
-                  agentId: 'agent-1',
                   reason: scenario.reason,
                   triggerTokens: {'generated-post-run-main-token'},
                   createdAt: scenario.now,
