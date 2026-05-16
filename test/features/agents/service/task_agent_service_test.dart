@@ -996,7 +996,7 @@ void main() {
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
 
-      test('hydrates throttle deadline from persisted state', () async {
+      test('restores pending wake from persisted deadline', () async {
         final futureDeadline = DateTime(2026, 3, 15, 12, 5);
         final stateWithDeadline = makeState().copyWith(
           nextWakeAt: futureDeadline,
@@ -1009,16 +1009,13 @@ void main() {
         when(
           () => mockRepository.getAgentState('agent-1'),
         ).thenAnswer((_) async => stateWithDeadline);
-        when(
-          () => mockOrchestrator.setThrottleDeadline(any(), any()),
-        ).thenReturn(null);
 
         await service.restoreSubscriptionsForAgent('agent-1');
 
         verify(
-          () => mockOrchestrator.setThrottleDeadline(
-            'agent-1',
-            futureDeadline,
+          () => mockOrchestrator.restorePendingWake(
+            agentId: 'agent-1',
+            dueAt: futureDeadline,
           ),
         ).called(1);
       });
@@ -1035,7 +1032,10 @@ void main() {
         await service.restoreSubscriptionsForAgent('agent-1');
 
         verifyNever(
-          () => mockOrchestrator.setThrottleDeadline(any(), any()),
+          () => mockOrchestrator.restorePendingWake(
+            agentId: any(named: 'agentId'),
+            dueAt: any(named: 'dueAt'),
+          ),
         );
       });
 

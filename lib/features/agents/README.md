@@ -27,7 +27,7 @@ Startup does this:
 7. seeds default inference profiles and default skills, then upgrades older
    default profiles with skill assignments
 8. restores persisted task-agent subscriptions, project-agent direct-edit
-   subscriptions, and persisted throttle deadlines
+   subscriptions, and persisted deferred wake jobs
 9. wires the sync event processor if one is registered in `GetIt`
 
 - Task agent wake prompts include:
@@ -76,7 +76,7 @@ flowchart TD
   Init --> Sched["ScheduledWakeManager.start()"]
   Init --> Activity["ProjectActivityMonitor.start()"]
   Init --> Seed["Seed templates, profiles, and skills"]
-  Init --> Restore["Restore subscriptions and throttle deadlines"]
+  Init --> Restore["Restore subscriptions and deferred wakes"]
   Init --> Sync["Wire SyncEventProcessor (if available)"]
 ```
 
@@ -95,7 +95,7 @@ landing page now exposes three runtime views:
 The pending-wakes dashboard is intentionally narrower than the full message
 log. It shows only wake records that can still fire later:
 
-- `nextWakeAt`: the per-device deferred wake/throttle deadline persisted by
+- `nextWakeAt`: the per-device deferred subscription wake deadline persisted by
   `WakeOrchestrator`
 - `scheduledWakeAt`: the synced scheduled wake used by project agents and
   template improvers
@@ -106,6 +106,13 @@ to rebuild the whole list every second and the timer does not drift if frames
 arrive late. Deleting a card clears only the represented wake marker:
 `nextWakeAt` uses the shared pending-wake cancellation path, while
 `scheduledWakeAt` is removed from the agent state.
+
+On startup, task-agent and project-agent subscription restoration turns a
+persisted `nextWakeAt` back into an in-memory `WakeJob`. Future deadlines
+re-arm the deferred drain timer; overdue deadlines enqueue immediately and
+clear the persisted marker. A completed subscription wake only writes a new
+`nextWakeAt` when follow-up work is still queued, so the Wake Cycles surfaces
+show pending work rather than a cooldown with nothing left to run.
 
 The instances dashboard stays intentionally lightweight. It exposes kind and
 lifecycle filters for task agents, and the task-agent modes now include one
@@ -336,8 +343,9 @@ stateDiagram-v2
 - enforces single-flight execution per agent through `WakeRunner`
 - persists wake-run entries before execution
 - suppresses self-notifications using vector clocks
-- persists and restores subscription-throttle deadlines through
-  `AgentStateEntity.nextWakeAt`
+- persists and restores deferred subscription wake deadlines through
+  `AgentStateEntity.nextWakeAt`, rebuilding the in-memory queue job after
+  restart
 
 The persisted wake reasons are:
 
@@ -389,8 +397,8 @@ Current mitigations are:
 
 - `WakeQueue` deduplicates by run key and merges trigger tokens
 - `WakeRunner` enforces single-flight execution per agent
-- `WakeOrchestrator` persists and restores throttle deadlines through
-  `nextWakeAt`
+- `WakeOrchestrator` persists deferred wake deadlines through `nextWakeAt` and
+  reconstructs the in-memory wake job during startup restoration
 - suppression is pre-registered before execution starts, then replaced with the
   actual mutated-entity vector clocks after execution
 

@@ -93,6 +93,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reads as a deliberate primary action at every breakpoint.
 
 ### Fixed
+- Agent wake-cycle deadlines now survive app restarts as executable work.
+  Persisted `nextWakeAt` rows are restored into the in-memory wake queue, so
+  a 06:00 deferred wake that becomes due while the app is closed runs after
+  the afternoon restart instead of lingering in the sidebar as stale. Completed
+  subscription wakes also stop writing cooldown-only `nextWakeAt` rows when no
+  follow-up job is queued, so the Wake Cycles list only shows work that can
+  still run.
 - Model IDs in the category Default-inference-profile picker no longer
   render with extra space between every digit. Replaced the generic
   `fontFamily: 'monospace'` (which Flutter doesn't ship, so macOS fell

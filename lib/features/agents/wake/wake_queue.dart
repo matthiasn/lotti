@@ -105,11 +105,10 @@ class WakeQueue {
   }
 
   /// Whether any queued job for [agentId] carries at least one direct
-  /// fast-throttle match. The orchestrator uses this when picking the
-  /// post-execution throttle deadline: an empty queue or a digest-deferred
-  /// propagated-only queue defers the next drain to the next 06:00; a
-  /// fast-bearing queue keeps the 120 s cooldown so the user sees task edits
-  /// reflected promptly.
+  /// fast-throttle match. The orchestrator uses this when queued follow-up
+  /// work remains after a wake: digest-deferred propagated-only queues wait
+  /// until the next 06:00, while a fast-bearing queue keeps the 120 s drain so
+  /// the user sees task edits reflected promptly.
   bool hasDirectQueuedJobFor(String agentId) =>
       _queue.any((job) => job.agentId == agentId && job.hasDirectMatch);
 

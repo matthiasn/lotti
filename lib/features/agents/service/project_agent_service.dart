@@ -214,7 +214,7 @@ class ProjectAgentService {
   /// Restore project-agent runtime state after app startup.
   ///
   /// Project agents restore short-delay subscriptions for direct project edits
-  /// and hydrate any persisted deferred wake deadlines, while task-driven
+  /// and rehydrate any persisted deferred wake jobs, while task-driven
   /// activity remains schedule-driven via pending-project-activity markers.
   Future<void> restoreSubscriptions() async {
     domainLogger?.log(
@@ -284,7 +284,7 @@ class ProjectAgentService {
     final state = await repository.getAgentState(agentId);
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
-      orchestrator.setThrottleDeadline(agentId, deadline);
+      orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
     }
   }
 }

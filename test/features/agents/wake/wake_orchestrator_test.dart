@@ -2786,6 +2786,100 @@ void main() {
         });
       });
 
+      test(
+        'restorePendingWake executes overdue persisted deadline immediately',
+        () {
+          fakeAsync((async) {
+            final dueAt = clock.now().subtract(const Duration(hours: 10));
+            var executionCount = 0;
+            var storedState = makeTestState(
+              agentId: 'agent-1',
+              nextWakeAt: dueAt,
+            );
+
+            orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executionCount++;
+              expect(agentId, 'agent-1');
+              expect(triggers, isEmpty);
+              return Future.value();
+            };
+
+            when(
+              () => mockRepository.getAgentState('agent-1'),
+            ).thenAnswer((_) async => storedState);
+            when(() => mockRepository.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              storedState =
+                  invocation.positionalArguments.single as AgentStateEntity;
+            });
+
+            orchestrator.restorePendingWake(agentId: 'agent-1', dueAt: dueAt);
+            async.flushMicrotasks();
+
+            expect(executionCount, 1);
+            expect(storedState.nextWakeAt, isNull);
+
+            final captured = captureWakeRuns(mockRepository);
+            expect(captured, hasLength(1));
+            expect(captured.single.agentId, 'agent-1');
+            expect(captured.single.reason, WakeReason.subscription.name);
+            expect(captured.single.reasonId, 'restored_pending_wake');
+            expect(captured.single.createdAt, dueAt);
+          });
+        },
+      );
+
+      test(
+        'restorePendingWake rebuilds future queue job and drains at deadline',
+        () {
+          fakeAsync((async) {
+            const wait = Duration(minutes: 5);
+            final dueAt = clock.now().add(wait);
+            var executionCount = 0;
+            var storedState = makeTestState(
+              agentId: 'agent-1',
+              nextWakeAt: dueAt,
+            );
+
+            orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executionCount++;
+              return Future.value();
+            };
+
+            when(
+              () => mockRepository.getAgentState('agent-1'),
+            ).thenAnswer((_) async => storedState);
+            when(() => mockRepository.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              storedState =
+                  invocation.positionalArguments.single as AgentStateEntity;
+            });
+
+            orchestrator.restorePendingWake(agentId: 'agent-1', dueAt: dueAt);
+            async.flushMicrotasks();
+
+            expect(executionCount, 0);
+
+            async
+              ..elapse(wait - const Duration(milliseconds: 1))
+              ..flushMicrotasks();
+            expect(executionCount, 0);
+
+            async
+              ..elapse(const Duration(milliseconds: 1))
+              ..flushMicrotasks();
+
+            expect(executionCount, 1);
+            expect(storedState.nextWakeAt, isNull);
+            final captured = captureWakeRuns(mockRepository);
+            expect(captured.single.reason, WakeReason.subscription.name);
+            expect(captured.single.reasonId, 'restored_pending_wake');
+          });
+        },
+      );
+
       test('stop cancels deferred drain timers', () {
         fakeAsync((async) {
           orchestrator
@@ -2867,6 +2961,44 @@ void main() {
           controller.close();
         });
       });
+
+      test(
+        'subscription wake clears nextWakeAt when no follow-up job remains',
+        () {
+          fakeAsync((async) {
+            orchestrator
+              ..addSubscription(makeSub())
+              ..wakeExecutor = noOpExecutor;
+
+            final writes = <AgentStateEntity>[];
+            var storedState = makeTestState(
+              id: 'state-agent-1',
+              agentId: 'agent-1',
+            );
+            when(
+              () => mockRepository.getAgentState(any()),
+            ).thenAnswer((_) async => storedState);
+            when(() => mockRepository.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              storedState =
+                  invocation.positionalArguments.single as AgentStateEntity;
+              writes.add(storedState);
+            });
+
+            final controller = StreamController<Set<String>>.broadcast();
+            orchestrator.start(controller.stream);
+
+            emitAndDrain(async, controller, {'entity-1'});
+
+            expect(writes, hasLength(2));
+            expect(writes.first.nextWakeAt, isNotNull);
+            expect(writes.last.nextWakeAt, isNull);
+
+            controller.close();
+          });
+        },
+      );
 
       test(
         '_setThrottleDeadline still sets in-memory throttle on DB error',
