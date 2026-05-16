@@ -47,9 +47,13 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   }
 
   /// Creates a single-choice stream chunk with the given [content].
+  ///
+  /// Uses [DateTime.now().microsecondsSinceEpoch] for the id so chunks
+  /// emitted within the same millisecond still receive distinct ids.
   static CreateChatCompletionStreamResponse _contentChunk(String content) {
+    final now = DateTime.now();
     return CreateChatCompletionStreamResponse(
-      id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+      id: '$ollamaResponseIdPrefix${now.microsecondsSinceEpoch}',
       choices: [
         ChatCompletionStreamResponseChoice(
           delta: ChatCompletionStreamResponseDelta(content: content),
@@ -57,7 +61,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         ),
       ],
       object: 'chat.completion.chunk',
-      created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      created: now.millisecondsSinceEpoch ~/ 1000,
     );
   }
 
@@ -443,18 +447,31 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
           if (message != null) {
             // Capture thinking content wrapped in <think> tags for
             // consistent downstream parsing across all providers.
+            // Use a defensive toString() so unexpected non-string payloads
+            // (e.g. null inside a nested object) do not crash the stream.
+            //
+            // We do NOT `continue` after emitting thinking: a single chunk
+            // can carry `thinking` together with `content`, `tool_calls`,
+            // or `done: true`. Falling through lets the same chunk close
+            // the thinking block, yield content/tool_calls, and trigger
+            // usage extraction below.
             if (message['thinking'] != null) {
-              final thinking = message['thinking'] as String;
+              final thinking = message['thinking']?.toString() ?? '';
               if (thinking.isNotEmpty) {
                 final prefix = inThinking ? '' : '<think>';
                 inThinking = true;
                 yield _contentChunk('$prefix$thinking');
               }
-              continue;
             }
 
-            // Close the thinking block when transitioning to content
-            if (inThinking) {
+            // Close the thinking block only when we are about to yield
+            // real content or tool calls. Intermediate metadata-only
+            // chunks (no thinking, content, or tool_calls) must not flip
+            // `inThinking` off, otherwise a subsequent thinking chunk
+            // would reopen the block and produce malformed nesting.
+            final hasOutput =
+                message['tool_calls'] != null || message['content'] != null;
+            if (inThinking && hasOutput) {
               inThinking = false;
               yield _contentChunk('</think>');
             }
@@ -530,8 +547,9 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
               // Create the response with tool calls
               // We'll emit this as a single chunk containing all tool calls
+              final toolNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
-                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                id: '$ollamaResponseIdPrefix${toolNow.microsecondsSinceEpoch}',
                 choices: [
                   ChatCompletionStreamResponseChoice(
                     delta: ChatCompletionStreamResponseDelta.fromJson({
@@ -541,13 +559,14 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: toolNow.millisecondsSinceEpoch ~/ 1000,
               );
             } else if (message['content'] != null) {
               // Regular content response
               final frag = message['content'] as String;
+              final contentNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
-                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                id: '$ollamaResponseIdPrefix${contentNow.microsecondsSinceEpoch}',
                 choices: [
                   ChatCompletionStreamResponseChoice(
                     delta: ChatCompletionStreamResponseDelta(
@@ -557,7 +576,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: contentNow.millisecondsSinceEpoch ~/ 1000,
               );
             }
           }
@@ -580,11 +599,12 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
             if (promptEval is int || evalCount is int) {
               final prompt = promptEval is int ? promptEval : 0;
               final completion = evalCount is int ? evalCount : 0;
+              final usageNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
-                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                id: '$ollamaResponseIdPrefix${usageNow.microsecondsSinceEpoch}',
                 choices: const [],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: usageNow.millisecondsSinceEpoch ~/ 1000,
                 usage: CompletionUsage(
                   promptTokens: prompt,
                   completionTokens: completion,

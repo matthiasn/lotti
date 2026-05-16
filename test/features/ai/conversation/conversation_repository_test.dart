@@ -202,6 +202,122 @@ void main() {
         expect(manager.messages[1].content, 'Hello, human!');
       });
 
+      test(
+        'strips <think> blocks from assistant content before persisting',
+        () async {
+          final streamController =
+              StreamController<CreateChatCompletionStreamResponse>();
+
+          when(
+            () => mockOllamaRepo.generateTextWithMessages(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              temperature: any(named: 'temperature'),
+              thoughtSignatures: any(named: 'thoughtSignatures'),
+              signatureCollector: any(named: 'signatureCollector'),
+              turnIndex: any(named: 'turnIndex'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+
+          final sendFuture = repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Why is the sky blue?',
+            model: 'gemma4:e4b',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+          );
+
+          // Stream chunks the way Ollama emits thinking + content:
+          // `<think>...</think>` interleaved with the visible answer.
+          for (final chunk in const [
+            '<think>',
+            'private reasoning the user must never see again',
+            '</think>',
+            'The sky is blue because of Rayleigh scattering.',
+          ]) {
+            streamController.add(
+              CreateChatCompletionStreamResponse(
+                id: 'chunk',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: chunk),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1710500000,
+              ),
+            );
+          }
+          await streamController.close();
+          await sendFuture;
+
+          final manager = repository.getConversation(conversationId)!;
+          final assistantContent = manager.messages.last.content;
+          expect(assistantContent, isNotNull);
+          expect(assistantContent, isNot(contains('<think>')));
+          expect(assistantContent, isNot(contains('</think>')));
+          expect(assistantContent, isNot(contains('private reasoning')));
+          expect(
+            assistantContent,
+            equals('The sky is blue because of Rayleigh scattering.'),
+          );
+        },
+      );
+
+      test('drops assistant content that is only a <think> block', () async {
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>();
+
+        when(
+          () => mockOllamaRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+            temperature: any(named: 'temperature'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        final sendFuture = repository.sendMessage(
+          conversationId: conversationId,
+          message: 'Think only',
+          model: 'gemma4:e4b',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+        );
+
+        streamController.add(
+          const CreateChatCompletionStreamResponse(
+            id: 'chunk',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: '<think>private reasoning</think>',
+                ),
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: 1710500000,
+          ),
+        );
+        await streamController.close();
+        await sendFuture;
+
+        final manager = repository.getConversation(conversationId)!;
+        // The assistant turn is still recorded so turn accounting stays
+        // accurate, but its persisted content is null instead of a stale
+        // `<think>` payload.
+        expect(manager.messages.last.role, ChatCompletionMessageRole.assistant);
+        expect(manager.messages.last.content, isNull);
+      });
+
       test('handles tool calls', () async {
         final streamController =
             StreamController<CreateChatCompletionStreamResponse>();

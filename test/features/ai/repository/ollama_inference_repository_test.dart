@@ -2418,6 +2418,231 @@ void main() {
           .join();
       expect(allContent, contains('<think>deep thought</think>'));
     });
+
+    test('metadata-only chunks between thinking chunks do not close the '
+        'block prematurely', () async {
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            utf8.encode('{"message":{"thinking":"part one "},"done":false}\n'),
+            // Metadata-only chunk: a `message` payload that contains
+            // neither `thinking`, nor `content`, nor `tool_calls`.
+            // Ollama can emit such chunks for intermediate state, and
+            // they must not flip `inThinking` off.
+            utf8.encode('{"message":{"role":"assistant"},"done":false}\n'),
+            utf8.encode('{"message":{"thinking":"part two"},"done":false}\n'),
+            utf8.encode(
+              '{"message":{"content":"final answer"},"done":true}\n',
+            ),
+          ]),
+        ),
+      );
+
+      when(
+        () => thinkingMockClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final events = await thinkingRepo
+          .generateTextWithMessages(
+            messages: [
+              const ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Hi'),
+              ),
+            ],
+            model: 'gemma4:26b',
+            temperature: 0.7,
+            provider: provider,
+          )
+          .toList();
+
+      final allContent = events
+          .map((e) => e.choices?.first.delta?.content ?? '')
+          .join();
+
+      // Exactly one `<think>` opener and one `</think>` closer should
+      // appear — no premature close before "part two".
+      expect('<think>'.allMatches(allContent), hasLength(1));
+      expect('</think>'.allMatches(allContent), hasLength(1));
+      expect(allContent, contains('<think>part one part two</think>'));
+      expect(allContent, contains('final answer'));
+    });
+
+    test(
+      'extracts usage when thinking and done arrive in the same chunk',
+      () async {
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              // Single chunk carries both `thinking` and `done: true`
+              // together with usage counters. A bare `continue` after
+              // emitting thinking would skip the usage-extraction branch
+              // entirely, dropping the token counts.
+              utf8.encode(
+                '{"message":{"thinking":"final thoughts"},'
+                ' "done":true,'
+                ' "prompt_eval_count":7,'
+                ' "eval_count":11}\n',
+              ),
+            ]),
+          ),
+        );
+
+        when(
+          () => thinkingMockClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final events = await thinkingRepo
+            .generateTextWithMessages(
+              messages: [
+                const ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.string('Hi'),
+                ),
+              ],
+              model: 'gemma4:26b',
+              temperature: 0.7,
+              provider: provider,
+            )
+            .toList();
+
+        final allContent = events
+            .map((e) => e.choices?.firstOrNull?.delta?.content ?? '')
+            .join();
+        expect(allContent, contains('<think>final thoughts</think>'));
+
+        // The terminal chunk's usage must still be reported.
+        final usage = events.lastWhere((e) => e.usage != null).usage!;
+        expect(usage.promptTokens, 7);
+        expect(usage.completionTokens, 11);
+        expect(usage.totalTokens, 18);
+      },
+    );
+
+    test(
+      'closes thinking and yields content when both arrive in one chunk',
+      () async {
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              // Single chunk carries `thinking` and `content` together.
+              // A bare `continue` after thinking would drop the content.
+              utf8.encode(
+                '{"message":{"thinking":"reason","content":"answer"},'
+                ' "done":false}\n',
+              ),
+              utf8.encode('{"done":true}\n'),
+            ]),
+          ),
+        );
+
+        when(
+          () => thinkingMockClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final events = await thinkingRepo
+            .generateTextWithMessages(
+              messages: [
+                const ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.string('Hi'),
+                ),
+              ],
+              model: 'gemma4:26b',
+              temperature: 0.7,
+              provider: provider,
+            )
+            .toList();
+
+        final allContent = events
+            .map((e) => e.choices?.first.delta?.content ?? '')
+            .join();
+        expect(allContent, contains('<think>reason</think>'));
+        expect(allContent, contains('answer'));
+        // Ordering: thinking closes before the visible content is emitted.
+        expect(
+          allContent.indexOf('</think>'),
+          lessThan(allContent.indexOf('answer')),
+        );
+      },
+    );
+
+    test('handles non-string thinking payload without crashing', () async {
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            // `thinking` is a number — older defensive casts would crash
+            // here. The repository must tolerate this and stringify it.
+            utf8.encode('{"message":{"thinking":42},"done":false}\n'),
+            utf8.encode('{"message":{"content":"done"},"done":true}\n'),
+          ]),
+        ),
+      );
+
+      when(
+        () => thinkingMockClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final events = await thinkingRepo
+          .generateTextWithMessages(
+            messages: [
+              const ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('Hi'),
+              ),
+            ],
+            model: 'gemma4:26b',
+            temperature: 0.7,
+            provider: provider,
+          )
+          .toList();
+
+      final allContent = events
+          .map((e) => e.choices?.first.delta?.content ?? '')
+          .join();
+      expect(allContent, contains('<think>42</think>'));
+      expect(allContent, contains('done'));
+    });
   });
 }
 
