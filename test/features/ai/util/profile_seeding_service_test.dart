@@ -32,10 +32,10 @@ void main() {
   });
 
   group('ProfileSeedingService', () {
-    test('seeds all 8 default profiles when none exist', () async {
+    test('seeds all 10 default profiles when none exist', () async {
       await service.seedDefaults();
 
-      verify(() => mockRepo.saveConfig(any())).called(8);
+      verify(() => mockRepo.saveConfig(any())).called(10);
     });
 
     test('skips profiles that already exist', () async {
@@ -65,8 +65,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // Only 7 profiles should be saved (Gemini Flash skipped).
-      verify(() => mockRepo.saveConfig(any())).called(7);
+      // Only 9 profiles should be saved (Gemini Flash skipped).
+      verify(() => mockRepo.saveConfig(any())).called(9);
     });
 
     test(
@@ -111,9 +111,9 @@ void main() {
 
         await service.seedDefaults();
 
-        // Only the 7 missing profiles get written. The existing Local
+        // Only the 9 missing profiles get written. The existing Local
         // profile is left untouched — user edit survives.
-        verify(() => mockRepo.saveConfig(any())).called(7);
+        verify(() => mockRepo.saveConfig(any())).called(9);
         verifyNever(
           () => mockRepo.saveConfig(
             any(
@@ -147,9 +147,9 @@ void main() {
 
         await service.seedDefaults();
 
-        // 7 new profiles only — the Local profile is not re-asserted to
+        // 9 new profiles only — the Local profile is not re-asserted to
         // isDefault: true.
-        verify(() => mockRepo.saveConfig(any())).called(7);
+        verify(() => mockRepo.saveConfig(any())).called(9);
       },
     );
 
@@ -166,6 +166,8 @@ void main() {
         profileAnthropicId,
         profileLocalId,
         profileLocalPowerId,
+        profileLocalGemmaId,
+        profileLocalGemmaPowerId,
       ]) {
         verify(() => mockRepo.getConfigById(id)).called(1);
       }
@@ -190,8 +192,8 @@ void main() {
 
         await service.seedDefaults();
 
-        // 7 new profiles only — Local profile preserved as-is.
-        verify(() => mockRepo.saveConfig(any())).called(7);
+        // 9 new profiles only — Local profile preserved as-is.
+        verify(() => mockRepo.saveConfig(any())).called(9);
       },
     );
 
@@ -257,9 +259,9 @@ void main() {
 
         for (final config in capturedConfigs) {
           final profile = config as AiConfigInferenceProfile;
-          if (profile.id == profileLocalPowerId) {
-            // Local Power is opt-in until the Qwen3.6 coding MoE
-            // tool-calling path stabilises.
+          if (profile.id == profileLocalPowerId ||
+              profile.id == profileLocalGemmaPowerId) {
+            // Power profiles are opt-in (require large models).
             expect(
               profile.isDefault,
               isFalse,
@@ -290,8 +292,9 @@ void main() {
 
       for (final config in capturedConfigs) {
         final profile = config as AiConfigInferenceProfile;
-        // Local Power has no skill assignments (opt-in profile).
+        // Power profiles have no skill assignments (opt-in profiles).
         if (profile.id == profileLocalPowerId) continue;
+        if (profile.id == profileLocalGemmaPowerId) continue;
         expect(
           profile.skillAssignments,
           isNotEmpty,

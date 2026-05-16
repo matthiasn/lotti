@@ -34,6 +34,37 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   // default to avoid console noise in production.
   static const bool kVerboseStreamLogging = false;
 
+  /// Model prefix for Gemma 4 family (supports thinking mode).
+  static const String _gemma4Prefix = 'gemma4';
+
+  /// Returns true if the model supports Ollama's thinking mode.
+  ///
+  /// When enabled, Ollama returns chain-of-thought reasoning in a separate
+  /// `thinking` field. We wrap this in `<think>` tags so the downstream
+  /// response parser can extract it (same format as Gemini/OpenAI thinking).
+  static bool shouldEnableThinking(String model) {
+    return model.startsWith(_gemma4Prefix);
+  }
+
+  /// Creates a single-choice stream chunk with the given [content].
+  ///
+  /// Uses [DateTime.now().microsecondsSinceEpoch] for the id so chunks
+  /// emitted within the same millisecond still receive distinct ids.
+  static CreateChatCompletionStreamResponse _contentChunk(String content) {
+    final now = DateTime.now();
+    return CreateChatCompletionStreamResponse(
+      id: '$ollamaResponseIdPrefix${now.microsecondsSinceEpoch}',
+      choices: [
+        ChatCompletionStreamResponseChoice(
+          delta: ChatCompletionStreamResponseDelta(content: content),
+          index: 0,
+        ),
+      ],
+      object: 'chat.completion.chunk',
+      created: now.millisecondsSinceEpoch ~/ 1000,
+    );
+  }
+
   /// Generate text using Ollama's API
   ///
   /// This method handles the specific requirements for Ollama text generation:
@@ -334,6 +365,11 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     String? model,
   }) async* {
+    // Enable thinking mode for supported models
+    if (model != null && shouldEnableThinking(model)) {
+      requestBody['think'] = true;
+    }
+
     try {
       final request = await _retryWithExponentialBackoff(
         operation: () => _httpClient
@@ -383,6 +419,11 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       // continuation chunks (which may omit `index`) merge correctly.
       final idToIndex = <String, int>{};
 
+      // Tracks whether we are inside a thinking block so we can wrap
+      // Ollama's `thinking` field content in `<think>...</think>` tags,
+      // matching the format used by Gemini and OpenAI reasoning models.
+      var inThinking = false;
+
       // Process streaming response
       await for (final chunk
           in request.stream
@@ -404,9 +445,35 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
           // Check if this is a tool call response
           if (message != null) {
-            // Skip thinking content - we only care about actual content or tool calls
+            // Capture thinking content wrapped in <think> tags for
+            // consistent downstream parsing across all providers.
+            // Use a defensive toString() so unexpected non-string payloads
+            // (e.g. null inside a nested object) do not crash the stream.
+            //
+            // We do NOT `continue` after emitting thinking: a single chunk
+            // can carry `thinking` together with `content`, `tool_calls`,
+            // or `done: true`. Falling through lets the same chunk close
+            // the thinking block, yield content/tool_calls, and trigger
+            // usage extraction below.
             if (message['thinking'] != null) {
-              continue;
+              final thinking = message['thinking']?.toString() ?? '';
+              if (thinking.isNotEmpty) {
+                final prefix = inThinking ? '' : '<think>';
+                inThinking = true;
+                yield _contentChunk('$prefix$thinking');
+              }
+            }
+
+            // Close the thinking block only when we are about to yield
+            // real content or tool calls. Intermediate metadata-only
+            // chunks (no thinking, content, or tool_calls) must not flip
+            // `inThinking` off, otherwise a subsequent thinking chunk
+            // would reopen the block and produce malformed nesting.
+            final hasOutput =
+                message['tool_calls'] != null || message['content'] != null;
+            if (inThinking && hasOutput) {
+              inThinking = false;
+              yield _contentChunk('</think>');
             }
 
             if (message['tool_calls'] != null) {
@@ -480,8 +547,9 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
               // Create the response with tool calls
               // We'll emit this as a single chunk containing all tool calls
+              final toolNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
-                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                id: '$ollamaResponseIdPrefix${toolNow.microsecondsSinceEpoch}',
                 choices: [
                   ChatCompletionStreamResponseChoice(
                     delta: ChatCompletionStreamResponseDelta.fromJson({
@@ -491,13 +559,14 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: toolNow.millisecondsSinceEpoch ~/ 1000,
               );
             } else if (message['content'] != null) {
               // Regular content response
               final frag = message['content'] as String;
+              final contentNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
-                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                id: '$ollamaResponseIdPrefix${contentNow.microsecondsSinceEpoch}',
                 choices: [
                   ChatCompletionStreamResponseChoice(
                     delta: ChatCompletionStreamResponseDelta(
@@ -507,12 +576,17 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   ),
                 ],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: contentNow.millisecondsSinceEpoch ~/ 1000,
               );
             }
           }
 
           // Check if done — extract usage from the final chunk.
+          // Safety: close any unclosed thinking block before finishing.
+          if (json['done'] == true && inThinking) {
+            inThinking = false;
+            yield _contentChunk('</think>');
+          }
           if (json['done'] == true) {
             developer.log(
               'Ollama done response: $chunk',
@@ -525,11 +599,12 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
             if (promptEval is int || evalCount is int) {
               final prompt = promptEval is int ? promptEval : 0;
               final completion = evalCount is int ? evalCount : 0;
+              final usageNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
-                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                id: '$ollamaResponseIdPrefix${usageNow.microsecondsSinceEpoch}',
                 choices: const [],
                 object: 'chat.completion.chunk',
-                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                created: usageNow.millisecondsSinceEpoch ~/ 1000,
                 usage: CompletionUsage(
                   promptTokens: prompt,
                   completionTokens: completion,

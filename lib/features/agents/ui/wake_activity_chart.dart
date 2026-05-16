@@ -228,6 +228,12 @@ class _HourBar extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Wakes/hour at which the bar turns "high activity" (error color).
+  static const int _highActivityThreshold = 10;
+
+  /// Wakes/hour at which the bar turns "medium activity" (tertiary color).
+  static const int _mediumActivityThreshold = 5;
+
   final HourlyWakeActivity bucket;
   final int maxCount;
   final bool isSelected;
@@ -274,8 +280,8 @@ class _HourBar extends StatelessWidget {
 
   Color _barColor(BuildContext context, int count) {
     if (count == 0) return Colors.transparent;
-    if (count >= 10) return context.colorScheme.error;
-    if (count >= 5) return context.colorScheme.tertiary;
+    if (count >= _highActivityThreshold) return context.colorScheme.error;
+    if (count >= _mediumActivityThreshold) return context.colorScheme.tertiary;
     return context.colorScheme.primary;
   }
 }

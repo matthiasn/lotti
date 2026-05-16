@@ -12,6 +12,23 @@ import 'package:uuid/uuid.dart';
 
 part 'conversation_repository.g.dart';
 
+/// Matches `<think>...</think>` and `<thinking>...</thinking>` blocks
+/// (case-insensitive, possibly spanning newlines). Used to remove
+/// chain-of-thought reasoning from assistant content before it is stored
+/// in conversation history. Persisting and resending these blocks wastes
+/// tokens and, for Gemma 4, violates Google's guidance that past
+/// reasoning must not be carried forward into subsequent turns.
+final _thinkBlockPattern = RegExp(
+  r'<think(?:ing)?\b[^>]*>[\s\S]*?</think(?:ing)?>',
+  caseSensitive: false,
+);
+
+String? _stripThinkBlocks(String? content) {
+  if (content == null) return null;
+  final stripped = content.replaceAll(_thinkBlockPattern, '').trim();
+  return stripped.isEmpty ? null : stripped;
+}
+
 /// Repository for managing AI conversations.
 ///
 /// Streaming expectations for tool calls (for providers and tests):
@@ -279,19 +296,27 @@ class ConversationRepository extends _$ConversationRepository {
           accumulated = accumulated.merge(turnUsage);
         }
 
-        // Add assistant message
-        final content = contentBuffer.toString();
+        // Add assistant message.
+        //
+        // Strip `<think>...</think>` blocks before persisting. The streaming
+        // UI has already received the thinking content in real time; what
+        // gets stored here is later resent on subsequent turns via
+        // `getMessagesForRequest()`, and we must not echo past reasoning
+        // back to the model.
+        final rawContent = contentBuffer.toString();
+        final persistedContent = _stripThinkBlocks(rawContent);
 
         developer.log(
           'Stream completed: collected ${toolCalls.length} tool calls, '
-          '${content.length} chars of content, '
+          '${rawContent.length} chars of content '
+          '(${persistedContent?.length ?? 0} chars after stripping think blocks), '
           '${signatureCollector.signatures.length} signatures captured',
           name: 'ConversationRepository',
         );
 
         // Pass captured signatures to manager for use in subsequent turns
         manager.addAssistantMessage(
-          content: content.isNotEmpty ? content : null,
+          content: persistedContent,
           toolCalls: toolCalls.isNotEmpty ? toolCalls : null,
           signatures: signatureCollector.hasSignatures
               ? signatureCollector.signatures
