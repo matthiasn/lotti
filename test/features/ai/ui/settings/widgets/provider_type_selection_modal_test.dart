@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -268,6 +269,116 @@ void main() {
         // Check that text is visible and readable
         expect(find.text('Select Provider Type'), findsOneWidget);
       });
+    });
+
+    group('showForResult — form-less entry point', () {
+      // Powers the AI Settings "+ Add provider" handler in the
+      // dismissed-FTUE-modal path: the page has no form controller
+      // yet, so taps must yield a value back to the caller rather
+      // than mutate an embedded controller.
+
+      Widget showForResultHost({
+        required void Function(InferenceProviderType?) onResolved,
+      }) {
+        return ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () async {
+                    final picked =
+                        await ProviderTypeSelectionModal.showForResult(
+                          context: context,
+                        );
+                    onResolved(picked);
+                  },
+                  child: const Text('Pick a type'),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('resolves with the tapped provider type', (tester) async {
+        // Tall surface — the modal renders every InferenceProviderType
+        // as a fixed-height card stacked in a non-scrollable Column,
+        // so on the default 800×600 viewport the lower types (Ollama
+        // included) sit beyond the bottom edge and fail the hit test.
+        await tester.binding.setSurfaceSize(const Size(900, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        InferenceProviderType? resolved;
+        var calls = 0;
+        await tester.pumpWidget(
+          showForResultHost(
+            onResolved: (value) {
+              resolved = value;
+              calls++;
+            },
+          ),
+        );
+        await tester.tap(find.text('Pick a type'));
+        await tester.pumpAndSettle();
+
+        // Sanity: the legacy list shows every InferenceProviderType,
+        // not just the FTUE picker's curated tile lineup — that's the
+        // whole point of routing dismissed users through it.
+        expect(find.text('Ollama'), findsOneWidget);
+
+        await tester.tap(find.text('Ollama'));
+        await tester.pumpAndSettle();
+
+        expect(calls, 1, reason: 'Future must resolve exactly once');
+        expect(resolved, InferenceProviderType.ollama);
+      });
+
+      testWidgets(
+        'resolves with null when the user dismisses without picking',
+        (tester) async {
+          await tester.binding.setSurfaceSize(const Size(900, 1800));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+
+          InferenceProviderType? resolved;
+          var calls = 0;
+          var resolvedHasFired = false;
+          await tester.pumpWidget(
+            showForResultHost(
+              onResolved: (value) {
+                resolved = value;
+                resolvedHasFired = true;
+                calls++;
+              },
+            ),
+          );
+          await tester.tap(find.text('Pick a type'));
+          await tester.pumpAndSettle();
+
+          // Pop the modal without tapping any type. Mirrors the
+          // user swiping the Wolt sheet down or hitting the close
+          // affordance.
+          tester.state<NavigatorState>(find.byType(Navigator).last).pop();
+          await tester.pumpAndSettle();
+
+          expect(calls, 1);
+          expect(resolvedHasFired, isTrue);
+          expect(
+            resolved,
+            isNull,
+            reason:
+                'Dismissal without a pick must resolve to null so '
+                'callers can short-circuit instead of routing to a '
+                'wrong default provider type.',
+          );
+        },
+      );
     });
   });
 }

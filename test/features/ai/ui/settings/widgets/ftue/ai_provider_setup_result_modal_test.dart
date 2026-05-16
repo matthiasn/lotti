@@ -204,8 +204,8 @@ void main() {
     );
 
     testWidgets(
-      'Review setup button pops the modal with reviewSetup, '
-      'Start using AI pops with startUsingAi',
+      'Start using AI button pops the modal with startUsingAi — and is '
+      'the only action rendered (the legacy Review setup button is gone)',
       (tester) async {
         AiProviderSetupResultAction? captured;
 
@@ -236,20 +236,68 @@ void main() {
           ),
         );
 
-        // Test the Review setup button.
         await tester.tap(find.text('open'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Review setup'));
-        await tester.pumpAndSettle();
-        expect(captured, equals(AiProviderSetupResultAction.reviewSetup));
 
-        // Test the Start using AI button.
-        captured = null;
-        await tester.tap(find.text('open'));
-        await tester.pumpAndSettle();
+        // Guard: no review-setup affordance survives the redesign.
+        expect(find.text('Review setup'), findsNothing);
+
         await tester.tap(find.text('Start using AI'));
         await tester.pumpAndSettle();
         expect(captured, equals(AiProviderSetupResultAction.startUsingAi));
+      },
+    );
+
+    testWidgets(
+      'narrow surface stretches the CTA to fill the row — mobile '
+      'primary-button pattern',
+      (tester) async {
+        tester.view.physicalSize = const Size(360, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiProviderSetupResultModal(data: _data()),
+          ),
+        );
+        await tester.pump();
+
+        final cta = tester.getRect(find.text('Start using AI'));
+        // The button's text label is centred inside a button that itself
+        // fills the row; checking that the row size matches the modal
+        // content width is enough — if the layout regressed back to a
+        // hug-content size, the CTA would be a fraction of this width.
+        expect(cta.width, greaterThan(120));
+      },
+    );
+
+    testWidgets(
+      'wide surface caps the CTA width and right-aligns it — desktop '
+      'dialog pattern',
+      (tester) async {
+        tester.view.physicalSize = const Size(1024, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiProviderSetupResultModal(data: _data()),
+          ),
+        );
+        await tester.pump();
+
+        // Locate the rendered button rect via the Align ancestor — the
+        // CTA must not stretch full-width at desktop sizes.
+        final align = tester.widget<Align>(
+          find.ancestor(
+            of: find.text('Start using AI'),
+            matching: find.byType(Align),
+          ),
+        );
+        expect(align.alignment, equals(Alignment.centerRight));
       },
     );
   });

@@ -3265,12 +3265,6 @@ abstract class AppLocalizations {
   /// **'{providerName} ready'**
   String aiSetupResultModalTitle(String providerName);
 
-  /// No description provided for @aiSetupResultReviewSetupButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Review setup'**
-  String get aiSetupResultReviewSetupButton;
-
   /// No description provided for @aiSetupResultStartUsingButton.
   ///
   /// In en, this message translates to:

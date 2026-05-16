@@ -1896,9 +1896,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get aiSetupResultReviewSetupButton => 'Einrichtung prüfen';
-
-  @override
   String get aiSetupResultStartUsingButton => 'KI verwenden';
 
   @override
