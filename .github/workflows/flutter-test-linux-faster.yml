@@ -10,10 +10,20 @@ concurrency:
 
 jobs:
   test:
-    name: Unit & Widget Tests (Linux)
+    name: Unit & Widget Tests (Linux, shard ${{ matrix.shard_label }}/3)
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard_index: 0
+            shard_label: 1
+          - shard_index: 1
+            shard_label: 2
+          - shard_index: 2
+            shard_label: 3
     steps:
       - uses: actions/checkout@v5
       - name: Cache Pub Packages
@@ -33,12 +43,18 @@ jobs:
       - name: Activate very_good_cli
         run: dart pub global activate very_good_cli
       - name: Run Flutter tests (standard)
-        run: very_good test --coverage --exclude-tags glados
+        run: |
+          very_good test --coverage --exclude-tags glados -- \
+            --total-shards=3 \
+            --shard-index=${{ matrix.shard_index }}
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
+          fail_ci_if_error: true
           flags: standard
+          name: standard-shard-${{ matrix.shard_label }}
+          files: coverage/lcov.info
 
   glados:
     name: Glados Property Tests (Linux)
@@ -69,4 +85,23 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
+          fail_ci_if_error: true
           flags: glados
+          files: coverage/lcov.info
+
+  codecov:
+    name: Publish Codecov Status
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs:
+      - test
+      - glados
+    steps:
+      - uses: actions/checkout@v5
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: matthiasn/lotti
+          fail_ci_if_error: true
+          run_command: send-notifications
