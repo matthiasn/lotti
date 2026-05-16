@@ -170,10 +170,9 @@ class WakeOrchestrator {
   /// write — i.e. they may surface as new notifications.
   static const wakeRunMaxDuration = Duration(minutes: 2);
 
-  // Post-execution drain is handled by [WakeThrottleCoordinator]'s deferred
-  // drain timer. After a subscription wake completes, a drain is scheduled at
-  // `now + throttleWindow`, which picks up signals that arrived during
-  // execution.
+  // Follow-up drains are handled by [WakeThrottleCoordinator]'s deferred
+  // drain timer. After a subscription wake completes, a new drain is scheduled
+  // only when signals arrived during execution and left work in [queue].
 
   /// Monotonic wake counter per agent.
   ///
@@ -211,6 +210,8 @@ class WakeOrchestrator {
   /// Safety-net periodic timer that catches any scenario where a deferred
   /// drain timer fails to fire (macOS App Nap, race conditions, etc.).
   Timer? _safetyNetTimer;
+
+  static const _restoredPendingWakeSubscriptionId = 'restored_pending_wake';
 
   /// Interval for the safety-net timer. Shorter than [throttleWindow] so
   /// stuck jobs are recovered within a reasonable time.
@@ -345,6 +346,49 @@ class WakeOrchestrator {
   /// If [deadline] is in the past, it is ignored.
   void setThrottleDeadline(String agentId, DateTime deadline) {
     _throttle.setDeadlineFromHydration(agentId, deadline);
+  }
+
+  /// Restore a persisted deferred subscription wake after an app restart.
+  ///
+  /// `nextWakeAt` is durable, but [WakeQueue] is intentionally in-memory.
+  /// Startup hydration must therefore reconstruct a queue job as well as the
+  /// throttle deadline; otherwise an overdue row can remain visible in the
+  /// sidebar forever with nothing left to execute it.
+  void restorePendingWake({
+    required String agentId,
+    required DateTime dueAt,
+  }) {
+    final now = clock.now();
+    final runKey = RunKeyFactory.forSubscription(
+      agentId: agentId,
+      subscriptionId: _restoredPendingWakeSubscriptionId,
+      batchTokens: const <String>{},
+      wakeCounter: 0,
+      timestamp: dueAt,
+    );
+
+    // Overdue jobs use [dueAt] as createdAt so they sort ahead of any wakes
+    // enqueued post-startup; future jobs use [now] so FIFO ordering doesn't
+    // promote them above real signals that arrive before the deadline.
+    final createdAt = dueAt.isBefore(now) ? dueAt : now;
+
+    queue.enqueue(
+      WakeJob(
+        runKey: runKey,
+        agentId: agentId,
+        reason: WakeReason.subscription.name,
+        triggerTokens: const <String>{},
+        reasonId: _restoredPendingWakeSubscriptionId,
+        createdAt: createdAt,
+      ),
+    );
+
+    if (dueAt.isAfter(now)) {
+      setThrottleDeadline(agentId, dueAt);
+    } else {
+      clearThrottle(agentId);
+      unawaited(processNext());
+    }
   }
 
   /// Clear the throttle for [agentId], allowing an immediate wake.
@@ -1103,19 +1147,19 @@ class WakeOrchestrator {
           completedAt: clock.now(),
         );
 
-        // Set the throttle deadline for subscription-triggered wakes so
-        // that rapid-fire mutations don't cause excessive LLM calls.
+        // Only arm a follow-up throttle deadline when work remains queued;
+        // otherwise the persisted `nextWakeAt` surfaces in the Wake Cycles
+        // sidebar as a cooldown row with nothing left to execute.
         //
-        // If the queue holds only digest-deferred propagated jobs for this
-        // agent (e.g. project fan-outs that arrived while the executor was
-        // running), honour the morning policy for the drain instead of
-        // bouncing them into a 120 s post-throttle. A fast-bearing queued job
+        // For queued follow-ups, a digest-deferred propagated-only queue
+        // (e.g. project fan-outs that arrived while the executor was
+        // running) defers the drain to the next 06:00. A fast-bearing job
         // — direct edit or task-agent propagated child update — keeps the
-        // standard 120 s cooldown so user-visible task edits land promptly.
-        if (job.reason == WakeReason.subscription.name) {
+        // standard 120 s drain so user-visible task edits land promptly.
+        if (job.reason == WakeReason.subscription.name &&
+            queue.hasQueuedJobFor(job.agentId)) {
           final hasDirectQueued = queue.hasDirectQueuedJobFor(job.agentId);
-          final hasAnyQueued = queue.hasQueuedJobFor(job.agentId);
-          final morningDeadline = hasAnyQueued && !hasDirectQueued
+          final morningDeadline = !hasDirectQueued
               ? nextOccurrenceOf(
                   clock.now(),
                   hour: AgentSchedules.projectDailyDigestHour,

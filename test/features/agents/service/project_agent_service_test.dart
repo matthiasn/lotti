@@ -177,9 +177,6 @@ void main() {
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
     when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-    when(
-      () => mockOrchestrator.setThrottleDeadline(any(), any()),
-    ).thenReturn(null);
 
     service = ProjectAgentService(
       agentService: mockAgentService,
@@ -996,7 +993,10 @@ void main() {
             {projectEntityUpdateNotification('project-1')},
           );
           verify(
-            () => mockOrchestrator.setThrottleDeadline('pa-1', nextWakeAt),
+            () => mockOrchestrator.restorePendingWake(
+              agentId: 'pa-1',
+              dueAt: nextWakeAt,
+            ),
           ).called(1);
           verifyNever(
             () => mockRepository.getLinksFrom(

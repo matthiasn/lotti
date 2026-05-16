@@ -738,19 +738,20 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 }
 
 /// Composer for the desktop sidebar's `aboveSettings` slot. Stacks the
-/// running-timer panel (when a timer is active) above the optional
-/// inline Wake Queue (when its config flag is enabled). The separator
-/// between the two is rendered only when both are visible — otherwise
-/// an idle timer would push an 8 px gap above the wake queue with no
-/// visible neighbour to separate from.
-class _DesktopSidebarAboveSettings extends StatelessWidget {
+/// optional inline Wake Queue (when its config flag is enabled) above
+/// the running-timer panel (when a timer is active), so the running
+/// timer sits closest to the Settings entry below. The separator
+/// between the two is rendered only when both are actually visible.
+class _DesktopSidebarAboveSettings extends ConsumerWidget {
   const _DesktopSidebarAboveSettings({required this.showWakeQueue});
 
   final bool showWakeQueue;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final wakesVisible =
+        showWakeQueue && sidebarWakeQueueHasVisibleContent(ref);
 
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
@@ -760,11 +761,20 @@ class _DesktopSidebarAboveSettings extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (showWakeQueue) const SidebarWakeQueue(),
+            // Animate the gap height so it grows/collapses in sync with
+            // the wake card's own AnimatedSize transition; a static
+            // SizedBox would otherwise pop in or out the instant either
+            // side's visibility flipped.
+            AnimatedSize(
+              duration: SidebarWakeQueue.animationDuration,
+              curve: Curves.easeInOut,
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                height: (wakesVisible && hasTimer) ? tokens.spacing.step3 : 0,
+              ),
+            ),
             const SidebarTimerSection(),
-            if (showWakeQueue) ...[
-              if (hasTimer) SizedBox(height: tokens.spacing.step3),
-              const SidebarWakeQueue(),
-            ],
           ],
         );
       },

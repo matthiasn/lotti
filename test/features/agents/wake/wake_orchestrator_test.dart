@@ -82,6 +82,26 @@ enum _GeneratedWakeDrainExecutorSlot {
   throwsException,
 }
 
+enum _GeneratedPendingWakeRestoreDueSlot {
+  deepPast,
+  justPast,
+  exactlyNow,
+  nearFuture,
+  farFuture,
+}
+
+enum _GeneratedPendingWakeRestorePriorThrottleSlot {
+  none,
+  earlierFuture,
+  laterFuture,
+}
+
+enum _GeneratedPostRunReasonSlot { subscription, reanalysis, scheduled }
+
+enum _GeneratedPostRunQueuedSlot { empty, direct, propagatedOnly }
+
+enum _GeneratedPostRunClockSlot { beforeMorning, afterMorning }
+
 class _GeneratedWakeSubscriptionSpec {
   const _GeneratedWakeSubscriptionSpec({
     required this.id,
@@ -558,6 +578,126 @@ class _ObservedWakeDrainStatusUpdate {
   final String? errorMessage;
 }
 
+class _GeneratedPendingWakeRestoreSpec {
+  const _GeneratedPendingWakeRestoreSpec({required this.dueSlot});
+
+  final _GeneratedPendingWakeRestoreDueSlot dueSlot;
+
+  DateTime dueAt(DateTime now) {
+    return switch (dueSlot) {
+      _GeneratedPendingWakeRestoreDueSlot.deepPast => now.subtract(
+        const Duration(hours: 8),
+      ),
+      _GeneratedPendingWakeRestoreDueSlot.justPast => now.subtract(
+        const Duration(milliseconds: 1),
+      ),
+      _GeneratedPendingWakeRestoreDueSlot.exactlyNow => now,
+      _GeneratedPendingWakeRestoreDueSlot.nearFuture => now.add(
+        const Duration(minutes: 2),
+      ),
+      _GeneratedPendingWakeRestoreDueSlot.farFuture => now.add(
+        const Duration(hours: 6),
+      ),
+    };
+  }
+
+  bool isFuture(DateTime now) => dueAt(now).isAfter(now);
+
+  @override
+  String toString() {
+    return '_GeneratedPendingWakeRestoreSpec(dueSlot: $dueSlot)';
+  }
+}
+
+class _GeneratedPendingWakeRestoreScenario {
+  const _GeneratedPendingWakeRestoreScenario({
+    required this.specs,
+    required this.priorThrottleSlot,
+    required this.duplicateRestoreCalls,
+    required this.registerSubscriptions,
+  });
+
+  final List<_GeneratedPendingWakeRestoreSpec> specs;
+  final _GeneratedPendingWakeRestorePriorThrottleSlot priorThrottleSlot;
+  final bool duplicateRestoreCalls;
+  final bool registerSubscriptions;
+
+  DateTime? priorThrottleDeadline(DateTime now, DateTime dueAt) {
+    return switch (priorThrottleSlot) {
+      _GeneratedPendingWakeRestorePriorThrottleSlot.none => null,
+      _GeneratedPendingWakeRestorePriorThrottleSlot.earlierFuture => now.add(
+        const Duration(seconds: 30),
+      ),
+      _GeneratedPendingWakeRestorePriorThrottleSlot.laterFuture => dueAt.add(
+        const Duration(minutes: 30),
+      ),
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedPendingWakeRestoreScenario('
+        'specs: $specs, priorThrottleSlot: $priorThrottleSlot, '
+        'duplicateRestoreCalls: $duplicateRestoreCalls, '
+        'registerSubscriptions: $registerSubscriptions)';
+  }
+}
+
+class _GeneratedPostRunThrottleScenario {
+  const _GeneratedPostRunThrottleScenario({
+    required this.reasonSlot,
+    required this.queuedSlot,
+    required this.clockSlot,
+  });
+
+  final _GeneratedPostRunReasonSlot reasonSlot;
+  final _GeneratedPostRunQueuedSlot queuedSlot;
+  final _GeneratedPostRunClockSlot clockSlot;
+
+  String get reason {
+    return switch (reasonSlot) {
+      _GeneratedPostRunReasonSlot.subscription => WakeReason.subscription.name,
+      _GeneratedPostRunReasonSlot.reanalysis => WakeReason.reanalysis.name,
+      _GeneratedPostRunReasonSlot.scheduled => WakeReason.scheduled.name,
+    };
+  }
+
+  DateTime get now {
+    return switch (clockSlot) {
+      _GeneratedPostRunClockSlot.beforeMorning => DateTime(2026, 5, 10, 3, 15),
+      _GeneratedPostRunClockSlot.afterMorning => DateTime(2026, 5, 10, 21, 30),
+    };
+  }
+
+  DateTime? get expectedDeadline {
+    if (reasonSlot != _GeneratedPostRunReasonSlot.subscription) {
+      return null;
+    }
+    return switch (queuedSlot) {
+      _GeneratedPostRunQueuedSlot.empty => null,
+      _GeneratedPostRunQueuedSlot.direct => now.add(
+        WakeOrchestrator.throttleWindow,
+      ),
+      _GeneratedPostRunQueuedSlot.propagatedOnly => switch (clockSlot) {
+        _GeneratedPostRunClockSlot.beforeMorning => DateTime(2026, 5, 10, 6),
+        _GeneratedPostRunClockSlot.afterMorning => DateTime(2026, 5, 11, 6),
+      },
+    };
+  }
+
+  bool get hasFollowUp => queuedSlot != _GeneratedPostRunQueuedSlot.empty;
+
+  bool get followUpHasDirectMatch =>
+      queuedSlot == _GeneratedPostRunQueuedSlot.direct;
+
+  @override
+  String toString() {
+    return '_GeneratedPostRunThrottleScenario('
+        'reasonSlot: $reasonSlot, queuedSlot: $queuedSlot, '
+        'clockSlot: $clockSlot)';
+  }
+}
+
 DateTime _generatedWakeDrainCreatedAt(int index) {
   return DateTime(2026, 5, 20, 8).add(Duration(minutes: index));
 }
@@ -615,6 +755,64 @@ extension _AnyGeneratedWakeOrchestratorScenario on glados.Any {
 
   glados.Generator<_GeneratedWakeDrainExecutorSlot> get wakeDrainExecutorSlot =>
       glados.AnyUtils(this).choose(_GeneratedWakeDrainExecutorSlot.values);
+
+  glados.Generator<_GeneratedPendingWakeRestoreDueSlot>
+  get pendingWakeRestoreDueSlot =>
+      glados.AnyUtils(this).choose(_GeneratedPendingWakeRestoreDueSlot.values);
+
+  glados.Generator<_GeneratedPendingWakeRestoreSpec>
+  get pendingWakeRestoreSpec => pendingWakeRestoreDueSlot.map(
+    (dueSlot) => _GeneratedPendingWakeRestoreSpec(dueSlot: dueSlot),
+  );
+
+  glados.Generator<_GeneratedPendingWakeRestorePriorThrottleSlot>
+  get pendingWakeRestorePriorThrottleSlot => glados.AnyUtils(
+    this,
+  ).choose(_GeneratedPendingWakeRestorePriorThrottleSlot.values);
+
+  glados.Generator<_GeneratedPendingWakeRestoreScenario>
+  get pendingWakeRestoreScenario => glados.CombinableAny(this).combine4(
+    glados.ListAnys(this).listWithLengthInRange(1, 5, pendingWakeRestoreSpec),
+    pendingWakeRestorePriorThrottleSlot,
+    glados.any.bool,
+    glados.any.bool,
+    (
+      List<_GeneratedPendingWakeRestoreSpec> specs,
+      _GeneratedPendingWakeRestorePriorThrottleSlot priorThrottleSlot,
+      bool duplicateRestoreCalls,
+      bool registerSubscriptions,
+    ) => _GeneratedPendingWakeRestoreScenario(
+      specs: specs,
+      priorThrottleSlot: priorThrottleSlot,
+      duplicateRestoreCalls: duplicateRestoreCalls,
+      registerSubscriptions: registerSubscriptions,
+    ),
+  );
+
+  glados.Generator<_GeneratedPostRunReasonSlot> get postRunReasonSlot =>
+      glados.AnyUtils(this).choose(_GeneratedPostRunReasonSlot.values);
+
+  glados.Generator<_GeneratedPostRunQueuedSlot> get postRunQueuedSlot =>
+      glados.AnyUtils(this).choose(_GeneratedPostRunQueuedSlot.values);
+
+  glados.Generator<_GeneratedPostRunClockSlot> get postRunClockSlot =>
+      glados.AnyUtils(this).choose(_GeneratedPostRunClockSlot.values);
+
+  glados.Generator<_GeneratedPostRunThrottleScenario>
+  get postRunThrottleScenario => glados.CombinableAny(this).combine3(
+    postRunReasonSlot,
+    postRunQueuedSlot,
+    postRunClockSlot,
+    (
+      _GeneratedPostRunReasonSlot reasonSlot,
+      _GeneratedPostRunQueuedSlot queuedSlot,
+      _GeneratedPostRunClockSlot clockSlot,
+    ) => _GeneratedPostRunThrottleScenario(
+      reasonSlot: reasonSlot,
+      queuedSlot: queuedSlot,
+      clockSlot: clockSlot,
+    ),
+  );
 
   glados.Generator<_GeneratedWakeDrainJobSpec> get wakeDrainJobSpec =>
       glados.CombinableAny(this).combine4(
@@ -2487,6 +2685,267 @@ void main() {
     });
 
     group('throttle gate', () {
+      glados.Glados(
+        glados.any.pendingWakeRestoreScenario,
+        glados.ExploreConfig(numRuns: 180),
+      ).test(
+        'matches generated persisted pending-wake restoration semantics',
+        (scenario) {
+          fakeAsync((async) {
+            final generatedRepository = MockAgentRepository();
+            final generatedQueue = WakeQueue();
+            final generatedRunner = WakeRunner();
+            final stateByAgent = <String, AgentStateEntity>{};
+            final executions = <String>[];
+            final now = clock.now();
+
+            when(
+              () => generatedRepository.getAgentState(any()),
+            ).thenAnswer((invocation) async {
+              final agentId = invocation.positionalArguments.single as String;
+              return stateByAgent[agentId];
+            });
+            when(
+              () => generatedRepository.upsertEntity(any()),
+            ).thenAnswer((invocation) async {
+              final entity =
+                  invocation.positionalArguments.single as AgentDomainEntity;
+              if (entity is AgentStateEntity) {
+                stateByAgent[entity.agentId] = entity;
+              }
+            });
+            when(
+              () => generatedRepository.insertWakeRun(
+                entry: any(named: 'entry'),
+              ),
+            ).thenAnswer((_) async {});
+            when(
+              () => generatedRepository.updateWakeRunStatus(
+                any(),
+                any(),
+                completedAt: any(named: 'completedAt'),
+                errorMessage: any(named: 'errorMessage'),
+              ),
+            ).thenAnswer((_) async {});
+
+            final generatedOrchestrator = WakeOrchestrator(
+              repository: generatedRepository,
+              queue: generatedQueue,
+              runner: generatedRunner,
+              wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                executions.add(agentId);
+                expect(triggers, isEmpty, reason: '$scenario');
+                return null;
+              },
+            );
+
+            final dueByAgent = <String, DateTime>{};
+            for (final (index, spec) in scenario.specs.indexed) {
+              final agentId = 'generated-restore-agent-$index';
+              final dueAt = spec.dueAt(now);
+              dueByAgent[agentId] = dueAt;
+              stateByAgent[agentId] = makeTestState(
+                agentId: agentId,
+                nextWakeAt: dueAt,
+              );
+
+              if (scenario.registerSubscriptions) {
+                generatedOrchestrator.addSubscription(
+                  makeSub(
+                    id: 'generated-restore-sub-$index',
+                    agentId: agentId,
+                    matchEntityIds: {'generated-restore-token-$index'},
+                  ),
+                );
+              }
+
+              final prior = scenario.priorThrottleDeadline(now, dueAt);
+              if (prior != null && prior.isAfter(now)) {
+                generatedOrchestrator.setThrottleDeadline(agentId, prior);
+              }
+
+              generatedOrchestrator.restorePendingWake(
+                agentId: agentId,
+                dueAt: dueAt,
+              );
+              if (scenario.duplicateRestoreCalls) {
+                generatedOrchestrator.restorePendingWake(
+                  agentId: agentId,
+                  dueAt: dueAt,
+                );
+              }
+            }
+
+            async.flushMicrotasks();
+
+            final overdueAgentIds = dueByAgent.entries
+                .where((entry) => !entry.value.isAfter(now))
+                .map((entry) => entry.key)
+                .toSet();
+            final futureEntries =
+                dueByAgent.entries
+                    .where((entry) => entry.value.isAfter(now))
+                    .toList()
+                  ..sort((a, b) => a.value.compareTo(b.value));
+
+            expect(executions.toSet(), overdueAgentIds, reason: '$scenario');
+            expect(executions, hasLength(overdueAgentIds.length));
+            expect(generatedQueue.length, futureEntries.length);
+
+            for (final agentId in overdueAgentIds) {
+              expect(
+                stateByAgent[agentId]?.nextWakeAt,
+                isNull,
+                reason: '$scenario',
+              );
+            }
+
+            if (futureEntries.isNotEmpty) {
+              final firstDueAt = futureEntries.first.value;
+              async
+                ..elapse(
+                  firstDueAt.difference(clock.now()) -
+                      const Duration(milliseconds: 1),
+                )
+                ..flushMicrotasks();
+              expect(executions, hasLength(overdueAgentIds.length));
+
+              for (final dueAt
+                  in futureEntries.map((entry) => entry.value).toSet()) {
+                async
+                  ..elapse(dueAt.difference(clock.now()))
+                  ..flushMicrotasks();
+
+                final expectedExecuted = dueByAgent.entries
+                    .where((entry) => !entry.value.isAfter(dueAt))
+                    .map((entry) => entry.key)
+                    .toSet();
+                expect(
+                  executions.toSet(),
+                  expectedExecuted,
+                  reason: '$scenario',
+                );
+                expect(executions, hasLength(expectedExecuted.length));
+              }
+            }
+
+            expect(executions, hasLength(scenario.specs.length));
+            for (final agentId in dueByAgent.keys) {
+              expect(
+                stateByAgent[agentId]?.nextWakeAt,
+                isNull,
+                reason: '$scenario',
+              );
+            }
+            expect(generatedQueue.isEmpty, isTrue, reason: '$scenario');
+
+            generatedOrchestrator.stop();
+            async.flushMicrotasks();
+          });
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados(
+        glados.any.postRunThrottleScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'matches generated post-run nextWakeAt decision matrix',
+        (scenario) {
+          withClock(Clock.fixed(scenario.now), () {
+            fakeAsync((async) {
+              final generatedRepository = MockAgentRepository();
+              final generatedQueue = WakeQueue();
+              final generatedRunner = WakeRunner();
+              final upsertedStates = <AgentStateEntity>[];
+              var state = makeTestState(agentId: 'agent-1');
+
+              when(
+                () => generatedRepository.getAgentState(any()),
+              ).thenAnswer((_) async => state);
+              when(
+                () => generatedRepository.upsertEntity(any()),
+              ).thenAnswer((invocation) async {
+                state =
+                    invocation.positionalArguments.single as AgentStateEntity;
+                upsertedStates.add(state);
+              });
+              when(
+                () => generatedRepository.insertWakeRun(
+                  entry: any(named: 'entry'),
+                ),
+              ).thenAnswer((_) async {});
+              when(
+                () => generatedRepository.updateWakeRunStatus(
+                  any(),
+                  any(),
+                  completedAt: any(named: 'completedAt'),
+                  errorMessage: any(named: 'errorMessage'),
+                ),
+              ).thenAnswer((_) async {});
+
+              final generatedOrchestrator = WakeOrchestrator(
+                repository: generatedRepository,
+                queue: generatedQueue,
+                runner: generatedRunner,
+                wakeExecutor: noOpExecutor,
+              );
+
+              generatedQueue.enqueue(
+                makeJob(
+                  runKey: 'generated-post-run-main',
+                  reason: scenario.reason,
+                  triggerTokens: {'generated-post-run-main-token'},
+                  createdAt: scenario.now,
+                ),
+              );
+              if (scenario.hasFollowUp) {
+                generatedQueue.enqueue(
+                  WakeJob(
+                    runKey: 'generated-post-run-follow-up',
+                    agentId: 'agent-1',
+                    reason: WakeReason.subscription.name,
+                    triggerTokens: const {'generated-post-run-follow-up-token'},
+                    reasonId: 'generated-post-run-follow-up-sub',
+                    createdAt: scenario.now,
+                    hasDirectMatch: scenario.followUpHasDirectMatch,
+                  ),
+                );
+              }
+
+              generatedOrchestrator.processNext();
+              async.flushMicrotasks();
+
+              final nextWakeWrites = upsertedStates
+                  .map((state) => state.nextWakeAt)
+                  .whereType<DateTime>()
+                  .toList();
+              final expectedDeadline = scenario.expectedDeadline;
+              if (expectedDeadline == null) {
+                expect(nextWakeWrites, isEmpty, reason: '$scenario');
+                expect(generatedQueue.isEmpty, isTrue, reason: '$scenario');
+              } else {
+                expect(nextWakeWrites, [expectedDeadline], reason: '$scenario');
+                expect(
+                  generatedQueue.hasQueuedJobFor('agent-1'),
+                  isTrue,
+                  reason: '$scenario',
+                );
+                expect(
+                  generatedQueue.hasDirectQueuedJobFor('agent-1'),
+                  scenario.followUpHasDirectMatch,
+                  reason: '$scenario',
+                );
+              }
+
+              generatedOrchestrator.stop();
+              async.flushMicrotasks();
+            });
+          });
+        },
+        tags: 'glados',
+      );
+
       test('subscription wake sets throttle deadline', () {
         fakeAsync((async) {
           orchestrator
@@ -2786,6 +3245,100 @@ void main() {
         });
       });
 
+      test(
+        'restorePendingWake executes overdue persisted deadline immediately',
+        () {
+          fakeAsync((async) {
+            final dueAt = clock.now().subtract(const Duration(hours: 10));
+            var executionCount = 0;
+            var storedState = makeTestState(
+              agentId: 'agent-1',
+              nextWakeAt: dueAt,
+            );
+
+            orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executionCount++;
+              expect(agentId, 'agent-1');
+              expect(triggers, isEmpty);
+              return Future.value();
+            };
+
+            when(
+              () => mockRepository.getAgentState('agent-1'),
+            ).thenAnswer((_) async => storedState);
+            when(() => mockRepository.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              storedState =
+                  invocation.positionalArguments.single as AgentStateEntity;
+            });
+
+            orchestrator.restorePendingWake(agentId: 'agent-1', dueAt: dueAt);
+            async.flushMicrotasks();
+
+            expect(executionCount, 1);
+            expect(storedState.nextWakeAt, isNull);
+
+            final captured = captureWakeRuns(mockRepository);
+            expect(captured, hasLength(1));
+            expect(captured.single.agentId, 'agent-1');
+            expect(captured.single.reason, WakeReason.subscription.name);
+            expect(captured.single.reasonId, 'restored_pending_wake');
+            expect(captured.single.createdAt, dueAt);
+          });
+        },
+      );
+
+      test(
+        'restorePendingWake rebuilds future queue job and drains at deadline',
+        () {
+          fakeAsync((async) {
+            const wait = Duration(minutes: 5);
+            final dueAt = clock.now().add(wait);
+            var executionCount = 0;
+            var storedState = makeTestState(
+              agentId: 'agent-1',
+              nextWakeAt: dueAt,
+            );
+
+            orchestrator.wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executionCount++;
+              return Future.value();
+            };
+
+            when(
+              () => mockRepository.getAgentState('agent-1'),
+            ).thenAnswer((_) async => storedState);
+            when(() => mockRepository.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              storedState =
+                  invocation.positionalArguments.single as AgentStateEntity;
+            });
+
+            orchestrator.restorePendingWake(agentId: 'agent-1', dueAt: dueAt);
+            async.flushMicrotasks();
+
+            expect(executionCount, 0);
+
+            async
+              ..elapse(wait - const Duration(milliseconds: 1))
+              ..flushMicrotasks();
+            expect(executionCount, 0);
+
+            async
+              ..elapse(const Duration(milliseconds: 1))
+              ..flushMicrotasks();
+
+            expect(executionCount, 1);
+            expect(storedState.nextWakeAt, isNull);
+            final captured = captureWakeRuns(mockRepository);
+            expect(captured.single.reason, WakeReason.subscription.name);
+            expect(captured.single.reasonId, 'restored_pending_wake');
+          });
+        },
+      );
+
       test('stop cancels deferred drain timers', () {
         fakeAsync((async) {
           orchestrator
@@ -2867,6 +3420,44 @@ void main() {
           controller.close();
         });
       });
+
+      test(
+        'subscription wake clears nextWakeAt when no follow-up job remains',
+        () {
+          fakeAsync((async) {
+            orchestrator
+              ..addSubscription(makeSub())
+              ..wakeExecutor = noOpExecutor;
+
+            final writes = <AgentStateEntity>[];
+            var storedState = makeTestState(
+              id: 'state-agent-1',
+              agentId: 'agent-1',
+            );
+            when(
+              () => mockRepository.getAgentState(any()),
+            ).thenAnswer((_) async => storedState);
+            when(() => mockRepository.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              storedState =
+                  invocation.positionalArguments.single as AgentStateEntity;
+              writes.add(storedState);
+            });
+
+            final controller = StreamController<Set<String>>.broadcast();
+            orchestrator.start(controller.stream);
+
+            emitAndDrain(async, controller, {'entity-1'});
+
+            expect(writes, hasLength(2));
+            expect(writes.first.nextWakeAt, isNotNull);
+            expect(writes.last.nextWakeAt, isNull);
+
+            controller.close();
+          });
+        },
+      );
 
       test(
         '_setThrottleDeadline still sets in-memory throttle on DB error',

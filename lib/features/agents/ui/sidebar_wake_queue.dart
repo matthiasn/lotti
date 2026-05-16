@@ -38,21 +38,50 @@ abstract final class SidebarWakeQueueTestHooks {
   static void Function(String path)? navigatorOverride;
 }
 
+/// Whether [SidebarWakeQueue] would render a non-empty card given the
+/// current snapshot of the pending- and ongoing-wake providers. The
+/// composer above the sidebar uses this to decide whether to insert a
+/// spacer between the wake card and the running-timer card — neither
+/// widget should leave a phantom gap when its data is empty.
+bool sidebarWakeQueueHasVisibleContent(WidgetRef ref) {
+  final wakes =
+      ref.watch(pendingWakeRecordsProvider).value ??
+      const <PendingWakeRecord>[];
+  final ongoing =
+      ref.watch(ongoingWakeRecordsProvider).value ??
+      const <OngoingWakeRecord>[];
+  if (ongoing.isNotEmpty) return true;
+  final cutoff = clock.now().add(kSidebarWakeQueueScheduledLookahead);
+  return wakes.any((r) => !r.dueAt.isAfter(cutoff));
+}
+
 /// Quiet inline Wake Queue surfaced in the desktop sidebar's
-/// `aboveSettings` slot. Renders:
+/// `aboveSettings` slot. When at least one wake is active it renders:
 ///
 /// 1. A `WAKES N ↗` header that links to the full Wake Cycles page.
 /// 2. Up to N currently *running* agents, each with the live duration
 ///    since the wake started.
 /// 3. Up to [kSidebarWakeQueueRowLimit] *scheduled* wakes that fall
 ///    within [kSidebarWakeQueueScheduledLookahead]; anything farther
-///    out is hidden under the trailing `+N more →` link.
+///    out is intentionally invisible from the sidebar — the header
+///    link icon is the only path into the full Wake Cycles page.
 ///
-/// The link row is always visible — when the queue is empty it still
-/// gives the user a one-tap path into the full list so the section
-/// never feels "stuck".
+/// When the pre-resolve / zero-wake state holds, `build` returns
+/// [SizedBox.shrink] so the card is hidden entirely rather than
+/// presenting an empty header above the running-timer card.
 class SidebarWakeQueue extends ConsumerWidget {
   const SidebarWakeQueue({super.key});
+
+  /// Matches `SidebarTimerSection.animationDuration` so the wake card and
+  /// the running-timer card share one rhythm when they appear or collapse
+  /// in the sidebar's `aboveSettings` slot.
+  static const Duration animationDuration = Duration(milliseconds: 220);
+
+  /// Stable key used by the hidden state so [AnimatedSwitcher] cross-fades
+  /// once between visible↔hidden rather than every time the content set
+  /// changes.
+  static const Key _hiddenKey = ValueKey('sidebar-wakes-hidden');
+  static const Key _visibleKey = ValueKey('sidebar-wakes-visible');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,43 +103,58 @@ class SidebarWakeQueue extends ConsumerWidget {
     // sidebar; the header link icon is the path to the full list.
     final totalCount = ongoing.length + inWindow.length;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: tokens.colors.decorative.level01),
-        ),
-      ),
-      child: Padding(
-        // Tighter horizontal padding than the rest of the sidebar so
-        // the title cell can breathe past the avatar/cancel cluster.
-        padding: EdgeInsets.fromLTRB(
-          tokens.spacing.step1,
-          tokens.spacing.step3,
-          tokens.spacing.step1,
-          tokens.spacing.step4,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _Header(count: totalCount),
-            if (ongoing.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.step2),
-              for (final record in ongoing)
-                Padding(
-                  padding: EdgeInsets.only(bottom: tokens.spacing.step1),
-                  child: _OngoingWakeRow(record: record),
-                ),
-            ],
-            if (visibleScheduled.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.step2),
-              for (final record in visibleScheduled)
-                Padding(
-                  padding: EdgeInsets.only(bottom: tokens.spacing.step1),
-                  child: _WakeRow(record: record),
-                ),
-            ],
-          ],
-        ),
+    final child = totalCount == 0
+        ? const SizedBox.shrink(key: _hiddenKey)
+        : Material(
+            key: _visibleKey,
+            color: tokens.colors.background.level02,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(tokens.radii.s),
+              // Hairline (0.5 px) — `decorative.level01` is already the
+              // faintest decorative token, so the only remaining axis for
+              // "fainter" is stroke thickness.
+              side: BorderSide(
+                color: tokens.colors.decorative.level01,
+                width: 0.5,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              // Matches the running-timer card's vertical rhythm and adds
+              // enough horizontal gutter that the dot+title cluster and
+              // the trailing × do not hug the card border.
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step2,
+                vertical: tokens.spacing.step3,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Header(count: totalCount),
+                  if (ongoing.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    for (final record in ongoing)
+                      _OngoingWakeRow(record: record),
+                  ],
+                  if (visibleScheduled.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    for (final record in visibleScheduled)
+                      _WakeRow(record: record),
+                  ],
+                ],
+              ),
+            ),
+          );
+
+    return AnimatedSize(
+      duration: animationDuration,
+      curve: Curves.easeInOut,
+      alignment: Alignment.bottomCenter,
+      child: AnimatedSwitcher(
+        duration: animationDuration,
+        switchInCurve: Curves.easeIn,
+        switchOutCurve: Curves.easeOut,
+        child: child,
       ),
     );
   }

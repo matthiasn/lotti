@@ -290,7 +290,7 @@ class TaskAgentService {
   }
 
   /// Read the persisted `nextWakeAt` from the agent's state entity and
-  /// restore it into the orchestrator's in-memory throttle cache.
+  /// restore the matching in-memory queue job plus throttle deadline.
   ///
   /// Also mirrors the persisted `awaitingContent` flag so the orchestrator
   /// can skip surfacing a 2-minute countdown for blank tasks across app
@@ -299,7 +299,7 @@ class TaskAgentService {
     final state = await repository.getAgentState(agentId);
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
-      orchestrator.setThrottleDeadline(agentId, deadline);
+      orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
     }
     orchestrator.setAwaitingContent(
       agentId,
@@ -359,8 +359,8 @@ class TaskAgentService {
           count++;
         }
 
-        // Hydrate the throttle deadline from persisted state so the
-        // cooldown window survives app restarts and backgrounding.
+        // Restore persisted deferred wake work so due deadlines survive app
+        // restarts and backgrounding.
         await _hydrateThrottleDeadline(agent.agentId);
       } catch (e, s) {
         final msg =
