@@ -35,6 +35,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   affordance to add a Voxtral provider, even though the rest of
   the runtime (repository, default URL, known models, chip +
   visual) has supported it for some time.
+- MLX Audio (local) provider scaffolding for embedded Apple
+  Silicon speech. AI setup now offers MLX Audio, seeds Voxtral,
+  Qwen3-ASR, Parakeet, and Qwen3-TTS model rows, prompts for
+  model installation, and shows native download progress on both
+  model overview and provider detail surfaces. Post-recording
+  transcription routes through a guarded Swift channel. AI-summary
+  playback remains wired through the same channel on macOS but is
+  hidden behind the default-off `enable_ai_summary_tts` config flag
+  while local TTS is evaluated. The iOS target does not link
+  `MLXAudioTTS` yet because its Moss TTS target is not archive-safe
+  on iOS; iOS `speakText` returns unsupported while STT remains
+  linked. Intel macOS and builds without the MLX Audio Swift SDK
+  keep compiling and report the feature as unsupported instead of
+  loading Apple Silicon-only libraries.
+- MLX Audio now also offers Qwen3-ASR 1.7B 4-bit and 8-bit model
+  rows for local post-recording transcription tests on macOS and
+  iOS. First-run MLX Audio setup now lets users choose which local
+  STT model to install, with Qwen3-ASR 1.7B 8-bit preselected
+  because it is materially faster than Voxtral Realtime for
+  post-recording transcription. Batch transcription prefers
+  configured MLX Qwen3-ASR models so speech-dictionary terms can be
+  passed as Qwen prompt context; the realtime code path remains in
+  place but its UI toggle is disabled until live transcription can
+  use comparable biasing. MLX model download status is now held in a
+  shared progress store so overview cards, provider-detail cards, and
+  the modal render the same live percentage and the progress modal can
+  be reopened while a download is running. Speech recognition can also
+  fall back to a configured audio-to-text model directly when no
+  applicable inference profile is available, which keeps local MLX STT
+  usable on mobile without requiring a desktop-only profile. The native
+  bridge now refuses transcription against missing or partial MLX models
+  instead of starting an implicit background download from an inference
+  call, and logs memory-stage diagnostics around model load and
+  generation for crash investigation.
 
 ### Changed
 - AI default-profile seeding is now strictly seed-on-create. User edits

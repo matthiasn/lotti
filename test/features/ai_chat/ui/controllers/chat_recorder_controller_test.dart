@@ -2131,7 +2131,7 @@ void main() {
   });
 
   group('realtimeAvailableProvider', () {
-    test('returns true when realtime model is configured', () async {
+    test('returns false while realtime UI is disabled', () async {
       final mockRealtime = _MockRealtimeService();
       when(() => mockRealtime.resolveRealtimeConfig()).thenAnswer(
         (_) async => (
@@ -2168,7 +2168,8 @@ void main() {
       addTearDown(container.dispose);
 
       final result = await container.read(realtimeAvailableProvider.future);
-      expect(result, isTrue);
+      expect(result, isFalse);
+      verifyNever(() => mockRealtime.resolveRealtimeConfig());
     });
 
     test('returns false when no realtime model configured', () async {

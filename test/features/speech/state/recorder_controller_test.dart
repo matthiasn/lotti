@@ -1719,7 +1719,7 @@ void main() {
   });
 
   group('realtimeAvailableProvider', () {
-    test('returns true when realtime config is available', () async {
+    test('returns false while realtime UI is disabled', () async {
       final mockService = MockRealtimeTranscriptionService();
       when(
         mockService.resolveRealtimeConfig,
@@ -1743,7 +1743,8 @@ void main() {
       await testContainer.read(realtimeAvailableProvider.future);
 
       final result = testContainer.read(realtimeAvailableProvider);
-      expect(result.value, isTrue);
+      expect(result.value, isFalse);
+      verifyNever(mockService.resolveRealtimeConfig);
     });
 
     test('returns false when no realtime config', () async {

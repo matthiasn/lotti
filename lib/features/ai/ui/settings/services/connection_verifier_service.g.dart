@@ -250,7 +250,7 @@ final class ConnectionVerifierControllerProvider
 }
 
 String _$connectionVerifierControllerHash() =>
-    r'590d50a848c139ba8d6f72e8c066cedde2013200';
+    r'dfd11ff823d7a9e7495321d5991deb17c8a6ad69';
 
 /// Family-keyed Riverpod notifier driving the connection-check strip.
 /// One controller instance per `InferenceProviderType` so tab swaps

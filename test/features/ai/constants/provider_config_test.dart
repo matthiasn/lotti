@@ -13,6 +13,7 @@ void main() {
             InferenceProviderType.gemini,
             InferenceProviderType.genericOpenAi,
             InferenceProviderType.mistral,
+            InferenceProviderType.mlxAudio,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
@@ -26,11 +27,19 @@ void main() {
 
       test('should have valid URLs', () {
         for (final entry in ProviderConfig.defaultBaseUrls.entries) {
-          expect(
-            entry.value,
-            isNotEmpty,
-            reason: '${entry.key} should have a non-empty URL',
-          );
+          if (ProviderConfig.usesBaseUrl(entry.key)) {
+            expect(
+              entry.value,
+              isNotEmpty,
+              reason: '${entry.key} should have a non-empty URL',
+            );
+          } else {
+            expect(
+              entry.value,
+              isEmpty,
+              reason: '${entry.key} is embedded and should not use Base URL',
+            );
+          }
         }
       });
 
@@ -58,6 +67,7 @@ void main() {
             InferenceProviderType.gemini,
             InferenceProviderType.genericOpenAi,
             InferenceProviderType.mistral,
+            InferenceProviderType.mlxAudio,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
@@ -100,6 +110,7 @@ void main() {
           ProviderConfig.noApiKeyRequired,
           containsAll([
             InferenceProviderType.ollama,
+            InferenceProviderType.mlxAudio,
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
           ]),
@@ -194,6 +205,10 @@ void main() {
         );
         expect(
           ProviderConfig.requiresApiKey(InferenceProviderType.whisper),
+          isFalse,
+        );
+        expect(
+          ProviderConfig.requiresApiKey(InferenceProviderType.mlxAudio),
           isFalse,
         );
       });

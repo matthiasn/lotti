@@ -11,6 +11,8 @@ class MainFlutterWindow: NSWindow {
         
         let registrar = flutterViewController.registrar(forPlugin: "AudioConverter")
         AudioConverter.register(with: registrar)
+        let mlxAudioRegistrar = flutterViewController.registrar(forPlugin: "MlxAudio")
+        MlxAudio.register(with: mlxAudioRegistrar)
         RegisterGeneratedPlugins(registry: flutterViewController)
 
         super.awakeFromNib()

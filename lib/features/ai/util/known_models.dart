@@ -65,6 +65,7 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.alibaba: alibabaModels,
   InferenceProviderType.gemini: geminiModels,
   InferenceProviderType.mistral: mistralModels,
+  InferenceProviderType.mlxAudio: mlxAudioModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
   InferenceProviderType.ollama: ollamaModels,
   InferenceProviderType.openAi: openaiModels,
@@ -73,6 +74,112 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
 };
+
+/// Canonical MLX Audio model identifiers used by the native Apple bridge.
+const mlxAudioVoxtralRealtime4BitModelId =
+    'mlx-community/Voxtral-Mini-4B-Realtime-2602-4bit';
+const mlxAudioVoxtralRealtimeFp16ModelId =
+    'mlx-community/Voxtral-Mini-4B-Realtime-2602-fp16';
+const mlxAudioQwenAsrModelId = 'mlx-community/Qwen3-ASR-0.6B-8bit';
+const mlxAudioQwenAsr17B4BitModelId = 'mlx-community/Qwen3-ASR-1.7B-4bit';
+const mlxAudioQwenAsr17B8BitModelId = 'mlx-community/Qwen3-ASR-1.7B-8bit';
+const String mlxAudioRecommendedSttModelId = mlxAudioQwenAsr17B8BitModelId;
+const mlxAudioParakeetModelId = 'mlx-community/parakeet-tdt-0.6b-v3';
+const mlxAudioDefaultTtsModelId = 'mlx-community/Qwen3-TTS-12Hz-0.6B-Base-8bit';
+
+/// Whether [providerModelId] is a Qwen3-ASR checkpoint converted for MLX Audio.
+bool isMlxAudioQwenAsrModelId(String providerModelId) {
+  final normalized = providerModelId.toLowerCase();
+  return normalized.startsWith('mlx-community/qwen3-asr-');
+}
+
+/// Whether [model] can be offered as an MLX Audio speech-to-text install.
+bool isMlxAudioSpeechToTextModel(AiConfigModel model) {
+  return model.inputModalities.contains(Modality.audio) &&
+      model.outputModalities.contains(Modality.text);
+}
+
+/// MLX Audio models embedded via the Apple Swift SDK.
+///
+/// These run in-process on Apple Silicon through `mlx-audio-swift` rather than
+/// through a localhost service. x86 macOS can keep the provider configured, but
+/// the native bridge reports the models as unsupported on that architecture.
+const List<KnownModel> mlxAudioModels = [
+  KnownModel(
+    providerModelId: mlxAudioQwenAsr17B8BitModelId,
+    name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Recommended local STT model for MLX Audio. Larger multilingual '
+        'Qwen3-ASR checkpoint converted for MLX, with category '
+        'speech-dictionary terms passed through the prompt context.',
+  ),
+  KnownModel(
+    providerModelId: mlxAudioQwenAsr17B4BitModelId,
+    name: 'Qwen3 ASR 1.7B (MLX 4-bit)',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Larger multilingual Qwen3-ASR checkpoint converted for MLX. Lower '
+        'memory footprint than the 8-bit variant while retaining the '
+        'same post-recording speech-dictionary prompt context path.',
+  ),
+  KnownModel(
+    providerModelId: mlxAudioQwenAsrModelId,
+    name: 'Qwen3 ASR 0.6B (MLX 8-bit)',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Compact multilingual ASR model. Lotti passes category speech-dictionary '
+        'terms through the Qwen prompt context for post-recording transcription.',
+  ),
+  KnownModel(
+    providerModelId: mlxAudioVoxtralRealtime4BitModelId,
+    name: 'Voxtral Mini Realtime 4B (MLX 4-bit)',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'On-device Voxtral Realtime transcription via MLX Audio Swift. '
+        'Quantized checkpoint kept as an explicit comparison target for '
+        'multilingual local transcription.',
+  ),
+  KnownModel(
+    providerModelId: mlxAudioVoxtralRealtimeFp16ModelId,
+    name: 'Voxtral Mini Realtime 4B (MLX fp16)',
+    inputModalities: [Modality.text, Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Full-precision MLX conversion of Voxtral Realtime for Apple Silicon. '
+        'Use this larger checkpoint when comparing quality against the '
+        'quantized default.',
+  ),
+  KnownModel(
+    providerModelId: mlxAudioParakeetModelId,
+    name: 'Parakeet TDT 0.6B v3 (MLX)',
+    inputModalities: [Modality.audio],
+    outputModalities: [Modality.text],
+    isReasoningModel: false,
+    description:
+        'Efficient NVIDIA Parakeet ASR checkpoint converted for MLX. Useful as '
+        'a smaller local transcription baseline against Voxtral and Qwen3-ASR.',
+  ),
+  KnownModel(
+    providerModelId: mlxAudioDefaultTtsModelId,
+    name: 'Qwen3 TTS 0.6B Base (MLX 8-bit)',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.audio],
+    isReasoningModel: false,
+    description:
+        'On-device text-to-speech model for reading AI summaries locally via '
+        'MLX Audio Swift.',
+  ),
+];
 
 /// Alibaba Cloud models - Qwen family via DashScope (OpenAI-compatible)
 ///
@@ -557,7 +664,8 @@ const List<KnownModel> mistralModels = [
     description:
         'High-accuracy cloud transcription model. '
         'Supports M4A, MP3, WAV, FLAC, and OGG up to 1 GB. '
-        'Up to 3 hours of audio with 13 languages (auto-detected).',
+        'Up to 3 hours of audio with 13 languages, speaker diarization, '
+        'and context biasing.',
   ),
   // Real-time transcription model — uses WebSocket streaming endpoint
   KnownModel(
@@ -684,9 +792,10 @@ const ftueMistralCategoryColor = '#FF7000'; // Mistral Orange
 /// Brand colors as Color constants for UI usage.
 ///
 /// New UI surfaces should prefer `tokens.colors.aiProvider.*` from the
-/// design-system tokens. These three remain only because
+/// design-system tokens. These constants remain only because
 /// `ai_provider_selection_modal.dart` has not migrated yet.
 const ftueGeminiColor = Color(0xFF4285F4);
+const ftueMlxAudioColor = Color(0xFF00BCD4);
 const ftueOpenAiColor = Color(0xFF10A37F);
 const ftueMistralColor = Color(0xFFFF7000);
 

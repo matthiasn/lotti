@@ -175,7 +175,10 @@ class InferenceProviderFormController
 
     // For new configs (when ID is null) or when the default is different from current
     // Always set the base URL for new configs, or when it would actually change
-    if (defaultBaseUrl.isNotEmpty &&
+    if (!ProviderConfig.usesBaseUrl(value)) {
+      newBaseUrl = '';
+      baseUrlController.text = '';
+    } else if (defaultBaseUrl.isNotEmpty &&
         (prev?.id == null || baseUrlController.text != defaultBaseUrl)) {
       newBaseUrl = defaultBaseUrl;
       baseUrlController.text = newBaseUrl;

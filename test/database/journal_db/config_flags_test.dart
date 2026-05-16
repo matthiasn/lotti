@@ -50,6 +50,7 @@ void main() {
         enableMatrixFlag: false,
         enableTooltipFlag: true,
         enableAiStreamingFlag: true,
+        enableAiSummaryTtsFlag: false,
         recordLocationFlag: false,
         resendAttachments: false,
         enableLoggingFlag: false,

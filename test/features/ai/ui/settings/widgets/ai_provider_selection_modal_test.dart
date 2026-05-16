@@ -42,6 +42,8 @@ MaterialApp _appWithOpenButton(WidgetBuilder buttonBuilder) {
 
 String _geminiDescription(BuildContext context) =>
     AppLocalizations.of(context)!.aiProviderSetupOptionGeminiDescription;
+String _mlxAudioDescription(BuildContext context) =>
+    AppLocalizations.of(context)!.aiProviderMlxAudioDescription;
 String _openAiDescription(BuildContext context) =>
     AppLocalizations.of(context)!.aiProviderSetupOptionOpenAiDescription;
 String _mistralDescription(BuildContext context) =>
@@ -60,6 +62,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Google Gemini'), findsOneWidget);
+      expect(find.text('MLX Audio (local)'), findsOneWidget);
       expect(find.text('OpenAI'), findsOneWidget);
       expect(find.text('Mistral'), findsOneWidget);
     });
@@ -71,6 +74,7 @@ void main() {
 
       final context = tester.element(find.byType(AiProviderSelectionModal));
       expect(find.text(_geminiDescription(context)), findsOneWidget);
+      expect(find.text(_mlxAudioDescription(context)), findsOneWidget);
       expect(find.text(_openAiDescription(context)), findsOneWidget);
       expect(find.text(_mistralDescription(context)), findsOneWidget);
     });
@@ -174,6 +178,39 @@ void main() {
       expect(selectedType, equals(InferenceProviderType.openAi));
     });
 
+    testWidgets(
+      'calls onProviderSelected with mlxAudio when MLX Audio selected',
+      (tester) async {
+        InferenceProviderType? selectedType;
+
+        await tester.pumpWidget(
+          _appWithOpenButton(
+            (context) => ElevatedButton(
+              onPressed: () async {
+                await AiProviderSelectionModal.show(
+                  context,
+                  onProviderSelected: (type) => selectedType = type,
+                  onDismiss: () {},
+                );
+              },
+              child: const Text('Open Modal'),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('MLX Audio (local)'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+
+        expect(selectedType, equals(InferenceProviderType.mlxAudio));
+      },
+    );
+
     testWidgets('calls onProviderSelected with mistral when Mistral selected', (
       tester,
     ) async {
@@ -198,6 +235,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Select Mistral
+      await tester.ensureVisible(find.text('Mistral'));
       await tester.tap(find.text('Mistral'));
       await tester.pumpAndSettle();
 

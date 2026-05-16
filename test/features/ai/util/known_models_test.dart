@@ -524,6 +524,7 @@ void main() {
             InferenceProviderType.whisper,
             InferenceProviderType.voxtral,
             InferenceProviderType.mistral,
+            InferenceProviderType.mlxAudio,
           ]),
         );
       });
@@ -578,6 +579,48 @@ void main() {
             }
           }
         }
+      });
+    });
+
+    group('MLX Audio Models', () {
+      test('recommends Qwen3 ASR 1.7B 8-bit for first install choice', () {
+        expect(
+          mlxAudioRecommendedSttModelId,
+          equals(mlxAudioQwenAsr17B8BitModelId),
+        );
+        expect(
+          mlxAudioModels.first.providerModelId,
+          mlxAudioQwenAsr17B8BitModelId,
+        );
+      });
+
+      test('has explicit Voxtral Realtime and Qwen3 ASR 1.7B variants', () {
+        final modelIds = mlxAudioModels.map((m) => m.providerModelId).toSet();
+
+        expect(modelIds, contains(mlxAudioVoxtralRealtime4BitModelId));
+        expect(modelIds, contains(mlxAudioVoxtralRealtimeFp16ModelId));
+        expect(modelIds, contains(mlxAudioQwenAsr17B4BitModelId));
+        expect(modelIds, contains(mlxAudioQwenAsr17B8BitModelId));
+      });
+
+      test('speech-to-text predicate excludes the TTS model', () {
+        final aiModels = mlxAudioModels
+            .map(
+              (model) => model.toAiConfigModel(
+                id: model.providerModelId,
+                inferenceProviderId: 'mlx-audio-provider',
+              ),
+            )
+            .toList();
+
+        final sttModelIds = aiModels
+            .where(isMlxAudioSpeechToTextModel)
+            .map((model) => model.providerModelId)
+            .toSet();
+
+        expect(sttModelIds, contains(mlxAudioQwenAsr17B8BitModelId));
+        expect(sttModelIds, contains(mlxAudioVoxtralRealtime4BitModelId));
+        expect(sttModelIds, isNot(contains(mlxAudioDefaultTtsModelId)));
       });
     });
 

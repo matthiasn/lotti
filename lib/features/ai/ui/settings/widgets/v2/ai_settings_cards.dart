@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_status.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -410,6 +411,8 @@ class AiModelCard extends StatelessWidget {
     required this.providerType,
     required this.onTap,
     this.menuActions = const [],
+    this.modelDownloadProgress,
+    this.onInstallModel,
     super.key,
   });
 
@@ -425,6 +428,8 @@ class AiModelCard extends StatelessWidget {
 
   final VoidCallback onTap;
   final List<AiCardMenuAction> menuActions;
+  final MlxAudioModelDownloadProgress? modelDownloadProgress;
+  final VoidCallback? onInstallModel;
 
   @override
   Widget build(BuildContext context) {
@@ -489,6 +494,13 @@ class AiModelCard extends StatelessWidget {
                         outputModalities: model.outputModalities,
                       ),
                     ),
+                    if (providerType == InferenceProviderType.mlxAudio) ...[
+                      SizedBox(height: tokens.spacing.step2),
+                      _ModelDownloadStatus(
+                        progress: modelDownloadProgress,
+                        onInstallModel: onInstallModel,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -499,6 +511,81 @@ class AiModelCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ModelDownloadStatus extends StatelessWidget {
+  const _ModelDownloadStatus({
+    required this.progress,
+    required this.onInstallModel,
+  });
+
+  final MlxAudioModelDownloadProgress? progress;
+  final VoidCallback? onInstallModel;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final status = progress?.status;
+    final percentComplete = progress?.percentComplete;
+    final (label, tone) = switch (status) {
+      MlxAudioModelStatus.installed => (
+        messages.aiModelDownloadStatusInstalled,
+        DesignSystemBadgeTone.success,
+      ),
+      MlxAudioModelStatus.downloading => (
+        percentComplete == null
+            ? messages.aiModelDownloadStatusDownloadingIndeterminate
+            : messages.aiModelDownloadStatusDownloading(percentComplete),
+        DesignSystemBadgeTone.primary,
+      ),
+      MlxAudioModelStatus.failed => (
+        messages.aiModelDownloadStatusFailed,
+        DesignSystemBadgeTone.warning,
+      ),
+      MlxAudioModelStatus.notInstalled => (
+        messages.aiModelDownloadStatusNotInstalled,
+        DesignSystemBadgeTone.secondary,
+      ),
+      MlxAudioModelStatus.unsupported => (
+        messages.aiModelDownloadStatusUnsupported,
+        DesignSystemBadgeTone.secondary,
+      ),
+      null => (
+        messages.aiModelDownloadStatusChecking,
+        DesignSystemBadgeTone.secondary,
+      ),
+    };
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: DesignSystemBadge.outlined(label: label, tone: tone),
+        ),
+        if (_shouldShowProgressAction && onInstallModel != null) ...[
+          SizedBox(width: tokens.spacing.step2),
+          IconButton(
+            icon: Icon(
+              status == MlxAudioModelStatus.downloading
+                  ? Icons.open_in_new_rounded
+                  : Icons.download_rounded,
+            ),
+            tooltip: status == MlxAudioModelStatus.downloading
+                ? messages.aiModelDownloadOpenProgressTooltip
+                : messages.aiModelDownloadInstallTooltip,
+            visualDensity: VisualDensity.compact,
+            onPressed: onInstallModel,
+          ),
+        ],
+      ],
+    );
+  }
+
+  bool get _shouldShowProgressAction {
+    return progress?.status == MlxAudioModelStatus.downloading ||
+        (progress?.canInstall ?? false);
   }
 }
 

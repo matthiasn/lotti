@@ -122,6 +122,7 @@ class AiSettingsNoProvidersCard extends StatelessWidget {
     InferenceProviderType.openAi,
     InferenceProviderType.anthropic,
     InferenceProviderType.alibaba,
+    InferenceProviderType.mlxAudio,
     InferenceProviderType.ollama,
   ];
 

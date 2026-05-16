@@ -195,6 +195,7 @@ This is why the flags page is not just a developer toy:
 
 - toggling `enableHabitsPageFlag` or `enableDashboardsPageFlag` changes both Settings tiles and top-level navigation behavior
 - toggling `enableMatrixFlag` changes visibility of Sync surfaces and also affects the Sync feature gate
+- toggling `enableAiSummaryTtsFlag` shows or hides the local MLX Audio TTS button on task AI summaries
 - logging flags influence subdomain logging pages under Advanced
 
 The control panel is wired to actual breakers, not cardboard cutouts.

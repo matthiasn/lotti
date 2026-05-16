@@ -194,7 +194,8 @@ class ConnectionVerifierController extends _$ConnectionVerifierController {
     // wire with the whitespace intact (which would fail auth even
     // though the underlying credential is valid).
     final normalizedKey = apiKey.trim();
-    if (normalizedKey.isEmpty && providerType != InferenceProviderType.ollama) {
+    if (normalizedKey.isEmpty &&
+        !ProviderConfig.noApiKeyRequired.contains(providerType)) {
       state = const ConnectionCheckIdle();
       return;
     }

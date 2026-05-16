@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
@@ -22,7 +24,13 @@ class TasksLocation extends BeamLocation<BeamState> {
     final isDesktop = navService.isDesktopMode;
 
     if (isDesktop) {
-      navService.resetDesktopTaskDetail(isUuid(taskId) ? taskId : null);
+      final desktopTaskId = isUuid(taskId) ? taskId : null;
+      scheduleMicrotask(() {
+        if (getIt.isRegistered<NavService>() &&
+            identical(getIt<NavService>(), navService)) {
+          navService.resetDesktopTaskDetail(desktopTaskId);
+        }
+      });
     }
 
     return [

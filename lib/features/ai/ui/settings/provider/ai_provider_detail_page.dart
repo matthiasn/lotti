@@ -9,7 +9,9 @@ import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.
 import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -178,6 +180,10 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
                 .toList(),
             orElse: () => const <AiConfigModel>[],
           );
+          final allModels = modelsAsync.maybeWhen(
+            data: (rows) => rows.whereType<AiConfigModel>().toList(),
+            orElse: () => const <AiConfigModel>[],
+          );
           final activeProfile = profilesAsync.maybeWhen(
             data: (rows) => pickActiveProfileForProvider(
               profiles: rows.whereType<AiConfigInferenceProfile>().toList(),
@@ -214,6 +220,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
           return _DetailBody(
             provider: config,
             models: models,
+            allModels: allModels,
             activeProfile: activeProfile,
             onAddModel: () => _navigationService.navigateToCreateModel(context),
             onEdit: () => _openEditForm(focusApiKey: false),
@@ -260,6 +267,7 @@ class _DetailBody extends StatelessWidget {
   const _DetailBody({
     required this.provider,
     required this.models,
+    required this.allModels,
     required this.activeProfile,
     required this.onAddModel,
     required this.onEdit,
@@ -270,6 +278,7 @@ class _DetailBody extends StatelessWidget {
 
   final AiConfigInferenceProvider provider;
   final List<AiConfigModel> models;
+  final List<AiConfigModel> allModels;
   final AiConfigInferenceProfile? activeProfile;
   final VoidCallback onAddModel;
   final VoidCallback onEdit;
@@ -310,7 +319,7 @@ class _DetailBody extends StatelessWidget {
           _ActiveProfileSection(
             profile: activeProfile!,
             providerType: provider.inferenceProviderType,
-            models: models,
+            models: allModels,
             onProfileTap: onProfileTap,
           ),
         if (activeProfile != null) SizedBox(height: tokens.spacing.step6),
@@ -481,6 +490,9 @@ class _ConnectionSection extends StatelessWidget {
     final requiresKey = !ProviderConfig.noApiKeyRequired.contains(
       provider.inferenceProviderType,
     );
+    final usesBaseUrl = ProviderConfig.usesBaseUrl(
+      provider.inferenceProviderType,
+    );
     final rows = <_ConnectionRow>[
       if (requiresKey)
         _ConnectionRow(
@@ -488,13 +500,14 @@ class _ConnectionSection extends StatelessWidget {
           value: _maskApiKey(provider.apiKey),
           isMissing: provider.apiKey.trim().isEmpty,
         ),
-      _ConnectionRow(
-        label: messages.aiProviderDetailBaseUrlLabel,
-        value: provider.baseUrl.isEmpty
-            ? messages.aiProviderDetailValueUnset
-            : provider.baseUrl,
-        isMissing: provider.baseUrl.trim().isEmpty,
-      ),
+      if (usesBaseUrl)
+        _ConnectionRow(
+          label: messages.aiProviderDetailBaseUrlLabel,
+          value: provider.baseUrl.isEmpty
+              ? messages.aiProviderDetailValueUnset
+              : provider.baseUrl,
+          isMissing: provider.baseUrl.trim().isEmpty,
+        ),
       _ConnectionRow(
         label: messages.aiProviderDetailDisplayNameLabel,
         value: provider.name.isEmpty
@@ -631,10 +644,33 @@ class _ModelsSection extends StatelessWidget {
               children: [
                 for (var i = 0; i < models.length; i++) ...[
                   if (i > 0) SizedBox(height: tokens.spacing.step3),
-                  AiModelCard(
-                    model: models[i],
-                    providerType: provider.inferenceProviderType,
-                    onTap: () => onModelTap(models[i]),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final model = models[i];
+                      final progress =
+                          provider.inferenceProviderType ==
+                              InferenceProviderType.mlxAudio
+                          ? ref.watch(
+                              mlxAudioModelProgressProvider(
+                                model.providerModelId,
+                              ),
+                            )
+                          : null;
+                      return AiModelCard(
+                        model: model,
+                        providerType: provider.inferenceProviderType,
+                        onTap: () => onModelTap(model),
+                        modelDownloadProgress: progress,
+                        onInstallModel:
+                            provider.inferenceProviderType ==
+                                InferenceProviderType.mlxAudio
+                            ? () => MlxAudioModelDownloadDialog.show(
+                                context: context,
+                                model: model,
+                              )
+                            : null,
+                      );
+                    },
                   ),
                 ],
               ],

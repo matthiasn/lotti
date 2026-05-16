@@ -1289,6 +1289,65 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiInternalsTitle => 'Componente interne ale agentului';
 
   @override
+  String get aiModelDownloadCloseButton => 'Închideți';
+
+  @override
+  String aiModelDownloadDialogDescription(String modelName) {
+    return 'Lotti va descărca $modelName în cache-ul MLX Audio și îl va utiliza pentru procesarea vocală locală.';
+  }
+
+  @override
+  String aiModelDownloadDialogTitle(String modelName) {
+    return 'Instalați $modelName';
+  }
+
+  @override
+  String get aiModelDownloadInstallTooltip => 'Instalați modelul';
+
+  @override
+  String get aiModelDownloadOpenProgressTooltip =>
+      'Afișați progresul descărcării';
+
+  @override
+  String get aiModelInstallChoiceCancelButton => 'Anulați';
+
+  @override
+  String get aiModelInstallChoiceDescription =>
+      'Alegeți mai întâi modelul local speech-to-text de descărcat. Puteți instala celelalte modele mai târziu din lista de modele.';
+
+  @override
+  String get aiModelInstallChoiceInstallButton => 'Instalați modelul';
+
+  @override
+  String get aiModelInstallChoiceRecommended => 'Recomandat';
+
+  @override
+  String get aiModelInstallChoiceTitle => 'Alegeți modelul MLX Audio';
+
+  @override
+  String get aiModelDownloadStatusChecking => 'Se verifică starea modelului';
+
+  @override
+  String aiModelDownloadStatusDownloading(int percent) {
+    return 'Se descarcă $percent %';
+  }
+
+  @override
+  String get aiModelDownloadStatusDownloadingIndeterminate => 'Se descarcă';
+
+  @override
+  String get aiModelDownloadStatusFailed => 'Descărcarea a eșuat';
+
+  @override
+  String get aiModelDownloadStatusInstalled => 'Instalat';
+
+  @override
+  String get aiModelDownloadStatusNotInstalled => 'Neinstalat';
+
+  @override
+  String get aiModelDownloadStatusUnsupported => 'Apple Silicon necesar';
+
+  @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
     return 'Modelul „$modelName” a fost instalat cu succes!';
   }
@@ -1577,6 +1636,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderDetailValueUnset => 'Nesetat';
 
   @override
+  String get aiProviderEmbeddedRuntimeHint =>
+      'Rulează integrat în procesul aplicației Apple. Nu este necesar un server local sau un URL de bază.';
+
+  @override
   String get aiProviderGeminiDescription => 'Modele AI Gemini de la Google';
 
   @override
@@ -1595,6 +1658,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderMistralName => 'Mistral';
+
+  @override
+  String get aiProviderMlxAudioDescription =>
+      'Modele MLX Audio integrate pentru STT și TTS locale pe Apple Silicon';
+
+  @override
+  String get aiProviderMlxAudioName => 'MLX Audio (local)';
 
   @override
   String get aiProviderNebiusAiStudioDescription => 'Modele Nebius AI Studio';
@@ -1641,6 +1711,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderTaglineGemini => 'Multimodal · transcriere audio';
+
+  @override
+  String get aiProviderTaglineMlxAudio =>
+      'Integrat · Apple Silicon · audio local';
 
   @override
   String get aiProviderTaglineOllama => 'Rulează local · fără apeluri în cloud';
@@ -1931,6 +2005,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSetupWizardTitle => 'Asistent de configurare AI';
+
+  @override
+  String get aiSummarySpeakTooltip => 'Citiți rezumatul local cu voce tare';
 
   @override
   String get aiTaskSummaryTitle => 'Rezumatul sarcinii AI';
@@ -2495,6 +2572,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagAttemptEmbeddingDescription =>
       'Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.';
+
+  @override
+  String get configFlagEnableAiSummaryTts => 'Redare rezumate AI';
+
+  @override
+  String get configFlagEnableAiSummaryTtsDescription =>
+      'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.';
 
   @override
   String get configFlagEnableAiStreaming =>

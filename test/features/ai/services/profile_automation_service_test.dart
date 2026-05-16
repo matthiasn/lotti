@@ -4,7 +4,9 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -204,6 +206,9 @@ void main() {
       resolver: mockResolver,
       aiConfigRepository: mockAiConfig,
     );
+    when(
+      () => mockAiConfig.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => const <AiConfig>[]);
   });
 
   /// Creates a resolved profile with optional transcription/image providers.
@@ -279,6 +284,44 @@ void main() {
         as AiConfigSkill;
   }
 
+  AiConfigInferenceProvider makeProvider({
+    String id = 'provider-mlx',
+    String name = 'MLX Audio',
+    InferenceProviderType type = InferenceProviderType.mlxAudio,
+    String apiKey = '',
+  }) {
+    return AiConfig.inferenceProvider(
+          id: id,
+          name: name,
+          baseUrl: '',
+          inferenceProviderType: type,
+          apiKey: apiKey,
+          createdAt: DateTime(2024, 3, 15),
+        )
+        as AiConfigInferenceProvider;
+  }
+
+  AiConfigModel makeModel({
+    String id = 'model-qwen',
+    String name = 'Qwen3 ASR 1.7B (MLX 8-bit)',
+    String providerModelId = mlxAudioQwenAsr17B8BitModelId,
+    String providerId = 'provider-mlx',
+    List<Modality> inputModalities = const [Modality.audio, Modality.text],
+    List<Modality> outputModalities = const [Modality.text],
+  }) {
+    return AiConfig.model(
+          id: id,
+          name: name,
+          providerModelId: providerModelId,
+          inferenceProviderId: providerId,
+          inputModalities: inputModalities,
+          outputModalities: outputModalities,
+          isReasoningModel: false,
+          createdAt: DateTime(2024, 3, 15),
+        )
+        as AiConfigModel;
+  }
+
   group('ProfileAutomationService', () {
     group('tryTranscribe', () {
       test(
@@ -320,6 +363,9 @@ void main() {
 
           expect(result.handled, isFalse);
           verifyNever(() => mockResolver.resolveForTask(any()));
+          verifyNever(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          );
         },
       );
 
@@ -358,6 +404,72 @@ void main() {
 
         expect(result.handled, isFalse);
       });
+
+      test(
+        'falls back to the configured recommended MLX speech model when no '
+        'profile handles transcription',
+        () async {
+          final provider = makeProvider();
+          final olderQwen = makeModel(
+            id: 'model-qwen-small',
+            name: 'Qwen3 ASR 0.6B (MLX 8-bit)',
+            providerModelId: mlxAudioQwenAsrModelId,
+          );
+          final recommendedQwen = makeModel();
+
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [olderQwen, recommendedQwen]);
+          when(
+            () => mockAiConfig.getConfigById('provider-mlx'),
+          ).thenAnswer((_) async => provider);
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(result.skill!.id, skillTranscribeContextId);
+          expect(result.skillAssignment!.skillId, skillTranscribeContextId);
+          expect(
+            result.resolvedProfile!.transcriptionModelId,
+            mlxAudioQwenAsr17B8BitModelId,
+          );
+          expect(result.resolvedProfile!.transcriptionProvider, provider);
+        },
+      );
+
+      test(
+        'does not fall back to cloud transcription providers with no API key',
+        () async {
+          final provider = makeProvider(
+            id: 'provider-openai',
+            name: 'OpenAI',
+            type: InferenceProviderType.openAi,
+          );
+          final model = makeModel(
+            id: 'model-whisper',
+            name: 'Whisper',
+            providerModelId: 'whisper-1',
+            providerId: provider.id,
+          );
+
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [model]);
+          when(
+            () => mockAiConfig.getConfigById(provider.id),
+          ).thenAnswer((_) async => provider);
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isFalse);
+        },
+      );
 
       test('returns not-handled when no matching skill type', () async {
         const assignment = SkillAssignment(
@@ -675,6 +787,9 @@ void main() {
           return scenario.profileMissing ? null : profile;
         });
         when(
+          () => localAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => const <AiConfig>[]);
+        when(
           () => localAiConfig.getConfigById(any()),
         ).thenAnswer((invocation) async {
           final skillId = invocation.positionalArguments.single as String;
@@ -768,6 +883,31 @@ void main() {
 
         expect(result, isFalse);
       });
+
+      test(
+        'returns true when direct transcription fallback is available',
+        () async {
+          final provider = makeProvider();
+          final model = makeModel();
+
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [model]);
+          when(
+            () => mockAiConfig.getConfigById(provider.id),
+          ).thenAnswer((_) async => provider);
+
+          final result = await service.hasAutomatedSkillType(
+            taskId: 'task-1',
+            skillType: SkillType.transcription,
+          );
+
+          expect(result, isTrue);
+        },
+      );
 
       test('returns false for mismatched skill type', () async {
         const assignment = SkillAssignment(

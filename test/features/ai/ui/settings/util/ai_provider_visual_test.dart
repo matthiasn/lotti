@@ -182,12 +182,19 @@ void main() {
         ),
         equals('Ollama'),
       );
+      expect(
+        aiProviderDisplayName(
+          type: InferenceProviderType.mlxAudio,
+          messages: messages,
+        ),
+        equals('MLX Audio (local)'),
+      );
     });
   });
 
   group('aiProviderTagline', () {
     test(
-      'only the five first-class providers carry taglines — others return empty',
+      'only first-class providers carry taglines — others return empty',
       () {
         const expectingTagline = {
           InferenceProviderType.gemini,
@@ -195,6 +202,7 @@ void main() {
           InferenceProviderType.anthropic,
           InferenceProviderType.ollama,
           InferenceProviderType.alibaba,
+          InferenceProviderType.mlxAudio,
         };
         for (final type in InferenceProviderType.values) {
           final tagline = aiProviderTagline(type: type, messages: messages);
@@ -209,8 +217,8 @@ void main() {
               tagline,
               isEmpty,
               reason:
-                  '$type should NOT have a tagline — only the four first-class '
-                  'providers (Gemini/OpenAI/Anthropic/Ollama) carry one.',
+                  '$type should NOT have a tagline — only first-class '
+                  'providers carry one.',
             );
           }
         }
@@ -330,6 +338,7 @@ void main() {
       () {
         for (final type in const [
           InferenceProviderType.ollama,
+          InferenceProviderType.mlxAudio,
           InferenceProviderType.whisper,
           InferenceProviderType.voxtral,
           InferenceProviderType.genericOpenAi,

@@ -571,6 +571,44 @@
   "aiInferenceErrorTimeoutTitle": "Délai d'attente dépassé",
   "aiInferenceErrorUnknownTitle": "Erreur",
   "aiInternalsTitle": "Détails internes de l'agent",
+  "aiModelDownloadCloseButton": "Fermer",
+  "aiModelDownloadDialogDescription": "Lotti télécharge {modelName} dans le cache MLX Audio et l’utilise pour le traitement vocal local.",
+  "@aiModelDownloadDialogDescription": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadDialogTitle": "Installer {modelName}",
+  "@aiModelDownloadDialogTitle": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadInstallTooltip": "Installer le modèle",
+  "aiModelDownloadOpenProgressTooltip": "Afficher la progression du téléchargement",
+  "aiModelInstallChoiceCancelButton": "Annuler",
+  "aiModelInstallChoiceDescription": "Choisis d’abord le modèle de transcription locale à télécharger. Tu pourras installer les autres plus tard depuis la liste des modèles.",
+  "aiModelInstallChoiceInstallButton": "Installer le modèle",
+  "aiModelInstallChoiceRecommended": "Recommandé",
+  "aiModelInstallChoiceTitle": "Choisir le modèle MLX Audio",
+  "aiModelDownloadStatusChecking": "Vérification de l’état du modèle",
+  "aiModelDownloadStatusDownloading": "Téléchargement {percent} %",
+  "@aiModelDownloadStatusDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "aiModelDownloadStatusDownloadingIndeterminate": "Téléchargement",
+  "aiModelDownloadStatusFailed": "Téléchargement échoué",
+  "aiModelDownloadStatusInstalled": "Installé",
+  "aiModelDownloadStatusNotInstalled": "Non installé",
+  "aiModelDownloadStatusUnsupported": "Apple Silicon requis",
   "aiOllamaModelInstalledSuccessfully": "Modèle « {modelName} » installé avec succès !",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -735,12 +773,15 @@
   "aiProviderDetailRemoveDescription": "Supprime le fournisseur et tous les modèles qui en dépendent. Action irréversible.",
   "aiProviderDetailRemoveTitle": "Supprimer ce fournisseur",
   "aiProviderDetailValueUnset": "Non défini",
+  "aiProviderEmbeddedRuntimeHint": "S’exécute intégré au processus de l’app Apple. Aucun serveur local ni URL de base n’est nécessaire.",
   "aiProviderGeminiDescription": "Modèles AI Gemini de Google",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiDescription": "API compatible avec le format OpenAI",
   "aiProviderGenericOpenAiName": "Compatible OpenAI",
   "aiProviderMistralDescription": "API cloud de Mistral AI avec transcription audio native",
   "aiProviderMistralName": "Mistral",
+  "aiProviderMlxAudioDescription": "Modèles MLX Audio intégrés pour STT et TTS locaux sur Apple Silicon",
+  "aiProviderMlxAudioName": "MLX Audio (local)",
   "aiProviderNebiusAiStudioDescription": "Modèles de Nebius AI Studio",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaDescription": "Exécuter l'inférence localement avec Ollama",
@@ -755,6 +796,7 @@
   "aiProviderTaglineAlibaba": "Modèles Qwen · multimodal · contexte long",
   "aiProviderTaglineAnthropic": "Famille Claude · contexte long",
   "aiProviderTaglineGemini": "Multimodal · transcription audio",
+  "aiProviderTaglineMlxAudio": "Intégré · Apple Silicon · audio local",
   "aiProviderTaglineOllama": "S'exécute en local · aucun appel cloud",
   "aiProviderTaglineOpenAi": "Famille GPT · vision + raisonnement",
   "aiProviderUnknownName": "Fournisseur d'IA",
@@ -942,6 +984,7 @@
   "aiSetupWizardRunningButton": "En cours...",
   "aiSetupWizardSafeToRunMultiple": "Peut être exécuté plusieurs fois - les éléments existants seront conservés",
   "aiSetupWizardTitle": "Assistant de configuration AI",
+  "aiSummarySpeakTooltip": "Lire le résumé localement à voix haute",
   "aiTaskSummaryTitle": "Résumé de la tâche IA",
   "apiKeyAddPageTitle": "Ajouter un fournisseur",
   "apiKeyAuthenticationDescription": "Sécurise ta connexion à l'API",
@@ -1190,6 +1233,8 @@
   "completeHabitSkipButton": "Ignorer",
   "completeHabitSuccessButton": "Succès",
   "configFlagAttemptEmbeddingDescription": "Lorsque cette option est activée, l'application tentera de générer des embeddings pour tes entrées afin d'améliorer la recherche et les suggestions de contenu associées.",
+  "configFlagEnableAiSummaryTts": "Lecture des résumés IA",
+  "configFlagEnableAiSummaryTtsDescription": "Affiche le bouton local de synthèse vocale dans les résumés IA des tâches. Nécessite un modèle TTS MLX Audio installé.",
   "configFlagEnableAiStreaming": "Activer le streaming IA pour les actions liées aux tâches",
   "configFlagEnableAiStreamingDescription": "Diffuser les réponses IA pour les actions liées aux tâches. Désactivez pour mettre les réponses en mémoire tampon et conserver une interface plus fluide.",
   "configFlagEnableDailyOs": "Activer DailyOS",

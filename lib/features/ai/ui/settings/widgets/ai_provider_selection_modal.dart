@@ -11,7 +11,7 @@ import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 ///
 /// This modal:
 /// - Explains the AI features available
-/// - Offers a choice between Gemini, OpenAI, and Mistral
+/// - Offers a choice between Gemini, MLX Audio, OpenAI, and Mistral
 /// - Allows dismissal (persisted so it won't show again)
 class AiProviderSelectionModal extends StatefulWidget {
   const AiProviderSelectionModal({
@@ -84,6 +84,13 @@ class _AiProviderSelectionModalState extends State<AiProviderSelectionModal> {
                 option: AiProviderOption.gemini,
                 icon: Icons.auto_awesome,
                 color: ftueGeminiColor,
+              ),
+              const SizedBox(height: 12),
+              _buildProviderOption(
+                context,
+                option: AiProviderOption.mlxAudio,
+                icon: Icons.memory,
+                color: ftueMlxAudioColor,
               ),
               const SizedBox(height: 12),
               _buildProviderOption(

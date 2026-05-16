@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/utils/consts.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
@@ -44,6 +45,7 @@ class AgentTestBench {
     bool isRunning = false,
     AgentStateEntity? state,
     bool enableAgents = true,
+    bool enableSummaryTts = false,
     AgentTemplateEntity? template,
     MockChangeSetConfirmationService? confirmationService,
     MockUpdateNotifications? updateNotifications,
@@ -54,6 +56,7 @@ class AgentTestBench {
        _isRunning = isRunning,
        _state = state,
        _enableAgents = enableAgents,
+       _enableSummaryTts = enableSummaryTts,
        _template = template,
        _confirmationService = confirmationService,
        _updateNotifications = updateNotifications,
@@ -67,6 +70,7 @@ class AgentTestBench {
   final bool _isRunning;
   final AgentStateEntity? _state;
   final bool _enableAgents;
+  final bool _enableSummaryTts;
   final AgentTemplateEntity? _template;
   final MockChangeSetConfirmationService? _confirmationService;
   final MockUpdateNotifications? _updateNotifications;
@@ -79,7 +83,11 @@ class AgentTestBench {
       mediaQueryData: _mediaQueryData,
       overrides: [
         configFlagProvider.overrideWith(
-          (ref, flagName) => Stream.value(_enableAgents),
+          (ref, flagName) => Stream.value(
+            flagName == enableAiSummaryTtsFlag
+                ? _enableSummaryTts
+                : _enableAgents,
+          ),
         ),
         taskAgentProvider.overrideWith((ref, id) async => identity),
         agentReportProvider.overrideWith((ref, agentId) async => _report),

@@ -182,6 +182,7 @@ void main() {
         (InferenceProviderType.openRouter, 'OpenRouter'),
         (InferenceProviderType.genericOpenAi, 'Generic OpenAI'),
         (InferenceProviderType.nebiusAiStudio, 'Nebius'),
+        (InferenceProviderType.mlxAudio, 'MLX Audio'),
         (InferenceProviderType.whisper, 'Whisper'),
         (InferenceProviderType.voxtral, 'Voxtral'),
       ];

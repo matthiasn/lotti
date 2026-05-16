@@ -15,6 +15,7 @@ const _dismissedKey = 'ai_setup_prompt_dismissed';
 /// Enum representing the available AI providers for FTUE setup
 enum AiProviderOption {
   gemini,
+  mlxAudio,
   openAi,
   mistral,
 }
@@ -23,6 +24,7 @@ enum AiProviderOption {
 extension AiProviderOptionExtension on AiProviderOption {
   String displayName(BuildContext context) => switch (this) {
     AiProviderOption.gemini => context.messages.aiProviderGeminiName,
+    AiProviderOption.mlxAudio => context.messages.aiProviderMlxAudioName,
     AiProviderOption.openAi => context.messages.aiProviderOpenAiName,
     AiProviderOption.mistral => context.messages.aiProviderMistralName,
   };
@@ -30,6 +32,7 @@ extension AiProviderOptionExtension on AiProviderOption {
   String description(BuildContext context) => switch (this) {
     AiProviderOption.gemini =>
       context.messages.aiProviderSetupOptionGeminiDescription,
+    AiProviderOption.mlxAudio => context.messages.aiProviderMlxAudioDescription,
     AiProviderOption.openAi =>
       context.messages.aiProviderSetupOptionOpenAiDescription,
     AiProviderOption.mistral =>
@@ -38,6 +41,7 @@ extension AiProviderOptionExtension on AiProviderOption {
 
   InferenceProviderType get inferenceProviderType => switch (this) {
     AiProviderOption.gemini => InferenceProviderType.gemini,
+    AiProviderOption.mlxAudio => InferenceProviderType.mlxAudio,
     AiProviderOption.openAi => InferenceProviderType.openAi,
     AiProviderOption.mistral => InferenceProviderType.mistral,
   };
@@ -92,7 +96,7 @@ class AiSetupPromptService extends _$AiSetupPromptService {
     }
   }
 
-  /// Checks if any Gemini, OpenAI, or Mistral inference providers exist.
+  /// Checks if any provider offered by the AI setup prompt exists.
   Future<bool> _hasAnyAiProvider() async {
     final repository = ref.read(aiConfigRepositoryProvider);
     final providers = await repository.getConfigsByType(
@@ -101,6 +105,7 @@ class AiSetupPromptService extends _$AiSetupPromptService {
 
     const supportedProviders = {
       InferenceProviderType.gemini,
+      InferenceProviderType.mlxAudio,
       InferenceProviderType.openAi,
       InferenceProviderType.mistral,
     };

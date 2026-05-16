@@ -1264,6 +1264,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiInternalsTitle => 'Agent internals';
 
   @override
+  String get aiModelDownloadCloseButton => 'Close';
+
+  @override
+  String aiModelDownloadDialogDescription(String modelName) {
+    return 'Lotti will download $modelName into the MLX Audio cache and use it for local speech processing.';
+  }
+
+  @override
+  String aiModelDownloadDialogTitle(String modelName) {
+    return 'Install $modelName';
+  }
+
+  @override
+  String get aiModelDownloadInstallTooltip => 'Install model';
+
+  @override
+  String get aiModelDownloadOpenProgressTooltip => 'Show download progress';
+
+  @override
+  String get aiModelInstallChoiceCancelButton => 'Cancel';
+
+  @override
+  String get aiModelInstallChoiceDescription =>
+      'Pick the local speech-to-text model to download first. You can install the others later from the model list.';
+
+  @override
+  String get aiModelInstallChoiceInstallButton => 'Install model';
+
+  @override
+  String get aiModelInstallChoiceRecommended => 'Recommended';
+
+  @override
+  String get aiModelInstallChoiceTitle => 'Choose MLX Audio model';
+
+  @override
+  String get aiModelDownloadStatusChecking => 'Checking model status';
+
+  @override
+  String aiModelDownloadStatusDownloading(int percent) {
+    return 'Downloading $percent%';
+  }
+
+  @override
+  String get aiModelDownloadStatusDownloadingIndeterminate => 'Downloading';
+
+  @override
+  String get aiModelDownloadStatusFailed => 'Download failed';
+
+  @override
+  String get aiModelDownloadStatusInstalled => 'Installed';
+
+  @override
+  String get aiModelDownloadStatusNotInstalled => 'Not installed';
+
+  @override
+  String get aiModelDownloadStatusUnsupported => 'Apple Silicon required';
+
+  @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
     return 'Model \"$modelName\" installed successfully!';
   }
@@ -1547,6 +1605,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderDetailValueUnset => 'Not set';
 
   @override
+  String get aiProviderEmbeddedRuntimeHint =>
+      'Runs embedded in the Apple app process. No local server or Base URL is required.';
+
+  @override
   String get aiProviderGeminiDescription => 'Google\'s Gemini AI models';
 
   @override
@@ -1565,6 +1627,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiProviderMistralName => 'Mistral';
+
+  @override
+  String get aiProviderMlxAudioDescription =>
+      'Embedded MLX Audio models for local STT and TTS on Apple Silicon';
+
+  @override
+  String get aiProviderMlxAudioName => 'MLX Audio (local)';
 
   @override
   String get aiProviderNebiusAiStudioDescription =>
@@ -1612,6 +1681,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiProviderTaglineGemini => 'Multimodal · audio transcription';
+
+  @override
+  String get aiProviderTaglineMlxAudio =>
+      'Embedded · Apple Silicon · local audio';
 
   @override
   String get aiProviderTaglineOllama => 'Runs locally · no cloud calls';
@@ -1898,6 +1971,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSetupWizardTitle => 'AI Setup Wizard';
+
+  @override
+  String get aiSummarySpeakTooltip => 'Read summary aloud locally';
 
   @override
   String get aiTaskSummaryTitle => 'AI Task Summary';
@@ -2443,6 +2519,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagAttemptEmbeddingDescription =>
       'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.';
+
+  @override
+  String get configFlagEnableAiSummaryTts => 'AI summary playback';
+
+  @override
+  String get configFlagEnableAiSummaryTtsDescription =>
+      'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.';
 
   @override
   String get configFlagEnableAiStreaming =>

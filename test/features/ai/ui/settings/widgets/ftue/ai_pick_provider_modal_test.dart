@@ -18,7 +18,7 @@ void main() {
   group('AiPickProviderModal.defaultTiles — static spec', () {
     test(
       'lineup matches the design: '
-      'Gemini → OpenAI → Anthropic → Alibaba → Ollama → Voxtral',
+      'Gemini → OpenAI → Anthropic → Alibaba → MLX Audio → Ollama → Voxtral',
       () {
         expect(
           AiPickProviderModal.defaultTiles.map((t) => t.providerType).toList(),
@@ -27,6 +27,7 @@ void main() {
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
             InferenceProviderType.alibaba,
+            InferenceProviderType.mlxAudio,
             InferenceProviderType.ollama,
             InferenceProviderType.voxtral,
           ],
@@ -51,6 +52,13 @@ void main() {
     test('Alibaba carries the NEW badge', () {
       final spec = AiPickProviderModal.defaultTiles.firstWhere(
         (t) => t.providerType == InferenceProviderType.alibaba,
+      );
+      expect(spec.badge, AiPickProviderBadge.newcomer);
+    });
+
+    test('MLX Audio carries the NEW badge', () {
+      final spec = AiPickProviderModal.defaultTiles.firstWhere(
+        (t) => t.providerType == InferenceProviderType.mlxAudio,
       );
       expect(spec.badge, AiPickProviderBadge.newcomer);
     });
@@ -145,11 +153,12 @@ void main() {
     testWidgets(
       'renders one DesignSystemBadge per badged tile '
       '(Gemini RECOMMENDED, Anthropic NEW, Alibaba NEW, '
-      'Ollama DESKTOP ONLY, Voxtral DESKTOP ONLY) — five badges total '
+      'MLX Audio NEW, Ollama DESKTOP ONLY, Voxtral DESKTOP ONLY) — '
+      'six badges total '
       'because OpenAI is intentionally un-badged',
       (tester) async {
         await pumpModal(tester);
-        expect(find.byType(DesignSystemBadge), findsNWidgets(5));
+        expect(find.byType(DesignSystemBadge), findsNWidgets(6));
       },
     );
 

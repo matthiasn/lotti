@@ -62,7 +62,7 @@ final class LinkedTasksControllerProvider
 }
 
 String _$linkedTasksControllerHash() =>
-    r'e7206ded96d7a406b69ef535e4368d89c4b8fb69';
+    r'b70c6917d055286c51fa86eeed7dd2ea8da43485';
 
 /// Controller for managing the LinkedTasks section UI state.
 

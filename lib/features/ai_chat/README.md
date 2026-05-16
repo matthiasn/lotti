@@ -258,10 +258,15 @@ The controller also tracks:
 
 - reads AI configs
 - finds audio-capable models
-- prefers `gemini-2.5-flash` when present
+- prefers local MLX Qwen3-ASR models because they receive the category speech
+  dictionary as prompt context
+- falls back to Mistral offline transcription models so their `context_bias`
+  parameter can receive the same dictionary terms
+- otherwise uses a configured Mistral audio model, `gemini-2.5-flash`, or the
+  first audio-capable model
 - excludes realtime-only Mistral models
-- base64-encodes the local audio file
-- calls `CloudInferenceRepository.generateWithAudio(...)`
+- sends MLX Audio model files directly to the native Swift bridge
+- otherwise base64-encodes the local audio file and calls `CloudInferenceRepository.generateWithAudio(...)`
 - yields text chunks as they arrive
 
 ```mermaid
@@ -270,23 +275,35 @@ sequenceDiagram
   participant File as "Temporary audio file"
   participant Batch as "AudioTranscriptionService"
   participant Cloud as "CloudInferenceRepository"
+  participant MLX as "MlxAudioChannel"
 
   UI->>File: record m4a in temp dir
   UI->>Batch: transcribeStream(filePath)
   Batch->>Batch: resolve audio-capable model
-  Batch->>Cloud: generateWithAudio(...)
-  Cloud-->>UI: text chunks
+  alt MLX Audio provider
+    Batch->>MLX: transcribeFile(filePath, modelId)
+    MLX-->>Batch: final transcript
+  else HTTP provider
+    Batch->>Cloud: generateWithAudio(...)
+    Cloud-->>Batch: text chunks
+  end
+  Batch-->>UI: text chunks
   UI->>UI: accumulate transcript
 ```
 
 ### Realtime transcription path
 
 `RealtimeTranscriptionService` bypasses the normal HTTP inference path entirely.
+The code path is kept in place, but `realtimeTranscriptionUiEnabled` is
+currently `false`, so chat input surfaces do not show the live-mode toggle.
+Realtime can be exposed again once the local realtime path supports the same
+dictionary/biasing behavior as batch transcription.
 
 It:
 
-- resolves a Mistral realtime transcription model
-- opens the WebSocket session
+- resolves a local MLX Qwen3-ASR realtime model when configured, otherwise a
+  Mistral realtime transcription model
+- opens the native MLX realtime session or Mistral WebSocket session
 - streams PCM audio chunks
 - computes local amplitude values from PCM
 - accumulates text deltas
@@ -297,18 +314,18 @@ It:
 sequenceDiagram
   participant UI as "ChatRecorderController"
   participant RT as "RealtimeTranscriptionService"
-  participant WS as "Mistral realtime API"
+  participant Backend as "MLX or Mistral realtime backend"
 
   UI->>RT: startRealtimeTranscription(pcmStream)
-  RT->>WS: connect WebSocket
+  RT->>Backend: open realtime session
   UI->>RT: stream PCM chunks
-  RT->>WS: sendAudioChunk(...)
-  WS-->>RT: transcription deltas
+  RT->>Backend: append PCM
+  Backend-->>RT: transcription deltas
   RT-->>UI: onDelta(delta)
   UI->>UI: update partialTranscript
   UI->>RT: stop(...)
-  RT->>WS: endAudio
-  WS-->>RT: transcription.done
+  RT->>Backend: end audio
+  Backend-->>RT: transcription.done
   RT-->>UI: final transcript + audio file path
 ```
 
@@ -337,7 +354,10 @@ If the selected model cannot satisfy the tool contract, the chat turn fails earl
 The chat feature does not invent its own privacy policy. It inherits routing from the configured provider/model path:
 
 - batch chat messages and batch transcription go through the selected provider path
-- realtime transcription goes through the configured Mistral realtime endpoint
+- MLX Audio batch transcription stays in-process through the native Apple bridge when supported
+- realtime transcription is currently hidden in the UI; the retained service
+  path can use either local MLX Qwen3-ASR or a configured Mistral realtime
+  endpoint
 - task retrieval happens locally from Lotti's databases before any tool result is sent upstream
 
 That means the privacy posture depends on the chosen provider configuration, not on the chat UI.
@@ -347,7 +367,8 @@ That means the privacy posture depends on the chosen provider configuration, not
 - sessions are in-memory only
 - the built-in tool surface is intentionally narrow
 - chat requires explicit model selection
-- realtime transcription currently depends on a configured Mistral realtime model
+- realtime transcription is gated by `realtimeTranscriptionUiEnabled` and can be
+  re-enabled once its dictionary/biasing behavior matches the batch path
 - hidden reasoning behavior is normalized, but provider quirks still matter at the stream level
 
 ## Relationship to Other Features
