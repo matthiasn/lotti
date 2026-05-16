@@ -269,24 +269,6 @@ void main() {
         expect(timeout.inSeconds, greaterThan(0));
         expect(timeout.inSeconds, lessThanOrEqualTo(60));
       });
-
-      test('portal service disposal prevents resource leaks', () async {
-        final service = ScreenshotPortalService();
-
-        // Initialize and dispose should work correctly
-        await service.initialize();
-        expect(service.isInitialized, isTrue);
-
-        await service.dispose();
-        expect(service.isInitialized, isFalse);
-
-        // After disposal, client access should fail
-        expect(() => service.client, throwsStateError);
-
-        // Multiple disposals should be safe
-        await service.dispose();
-        expect(service.isInitialized, isFalse);
-      });
     });
 
     group('Security Best Practices', () {

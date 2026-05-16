@@ -58,20 +58,6 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
         _itemHeight(context);
   }
 
-  /// Distance from the top of the system bottom safe-area inset to the visual
-  /// top of the nav-bar pill. Overlays (e.g. recording indicators) that wrap
-  /// themselves in `SafeArea(top: false)` should add this offset to dock flush
-  /// against the pill. Excludes `MediaQuery.paddingOf(context).bottom` so the
-  /// SafeArea at the overlay site is the single source of truth for the
-  /// home-indicator inset on iOS.
-  static double pillTopFromNavBarBottom(BuildContext context) {
-    if (isDesktopLayout(context)) return 0;
-    final tokens = context.designTokens;
-    return padding(context).bottom +
-        tokens.spacing.step2 * 2 +
-        _itemHeight(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(

@@ -6,7 +6,6 @@ import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -204,14 +203,6 @@ class NavService {
     }
 
     emitState();
-  }
-
-  Future<void> restoreRoute() async {
-    final path = await getSavedRoute();
-    DevLogger.log(name: 'NavService', message: 'restoreRoute $path');
-    if (path != null) {
-      beamToNamed(path);
-    }
   }
 
   void emitState() {

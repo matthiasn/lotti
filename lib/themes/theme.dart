@@ -68,7 +68,6 @@ class AppTheme {
   static const double alphaPrimaryIcon = 0.95; // More vibrant
   static const double alphaSurfaceVariant = 0.85; // Better contrast
   static const double alphaSurfaceVariantChevron = 0.7;
-  static const double alphaDestructive = 0.25;
 
   // List item alpha values
   static const double alphaDisabled = 0.38; // Material Design disabled state
@@ -120,7 +119,6 @@ class AppTheme {
   static const double statusIndicatorBorderWidth = 0.8; // Slightly thicker
   static const double statusIndicatorSize = 26; // Slightly larger
   static const double statusIndicatorIconSize = 16; // Larger icons
-  static const double statusIndicatorIconSizeCompact = 14;
 
   // Label chip padding (Linear-style)
   static const double labelChipPaddingLeft = 8;
@@ -155,7 +153,6 @@ class AppTheme {
   static const double statusIndicatorFontSizeCompact = 11;
 
   // Modal item spacer widths
-  static const double modalIconSpacerWidth = iconContainerSize;
   static const double modalChevronSpacerWidth = spacingLarge;
   static const double errorModalMargin = 16;
   static const double errorModalPadding = 20;
@@ -169,7 +166,6 @@ class AppTheme {
   static const double errorModalSuggestionBorderRadius = 8;
   static const double errorModalSuggestionSpacing = 4;
   static const double errorModalSpacingButton = 20;
-  static const double errorModalSpacingButtonSecondary = 12;
 }
 
 // Gradient and shadow constants - tuned for polished, modern look

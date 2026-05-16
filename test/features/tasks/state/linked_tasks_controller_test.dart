@@ -54,53 +54,6 @@ void main() {
       );
     });
 
-    test('exitManageMode sets manageMode to false', () {
-      final notifier =
-          container.read(
-              linkedTasksControllerProvider(taskId: 'task-1').notifier,
-            )
-            // Enable manage mode first
-            ..toggleManageMode();
-      expect(
-        container
-            .read(linkedTasksControllerProvider(taskId: 'task-1'))
-            .manageMode,
-        isTrue,
-      );
-
-      // Exit manage mode
-      notifier.exitManageMode();
-      expect(
-        container
-            .read(linkedTasksControllerProvider(taskId: 'task-1'))
-            .manageMode,
-        isFalse,
-      );
-    });
-
-    test('exitManageMode does nothing when manageMode is already false', () {
-      final notifier = container.read(
-        linkedTasksControllerProvider(taskId: 'task-1').notifier,
-      );
-
-      // Initially false
-      expect(
-        container
-            .read(linkedTasksControllerProvider(taskId: 'task-1'))
-            .manageMode,
-        isFalse,
-      );
-
-      // Exit manage mode (no-op)
-      notifier.exitManageMode();
-      expect(
-        container
-            .read(linkedTasksControllerProvider(taskId: 'task-1'))
-            .manageMode,
-        isFalse,
-      );
-    });
-
     test('different taskIds have independent state', () {
       final notifier1 = container.read(
         linkedTasksControllerProvider(taskId: 'task-1').notifier,

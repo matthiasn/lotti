@@ -527,13 +527,6 @@ void main() {
       expect(navService.index, 0);
     });
 
-    test('restoreRoute', () async {
-      final navService = getIt<NavService>();
-      await settingsDb.saveSettingsItem(lastRouteKey, '/settings');
-      await navService.restoreRoute();
-      expect(navService.currentPath, '/settings');
-    });
-
     test('getIdFromSavedRoute', () async {
       await settingsDb.saveSettingsItem(
         lastRouteKey,

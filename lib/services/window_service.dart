@@ -62,21 +62,11 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     }
   }
 
-  Future<void> restoreSize() async {
-    final sizeString = await getIt<SettingsDb>().itemByKey(sizeKey);
-    await _applyRestoredSize(sizeString);
-  }
-
   Future<void> _applyRestoredSize(String? sizeString) async {
     final values = sizeString?.split(',').map(double.parse).toList();
     final width = values?.first ?? 400;
     final height = values?.last ?? 900;
     await windowManager.setSize(Size(width, height));
-  }
-
-  Future<void> restoreOffset() async {
-    final offsetString = await getIt<SettingsDb>().itemByKey(offsetKey);
-    await _applyRestoredOffset(offsetString);
   }
 
   Future<void> _applyRestoredOffset(String? offsetString) async {

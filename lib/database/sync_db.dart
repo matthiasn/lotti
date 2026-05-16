@@ -1379,18 +1379,6 @@ class SyncDatabase extends _$SyncDatabase {
       perHost.putIfAbsent(host, () => <int, int>{})[status] = count;
     }
 
-    // Only fetch host_activity rows for hosts that actually appear in
-    // the stats result. `host_activity` is small in practice (one row
-    // per peer the device has ever seen), but the filtered lookup
-    // avoids materialising every row when the caller only needs
-    // last-seen for the hosts being reported on.
-    final hostActivityRows = await (select(
-      hostActivity,
-    )..where((t) => t.hostId.isIn(perHost.keys))).get();
-    final lastSeenByHost = {
-      for (final row in hostActivityRows) row.hostId: row.lastSeenAt,
-    };
-
     final received = SyncSequenceStatus.received.index;
     final missing = SyncSequenceStatus.missing.index;
     final requested = SyncSequenceStatus.requested.index;
@@ -1408,7 +1396,6 @@ class SyncDatabase extends _$SyncDatabase {
           backfilledCount: perHost[host]![backfilled] ?? 0,
           deletedCount: perHost[host]![deleted] ?? 0,
           unresolvableCount: perHost[host]![unresolvable] ?? 0,
-          lastSeenAt: lastSeenByHost[host],
         ),
     ];
 

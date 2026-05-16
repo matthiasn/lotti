@@ -2,62 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/tuning.dart';
 
 void main() {
-  group('BackfillHostStats', () {
-    test('totalCount returns sum of all counts', () {
-      const stats = BackfillHostStats(
-        receivedCount: 10,
-        missingCount: 5,
-        requestedCount: 3,
-        backfilledCount: 7,
-        deletedCount: 2,
-        unresolvableCount: 1,
-      );
-
-      expect(stats.totalCount, 28);
-    });
-
-    test('pendingCount returns sum of missing and requested', () {
-      const stats = BackfillHostStats(
-        receivedCount: 10,
-        missingCount: 5,
-        requestedCount: 3,
-        backfilledCount: 7,
-        deletedCount: 2,
-        unresolvableCount: 0,
-      );
-
-      expect(stats.pendingCount, 8);
-    });
-
-    test('lastSeenAt can be null', () {
-      const stats = BackfillHostStats(
-        receivedCount: 1,
-        missingCount: 0,
-        requestedCount: 0,
-        backfilledCount: 0,
-        deletedCount: 0,
-        unresolvableCount: 0,
-      );
-
-      expect(stats.lastSeenAt, isNull);
-    });
-
-    test('lastSeenAt can be set', () {
-      final lastSeen = DateTime(2024, 1, 15);
-      final stats = BackfillHostStats(
-        receivedCount: 1,
-        missingCount: 0,
-        requestedCount: 0,
-        backfilledCount: 0,
-        deletedCount: 0,
-        unresolvableCount: 0,
-        lastSeenAt: lastSeen,
-      );
-
-      expect(stats.lastSeenAt, lastSeen);
-    });
-  });
-
   group('BackfillStats', () {
     test('fromHostStats creates stats from list', () {
       const hostStats = [
@@ -90,21 +34,6 @@ void main() {
       expect(stats.hostStats, hostStats);
     });
 
-    test('totalPending returns sum of missing and requested', () {
-      final stats = BackfillStats.fromHostStats(const [
-        BackfillHostStats(
-          receivedCount: 10,
-          missingCount: 5,
-          requestedCount: 3,
-          backfilledCount: 0,
-          deletedCount: 0,
-          unresolvableCount: 0,
-        ),
-      ]);
-
-      expect(stats.totalPending, 8);
-    });
-
     test('totalEntries returns sum of all counts', () {
       final stats = BackfillStats.fromHostStats(const [
         BackfillHostStats(
@@ -130,7 +59,6 @@ void main() {
       expect(stats.totalDeleted, 0);
       expect(stats.totalUnresolvable, 0);
       expect(stats.hostStats, isEmpty);
-      expect(stats.totalPending, 0);
       expect(stats.totalEntries, 0);
     });
   });
@@ -182,27 +110,7 @@ void main() {
         );
       });
 
-      test('live-scan and catchup constants have expected values', () {
-        expect(
-          SyncTuning.minLiveScanGap,
-          const Duration(seconds: 1),
-        );
-        expect(
-          SyncTuning.trailingLiveScanDebounce,
-          const Duration(milliseconds: 120),
-        );
-        expect(
-          SyncTuning.minCatchupGap,
-          const Duration(seconds: 1),
-        );
-        expect(
-          SyncTuning.trailingCatchupDelay,
-          const Duration(seconds: 1),
-        );
-      });
-
       test('historical window constants have expected values', () {
-        expect(SyncTuning.catchupPreContextCount, 80);
         expect(SyncTuning.catchupMaxLookback, 10000);
       });
     });

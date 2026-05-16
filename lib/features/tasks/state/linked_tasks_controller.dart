@@ -27,11 +27,6 @@ class LinkedTasksController extends _$LinkedTasksController {
   void toggleManageMode() {
     state = state.copyWith(manageMode: !state.manageMode);
   }
-
-  /// Exit manage mode.
-  void exitManageMode() {
-    state = state.copyWith(manageMode: false);
-  }
 }
 
 /// Provider that resolves outgoing entry links to Task entities.

@@ -88,7 +88,6 @@ void main() {
     });
 
     tearDown(() async {
-      await navService.dispose();
       if (getIt.isRegistered<JournalDb>()) {
         getIt.unregister<JournalDb>();
       }
