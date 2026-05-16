@@ -1,8 +1,10 @@
 codecov:
   notify:
-    # CI uploads two coverage reports for each commit: standard and glados.
-    # Wait for both before publishing Codecov statuses/comments.
-    after_n_builds: 2
+    # Sharded coverage uploads arrive independently, so do not let Codecov
+    # publish transient project statuses from a partial report set.
+    # The GitHub workflow sends a single notification once all coverage
+    # upload jobs have completed successfully.
+    manual_trigger: true
     wait_for_ci: true
 
 flag_management:
