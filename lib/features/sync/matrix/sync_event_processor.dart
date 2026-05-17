@@ -684,12 +684,18 @@ class SyncEventProcessor {
               subDomain: 'processor.apply.syncNodeProfile',
             );
           } catch (error, stackTrace) {
+            // Log AND rethrow: an upsert failure (e.g. SettingsDb write
+            // refused, JSON encode glitch) must leave the inbound event
+            // eligible for retry. Swallowing here would silently drop peer
+            // profile updates, which the pinning UI relies on to surface
+            // capable devices.
             _loggingService.captureException(
               error,
               domain: 'SYNC_NODE_PROFILE',
               subDomain: 'apply.upsert',
               stackTrace: stackTrace,
             );
+            rethrow;
           }
         }
         return null;

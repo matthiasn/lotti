@@ -141,6 +141,16 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
   }
 }
 
+String _capabilityLabel(BuildContext context, NodeCapability cap) {
+  final m = context.messages;
+  return switch (cap) {
+    NodeCapability.mlxAudio => m.settingsSyncNodeProfileCapabilityMlxAudio,
+    NodeCapability.ollamaLlm => m.settingsSyncNodeProfileCapabilityOllamaLlm,
+    NodeCapability.voxtral => m.settingsSyncNodeProfileCapabilityVoxtral,
+    NodeCapability.whisper => m.settingsSyncNodeProfileCapabilityWhisper,
+  };
+}
+
 class _CapabilityChips extends StatelessWidget {
   const _CapabilityChips({required this.self});
 
@@ -159,21 +169,11 @@ class _CapabilityChips extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: [for (final cap in caps) Chip(label: Text(_labelFor(cap)))],
+      children: [
+        for (final cap in caps)
+          Chip(label: Text(_capabilityLabel(context, cap))),
+      ],
     );
-  }
-
-  String _labelFor(NodeCapability cap) {
-    switch (cap) {
-      case NodeCapability.mlxAudio:
-        return 'MLX Audio (local)';
-      case NodeCapability.ollamaLlm:
-        return 'Ollama LLM';
-      case NodeCapability.voxtral:
-        return 'Voxtral (local)';
-      case NodeCapability.whisper:
-        return 'Whisper (local)';
-    }
   }
 }
 
@@ -185,7 +185,7 @@ class _KnownNodeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final caps = node.capabilities
-        .map((c) => c.name)
+        .map((c) => _capabilityLabel(context, c))
         .toList(growable: false)
         .join(', ');
     return ListTile(

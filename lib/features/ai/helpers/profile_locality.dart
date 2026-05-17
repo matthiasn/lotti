@@ -13,6 +13,13 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 /// model. This function fails closed instead: a referenced model whose model
 /// or provider config can't be looked up is treated as **not local**.
 ///
+/// Profile slots store the `providerModelId` string (see `ai_config.dart`
+/// docstring on `inferenceProfile`). The lookup chain therefore matches the
+/// same pattern as `resolveInferenceProvider`: scan all `AiConfigModel` rows
+/// for a `providerModelId` match, then `getConfigById` on the model's
+/// `inferenceProviderId`. We must not assume the stored slot value equals a
+/// row's primary key.
+///
 /// Used by the synced-audio dispatcher to refuse running an entry against a
 /// profile that could route any slot through a cloud provider. A profile with
 /// only the (mandatory) thinking slot is local when that slot's provider is
@@ -31,9 +38,19 @@ Future<bool> profileIsLocal(
     if (profile.imageGenerationModelId != null) profile.imageGenerationModelId!,
   ];
 
-  for (final modelId in referencedModelIds) {
-    final modelConfig = await repository.getConfigById(modelId);
-    if (modelConfig is! AiConfigModel) {
+  if (referencedModelIds.isEmpty) return true;
+
+  // Load every model row once; profile slots reference `providerModelId`,
+  // not the row's primary key, so a single scan is the load-bearing lookup.
+  final modelRows = await repository.getConfigsByType(AiConfigType.model);
+  final modelsByProviderModelId = <String, AiConfigModel>{
+    for (final config in modelRows.whereType<AiConfigModel>())
+      config.providerModelId: config,
+  };
+
+  for (final providerModelId in referencedModelIds) {
+    final modelConfig = modelsByProviderModelId[providerModelId];
+    if (modelConfig == null) {
       // Referenced-but-unresolved model id. Fail closed.
       return false;
     }

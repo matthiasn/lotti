@@ -4053,28 +4053,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inferenceProfileEditTitle => 'Profil bearbeiten';
 
   @override
-  String get inferenceProfilePinnedHostHelper =>
-      'Wenn gesetzt, führt nur dieses Gerät die Inferenz für synchronisierte Audio-Einträge automatisch aus, die dieses Profil verwenden.';
-
-  @override
-  String get inferenceProfilePinnedHostLabel => 'Verknüpftes Gerät';
-
-  @override
-  String get inferenceProfilePinnedHostNoneHelper =>
-      'Synchronisierte Audio-Einträge werden nicht automatisch transkribiert, wenn kein Gerät verknüpft ist.';
-
-  @override
-  String get inferenceProfilePinnedHostNoneLabel =>
-      'Nicht verknüpft (kein Auto-Trigger)';
-
-  @override
-  String get inferenceProfilePinnedHostNoEligibleNodes =>
-      'Keine bekannten Geräte bieten die Anbieter, die dieses Profil verwendet. Öffne die Sync-Knoten-Einstellungen auf dem Zielgerät.';
-
-  @override
-  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (dieses Gerät)';
-
-  @override
   String get inferenceProfileImageGeneration => 'Bilderzeugung';
 
   @override
@@ -4085,6 +4063,28 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get inferenceProfileNameRequired => 'Ein Profilname ist erforderlich';
+
+  @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Wenn gesetzt, führt nur dieses Gerät die Inferenz für synchronisierte Audio-Einträge automatisch aus, die dieses Profil verwenden.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Verknüpftes Gerät';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Keine bekannten Geräte bieten die Anbieter, die dieses Profil verwendet. Öffne die Sync-Knoten-Einstellungen auf dem Zielgerät.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Synchronisierte Audio-Einträge werden nicht automatisch transkribiert, wenn kein Gerät verknüpft ist.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Nicht verknüpft (kein Auto-Trigger)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (dieses Gerät)';
 
   @override
   String get inferenceProfileSaveButton => 'Speichern';
@@ -5850,6 +5850,18 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Erkannte KI-Fähigkeiten';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (lokal)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (lokal)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (lokal)';
 
   @override
   String get settingsSyncNodeProfileDisplayNameHelper =>

@@ -118,7 +118,15 @@ class SyncNodeProfileRepository {
     if (raw == null || raw.isEmpty) {
       return <String, SyncNodeProfile>{};
     }
-    final decoded = jsonDecode(raw);
+    // Malformed JSON in settings storage must not poison the read/upsert
+    // paths — degrade gracefully so a corrupted row can't break the pinning
+    // UI or block legitimate inbound profile broadcasts.
+    Object? decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } catch (_) {
+      return <String, SyncNodeProfile>{};
+    }
     if (decoded is! Map<String, dynamic>) {
       return <String, SyncNodeProfile>{};
     }

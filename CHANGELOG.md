@@ -4,15 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1001]
+## [0.9.1002]
 ### Added
 - Synced notifications data layer: a separate `notifications.sqlite` store,
   Freezed notification entities, Matrix sync payloads for full alerts and
   state updates, backfill coverage, and macOS/iOS scheduler plumbing behind
   the new `enable_synced_alerts` flag.
-
-## [0.9.1000]
-### Added
+- Automatic AI inference pickup on capable desktops when a mobile
+  device syncs an audio entry. Each node broadcasts a sync node
+  profile (display name, platform, detected capabilities — MLX
+  Audio, Ollama, Voxtral, Whisper) over Matrix and maintains a
+  local directory of peers. Inference profiles gain an optional
+  pinned device: when a mobile-recorded `JournalAudio` arrives
+  via sync and its responsible profile is pinned to the local
+  host (and the profile is fully local — every populated model
+  slot resolves to MLX Audio, Ollama, Voxtral, or Whisper), the
+  desktop runs the existing transcription skill and nudges the
+  wake cycle — no manual transcription, no cloud routing. Pinned
+  host offline = entry stays untranscribed; the user can re-pin.
+  New AI Settings → "This device" page edits the local display
+  name, shows detected capabilities, and lists known peer nodes.
+  The inference profile edit page exposes the Pinned device
+  selector, filtered to peers that advertise the capabilities the
+  profile actually needs.
 - Live API-key verification on the AI provider connect form. As
   soon as you stop typing in the API key or Base URL field, the
   form checks the credentials against the provider's API and

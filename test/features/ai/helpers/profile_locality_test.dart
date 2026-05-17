@@ -29,11 +29,15 @@ AiConfigInferenceProfile _profile({
 AiConfigModel _model({
   required String id,
   required String inferenceProviderId,
+  String? providerModelId,
 }) {
+  // Profile slots store `providerModelId`, not the row's primary key
+  // (see `ai_config.dart` docstring on `inferenceProfile`). Default the
+  // factory to the matching shape used by production seeders.
   return AiConfig.model(
         id: id,
         name: id,
-        providerModelId: id,
+        providerModelId: providerModelId ?? id,
         inferenceProviderId: inferenceProviderId,
         createdAt: DateTime.utc(2026, 3, 15),
         inputModalities: const [Modality.text],
@@ -61,24 +65,36 @@ AiConfigInferenceProvider _provider({
 void main() {
   late MockAiConfigRepository repo;
 
+  /// Models registered for the current test, keyed by `providerModelId` so
+  /// `getConfigsByType(AiConfigType.model)` returns a consistent snapshot
+  /// (production lookup is by `providerModelId`, not row primary key).
+  final stubbedModels = <String, AiConfigModel>{};
+
   setUp(() {
     repo = MockAiConfigRepository();
+    stubbedModels.clear();
     when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
+    when(
+      () => repo.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => stubbedModels.values.toList());
   });
 
-  /// Stubs the repo so `modelId` resolves to a model that points at a provider
-  /// of type [providerType].
+  /// Stubs the repo so the profile slot string `providerModelId` resolves to
+  /// a model row pointing at a provider of [providerType]. Mirrors how
+  /// production seeders set up the (model, provider) pair.
   void stubModelWithProvider({
-    required String modelId,
+    required String providerModelId,
     required InferenceProviderType providerType,
     String? providerId,
   }) {
-    final pid = providerId ?? 'provider-for-$modelId';
-    when(
-      () => repo.getConfigById(modelId),
-    ).thenAnswer(
-      (_) async => _model(id: modelId, inferenceProviderId: pid),
+    final pid = providerId ?? 'provider-for-$providerModelId';
+    final modelRowId = 'model-row-for-$providerModelId';
+    final model = _model(
+      id: modelRowId,
+      providerModelId: providerModelId,
+      inferenceProviderId: pid,
     );
+    stubbedModels[providerModelId] = model;
     when(
       () => repo.getConfigById(pid),
     ).thenAnswer((_) async => _provider(id: pid, type: providerType));
@@ -87,7 +103,7 @@ void main() {
   group('profileIsLocal — happy path (all populated slots local)', () {
     test('thinking slot only, local provider → true', () async {
       stubModelWithProvider(
-        modelId: 'thinking-model',
+        providerModelId: 'thinking-model',
         providerType: InferenceProviderType.ollama,
       );
 
@@ -96,23 +112,23 @@ void main() {
 
     test('every slot populated with mixed local providers → true', () async {
       stubModelWithProvider(
-        modelId: 'thinking-model',
+        providerModelId: 'thinking-model',
         providerType: InferenceProviderType.ollama,
       );
       stubModelWithProvider(
-        modelId: 'thinking-pro',
+        providerModelId: 'thinking-pro',
         providerType: InferenceProviderType.ollama,
       );
       stubModelWithProvider(
-        modelId: 'vision',
+        providerModelId: 'vision',
         providerType: InferenceProviderType.mlxAudio,
       );
       stubModelWithProvider(
-        modelId: 'asr',
+        providerModelId: 'asr',
         providerType: InferenceProviderType.mlxAudio,
       );
       stubModelWithProvider(
-        modelId: 'image-gen',
+        providerModelId: 'image-gen',
         providerType: InferenceProviderType.whisper,
       );
 
@@ -128,11 +144,11 @@ void main() {
 
     test('voxtral and whisper count as local', () async {
       stubModelWithProvider(
-        modelId: 'thinking-model',
+        providerModelId: 'thinking-model',
         providerType: InferenceProviderType.voxtral,
       );
       stubModelWithProvider(
-        modelId: 'asr',
+        providerModelId: 'asr',
         providerType: InferenceProviderType.whisper,
       );
 
@@ -144,7 +160,7 @@ void main() {
   group('profileIsLocal — cloud provider in any slot → false', () {
     test('thinking slot cloud → false', () async {
       stubModelWithProvider(
-        modelId: 'thinking-model',
+        providerModelId: 'thinking-model',
         providerType: InferenceProviderType.gemini,
       );
 
@@ -155,11 +171,11 @@ void main() {
       'transcription slot cloud → false even if thinking is local',
       () async {
         stubModelWithProvider(
-          modelId: 'thinking-model',
+          providerModelId: 'thinking-model',
           providerType: InferenceProviderType.ollama,
         );
         stubModelWithProvider(
-          modelId: 'asr',
+          providerModelId: 'asr',
           providerType: InferenceProviderType.openAi,
         );
 
@@ -185,8 +201,14 @@ void main() {
         when(
           () => scopedRepo.getConfigById(any()),
         ).thenAnswer((_) async => null);
-        when(() => scopedRepo.getConfigById('thinking-model')).thenAnswer(
-          (_) async => _model(id: 'thinking-model', inferenceProviderId: 'p'),
+        when(() => scopedRepo.getConfigsByType(AiConfigType.model)).thenAnswer(
+          (_) async => [
+            _model(
+              id: 'model-row',
+              providerModelId: 'thinking-model',
+              inferenceProviderId: 'p',
+            ),
+          ],
         );
         when(
           () => scopedRepo.getConfigById('p'),
@@ -215,11 +237,14 @@ void main() {
     test(
       'model resolves but provider config is missing → false',
       () async {
-        when(() => repo.getConfigById('thinking-model')).thenAnswer(
-          (_) async => _model(
-            id: 'thinking-model',
-            inferenceProviderId: 'missing-provider',
-          ),
+        when(() => repo.getConfigsByType(AiConfigType.model)).thenAnswer(
+          (_) async => [
+            _model(
+              id: 'model-row',
+              providerModelId: 'thinking-model',
+              inferenceProviderId: 'missing-provider',
+            ),
+          ],
         );
         // missing-provider intentionally not stubbed (returns null).
 
@@ -232,7 +257,7 @@ void main() {
       'vacuously local — this is the bug the reviewer flagged)',
       () async {
         stubModelWithProvider(
-          modelId: 'thinking-model',
+          providerModelId: 'thinking-model',
           providerType: InferenceProviderType.ollama,
         );
         // transcriptionModelId is set but its model config is missing.
@@ -246,7 +271,7 @@ void main() {
       'unset optional slot does not require any lookup (vacuously local)',
       () async {
         stubModelWithProvider(
-          modelId: 'thinking-model',
+          providerModelId: 'thinking-model',
           providerType: InferenceProviderType.ollama,
         );
 
@@ -261,10 +286,14 @@ void main() {
 
   group('profileIsLocal — wrong config type at id', () {
     test(
-      'model id resolves to a profile config (wrong type) → false',
+      'no AiConfigModel row matches the slot value → false '
+      '(fail-closed when the profile references a model that was deleted '
+      'or never seeded)',
       () async {
-        when(() => repo.getConfigById('thinking-model')).thenAnswer(
-          (_) async => _profile(),
+        // getConfigsByType returns only non-model rows for the slot value,
+        // so the providerModelId lookup yields null and the guard trips.
+        when(() => repo.getConfigsByType(AiConfigType.model)).thenAnswer(
+          (_) async => const <AiConfig>[],
         );
 
         expect(await profileIsLocal(_profile(), repo), isFalse);
@@ -272,17 +301,21 @@ void main() {
     );
 
     test(
-      'provider id resolves to a model config (wrong type) → false',
+      'provider id resolves to a non-provider config (wrong type) → false',
       () async {
-        when(() => repo.getConfigById('thinking-model')).thenAnswer(
-          (_) async => _model(
-            id: 'thinking-model',
-            inferenceProviderId: 'wrong-shape',
-          ),
+        when(() => repo.getConfigsByType(AiConfigType.model)).thenAnswer(
+          (_) async => [
+            _model(
+              id: 'model-row',
+              providerModelId: 'thinking-model',
+              inferenceProviderId: 'wrong-shape',
+            ),
+          ],
         );
         when(() => repo.getConfigById('wrong-shape')).thenAnswer(
           (_) async => _model(
             id: 'wrong-shape',
+            providerModelId: 'wrong-shape',
             inferenceProviderId: 'irrelevant',
           ),
         );

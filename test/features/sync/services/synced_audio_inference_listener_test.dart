@@ -148,6 +148,57 @@ void main() {
   );
 
   test(
+    'serializes consecutive batches — a slow dispatch must complete before '
+    'the next batch starts, otherwise runTranscription would overlap inside '
+    'the journal writer transaction',
+    () {
+      fakeAsync((async) {
+        final source = StreamController<Set<String>>.broadcast();
+        final orderedDispatcher = _MockDispatcher();
+        final inFlight = <String>{};
+        final concurrentCalls = <String>[];
+        when(() => orderedDispatcher.maybeDispatch(any())).thenAnswer(
+          (invocation) async {
+            final id = invocation.positionalArguments.first as String;
+            if (inFlight.isNotEmpty) concurrentCalls.add(id);
+            inFlight.add(id);
+            // Take an async hop to mimic a real dispatcher's awaited work.
+            // Microtask, not `Future.delayed` — fakeAsync doesn't intercept
+            // real timers (and AGENTS.md forbids them in tests anyway).
+            await Future<void>.microtask(() {});
+            inFlight.remove(id);
+          },
+        );
+
+        final seqListener = SyncedAudioInferenceListener(
+          updateNotifications: _FaultySyncNotifications(source),
+          dispatcher: orderedDispatcher,
+        )..start();
+
+        source
+          ..add({'a'})
+          ..add({'b'})
+          ..add({'c'});
+
+        // Microtasks are sufficient now that the stub uses a microtask hop;
+        // no need to advance fake time.
+        async.flushMicrotasks();
+
+        // No call should have observed another in flight — `asyncMap` holds
+        // the next event until the prior `_onBatch` completes.
+        expect(concurrentCalls, isEmpty);
+        verify(() => orderedDispatcher.maybeDispatch('a')).called(1);
+        verify(() => orderedDispatcher.maybeDispatch('b')).called(1);
+        verify(() => orderedDispatcher.maybeDispatch('c')).called(1);
+
+        unawaited(seqListener.dispose());
+        unawaited(source.close());
+        async.flushMicrotasks();
+      });
+    },
+  );
+
+  test(
     'stream errors are caught by the listener and do NOT terminate the '
     'subscription — a dispatcher loop must survive a transient producer error',
     () {

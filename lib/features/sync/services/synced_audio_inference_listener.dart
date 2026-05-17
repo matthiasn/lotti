@@ -27,23 +27,30 @@ class SyncedAudioInferenceListener {
   final SyncedAudioInferenceDispatcher _dispatcher;
   final DomainLogger? _domainLogger;
 
-  StreamSubscription<Set<String>>? _subscription;
+  StreamSubscription<void>? _subscription;
 
   /// Starts the listener. Idempotent — a second call is a no-op.
   void start() {
     if (_subscription != null) return;
-    _subscription = _updateNotifications.syncUpdateStream.listen(
-      _onBatch,
-      onError: (Object error, StackTrace stackTrace) {
-        _domainLogger?.error(
-          LogDomains.sync,
-          'syncUpdateStream emitted an error',
-          error: error,
-          stackTrace: stackTrace,
-          subDomain: 'syncedAudioInferenceListener',
+    // `Stream.listen` does NOT await an async onData callback, so two batches
+    // arriving back-to-back would execute `_onBatch` concurrently and break
+    // the documented sequential-dispatch contract — and overlap inside
+    // `runTranscription`'s journal-writer transaction. `asyncMap` serializes
+    // the chain by holding the next event until the prior future completes.
+    _subscription = _updateNotifications.syncUpdateStream
+        .asyncMap(_onBatch)
+        .listen(
+          (_) {},
+          onError: (Object error, StackTrace stackTrace) {
+            _domainLogger?.error(
+              LogDomains.sync,
+              'syncUpdateStream emitted an error',
+              error: error,
+              stackTrace: stackTrace,
+              subDomain: 'syncedAudioInferenceListener',
+            );
+          },
         );
-      },
-    );
   }
 
   Future<void> dispose() async {

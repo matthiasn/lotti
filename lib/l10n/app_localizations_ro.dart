@@ -4074,29 +4074,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileEditTitle => 'Editați profilul';
 
   @override
-  String get inferenceProfilePinnedHostHelper =>
-      'Când este setat, doar acest dispozitiv rulează automat inferența pentru intrările audio sincronizate care folosesc acest profil.';
-
-  @override
-  String get inferenceProfilePinnedHostLabel => 'Dispozitiv fixat';
-
-  @override
-  String get inferenceProfilePinnedHostNoneHelper =>
-      'Intrările audio sincronizate nu sunt transcrise automat când niciun dispozitiv nu este fixat.';
-
-  @override
-  String get inferenceProfilePinnedHostNoneLabel =>
-      'Nefixat (fără declanșare automată)';
-
-  @override
-  String get inferenceProfilePinnedHostNoEligibleNodes =>
-      'Niciun dispozitiv cunoscut nu anunță furnizorii pe care îi folosește acest profil. Deschideți setările nodurilor de sincronizare pe dispozitivul țintă.';
-
-  @override
-  String get inferenceProfilePinnedHostThisDeviceSuffix =>
-      ' (acest dispozitiv)';
-
-  @override
   String get inferenceProfileImageGeneration => 'Generare de imagini';
 
   @override
@@ -4107,6 +4084,29 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get inferenceProfileNameRequired => 'Este necesar un nume de profil';
+
+  @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Când este setat, doar acest dispozitiv rulează automat inferența pentru intrările audio sincronizate care folosesc acest profil.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Dispozitiv fixat';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Niciun dispozitiv cunoscut nu anunță furnizorii pe care îi folosește acest profil. Deschideți setările nodurilor de sincronizare pe dispozitivul țintă.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Intrările audio sincronizate nu sunt transcrise automat când niciun dispozitiv nu este fixat.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Nefixat (fără declanșare automată)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix =>
+      ' (acest dispozitiv)';
 
   @override
   String get inferenceProfileSaveButton => 'Salvați';
@@ -5907,6 +5907,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Capabilități AI detectate';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (local)';
 
   @override
   String get settingsSyncNodeProfileDisplayNameHelper =>

@@ -234,23 +234,34 @@ class _Bench {
     ).thenReturn(null);
   }
 
+  /// Models indexed by the `providerModelId` profile slots store; the
+  /// dispatcher's `profileIsLocal` walks `getConfigsByType(AiConfigType.model)`
+  /// and matches on `providerModelId`, NOT on the model row's primary key.
+  /// Each `_stubModelAndProvider` call registers one (model, provider) pair
+  /// into this map and individually stubs the provider's `getConfigById`.
+  final _stubbedModels = <String, AiConfigModel>{};
+
   void _stubModelAndProvider({
     required String modelId,
     required InferenceProviderType providerType,
     required String providerId,
   }) {
-    when(() => aiConfigRepository.getConfigById(modelId)).thenAnswer(
-      (_) async => AiConfig.model(
-        id: modelId,
-        name: modelId,
-        providerModelId: modelId,
-        inferenceProviderId: providerId,
-        createdAt: _kCreatedAt,
-        inputModalities: const [Modality.text],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-      ),
-    );
+    final modelRow =
+        AiConfig.model(
+              id: 'model-row-$modelId',
+              name: modelId,
+              providerModelId: modelId,
+              inferenceProviderId: providerId,
+              createdAt: _kCreatedAt,
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            )
+            as AiConfigModel;
+    _stubbedModels[modelId] = modelRow;
+    when(
+      () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => _stubbedModels.values.toList());
     when(() => aiConfigRepository.getConfigById(providerId)).thenAnswer(
       (_) async => AiConfig.inferenceProvider(
         id: providerId,

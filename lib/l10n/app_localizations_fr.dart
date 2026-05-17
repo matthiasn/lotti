@@ -4073,28 +4073,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inferenceProfileEditTitle => 'Modifier le profil';
 
   @override
-  String get inferenceProfilePinnedHostHelper =>
-      'Lorsque défini, seul cet appareil exécute automatiquement l\'inférence pour les entrées audio synchronisées qui utilisent ce profil.';
-
-  @override
-  String get inferenceProfilePinnedHostLabel => 'Appareil épinglé';
-
-  @override
-  String get inferenceProfilePinnedHostNoneHelper =>
-      'Les entrées audio synchronisées ne sont pas transcrites automatiquement quand aucun appareil n\'est épinglé.';
-
-  @override
-  String get inferenceProfilePinnedHostNoneLabel =>
-      'Non épinglé (pas de déclenchement auto)';
-
-  @override
-  String get inferenceProfilePinnedHostNoEligibleNodes =>
-      'Aucun appareil connu n\'annonce les fournisseurs que ce profil utilise. Ouvre les paramètres des nœuds de synchronisation sur l\'appareil cible.';
-
-  @override
-  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (cet appareil)';
-
-  @override
   String get inferenceProfileImageGeneration => 'Génération d\'images';
 
   @override
@@ -4105,6 +4083,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get inferenceProfileNameRequired => 'Un nom de profil est requis';
+
+  @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Lorsque défini, seul cet appareil exécute automatiquement l\'inférence pour les entrées audio synchronisées qui utilisent ce profil.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Appareil épinglé';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Aucun appareil connu n\'annonce les fournisseurs que ce profil utilise. Ouvre les paramètres des nœuds de synchronisation sur l\'appareil cible.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Les entrées audio synchronisées ne sont pas transcrites automatiquement quand aucun appareil n\'est épinglé.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Non épinglé (pas de déclenchement auto)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (cet appareil)';
 
   @override
   String get inferenceProfileSaveButton => 'Enregistrer';
@@ -5925,6 +5925,18 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Capacités d\'IA détectées';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (local)';
 
   @override
   String get settingsSyncNodeProfileDisplayNameHelper =>

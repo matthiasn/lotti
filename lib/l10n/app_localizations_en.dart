@@ -4003,28 +4003,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inferenceProfileEditTitle => 'Edit Profile';
 
   @override
-  String get inferenceProfilePinnedHostHelper =>
-      'When set, only this device auto-runs inference for synced audio entries that use this profile.';
-
-  @override
-  String get inferenceProfilePinnedHostLabel => 'Pinned device';
-
-  @override
-  String get inferenceProfilePinnedHostNoneHelper =>
-      'Synced audio entries are not auto-transcribed when no device is pinned.';
-
-  @override
-  String get inferenceProfilePinnedHostNoneLabel =>
-      'Not pinned (no auto-trigger)';
-
-  @override
-  String get inferenceProfilePinnedHostNoEligibleNodes =>
-      'No known devices advertise the providers this profile uses. Open Sync nodes settings on the target device.';
-
-  @override
-  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (this device)';
-
-  @override
   String get inferenceProfileImageGeneration => 'Image Generation';
 
   @override
@@ -4035,6 +4013,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inferenceProfileNameRequired => 'A profile name is required';
+
+  @override
+  String get inferenceProfilePinnedHostHelper =>
+      'When set, only this device auto-runs inference for synced audio entries that use this profile.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Pinned device';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'No known devices advertise the providers this profile uses. Open Sync node settings on the target device.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Synced audio entries are not auto-transcribed when no device is pinned.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Not pinned (no auto-trigger)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (this device)';
 
   @override
   String get inferenceProfileSaveButton => 'Save';
@@ -5775,6 +5775,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Detected AI capabilities';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (local)';
 
   @override
   String get settingsSyncNodeProfileDisplayNameHelper =>

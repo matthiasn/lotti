@@ -17,7 +17,7 @@ A parallel task ("Implement synchronized notification system for AI inference re
 
 ## Architecture overview
 
-```
+```text
 Matrix room
    │
    ▼

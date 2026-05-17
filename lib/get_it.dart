@@ -404,8 +404,10 @@ Future<void> registerSingletons() async {
   // Sync-node profile broadcaster: probes the local node's capabilities and
   // broadcasts (over the outbox) whenever the snapshot changes. Registered
   // here because it depends on both the repository (created earlier) and the
-  // outbox service. The initial probe runs unawaited — broadcast is
-  // non-critical for boot and any failure is logged inside the broadcaster.
+  // outbox service. The initial broadcast is fire-and-forget — boot must
+  // never await it — and we wrap the future in a try/catch right here so an
+  // unexpected probe / enqueue failure is captured under SYNC_NODE_PROFILE
+  // instead of escaping to the zone error handler.
   final syncNodeProfileBroadcaster = SyncNodeProfileBroadcaster(
     repository: syncNodeProfileRepository,
     probe: defaultSyncNodeCapabilityProbe,
@@ -420,7 +422,18 @@ Future<void> registerSingletons() async {
   // that wiped settings always converge on the current snapshot within a
   // session — the receiver's directory upsert is last-write-wins by
   // updatedAt, so redundant re-broadcasts of unchanged content are cheap.
-  unawaited(syncNodeProfileBroadcaster.broadcast());
+  unawaited(() async {
+    try {
+      await syncNodeProfileBroadcaster.broadcast();
+    } catch (error, stackTrace) {
+      loggingService.captureException(
+        error,
+        domain: 'SYNC_NODE_PROFILE',
+        subDomain: 'startupBroadcast',
+        stackTrace: stackTrace,
+      );
+    }
+  }());
 
   // Proactive VC burn broadcast: when a reservation releases (write rejected,
   // scope threw, commitWhen=false), enqueue a SyncBackfillResponse with

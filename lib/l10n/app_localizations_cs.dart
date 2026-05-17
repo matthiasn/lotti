@@ -4051,28 +4051,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileEditTitle => 'Edit Profile';
 
   @override
-  String get inferenceProfilePinnedHostHelper =>
-      'Když je nastaveno, pouze toto zařízení automaticky spouští inference pro synchronizované zvukové záznamy používající tento profil.';
-
-  @override
-  String get inferenceProfilePinnedHostLabel => 'Připnuté zařízení';
-
-  @override
-  String get inferenceProfilePinnedHostNoneHelper =>
-      'Synchronizované zvukové záznamy nejsou automaticky přepisovány, dokud není žádné zařízení připnuté.';
-
-  @override
-  String get inferenceProfilePinnedHostNoneLabel =>
-      'Nepřipnuto (bez automatického spuštění)';
-
-  @override
-  String get inferenceProfilePinnedHostNoEligibleNodes =>
-      'Žádné známé zařízení neoznamuje poskytovatele, které tento profil používá. Otevři nastavení synchronizačních uzlů na cílovém zařízení.';
-
-  @override
-  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (toto zařízení)';
-
-  @override
   String get inferenceProfileImageGeneration => 'Image Generation';
 
   @override
@@ -4083,6 +4061,28 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get inferenceProfileNameRequired => 'A profile name is required';
+
+  @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Když je nastaveno, pouze toto zařízení automaticky spouští inference pro synchronizované zvukové záznamy používající tento profil.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Připnuté zařízení';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Žádné známé zařízení neoznamuje poskytovatele, které tento profil používá. Otevři nastavení synchronizačních uzlů na cílovém zařízení.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Synchronizované zvukové záznamy se nebudou automaticky přepisovat, dokud nebude připnuté nějaké zařízení.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Nepřipnuto (bez automatického spuštění)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (toto zařízení)';
 
   @override
   String get inferenceProfileSaveButton => 'Save';
@@ -5882,6 +5882,18 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Detekované AI schopnosti';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (lokální)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (lokální)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (lokální)';
 
   @override
   String get settingsSyncNodeProfileDisplayNameHelper =>

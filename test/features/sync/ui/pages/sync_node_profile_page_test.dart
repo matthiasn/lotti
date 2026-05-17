@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
+import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -49,7 +49,7 @@ void main() {
     registerFallbackValue('');
   });
 
-  setUp(() {
+  setUp(() async {
     broadcaster = MockSyncNodeProfileBroadcaster();
     when(
       () => broadcaster.broadcastIfChanged(
@@ -58,17 +58,17 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
 
-    if (GetIt.I.isRegistered<SyncNodeProfileBroadcaster>()) {
-      GetIt.I.unregister<SyncNodeProfileBroadcaster>();
-    }
-    GetIt.I.registerSingleton<SyncNodeProfileBroadcaster>(broadcaster);
+    // Use the shared test DI helpers (per AGENTS.md) instead of inline GetIt
+    // boilerplate; the page resolves the broadcaster via `getIt<...>` so we
+    // register the mock as an additional setup hook.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<SyncNodeProfileBroadcaster>(broadcaster);
+      },
+    );
   });
 
-  tearDown(() {
-    if (GetIt.I.isRegistered<SyncNodeProfileBroadcaster>()) {
-      GetIt.I.unregister<SyncNodeProfileBroadcaster>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   Widget harness({
     SyncNodeProfile? self,

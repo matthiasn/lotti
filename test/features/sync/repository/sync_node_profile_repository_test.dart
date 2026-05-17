@@ -357,74 +357,79 @@ void main() {
         final sub = repo2.watchKnownNodes().listen(emissions.add);
         var expectedEmissionCount = 0;
 
-        for (final op in operations) {
-          switch (op) {
-            case _Upsert():
-              final profile = SyncNodeProfile(
-                hostId: op.hostId,
-                displayName: op.displayName,
-                platform: 'macos',
-                capabilities: const [NodeCapability.mlxAudio],
-                updatedAt: op.updatedAt,
-              );
-              final existing = expected[op.hostId];
-              // Mirror the repository's predicate exactly: write iff the
-              // existing snapshot is null, OR the incoming updatedAt is not
-              // older than the existing one AND content differs.
-              final wouldChange =
-                  existing == null ||
-                  (!existing.updatedAt.isAfter(profile.updatedAt) &&
-                      existing != profile);
-              final returned = await repo2.upsertNode(profile);
+        // try/finally: a failing assertion below would otherwise leak the
+        // subscription + DB handles into subsequent glados iterations,
+        // contaminating their state and producing confusing cascade failures.
+        try {
+          for (final op in operations) {
+            switch (op) {
+              case _Upsert():
+                final profile = SyncNodeProfile(
+                  hostId: op.hostId,
+                  displayName: op.displayName,
+                  platform: 'macos',
+                  capabilities: const [NodeCapability.mlxAudio],
+                  updatedAt: op.updatedAt,
+                );
+                final existing = expected[op.hostId];
+                // Mirror the repository's predicate exactly: write iff the
+                // existing snapshot is null, OR the incoming updatedAt is not
+                // older than the existing one AND content differs.
+                final wouldChange =
+                    existing == null ||
+                    (!existing.updatedAt.isAfter(profile.updatedAt) &&
+                        existing != profile);
+                final returned = await repo2.upsertNode(profile);
 
-              if (wouldChange) {
-                expected[op.hostId] = profile;
-                expect(returned, isTrue, reason: 'upsert $op');
-                expectedEmissionCount++;
-              } else {
-                expect(returned, isFalse, reason: 'stale or identical $op');
-              }
-            case _Remove():
-              final wasPresent = expected.containsKey(op.hostId);
-              final returned = await repo2.removeNode(op.hostId);
-              expect(returned, wasPresent, reason: 'remove $op');
-              if (wasPresent) {
-                expected.remove(op.hostId);
-                expectedEmissionCount++;
-              }
+                if (wouldChange) {
+                  expected[op.hostId] = profile;
+                  expect(returned, isTrue, reason: 'upsert $op');
+                  expectedEmissionCount++;
+                } else {
+                  expect(returned, isFalse, reason: 'stale or identical $op');
+                }
+              case _Remove():
+                final wasPresent = expected.containsKey(op.hostId);
+                final returned = await repo2.removeNode(op.hostId);
+                expect(returned, wasPresent, reason: 'remove $op');
+                if (wasPresent) {
+                  expected.remove(op.hostId);
+                  expectedEmissionCount++;
+                }
+            }
           }
-        }
 
-        await pumpEventQueue();
+          await pumpEventQueue();
 
-        // Property 1: directory matches the model.
-        final actual = await repo2.listKnownNodes();
-        final actualById = {for (final p in actual) p.hostId: p};
-        expect(
-          actualById.keys.toSet(),
-          expected.keys.toSet(),
-          reason: 'host set mismatch for $operations',
-        );
-        for (final hostId in expected.keys) {
+          // Property 1: directory matches the model.
+          final actual = await repo2.listKnownNodes();
+          final actualById = {for (final p in actual) p.hostId: p};
           expect(
-            actualById[hostId],
-            expected[hostId],
-            reason: 'profile mismatch for $hostId in $operations',
+            actualById.keys.toSet(),
+            expected.keys.toSet(),
+            reason: 'host set mismatch for $operations',
           );
+          for (final hostId in expected.keys) {
+            expect(
+              actualById[hostId],
+              expected[hostId],
+              reason: 'profile mismatch for $hostId in $operations',
+            );
+          }
+
+          // Property 2: exactly one stream emission per actual mutation.
+          expect(
+            emissions.length,
+            expectedEmissionCount,
+            reason:
+                'expected $expectedEmissionCount emissions but got '
+                '${emissions.length} for $operations',
+          );
+        } finally {
+          await sub.cancel();
+          await repo2.dispose();
+          await settingsDb2.close();
         }
-
-        // Property 2: exactly one stream emission per actual mutation.
-        expect(
-          emissions.length,
-          expectedEmissionCount,
-          reason:
-              'expected $expectedEmissionCount emissions but got '
-              '${emissions.length} for $operations',
-        );
-
-        await sub.cancel();
-        await repo2.dispose();
-        await settingsDb2.close();
       },
       tags: 'glados',
     );

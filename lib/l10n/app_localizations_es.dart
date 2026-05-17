@@ -4068,29 +4068,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inferenceProfileEditTitle => 'Editar perfil';
 
   @override
-  String get inferenceProfilePinnedHostHelper =>
-      'Cuando está configurado, solo este dispositivo ejecuta automáticamente la inferencia para entradas de audio sincronizadas que usan este perfil.';
-
-  @override
-  String get inferenceProfilePinnedHostLabel => 'Dispositivo fijado';
-
-  @override
-  String get inferenceProfilePinnedHostNoneHelper =>
-      'Las entradas de audio sincronizadas no se transcriben automáticamente cuando ningún dispositivo está fijado.';
-
-  @override
-  String get inferenceProfilePinnedHostNoneLabel =>
-      'Sin fijar (sin auto-disparador)';
-
-  @override
-  String get inferenceProfilePinnedHostNoEligibleNodes =>
-      'Ningún dispositivo conocido anuncia los proveedores que este perfil usa. Abre la configuración de nodos de sincronización en el dispositivo destino.';
-
-  @override
-  String get inferenceProfilePinnedHostThisDeviceSuffix =>
-      ' (este dispositivo)';
-
-  @override
   String get inferenceProfileImageGeneration => 'Generación de imágenes';
 
   @override
@@ -4101,6 +4078,29 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inferenceProfileNameRequired => 'Se requiere un nombre de perfil';
+
+  @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Cuando está configurado, solo este dispositivo ejecuta automáticamente la inferencia para entradas de audio sincronizadas que usan este perfil.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Dispositivo fijado';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Ningún dispositivo conocido anuncia los proveedores que este perfil usa. Abre la configuración de nodos de sincronización en el dispositivo destino.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Las entradas de audio sincronizadas no se transcriben automáticamente cuando ningún dispositivo está fijado.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Sin fijar (sin auto-disparador)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix =>
+      ' (este dispositivo)';
 
   @override
   String get inferenceProfileSaveButton => 'Guardar';
@@ -5915,6 +5915,18 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get settingsSyncNodeProfileCapabilitiesLabel =>
       'Capacidades de IA detectadas';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (local)';
 
   @override
   String get settingsSyncNodeProfileDisplayNameHelper =>
