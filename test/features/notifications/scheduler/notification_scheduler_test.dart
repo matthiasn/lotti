@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
@@ -182,6 +183,67 @@ void main() {
         );
       }
     });
+
+    test('cancel cancels by FNV-derived os notification id', () async {
+      await scheduler.cancel('cancel-target');
+
+      verify(
+        () => notificationService.cancelNotification(
+          NotificationScheduler.notificationIdFor('cancel-target'),
+        ),
+      ).called(1);
+    });
+
+    test('reconcile short-circuits when synced alerts flag is off', () async {
+      _stubFlag(journalDb, enabled: false);
+      await notificationsDb.upsertNotification(
+        _notification(
+          id: 'reconcile-skip',
+          scheduledFor: DateTime.utc(2026, 5, 17, 6),
+        ),
+      );
+
+      await scheduler.reconcile(now: DateTime.utc(2026, 5, 17, 10));
+
+      verifyNever(
+        () => notificationService.showNotificationNow(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+      verifyNever(
+        () => notificationService.scheduleNotificationAt(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notifyAt: any(named: 'notifyAt'),
+          notificationId: any(named: 'notificationId'),
+          showOnMobile: any(named: 'showOnMobile'),
+          showOnDesktop: any(named: 'showOnDesktop'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      );
+      verifyNever(() => notificationService.cancelNotification(any()));
+    });
+
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 64),
+    ).test(
+      'notificationIdFor is deterministic and a positive 31-bit int',
+      (
+        id,
+      ) {
+        final hash = NotificationScheduler.notificationIdFor(id);
+        expect(hash, NotificationScheduler.notificationIdFor(id));
+        expect(hash, greaterThanOrEqualTo(0));
+        expect(hash, lessThanOrEqualTo(0x7fffffff));
+      },
+      tags: 'glados',
+    );
 
     test(
       'reconcile schedules every active due and upcoming notification',
