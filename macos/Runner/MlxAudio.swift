@@ -60,7 +60,11 @@ private actor MlxAudioAsyncSemaphore {
 
         let id = UUID()
         try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
+            // Xcode 26 SDK can no longer infer T from the closure body that
+            // stores the continuation in `waiters`. Pin the result type
+            // explicitly so the call resolves without an inference failure.
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<Void, Error>) in
                 if Task.isCancelled {
                     continuation.resume(throwing: CancellationError())
                 } else {
