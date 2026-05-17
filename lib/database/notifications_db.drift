@@ -19,8 +19,12 @@ CREATE TABLE notifications (
 
 CREATE INDEX notifications_scheduled_for_idx ON notifications(scheduled_for);
 CREATE INDEX notifications_linked_idx ON notifications(linked_entity_id);
+-- Mirrors dueNow / upcoming / unseenCount filters: pending rows are
+-- (seen_at IS NULL AND acted_on_at IS NULL AND deleted_at IS NULL), ordered
+-- by scheduled_for. Putting acted_on_at in the index lets SQLite use it as a
+-- covering filter for both schedulable lookups and the unseen badge count.
 CREATE INDEX notifications_pending_idx
-  ON notifications(seen_at, deleted_at, scheduled_for);
+  ON notifications(seen_at, acted_on_at, deleted_at, scheduled_for);
 
 /* Queries ----------------------------------------------------- */
 

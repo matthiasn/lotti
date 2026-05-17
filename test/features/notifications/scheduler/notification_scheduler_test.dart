@@ -144,6 +144,10 @@ void main() {
           enabled: true,
           entity: _notification(id: 'deleted-id', deletedAt: now),
         ),
+        (
+          enabled: true,
+          entity: _notification(id: 'acted-id', actedOnAt: now),
+        ),
       ];
 
       for (final scenario in scenarios) {
@@ -407,6 +411,7 @@ NotificationEntity _notification({
   String linkedTaskId = 'task-id',
   DateTime? scheduledFor,
   DateTime? seenAt,
+  DateTime? actedOnAt,
   DateTime? deletedAt,
 }) {
   final createdAt = DateTime.utc(2026, 5, 17, 8);
@@ -417,6 +422,7 @@ NotificationEntity _notification({
       updatedAt: createdAt,
       scheduledFor: scheduledFor ?? DateTime.utc(2026, 5, 17, 12),
       seenAt: seenAt,
+      actedOnAt: actedOnAt,
       deletedAt: deletedAt,
       vectorClock: const VectorClock({'host': 1}),
       originatingHostId: 'host',

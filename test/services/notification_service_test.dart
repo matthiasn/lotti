@@ -1,20 +1,15 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/utils/consts.dart';
-import 'package:mocktail/mocktail.dart';
 
-import '../mocks/mocks.dart';
-
-const MethodChannel _kPluginChannel = MethodChannel(
-  'dexterous.com/flutter/local_notifications',
-);
+// NOTE: scheduleNotificationAt / showNotificationNow can't be tested here
+// because constructing NotificationService eagerly calls
+// `flutterLocalNotificationsPlugin.initialize` which requires a registered
+// platform-specific implementation. The plugin's async error never propagates
+// through the constructor's synchronous try/catch, so flutter_test sees an
+// unhandled exception. The same limitation already blocks tests for the
+// legacy `show` / `scheduleNotification` / `updateBadge` methods.
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

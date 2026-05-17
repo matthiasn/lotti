@@ -45,7 +45,10 @@ class NotificationScheduler {
     final enabled = await _journalDb.getConfigFlag(enableSyncedAlertsFlag);
     if (!enabled ||
         entity.meta.deletedAt != null ||
-        entity.meta.seenAt != null) {
+        entity.meta.seenAt != null ||
+        entity.meta.actedOnAt != null) {
+      // Match the dueNow/upcoming queries: rows acted on (regardless of seen
+      // state) are no longer schedulable, so cancel any stale OS-level alert.
       await _notificationService.cancelNotification(notificationId);
       return;
     }

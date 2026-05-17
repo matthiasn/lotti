@@ -802,7 +802,7 @@ abstract class _$NotificationsDb extends GeneratedDatabase {
   );
   late final Index notificationsPendingIdx = Index(
     'notifications_pending_idx',
-    'CREATE INDEX notifications_pending_idx ON notifications (seen_at, deleted_at, scheduled_for)',
+    'CREATE INDEX notifications_pending_idx ON notifications (seen_at, acted_on_at, deleted_at, scheduled_for)',
   );
   Selectable<NotificationDbEntity> notificationRowById(String id) {
     return customSelect(

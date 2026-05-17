@@ -132,21 +132,29 @@ class NotificationsDb extends _$NotificationsDb {
     });
   }
 
+  // Keyset pagination over the `id` primary key. `LIMIT/OFFSET` would re-scan
+  // the first N rows on every page (quadratic for large tables); seeking by
+  // `id > :lastId` keeps each page O(batchSize) using the PK index.
   Stream<List<({String id, Map<String, int>? vectorClock})>>
   streamNotificationsWithVectorClock({int batchSize = 1000}) async* {
-    var offset = 0;
+    String? lastId;
 
     while (true) {
       final rows = await customSelect(
-        'SELECT id, vector_clock FROM notifications '
-        'ORDER BY id LIMIT ? OFFSET ?',
-        variables: [Variable<int>(batchSize), Variable<int>(offset)],
+        lastId == null
+            ? 'SELECT id, vector_clock FROM notifications '
+                  'ORDER BY id LIMIT ?'
+            : 'SELECT id, vector_clock FROM notifications '
+                  'WHERE id > ? ORDER BY id LIMIT ?',
+        variables: lastId == null
+            ? [Variable<int>(batchSize)]
+            : [Variable<String>(lastId), Variable<int>(batchSize)],
         readsFrom: {notifications},
       ).get();
 
       if (rows.isEmpty) break;
 
-      yield rows
+      final batch = rows
           .map(
             (row) => (
               id: row.read<String>('id'),
@@ -156,7 +164,9 @@ class NotificationsDb extends _$NotificationsDb {
             ),
           )
           .toList();
-      offset += batchSize;
+      yield batch;
+      lastId = batch.last.id;
+      if (batch.length < batchSize) break;
     }
   }
 
