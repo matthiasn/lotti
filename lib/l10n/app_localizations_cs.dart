@@ -4650,10 +4650,11 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'upozornění',
-      one: 'upozornění',
+      other: 'Oznámení, $count nepřečtených upozornění',
+      few: 'Oznámení, $count nepřečtená upozornění',
+      one: 'Oznámení, 1 nepřečtené upozornění',
     );
-    return 'Oznámení, $count nepřečtených $_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -4667,6 +4668,22 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get notificationInboxTitle => 'Oznámení';
+
+  @override
+  String get notificationSuggestionAttentionBodyFallback =>
+      'Otevři úkol a zkontroluj jej.';
+
+  @override
+  String notificationSuggestionAttentionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count návrhů potřebuje tvou pozornost',
+      few: '$count návrhy potřebují tvou pozornost',
+      one: '1 návrh potřebuje tvou pozornost',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get outboxMonitorAttachmentLabel => 'Příloha';

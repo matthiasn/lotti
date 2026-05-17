@@ -2123,6 +2123,15 @@
   "notificationInboxEmpty": "Estás al día.",
   "notificationInboxError": "No se pudieron cargar las notificaciones.",
   "notificationInboxTitle": "Notificaciones",
+  "notificationSuggestionAttentionBodyFallback": "Abre la tarea para revisarla.",
+  "notificationSuggestionAttentionTitle": "{count, plural, =1{1 sugerencia necesita tu atención} other{{count} sugerencias necesitan tu atención}}",
+  "@notificationSuggestionAttentionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "outboxMonitorAttachmentLabel": "Adjunto",
   "outboxMonitorDelete": "eliminar",
   "outboxMonitorDeleteConfirmLabel": "Eliminar",

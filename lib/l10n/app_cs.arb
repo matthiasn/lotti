@@ -1903,7 +1903,7 @@
   "noTasksToLink": "Žádné dostupné úkoly k propojení",
   "notificationBellEmptySemantics": "Oznámení, žádná nepřečtená upozornění",
   "notificationBellTooltip": "Oznámení",
-  "notificationBellUnseenSemantics": "Oznámení, {count} nepřečtených {count, plural, =1{upozornění} other{upozornění}}",
+  "notificationBellUnseenSemantics": "{count, plural, =1{Oznámení, 1 nepřečtené upozornění} few{Oznámení, {count} nepřečtená upozornění} other{Oznámení, {count} nepřečtených upozornění}}",
   "@notificationBellUnseenSemantics": {
     "placeholders": {
       "count": {
@@ -1915,6 +1915,15 @@
   "notificationInboxEmpty": "Máš všechno přečtené.",
   "notificationInboxError": "Oznámení se nepodařilo načíst.",
   "notificationInboxTitle": "Oznámení",
+  "notificationSuggestionAttentionBodyFallback": "Otevři úkol a zkontroluj jej.",
+  "notificationSuggestionAttentionTitle": "{count, plural, =1{1 návrh potřebuje tvou pozornost} few{{count} návrhy potřebují tvou pozornost} other{{count} návrhů potřebuje tvou pozornost}}",
+  "@notificationSuggestionAttentionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "outboxMonitorAttachmentLabel": "Příloha",
   "outboxMonitorDelete": "smazat",
   "outboxMonitorDeleteConfirmLabel": "Smazat",

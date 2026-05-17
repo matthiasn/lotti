@@ -4693,6 +4693,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationInboxTitle => 'Notificaciones';
 
   @override
+  String get notificationSuggestionAttentionBodyFallback =>
+      'Abre la tarea para revisarla.';
+
+  @override
+  String notificationSuggestionAttentionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sugerencias necesitan tu atención',
+      one: '1 sugerencia necesita tu atención',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Adjunto';
 
   @override

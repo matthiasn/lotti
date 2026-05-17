@@ -8044,6 +8044,18 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get notificationInboxTitle;
 
+  /// No description provided for @notificationSuggestionAttentionBodyFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the task to review.'**
+  String get notificationSuggestionAttentionBodyFallback;
+
+  /// No description provided for @notificationSuggestionAttentionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 suggestion needs your attention} other{{count} suggestions need your attention}}'**
+  String notificationSuggestionAttentionTitle(int count);
+
   /// No description provided for @outboxMonitorAttachmentLabel.
   ///
   /// In en, this message translates to:

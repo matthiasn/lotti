@@ -277,6 +277,112 @@ void main() {
       ).called(1);
     },
   );
+
+  testWidgets(
+    'markActedOn failure is reported and navigation still proceeds',
+    (tester) async {
+      final navService = MockNavService();
+      if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
+      getIt.registerSingleton<NavService>(navService);
+      addTearDown(() {
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+      });
+      when(
+        () => navService.pushDesktopTaskDetail(any()),
+      ).thenAnswer((_) {});
+
+      when(
+        () => repository.markActedOn(any()),
+      ).thenThrow(StateError('mark-acted-boom'));
+
+      final entity = _makeNotification(
+        id: 'mark-failure',
+        title: 'Will fail',
+        body: '',
+      );
+
+      final errors = <FlutterErrorDetails>[];
+      final previous = FlutterError.onError;
+      FlutterError.onError = errors.add;
+      addTearDown(() => FlutterError.onError = previous);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const NotificationBell(),
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+          overrides: [
+            unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+            inboxNotificationsProvider.overrideWith(
+              () => _StaticInbox([entity]),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Will fail'));
+      await tester.pump();
+
+      verify(() => repository.markActedOn('mark-failure')).called(1);
+      // Navigation runs even when markActedOn throws.
+      verify(
+        () => navService.pushDesktopTaskDetail('task-mark-failure'),
+      ).called(1);
+      // FlutterError.reportError should have been called with the exception.
+      expect(
+        errors.where((e) => e.exception.toString().contains('mark-acted-boom')),
+        isNotEmpty,
+      );
+    },
+  );
+
+  testWidgets(
+    'retract failure is reported and the popover stays open',
+    (tester) async {
+      when(
+        () => repository.retract(any()),
+      ).thenThrow(StateError('retract-boom'));
+
+      final entity = _makeNotification(
+        id: 'retract-failure',
+        title: 'Cannot dismiss',
+        body: '',
+      );
+
+      final errors = <FlutterErrorDetails>[];
+      final previous = FlutterError.onError;
+      FlutterError.onError = errors.add;
+      addTearDown(() => FlutterError.onError = previous);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const NotificationBell(),
+          overrides: [
+            unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+            inboxNotificationsProvider.overrideWith(
+              () => _StaticInbox([entity]),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
+
+      verify(() => repository.retract('retract-failure')).called(1);
+      expect(
+        errors.where((e) => e.exception.toString().contains('retract-boom')),
+        isNotEmpty,
+      );
+      // Popover must still be present — the row text remains findable.
+      expect(find.text('Cannot dismiss'), findsOneWidget);
+    },
+  );
 }
 
 NotificationEntity _makeNotification({

@@ -2111,7 +2111,7 @@
   "noTasksToLink": "Nu sunt sarcini disponibile pentru a fi legate",
   "notificationBellEmptySemantics": "Notificări, nicio alertă necitită",
   "notificationBellTooltip": "Notificări",
-  "notificationBellUnseenSemantics": "Notificări, {count} {count, plural, =1{alertă necitită} other{alerte necitite}}",
+  "notificationBellUnseenSemantics": "Notificări, {count, plural, =1{1 alertă necitită} few{{count} alerte necitite} other{{count} de alerte necitite}}",
   "@notificationBellUnseenSemantics": {
     "placeholders": {
       "count": {
@@ -2123,6 +2123,15 @@
   "notificationInboxEmpty": "Sunteți la zi.",
   "notificationInboxError": "Nu s-au putut încărca notificările.",
   "notificationInboxTitle": "Notificări",
+  "notificationSuggestionAttentionBodyFallback": "Deschideți sarcina pentru a o revizui.",
+  "notificationSuggestionAttentionTitle": "{count, plural, =1{1 sugestie necesită atenția dvs.} few{{count} sugestii necesită atenția dvs.} other{{count} de sugestii necesită atenția dvs.}}",
+  "@notificationSuggestionAttentionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "outboxMonitorAttachmentLabel": "Atașament",
   "outboxMonitorDelete": "șterge",
   "outboxMonitorDeleteConfirmLabel": "Șterge",

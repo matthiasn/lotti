@@ -2123,6 +2123,15 @@
   "notificationInboxEmpty": "Tu es à jour.",
   "notificationInboxError": "Impossible de charger les notifications.",
   "notificationInboxTitle": "Notifications",
+  "notificationSuggestionAttentionBodyFallback": "Ouvre la tâche pour la passer en revue.",
+  "notificationSuggestionAttentionTitle": "{count, plural, =1{1 suggestion a besoin de ton attention} other{{count} suggestions ont besoin de ton attention}}",
+  "@notificationSuggestionAttentionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "outboxMonitorAttachmentLabel": "Pièce jointe",
   "outboxMonitorDelete": "supprimer",
   "outboxMonitorDeleteConfirmLabel": "Supprimer",

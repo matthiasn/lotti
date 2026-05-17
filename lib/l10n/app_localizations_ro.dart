@@ -4667,10 +4667,11 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'alerte necitite',
-      one: 'alertă necitită',
+      other: '$count de alerte necitite',
+      few: '$count alerte necitite',
+      one: '1 alertă necitită',
     );
-    return 'Notificări, $count $_temp0';
+    return 'Notificări, $_temp0';
   }
 
   @override
@@ -4684,6 +4685,22 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get notificationInboxTitle => 'Notificări';
+
+  @override
+  String get notificationSuggestionAttentionBodyFallback =>
+      'Deschideți sarcina pentru a o revizui.';
+
+  @override
+  String notificationSuggestionAttentionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sugestii necesită atenția dvs.',
+      few: '$count sugestii necesită atenția dvs.',
+      one: '1 sugestie necesită atenția dvs.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get outboxMonitorAttachmentLabel => 'Atașament';

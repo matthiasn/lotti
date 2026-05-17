@@ -2316,6 +2316,15 @@
   "notificationInboxEmpty": "You're all caught up.",
   "notificationInboxError": "Couldn't load notifications.",
   "notificationInboxTitle": "Notifications",
+  "notificationSuggestionAttentionBodyFallback": "Open the task to review.",
+  "notificationSuggestionAttentionTitle": "{count, plural, =1{1 suggestion needs your attention} other{{count} suggestions need your attention}}",
+  "@notificationSuggestionAttentionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "outboxMonitorAttachmentLabel": "Attachment",
   "outboxMonitorDelete": "delete",
   "outboxMonitorDeleteConfirmLabel": "Delete",

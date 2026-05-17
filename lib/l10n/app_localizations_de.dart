@@ -4624,7 +4624,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notificationBellEmptySemantics =>
-      'Mitteilungen, keine ungelesenen Hinweise';
+      'Mitteilungen, keine ungelesenen Mitteilungen';
 
   @override
   String get notificationBellTooltip => 'Mitteilungen';
@@ -4652,6 +4652,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notificationInboxTitle => 'Mitteilungen';
+
+  @override
+  String get notificationSuggestionAttentionBodyFallback =>
+      'Öffne die Aufgabe zur Prüfung.';
+
+  @override
+  String notificationSuggestionAttentionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Vorschläge brauchen deine Aufmerksamkeit',
+      one: '1 Vorschlag braucht deine Aufmerksamkeit',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get outboxMonitorAttachmentLabel => 'Anhang';

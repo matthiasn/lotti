@@ -128,7 +128,12 @@ class _UnseenBadge extends StatelessWidget {
           label,
           textAlign: TextAlign.center,
           style: tokens.typography.styles.others.caption.copyWith(
-            color: Colors.white,
+            // Material's onError pairs with the alert.error.defaultColor
+            // surface this badge sits on. No explicit "on-color" token exists
+            // in the generated design-system palette yet (see PR 2893's
+            // learnings on incomplete token coverage), so the theme value is
+            // the most appropriate substitute for a hardcoded Colors.white.
+            color: Theme.of(context).colorScheme.onError,
             height: 1,
             fontWeight: tokens.typography.weight.semiBold,
           ),
@@ -170,6 +175,13 @@ class _InboxPanel extends ConsumerWidget {
               if (entries.isEmpty) {
                 return _InboxEmptyState(text: messages.notificationInboxEmpty);
               }
+              // MenuAnchor measures its panel via intrinsic-height layout,
+              // which rejects shrink-wrapping viewports — so a plain
+              // SingleChildScrollView + Column is the right primitive here.
+              // The inbox is bounded in practice (a handful of alerts), so
+              // ListView.builder's lazy advantage does not apply, but each
+              // row still gets a ValueKey so reordering preserves widget
+              // state when the stream pushes incremental updates.
               return ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 360),
                 child: SingleChildScrollView(
@@ -178,6 +190,7 @@ class _InboxPanel extends ConsumerWidget {
                     children: [
                       for (final entry in entries)
                         _InboxRow(
+                          key: ValueKey(entry.id),
                           entity: entry,
                           onDismiss: onDismiss,
                         ),
@@ -233,6 +246,7 @@ class _InboxRow extends StatelessWidget {
   const _InboxRow({
     required this.entity,
     required this.onDismiss,
+    super.key,
   });
 
   final NotificationEntity entity;
@@ -289,6 +303,9 @@ class _InboxRow extends StatelessWidget {
               ),
             ),
             IconButton(
+              // Compact density keeps the row tight; the default 48x48 hit
+              // box dwarfs the two-line text content otherwise.
+              visualDensity: VisualDensity.compact,
               tooltip: messages.notificationInboxDismiss,
               icon: Icon(
                 Icons.close_rounded,
@@ -304,14 +321,35 @@ class _InboxRow extends StatelessWidget {
   }
 
   Future<void> _handleTap(BuildContext context, String linkedId) async {
-    await getIt<NotificationRepository>().markActedOn(entity.id);
+    // Dismiss the popover before awaiting the database write so navigation
+    // feels instantaneous — the markActedOn round-trip can take tens of ms
+    // on cold reads. The inbox stream will catch up when the write lands.
     onDismiss();
-    if (!context.mounted) return;
-    openLinkedTaskDetail(context: context, taskId: linkedId);
+    final navigatorContext = context;
+    try {
+      await getIt<NotificationRepository>().markActedOn(entity.id);
+    } catch (error, stackTrace) {
+      // Surface the failure to the zone error handler so it lands in the
+      // logging pipeline, but keep navigating — the user already committed
+      // to opening the task.
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: error, stack: stackTrace),
+      );
+    }
+    if (!navigatorContext.mounted) return;
+    openLinkedTaskDetail(context: navigatorContext, taskId: linkedId);
   }
 
   Future<void> _handleRetract(BuildContext context) async {
-    await getIt<NotificationRepository>().retract(entity.id);
+    try {
+      await getIt<NotificationRepository>().retract(entity.id);
+    } catch (error, stackTrace) {
+      // Swallow the failure: the popover stays open and the user can retry.
+      // Reporting keeps the error visible in crash logs without bubbling.
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: error, stack: stackTrace),
+      );
+    }
     // Keep the popover open so the user can dismiss multiple in a row;
     // the inbox stream removes the row automatically.
   }

@@ -37,6 +37,19 @@ class NotificationRepository {
   final DateTime Function() _now;
   final Uuid _uuid = const Uuid();
 
+  /// Creates (or refreshes) a `taskSuggestion` row in the synced inbox.
+  ///
+  /// [linkedTaskId] is the task the user opens when they tap the row. By
+  /// default the inbox row id is derived from this so repeated creates for
+  /// the same task update one row in place — but caller-supplied [idSeed]
+  /// overrides the derivation. This matters because `markActedOn` /
+  /// `retract` set monotonic, one-way fields on the meta and the merge
+  /// keeps the earliest non-null timestamp (the sync convergence
+  /// guarantee). Once a notification is acted-on or retracted, the same id
+  /// can never re-surface in the inbox. Producers that have a natural
+  /// "wave" boundary — e.g. a fresh agent change set after the user
+  /// resolved the previous one — should pass that wave's stable id as the
+  /// seed so each wave gets its own inbox row.
   Future<NotificationEntity?> createTaskSuggestion({
     required String linkedTaskId,
     required int suggestionCount,
@@ -44,11 +57,14 @@ class NotificationRepository {
     required String body,
     DateTime? scheduledFor,
     String? category,
+    String? idSeed,
   }) {
     final now = _now();
     final placeholder = NotificationEntity.taskSuggestion(
       meta: NotificationMeta(
-        id: notificationIdForTaskSuggestion(linkedTaskId),
+        id: idSeed == null
+            ? notificationIdForTaskSuggestion(linkedTaskId)
+            : notificationIdForTaskSuggestion(idSeed),
         createdAt: now,
         updatedAt: now,
         scheduledFor: scheduledFor ?? now,
