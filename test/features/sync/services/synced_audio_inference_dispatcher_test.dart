@@ -11,13 +11,13 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
-import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 const _kLocalHost = 'local-host';
@@ -336,10 +336,7 @@ class _Bench {
 }
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(AutomationResult.notHandled);
-    registerFallbackValue(<String>{});
-  });
+  setUpAll(registerAllFallbackValues);
 
   late _Bench bench;
 

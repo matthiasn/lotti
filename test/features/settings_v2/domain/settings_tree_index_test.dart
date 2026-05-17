@@ -391,12 +391,12 @@ void main() {
 
     test('returns null for ids gated off by a flag', () {
       final index = SettingsTreeIndex.build(_tree(enableMatrix: false));
-      // Matrix-only leaves disappear …
+      // Sync is all-or-nothing: every Sync id disappears when the
+      // matrix flag is off, including the branch itself and conflicts.
+      expect(index.findById('sync'), isNull);
       expect(index.findById('sync/backfill'), isNull);
       expect(index.findById('sync/matrix-maintenance'), isNull);
-      // … but the Sync branch + the always-on conflicts leaf survive.
-      expect(index.findById('sync'), isNotNull);
-      expect(index.findById('sync/conflicts'), isNotNull);
+      expect(index.findById('sync/conflicts'), isNull);
     });
 
     test('empty tree input produces an empty index', () {
@@ -515,9 +515,8 @@ void main() {
 
     test('single missing id invalidates the whole path', () {
       final index = SettingsTreeIndex.build(_tree(enableMatrix: false));
-      // `sync/backfill` is gated off by Matrix; `sync` itself stays
-      // (the conflicts leaf is always-visible) but the leaf below it
-      // is gone, so any path that touches `sync/backfill` is invalid.
+      // With Matrix off the whole Sync branch (including conflicts)
+      // disappears, so any path that touches a Sync id is invalid.
       expect(index.isValidPath(['sync', 'sync/backfill']), isFalse);
       expect(index.isValidPath(['sync/backfill']), isFalse);
     });

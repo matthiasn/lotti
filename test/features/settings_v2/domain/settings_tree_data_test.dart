@@ -97,7 +97,7 @@ void main() {
       },
     );
 
-    test('AI, Sync, and Advanced branches are unconditional', () {
+    test('AI and Advanced branches are unconditional', () {
       final ids = _ids(
         _tree(
           enableHabits: false,
@@ -111,8 +111,6 @@ void main() {
         containsAll(<String>[
           'ai',
           'ai/profiles',
-          'sync',
-          'sync/conflicts',
           'advanced',
           'advanced/logging',
           'advanced/maintenance',
@@ -122,13 +120,17 @@ void main() {
     });
 
     test(
-      'sync/conflicts stays reachable regardless of enableMatrix',
+      'sync branch and all its leaves disappear when enableMatrix is off',
       () {
-        // Conflicts can predate or outlive Matrix sync (legacy data,
-        // local-only divergence). The leaf must remain reachable so
-        // turning Matrix off does not strand existing conflicts.
+        // Sync is now an all-or-nothing surface — flag on = full
+        // sync tree (including conflicts); flag off = no Sync entry
+        // at all, mirroring the mobile root list behaviour.
         expect(_ids(_tree()), contains('sync/conflicts'));
-        expect(_ids(_tree(enableMatrix: false)), contains('sync/conflicts'));
+        expect(_ids(_tree(enableMatrix: false)), isNot(contains('sync')));
+        expect(
+          _ids(_tree(enableMatrix: false)),
+          isNot(contains('sync/conflicts')),
+        );
       },
     );
   });
@@ -255,12 +257,13 @@ void main() {
   });
 
   group('buildSettingsTree — enableMatrix', () {
-    test('drops only the matrix-specific leaves when off; keeps conflicts', () {
+    test('drops the entire Sync branch when off', () {
       final ids = _ids(_tree(enableMatrix: false));
-      // Sync branch and conflicts leaf remain reachable.
-      expect(ids, contains('sync'));
-      expect(ids, contains('sync/conflicts'));
-      // Matrix-only surfaces are hidden.
+      // The whole Sync surface is hidden: branch + every leaf,
+      // including conflicts. Sync is either on or off.
+      expect(ids, isNot(contains('sync')));
+      expect(ids, isNot(contains('sync/node-profile')));
+      expect(ids, isNot(contains('sync/conflicts')));
       expect(ids, isNot(contains('sync/backfill')));
       expect(ids, isNot(contains('sync/stats')));
       expect(ids, isNot(contains('sync/outbox')));
@@ -269,7 +272,7 @@ void main() {
 
     test(
       'emits Sync with exactly node-profile/backfill/stats/outbox/conflicts/ '
-      'matrix-maintenance',
+      'matrix-maintenance when on',
       () {
         final sync = _tree().firstWhere((n) => n.id == 'sync');
         expect(sync.hasChildren, isTrue);
@@ -283,13 +286,6 @@ void main() {
         ]);
       },
     );
-
-    test('with Matrix off, Sync collapses to just the conflicts leaf', () {
-      final sync = _tree(
-        enableMatrix: false,
-      ).firstWhere((n) => n.id == 'sync');
-      expect(sync.children!.map((n) => n.id).toList(), ['sync/conflicts']);
-    });
   });
 
   group('buildSettingsTree — panel assignments', () {
@@ -425,10 +421,8 @@ void main() {
       expect(ids, [
         'ai',
         'agents',
-        // Sync branch stays so the conflicts leaf remains reachable —
-        // and sits directly below the AI/Agents-family slot regardless
-        // of which optional taxonomy branches are gated off.
-        'sync',
+        // Sync branch is gated by enableMatrix — flag off drops the
+        // entire Sync surface, matching the mobile root list.
         'definitions',
         'theming',
         'advanced',
@@ -436,18 +430,16 @@ void main() {
     });
 
     test(
-      'sync flag independence: toggling Matrix only changes Sync children, '
-      'not the root order',
+      'matrix flag toggles the Sync branch as a whole; other roots stay put',
       () {
-        final on = _tree();
-        final off = _tree(enableMatrix: false);
+        final on = _tree().map((n) => n.id).toList();
+        final off = _tree(enableMatrix: false).map((n) => n.id).toList();
 
-        // Root order is preserved across the toggle; only the Sync
-        // branch's children differ.
-        expect(
-          off.map((n) => n.id).toList(),
-          on.map((n) => n.id).toList(),
-        );
+        // Sync appears only in the on-tree; every other root entry
+        // shows up in both, in the same order.
+        expect(on.contains('sync'), isTrue);
+        expect(off.contains('sync'), isFalse);
+        expect(off, on.where((id) => id != 'sync').toList());
       },
     );
   });

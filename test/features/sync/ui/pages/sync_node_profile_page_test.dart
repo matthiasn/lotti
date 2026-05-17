@@ -168,6 +168,10 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextFormField), '  New Name  ');
+      // Pump so the controller listener's setState rebuilds the
+      // TextButton with `onPressed` populated — without this the tap
+      // would land on a still-disabled button.
+      await tester.pump();
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
@@ -216,6 +220,83 @@ void main() {
           appVersion: any(named: 'appVersion'),
         ),
       );
+    },
+  );
+
+  testWidgets(
+    'Save button is disabled until the display name actually changes',
+    (tester) async {
+      await tester.pumpWidget(
+        harness(self: _self(), directory: [_self()]),
+      );
+      await tester.pumpAndSettle();
+
+      TextButton saveButton() => tester.widget<TextButton>(
+        find.ancestor(
+          of: find.text('Save'),
+          matching: find.byType(TextButton),
+        ),
+      );
+
+      // Seeded with the self display name → no diff → button disabled.
+      expect(saveButton().onPressed, isNull);
+
+      // User types a different name → button enables.
+      await tester.enterText(find.byType(TextFormField), 'New Name');
+      await tester.pump();
+      expect(saveButton().onPressed, isNotNull);
+
+      // User reverts (including surrounding whitespace, which is trimmed
+      // before comparison) → button disables again.
+      await tester.enterText(find.byType(TextFormField), '  Studio Mac  ');
+      await tester.pump();
+      expect(saveButton().onPressed, isNull);
+    },
+  );
+
+  testWidgets(
+    'Save button stays disabled when the trimmed input is empty',
+    (tester) async {
+      await tester.pumpWidget(
+        harness(self: _self(), directory: [_self()]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), '   ');
+      await tester.pump();
+
+      final saveButton = tester.widget<TextButton>(
+        find.ancestor(
+          of: find.text('Save'),
+          matching: find.byType(TextButton),
+        ),
+      );
+      expect(saveButton.onPressed, isNull);
+    },
+  );
+
+  testWidgets(
+    'Save button disables again after a successful save (clean state)',
+    (tester) async {
+      await tester.pumpWidget(
+        harness(self: _self(), directory: [_self()]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'Renamed');
+      await tester.pump();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      final saveButton = tester.widget<TextButton>(
+        find.ancestor(
+          of: find.text('Save'),
+          matching: find.byType(TextButton),
+        ),
+      );
+      // After saving, the seeded baseline updates to the new value so
+      // the button no longer reads as dirty.
+      expect(saveButton.onPressed, isNull);
     },
   );
 

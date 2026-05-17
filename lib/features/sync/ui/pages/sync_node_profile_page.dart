@@ -30,11 +30,26 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
   final _nameController = TextEditingController();
   bool _isSaving = false;
   String? _lastSeededFromHostId;
+  String _seededName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild on every keystroke so the Save button can reflect whether
+    // the trimmed text differs from the seeded self name.
+    _nameController.addListener(_handleNameChanged);
+  }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _nameController
+      ..removeListener(_handleNameChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _handleNameChanged() {
+    if (mounted) setState(() {});
   }
 
   void _seedName(SyncNodeProfile? self) {
@@ -43,7 +58,16 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
     if (self == null) return;
     if (_lastSeededFromHostId == self.hostId) return;
     _lastSeededFromHostId = self.hostId;
+    _seededName = self.displayName;
     _nameController.text = self.displayName;
+  }
+
+  bool get _hasUnsavedChanges {
+    // No self profile loaded yet → nothing to compare against, no save.
+    if (_lastSeededFromHostId == null) return false;
+    final trimmed = _nameController.text.trim();
+    if (trimmed.isEmpty) return false;
+    return trimmed != _seededName.trim();
   }
 
   Future<void> _save() async {
@@ -52,9 +76,9 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
     setState(() => _isSaving = true);
     try {
       final broadcaster = getIt<SyncNodeProfileBroadcaster>();
-      await broadcaster.broadcastIfChanged(
-        displayNameOverride: _nameController.text.trim(),
-      );
+      final newName = _nameController.text.trim();
+      await broadcaster.broadcastIfChanged(displayNameOverride: newName);
+      _seededName = newName;
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -83,7 +107,7 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
         title: Text(messages.settingsSyncNodeProfileTitle),
         actions: [
           TextButton(
-            onPressed: _isSaving ? null : _save,
+            onPressed: (_isSaving || !_hasUnsavedChanges) ? null : _save,
             child: Text(messages.settingsSyncNodeProfileSaveButton),
           ),
         ],
