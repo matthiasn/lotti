@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -264,6 +266,68 @@ void main() {
 
         final nodes = await second.listKnownNodes();
         expect(nodes.map((p) => p.hostId), containsAll(['peer-1', 'peer-2']));
+      },
+    );
+  });
+
+  group('corrupted persisted state — fail-soft decode', () {
+    test(
+      'getSelf returns null when the stored JSON is not a profile map '
+      '(forward-compat / hand-corruption)',
+      () async {
+        // Hand-write a non-object value into the slot the repo reads.
+        await settingsDb.saveSettingsItem(
+          SyncNodeProfileRepository.selfKey,
+          '"not-a-profile"',
+        );
+
+        expect(await repo.getSelf(), isNull);
+      },
+    );
+
+    test(
+      'getSelf returns null when the stored JSON is malformed',
+      () async {
+        await settingsDb.saveSettingsItem(
+          SyncNodeProfileRepository.selfKey,
+          '{not valid json',
+        );
+
+        expect(await repo.getSelf(), isNull);
+      },
+    );
+
+    test(
+      'listKnownNodes drops corrupted directory rows and keeps the readable '
+      'ones — one bad row must not break the pinning UI',
+      () async {
+        // Mix a corrupted profile alongside a valid one. The repo should
+        // surface the valid one and silently skip the corrupted one.
+        final validProfile = makeProfile(hostId: 'good', updatedAt: t0);
+        final directoryJson = jsonEncode({
+          'good': validProfile.toJson(),
+          'bad': {'this': 'is not a valid profile shape'},
+        });
+        await settingsDb.saveSettingsItem(
+          SyncNodeProfileRepository.directoryKey,
+          directoryJson,
+        );
+
+        final nodes = await repo.listKnownNodes();
+        expect(nodes, hasLength(1));
+        expect(nodes.single.hostId, 'good');
+      },
+    );
+
+    test(
+      'listKnownNodes returns empty when the directory JSON is not an object',
+      () async {
+        await settingsDb.saveSettingsItem(
+          SyncNodeProfileRepository.directoryKey,
+          '["not", "an", "object"]',
+        );
+
+        expect(await repo.listKnownNodes(), isEmpty);
       },
     );
   });

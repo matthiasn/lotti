@@ -195,4 +195,62 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'Save with an empty display-name field surfaces the validator and '
+    'does NOT invoke the broadcaster',
+    (tester) async {
+      await tester.pumpWidget(
+        harness(self: _self(), directory: [_self()]),
+      );
+      await tester.pumpAndSettle();
+
+      // Clear the seeded display name; this should fail validation on save.
+      await tester.enterText(find.byType(TextFormField), '   ');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => broadcaster.broadcastIfChanged(
+          displayNameOverride: any(named: 'displayNameOverride'),
+          appVersion: any(named: 'appVersion'),
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'renders the full capability palette including voxtral and whisper',
+    (tester) async {
+      await tester.pumpWidget(
+        harness(
+          self: _self(
+            capabilities: const [
+              NodeCapability.mlxAudio,
+              NodeCapability.ollamaLlm,
+              NodeCapability.voxtral,
+              NodeCapability.whisper,
+            ],
+          ),
+          directory: [
+            _self(
+              capabilities: const [
+                NodeCapability.mlxAudio,
+                NodeCapability.ollamaLlm,
+                NodeCapability.voxtral,
+                NodeCapability.whisper,
+              ],
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Chip), findsNWidgets(4));
+      expect(find.text('MLX Audio (local)'), findsOneWidget);
+      expect(find.text('Ollama LLM'), findsOneWidget);
+      expect(find.text('Voxtral (local)'), findsOneWidget);
+      expect(find.text('Whisper (local)'), findsOneWidget);
+    },
+  );
 }

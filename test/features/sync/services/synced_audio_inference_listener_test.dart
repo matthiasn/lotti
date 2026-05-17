@@ -146,4 +146,55 @@ void main() {
       });
     },
   );
+
+  test(
+    'stream errors are caught by the listener and do NOT terminate the '
+    'subscription — a dispatcher loop must survive a transient producer error',
+    () {
+      // Build a controllable error-emitting source instead of relying on
+      // UpdateNotifications (which doesn't expose addError).
+      fakeAsync((async) {
+        final errorSource = StreamController<Set<String>>.broadcast();
+        final errorDispatcher = _MockDispatcher();
+        when(() => errorDispatcher.maybeDispatch(any())).thenAnswer(
+          (_) async {},
+        );
+        // Wire a stand-in UpdateNotifications whose syncUpdateStream is the
+        // controllable source.
+        final faultyNotifications = _FaultySyncNotifications(errorSource);
+        final faultyListener = SyncedAudioInferenceListener(
+          updateNotifications: faultyNotifications,
+          dispatcher: errorDispatcher,
+        );
+
+        faultyListener.start();
+
+        errorSource.addError(StateError('upstream broke'));
+        async.flushMicrotasks();
+
+        errorSource.add({'audio-after-error'});
+        async.flushMicrotasks();
+
+        verify(
+          () => errorDispatcher.maybeDispatch('audio-after-error'),
+        ).called(1);
+
+        unawaited(faultyListener.dispose());
+        unawaited(errorSource.close());
+        async.flushMicrotasks();
+      });
+    },
+  );
+}
+
+/// Thin pass-through that exposes a caller-controlled `syncUpdateStream`
+/// while inheriting the rest of UpdateNotifications' behavior. Used to feed
+/// stream errors into the listener.
+class _FaultySyncNotifications extends UpdateNotifications {
+  _FaultySyncNotifications(this._source);
+
+  final StreamController<Set<String>> _source;
+
+  @override
+  Stream<Set<String>> get syncUpdateStream => _source.stream;
 }

@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -29,7 +30,7 @@ const _kSkillId = 'skill-1';
 final _kCreatedAt = DateTime.utc(2026, 3, 15, 12);
 
 class _Bench {
-  _Bench();
+  _Bench({this.domainLogger});
 
   final journalDb = MockJournalDb();
   final vectorClockService = MockVectorClockService();
@@ -39,6 +40,7 @@ class _Bench {
   final skillInferenceRunner = MockSkillInferenceRunner();
   final taskAgentService = MockTaskAgentService();
   final wakeOrchestrator = MockWakeOrchestrator();
+  final DomainLogger? domainLogger;
 
   late final dispatcher = SyncedAudioInferenceDispatcher(
     journalDb: journalDb,
@@ -49,6 +51,7 @@ class _Bench {
     skillInferenceRunner: skillInferenceRunner,
     taskAgentService: taskAgentService,
     wakeOrchestrator: wakeOrchestrator,
+    domainLogger: domainLogger,
   );
 
   /// Wires the happy path: an audio entry, linked task, resolved profile id,
@@ -613,6 +616,176 @@ void main() {
         await bench.dispatcher.maybeDispatch(_kAudioId);
         verifyNever(
           () => bench.wakeOrchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        );
+      },
+    );
+  });
+
+  group('error handling and rare guards', () {
+    test(
+      'maybeDispatch swallows an outer throw and logs it — the listener '
+      'loop must keep draining even when the dispatcher hits an unexpected '
+      'error path',
+      () async {
+        final logger = MockDomainLogger();
+        final bench2 = _Bench(domainLogger: logger);
+        // Force the very first DB read to throw — this lands outside any of
+        // the dispatcher's per-step catches and exercises the outer try in
+        // maybeDispatch.
+        when(
+          () => bench2.journalDb.journalEntityById(any()),
+        ).thenThrow(StateError('db unavailable'));
+        when(
+          () => logger.error(
+            any(),
+            any(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
+
+        await expectLater(
+          bench2.dispatcher.maybeDispatch(_kAudioId),
+          completes,
+        );
+
+        verify(
+          () => logger.error(
+            LogDomains.sync,
+            any(that: contains('threw on id=$_kAudioId')),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'skips with no fallback when the profile has multiple automated '
+      'transcription skills — ambiguous policies must not silently pick one',
+      () async {
+        bench.stubHappyPath();
+        // Override the profile config to carry two automated transcription
+        // skills. Both resolve to skills of type transcription — the
+        // dispatcher must refuse rather than guess.
+        const skillIdA = 'skill-A';
+        const skillIdB = 'skill-B';
+        final profile =
+            AiConfig.inferenceProfile(
+                  id: _kProfileId,
+                  name: 'Ambiguous',
+                  createdAt: _kCreatedAt,
+                  thinkingModelId: 'm-thinking',
+                  transcriptionModelId: 'm-transcribe',
+                  pinnedHostId: _kLocalHost,
+                  skillAssignments: const [
+                    SkillAssignment(skillId: skillIdA, automate: true),
+                    SkillAssignment(skillId: skillIdB, automate: true),
+                  ],
+                )
+                as AiConfigInferenceProfile;
+        when(
+          () => bench.aiConfigRepository.getConfigById(_kProfileId),
+        ).thenAnswer((_) async => profile);
+
+        AiConfigSkill mkSkill(String id) =>
+            AiConfig.skill(
+                  id: id,
+                  name: id,
+                  createdAt: _kCreatedAt,
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: const [Modality.audio],
+                  systemInstructions: 'sys',
+                  userInstructions: 'usr',
+                )
+                as AiConfigSkill;
+        when(
+          () => bench.aiConfigRepository.getConfigById(skillIdA),
+        ).thenAnswer((_) async => mkSkill(skillIdA));
+        when(
+          () => bench.aiConfigRepository.getConfigById(skillIdB),
+        ).thenAnswer((_) async => mkSkill(skillIdB));
+
+        await bench.dispatcher.maybeDispatch(_kAudioId);
+
+        verifyNever(
+          () => bench.skillInferenceRunner.runTranscription(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'skips when ProfileResolver.resolveByProfileId yields a profile with no '
+      'transcription provider — guards against the runner being called with '
+      'an unusable resolved profile',
+      () async {
+        bench.stubHappyPath();
+        when(
+          () => bench.profileResolver.resolveByProfileId(_kProfileId),
+        ).thenAnswer((_) async => null);
+
+        await bench.dispatcher.maybeDispatch(_kAudioId);
+
+        verifyNever(
+          () => bench.skillInferenceRunner.runTranscription(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'when a DomainLogger is wired, runner throws emit a structured error '
+      'and the dispatcher still completes without rethrowing',
+      () async {
+        final logger = MockDomainLogger();
+        final bench2 = _Bench(domainLogger: logger)
+          ..stubHappyPath(postTranscriptCount: 0);
+        when(
+          () => bench2.skillInferenceRunner.runTranscription(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+          ),
+        ).thenThrow(StateError('runner exploded'));
+        when(
+          () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
+        ).thenAnswer((_) {});
+        when(
+          () => logger.error(
+            any(),
+            any(),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
+
+        await bench2.dispatcher.maybeDispatch(_kAudioId);
+
+        verify(
+          () => logger.error(
+            LogDomains.sync,
+            any(that: contains('runTranscription threw for $_kAudioId')),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => bench2.wakeOrchestrator.enqueueManualWake(
             agentId: any(named: 'agentId'),
             reason: any(named: 'reason'),
             triggerTokens: any(named: 'triggerTokens'),

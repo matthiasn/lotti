@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -198,4 +199,86 @@ void main() {
     expect(probe.calls, 0);
     verifyNever(() => outboxService.enqueueMessage(any()));
   });
+
+  test(
+    'setDisplayName routes through broadcastIfChanged with the override and '
+    'persists the new name',
+    () async {
+      await broadcaster.setDisplayName('Studio Mac');
+
+      final self = await repo.getSelf();
+      expect(self?.displayName, 'Studio Mac');
+      verify(() => outboxService.enqueueMessage(any())).called(1);
+    },
+  );
+
+  test(
+    'with a DomainLogger wired, the issued-broadcast and skipped-unchanged '
+    'log paths fire on the matching control flow',
+    () async {
+      final logger = MockDomainLogger();
+      when(
+        () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
+      ).thenAnswer((_) {});
+
+      var tick = 0;
+      final loggingBroadcaster = SyncNodeProfileBroadcaster(
+        repository: repo,
+        probe: probe.probe,
+        vectorClockService: vectorClockService,
+        outboxService: outboxService,
+        domainLogger: logger,
+        clock: () => tick++ == 0 ? t0 : t1,
+      );
+
+      await loggingBroadcaster.broadcastIfChanged();
+      verify(
+        () => logger.log(
+          LogDomains.sync,
+          any(that: contains('broadcast issued')),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+
+      // Identical re-probe → diff path returns false and logs the skip.
+      await loggingBroadcaster.broadcastIfChanged();
+      verify(
+        () => logger.log(
+          LogDomains.sync,
+          any(that: contains('skipped: unchanged')),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'logs the no-host-id skip when DomainLogger is wired',
+    () async {
+      final logger = MockDomainLogger();
+      when(
+        () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
+      ).thenAnswer((_) {});
+      when(() => vectorClockService.getHost()).thenAnswer((_) async => null);
+
+      final loggingBroadcaster = SyncNodeProfileBroadcaster(
+        repository: repo,
+        probe: probe.probe,
+        vectorClockService: vectorClockService,
+        outboxService: outboxService,
+        domainLogger: logger,
+        clock: () => t0,
+      );
+
+      await loggingBroadcaster.broadcastIfChanged();
+
+      verify(
+        () => logger.log(
+          LogDomains.sync,
+          any(that: contains('no host id')),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
+    },
+  );
 }
