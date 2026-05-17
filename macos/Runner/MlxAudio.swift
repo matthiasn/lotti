@@ -25,6 +25,7 @@ import MLXAudioVAD
 private enum MlxAudioBridgeError: LocalizedError {
     case unsupportedModel(String)
     case modelNotInstalled(String)
+    case inferenceBusy(String)
 
     var errorDescription: String? {
         switch self {
@@ -32,7 +33,38 @@ private enum MlxAudioBridgeError: LocalizedError {
             return "Unsupported MLX Audio STT model: \(repo)"
         case .modelNotInstalled(let repo):
             return "MLX Audio model is not installed yet: \(repo)"
+        case .inferenceBusy(let message):
+            return message
         }
+    }
+}
+
+private actor MlxAudioAsyncSemaphore {
+    private var availablePermits: Int
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    init(value: Int) {
+        availablePermits = value
+    }
+
+    func wait() async {
+        if availablePermits > 0 {
+            availablePermits -= 1
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            waiters.append(continuation)
+        }
+    }
+
+    func signal() {
+        guard !waiters.isEmpty else {
+            availablePermits += 1
+            return
+        }
+
+        waiters.removeFirst().resume()
     }
 }
 
@@ -231,6 +263,27 @@ final class MlxAudio: NSObject {
     #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
     private var realtimeSession: StreamingInferenceSession?
     private var realtimeEventTask: Task<Void, Never>?
+    private var realtimeModelId: String?
+    private var cachedSTTModelId: String?
+    private var cachedSTTModel: (any STTGenerationModel)?
+    private var cachedSTTModelLastUsedAt: Date?
+    private var cachedSTTModelEvictionTask: Task<Void, Never>?
+    private static let mlxInferenceGate = MlxAudioAsyncSemaphore(value: 1)
+    private static let mlxMemoryConfigurationLock = NSLock()
+    private static var didConfigureMlxMemory = false
+    private static let cachedSTTModelTimeToLiveSeconds: TimeInterval = 120
+    private static let mlxCacheLimitBytes = 512 * 1024 * 1024
+    private static let mlxWiredLimitPolicy = WiredMaxPolicy(
+        id: UUID(uuidString: "FD65E5A2-5748-4F8C-9B3C-36FB18F775B2")!
+    )
+    private static var mlxMemoryLimitBytes: Int {
+        let gibibyte = UInt64(1024 * 1024 * 1024)
+        let physicalBytes = ProcessInfo.processInfo.physicalMemory
+        let appCeiling = UInt64(32) * gibibyte
+        let systemCeiling = physicalBytes * 3 / 4
+        let lowerBound = UInt64(8) * gibibyte
+        return Int(max(lowerBound, min(appCeiling, systemCeiling)))
+    }
     #endif
 
     static func register(with registrar: FlutterPluginRegistrar) {
@@ -457,16 +510,33 @@ final class MlxAudio: NSObject {
                     modelId: modelId,
                     audioURL: inputURL
                 )
-                let output = try await transcribeAudioURL(
-                    inputURL,
+                let output = try await withMlxInferenceResources(
+                    stage: "transcribe",
                     modelId: modelId,
-                    language: language,
-                    speechDictionaryTerms: speechDictionaryTerms
-                )
-                let diarizationStatus = try await diarizationStatusIfRequested(
-                    audioURL: inputURL,
-                    enableSpeakerDiarization: enableSpeakerDiarization
-                )
+                    audioURL: inputURL
+                ) {
+                    try await self.transcribeAudioURL(
+                        inputURL,
+                        modelId: modelId,
+                        language: language,
+                        speechDictionaryTerms: speechDictionaryTerms
+                    )
+                }
+                let diarizationStatus: String
+                if enableSpeakerDiarization {
+                    diarizationStatus = try await withMlxInferenceResources(
+                        stage: "diarization",
+                        modelId: Self.diarizationModelId,
+                        audioURL: inputURL
+                    ) {
+                        try await self.diarizationStatusIfRequested(
+                            audioURL: inputURL,
+                            enableSpeakerDiarization: true
+                        )
+                    }
+                } else {
+                    diarizationStatus = "disabled"
+                }
                 var payload: [String: Any] = [
                     "text": output.text,
                     "processingTimeMs": Int((CFAbsoluteTimeGetCurrent() - started) * 1000),
@@ -535,29 +605,31 @@ final class MlxAudio: NSObject {
         language: String?,
         result: @escaping FlutterResult
     ) {
-        #if arch(arm64) && canImport(MLXAudioCore) && canImport(MLXAudioTTS)
+        #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT) && canImport(MLXAudioTTS)
         Task {
             do {
-                let model = try await TTS.loadModel(modelRepo: modelId)
-                let audio = try await model.generate(
-                    text: text,
-                    voice: nil,
-                    refAudio: nil,
-                    refText: nil,
-                    language: language ?? "English"
-                )
-                let outputURL = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("mlx-audio-tts-\(UUID().uuidString).wav")
-                try AudioUtils.writeWavFile(
-                    samples: audio.asArray(Float.self),
-                    sampleRate: Double(model.sampleRate),
-                    fileURL: outputURL
-                )
-                defer {
-                    try? FileManager.default.removeItem(at: outputURL)
+                try await withMlxInferenceResources(stage: "tts", modelId: modelId) {
+                    let model = try await TTS.loadModel(modelRepo: modelId)
+                    let audio = try await model.generate(
+                        text: text,
+                        voice: nil,
+                        refAudio: nil,
+                        refText: nil,
+                        language: language ?? "English"
+                    )
+                    let outputURL = FileManager.default.temporaryDirectory
+                        .appendingPathComponent("mlx-audio-tts-\(UUID().uuidString).wav")
+                    try AudioUtils.writeWavFile(
+                        samples: audio.asArray(Float.self),
+                        sampleRate: Double(model.sampleRate),
+                        fileURL: outputURL
+                    )
+                    defer {
+                        try? FileManager.default.removeItem(at: outputURL)
+                    }
+                    let wavData = try Data(contentsOf: outputURL)
+                    try playAudio(data: wavData)
                 }
-                let wavData = try Data(contentsOf: outputURL)
-                try playAudio(data: wavData)
                 result(nil)
             } catch {
                 result(FlutterError(
@@ -606,32 +678,42 @@ final class MlxAudio: NSObject {
 
                 self.cancelRealtimeSessionState()
 
-                self.clearLoggedDownloadPercent(modelId: modelId)
-                try requireModelInstalled(modelId: modelId)
-                emitDownload([
-                    "modelId": modelId,
-                    "status": "installed",
-                    "progress": 1.0,
-                ])
-                self.clearLoggedDownloadPercent(modelId: modelId)
+                try await self.withMlxInferenceResources(
+                    stage: "realtime.start",
+                    modelId: modelId
+                ) {
+                    self.evictCachedSTTModel(reason: "realtime.start")
+                    self.clearLoggedDownloadPercent(modelId: modelId)
+                    try requireModelInstalled(modelId: modelId)
+                    emitDownload([
+                        "modelId": modelId,
+                        "status": "installed",
+                        "progress": 1.0,
+                    ])
+                    self.clearLoggedDownloadPercent(modelId: modelId)
 
-                self.logResourceSnapshot(stage: "realtime.loadModel.start", modelId: modelId)
-                let model = try await Qwen3ASRModel.fromPretrained(modelId)
-                self.logResourceSnapshot(stage: "realtime.loadModel.done", modelId: modelId)
-                let config = StreamingConfig(
-                    delayPreset: streamingDelayPreset(from: delayPreset),
-                    language: normalizeLanguage(language) ?? "English",
-                    temperature: 0.0,
-                    finalizeCompletedWindows: true
-                )
-                let session = StreamingInferenceSession(model: model, config: config)
-                let eventTask = Task { [weak self] in
-                    for await event in session.events {
-                        self?.emitRealtimeEvent(event)
+                    self.logResourceSnapshot(stage: "realtime.loadModel.start", modelId: modelId)
+                    let model = try await Qwen3ASRModel.fromPretrained(modelId)
+                    self.logResourceSnapshot(stage: "realtime.loadModel.done", modelId: modelId)
+                    let config = StreamingConfig(
+                        delayPreset: streamingDelayPreset(from: delayPreset),
+                        language: normalizeLanguage(language) ?? "English",
+                        temperature: 0.0,
+                        finalizeCompletedWindows: true
+                    )
+                    let session = StreamingInferenceSession(model: model, config: config)
+                    let eventTask = Task { [weak self] in
+                        for await event in session.events {
+                            self?.emitRealtimeEvent(event)
+                        }
+                        self?.clearRealtimeSessionState()
                     }
-                    self?.clearRealtimeSessionState()
+                    self.setRealtimeSession(
+                        session,
+                        eventTask: eventTask,
+                        modelId: modelId
+                    )
                 }
-                self.setRealtimeSession(session, eventTask: eventTask)
 
                 NSLog("[MLX Audio] started realtime transcription model=\(modelId)")
                 result(nil)
@@ -749,11 +831,13 @@ final class MlxAudio: NSObject {
     #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
     private func setRealtimeSession(
         _ session: StreamingInferenceSession,
-        eventTask: Task<Void, Never>
+        eventTask: Task<Void, Never>,
+        modelId: String
     ) {
         stateQueue.sync {
             realtimeSession = session
             realtimeEventTask = eventTask
+            realtimeModelId = modelId
         }
     }
 
@@ -764,21 +848,36 @@ final class MlxAudio: NSObject {
     }
 
     private func clearRealtimeSessionState() {
-        stateQueue.sync {
+        let modelId = stateQueue.sync {
+            let modelId = realtimeModelId
             realtimeSession = nil
             realtimeEventTask = nil
+            realtimeModelId = nil
+            return modelId
+        }
+
+        if let modelId {
+            drainMlxCache(stage: "realtime.session.cleared", modelId: modelId)
         }
     }
 
     private func cancelRealtimeSessionState() {
         let current = stateQueue.sync {
-            let state = (session: realtimeSession, task: realtimeEventTask)
+            let state = (
+                session: realtimeSession,
+                task: realtimeEventTask,
+                modelId: realtimeModelId
+            )
             realtimeSession = nil
             realtimeEventTask = nil
+            realtimeModelId = nil
             return state
         }
         current.task?.cancel()
         current.session?.cancel()
+        if let modelId = current.modelId {
+            drainMlxCache(stage: "realtime.session.cancelled", modelId: modelId)
+        }
     }
     #endif
 
@@ -811,8 +910,13 @@ final class MlxAudio: NSObject {
             (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
         } ?? 0
         let residentBytes = currentResidentMemoryBytes() ?? 0
+        var mlxMemory = ""
+        #if arch(arm64) && canImport(MLX)
+        let snapshot = Memory.snapshot()
+        mlxMemory = " mlxActiveBytes=\(snapshot.activeMemory) mlxCacheBytes=\(snapshot.cacheMemory) mlxPeakBytes=\(snapshot.peakMemory) mlxMemoryLimitBytes=\(Memory.memoryLimit) mlxCacheLimitBytes=\(Memory.cacheLimit)"
+        #endif
         NSLog(
-            "[MLX Audio] diagnostics stage=\(stage) model=\(modelId) residentBytes=\(residentBytes) physicalBytes=\(ProcessInfo.processInfo.physicalMemory) audioBytes=\(audioBytes)"
+            "[MLX Audio] diagnostics stage=\(stage) model=\(modelId) residentBytes=\(residentBytes) physicalBytes=\(ProcessInfo.processInfo.physicalMemory) audioBytes=\(audioBytes)\(mlxMemory)"
         )
     }
 
@@ -836,12 +940,138 @@ final class MlxAudio: NSObject {
     }
 
     #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
+    private func configureMlxMemoryLimitsIfNeeded() {
+        Self.mlxMemoryConfigurationLock.lock()
+        defer { Self.mlxMemoryConfigurationLock.unlock() }
+
+        guard !Self.didConfigureMlxMemory else { return }
+
+        Memory.memoryLimit = Self.mlxMemoryLimitBytes
+        Memory.cacheLimit = Self.mlxCacheLimitBytes
+        Memory.clearCache()
+        Memory.peakMemory = 0
+        Self.didConfigureMlxMemory = true
+
+        NSLog(
+            "[MLX Audio] configured MLX memory limits memoryLimitBytes=\(Self.mlxMemoryLimitBytes) cacheLimitBytes=\(Self.mlxCacheLimitBytes)"
+        )
+    }
+
+    private func withMlxInferenceResources<T>(
+        stage: String,
+        modelId: String,
+        audioURL: URL? = nil,
+        operation: () async throws -> T
+    ) async throws -> T {
+        configureMlxMemoryLimitsIfNeeded()
+        await Self.mlxInferenceGate.wait()
+        Memory.peakMemory = 0
+        logResourceSnapshot(stage: "\(stage).enter", modelId: modelId, audioURL: audioURL)
+
+        let ticket = WiredMemoryTicket(
+            size: Self.mlxMemoryLimitBytes,
+            policy: Self.mlxWiredLimitPolicy,
+            manager: .shared,
+            kind: .active
+        )
+
+        do {
+            let value = try await ticket.withWiredLimit {
+                try await operation()
+            }
+            drainMlxCache(stage: "\(stage).done", modelId: modelId, audioURL: audioURL)
+            await Self.mlxInferenceGate.signal()
+            return value
+        } catch {
+            drainMlxCache(stage: "\(stage).failed", modelId: modelId, audioURL: audioURL)
+            await Self.mlxInferenceGate.signal()
+            throw error
+        }
+    }
+
+    private func drainMlxCache(stage: String, modelId: String, audioURL: URL? = nil) {
+        Stream.gpu.synchronize()
+        Memory.clearCache()
+        logResourceSnapshot(stage: stage, modelId: modelId, audioURL: audioURL)
+    }
+
+    private func cachedOrLoadSTTModel(repo: String) async throws -> any STTGenerationModel {
+        let now = Date()
+        if cachedSTTModelId == repo, let cachedSTTModel {
+            cachedSTTModelLastUsedAt = now
+            scheduleCachedSTTModelEviction(modelId: repo)
+            NSLog("[MLX Audio] reused cached STT model model=\(repo)")
+            return cachedSTTModel
+        }
+
+        evictCachedSTTModel(reason: "replace")
+        let model = try await loadSTTModel(repo: repo)
+        cachedSTTModelId = repo
+        cachedSTTModel = model
+        cachedSTTModelLastUsedAt = now
+        scheduleCachedSTTModelEviction(modelId: repo)
+        NSLog("[MLX Audio] cached STT model model=\(repo)")
+        return model
+    }
+
+    private func scheduleCachedSTTModelEviction(modelId: String) {
+        cachedSTTModelEvictionTask?.cancel()
+        cachedSTTModelEvictionTask = Task { [weak self] in
+            let nanoseconds = UInt64(Self.cachedSTTModelTimeToLiveSeconds * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: nanoseconds)
+            guard !Task.isCancelled else { return }
+            await self?.evictCachedSTTModelIfIdle(modelId: modelId)
+        }
+    }
+
+    private func evictCachedSTTModelIfIdle(modelId: String) async {
+        await Self.mlxInferenceGate.wait()
+
+        if cachedSTTModelId == modelId,
+           let lastUsedAt = cachedSTTModelLastUsedAt,
+           Date().timeIntervalSince(lastUsedAt) < Self.cachedSTTModelTimeToLiveSeconds
+        {
+            scheduleCachedSTTModelEviction(modelId: modelId)
+            await Self.mlxInferenceGate.signal()
+            return
+        }
+
+        evictCachedSTTModel(reason: "ttl", modelId: modelId)
+        await Self.mlxInferenceGate.signal()
+    }
+
+    private func evictCachedSTTModel(reason: String, modelId: String? = nil) {
+        if let modelId, cachedSTTModelId != modelId {
+            return
+        }
+
+        guard cachedSTTModel != nil else {
+            return
+        }
+
+        let evictedModelId = cachedSTTModelId ?? "unknown"
+        cachedSTTModel = nil
+        cachedSTTModelId = nil
+        cachedSTTModelLastUsedAt = nil
+        cachedSTTModelEvictionTask?.cancel()
+        cachedSTTModelEvictionTask = nil
+
+        drainMlxCache(stage: "stt.modelCache.evicted.\(reason)", modelId: evictedModelId)
+        NSLog("[MLX Audio] evicted cached STT model model=\(evictedModelId) reason=\(reason)")
+    }
+
     private func transcribeAudioURL(
         _ audioURL: URL,
         modelId: String,
         language: String?,
         speechDictionaryTerms: [String]
     ) async throws -> STTOutput {
+        if currentRealtimeSession() != nil {
+            throw MlxAudioBridgeError.inferenceBusy(
+                "MLX realtime transcription is active. Stop realtime transcription before starting batch transcription."
+            )
+        }
+
         try requireModelInstalled(modelId: modelId)
         emitDownload([
             "modelId": modelId,
@@ -849,15 +1079,19 @@ final class MlxAudio: NSObject {
             "progress": 1.0,
         ])
         logResourceSnapshot(stage: "stt.loadModel.start", modelId: modelId, audioURL: audioURL)
-        let model = try await loadSTTModel(repo: modelId)
+        let model = try await cachedOrLoadSTTModel(repo: modelId)
         logResourceSnapshot(stage: "stt.loadModel.done", modelId: modelId, audioURL: audioURL)
-        let (inputSampleRate, inputAudio) = try loadAudioArray(from: audioURL)
+        let (inputSampleRate, inputAudio) = try autoreleasepool {
+            try loadAudioArray(from: audioURL)
+        }
         logResourceSnapshot(stage: "stt.audioLoaded", modelId: modelId, audioURL: audioURL)
-        let audio = try prepareAudioForSTT(
-            inputAudio,
-            inputSampleRate: inputSampleRate,
-            targetSampleRate: 16000
-        )
+        let audio = try autoreleasepool {
+            try prepareAudioForSTT(
+                inputAudio,
+                inputSampleRate: inputSampleRate,
+                targetSampleRate: 16000
+            )
+        }
         logResourceSnapshot(stage: "stt.audioPrepared", modelId: modelId, audioURL: audioURL)
 
         var params = model.defaultGenerationParameters

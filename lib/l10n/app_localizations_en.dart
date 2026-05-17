@@ -1283,22 +1283,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiModelDownloadOpenProgressTooltip => 'Show download progress';
 
   @override
-  String get aiModelInstallChoiceCancelButton => 'Cancel';
-
-  @override
-  String get aiModelInstallChoiceDescription =>
-      'Pick the local speech-to-text model to download first. You can install the others later from the model list.';
-
-  @override
-  String get aiModelInstallChoiceInstallButton => 'Install model';
-
-  @override
-  String get aiModelInstallChoiceRecommended => 'Recommended';
-
-  @override
-  String get aiModelInstallChoiceTitle => 'Choose MLX Audio model';
-
-  @override
   String get aiModelDownloadStatusChecking => 'Checking model status';
 
   @override
@@ -1320,6 +1304,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiModelDownloadStatusUnsupported => 'Apple Silicon required';
+
+  @override
+  String get aiModelInstallChoiceCancelButton => 'Cancel';
+
+  @override
+  String get aiModelInstallChoiceDescription =>
+      'Pick the local speech-to-text model to download first. You can install the others later from the model list.';
+
+  @override
+  String get aiModelInstallChoiceInstallButton => 'Install model';
+
+  @override
+  String get aiModelInstallChoiceRecommended => 'Recommended';
+
+  @override
+  String get aiModelInstallChoiceTitle => 'Choose MLX Audio model';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
@@ -2525,19 +2525,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.';
 
   @override
-  String get configFlagEnableAiSummaryTts => 'AI summary playback';
-
-  @override
-  String get configFlagEnableAiSummaryTtsDescription =>
-      'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Enable AI streaming for task actions';
 
   @override
   String get configFlagEnableAiStreamingDescription =>
       'Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.';
+
+  @override
+  String get configFlagEnableAiSummaryTts => 'AI summary playback';
+
+  @override
+  String get configFlagEnableAiSummaryTtsDescription =>
+      'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.';
 
   @override
   String get configFlagEnableDailyOs => 'Enable DailyOS';

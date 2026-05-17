@@ -1309,22 +1309,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la progression du téléchargement';
 
   @override
-  String get aiModelInstallChoiceCancelButton => 'Annuler';
-
-  @override
-  String get aiModelInstallChoiceDescription =>
-      'Choisis d’abord le modèle de transcription locale à télécharger. Tu pourras installer les autres plus tard depuis la liste des modèles.';
-
-  @override
-  String get aiModelInstallChoiceInstallButton => 'Installer le modèle';
-
-  @override
-  String get aiModelInstallChoiceRecommended => 'Recommandé';
-
-  @override
-  String get aiModelInstallChoiceTitle => 'Choisir le modèle MLX Audio';
-
-  @override
   String get aiModelDownloadStatusChecking =>
       'Vérification de l’état du modèle';
 
@@ -1347,6 +1331,22 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiModelDownloadStatusUnsupported => 'Apple Silicon requis';
+
+  @override
+  String get aiModelInstallChoiceCancelButton => 'Annuler';
+
+  @override
+  String get aiModelInstallChoiceDescription =>
+      'Choisis d’abord le modèle de transcription locale à télécharger. Tu pourras installer les autres plus tard depuis la liste des modèles.';
+
+  @override
+  String get aiModelInstallChoiceInstallButton => 'Installer le modèle';
+
+  @override
+  String get aiModelInstallChoiceRecommended => 'Recommandé';
+
+  @override
+  String get aiModelInstallChoiceTitle => 'Choisir le modèle MLX Audio';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
@@ -2571,19 +2571,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Lorsque cette option est activée, l\'application tentera de générer des embeddings pour tes entrées afin d\'améliorer la recherche et les suggestions de contenu associées.';
 
   @override
-  String get configFlagEnableAiSummaryTts => 'Lecture des résumés IA';
-
-  @override
-  String get configFlagEnableAiSummaryTtsDescription =>
-      'Affiche le bouton local de synthèse vocale dans les résumés IA des tâches. Nécessite un modèle TTS MLX Audio installé.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Activer le streaming IA pour les actions liées aux tâches';
 
   @override
   String get configFlagEnableAiStreamingDescription =>
       'Diffuser les réponses IA pour les actions liées aux tâches. Désactivez pour mettre les réponses en mémoire tampon et conserver une interface plus fluide.';
+
+  @override
+  String get configFlagEnableAiSummaryTts => 'Lecture des résumés IA';
+
+  @override
+  String get configFlagEnableAiSummaryTtsDescription =>
+      'Affiche le bouton local de synthèse vocale dans les résumés IA des tâches. Nécessite un modèle TTS MLX Audio installé.';
 
   @override
   String get configFlagEnableDailyOs => 'Activer DailyOS';

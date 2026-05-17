@@ -1296,22 +1296,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiModelDownloadOpenProgressTooltip => 'Zobrazit průběh stahování';
 
   @override
-  String get aiModelInstallChoiceCancelButton => 'Zrušit';
-
-  @override
-  String get aiModelInstallChoiceDescription =>
-      'Nejdřív vyber lokální model pro převod řeči na text, který se má stáhnout. Ostatní můžeš nainstalovat později ze seznamu modelů.';
-
-  @override
-  String get aiModelInstallChoiceInstallButton => 'Instalovat model';
-
-  @override
-  String get aiModelInstallChoiceRecommended => 'Doporučeno';
-
-  @override
-  String get aiModelInstallChoiceTitle => 'Vybrat model MLX Audio';
-
-  @override
   String get aiModelDownloadStatusChecking => 'Kontroluje se stav modelu';
 
   @override
@@ -1333,6 +1317,22 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiModelDownloadStatusUnsupported => 'Vyžaduje Apple Silicon';
+
+  @override
+  String get aiModelInstallChoiceCancelButton => 'Zrušit';
+
+  @override
+  String get aiModelInstallChoiceDescription =>
+      'Nejdřív vyber lokální model pro převod řeči na text, který se má stáhnout. Ostatní můžeš nainstalovat později ze seznamu modelů.';
+
+  @override
+  String get aiModelInstallChoiceInstallButton => 'Instalovat model';
+
+  @override
+  String get aiModelInstallChoiceRecommended => 'Doporučeno';
+
+  @override
+  String get aiModelInstallChoiceTitle => 'Vybrat model MLX Audio';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
@@ -2565,19 +2565,19 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.';
 
   @override
-  String get configFlagEnableAiSummaryTts => 'Přehrávání AI souhrnů';
-
-  @override
-  String get configFlagEnableAiSummaryTtsDescription =>
-      'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model MLX Audio TTS.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Povolit AI streamování pro akce úkolů';
 
   @override
   String get configFlagEnableAiStreamingDescription =>
       'Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.';
+
+  @override
+  String get configFlagEnableAiSummaryTts => 'Přehrávání AI souhrnů';
+
+  @override
+  String get configFlagEnableAiSummaryTtsDescription =>
+      'Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model MLX Audio TTS.';
 
   @override
   String get configFlagEnableDailyOs => 'Povolit DailyOS';

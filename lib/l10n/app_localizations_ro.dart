@@ -1309,22 +1309,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișați progresul descărcării';
 
   @override
-  String get aiModelInstallChoiceCancelButton => 'Anulați';
-
-  @override
-  String get aiModelInstallChoiceDescription =>
-      'Alegeți mai întâi modelul local speech-to-text de descărcat. Puteți instala celelalte modele mai târziu din lista de modele.';
-
-  @override
-  String get aiModelInstallChoiceInstallButton => 'Instalați modelul';
-
-  @override
-  String get aiModelInstallChoiceRecommended => 'Recomandat';
-
-  @override
-  String get aiModelInstallChoiceTitle => 'Alegeți modelul MLX Audio';
-
-  @override
   String get aiModelDownloadStatusChecking => 'Se verifică starea modelului';
 
   @override
@@ -1346,6 +1330,22 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiModelDownloadStatusUnsupported => 'Apple Silicon necesar';
+
+  @override
+  String get aiModelInstallChoiceCancelButton => 'Anulați';
+
+  @override
+  String get aiModelInstallChoiceDescription =>
+      'Alegeți mai întâi modelul local speech-to-text de descărcat. Puteți instala celelalte modele mai târziu din lista de modele.';
+
+  @override
+  String get aiModelInstallChoiceInstallButton => 'Instalați modelul';
+
+  @override
+  String get aiModelInstallChoiceRecommended => 'Recomandat';
+
+  @override
+  String get aiModelInstallChoiceTitle => 'Alegeți modelul MLX Audio';
 
   @override
   String aiOllamaModelInstalledSuccessfully(String modelName) {
@@ -2578,19 +2578,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.';
 
   @override
-  String get configFlagEnableAiSummaryTts => 'Redare rezumate AI';
-
-  @override
-  String get configFlagEnableAiSummaryTtsDescription =>
-      'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.';
-
-  @override
   String get configFlagEnableAiStreaming =>
       'Activează streamingul AI pentru acțiunile legate de sarcini';
 
   @override
   String get configFlagEnableAiStreamingDescription =>
       'Transmite răspunsurile AI pentru acțiunile legate de sarcini. Dezactivați pentru a stoca răspunsurile în buffer și a menține interfața mai fluidă.';
+
+  @override
+  String get configFlagEnableAiSummaryTts => 'Redare rezumate AI';
+
+  @override
+  String get configFlagEnableAiSummaryTtsDescription =>
+      'Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.';
 
   @override
   String get configFlagEnableDailyOs => 'Activează DailyOS';
