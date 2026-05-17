@@ -112,6 +112,7 @@ void main() {
         '/settings/ai/profile/:profileId',
         '/settings/sync',
         '/settings/sync/matrix/maintenance',
+        '/settings/sync/node-profile',
         '/settings/sync/backfill',
         '/settings/sync/stats',
         '/settings/sync/outbox',

@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 void main() {
@@ -84,6 +85,57 @@ void main() {
 
       expect(message.lightThemeName, 'Indigo');
       expect(message.darkThemeName, 'Shark');
+    });
+  });
+
+  group('SyncMessage.syncNodeProfile', () {
+    final updatedAt = DateTime.utc(2026, 3, 15, 12, 30);
+
+    test('round-trips a node profile through JSON', () {
+      final profile = SyncNodeProfile(
+        hostId: 'host-uuid-abc',
+        displayName: 'Studio Mac',
+        platform: 'macos',
+        cpuModel: 'Apple M4 Max',
+        ramMb: 65536,
+        capabilities: const [
+          NodeCapability.mlxAudio,
+          NodeCapability.ollamaLlm,
+        ],
+        updatedAt: updatedAt,
+      );
+
+      final message = SyncMessage.syncNodeProfile(profile: profile);
+
+      final json = jsonEncode(message.toJson());
+      final decoded =
+          SyncMessage.fromJson(jsonDecode(json) as Map<String, dynamic>)
+              as SyncSyncNodeProfile;
+
+      expect(decoded.profile.hostId, 'host-uuid-abc');
+      expect(decoded.profile.displayName, 'Studio Mac');
+      expect(decoded.profile.platform, 'macos');
+      expect(decoded.profile.cpuModel, 'Apple M4 Max');
+      expect(decoded.profile.ramMb, 65536);
+      expect(decoded.profile.capabilities, [
+        NodeCapability.mlxAudio,
+        NodeCapability.ollamaLlm,
+      ]);
+      expect(decoded.profile.updatedAt, updatedAt);
+    });
+
+    test('emits a stable runtimeType discriminator', () {
+      final profile = SyncNodeProfile(
+        hostId: 'h',
+        displayName: 'A',
+        platform: 'macos',
+        capabilities: const [NodeCapability.mlxAudio],
+        updatedAt: updatedAt,
+      );
+
+      final json = SyncMessage.syncNodeProfile(profile: profile).toJson();
+
+      expect(json['runtimeType'], 'syncNodeProfile');
     });
   });
 

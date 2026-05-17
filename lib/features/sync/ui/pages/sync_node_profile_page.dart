@@ -1,0 +1,199 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
+import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Settings page for the local sync-node profile and the directory of known
+/// peer profiles.
+///
+/// Lets the user rename this device (the name appears in other devices'
+/// pinning UI), surface the auto-detected capabilities, and review which
+/// peers have advertised their own profiles.
+///
+/// All save actions go through `SyncNodeProfileBroadcaster.broadcastIfChanged`
+/// — that path re-broadcasts on a real name change but suppresses a no-op
+/// re-save, matching how `inference_profile_form.dart` preserves the pin on
+/// unrelated edits.
+class SyncNodeProfilePage extends ConsumerStatefulWidget {
+  const SyncNodeProfilePage({super.key});
+
+  @override
+  ConsumerState<SyncNodeProfilePage> createState() =>
+      _SyncNodeProfilePageState();
+}
+
+class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  bool _isSaving = false;
+  String? _lastSeededFromHostId;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _seedName(SyncNodeProfile? self) {
+    // Seed only when we first see the self profile for a given host id —
+    // after that, the user owns the text field.
+    if (self == null) return;
+    if (_lastSeededFromHostId == self.hostId) return;
+    _lastSeededFromHostId = self.hostId;
+    _nameController.text = self.displayName;
+  }
+
+  Future<void> _save() async {
+    if (_isSaving) return;
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
+    try {
+      final broadcaster = getIt<SyncNodeProfileBroadcaster>();
+      await broadcaster.broadcastIfChanged(
+        displayNameOverride: _nameController.text.trim(),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    final selfAsync = ref.watch(localSyncNodeSelfProvider);
+    final directoryAsync = ref.watch(knownSyncNodesProvider);
+
+    final self = selfAsync.maybeWhen<SyncNodeProfile?>(
+      data: (value) => value,
+      orElse: () => null,
+    );
+    _seedName(self);
+
+    final knownNodes = directoryAsync.maybeWhen<List<SyncNodeProfile>>(
+      data: (value) =>
+          value.where((n) => self == null || n.hostId != self.hostId).toList(),
+      orElse: () => const <SyncNodeProfile>[],
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(messages.settingsSyncNodeProfileTitle),
+        actions: [
+          TextButton(
+            onPressed: _isSaving ? null : _save,
+            child: Text(messages.settingsSyncNodeProfileSaveButton),
+          ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              messages.settingsSyncNodeProfileSubtitle,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: messages.settingsSyncNodeProfileDisplayNameLabel,
+                helperText: messages.settingsSyncNodeProfileDisplayNameHelper,
+                border: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return messages.settingsSyncNodeProfileDisplayNameLabel;
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+            Text(
+              messages.settingsSyncNodeProfileCapabilitiesLabel,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            _CapabilityChips(self: self),
+            const SizedBox(height: 24),
+            Text(
+              messages.settingsSyncNodeProfileKnownNodesTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            if (knownNodes.isEmpty)
+              Text(
+                messages.settingsSyncNodeProfileKnownNodesEmpty,
+                style: Theme.of(context).textTheme.bodySmall,
+              )
+            else
+              ...knownNodes.map(_KnownNodeTile.new),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CapabilityChips extends StatelessWidget {
+  const _CapabilityChips({required this.self});
+
+  final SyncNodeProfile? self;
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = context.messages;
+    final caps = self?.capabilities ?? const <NodeCapability>[];
+    if (caps.isEmpty) {
+      return Text(
+        messages.settingsSyncNodeProfileCapabilitiesEmpty,
+        style: Theme.of(context).textTheme.bodySmall,
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [for (final cap in caps) Chip(label: Text(_labelFor(cap)))],
+    );
+  }
+
+  String _labelFor(NodeCapability cap) {
+    switch (cap) {
+      case NodeCapability.mlxAudio:
+        return 'MLX Audio (local)';
+      case NodeCapability.ollamaLlm:
+        return 'Ollama LLM';
+      case NodeCapability.voxtral:
+        return 'Voxtral (local)';
+      case NodeCapability.whisper:
+        return 'Whisper (local)';
+    }
+  }
+}
+
+class _KnownNodeTile extends StatelessWidget {
+  const _KnownNodeTile(this.node);
+
+  final SyncNodeProfile node;
+
+  @override
+  Widget build(BuildContext context) {
+    final caps = node.capabilities
+        .map((c) => c.name)
+        .toList(growable: false)
+        .join(', ');
+    return ListTile(
+      title: Text(node.displayName),
+      subtitle: Text(
+        '${node.platform}'
+        '${caps.isEmpty ? '' : ' · $caps'}',
+      ),
+    );
+  }
+}

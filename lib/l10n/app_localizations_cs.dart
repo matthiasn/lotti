@@ -4051,6 +4051,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileEditTitle => 'Edit Profile';
 
   @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Když je nastaveno, pouze toto zařízení automaticky spouští inference pro synchronizované zvukové záznamy používající tento profil.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Připnuté zařízení';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Synchronizované zvukové záznamy nejsou automaticky přepisovány, dokud není žádné zařízení připnuté.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Nepřipnuto (bez automatického spuštění)';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Žádné známé zařízení neoznamuje poskytovatele, které tento profil používá. Otevři nastavení synchronizačních uzlů na cílovém zařízení.';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (toto zařízení)';
+
+  @override
   String get inferenceProfileImageGeneration => 'Image Generation';
 
   @override
@@ -5854,6 +5876,40 @@ class AppLocalizationsCs extends AppLocalizations {
       'Řešte konflikty synchronizace pro zajištění konzistence dat';
 
   @override
+  String get settingsSyncNodeProfileCapabilitiesEmpty =>
+      'Žádné detekovány — automatické spuštění inference pro synchronizovaný zvuk nebude na toto zařízení směrováno.';
+
+  @override
+  String get settingsSyncNodeProfileCapabilitiesLabel =>
+      'Detekované AI schopnosti';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameHelper =>
+      'Viditelné pro tvá další zařízení při výběru, ke kterému profil připnout.';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameLabel =>
+      'Zobrazované jméno zařízení';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesEmpty =>
+      'Žádné jiné zařízení dosud nepublikovalo profil.';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesTitle =>
+      'Známá synchronizační zařízení';
+
+  @override
+  String get settingsSyncNodeProfileSaveButton => 'Uložit';
+
+  @override
+  String get settingsSyncNodeProfileSubtitle =>
+      'Pojmenuj toto zařízení a zkontroluj schopnosti viditelné pro tvá další zařízení.';
+
+  @override
+  String get settingsSyncNodeProfileTitle => 'Toto zařízení';
+
+  @override
   String get settingsSyncOutboxTitle => 'Synchronizace odeslané pošty';
 
   @override
@@ -6046,6 +6102,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPayloadOutboxBundle => 'Odchozí balíček';
+
+  @override
+  String get syncPayloadSyncNodeProfile => 'Profil synchronizačního uzlu';
 
   @override
   String get syncPayloadThemingSelection => 'Výběr tématu';

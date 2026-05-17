@@ -34,6 +34,7 @@ import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
+import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
@@ -122,6 +123,8 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
         build: _advancedLoggingPanel,
         scrollable: true,
       ),
+      // SyncNodeProfilePage owns its Scaffold; don't wrap.
+      'sync-node-profile': SettingsPanelSpec(build: _syncNodeProfilePanel),
       'sync-backfill': SettingsPanelSpec(
         build: _syncBackfillPanel,
         scrollable: true,
@@ -229,6 +232,8 @@ Widget _syncPanel(BuildContext context) {
 Widget _syncBackfillPanel(BuildContext context) => const BackfillSettingsBody();
 Widget _syncStatsPanel(BuildContext context) => const SyncStatsBody();
 Widget _syncOutboxPanel(BuildContext context) => const OutboxMonitorBody();
+Widget _syncNodeProfilePanel(BuildContext context) =>
+    const SyncNodeProfilePage();
 Widget _syncMatrixMaintenancePanel(BuildContext context) =>
     const MatrixSyncMaintenanceBody();
 

@@ -119,6 +119,18 @@ sealed class AiConfig with _$AiConfig {
 
     /// Skills assigned to this profile.
     @Default([]) List<SkillAssignment> skillAssignments,
+
+    /// Vector-clock host UUID of the device this profile is pinned to.
+    ///
+    /// When set, the auto-trigger pipeline runs this profile's inference only
+    /// on the device whose `VectorClockService.getHost()` matches. Other
+    /// devices receiving a synced audio entry that references this profile
+    /// skip auto-triggering — preventing duplicate inference races between
+    /// multiple capable desktops.
+    ///
+    /// Null means "no pin" — the auto-trigger does not claim entries for this
+    /// profile on any device. Manual inference is unaffected.
+    String? pinnedHostId,
     DateTime? updatedAt,
     String? description,
   }) = AiConfigInferenceProfile;

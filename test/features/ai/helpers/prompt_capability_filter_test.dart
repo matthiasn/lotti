@@ -590,6 +590,15 @@ void main() {
         );
       });
 
+      test('returns true for MLX Audio', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.mlxAudio,
+          ),
+          isTrue,
+        );
+      });
+
       test('returns false for cloud providers', () {
         expect(
           PromptCapabilityFilter.isLocalOnlyProviderType(
@@ -651,6 +660,7 @@ void main() {
           InferenceProviderType.whisper,
           InferenceProviderType.ollama,
           InferenceProviderType.voxtral,
+          InferenceProviderType.mlxAudio,
         }.contains(providerType);
 
         expect(

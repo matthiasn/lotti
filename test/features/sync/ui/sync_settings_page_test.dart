@@ -118,8 +118,8 @@ void main() {
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
       // 1 ProvisionedSyncSettingsCard (contains a DesignSystemListItem)
-      // + 5 regular DesignSystemListItems = 6
-      expect(find.byType(DesignSystemListItem), findsNWidgets(6));
+      // + 6 regular DesignSystemListItems = 7 (added "This device" / node-profile entry)
+      expect(find.byType(DesignSystemListItem), findsNWidgets(7));
       expect(find.byType(ProvisionedSyncSettingsCard), findsOneWidget);
     });
 
@@ -129,14 +129,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 5 regular items + 1 provisioned card = 6 SettingsIcon
-      expect(find.byType(SettingsIcon), findsNWidgets(6));
+      // 6 regular items + 1 provisioned card = 7 SettingsIcon (node-profile added)
+      expect(find.byType(SettingsIcon), findsNWidgets(7));
       expect(find.byIcon(Icons.qr_code_scanner), findsOneWidget);
       expect(find.byIcon(Icons.build_outlined), findsOneWidget);
       expect(find.byIcon(Icons.mail), findsOneWidget);
       expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
       expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
       expect(find.byIcon(Icons.history_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.devices_rounded), findsOneWidget);
     });
 
     testWidgets('shows chevron trailing icon on each item', (tester) async {
@@ -145,7 +146,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(6));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(7));
     });
 
     testWidgets('shows dividers between items but not after last', (

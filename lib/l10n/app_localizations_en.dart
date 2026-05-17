@@ -4003,6 +4003,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inferenceProfileEditTitle => 'Edit Profile';
 
   @override
+  String get inferenceProfilePinnedHostHelper =>
+      'When set, only this device auto-runs inference for synced audio entries that use this profile.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Pinned device';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Synced audio entries are not auto-transcribed when no device is pinned.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Not pinned (no auto-trigger)';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'No known devices advertise the providers this profile uses. Open Sync nodes settings on the target device.';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (this device)';
+
+  @override
   String get inferenceProfileImageGeneration => 'Image Generation';
 
   @override
@@ -5747,6 +5769,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'Resolve synchronization conflicts to ensure data consistency';
 
   @override
+  String get settingsSyncNodeProfileCapabilitiesEmpty =>
+      'None detected — auto-trigger of synced audio inference will not target this device.';
+
+  @override
+  String get settingsSyncNodeProfileCapabilitiesLabel =>
+      'Detected AI capabilities';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameHelper =>
+      'Visible to your other devices when picking which one to pin a profile to.';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameLabel => 'Device display name';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesEmpty =>
+      'No other devices have published a profile yet.';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesTitle => 'Known sync devices';
+
+  @override
+  String get settingsSyncNodeProfileSaveButton => 'Save';
+
+  @override
+  String get settingsSyncNodeProfileSubtitle =>
+      'Name this device and review capabilities visible to your other devices.';
+
+  @override
+  String get settingsSyncNodeProfileTitle => 'This device';
+
+  @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override
@@ -5935,6 +5989,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPayloadOutboxBundle => 'Outbox bundle';
+
+  @override
+  String get syncPayloadSyncNodeProfile => 'Sync node profile';
 
   @override
   String get syncPayloadThemingSelection => 'Theming selection';

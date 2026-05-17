@@ -61,6 +61,7 @@ void main() {
       'advanced-about',
       'advanced-maintenance',
       'advanced-logging',
+      'sync-node-profile',
       'sync-backfill',
       'sync-stats',
       'sync-outbox',

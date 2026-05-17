@@ -64,6 +64,54 @@ class ProfileAutomationResolver {
     return _resolveViaTaskProfile(taskId);
   }
 
+  /// Returns the raw profile id for [taskId] using the same resolution chain
+  /// as [resolveForTask], but without invoking [ProfileResolver] — callers
+  /// (the synced-audio dispatcher) need the underlying inference profile
+  /// directly so they can read `pinnedHostId` and run `profileIsLocal`, both
+  /// of which the resolved view either hides or silently distorts (unresolved
+  /// optional slots become null on the resolved view, masking referenced
+  /// cloud configs).
+  ///
+  /// Order (identical to [resolveForTask], minus the legacy `modelId`
+  /// fallback — `modelId` resolves to a model, not a profile, so it can't
+  /// carry pin/locality data and is intentionally out of scope here):
+  /// 1. Agent path: `agentConfig.profileId ?? version.profileId ??
+  ///    template.profileId`.
+  /// 2. Task fallback: `task.data.profileId`.
+  ///
+  /// Mirrors [resolveForTask] but returns the raw profile id.
+  ///
+  /// Returns `null` when neither path yields a profile id.
+  Future<String?> resolveProfileIdForTask(String taskId) async {
+    final agentId = await _resolveProfileIdViaAgent(taskId);
+    if (agentId != null) return agentId;
+
+    final lookup = _taskProfileLookup;
+    if (lookup == null) return null;
+    final taskId0 = await lookup(taskId);
+    if (taskId0 != null) {
+      developer.log(
+        'resolveProfileIdForTask: using task-level profileId $taskId0 for '
+        'task $taskId',
+        name: _logTag,
+      );
+    }
+    return taskId0;
+  }
+
+  Future<String?> _resolveProfileIdViaAgent(String taskId) async {
+    final agent = await _taskAgentService.getTaskAgentForTask(taskId);
+    if (agent == null) return null;
+
+    final template = await _templateService.getTemplateForAgent(agent.agentId);
+    if (template == null) return null;
+
+    final version = await _templateService.getActiveVersion(template.id);
+    if (version == null) return null;
+
+    return agent.config.profileId ?? version.profileId ?? template.profileId;
+  }
+
   /// Resolves the profile from a category's `defaultProfileId`.
   ///
   /// Used for entries that have no parent task — the category's configured

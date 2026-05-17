@@ -84,6 +84,7 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
@@ -492,6 +493,9 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
 }
 
 class MockMatrixStreamProcessor extends Mock implements MatrixStreamProcessor {}
+
+class MockSyncNodeProfileBroadcaster extends Mock
+    implements SyncNodeProfileBroadcaster {}
 
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 

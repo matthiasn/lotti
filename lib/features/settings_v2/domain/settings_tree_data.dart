@@ -148,6 +148,11 @@ List<SettingsNode> buildSettingsTree({
       children: [
         if (enableMatrix) ...[
           leaf(
+            'sync/node-profile',
+            Icons.devices_rounded,
+            panel: 'sync-node-profile',
+          ),
+          leaf(
             'sync/backfill',
             Icons.cloud_download_outlined,
             panel: 'sync-backfill',

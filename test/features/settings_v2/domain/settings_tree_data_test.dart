@@ -268,12 +268,13 @@ void main() {
     });
 
     test(
-      'emits Sync with exactly backfill/stats/outbox/conflicts/ '
+      'emits Sync with exactly node-profile/backfill/stats/outbox/conflicts/ '
       'matrix-maintenance',
       () {
         final sync = _tree().firstWhere((n) => n.id == 'sync');
         expect(sync.hasChildren, isTrue);
         expect(sync.children!.map((n) => n.id).toList(), [
+          'sync/node-profile',
           'sync/backfill',
           'sync/stats',
           'sync/outbox',
@@ -324,6 +325,7 @@ void main() {
         'definitions/habits': 'habits',
         'definitions/categories': 'categories',
         'definitions/labels': 'labels',
+        'sync/node-profile': 'sync-node-profile',
         'sync/backfill': 'sync-backfill',
         'sync/stats': 'sync-stats',
         'sync/outbox': 'sync-outbox',
@@ -395,11 +397,12 @@ void main() {
     });
 
     test(
-      'Sync has backfill / stats / outbox / conflicts / matrix-maintenance '
-      'in order',
+      'Sync has node-profile / backfill / stats / outbox / conflicts / '
+      'matrix-maintenance in order',
       () {
         final sync = _tree().firstWhere((n) => n.id == 'sync');
         expect(sync.children!.map((n) => n.id).toList(), [
+          'sync/node-profile',
           'sync/backfill',
           'sync/stats',
           'sync/outbox',

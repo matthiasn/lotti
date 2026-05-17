@@ -43,6 +43,7 @@ import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
+import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
@@ -67,6 +68,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/ai/profile/:profileId',
     '/settings/sync',
     '/settings/sync/matrix/maintenance',
+    '/settings/sync/node-profile',
     '/settings/sync/backfill',
     '/settings/sync/stats',
     '/settings/sync/outbox',
@@ -251,6 +253,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey('settings-sync-matrix-maintenance'),
           title: 'Matrix Sync Maintenance',
           child: MatrixSyncMaintenancePage(),
+        ),
+
+      if (path == '/settings/sync/node-profile')
+        const BeamPage(
+          key: ValueKey('settings-sync-node-profile'),
+          child: SyncNodeProfilePage(),
         ),
 
       if (path == '/settings/sync/backfill')

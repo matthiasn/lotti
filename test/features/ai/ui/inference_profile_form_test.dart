@@ -9,6 +9,9 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
+import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
@@ -31,6 +34,7 @@ void main() {
     AiConfigInferenceProfile? existingProfile,
     List<AiConfig> models = const [],
     List<AiConfig> providers = const [],
+    List<SyncNodeProfile> knownNodes = const [],
   }) {
     return makeTestableWidgetNoScroll(
       InferenceProfileForm(existingProfile: existingProfile),
@@ -48,6 +52,10 @@ void main() {
         ).overrideWith(() {
           return _FakeAiConfigByTypeController(providers);
         }),
+        // Stub the pinning selector's data sources so the form's existing
+        // tests don't need to register a real sync stack.
+        knownSyncNodesProvider.overrideWith((_) => Stream.value(knownNodes)),
+        localVectorClockHostIdProvider.overrideWith((_) async => null),
       ],
     );
   }
@@ -711,6 +719,35 @@ void main() {
       expect(fakeProfileController.savedProfiles, hasLength(1));
       expect(fakeProfileController.savedProfiles.first.desktopOnly, isTrue);
     });
+
+    testWidgets(
+      'preserves pinnedHostId on save when the form has no pin selector yet',
+      (tester) async {
+        // Regression guard: PR4 will add an explicit pinning selector, but
+        // until then every form save must carry through whatever pin the
+        // user (or sync) stored on the profile — otherwise an unrelated edit
+        // (rename, description tweak, slot change) silently disables the
+        // synced-audio auto-trigger for this profile.
+        final profile = testInferenceProfile(
+          id: 'pinned-profile',
+          name: 'Pinned Studio',
+          pinnedHostId: 'host-uuid-abc',
+        );
+
+        await tester.pumpWidget(buildSubject(existingProfile: profile));
+        await tester.pumpAndSettle();
+
+        // Save without changes.
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        expect(
+          fakeProfileController.savedProfiles.first.pinnedHostId,
+          'host-uuid-abc',
+        );
+      },
+    );
 
     group('skill assignments', () {
       testWidgets('shows skill assignment section with skill names', (
