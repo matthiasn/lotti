@@ -60,6 +60,7 @@ Future<void> captureManualScreenshot({
       ),
       flush: true,
     );
+    stdout.writeln('wrote screenshot: ${file.path}');
   } finally {
     image.dispose();
   }
