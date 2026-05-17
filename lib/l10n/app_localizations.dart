@@ -2329,36 +2329,6 @@ abstract class AppLocalizations {
   /// **'Show download progress'**
   String get aiModelDownloadOpenProgressTooltip;
 
-  /// No description provided for @aiModelInstallChoiceCancelButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get aiModelInstallChoiceCancelButton;
-
-  /// No description provided for @aiModelInstallChoiceDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Pick the local speech-to-text model to download first. You can install the others later from the model list.'**
-  String get aiModelInstallChoiceDescription;
-
-  /// No description provided for @aiModelInstallChoiceInstallButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Install model'**
-  String get aiModelInstallChoiceInstallButton;
-
-  /// No description provided for @aiModelInstallChoiceRecommended.
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended'**
-  String get aiModelInstallChoiceRecommended;
-
-  /// No description provided for @aiModelInstallChoiceTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose MLX Audio model'**
-  String get aiModelInstallChoiceTitle;
-
   /// No description provided for @aiModelDownloadStatusChecking.
   ///
   /// In en, this message translates to:
@@ -2400,6 +2370,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apple Silicon required'**
   String get aiModelDownloadStatusUnsupported;
+
+  /// No description provided for @aiModelInstallChoiceCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get aiModelInstallChoiceCancelButton;
+
+  /// No description provided for @aiModelInstallChoiceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the local speech-to-text model to download first. You can install the others later from the model list.'**
+  String get aiModelInstallChoiceDescription;
+
+  /// No description provided for @aiModelInstallChoiceInstallButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Install model'**
+  String get aiModelInstallChoiceInstallButton;
+
+  /// No description provided for @aiModelInstallChoiceRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get aiModelInstallChoiceRecommended;
+
+  /// No description provided for @aiModelInstallChoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose MLX Audio model'**
+  String get aiModelInstallChoiceTitle;
 
   /// No description provided for @aiOllamaModelInstalledSuccessfully.
   ///
@@ -4363,18 +4363,6 @@ abstract class AppLocalizations {
   /// **'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.'**
   String get configFlagAttemptEmbeddingDescription;
 
-  /// No description provided for @configFlagEnableAiSummaryTts.
-  ///
-  /// In en, this message translates to:
-  /// **'AI summary playback'**
-  String get configFlagEnableAiSummaryTts;
-
-  /// No description provided for @configFlagEnableAiSummaryTtsDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.'**
-  String get configFlagEnableAiSummaryTtsDescription;
-
   /// No description provided for @configFlagEnableAiStreaming.
   ///
   /// In en, this message translates to:
@@ -4386,6 +4374,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.'**
   String get configFlagEnableAiStreamingDescription;
+
+  /// No description provided for @configFlagEnableAiSummaryTts.
+  ///
+  /// In en, this message translates to:
+  /// **'AI summary playback'**
+  String get configFlagEnableAiSummaryTts;
+
+  /// No description provided for @configFlagEnableAiSummaryTtsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.'**
+  String get configFlagEnableAiSummaryTtsDescription;
 
   /// No description provided for @configFlagEnableDailyOs.
   ///
