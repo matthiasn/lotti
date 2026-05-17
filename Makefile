@@ -130,6 +130,16 @@ fluttium_docs:
 	cp ./screenshots/* ~/github/lotti-docs/images/${LOTTI_VERSION}/
 	cd ~/github/lotti-docs/ && git pull && git add . && git commit -m ${LOTTI_VERSION} && git push
 
+.PHONY: manual_screenshots_macos
+manual_screenshots_macos:
+	mkdir -p screenshots/manual/${LOTTI_VERSION}/macos
+	LOTTI_SCREENSHOT_DIR=${CURDIR}/screenshots/manual/${LOTTI_VERSION}/macos $(FLUTTER_CMD) drive -d macos --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR=${CURDIR}/screenshots/manual/${LOTTI_VERSION}/macos
+
+.PHONY: manual_screenshots_linux
+manual_screenshots_linux:
+	mkdir -p screenshots/manual/${LOTTI_VERSION}/linux
+	LOTTI_SCREENSHOT_DIR=${CURDIR}/screenshots/manual/${LOTTI_VERSION}/linux $(FLUTTER_CMD) drive -d linux --driver=test_driver/manual_screenshots_driver.dart --target=integration_test/manual_screenshots_test.dart --dart-define=LOTTI_SCREENSHOT_DIR=${CURDIR}/screenshots/manual/${LOTTI_VERSION}/linux
+
 .PHONY: bundle
 bundle:
 	$(FLUTTER_CMD) build bundle
