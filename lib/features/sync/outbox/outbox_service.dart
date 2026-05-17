@@ -510,6 +510,10 @@ class OutboxService {
         // this method; this arm exists only so the freezed-sealed switch
         // stays exhaustive.
         SyncOutboxBundle() => throw StateError('unreachable'),
+        final SyncSyncNodeProfile msg => _enqueueSyncNodeProfile(
+          msg: msg,
+          commonFields: commonFields,
+        ),
       };
 
       _syncLog(
@@ -552,6 +556,9 @@ class OutboxService {
       // [enqueueMessage] is the single defensive guard for that invariant
       // (one source of truth instead of two coupled `throw` arms).
       SyncOutboxBundle() => OutboxPriority.normal.index,
+      // SyncSyncNodeProfile is a presence-style broadcast — low priority so
+      // it never queue-jumps journal writes.
+      SyncSyncNodeProfile() => OutboxPriority.low.index,
     };
   }
 
@@ -1554,6 +1561,18 @@ class OutboxService {
     );
     return result;
   }
+
+  Future<bool> _enqueueSyncNodeProfile({
+    required SyncSyncNodeProfile msg,
+    required OutboxCompanion commonFields,
+  }) => _enqueueSimple(
+    commonFields: commonFields,
+    subject: 'syncNodeProfile',
+    logMessage:
+        'enqueue type=SyncSyncNodeProfile subject=syncNodeProfile '
+        'hostId=${msg.profile.hostId} name=${msg.profile.displayName} '
+        'caps=${msg.profile.capabilities.length}',
+  );
 
   Future<bool> _enqueueBackfillRequest({
     required SyncBackfillRequest msg,

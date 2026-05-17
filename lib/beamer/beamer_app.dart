@@ -27,6 +27,7 @@ import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
+import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_activity_indicator.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/tasks_saved_filters_tree.dart';
@@ -665,9 +666,15 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Keep agent runtime wiring alive from app startup onward so sync can
-    // apply and verify incoming agent payloads before the first entry view.
-    ref.listen(agentInitializationProvider, (_, _) {});
+    // Keep long-lived runtime wiring alive from app startup onward.
+    // - agentInitializationProvider: sync can apply and verify incoming agent
+    //   payloads before the first entry view.
+    // - syncedAudioInferenceListenerProvider: auto-trigger local AI inference
+    //   on synced audio for pinned profiles (keepAlive — this listen just
+    //   forces construction so the listener subscribes to syncUpdateStream).
+    ref
+      ..listen(agentInitializationProvider, (_, _) {})
+      ..listen(syncedAudioInferenceListenerProvider, (_, _) {});
 
     final themingState = ref.watch(themingControllerProvider);
     final enableTooltips = ref.watch(enableTooltipsProvider).value ?? true;

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -12,8 +11,8 @@ class PromptCapabilityFilter {
 
   /// Check if a prompt is available on the current platform
   ///
-  /// Returns false for prompts using local-only models (Whisper, Ollama, Gemini 3N)
-  /// when running on mobile platforms
+  /// Returns false for prompts using local-only models (Whisper, Ollama,
+  /// Voxtral, MLX Audio) when running on mobile platforms.
   Future<bool> isPromptAvailableOnPlatform(AiConfigPrompt prompt) async {
     // Desktop supports all models
     if (isDesktop) {
@@ -47,12 +46,21 @@ class PromptCapabilityFilter {
     return isLocalOnlyProviderType(providerType);
   }
 
-  /// Check if an inference provider type is local-only (static for testing)
-  @visibleForTesting
+  /// Returns true when [providerType] runs entirely on the local device
+  /// (no outbound HTTP to a cloud inference service).
+  ///
+  /// Used in two places:
+  /// - this filter, to gate which prompts a mobile platform can run;
+  /// - `profileIsLocal` in `lib/features/ai/helpers/profile_locality.dart`,
+  ///   which decides whether the synced-audio auto-trigger may run a profile
+  ///   against an inbound entry.
+  ///
+  /// New local providers must be added here so both call sites stay in sync.
   static bool isLocalOnlyProviderType(InferenceProviderType providerType) {
     return providerType == InferenceProviderType.whisper ||
         providerType == InferenceProviderType.ollama ||
-        providerType == InferenceProviderType.voxtral;
+        providerType == InferenceProviderType.voxtral ||
+        providerType == InferenceProviderType.mlxAudio;
   }
 
   /// Filter a list of prompts to only include those available on current platform

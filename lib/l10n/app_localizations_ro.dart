@@ -4086,6 +4086,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileNameRequired => 'Este necesar un nume de profil';
 
   @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Când este setat, doar acest dispozitiv rulează automat inferența pentru intrările audio sincronizate care folosesc acest profil.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Dispozitiv fixat';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Niciun dispozitiv cunoscut nu anunță furnizorii pe care îi folosește acest profil. Deschideți setările nodurilor de sincronizare pe dispozitivul țintă.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Intrările audio sincronizate nu sunt transcrise automat când niciun dispozitiv nu este fixat.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Nefixat (fără declanșare automată)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix =>
+      ' (acest dispozitiv)';
+
+  @override
   String get inferenceProfileSaveButton => 'Salvați';
 
   @override
@@ -5878,6 +5901,52 @@ class AppLocalizationsRo extends AppLocalizations {
       'Rezolvați conflictele de sincronizare pentru a asigura consistența datelor';
 
   @override
+  String get settingsSyncNodeProfileCapabilitiesEmpty =>
+      'Niciuna detectată — declanșarea automată a inferenței audio sincronizate nu va viza acest dispozitiv.';
+
+  @override
+  String get settingsSyncNodeProfileCapabilitiesLabel =>
+      'Capabilități AI detectate';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (local)';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameHelper =>
+      'Vizibil pentru celelalte dispozitive ale dvs. când alegeți la care să fixați un profil.';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameLabel =>
+      'Numele afișat al dispozitivului';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesEmpty =>
+      'Niciun alt dispozitiv nu a publicat încă un profil.';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesTitle =>
+      'Dispozitive de sincronizare cunoscute';
+
+  @override
+  String get settingsSyncNodeProfileSaveButton => 'Salvați';
+
+  @override
+  String get settingsSyncNodeProfileSubtitle =>
+      'Denumiți acest dispozitiv și examinați capabilitățile vizibile pentru celelalte dispozitive.';
+
+  @override
+  String get settingsSyncNodeProfileTitle => 'Acest dispozitiv';
+
+  @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override
@@ -6074,6 +6143,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadOutboxBundle => 'Pachet din căsuța de trimitere';
+
+  @override
+  String get syncPayloadSyncNodeProfile => 'Profilul nodului de sincronizare';
 
   @override
   String get syncPayloadThemingSelection => 'Selecție temă';

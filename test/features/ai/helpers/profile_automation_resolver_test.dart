@@ -599,4 +599,174 @@ void main() {
       expect(result, isNull);
     });
   });
+
+  group('resolveProfileIdForTask', () {
+    test(
+      'returns agentConfig.profileId when set (agent path wins)',
+      () async {
+        final agent = makeTestIdentity(
+          config: const AgentConfig(profileId: 'agent-profile-id'),
+        );
+        final template = makeTestTemplate(profileId: 'tpl-profile-id');
+        final version = makeTestTemplateVersion(profileId: 'ver-profile-id');
+
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agent.agentId),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getActiveVersion(template.id),
+        ).thenAnswer((_) async => version);
+
+        final result = await resolver.resolveProfileIdForTask('task-1');
+
+        expect(result, 'agent-profile-id');
+      },
+    );
+
+    test(
+      'falls back to version.profileId when agentConfig has none',
+      () async {
+        final agent = makeTestIdentity();
+        final template = makeTestTemplate(profileId: 'tpl-profile-id');
+        final version = makeTestTemplateVersion(profileId: 'ver-profile-id');
+
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agent.agentId),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getActiveVersion(template.id),
+        ).thenAnswer((_) async => version);
+
+        final result = await resolver.resolveProfileIdForTask('task-1');
+
+        expect(result, 'ver-profile-id');
+      },
+    );
+
+    test(
+      'falls back to template.profileId when version has none',
+      () async {
+        final agent = makeTestIdentity();
+        final template = makeTestTemplate(profileId: 'tpl-profile-id');
+        final version = makeTestTemplateVersion();
+
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agent.agentId),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getActiveVersion(template.id),
+        ).thenAnswer((_) async => version);
+
+        final result = await resolver.resolveProfileIdForTask('task-1');
+
+        expect(result, 'tpl-profile-id');
+      },
+    );
+
+    test(
+      'falls back to task-level profileId when no agent exists',
+      () async {
+        final resolverWithLookup = ProfileAutomationResolver(
+          taskAgentService: mockTaskAgentService,
+          templateService: mockTemplateService,
+          profileResolver: mockProfileResolver,
+          taskProfileLookup: (taskId) async =>
+              taskId == 'task-orphan' ? 'task-inherited-profile' : null,
+        );
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('task-orphan'),
+        ).thenAnswer((_) async => null);
+
+        final result = await resolverWithLookup.resolveProfileIdForTask(
+          'task-orphan',
+        );
+
+        expect(result, 'task-inherited-profile');
+      },
+    );
+
+    test(
+      'agent-level profile wins over task-level profile — proves we never '
+      'silently demote to category default after task creation',
+      () async {
+        final agent = makeTestIdentity(
+          config: const AgentConfig(profileId: 'agent-pin'),
+        );
+        final template = makeTestTemplate();
+        final version = makeTestTemplateVersion();
+        final resolverWithLookup = ProfileAutomationResolver(
+          taskAgentService: mockTaskAgentService,
+          templateService: mockTemplateService,
+          profileResolver: mockProfileResolver,
+          taskProfileLookup: (_) async => 'task-different-profile',
+        );
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agent.agentId),
+        ).thenAnswer((_) async => template);
+        when(
+          () => mockTemplateService.getActiveVersion(template.id),
+        ).thenAnswer((_) async => version);
+
+        final result = await resolverWithLookup.resolveProfileIdForTask(
+          'task-1',
+        );
+
+        expect(result, 'agent-pin');
+      },
+    );
+
+    test(
+      'returns null when no path yields a profile id',
+      () async {
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
+        ).thenAnswer((_) async => null);
+
+        final result = await resolver.resolveProfileIdForTask('task-1');
+
+        expect(result, isNull);
+      },
+    );
+
+    test(
+      'never reads category.defaultProfileId — the dispatcher must rely on '
+      'the agent/task chain, not the category default',
+      () async {
+        // Wire a categoryProfileLookup that would explode the test if called.
+        final resolverWithCategory = ProfileAutomationResolver(
+          taskAgentService: mockTaskAgentService,
+          templateService: mockTemplateService,
+          profileResolver: mockProfileResolver,
+          taskProfileLookup: (_) async => null,
+          categoryProfileLookup: (_) async {
+            fail(
+              'resolveProfileIdForTask must not consult '
+              'categoryProfileLookup',
+            );
+          },
+        );
+        when(
+          () => mockTaskAgentService.getTaskAgentForTask('task-1'),
+        ).thenAnswer((_) async => null);
+
+        final result = await resolverWithCategory.resolveProfileIdForTask(
+          'task-1',
+        );
+
+        expect(result, isNull);
+      },
+    );
+  });
 }

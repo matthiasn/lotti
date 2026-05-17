@@ -4085,6 +4085,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inferenceProfileNameRequired => 'Un nom de profil est requis';
 
   @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Lorsque défini, seul cet appareil exécute automatiquement l\'inférence pour les entrées audio synchronisées qui utilisent ce profil.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Appareil épinglé';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Aucun appareil connu n\'annonce les fournisseurs que ce profil utilise. Ouvre les paramètres des nœuds de synchronisation sur l\'appareil cible.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Les entrées audio synchronisées ne sont pas transcrites automatiquement quand aucun appareil n\'est épinglé.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Non épinglé (pas de déclenchement auto)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (cet appareil)';
+
+  @override
   String get inferenceProfileSaveButton => 'Enregistrer';
 
   @override
@@ -5897,6 +5919,51 @@ class AppLocalizationsFr extends AppLocalizations {
       'Résoudre les conflits de synchronisation pour assurer la cohérence des données';
 
   @override
+  String get settingsSyncNodeProfileCapabilitiesEmpty =>
+      'Aucune détectée — le déclenchement automatique de l\'inférence audio synchronisée ne ciblera pas cet appareil.';
+
+  @override
+  String get settingsSyncNodeProfileCapabilitiesLabel =>
+      'Capacités d\'IA détectées';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (local)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (local)';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameHelper =>
+      'Visible par tes autres appareils lorsque tu choisis lequel épingler à un profil.';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameLabel => 'Nom de l\'appareil';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesEmpty =>
+      'Aucun autre appareil n\'a encore publié de profil.';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesTitle =>
+      'Appareils de synchronisation connus';
+
+  @override
+  String get settingsSyncNodeProfileSaveButton => 'Enregistrer';
+
+  @override
+  String get settingsSyncNodeProfileSubtitle =>
+      'Nomme cet appareil et passe en revue les capacités visibles par tes autres appareils.';
+
+  @override
+  String get settingsSyncNodeProfileTitle => 'Cet appareil';
+
+  @override
   String get settingsSyncOutboxTitle => 'Sync Outbox';
 
   @override
@@ -6092,6 +6159,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPayloadOutboxBundle => 'Lot d\'envoi';
+
+  @override
+  String get syncPayloadSyncNodeProfile => 'Profil du nœud de synchronisation';
 
   @override
   String get syncPayloadThemingSelection => 'Sélection de thème';

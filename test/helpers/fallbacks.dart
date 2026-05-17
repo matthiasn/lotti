@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -201,6 +202,10 @@ void registerAllFallbackValues() {
   // Enum fallbacks
   registerFallbackValue(ChangeSource.user);
   registerFallbackValue(AiConfigType.inferenceProvider);
+
+  // Profile-automation result fallback (used by synced-audio-inference
+  // dispatcher and skill-inference runner tests via `any()`).
+  registerFallbackValue(AutomationResult.notHandled);
 
   registerFallbackValue(
     const TemplatePerformanceMetrics(

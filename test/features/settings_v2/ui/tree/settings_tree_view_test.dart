@@ -49,16 +49,13 @@ Future<void> _pumpView(
 void main() {
   group('SettingsTreeView — flag-off baseline', () {
     testWidgets(
-      'renders every always-on top-level section (ai, sync, definitions, '
+      'renders every always-on top-level section (ai, definitions, '
       'theming, advanced)',
       (tester) async {
         await _pumpView(tester);
         expect(find.text('AI Settings'), findsOneWidget);
         expect(find.text('Definitions'), findsOneWidget);
         expect(find.text('Theming'), findsOneWidget);
-        // Sync stays visible regardless of Matrix so the Conflicts
-        // leaf inside it is always reachable.
-        expect(find.text('Sync Settings'), findsOneWidget);
         expect(find.text('Advanced Settings'), findsOneWidget);
         // Categories / Labels / Measurables / Config Flags moved off
         // the root list — they now hang off the Definitions / Advanced
@@ -79,16 +76,18 @@ void main() {
       expect(find.text("What's New"), findsNothing);
       expect(find.text('Habits'), findsNothing);
       expect(find.text('Dashboards'), findsNothing);
+      // Sync is gated all-or-nothing on enableMatrix: with the flag
+      // off, the whole Sync branch (and its conflicts leaf) is gone.
+      expect(find.text('Sync Settings'), findsNothing);
     });
   });
 
   group('SettingsTreeView — flag-gated visibility', () {
     testWidgets(
-      'enableMatrix on surfaces the matrix-only Sync leaves',
+      'enableMatrix on surfaces the entire Sync branch',
       (tester) async {
         await _pumpView(tester, flags: {enableMatrixFlag: true});
-        // Sync branch is always visible; Matrix gates the leaves
-        // inside it.
+        // Sync is all-or-nothing on the matrix flag.
         expect(find.text('Sync Settings'), findsOneWidget);
       },
     );
@@ -118,20 +117,19 @@ void main() {
       'every root node renders through SettingsTreeNodeWidget (not raw rows)',
       (tester) async {
         // With every flag off the root list is the always-on set
-        // declared in `buildSettingsTree`: ai, agents, sync, definitions,
-        // theming, advanced. Sync stays visible so the always-on
-        // Conflicts leaf inside it remains reachable. A depth-0
+        // declared in `buildSettingsTree`: ai, agents, definitions,
+        // theming, advanced. Sync is gated on enableMatrix so it
+        // drops out when the flag is off. A depth-0
         // `SettingsTreeNodeWidget` per root proves every entry
         // rendered through the widget, not a raw row.
         await _pumpView(tester);
         final rootNodeFinder = find.byWidgetPredicate(
           (w) => w is SettingsTreeNodeWidget && w.depth == 0,
         );
-        expect(rootNodeFinder, findsNWidgets(6));
+        expect(rootNodeFinder, findsNWidgets(5));
         for (final title in const [
           'AI Settings',
           'Agents',
-          'Sync Settings',
           'Definitions',
           'Theming',
           'Advanced Settings',

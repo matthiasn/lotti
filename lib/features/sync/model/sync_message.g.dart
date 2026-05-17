@@ -103,6 +103,21 @@ Map<String, dynamic> _$SyncAiConfigToJson(SyncAiConfig instance) =>
       'runtimeType': instance.$type,
     };
 
+SyncSyncNodeProfile _$SyncSyncNodeProfileFromJson(Map<String, dynamic> json) =>
+    SyncSyncNodeProfile(
+      profile: SyncNodeProfile.fromJson(
+        json['profile'] as Map<String, dynamic>,
+      ),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncSyncNodeProfileToJson(
+  SyncSyncNodeProfile instance,
+) => <String, dynamic>{
+  'profile': instance.profile,
+  'runtimeType': instance.$type,
+};
+
 SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
     SyncAiConfigDelete(
       id: json['id'] as String,

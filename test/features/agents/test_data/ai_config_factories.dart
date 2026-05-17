@@ -49,6 +49,7 @@ AiConfigInferenceProfile testInferenceProfile({
   List<SkillAssignment> skillAssignments = const [],
   bool isDefault = false,
   bool desktopOnly = false,
+  String? pinnedHostId,
 }) {
   return AiConfig.inferenceProfile(
         id: id,
@@ -61,6 +62,7 @@ AiConfigInferenceProfile testInferenceProfile({
         skillAssignments: skillAssignments,
         isDefault: isDefault,
         desktopOnly: desktopOnly,
+        pinnedHostId: pinnedHostId,
         createdAt: DateTime(2024),
       )
       as AiConfigInferenceProfile;

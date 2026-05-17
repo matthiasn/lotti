@@ -5,6 +5,7 @@ class UpdateNotifications {
 
   final _controller = StreamController<Set<String>>.broadcast();
   final _localController = StreamController<Set<String>>.broadcast();
+  final _syncController = StreamController<Set<String>>.broadcast();
   final _affectedIds = <String>{};
   final _affectedIdsFromSync = <String>{};
   final _uiOnlyIds = <String>{};
@@ -13,9 +14,12 @@ class UpdateNotifications {
   Timer? _uiOnlyTimer;
   bool _isDisposed = false;
 
-  /// Stream of all update notifications (both local and sync-originated).
+  /// Stream of all update notifications (local, sync, and UI-only).
   ///
   /// Used by UI widgets and other consumers that need to react to all changes.
+  /// Do **not** use this as the input to feature-specific reactors that should
+  /// only respond to one origin — use [localUpdateStream] or [syncUpdateStream]
+  /// instead.
   Stream<Set<String>> get updateStream => _controller.stream;
 
   /// Stream of only locally-originated update notifications.
@@ -24,6 +28,14 @@ class UpdateNotifications {
   /// trigger agent wakes — the source device already ran the agent.
   Stream<Set<String>> get localUpdateStream => _localController.stream;
 
+  /// Stream of only sync-originated update notifications.
+  ///
+  /// Used by the synced-audio auto-trigger dispatcher, which must react only
+  /// when an entry arrives via Matrix sync — never on local edits or UI-only
+  /// refreshes. The dispatcher would otherwise re-process the same audio
+  /// every time the user typed in the linked task.
+  Stream<Set<String>> get syncUpdateStream => _syncController.stream;
+
   void notify(Set<String> affectedIds, {bool fromSync = false}) {
     if (_isDisposed) return;
 
@@ -31,7 +43,9 @@ class UpdateNotifications {
       _affectedIdsFromSync.addAll(affectedIds);
       _fromSyncTimer ??= Timer(const Duration(seconds: 1), () {
         if (_affectedIdsFromSync.isNotEmpty) {
-          _controller.add({..._affectedIdsFromSync});
+          final batch = {..._affectedIdsFromSync};
+          _controller.add(batch);
+          _syncController.add(batch);
           _affectedIdsFromSync.clear();
         }
         _fromSyncTimer = null;
@@ -83,6 +97,7 @@ class UpdateNotifications {
     _uiOnlyIds.clear();
     await _controller.close();
     await _localController.close();
+    await _syncController.close();
   }
 }
 

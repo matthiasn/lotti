@@ -395,6 +395,7 @@ class MatrixService {
       agentLink: (_) => 'agentLink',
       agentBundle: (_) => 'agentBundle',
       outboxBundle: (_) => 'outboxBundle',
+      syncNodeProfile: (_) => 'syncNodeProfile',
     );
 
     return _messageSender.sendMatrixMessage(

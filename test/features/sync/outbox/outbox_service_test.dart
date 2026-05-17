@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -123,6 +124,7 @@ enum _GeneratedPriorityMessageKind {
   notification,
   notificationStateUpdate,
   outboxBundle,
+  syncNodeProfile,
 }
 
 class _GeneratedPriorityScenario {
@@ -239,6 +241,16 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.outboxBundle => SyncMessage.outboxBundle(
         children: [SyncMessage.aiConfigDelete(id: id)],
       ),
+      _GeneratedPriorityMessageKind.syncNodeProfile =>
+        SyncMessage.syncNodeProfile(
+          profile: SyncNodeProfile(
+            hostId: 'host-$counterSlot',
+            displayName: 'Device $counterSlot',
+            platform: 'macos',
+            capabilities: const [NodeCapability.mlxAudio],
+            updatedAt: DateTime.utc(2026, 3, 15, 12, counterSlot),
+          ),
+        ),
     };
   }
 
@@ -257,7 +269,8 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.outboxBundle => OutboxPriority.normal.index,
       _GeneratedPriorityMessageKind.entityDefinition ||
       _GeneratedPriorityMessageKind.aiConfig ||
-      _GeneratedPriorityMessageKind.aiConfigDelete => OutboxPriority.low.index,
+      _GeneratedPriorityMessageKind.aiConfigDelete ||
+      _GeneratedPriorityMessageKind.syncNodeProfile => OutboxPriority.low.index,
     };
   }
 
@@ -3751,6 +3764,70 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('SyncSyncNodeProfile', () {
+    test(
+      'enqueues sync-node-profile message with correct subject',
+      () async {
+        final message = SyncMessage.syncNodeProfile(
+          profile: SyncNodeProfile(
+            hostId: 'host-uuid-abc',
+            displayName: 'Studio Mac',
+            platform: 'macos',
+            capabilities: const [
+              NodeCapability.mlxAudio,
+              NodeCapability.ollamaLlm,
+            ],
+            updatedAt: DateTime.utc(2026, 3, 15, 12),
+          ),
+        );
+
+        await service.enqueueMessage(message);
+
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
+
+        final companion = captured.first as OutboxCompanion;
+        expect(companion.subject.value, 'syncNodeProfile');
+        // Presence broadcasts ride at low priority so they never queue-jump
+        // journal writes.
+        expect(companion.priority.value, OutboxPriority.low.index);
+      },
+    );
+
+    test(
+      'logs sync-node-profile message details — hostId, name, and capability '
+      'count appear in the structured event for log triage',
+      () async {
+        final message = SyncMessage.syncNodeProfile(
+          profile: SyncNodeProfile(
+            hostId: 'host-uuid-xyz',
+            displayName: 'Linux Box',
+            platform: 'linux',
+            capabilities: const [NodeCapability.ollamaLlm],
+            updatedAt: DateTime.utc(2026, 3, 15, 12),
+          ),
+        );
+
+        await service.enqueueMessage(message);
+
+        verify(
+          () => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncSyncNodeProfile'),
+              contains('hostId=host-uuid-xyz'),
+              contains('name=Linux Box'),
+              contains('caps=1'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('Embedded Entry Links', () {

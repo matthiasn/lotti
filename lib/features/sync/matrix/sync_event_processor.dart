@@ -33,6 +33,7 @@ import 'package:lotti/features/sync/matrix/smart_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/sync_journal_entity_loader.dart';
 import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -88,6 +89,7 @@ class SyncEventProcessor {
     VectorClockService? vectorClockService,
     NotificationsDb? notificationsDb,
     NotificationScheduler? notificationScheduler,
+    SyncNodeProfileRepository? syncNodeProfileRepository,
   }) : _loggingService = loggingService,
        _domainLogger = domainLogger,
        _updateNotifications = updateNotifications,
@@ -100,7 +102,8 @@ class SyncEventProcessor {
        _journalDb = journalDb,
        _vectorClockService = vectorClockService,
        _notificationsDb = notificationsDb,
-       _notificationScheduler = notificationScheduler;
+       _notificationScheduler = notificationScheduler,
+       _syncNodeProfileRepository = syncNodeProfileRepository;
 
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
@@ -125,6 +128,12 @@ class SyncEventProcessor {
   final VectorClockService? _vectorClockService;
   final NotificationsDb? _notificationsDb;
   final NotificationScheduler? _notificationScheduler;
+
+  // Optional so existing test harnesses that construct a processor without
+  // wiring the node-profile directory keep working. When null, incoming
+  // `SyncSyncNodeProfile` messages are still acknowledged but the directory
+  // upsert is skipped.
+  final SyncNodeProfileRepository? _syncNodeProfileRepository;
 
   // Cached local host id. Resolved lazily on the first event that carries
   // an `originatingHostId`. Vector-clock host ids are stable for the life
@@ -662,6 +671,33 @@ class SyncEventProcessor {
           applyChild: (child) =>
               _applyMessage(prepared: child, journalDb: journalDb),
         );
+        return null;
+      case SyncSyncNodeProfile(:final profile):
+        final repo = _syncNodeProfileRepository;
+        if (repo != null) {
+          try {
+            final changed = await repo.upsertNode(profile);
+            _trace(
+              'apply syncNodeProfile hostId=${profile.hostId} '
+              'name=${profile.displayName} caps=${profile.capabilities.length} '
+              'changed=$changed',
+              subDomain: 'processor.apply.syncNodeProfile',
+            );
+          } catch (error, stackTrace) {
+            // Log AND rethrow: an upsert failure (e.g. SettingsDb write
+            // refused, JSON encode glitch) must leave the inbound event
+            // eligible for retry. Swallowing here would silently drop peer
+            // profile updates, which the pinning UI relies on to surface
+            // capable devices.
+            _loggingService.captureException(
+              error,
+              domain: 'SYNC_NODE_PROFILE',
+              subDomain: 'apply.upsert',
+              stackTrace: stackTrace,
+            );
+            rethrow;
+          }
+        }
         return null;
     }
   }

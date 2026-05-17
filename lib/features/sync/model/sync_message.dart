@@ -4,6 +4,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -71,6 +72,15 @@ sealed class SyncMessage with _$SyncMessage {
     required AiConfig aiConfig,
     required SyncEntryStatus status,
   }) = SyncAiConfig;
+
+  /// A node's self-description (name, platform, capabilities).
+  ///
+  /// Carries no vector clock — receivers upsert by `profile.hostId` and use
+  /// `profile.updatedAt` for last-write-wins. Profiles are presence-style
+  /// state, not journal data, so they don't participate in gap detection.
+  const factory SyncMessage.syncNodeProfile({
+    required SyncNodeProfile profile,
+  }) = SyncSyncNodeProfile;
 
   const factory SyncMessage.aiConfigDelete({
     required String id,

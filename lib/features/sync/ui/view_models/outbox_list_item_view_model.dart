@@ -169,6 +169,7 @@ class OutboxListItemViewModel {
         // text-only updates a single envelope carries.
         outboxBundle: (b) =>
             '${messages.syncPayloadOutboxBundle} (${b.children.length})',
+        syncNodeProfile: (_) => messages.syncPayloadSyncNodeProfile,
       );
     } catch (_) {
       return messages.syncListUnknownPayload;

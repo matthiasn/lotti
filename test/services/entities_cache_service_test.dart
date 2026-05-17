@@ -23,6 +23,9 @@ class TestNotifications implements UpdateNotifications {
   @override
   Stream<Set<String>> get localUpdateStream => _controller.stream;
 
+  @override
+  Stream<Set<String>> get syncUpdateStream => _controller.stream;
+
   void emit(Set<String> ids) {
     _controller.add(ids);
   }

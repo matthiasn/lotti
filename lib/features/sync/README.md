@@ -54,6 +54,8 @@ At runtime, the sync feature owns:
 5. sequence-log tracking for sequence-aware payloads
 6. backfill request and response handling
 7. provisioning, maintenance, verification, and diagnostics UI/state
+8. sync-node directory and auto-trigger of local AI inference on synced audio
+   for pinned inference profiles (see [Sync Node Profile And Auto-Trigger](#sync-node-profile-and-auto-trigger))
 
 ## Code Map
 
@@ -67,6 +69,9 @@ At runtime, the sync feature owns:
 | `backfill/` | Send missing-counter requests and answer peer requests with resend, deleted, unresolvable, or covering-payload hints |
 | `state/` and `ui/` | Riverpod controllers and sync-facing settings, stats, diagnostics, provisioning, and maintenance screens |
 | `actor/` | Separate isolate-based sync implementation; present in the repo, but not wired by the default bootstrap path above |
+| `services/sync_node_capability_probe.dart` + `sync_node_profile_broadcaster.dart` | Detect local AI capabilities (macOS → mlxAudio, 300 ms HTTP probe to `127.0.0.1:11434` → ollamaLlm) and publish the local node's profile over Matrix |
+| `repository/sync_node_profile_repository.dart` | Persist this device's self profile + the directory of peer profiles received over sync (both in `SettingsDb`) |
+| `services/synced_audio_inference_listener.dart` + `synced_audio_inference_dispatcher.dart` | Subscribe to sync-only `UpdateNotifications.syncUpdateStream` and run MLX transcription + wake nudge for inbound audio whose pinned profile resolves to this device |
 
 ## Message Model
 
@@ -108,6 +113,130 @@ Those payloads can carry:
 `coveredVectorClocks` are not optional decoration. `SyncSequenceLogService`
 pre-marks covered counters before normal gap detection so a newer payload can
 prove that older counters were semantically superseded instead of simply lost.
+
+## Sync Node Profile And Auto-Trigger
+
+The goal: an audio entry recorded on a phone (where local MLX + Ollama can't
+run) arrives on a capable desktop and the desktop **automatically** runs MLX
+transcription + the Ollama Qwen wake cycle, without the user touching either
+device after the recording. The path is designed so synced audio can never
+accidentally leak to a cloud transcription provider — see the locality
+contract below.
+
+### Components
+
+- **`SyncNodeProfile`** (`model/sync_node_profile.dart`) — freezed model
+  capturing one device's vector-clock `hostId`, user-visible display name,
+  platform, and advertised AI capabilities (`mlxAudio`, `ollamaLlm`,
+  `voxtral`, `whisper`). Capabilities are auto-detected at app startup by
+  `makeDefaultSyncNodeCapabilityProbe`: `mlxAudio` iff `Platform.isMacOS`,
+  `ollamaLlm` iff a 300 ms HTTP request to `127.0.0.1:11434/api/version`
+  succeeds. `voxtral` and `whisper` are intentionally not auto-claimed
+  (they require user-installed binaries the app doesn't manage).
+- **`SyncMessage.syncNodeProfile(profile)`** — wire format for broadcasting
+  the local self profile over Matrix. Receivers upsert it into a directory
+  in `SettingsDb` (`sync_node_profile_directory`), last-write-wins by
+  `updatedAt`. The directory feeds the pinning UI and the dispatcher.
+- **`SyncNodeProfileBroadcaster`** — has two entry points:
+  - `broadcast()` — unconditional. Called on every app startup so a peer
+    that joined late, wiped settings, or missed the last Matrix event
+    always converges within a session. The receiver-side last-write-wins
+    upsert makes redundant re-publishes free.
+  - `broadcastIfChanged()` — diff-only. Called from the rename UI to
+    suppress no-op saves.
+- **`AiConfigInferenceProfile.pinnedHostId`** — a single VC host UUID. When
+  set, only that device's `SyncedAudioInferenceDispatcher` claims inbound
+  audio for this profile. Null = no auto-claim (explicit and conservative;
+  no fallback to "any capable desktop").
+- **`UpdateNotifications.syncUpdateStream`** — sibling of the existing
+  `updateStream` and `localUpdateStream`. Emits the 1 s-batched set of ids
+  for every `notify(..., fromSync: true)` call, and nothing else. The
+  dispatcher subscribes here so it never fires on local edits or UI-only
+  agent-execution refreshes.
+
+### Receive flow
+
+```mermaid
+sequenceDiagram
+  participant Mobile as Mobile (recording)
+  participant Matrix as Matrix room
+  participant Apply as SyncEventProcessor._persistJournalEntity
+  participant Notif as UpdateNotifications.syncUpdateStream
+  participant Listener as SyncedAudioInferenceListener
+  participant Disp as SyncedAudioInferenceDispatcher
+  participant Runner as SkillInferenceRunner.runTranscription
+  participant Wake as WakeOrchestrator.enqueueManualWake
+
+  Mobile->>Matrix: JournalAudio (no transcript)
+  Matrix-->>Apply: SyncJournalEntity event
+  Apply->>Apply: write to JournalDb
+  Apply->>Notif: notify({audioId}, fromSync: true)
+  Notif-->>Listener: batched set after 1 s
+  Listener->>Disp: maybeDispatch(audioId)
+  Disp->>Disp: eligibility (15 checks; see §below)
+  Disp->>Runner: runTranscription(audioEntryId, automationResult, linkedTaskId)
+  Runner-->>Disp: transcript appended to entity (or runner returns silently)
+  Disp->>Disp: reload entity, verify transcripts grew
+  alt transcripts grew
+    Disp->>Wake: enqueueManualWake(reason: transcriptionComplete)
+  else no growth
+    Disp->>Disp: skip wake (log only)
+  end
+```
+
+### Dispatcher eligibility (cliff-notes)
+
+For each id received from the listener, in order:
+
+1. Skip sentinels (`*_CHANGED`, `*_NOTIFICATION`).
+2. Load entity; skip if not `JournalAudio`. Capture `priorTranscriptCount`.
+3. Skip if `priorTranscriptCount > 0` (already transcribed somewhere).
+4. **Self-echo guard.** Skip if VC has *exactly one* entry and it's the
+   local host — that's a first-time self-originated entry. A merged
+   remote VC that includes the local host alongside other hosts passes
+   through; the prior step covers re-transcription guard.
+5. Find the linked task via `linksForEntryIds`. Skip if no parent `Task`.
+6. Call `ProfileAutomationResolver.resolveProfileIdForTask(taskId)` — the
+   raw-id variant of `resolveForTask`. Identical chain
+   (`agentConfig.profileId` → `version.profileId` → `template.profileId`
+   → `task.data.profileId`). **Does not consult `category.defaultProfileId`**;
+   that would let a category edit retroactively re-route claims.
+7. Load the raw `AiConfigInferenceProfile`. Skip if missing.
+8. Skip if `profile.pinnedHostId == null`.
+9. Skip if `profile.pinnedHostId != localHostId`.
+10. Skip with error log if `!await profileIsLocal(profile, repo)` — fail
+    closed: an unresolved model id counts as not local.
+11. Skip if `profile.transcriptionModelId == null` (runner would early-return).
+12. Find the profile's automated transcription `SkillAssignment` (where
+    `automate: true` AND `skill.skillType == transcription`). Skip if none —
+    **no fallback** to `_tryDirectTranscriptionFallback`'s rank-ordered
+    cloud-capable scan.
+13. Build `ResolvedProfile` via `ProfileResolver.resolveByProfileId` +
+    `AutomationResult(handled: true, ...)`.
+14. Call `skillInferenceRunner.runTranscription(audioEntryId, ...)` inside a
+    `try` — a thrown runner reaches step 15 with no transcript growth.
+15. Reload the audio entity. Skip the wake (log only) if `postCount <=
+    priorCount` — silent runner failure must not produce a misleading wake.
+16. Resolve the task agent. Call `wakeOrchestrator.enqueueManualWake(
+    reason: WakeReason.transcriptionComplete.name)`.
+
+`AutomaticPromptTrigger` is deliberately not on this path: its
+`ProfileAutomationService.tryTranscribe` re-enters the rank-ordered fallback
+that includes cloud STT providers (Mistral, OpenAI, Alibaba Qwen), which
+silently breaks the local-only contract for synced audio.
+
+### UI surfaces
+
+- `lib/features/sync/ui/pages/sync_node_profile_page.dart` — settings page for
+  this device. Edit display name, see auto-detected capability chips, list
+  known peers. Reachable at `/settings/sync/node-profile` (Beamer + settings
+  V2 tree).
+- `lib/features/ai/ui/widgets/profile_pinning_selector.dart` — embedded in the
+  inference-profile edit form. Filters the directory by required capabilities
+  (`InferenceProviderType` → `NodeCapability` via `nodeCapabilityFromProviderType`),
+  marks the local node with a "(this device)" suffix, preserves a stale pin
+  as a visible option so the user can see broken state instead of silently
+  losing it.
 
 ## Vector Clock Mechanism
 

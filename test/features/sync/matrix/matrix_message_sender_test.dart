@@ -3661,7 +3661,9 @@ void main() {
         verify(
           () => loggingService.captureEvent(
             any<String>(
-              that: contains('notificationStateUpdate id=notification-state-stamp'),
+              that: contains(
+                'notificationStateUpdate id=notification-state-stamp',
+              ),
             ),
             domain: 'MATRIX_SERVICE',
             subDomain: 'sendMatrixMsg.originatingHostId',
@@ -3676,12 +3678,14 @@ void main() {
       () async {
         final result = await sender.sendNotificationPayloadForTesting(
           room: room,
-          message: const SyncMessage.notification(
-            id: 'missing-json',
-            jsonPath: '/notifications/missing-json.json',
-            vectorClock: VectorClock({'hostA': 1}),
-            originatingHostId: 'origin',
-          ) as SyncNotification,
+          message:
+              const SyncMessage.notification(
+                    id: 'missing-json',
+                    jsonPath: '/notifications/missing-json.json',
+                    vectorClock: VectorClock({'hostA': 1}),
+                    originatingHostId: 'origin',
+                  )
+                  as SyncNotification,
         );
 
         expect(result, isNull);
@@ -3713,12 +3717,14 @@ void main() {
 
         final result = await sender.sendNotificationPayloadForTesting(
           room: room,
-          message: const SyncMessage.notification(
-            id: 'bad-json',
-            jsonPath: '/notifications/bad-json.json',
-            vectorClock: VectorClock({'hostA': 1}),
-            originatingHostId: 'origin',
-          ) as SyncNotification,
+          message:
+              const SyncMessage.notification(
+                    id: 'bad-json',
+                    jsonPath: '/notifications/bad-json.json',
+                    vectorClock: VectorClock({'hostA': 1}),
+                    originatingHostId: 'origin',
+                  )
+                  as SyncNotification,
         );
 
         expect(result, isNull);

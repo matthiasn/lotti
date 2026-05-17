@@ -186,6 +186,41 @@ providers that have the required API key. This keeps local/mobile STT available
 when the user has installed MLX Audio but the desktop-only local profile is not
 available on that device.
 
+**Synced-audio auto-trigger uses a different path.** When a `JournalAudio`
+arrives over Matrix sync (recorded on another device), `SyncedAudioInferenceDispatcher`
+runs the inference flow itself rather than calling `AutomaticPromptTrigger`.
+The dispatcher bypasses `tryTranscribe` entirely — that path would re-enter the
+ranked direct-model fallback above, which can route through cloud providers
+(Mistral, OpenAI, Gemini) and silently break the "local-only" promise of a
+pinned profile. See [Profile Pinning](#profile-pinning) and the sync
+[README](../sync/README.md#sync-node-profile-and-auto-trigger) for the full
+flow.
+
+### Profile Pinning
+
+`AiConfigInferenceProfile.pinnedHostId` is the vector-clock host UUID of the
+device that should auto-run this profile on synced audio entries. The
+`SyncedAudioInferenceDispatcher` (see sync README) consults this field at
+trigger time: pinned-or-skip with no fallback. The pinning UI lives in
+`lib/features/ai/ui/widgets/profile_pinning_selector.dart`, filters the known
+sync-node directory by required capabilities, and is embedded in
+`inference_profile_form.dart`.
+
+`profile_locality.dart` defines `profileIsLocal(profile, repo)`: returns true
+iff every populated model id resolves to a provider in `{ollama, voxtral,
+whisper, mlxAudio}`. **Fail-closed** — a referenced-but-unresolved model id
+counts as not local, which prevents a deleted cloud-provider config from
+masking the profile as safe-to-auto-route. The dispatcher gates on this
+helper after the pin match, so even a buggy pinning UI cannot route synced
+audio to a cloud model.
+
+The dispatcher uses `ProfileAutomationResolver.resolveProfileIdForTask` (a
+sibling of `resolveForTask` that returns the raw profile id rather than a
+`ResolvedProfile`) so it can read `pinnedHostId` and call `profileIsLocal` on
+the raw config. It does **not** consult `category.defaultProfileId` directly,
+which would skip agent-level overrides and let a category edit retroactively
+re-route which device claims an entry.
+
 ```mermaid
 flowchart TD
   Trigger["triggerSkillProvider"] --> HasTask{"linkedTaskId != null?"}

@@ -199,6 +199,7 @@ AiConfigInferenceProfile _$AiConfigInferenceProfileFromJson(
           ?.map((e) => SkillAssignment.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
+  pinnedHostId: json['pinnedHostId'] as String?,
   updatedAt: json['updatedAt'] == null
       ? null
       : DateTime.parse(json['updatedAt'] as String),
@@ -220,6 +221,7 @@ Map<String, dynamic> _$AiConfigInferenceProfileToJson(
   'isDefault': instance.isDefault,
   'desktopOnly': instance.desktopOnly,
   'skillAssignments': instance.skillAssignments,
+  'pinnedHostId': instance.pinnedHostId,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'description': instance.description,
   'runtimeType': instance.$type,

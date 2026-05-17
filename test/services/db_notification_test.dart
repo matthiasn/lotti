@@ -973,6 +973,98 @@ void main() {
     });
   });
 
+  group('syncUpdateStream', () {
+    test('emits for sync-originated notifications', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final syncEmitted = <Set<String>>[];
+        updateNotifications.syncUpdateStream.listen(syncEmitted.add);
+
+        updateNotifications.notify({'sync-1', 'sync-2'}, fromSync: true);
+        async.elapse(
+          const Duration(milliseconds: _TestConstants.syncTimerDelay),
+        );
+
+        expect(syncEmitted, hasLength(1));
+        expect(syncEmitted.first, containsAll(['sync-1', 'sync-2']));
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+
+    test('does NOT emit for locally-originated notifications', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final syncEmitted = <Set<String>>[];
+        updateNotifications.syncUpdateStream.listen(syncEmitted.add);
+
+        updateNotifications.notify({'local-1'});
+        async.elapse(
+          const Duration(milliseconds: _TestConstants.regularTimerDelay),
+        );
+
+        // Local notifications must never reach the sync stream — the
+        // dispatcher uses this as its safety boundary against re-running
+        // inference on every keystroke / UI refresh.
+        expect(syncEmitted, isEmpty);
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+
+    test('does NOT emit for notifyUiOnly notifications', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final syncEmitted = <Set<String>>[];
+        updateNotifications.syncUpdateStream.listen(syncEmitted.add);
+
+        updateNotifications.notifyUiOnly({'agent-ui-refresh'});
+        async.elapse(const Duration(milliseconds: 200));
+
+        expect(syncEmitted, isEmpty);
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+
+    test('emits the same batch as updateStream for sync notifications', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        final syncEmitted = <Set<String>>[];
+        final allEmitted = <Set<String>>[];
+        updateNotifications.syncUpdateStream.listen(syncEmitted.add);
+        updateNotifications.updateStream.listen(allEmitted.add);
+
+        updateNotifications.notify({'a', 'b'}, fromSync: true);
+        async.elapse(
+          const Duration(milliseconds: _TestConstants.syncTimerDelay),
+        );
+
+        expect(syncEmitted, hasLength(1));
+        expect(allEmitted, hasLength(1));
+        expect(syncEmitted.first, allEmitted.first);
+
+        unawaited(updateNotifications.dispose());
+      });
+    });
+
+    test('closed on dispose', () {
+      fakeAsync((async) {
+        final updateNotifications = UpdateNotifications();
+        var done = false;
+        updateNotifications.syncUpdateStream.listen(
+          (_) {},
+          onDone: () => done = true,
+        );
+
+        unawaited(updateNotifications.dispose());
+        async.flushMicrotasks();
+
+        expect(done, isTrue);
+      });
+    });
+  });
+
   group('notifyUiOnly', () {
     test('emits to updateStream but not localUpdateStream', () {
       fakeAsync((async) {

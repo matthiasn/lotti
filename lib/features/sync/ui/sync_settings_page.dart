@@ -82,6 +82,13 @@ class SyncSettingsPage extends StatelessWidget {
             trailing: chevron,
             onTap: () => context.beamToNamed('/settings/sync/backfill'),
           ),
+          (
+            title: context.messages.settingsSyncNodeProfileTitle,
+            subtitle: context.messages.settingsSyncNodeProfileSubtitle,
+            icon: Icons.devices_rounded,
+            trailing: chevron,
+            onTap: () => context.beamToNamed('/settings/sync/node-profile'),
+          ),
         ];
 
     return SyncFeatureGate(

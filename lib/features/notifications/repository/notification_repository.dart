@@ -103,7 +103,8 @@ class NotificationRepository {
       // createdAt + vector clock so causality keeps advancing instead of
       // resetting to the new placeholder's empty clock.
       final existing = await _notificationsDb.notificationById(entity.id);
-      final previousClock = existing?.meta.vectorClock ??
+      final previousClock =
+          existing?.meta.vectorClock ??
           (entity.meta.vectorClock.vclock.isEmpty
               ? null
               : entity.meta.vectorClock);

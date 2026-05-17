@@ -46,8 +46,11 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
+import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -212,6 +215,12 @@ Future<void> registerSingletons() async {
   final journalDb = getIt<JournalDb>();
   final notificationsDb = getIt<NotificationsDb>();
   final settingsDb = getIt<SettingsDb>();
+  final syncNodeProfileRepository = SyncNodeProfileRepository(
+    settingsDb: settingsDb,
+  );
+  getIt.registerSingleton<SyncNodeProfileRepository>(
+    syncNodeProfileRepository,
+  );
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
   final secureStorage = getIt<SecureStorage>();
@@ -283,6 +292,7 @@ Future<void> registerSingletons() async {
     vectorClockService: vectorClockService,
     notificationsDb: notificationsDb,
     notificationScheduler: notificationScheduler,
+    syncNodeProfileRepository: syncNodeProfileRepository,
   );
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
@@ -390,6 +400,40 @@ Future<void> registerSingletons() async {
     scheduler: notificationScheduler,
   );
   getIt.registerSingleton<NotificationRepository>(notificationRepository);
+
+  // Sync-node profile broadcaster: probes the local node's capabilities and
+  // broadcasts (over the outbox) whenever the snapshot changes. Registered
+  // here because it depends on both the repository (created earlier) and the
+  // outbox service. The initial broadcast is fire-and-forget — boot must
+  // never await it — and we wrap the future in a try/catch right here so an
+  // unexpected probe / enqueue failure is captured under SYNC_NODE_PROFILE
+  // instead of escaping to the zone error handler.
+  final syncNodeProfileBroadcaster = SyncNodeProfileBroadcaster(
+    repository: syncNodeProfileRepository,
+    probe: defaultSyncNodeCapabilityProbe,
+    vectorClockService: vectorClockService,
+    outboxService: outboxService,
+    domainLogger: domainLogger,
+  );
+  getIt.registerSingleton<SyncNodeProfileBroadcaster>(
+    syncNodeProfileBroadcaster,
+  );
+  // Unconditional broadcast on every startup so late-joining peers and peers
+  // that wiped settings always converge on the current snapshot within a
+  // session — the receiver's directory upsert is last-write-wins by
+  // updatedAt, so redundant re-broadcasts of unchanged content are cheap.
+  unawaited(() async {
+    try {
+      await syncNodeProfileBroadcaster.broadcast();
+    } catch (error, stackTrace) {
+      loggingService.captureException(
+        error,
+        domain: 'SYNC_NODE_PROFILE',
+        subDomain: 'startupBroadcast',
+        stackTrace: stackTrace,
+      );
+    }
+  }());
 
   // Proactive VC burn broadcast: when a reservation releases (write rejected,
   // scope threw, commitWhen=false), enqueue a SyncBackfillResponse with

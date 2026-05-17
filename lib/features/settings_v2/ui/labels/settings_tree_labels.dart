@@ -85,6 +85,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.backfillSettingsTitle,
           desc: m.backfillSettingsSubtitle,
         );
+      case 'sync/node-profile':
+        return (
+          title: m.settingsSyncNodeProfileTitle,
+          desc: m.settingsSyncNodeProfileSubtitle,
+        );
       case 'sync/stats':
         return (
           title: m.settingsMatrixStatsTitle,

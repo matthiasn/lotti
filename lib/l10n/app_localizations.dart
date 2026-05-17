@@ -7032,6 +7032,42 @@ abstract class AppLocalizations {
   /// **'A profile name is required'**
   String get inferenceProfileNameRequired;
 
+  /// No description provided for @inferenceProfilePinnedHostHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'When set, only this device auto-runs inference for synced audio entries that use this profile.'**
+  String get inferenceProfilePinnedHostHelper;
+
+  /// No description provided for @inferenceProfilePinnedHostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned device'**
+  String get inferenceProfilePinnedHostLabel;
+
+  /// No description provided for @inferenceProfilePinnedHostNoEligibleNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'No known devices advertise the providers this profile uses. Open Sync node settings on the target device.'**
+  String get inferenceProfilePinnedHostNoEligibleNodes;
+
+  /// No description provided for @inferenceProfilePinnedHostNoneHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced audio entries are not auto-transcribed when no device is pinned.'**
+  String get inferenceProfilePinnedHostNoneHelper;
+
+  /// No description provided for @inferenceProfilePinnedHostNoneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not pinned (no auto-trigger)'**
+  String get inferenceProfilePinnedHostNoneLabel;
+
+  /// No description provided for @inferenceProfilePinnedHostThisDeviceSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' (this device)'**
+  String get inferenceProfilePinnedHostThisDeviceSuffix;
+
   /// No description provided for @inferenceProfileSaveButton.
   ///
   /// In en, this message translates to:
@@ -9937,6 +9973,84 @@ abstract class AppLocalizations {
   /// **'Resolve synchronization conflicts to ensure data consistency'**
   String get settingsSyncConflictsSubtitle;
 
+  /// No description provided for @settingsSyncNodeProfileCapabilitiesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'None detected — auto-trigger of synced audio inference will not target this device.'**
+  String get settingsSyncNodeProfileCapabilitiesEmpty;
+
+  /// No description provided for @settingsSyncNodeProfileCapabilitiesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected AI capabilities'**
+  String get settingsSyncNodeProfileCapabilitiesLabel;
+
+  /// No description provided for @settingsSyncNodeProfileCapabilityMlxAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'MLX Audio (local)'**
+  String get settingsSyncNodeProfileCapabilityMlxAudio;
+
+  /// No description provided for @settingsSyncNodeProfileCapabilityOllamaLlm.
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama LLM'**
+  String get settingsSyncNodeProfileCapabilityOllamaLlm;
+
+  /// No description provided for @settingsSyncNodeProfileCapabilityVoxtral.
+  ///
+  /// In en, this message translates to:
+  /// **'Voxtral (local)'**
+  String get settingsSyncNodeProfileCapabilityVoxtral;
+
+  /// No description provided for @settingsSyncNodeProfileCapabilityWhisper.
+  ///
+  /// In en, this message translates to:
+  /// **'Whisper (local)'**
+  String get settingsSyncNodeProfileCapabilityWhisper;
+
+  /// No description provided for @settingsSyncNodeProfileDisplayNameHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible to your other devices when picking which one to pin a profile to.'**
+  String get settingsSyncNodeProfileDisplayNameHelper;
+
+  /// No description provided for @settingsSyncNodeProfileDisplayNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Device display name'**
+  String get settingsSyncNodeProfileDisplayNameLabel;
+
+  /// No description provided for @settingsSyncNodeProfileKnownNodesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No other devices have published a profile yet.'**
+  String get settingsSyncNodeProfileKnownNodesEmpty;
+
+  /// No description provided for @settingsSyncNodeProfileKnownNodesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Known sync devices'**
+  String get settingsSyncNodeProfileKnownNodesTitle;
+
+  /// No description provided for @settingsSyncNodeProfileSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get settingsSyncNodeProfileSaveButton;
+
+  /// No description provided for @settingsSyncNodeProfileSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this device and review capabilities visible to your other devices.'**
+  String get settingsSyncNodeProfileSubtitle;
+
+  /// No description provided for @settingsSyncNodeProfileTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get settingsSyncNodeProfileTitle;
+
   /// No description provided for @settingsSyncOutboxTitle.
   ///
   /// In en, this message translates to:
@@ -10284,6 +10398,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Outbox bundle'**
   String get syncPayloadOutboxBundle;
+
+  /// No description provided for @syncPayloadSyncNodeProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync node profile'**
+  String get syncPayloadSyncNodeProfile;
 
   /// No description provided for @syncPayloadThemingSelection.
   ///

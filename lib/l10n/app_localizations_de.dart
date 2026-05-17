@@ -4065,6 +4065,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inferenceProfileNameRequired => 'Ein Profilname ist erforderlich';
 
   @override
+  String get inferenceProfilePinnedHostHelper =>
+      'Wenn gesetzt, führt nur dieses Gerät die Inferenz für synchronisierte Audio-Einträge automatisch aus, die dieses Profil verwenden.';
+
+  @override
+  String get inferenceProfilePinnedHostLabel => 'Verknüpftes Gerät';
+
+  @override
+  String get inferenceProfilePinnedHostNoEligibleNodes =>
+      'Keine bekannten Geräte bieten die Anbieter, die dieses Profil verwendet. Öffne die Sync-Knoten-Einstellungen auf dem Zielgerät.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneHelper =>
+      'Synchronisierte Audio-Einträge werden nicht automatisch transkribiert, wenn kein Gerät verknüpft ist.';
+
+  @override
+  String get inferenceProfilePinnedHostNoneLabel =>
+      'Nicht verknüpft (kein Auto-Trigger)';
+
+  @override
+  String get inferenceProfilePinnedHostThisDeviceSuffix => ' (dieses Gerät)';
+
+  @override
   String get inferenceProfileSaveButton => 'Speichern';
 
   @override
@@ -5822,6 +5844,51 @@ class AppLocalizationsDe extends AppLocalizations {
       'Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten';
 
   @override
+  String get settingsSyncNodeProfileCapabilitiesEmpty =>
+      'Keine erkannt — der Auto-Trigger für synchronisierte Audio-Inferenz zielt nicht auf dieses Gerät.';
+
+  @override
+  String get settingsSyncNodeProfileCapabilitiesLabel =>
+      'Erkannte KI-Fähigkeiten';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityMlxAudio => 'MLX Audio (lokal)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (lokal)';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityWhisper => 'Whisper (lokal)';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameHelper =>
+      'Wird auf deinen anderen Geräten angezeigt, wenn du auswählst, an welches du ein Profil verknüpfst.';
+
+  @override
+  String get settingsSyncNodeProfileDisplayNameLabel =>
+      'Anzeigename des Geräts';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesEmpty =>
+      'Noch keine anderen Geräte haben ein Profil veröffentlicht.';
+
+  @override
+  String get settingsSyncNodeProfileKnownNodesTitle => 'Bekannte Sync-Geräte';
+
+  @override
+  String get settingsSyncNodeProfileSaveButton => 'Speichern';
+
+  @override
+  String get settingsSyncNodeProfileSubtitle =>
+      'Benenne dieses Gerät und überprüfe die Fähigkeiten, die deine anderen Geräte sehen können.';
+
+  @override
+  String get settingsSyncNodeProfileTitle => 'Dieses Gerät';
+
+  @override
   String get settingsSyncOutboxTitle => 'Sync-Postausgang';
 
   @override
@@ -6018,6 +6085,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadOutboxBundle => 'Outbox-Bündel';
+
+  @override
+  String get syncPayloadSyncNodeProfile => 'Sync-Knoten-Profil';
 
   @override
   String get syncPayloadThemingSelection => 'Designauswahl';

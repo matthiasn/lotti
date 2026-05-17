@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
+import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -81,6 +82,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   String? _transcriptionModelId;
   String? _imageGenerationModelId;
   bool _desktopOnly = false;
+  String? _pinnedHostId;
   late List<SkillAssignment> _skillAssignments;
   bool _isSaving = false;
 
@@ -97,6 +99,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     _imageRecognitionModelId = p?.imageRecognitionModelId;
     _transcriptionModelId = p?.transcriptionModelId;
     _imageGenerationModelId = p?.imageGenerationModelId;
+    _pinnedHostId = p?.pinnedHostId;
     _desktopOnly = p?.desktopOnly ?? false;
     _skillAssignments = List.of(p?.skillAssignments ?? []);
   }
@@ -255,6 +258,21 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             ),
             const SizedBox(height: 24),
 
+            // Pinning: which device should auto-trigger this profile on
+            // inbound synced audio?
+            ProfilePinningSelector(
+              pinnedHostId: _pinnedHostId,
+              referencedModelIds: <String>{
+                ?_thinkingModelId,
+                ?_thinkingHighEndModelId,
+                ?_imageRecognitionModelId,
+                ?_transcriptionModelId,
+                ?_imageGenerationModelId,
+              },
+              onChanged: (value) => setState(() => _pinnedHostId = value),
+            ),
+            const SizedBox(height: 24),
+
             // Automated skills section
             Text(
               context.messages.inferenceProfileSkillsSection,
@@ -393,6 +411,10 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
                 desktopOnly: _desktopOnly,
                 skillAssignments: _sanitizedSkillAssignments(),
                 isDefault: widget.existingProfile?.isDefault ?? false,
+                // The selector mutates `_pinnedHostId`; on a brand-new
+                // profile this is null and the auto-trigger stays inert
+                // until the user picks a device.
+                pinnedHostId: _pinnedHostId,
                 description: _descriptionController.text.trim().isNotEmpty
                     ? _descriptionController.text.trim()
                     : null,

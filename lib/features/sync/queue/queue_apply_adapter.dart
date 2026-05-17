@@ -348,6 +348,8 @@ class QueueApplyAdapter {
       // OutboxBundle unpacks into journal/linked_entries via
       // _outboxBundleUnpacker.apply — keep wrapped.
       outboxBundle: (_) => true,
+      // settings_db (directory map keyed by hostId).
+      syncNodeProfile: (_) => false,
     );
   }
 }
