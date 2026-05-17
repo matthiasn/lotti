@@ -1,7 +1,20 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/consts.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../mocks/mocks.dart';
+
+const MethodChannel _kPluginChannel = MethodChannel(
+  'dexterous.com/flutter/local_notifications',
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

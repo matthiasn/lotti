@@ -1185,6 +1185,12 @@ class MatrixMessageSender {
   Future<SyncMessage> ensureOriginatingHostIdForTesting(
     SyncMessage message,
   ) => _ensureOriginatingHostId(message);
+
+  @visibleForTesting
+  Future<SyncNotification?> sendNotificationPayloadForTesting({
+    required Room room,
+    required SyncNotification message,
+  }) => _sendNotificationPayload(room: room, message: message);
 }
 
 class MatrixMessageContext {

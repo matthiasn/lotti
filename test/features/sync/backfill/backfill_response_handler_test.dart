@@ -211,6 +211,60 @@ void main() {
       },
     );
 
+    test(
+      'skips notification backfill when notificationsDb is not wired',
+      () async {
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 5),
+          ],
+          requesterId: requesterId,
+        );
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 5),
+        ).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            5,
+            entryId: 'notif-no-db',
+            originatingHostId: aliceHostId,
+            payloadType: SyncSequencePayloadType.notification,
+          ),
+        );
+
+        await handler.handleBackfillRequest(request);
+
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
+
+    test(
+      'skips notification state update backfill when notificationsDb is not wired',
+      () async {
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 6),
+          ],
+          requesterId: requesterId,
+        );
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 6),
+        ).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            6,
+            entryId: 'notif-state-no-db',
+            originatingHostId: aliceHostId,
+            payloadType: SyncSequencePayloadType.notificationStateUpdate,
+          ),
+        );
+
+        await handler.handleBackfillRequest(request);
+
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
+
     test('sends unresolvable when own counter not in sequence log', () async {
       // Request for Alice's counter (our own) - we can't find it
       // Only we can answer for our own counters, so send unresolvable

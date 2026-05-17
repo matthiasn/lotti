@@ -3508,6 +3508,230 @@ void main() {
         expect((stamped as SyncOutboxBundle).originatingHostId, 'host-X');
       },
     );
+
+    test(
+      'fills originatingHostId on SyncNotificationStateUpdate child inside '
+      'an outbox bundle so the receiver matches it to the local host id and '
+      'skips re-applying it on the originating device',
+      () async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-A');
+        final stamper = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          vectorClockService: vectorClockService,
+        );
+
+        MatrixFile? capturedFile;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedFile = inv.positionalArguments.first as MatrixFile;
+          return r'$file-id';
+        });
+
+        const stateUpdate = SyncMessage.notificationStateUpdate(
+          id: 'state-bundle',
+          vectorClock: VectorClock({'host-A': 4}),
+          originatingHostId: '',
+        );
+
+        final stripped = await stamper.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: const SyncOutboxBundle(children: [stateUpdate]),
+        );
+
+        expect(stripped, isNotNull);
+        final manifest =
+            json.decode(utf8.decode(gzip.decode(capturedFile!.bytes)))
+                as Map<String, dynamic>;
+        final entries = manifest['entries'] as List;
+        final reconstructed = SyncMessage.fromJson(
+          (entries.single as Map<String, dynamic>)['envelope']
+              as Map<String, dynamic>,
+        );
+        expect(reconstructed, isA<SyncNotificationStateUpdate>());
+        expect(
+          (reconstructed as SyncNotificationStateUpdate).originatingHostId,
+          'host-A',
+        );
+      },
+    );
+
+    test(
+      'sendMatrixMessage returns false when the notification JSON file is '
+      'missing, exercising the FAIL notificationPayload trace branch',
+      () async {
+        final result = await sender.sendMatrixMessage(
+          message: const SyncMessage.notification(
+            id: 'send-missing',
+            jsonPath: '/notifications/send-missing.json',
+            vectorClock: VectorClock({'hostA': 1}),
+            originatingHostId: 'origin',
+          ),
+          context: buildContext(),
+          onSent: (_, _) {},
+        );
+
+        expect(result, isFalse);
+        verifyNever(
+          () => room.sendTextEvent(
+            any<String>(),
+            msgtype: any<String>(named: 'msgtype'),
+            parseCommands: any<bool>(named: 'parseCommands'),
+            parseMarkdown: any<bool>(named: 'parseMarkdown'),
+          ),
+        );
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.notification',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '_ensureOriginatingHostId stamps SyncNotification when host is missing',
+      () async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-N');
+        final stamper = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          vectorClockService: vectorClockService,
+        );
+
+        final stamped = await stamper.ensureOriginatingHostIdForTesting(
+          const SyncMessage.notification(
+            id: 'notification-stamp',
+            jsonPath: '/notifications/notification-stamp.json',
+            vectorClock: VectorClock({'hostA': 1}),
+            originatingHostId: '',
+          ),
+        );
+
+        expect(stamped, isA<SyncNotification>());
+        expect((stamped as SyncNotification).originatingHostId, 'host-N');
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(that: contains('notification id=notification-stamp')),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.originatingHostId',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '_ensureOriginatingHostId stamps SyncNotificationStateUpdate when host is missing',
+      () async {
+        final vectorClockService = MockVectorClockService();
+        when(vectorClockService.getHost).thenAnswer((_) async => 'host-S');
+        final stamper = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: SentEventRegistry(),
+          vectorClockService: vectorClockService,
+        );
+
+        final stamped = await stamper.ensureOriginatingHostIdForTesting(
+          const SyncMessage.notificationStateUpdate(
+            id: 'notification-state-stamp',
+            vectorClock: VectorClock({'hostA': 2}),
+            originatingHostId: '',
+          ),
+        );
+
+        expect(stamped, isA<SyncNotificationStateUpdate>());
+        expect(
+          (stamped as SyncNotificationStateUpdate).originatingHostId,
+          'host-S',
+        );
+        verify(
+          () => loggingService.captureEvent(
+            any<String>(
+              that: contains('notificationStateUpdate id=notification-state-stamp'),
+            ),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.originatingHostId',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '_sendNotificationPayload returns null when the JSON file is missing '
+      'on disk',
+      () async {
+        final result = await sender.sendNotificationPayloadForTesting(
+          room: room,
+          message: const SyncMessage.notification(
+            id: 'missing-json',
+            jsonPath: '/notifications/missing-json.json',
+            vectorClock: VectorClock({'hostA': 1}),
+            originatingHostId: 'origin',
+          ) as SyncNotification,
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.notification',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      '_sendNotificationPayload returns null when the on-disk JSON is '
+      'malformed',
+      () async {
+        const jsonPath = '/notifications/bad-json.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync('{"not":"valid notification"}');
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((_) async => r'$bad-json-file-id');
+
+        final result = await sender.sendNotificationPayloadForTesting(
+          room: room,
+          message: const SyncMessage.notification(
+            id: 'bad-json',
+            jsonPath: '/notifications/bad-json.json',
+            vectorClock: VectorClock({'hostA': 1}),
+            originatingHostId: 'origin',
+          ) as SyncNotification,
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'sendMatrixMsg.notification.decode',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
   });
 }
 

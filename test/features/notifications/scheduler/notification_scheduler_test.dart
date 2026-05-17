@@ -16,10 +16,7 @@ void main() {
   late MockJournalDb journalDb;
   late NotificationScheduler scheduler;
 
-  setUpAll(() {
-    registerAllFallbackValues();
-    registerFallbackValue(DateTime.utc(2026));
-  });
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
     notificationsDb = NotificationsDb(
@@ -193,6 +190,61 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'schedule falls back to wall-clock now when caller omits now',
+      () async {
+        final farFuture = DateTime.utc(2099);
+        final entity = _notification(
+          id: 'fallback-now',
+          scheduledFor: farFuture,
+        );
+
+        await scheduler.schedule(entity);
+
+        verify(
+          () => notificationService.scheduleNotificationAt(
+            title: 'Due title',
+            body: 'Due body',
+            notifyAt: farFuture,
+            notificationId: NotificationScheduler.notificationIdFor(
+              'fallback-now',
+            ),
+            showOnMobile: true,
+            showOnDesktop: true,
+            deepLink: '/tasks/task-id',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'reconcile falls back to wall-clock now when caller omits now',
+      () async {
+        await notificationsDb.upsertNotification(
+          _notification(
+            id: 'reconcile-fallback',
+            scheduledFor: DateTime.utc(2099),
+          ),
+        );
+
+        await scheduler.reconcile();
+
+        verify(
+          () => notificationService.scheduleNotificationAt(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notifyAt: DateTime.utc(2099),
+            notificationId: NotificationScheduler.notificationIdFor(
+              'reconcile-fallback',
+            ),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'reconcile cancels stale scheduled alerts when flag is off',

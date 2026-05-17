@@ -311,6 +311,7 @@ void main() {
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(const VectorClock({'fallback': 1}));
     registerFallbackValue(Duration.zero);
+    registerFallbackValue(SyncSequencePayloadType.journalEntity);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(connectivityMethodChannel, (
           MethodCall call,
@@ -708,6 +709,87 @@ void main() {
         jsonDecode(payloadFile.readAsStringSync()) as Map<String, dynamic>,
       );
       expect(payload, notification);
+    },
+  );
+
+  test(
+    'enqueueMessage swallows sequence log throws on notification path',
+    () async {
+      final sequenceLog = MockSyncSequenceLogService();
+      when(
+        () => sequenceLog.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenThrow(Exception('record sent boom'));
+
+      final notification = _testNotification(
+        id: 'throwing-record',
+        vectorClock: const VectorClock({'hostA': 4}),
+      );
+      final relPath = relativeNotificationPath(notification.id);
+      File('${documentsDirectory.path}$relPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(notification.toJson()));
+
+      final svc = TestableOutboxService(
+        syncDatabase: syncDatabase,
+        loggingService: loggingService,
+        vectorClockService: vectorClockService,
+        journalDb: journalDb,
+        documentsDirectory: documentsDirectory,
+        userActivityService: userActivityService,
+        repository: repository,
+        messageSender: messageSender,
+        processor: processor,
+        sequenceLogService: sequenceLog,
+      );
+
+      await svc.enqueueMessage(
+        SyncMessage.notification(
+          id: notification.id,
+          jsonPath: relPath,
+          vectorClock: notification.meta.vectorClock,
+          originatingHostId: 'hostA',
+        ),
+      );
+
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'recordSent',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'enqueueMessage skips and logs when notification jsonPath escapes docs root',
+    () async {
+      await service.enqueueMessage(
+        const SyncMessage.notification(
+          id: 'escape',
+          jsonPath: '/../escape.json',
+          vectorClock: VectorClock({'hostA': 1}),
+          originatingHostId: 'hostA',
+        ),
+      );
+
+      verifyNever(
+        () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+      );
+      verify(
+        () => loggingService.captureEvent(
+          any<String>(
+            that: contains('enqueue.skip invalid notification payload path'),
+          ),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     },
   );
 
