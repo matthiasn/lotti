@@ -149,6 +149,103 @@ void main() {
 
       expect(selectedModel, isNull);
     });
+
+    testWidgets(
+      'falls back to the first model when no recommended id matches',
+      (tester) async {
+        AiConfigModel? selectedModel;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) {
+                return TextButton(
+                  onPressed: () async {
+                    final result = await Navigator.of(context)
+                        .push<AiConfigModel>(
+                          MaterialPageRoute<AiConfigModel>(
+                            builder: (_) => Scaffold(
+                              body: SingleChildScrollView(
+                                child: MlxAudioModelInstallChoiceDialog(
+                                  models: [voxtralModel],
+                                  recommendedModelId: 'does-not-match-anything',
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                    selectedModel = result;
+                  },
+                  child: const Text('Open chooser'),
+                );
+              },
+            ),
+          ),
+        );
+        await _openChoiceDialog(tester);
+        await tester.tap(find.text('Install model'));
+        await _closePushedRoute(tester);
+
+        expect(
+          selectedModel?.providerModelId,
+          mlxAudioVoxtralRealtime4BitModelId,
+        );
+      },
+    );
+
+    testWidgets(
+      'didUpdateWidget rebuilds the model index when models or '
+      'recommendedModelId change',
+      (tester) async {
+        final hostKey = GlobalKey<_DialogHostState>();
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            _DialogHost(
+              key: hostKey,
+              initialModels: [recommendedModel, voxtralModel],
+              initialRecommendedId: recommendedModel.providerModelId,
+            ),
+          ),
+        );
+
+        expect(find.text(recommendedModel.name), findsOneWidget);
+        expect(find.text(voxtralModel.name), findsOneWidget);
+
+        hostKey.currentState!.swapToVoxtralOnly();
+        await tester.pump();
+
+        expect(find.text(recommendedModel.name), findsNothing);
+        expect(find.text(voxtralModel.name), findsOneWidget);
+      },
+    );
+
+    testWidgets('show static helper resolves with the selected model', (
+      tester,
+    ) async {
+      AiConfigModel? selectedModel;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                selectedModel = await MlxAudioModelInstallChoiceDialog.show(
+                  context: context,
+                  models: [recommendedModel, voxtralModel],
+                  recommendedModelId: recommendedModel.providerModelId,
+                );
+              },
+              child: const Text('Open chooser'),
+            ),
+          ),
+        ),
+      );
+
+      await _openChoiceDialog(tester);
+      await tester.tap(find.text('Install model'));
+      await _closePushedRoute(tester);
+
+      expect(selectedModel?.providerModelId, recommendedModel.providerModelId);
+    });
   });
 
   group('MlxAudioModelDownloadDialog', () {
@@ -285,6 +382,47 @@ void main() {
       }
     });
 
+    testWidgets('close button pops the dialog', (tester) async {
+      final model = _model(
+        id: 'qwen-17b-8bit',
+        name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+        providerModelId: mlxAudioQwenAsr17B8BitModelId,
+      );
+      final channel = _TerminalMlxAudioChannel(
+        model.providerModelId,
+        MlxAudioModelStatus.installed,
+      );
+      addTearDown(channel.close);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(
+            builder: (context) => TextButton(
+              onPressed: () => MlxAudioModelDownloadDialog.show(
+                context: context,
+                model: model,
+              ),
+              child: const Text('Open download'),
+            ),
+          ),
+          overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+        ),
+      );
+      await tester.tap(find.text('Open download'));
+      await tester.pump();
+      await tester.pump(kThemeAnimationDuration);
+      await Future<void>.value();
+      await tester.pump();
+
+      expect(find.byType(MlxAudioModelDownloadDialog), findsOneWidget);
+
+      await tester.tap(find.text('Close'));
+      await tester.pump();
+      await tester.pump(kThemeAnimationDuration);
+
+      expect(find.byType(MlxAudioModelDownloadDialog), findsNothing);
+    });
+
     testWidgets(
       'renders terminal failed and unsupported states with determinate progress',
       (tester) async {
@@ -362,6 +500,48 @@ class _PendingStatusMlxAudioChannel extends MlxAudioChannel {
         ),
       );
     }
+  }
+}
+
+class _DialogHost extends StatefulWidget {
+  const _DialogHost({
+    required this.initialModels,
+    required this.initialRecommendedId,
+    super.key,
+  });
+
+  final List<AiConfigModel> initialModels;
+  final String initialRecommendedId;
+
+  @override
+  State<_DialogHost> createState() => _DialogHostState();
+}
+
+class _DialogHostState extends State<_DialogHost> {
+  late List<AiConfigModel> _models = widget.initialModels;
+  late String _recommendedId = widget.initialRecommendedId;
+
+  void swapToVoxtralOnly() {
+    setState(() {
+      _models = _models
+          .where(
+            (m) => m.providerModelId == mlxAudioVoxtralRealtime4BitModelId,
+          )
+          .toList();
+      _recommendedId = 'no-match';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: MlxAudioModelInstallChoiceDialog(
+          models: _models,
+          recommendedModelId: _recommendedId,
+        ),
+      ),
+    );
   }
 }
 

@@ -821,6 +821,143 @@ void main() {
         expect(deltas, ['Hello world', 'ium']);
       },
     );
+
+    test(
+      'records detected language from Mistral transcription.language events',
+      () async {
+        final bench = await _TestBench.create();
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        bench.channel.simulateServerMessage({
+          'type': 'transcription.language',
+          'language': 'en',
+        });
+        bench.scheduleDone('hello');
+
+        final result = await bench.stop();
+
+        expect(result.detectedLanguage, 'en');
+        expect(result.transcript, 'hello');
+      },
+    );
+
+    test(
+      'logs and surfaces MLX error events through the done completer',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+          doneTimeout: const Duration(seconds: 5),
+        );
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'before crash',
+          ),
+        );
+        final dir = await Directory.systemTemp.createTemp('rt_mlx_err_');
+        addTearDown(() async {
+          if (dir.existsSync()) await dir.delete(recursive: true);
+        });
+
+        unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 20)).then((_) {
+            bench.mlxAudioChannel.emit(
+              const MlxAudioRealtimeEvent(
+                type: MlxAudioRealtimeEventType.error,
+                message: 'inference crashed',
+              ),
+            );
+          }),
+        );
+        final result = await bench.service.stop(
+          stopRecorder: () async {},
+          outputPath: '${dir.path}/output',
+        );
+
+        expect(result.usedTranscriptFallback, isTrue);
+        expect(result.transcript, 'before crash');
+        expect(
+          fakeLogging.exceptions
+              .map((error) => error.toString())
+              .where((message) => message.contains('inference crashed')),
+          isNotEmpty,
+        );
+      },
+    );
+
+    test(
+      'logs MLX realtime event stream errors via the outer onError handler',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+          doneTimeout: const Duration(seconds: 5),
+        );
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        final dir = await Directory.systemTemp.createTemp('rt_mlx_stream_err_');
+        addTearDown(() async {
+          if (dir.existsSync()) await dir.delete(recursive: true);
+        });
+        unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 20)).then((_) {
+            bench.mlxAudioChannel.eventsController.addError(
+              Exception('event stream broken'),
+            );
+          }),
+        );
+        final result = await bench.service.stop(
+          stopRecorder: () async {},
+          outputPath: '${dir.path}/output',
+        );
+
+        expect(result.usedTranscriptFallback, isTrue);
+        expect(
+          fakeLogging.exceptions.map((error) => error.toString()),
+          contains(contains('event stream broken')),
+        );
+      },
+    );
+
+    test(
+      'logs MLX PCM stream errors and keeps the session active',
+      () {
+        fakeAsync((async) {
+          late _TestBench bench;
+          _TestBench.create(
+            addConfig: false,
+            addMlxConfig: true,
+          ).then((b) => bench = b);
+          async.flushMicrotasks();
+          addTearDown(bench.dispose);
+
+          late StreamController<Uint8List> pcm;
+          bench.startTranscription().then((c) => pcm = c);
+          async
+            ..flushMicrotasks()
+            ..elapse(Duration.zero)
+            ..flushMicrotasks();
+
+          pcm.addError(Exception('mlx microphone disconnected'));
+          async.flushMicrotasks();
+
+          expect(
+            fakeLogging.exceptions.map((error) => error.toString()),
+            contains(contains('mlx microphone disconnected')),
+          );
+          expect(bench.service.isActive, isTrue);
+
+          bench.service.dispose();
+          async.flushMicrotasks();
+        });
+      },
+    );
   });
 
   group('stop', () {
@@ -987,6 +1124,43 @@ void main() {
         expect(result.transcript, 'partial local transcript');
         expect(result.usedTranscriptFallback, isFalse);
         expect(deltas, ['partial local transcript']);
+      },
+    );
+
+    test(
+      'falls back to accumulated MLX confirmed text when stop times out',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+          doneTimeout: const Duration(milliseconds: 10),
+        );
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'timeout fallback transcript',
+          ),
+        );
+        await Future<void>.value();
+
+        final result = await bench.service.stop(
+          stopRecorder: () async {},
+          outputPath: (await Directory.systemTemp.createTemp(
+            'rt_mlx_timeout_',
+          )).path,
+        );
+
+        expect(result.transcript, 'timeout fallback transcript');
+        expect(result.usedTranscriptFallback, isTrue);
+        expect(
+          fakeLogging.events,
+          contains(
+            contains('MLX transcription.done timed out'),
+          ),
+        );
       },
     );
 

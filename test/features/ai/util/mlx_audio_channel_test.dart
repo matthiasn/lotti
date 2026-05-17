@@ -3,8 +3,13 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:lotti/services/logging_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 enum _GeneratedProgressStatusShape {
   installed,
@@ -275,6 +280,132 @@ void main() {
         final pcmArgs = calls[6].arguments! as Map<Object?, Object?>;
         expect(pcmArgs['pcm16'], isA<Uint8List>());
         expect(pcmArgs['pcm16']! as Uint8List, [1, 2, 3, 4]);
+      },
+    );
+
+    test(
+      'downloadProgressStream maps native event payloads to progress',
+      () async {
+        const eventChannel = EventChannel('test_mlx_audio_download_events');
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        addTearDown(
+          () => messenger.setMockStreamHandler(eventChannel, null),
+        );
+        messenger.setMockStreamHandler(
+          eventChannel,
+          MockStreamHandler.inline(
+            onListen: (args, events) {
+              events
+                ..success(<String, Object?>{
+                  'modelId': 'model-stream',
+                  'status': 'downloading',
+                  'completedUnitCount': 5,
+                  'totalUnitCount': 10,
+                })
+                ..success(<String, Object?>{
+                  'modelId': 'model-stream',
+                  'status': 'installed',
+                  'progress': 1.0,
+                })
+                ..endOfStream();
+            },
+            onCancel: (_) {},
+          ),
+        );
+
+        final channel = MlxAudioChannel(eventChannel: eventChannel);
+        final events = await channel.downloadProgressStream.toList();
+
+        expect(events, hasLength(2));
+        expect(events[0].modelId, 'model-stream');
+        expect(events[0].status, MlxAudioModelStatus.downloading);
+        expect(events[0].percentComplete, 50);
+        expect(events[1].status, MlxAudioModelStatus.installed);
+      },
+    );
+
+    test(
+      'realtimeTranscriptionEvents maps native event payloads to events',
+      () async {
+        const eventChannel = EventChannel('test_mlx_audio_realtime_events');
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        addTearDown(
+          () => messenger.setMockStreamHandler(eventChannel, null),
+        );
+        messenger.setMockStreamHandler(
+          eventChannel,
+          MockStreamHandler.inline(
+            onListen: (args, events) {
+              events
+                ..success(<String, Object?>{
+                  'type': 'transcription.confirmed',
+                  'text': 'hello world',
+                })
+                ..success(<String, Object?>{
+                  'type': 'transcription.done',
+                  'text': 'hello world.',
+                })
+                ..endOfStream();
+            },
+            onCancel: (_) {},
+          ),
+        );
+
+        final channel = MlxAudioChannel(realtimeEventChannel: eventChannel);
+        final events = await channel.realtimeTranscriptionEvents.toList();
+
+        expect(events, hasLength(2));
+        expect(events[0].type, MlxAudioRealtimeEventType.confirmed);
+        expect(events[0].text, 'hello world');
+        expect(events[1].type, MlxAudioRealtimeEventType.done);
+      },
+    );
+
+    test(
+      'getModelStatus failure logs to the registered LoggingService',
+      () async {
+        final logger = MockLoggingService();
+        stubLoggingService(logger);
+        final getIt = GetIt.instance;
+        addTearDown(() {
+          if (getIt.isRegistered<LoggingService>()) {
+            getIt.unregister<LoggingService>();
+          }
+        });
+        if (getIt.isRegistered<LoggingService>()) {
+          getIt.unregister<LoggingService>();
+        }
+        getIt.registerSingleton<LoggingService>(logger);
+
+        const methodChannel = MethodChannel(
+          'test_mlx_audio_logger_status_failure',
+        );
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        addTearDown(
+          () => messenger.setMockMethodCallHandler(methodChannel, null),
+        );
+        messenger.setMockMethodCallHandler(methodChannel, (_) async {
+          throw PlatformException(
+            code: 'NATIVE_ERROR',
+            message: 'boom',
+          );
+        });
+
+        final progress = await MlxAudioChannel(
+          methodChannel: methodChannel,
+        ).getModelStatus('model-x');
+
+        expect(progress.status, MlxAudioModelStatus.failed);
+        verify(
+          () => logger.captureEvent(
+            any<Object>(that: contains('MLX Audio channel getModelStatus')),
+            domain: 'mlx_audio_channel',
+            subDomain: 'getModelStatus',
+          ),
+        ).called(1);
       },
     );
   });

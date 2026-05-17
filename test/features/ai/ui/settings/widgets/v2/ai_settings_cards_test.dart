@@ -446,6 +446,36 @@ void main() {
       expect(installTaps, 1);
     });
 
+    testWidgets(
+      'shows the indeterminate MLX downloading label when no percent is known',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiModelCard(
+              model: _model(
+                providerId: 'mlx-provider',
+                name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+                providerModelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+                isReasoning: false,
+                inputModalities: const [Modality.audio],
+              ),
+              providerType: InferenceProviderType.mlxAudio,
+              modelDownloadProgress: const MlxAudioModelDownloadProgress(
+                modelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+                status: MlxAudioModelStatus.downloading,
+              ),
+              onTap: () {},
+              onInstallModel: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Downloading'), findsOneWidget);
+        expect(find.textContaining('%'), findsNothing);
+      },
+    );
+
     testWidgets('shows the MLX install action when a model is missing', (
       tester,
     ) async {
