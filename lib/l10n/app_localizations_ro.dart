@@ -2662,6 +2662,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.';
 
   @override
+  String get configFlagEnableSyncedAlerts => 'Alerte sincronizate';
+
+  @override
+  String get configFlagEnableSyncedAlertsDescription =>
+      'Sincronizați alertele AI și de sarcini între dispozitivele dvs. și permiteți programarea notificărilor locale de sistem.';
+
+  @override
   String get configFlagEnableTooltip => 'Activează sfaturile';
 
   @override
@@ -6057,6 +6064,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncPayloadJournalEntity => 'Intrare jurnal';
+
+  @override
+  String get syncPayloadNotification => 'Notificare';
+
+  @override
+  String get syncPayloadNotificationStateUpdate =>
+      'Actualizare stare notificare';
 
   @override
   String get syncPayloadOutboxBundle => 'Pachet din căsuța de trimitere';

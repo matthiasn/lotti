@@ -361,10 +361,12 @@ class MatrixService {
   /// Sends a Matrix sync payload and records basic "sent" metrics.
   ///
   /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket
-  /// (`journalEntity`, `entityDefinition`, `entryLink`,
-  /// `aiConfig`, `aiConfigDelete`). When the SDK reports a successful send, the
-  /// corresponding counter is incremented and debounced stats are emitted to the
-  /// Matrix Stats UI.
+  /// (`journalEntity`, `entityDefinition`, `entryLink`, `aiConfig`,
+  /// `aiConfigDelete`, `themingSelection`, `notification`,
+  /// `notificationStateUpdate`, `backfillRequest`, `backfillResponse`,
+  /// `agentEntity`, `agentLink`, `agentBundle`, `outboxBundle`). When the SDK
+  /// reports a successful send, the corresponding counter is incremented and
+  /// debounced stats are emitted to the Matrix Stats UI.
   Future<bool> sendMatrixMsg(
     SyncMessage syncMessage, {
     String? myRoomId,
@@ -385,6 +387,8 @@ class MatrixService {
       aiConfig: (_) => 'aiConfig',
       aiConfigDelete: (_) => 'aiConfigDelete',
       themingSelection: (_) => 'themingSelection',
+      notification: (_) => 'notification',
+      notificationStateUpdate: (_) => 'notificationStateUpdate',
       backfillRequest: (_) => 'backfillRequest',
       backfillResponse: (_) => 'backfillResponse',
       agentEntity: (_) => 'agentEntity',

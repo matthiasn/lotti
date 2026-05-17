@@ -162,6 +162,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableSyncedAlertsFlag,
+    description: 'Enable synced alerts?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableWhatsNewFlag,
     description: "Enable What's New feature?",
     status: false,

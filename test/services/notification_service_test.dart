@@ -3,6 +3,14 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/services/notification_service.dart';
 
+// NOTE: scheduleNotificationAt / showNotificationNow can't be tested here
+// because constructing NotificationService eagerly calls
+// `flutterLocalNotificationsPlugin.initialize` which requires a registered
+// platform-specific implementation. The plugin's async error never propagates
+// through the constructor's synchronous try/catch, so flutter_test sees an
+// unhandled exception. The same limitation already blocks tests for the
+// legacy `show` / `scheduleNotification` / `updateBadge` methods.
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

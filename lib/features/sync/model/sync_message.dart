@@ -84,6 +84,23 @@ sealed class SyncMessage with _$SyncMessage {
     required SyncEntryStatus status,
   }) = SyncThemingSelection;
 
+  const factory SyncMessage.notification({
+    required String id,
+    required String jsonPath,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+    List<VectorClock>? coveredVectorClocks,
+  }) = SyncNotification;
+
+  const factory SyncMessage.notificationStateUpdate({
+    required String id,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+    DateTime? seenAt,
+    DateTime? actedOnAt,
+    DateTime? deletedAt,
+  }) = SyncNotificationStateUpdate;
+
   /// Request to backfill missing entries identified by host ID and counter.
   /// Broadcast to all devices; any device with the entries can respond.
   /// Batched to reduce message overhead (up to 100 entries per request).

@@ -12,8 +12,10 @@ import 'package:json_annotation/json_annotation.dart'
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
+import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/matrix/journal_entity_dedup_cache.dart';
@@ -51,6 +54,7 @@ export 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 // dependency-injection plumbing for every collaborator.
 part 'sync_event_processor_journal_handlers.dart';
 part 'sync_event_processor_agent_handlers.dart';
+part 'sync_event_processor_notification_handlers.dart';
 part 'sync_event_processor_outbox_bundle.dart';
 
 /// Sync message bodies below this base64 length are decoded inline; anything
@@ -82,6 +86,8 @@ class SyncEventProcessor {
     AttachmentIndex? attachmentIndex,
     JournalDb? journalDb,
     VectorClockService? vectorClockService,
+    NotificationsDb? notificationsDb,
+    NotificationScheduler? notificationScheduler,
   }) : _loggingService = loggingService,
        _domainLogger = domainLogger,
        _updateNotifications = updateNotifications,
@@ -92,7 +98,9 @@ class SyncEventProcessor {
        _sequenceLogService = sequenceLogService,
        _attachmentIndex = attachmentIndex,
        _journalDb = journalDb,
-       _vectorClockService = vectorClockService;
+       _vectorClockService = vectorClockService,
+       _notificationsDb = notificationsDb,
+       _notificationScheduler = notificationScheduler;
 
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
@@ -115,6 +123,8 @@ class SyncEventProcessor {
   // working — they just lose the self-echo skip and process every event
   // (which is what they tested before).
   final VectorClockService? _vectorClockService;
+  final NotificationsDb? _notificationsDb;
+  final NotificationScheduler? _notificationScheduler;
 
   // Cached local host id. Resolved lazily on the first event that carries
   // an `originatingHostId`. Vector-clock host ids are stable for the life
@@ -362,6 +372,8 @@ class SyncEventProcessor {
     final SyncEntryLink m => m.originatingHostId,
     final SyncAgentEntity m => m.originatingHostId,
     final SyncAgentLink m => m.originatingHostId,
+    final SyncNotification m => m.originatingHostId,
+    final SyncNotificationStateUpdate m => m.originatingHostId,
     final SyncAgentBundle m => m.originatingHostId,
     final SyncOutboxBundle m => m.originatingHostId,
     _ => null,
@@ -412,6 +424,13 @@ class SyncEventProcessor {
           event: event,
           syncMessage: msg,
           resolvedAgentLink: resolved,
+        );
+      case final SyncNotification msg:
+        final resolved = await _resolveNotification(msg);
+        return PreparedSyncEvent._(
+          event: event,
+          syncMessage: msg,
+          resolvedNotification: resolved,
         );
       case final SyncAgentBundle msg:
         // Legacy wire variant — agent wake-cycle bundling has been
@@ -621,6 +640,15 @@ class SyncEventProcessor {
           resolvedLink: prepared.resolvedAgentLink,
         );
         return null;
+      case final SyncNotification msg:
+        await _applyNotificationMessage(
+          msg: msg,
+          resolvedNotification: prepared.resolvedNotification,
+        );
+        return null;
+      case final SyncNotificationStateUpdate msg:
+        await _applyNotificationStateUpdateMessage(msg);
+        return null;
       case SyncAgentBundle():
         // Legacy wire variant — already logged + skipped in prepare. Apply
         // is a no-op so the inbound queue marker advances; missing
@@ -688,6 +716,7 @@ class PreparedSyncEvent {
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
+    this.resolvedNotification,
     this.resolvedOutboxBundle,
   });
 
@@ -700,6 +729,7 @@ class PreparedSyncEvent {
     this.deferredStaleDescriptorError,
     this.resolvedAgentEntity,
     this.resolvedAgentLink,
+    this.resolvedNotification,
     this.resolvedOutboxBundle,
   });
 
@@ -741,6 +771,10 @@ class PreparedSyncEvent {
   /// Resolved link when [syncMessage] is a [SyncAgentLink]. Same null
   /// semantics as [resolvedAgentEntity].
   final AgentLink? resolvedAgentLink;
+
+  /// Resolved notification when [syncMessage] is a [SyncNotification].
+  /// Null means prepare could not materialize a payload and apply will skip it.
+  final NotificationEntity? resolvedNotification;
 
   /// Resolved dequeue-time outbox bundle when [syncMessage] is a
   /// [SyncOutboxBundle]. Each child carries its own [PreparedSyncEvent] so

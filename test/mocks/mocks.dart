@@ -16,6 +16,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -68,6 +69,8 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
+import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
@@ -406,6 +409,13 @@ class MockAudioPlayerController extends Mock implements AudioPlayerController {}
 class MockNavService extends Mock implements NavService {}
 
 class MockNotificationService extends Mock implements NotificationService {}
+
+class MockNotificationsDb extends Mock implements NotificationsDb {}
+
+class MockNotificationRepository extends Mock
+    implements NotificationRepository {}
+
+class MockNotificationScheduler extends Mock implements NotificationScheduler {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 

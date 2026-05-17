@@ -107,6 +107,7 @@ const settingsNotification = 'SETTINGS_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
+const inboxNotification = 'INBOX_CHANGED';
 
 /// Zone key set to `true` during agent wake execution.
 ///

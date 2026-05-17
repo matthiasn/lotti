@@ -5,6 +5,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -69,6 +70,22 @@ final AiConfig fallbackAiConfig = AiConfig.inferenceProvider(
   inferenceProviderType: InferenceProviderType.openAi,
 );
 
+final NotificationEntity fallbackNotificationEntity =
+    NotificationEntity.taskSuggestion(
+      meta: NotificationMeta(
+        id: 'fallback-notification-id',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+        scheduledFor: DateTime.fromMillisecondsSinceEpoch(0),
+        vectorClock: const VectorClock({'fallback-host': 0}),
+        originatingHostId: 'fallback-host',
+      ),
+      linkedTaskId: 'fallback-task-id',
+      suggestionCount: 1,
+      title: 'Fallback',
+      body: 'Fallback notification',
+    );
+
 const ConfigFlag fallbackConfigFlag = ConfigFlag(
   name: 'fallback-flag',
   description: 'fallback',
@@ -86,6 +103,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackProjectEntry);
   registerFallbackValue(fallbackSyncMessage);
   registerFallbackValue(fallbackAiConfig);
+  registerFallbackValue(fallbackNotificationEntity);
   registerFallbackValue(fallbackConfigFlag);
 
   // Fake classes from mocks.dart

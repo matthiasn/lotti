@@ -5,4 +5,6 @@ enum SyncSequencePayloadType {
   entryLink,
   agentEntity,
   agentLink,
+  notification,
+  notificationStateUpdate,
 }

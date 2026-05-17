@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1001]
+### Added
+- Synced notifications data layer: a separate `notifications.sqlite` store,
+  Freezed notification entities, Matrix sync payloads for full alerts and
+  state updates, backfill coverage, and macOS/iOS scheduler plumbing behind
+  the new `enable_synced_alerts` flag.
+
 ## [0.9.1000]
 ### Added
 - Live API-key verification on the AI provider connect form. As

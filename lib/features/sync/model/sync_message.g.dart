@@ -134,6 +134,62 @@ Map<String, dynamic> _$SyncThemingSelectionToJson(
   'runtimeType': instance.$type,
 };
 
+SyncNotification _$SyncNotificationFromJson(Map<String, dynamic> json) =>
+    SyncNotification(
+      id: json['id'] as String,
+      jsonPath: json['jsonPath'] as String,
+      vectorClock: VectorClock.fromJson(
+        json['vectorClock'] as Map<String, dynamic>,
+      ),
+      originatingHostId: json['originatingHostId'] as String,
+      coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
+          ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$SyncNotificationToJson(SyncNotification instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'jsonPath': instance.jsonPath,
+      'vectorClock': instance.vectorClock,
+      'originatingHostId': instance.originatingHostId,
+      'coveredVectorClocks': instance.coveredVectorClocks,
+      'runtimeType': instance.$type,
+    };
+
+SyncNotificationStateUpdate _$SyncNotificationStateUpdateFromJson(
+  Map<String, dynamic> json,
+) => SyncNotificationStateUpdate(
+  id: json['id'] as String,
+  vectorClock: VectorClock.fromJson(
+    json['vectorClock'] as Map<String, dynamic>,
+  ),
+  originatingHostId: json['originatingHostId'] as String,
+  seenAt: json['seenAt'] == null
+      ? null
+      : DateTime.parse(json['seenAt'] as String),
+  actedOnAt: json['actedOnAt'] == null
+      ? null
+      : DateTime.parse(json['actedOnAt'] as String),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$SyncNotificationStateUpdateToJson(
+  SyncNotificationStateUpdate instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'vectorClock': instance.vectorClock,
+  'originatingHostId': instance.originatingHostId,
+  'seenAt': instance.seenAt?.toIso8601String(),
+  'actedOnAt': instance.actedOnAt?.toIso8601String(),
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
 SyncBackfillRequest _$SyncBackfillRequestFromJson(Map<String, dynamic> json) =>
     SyncBackfillRequest(
       entries: (json['entries'] as List<dynamic>)
@@ -185,6 +241,8 @@ const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.entryLink: 'entryLink',
   SyncSequencePayloadType.agentEntity: 'agentEntity',
   SyncSequencePayloadType.agentLink: 'agentLink',
+  SyncSequencePayloadType.notification: 'notification',
+  SyncSequencePayloadType.notificationStateUpdate: 'notificationStateUpdate',
 };
 
 SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>

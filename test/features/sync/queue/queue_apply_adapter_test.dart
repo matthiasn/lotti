@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -885,6 +886,28 @@ void main() {
       );
       expect(wraps(message), isFalse);
     });
+
+    test('SyncNotification bypasses outer wrap (notifications_db)', () {
+      const message = SyncMessage.notification(
+        id: 'notification-id',
+        jsonPath: '/notifications/notification-id.json',
+        vectorClock: VectorClock({'host-1': 1}),
+        originatingHostId: 'host-1',
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test(
+      'SyncNotificationStateUpdate bypasses outer wrap (notifications_db)',
+      () {
+        const message = SyncMessage.notificationStateUpdate(
+          id: 'notification-id',
+          vectorClock: VectorClock({'host-1': 1}),
+          originatingHostId: 'host-1',
+        );
+        expect(wraps(message), isFalse);
+      },
+    );
 
     test('SyncOutboxBundle wraps — unpacks into journal/linked_entries', () {
       const message = SyncMessage.outboxBundle(

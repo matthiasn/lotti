@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -33,6 +34,7 @@ class BackfillResponseHandler {
     required LoggingService loggingService,
     required VectorClockService vectorClockService,
     DomainLogger? domainLogger,
+    NotificationsDb? notificationsDb,
     @visibleForTesting Duration? responseCooldown,
   }) : _journalDb = journalDb,
        _sequenceLogService = sequenceLogService,
@@ -40,6 +42,7 @@ class BackfillResponseHandler {
        _loggingService = loggingService,
        _vectorClockService = vectorClockService,
        _domainLogger = domainLogger,
+       _notificationsDb = notificationsDb,
        _responseCooldown =
            responseCooldown ?? SyncTuning.backfillResponseCooldown;
 
@@ -49,6 +52,7 @@ class BackfillResponseHandler {
   final LoggingService _loggingService;
   final VectorClockService _vectorClockService;
   final DomainLogger? _domainLogger;
+  final NotificationsDb? _notificationsDb;
   final Duration _responseCooldown;
 
   /// Agent repository, injected after construction to avoid circular
@@ -181,6 +185,11 @@ class BackfillResponseHandler {
         return (await agentRepository?.getEntity(payloadId))?.vectorClock;
       case SyncSequencePayloadType.agentLink:
         return (await agentRepository?.getLinkById(payloadId))?.vectorClock;
+      case SyncSequencePayloadType.notification:
+      case SyncSequencePayloadType.notificationStateUpdate:
+        return (await _notificationsDb?.notificationById(
+          payloadId,
+        ))?.meta.vectorClock;
     }
   }
 
@@ -718,6 +727,92 @@ class BackfillResponseHandler {
           ),
           typeName: 'agentLink',
         );
+      case SyncSequencePayloadType.notification:
+        final db = _notificationsDb;
+        if (db == null) {
+          _trace(
+            'notificationsDb not wired, skipping notification $payloadId',
+            subDomain: 'backfill.processEntry',
+          );
+          return false;
+        }
+        final notification = await db.notificationById(payloadId);
+        if (notification == null) {
+          await _sendDeletedResponse(
+            hostId: hostId,
+            counter: counter,
+            payloadType: payloadType,
+          );
+          return true;
+        }
+
+        if (!sentPayloads.contains(payloadId)) {
+          sentPayloads.add(payloadId);
+          await _outboxService.enqueueNotification(
+            notification,
+            originatingHostId: originatingHostId,
+          );
+        }
+
+        final vcCounter = notification.meta.vectorClock.vclock[hostId];
+        final vcContainsCounter = vcCounter != null && vcCounter == counter;
+
+        if (!vcContainsCounter) {
+          await _sendHintOrUnresolvable(
+            hostId: hostId,
+            counter: counter,
+            payloadId: payloadId,
+            payloadType: payloadType,
+            vcCounter: vcCounter,
+          );
+        }
+
+        return true;
+      case SyncSequencePayloadType.notificationStateUpdate:
+        final db = _notificationsDb;
+        if (db == null) {
+          _trace(
+            'notificationsDb not wired, skipping notificationStateUpdate $payloadId',
+            subDomain: 'backfill.processEntry',
+          );
+          return false;
+        }
+        final notification = await db.notificationById(payloadId);
+        if (notification == null) {
+          await _sendDeletedResponse(
+            hostId: hostId,
+            counter: counter,
+            payloadType: payloadType,
+          );
+          return true;
+        }
+
+        if (!sentPayloads.contains('state:$payloadId')) {
+          sentPayloads.add('state:$payloadId');
+          await _outboxService.enqueueNotificationStateUpdate(
+            id: notification.meta.id,
+            seenAt: notification.meta.seenAt,
+            actedOnAt: notification.meta.actedOnAt,
+            deletedAt: notification.meta.deletedAt,
+            vectorClock: notification.meta.vectorClock,
+            originatingHostId: originatingHostId,
+          );
+        }
+
+        final vcCounter = notification.meta.vectorClock.vclock[hostId];
+        final vcContainsCounter = vcCounter != null && vcCounter == counter;
+
+        if (!vcContainsCounter) {
+          await _sendHintOrUnresolvable(
+            hostId: hostId,
+            counter: counter,
+            payloadId: payloadId,
+            payloadType: payloadType,
+            vcCounter: vcCounter,
+          );
+        }
+
+        return true;
     }
   }
 
@@ -845,6 +940,34 @@ class BackfillResponseHandler {
                 loadPayload: () => agentRepository!.getLinkById(payloadId),
                 getVectorClock: (link) => link.vectorClock,
                 payloadTypeName: 'agentLink',
+              );
+            }
+          case SyncSequencePayloadType.notification:
+            if (_notificationsDb != null) {
+              await _tryVerifyAndMarkBackfilled(
+                hostId: response.hostId,
+                counter: response.counter,
+                payloadId: payloadId,
+                payloadType: payloadType,
+                loadPayload: () => _notificationsDb.notificationById(
+                  payloadId,
+                ),
+                getVectorClock: (notification) => notification.meta.vectorClock,
+                payloadTypeName: 'notification',
+              );
+            }
+          case SyncSequencePayloadType.notificationStateUpdate:
+            if (_notificationsDb != null) {
+              await _tryVerifyAndMarkBackfilled(
+                hostId: response.hostId,
+                counter: response.counter,
+                payloadId: payloadId,
+                payloadType: payloadType,
+                loadPayload: () => _notificationsDb.notificationById(
+                  payloadId,
+                ),
+                getVectorClock: (notification) => notification.meta.vectorClock,
+                payloadTypeName: 'notificationStateUpdate',
               );
             }
         }

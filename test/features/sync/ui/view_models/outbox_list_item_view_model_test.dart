@@ -296,6 +296,96 @@ void main() {
       );
     });
 
+    testWidgets('shows notification payload label', (tester) async {
+      late OutboxListItemViewModel viewModel;
+      late BuildContext capturedContext;
+
+      final item = OutboxItem(
+        id: 30,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        status: 0,
+        retries: 0,
+        priority: OutboxPriority.normal.index,
+        message: jsonEncode({
+          'runtimeType': 'notification',
+          'id': 'notification-id',
+          'jsonPath': '/notifications/notification-id.json',
+          'vectorClock': {'host-1': 1},
+          'originatingHostId': 'host-1',
+        }),
+        subject: 'notification:notification-id',
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              viewModel = OutboxListItemViewModel.fromItem(
+                context: context,
+                item: item,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(
+        viewModel.payloadKindLabel,
+        capturedContext.messages.syncPayloadNotification,
+      );
+    });
+
+    testWidgets(
+      'shows notification state update payload label',
+      (tester) async {
+        late OutboxListItemViewModel viewModel;
+        late BuildContext capturedContext;
+
+        final item = OutboxItem(
+          id: 31,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          status: 0,
+          retries: 0,
+          priority: OutboxPriority.normal.index,
+          message: jsonEncode({
+            'runtimeType': 'notificationStateUpdate',
+            'id': 'notification-id',
+            'vectorClock': {'host-1': 2},
+            'originatingHostId': 'host-1',
+          }),
+          subject: 'notificationStateUpdate:notification-id',
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                viewModel = OutboxListItemViewModel.fromItem(
+                  context: context,
+                  item: item,
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        expect(
+          viewModel.payloadKindLabel,
+          capturedContext.messages.syncPayloadNotificationStateUpdate,
+        );
+      },
+    );
+
     testWidgets('shows agent bundle payload label', (tester) async {
       late OutboxListItemViewModel viewModel;
       late BuildContext capturedContext;

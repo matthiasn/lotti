@@ -240,6 +240,98 @@ class NotificationService {
     );
   }
 
+  Future<void> scheduleNotificationAt({
+    required String title,
+    required String body,
+    required DateTime notifyAt,
+    required int notificationId,
+    required bool showOnMobile,
+    required bool showOnDesktop,
+    String? deepLink,
+  }) async {
+    final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
+
+    if (!notifyEnabled || Platform.isWindows || Platform.isLinux) {
+      return;
+    }
+
+    await _requestPermissions();
+    await flutterLocalNotificationsPlugin.cancel(id: notificationId);
+    final localTimezone = await getLocalTimezone();
+    final location = getLocation(localTimezone);
+    final scheduledDate = TZDateTime.from(notifyAt, location);
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id: notificationId,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: NotificationDetails(
+        iOS: showOnMobile
+            ? const DarwinNotificationDetails(
+                presentAlert: true,
+                presentSound: true,
+                presentBanner: true,
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              )
+            : null,
+        macOS: showOnDesktop
+            ? DarwinNotificationDetails(
+                presentAlert: true,
+                presentBanner: true,
+                subtitle: title,
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              )
+            : null,
+      ),
+      payload: deepLink,
+      androidScheduleMode: AndroidScheduleMode.exact,
+    );
+  }
+
+  Future<void> showNotificationNow({
+    required String title,
+    required String body,
+    required int notificationId,
+    required bool showOnMobile,
+    required bool showOnDesktop,
+    String? deepLink,
+  }) async {
+    final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
+
+    if (!notifyEnabled || Platform.isWindows || Platform.isLinux) {
+      return;
+    }
+
+    await _requestPermissions();
+    await flutterLocalNotificationsPlugin.cancel(id: notificationId);
+
+    await flutterLocalNotificationsPlugin.show(
+      id: notificationId,
+      title: title,
+      body: body,
+      notificationDetails: NotificationDetails(
+        iOS: showOnMobile
+            ? const DarwinNotificationDetails(
+                presentAlert: true,
+                presentSound: true,
+                presentBanner: true,
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              )
+            : null,
+        macOS: showOnDesktop
+            ? DarwinNotificationDetails(
+                presentAlert: true,
+                presentBanner: true,
+                subtitle: title,
+                interruptionLevel: InterruptionLevel.timeSensitive,
+              )
+            : null,
+      ),
+      payload: deepLink,
+    );
+  }
+
   Future<void> cancelNotification(int notificationId) async {
     if (Platform.isWindows || Platform.isLinux) {
       return;

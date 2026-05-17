@@ -72,7 +72,7 @@ final class ConversationRepositoryProvider
 }
 
 String _$conversationRepositoryHash() =>
-    r'656614103a3c2f708b745ecda93913fcf88a6985';
+    r'a6319d3ff2f09eeb959bb17c7398d18a69008fd0';
 
 /// Repository for managing AI conversations.
 ///

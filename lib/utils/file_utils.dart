@@ -169,6 +169,9 @@ const agentLinksSegment = '/agent_links/';
 /// `OutboxProcessor`.
 const outboxBundlesSegment = '/outbox_bundles/';
 
+/// Path segment for synced notification payload files.
+const notificationsSegment = '/notifications/';
+
 /// Returns `true` if [relativePath] points to an agent sync payload file.
 ///
 /// Entity/link payloads use the entity ID in the path and can be legitimately
@@ -202,6 +205,12 @@ String relativeAgentLinkPath(String linkId) {
 /// database content for file-backed types).
 String relativeOutboxBundlePath(String bundleId) {
   return '$outboxBundlesSegment${Uri.encodeComponent(bundleId)}.json';
+}
+
+/// Returns the documents-directory-relative path for a notification JSON file,
+/// including a leading `/`. Uses `/notifications/<id>.json`.
+String relativeNotificationPath(String notificationId) {
+  return '$notificationsSegment${Uri.encodeComponent(notificationId)}.json';
 }
 
 Future<JournalEntity> readEntityFromJson(String jsonPath) async {
