@@ -1474,6 +1474,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'URL de bază (opțional)';
 
   @override
+  String get aiProviderConnectFieldBaseUrlPlaceholder =>
+      'https://api.example.com';
+
+  @override
   String get aiProviderConnectFieldDisplayNameHint =>
       'Apare în lista dvs. de furnizori';
 

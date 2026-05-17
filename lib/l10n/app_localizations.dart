@@ -2581,6 +2581,12 @@ abstract class AppLocalizations {
   /// **'Base URL (optional)'**
   String get aiProviderConnectFieldBaseUrlLabelOptional;
 
+  /// No description provided for @aiProviderConnectFieldBaseUrlPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'https://api.example.com'**
+  String get aiProviderConnectFieldBaseUrlPlaceholder;
+
   /// No description provided for @aiProviderConnectFieldDisplayNameHint.
   ///
   /// In en, this message translates to:

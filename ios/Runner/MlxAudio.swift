@@ -56,6 +56,13 @@ private final class MlxAudioEventStreamHandler: NSObject, FlutterStreamHandler {
 }
 
 private final class MlxAudioStreamingDownloader: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    private static let delegateQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.name = "com.matthiasn.lotti.mlx_audio.download_delegate"
+        queue.maxConcurrentOperationCount = 1
+        return queue
+    }()
+
     private let destination: URL
     private let temporaryURL: URL
     private let onProgress: @Sendable (Int64) -> Void
@@ -107,7 +114,11 @@ private final class MlxAudioStreamingDownloader: NSObject, URLSessionDataDelegat
                 self.continuation = continuation
                 var request = URLRequest(url: url)
                 request.setValue("lotti/mlx-audio", forHTTPHeaderField: "User-Agent")
-                let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+                let session = URLSession(
+                    configuration: .default,
+                    delegate: self,
+                    delegateQueue: Self.delegateQueue
+                )
                 self.session = session
                 session.dataTask(with: request).resume()
             }
@@ -205,9 +216,12 @@ final class MlxAudio: NSObject {
     private static let realtimeEventChannelName = "com.matthiasn.lotti/mlx_audio/realtime_events"
     private static let unsupportedMessage =
         "MLX Audio requires Apple Silicon and the MLX Audio Swift SDK."
+    private static let diarizationModelId =
+        "mlx-community/diar_streaming_sortformer_4spk-v2.1-fp16"
 
     private let downloadEvents = MlxAudioEventStreamHandler()
     private let realtimeEvents = MlxAudioEventStreamHandler()
+    private let stateQueue = DispatchQueue(label: "com.matthiasn.lotti.mlx_audio.state")
     private var latestDownloadPayloadByModel: [String: [String: Any]] = [:]
     private var lastLoggedDownloadPercentByModel: [String: Int] = [:]
     #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
@@ -337,7 +351,7 @@ final class MlxAudio: NSObject {
 
     private func modelStatus(modelId: String) -> [String: Any] {
         #if arch(arm64) && canImport(MLXAudioCore) && canImport(HuggingFace)
-        if let latest = latestDownloadPayloadByModel[modelId] {
+        if let latest = latestDownloadPayload(modelId: modelId) {
             return latest
         }
         let modelDir = modelCacheDirectory(cache: HubCache.default, modelId: modelId)
@@ -367,7 +381,7 @@ final class MlxAudio: NSObject {
 
     private func installModel(modelId: String, result: @escaping FlutterResult) {
         #if arch(arm64) && canImport(MLXAudioCore) && canImport(HuggingFace)
-        lastLoggedDownloadPercentByModel[modelId] = nil
+        clearLoggedDownloadPercent(modelId: modelId)
         NSLog("[MLX Audio] starting model download model=\(modelId)")
         emitDownload([
             "modelId": modelId,
@@ -395,11 +409,11 @@ final class MlxAudio: NSObject {
                     "status": "installed",
                     "progress": 1.0,
                 ])
-                self.lastLoggedDownloadPercentByModel[modelId] = nil
+                self.clearLoggedDownloadPercent(modelId: modelId)
                 NSLog("[MLX Audio] completed model download model=\(modelId)")
                 result(nil)
             } catch {
-                self.lastLoggedDownloadPercentByModel[modelId] = nil
+                self.clearLoggedDownloadPercent(modelId: modelId)
                 NSLog("[MLX Audio] model download failed model=\(modelId) error=\(error.localizedDescription)")
                 self.emitDownload([
                     "modelId": modelId,
@@ -534,17 +548,16 @@ final class MlxAudio: NSObject {
                     throw MlxAudioBridgeError.unsupportedModel(modelId)
                 }
 
-                realtimeEventTask?.cancel()
-                realtimeSession?.cancel()
+                self.cancelRealtimeSessionState()
 
-                lastLoggedDownloadPercentByModel[modelId] = nil
+                self.clearLoggedDownloadPercent(modelId: modelId)
                 try requireModelInstalled(modelId: modelId)
                 emitDownload([
                     "modelId": modelId,
                     "status": "installed",
                     "progress": 1.0,
                 ])
-                lastLoggedDownloadPercentByModel[modelId] = nil
+                self.clearLoggedDownloadPercent(modelId: modelId)
 
                 self.logResourceSnapshot(stage: "realtime.loadModel.start", modelId: modelId)
                 let model = try await Qwen3ASRModel.fromPretrained(modelId)
@@ -556,19 +569,18 @@ final class MlxAudio: NSObject {
                     finalizeCompletedWindows: true
                 )
                 let session = StreamingInferenceSession(model: model, config: config)
-                realtimeSession = session
-                realtimeEventTask = Task { [weak self] in
+                let eventTask = Task { [weak self] in
                     for await event in session.events {
                         self?.emitRealtimeEvent(event)
                     }
-                    self?.realtimeSession = nil
-                    self?.realtimeEventTask = nil
+                    self?.clearRealtimeSessionState()
                 }
+                self.setRealtimeSession(session, eventTask: eventTask)
 
                 NSLog("[MLX Audio] started realtime transcription model=\(modelId)")
                 result(nil)
             } catch {
-                lastLoggedDownloadPercentByModel[modelId] = nil
+                self.clearLoggedDownloadPercent(modelId: modelId)
                 emitDownload([
                     "modelId": modelId,
                     "status": "failed",
@@ -596,7 +608,7 @@ final class MlxAudio: NSObject {
 
     private func appendRealtimePcm(_ pcm16: Data, result: @escaping FlutterResult) {
         #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
-        guard let realtimeSession else {
+        guard let realtimeSession = currentRealtimeSession() else {
             result(FlutterError(
                 code: "REALTIME_NOT_STARTED",
                 message: "MLX realtime transcription has not been started.",
@@ -614,7 +626,7 @@ final class MlxAudio: NSObject {
 
     private func stopRealtimeTranscription(result: @escaping FlutterResult) {
         #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
-        realtimeSession?.stop()
+        currentRealtimeSession()?.stop()
         result(nil)
         #else
         result(unsupportedError())
@@ -623,10 +635,7 @@ final class MlxAudio: NSObject {
 
     private func cancelRealtimeTranscription(result: @escaping FlutterResult) {
         #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
-        realtimeEventTask?.cancel()
-        realtimeEventTask = nil
-        realtimeSession?.cancel()
-        realtimeSession = nil
+        cancelRealtimeSessionState()
         result(nil)
         #else
         result(unsupportedError())
@@ -635,7 +644,9 @@ final class MlxAudio: NSObject {
 
     private func emitDownload(_ payload: [String: Any]) {
         if let modelId = payload["modelId"] as? String {
-            latestDownloadPayloadByModel[modelId] = payload
+            stateQueue.sync {
+                latestDownloadPayloadByModel[modelId] = payload
+            }
         }
         downloadEvents.emit(payload)
     }
@@ -645,10 +656,75 @@ final class MlxAudio: NSObject {
     }
 
     private func replayLatestDownloadProgress() {
-        for payload in latestDownloadPayloadByModel.values {
+        let payloads = stateQueue.sync {
+            Array(latestDownloadPayloadByModel.values)
+        }
+        for payload in payloads {
             downloadEvents.emit(payload)
         }
     }
+
+    private func latestDownloadPayload(modelId: String) -> [String: Any]? {
+        stateQueue.sync {
+            latestDownloadPayloadByModel[modelId]
+        }
+    }
+
+    private func clearLoggedDownloadPercent(modelId: String) {
+        stateQueue.sync {
+            lastLoggedDownloadPercentByModel[modelId] = nil
+        }
+    }
+
+    private func shouldLogDownloadProgress(modelId: String, percent: Int) -> Bool {
+        stateQueue.sync {
+            let lastLoggedPercent = lastLoggedDownloadPercentByModel[modelId]
+            guard lastLoggedPercent == nil ||
+                  percent >= (lastLoggedPercent ?? 0) + 5 ||
+                  (percent == 100 && lastLoggedPercent != 100)
+            else {
+                return false
+            }
+            lastLoggedDownloadPercentByModel[modelId] = percent
+            return true
+        }
+    }
+
+    #if arch(arm64) && canImport(MLX) && canImport(MLXAudioCore) && canImport(MLXAudioSTT)
+    private func setRealtimeSession(
+        _ session: StreamingInferenceSession,
+        eventTask: Task<Void, Never>
+    ) {
+        stateQueue.sync {
+            realtimeSession = session
+            realtimeEventTask = eventTask
+        }
+    }
+
+    private func currentRealtimeSession() -> StreamingInferenceSession? {
+        stateQueue.sync {
+            realtimeSession
+        }
+    }
+
+    private func clearRealtimeSessionState() {
+        stateQueue.sync {
+            realtimeSession = nil
+            realtimeEventTask = nil
+        }
+    }
+
+    private func cancelRealtimeSessionState() {
+        let current = stateQueue.sync {
+            let state = (session: realtimeSession, task: realtimeEventTask)
+            realtimeSession = nil
+            realtimeEventTask = nil
+            return state
+        }
+        current.task?.cancel()
+        current.session?.cancel()
+    }
+    #endif
 
     private func unsupportedStatus(modelId: String) -> [String: Any] {
         [
@@ -908,10 +984,11 @@ final class MlxAudio: NSObject {
         enableSpeakerDiarization: Bool
     ) async throws -> String {
         guard enableSpeakerDiarization else { return "disabled" }
+        guard isModelCached(modelId: Self.diarizationModelId) else {
+            return "modelNotInstalled"
+        }
         let (_, audio) = try loadAudioArray(from: audioURL, sampleRate: 16000)
-        let model = try await SortformerModel.fromPretrained(
-            "mlx-community/diar_streaming_sortformer_4spk-v2.1-fp16"
-        )
+        let model = try await SortformerModel.fromPretrained(Self.diarizationModelId)
         let output = try await model.generate(
             audio: audio,
             sampleRate: 16000,
@@ -1168,11 +1245,7 @@ final class MlxAudio: NSObject {
         let percent = completed >= total && total > 0
             ? 100
             : Int((clampedFraction * 100.0).rounded(.down))
-        let lastLoggedPercent = lastLoggedDownloadPercentByModel[modelId]
-        if lastLoggedPercent == nil ||
-            percent >= (lastLoggedPercent ?? 0) + 5 ||
-            (percent == 100 && lastLoggedPercent != 100) {
-            lastLoggedDownloadPercentByModel[modelId] = percent
+        if shouldLogDownloadProgress(modelId: modelId, percent: percent) {
             NSLog("[MLX Audio] download progress model=\(modelId) percent=\(percent) completed=\(completed) total=\(total)")
         }
         emitDownload([

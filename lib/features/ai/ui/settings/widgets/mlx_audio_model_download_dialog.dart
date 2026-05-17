@@ -243,9 +243,22 @@ class _MlxAudioModelDownloadDialogState
         current?.status == MlxAudioModelStatus.installed) {
       return;
     }
-    await ref
-        .read(mlxAudioModelProgressStoreProvider.notifier)
-        .installModel(widget.model.providerModelId);
+    try {
+      await ref
+          .read(mlxAudioModelProgressStoreProvider.notifier)
+          .installModel(widget.model.providerModelId);
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'mlx_audio_model_download_dialog',
+          context: ErrorDescription(
+            'while starting MLX Audio model download',
+          ),
+        ),
+      );
+    }
   }
 
   @override

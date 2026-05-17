@@ -119,26 +119,16 @@ class AudioTranscriptionService {
     final audioBase64 = base64Encode(bytes);
 
     final cloud = ref.read(cloudInferenceRepositoryProvider);
-    final stream = speechDictionaryTerms.isEmpty
-        ? cloud.generateWithAudio(
-            _kTranscriptionPrompt,
-            model: model.providerModelId,
-            audioBase64: audioBase64,
-            baseUrl: provider.baseUrl,
-            apiKey: provider.apiKey,
-            provider: provider,
-            maxCompletionTokens: model.maxCompletionTokens,
-          )
-        : cloud.generateWithAudio(
-            _kTranscriptionPrompt,
-            model: model.providerModelId,
-            audioBase64: audioBase64,
-            baseUrl: provider.baseUrl,
-            apiKey: provider.apiKey,
-            provider: provider,
-            maxCompletionTokens: model.maxCompletionTokens,
-            speechDictionaryTerms: speechDictionaryTerms,
-          );
+    final stream = cloud.generateWithAudio(
+      _kTranscriptionPrompt,
+      model: model.providerModelId,
+      audioBase64: audioBase64,
+      baseUrl: provider.baseUrl,
+      apiKey: provider.apiKey,
+      provider: provider,
+      maxCompletionTokens: model.maxCompletionTokens,
+      speechDictionaryTerms: speechDictionaryTerms,
+    );
 
     await for (final chunk in stream) {
       final content = chunk.choices?.firstOrNull?.delta?.content ?? '';

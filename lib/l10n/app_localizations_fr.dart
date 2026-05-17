@@ -1473,6 +1473,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'URL de base (optionnel)';
 
   @override
+  String get aiProviderConnectFieldBaseUrlPlaceholder =>
+      'https://api.example.com';
+
+  @override
   String get aiProviderConnectFieldDisplayNameHint =>
       'Affiché dans ta liste de fournisseurs';
 

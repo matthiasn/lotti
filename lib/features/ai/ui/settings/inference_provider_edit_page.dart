@@ -671,7 +671,7 @@ class _InferenceProviderEditPageState
                 hintRight: messages.aiProviderConnectFieldBaseUrlHint,
                 child: AiTextField(
                   label: '',
-                  hint: 'https://api.example.com',
+                  hint: messages.aiProviderConnectFieldBaseUrlPlaceholder,
                   controller: formController.baseUrlController,
                   onChanged: (value) {
                     formController.baseUrlChanged(value);
@@ -746,7 +746,7 @@ class _InferenceProviderEditPageState
                 SizedBox(height: tokens.spacing.step6),
                 AiTextField(
                   label: messages.apiKeyBaseUrlLabel,
-                  hint: 'https://api.example.com',
+                  hint: messages.aiProviderConnectFieldBaseUrlPlaceholder,
                   controller: formController.baseUrlController,
                   onChanged: formController.baseUrlChanged,
                   validator: (_) => formState.baseUrl.error?.displayMessage,

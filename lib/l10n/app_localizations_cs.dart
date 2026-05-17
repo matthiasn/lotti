@@ -1461,6 +1461,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Základní URL (volitelné)';
 
   @override
+  String get aiProviderConnectFieldBaseUrlPlaceholder =>
+      'https://api.example.com';
+
+  @override
   String get aiProviderConnectFieldDisplayNameHint =>
       'Zobrazí se v tvém seznamu poskytovatelů';
 
