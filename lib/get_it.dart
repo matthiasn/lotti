@@ -251,9 +251,14 @@ Future<void> registerSingletons() async {
     domainLogger: domainLogger,
   );
 
+  // NotificationService is lazily registered above so it doesn't have to
+  // initialise the platform plugin at startup. Pass a thunk instead of
+  // resolving here so sandboxed builds (e.g. flatpak) don't trip the lazy
+  // service before anything actually needs it.
   final notificationScheduler = NotificationScheduler(
     notificationsDb: notificationsDb,
-    notificationService: getIt<NotificationService>(),
+    // ignore: unnecessary_lambdas
+    notificationServiceProvider: () => getIt<NotificationService>(),
     journalDb: journalDb,
   );
   getIt.registerSingleton<NotificationScheduler>(notificationScheduler);

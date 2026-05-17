@@ -30,7 +30,7 @@ void main() {
     journalDb = MockJournalDb();
     scheduler = NotificationScheduler(
       notificationsDb: notificationsDb,
-      notificationService: notificationService,
+      notificationServiceProvider: () => notificationService,
       journalDb: journalDb,
     );
 
@@ -194,40 +194,57 @@ void main() {
       ).called(1);
     });
 
-    test('reconcile short-circuits when synced alerts flag is off', () async {
-      _stubFlag(journalDb, enabled: false);
-      await notificationsDb.upsertNotification(
-        _notification(
-          id: 'reconcile-skip',
-          scheduledFor: DateTime.utc(2026, 5, 17, 6),
-        ),
-      );
+    test(
+      'reconcile cancels stale scheduled alerts when flag is off',
+      () async {
+        _stubFlag(journalDb, enabled: false);
+        final now = DateTime.utc(2026, 5, 17, 10);
+        final dueEntity = _notification(
+          id: 'reconcile-due',
+          scheduledFor: now.subtract(const Duration(minutes: 5)),
+        );
+        final upcomingEntity = _notification(
+          id: 'reconcile-upcoming',
+          scheduledFor: now.add(const Duration(hours: 1)),
+        );
+        await notificationsDb.upsertNotification(dueEntity);
+        await notificationsDb.upsertNotification(upcomingEntity);
 
-      await scheduler.reconcile(now: DateTime.utc(2026, 5, 17, 10));
+        await scheduler.reconcile(now: now);
 
-      verifyNever(
-        () => notificationService.showNotificationNow(
-          title: any(named: 'title'),
-          body: any(named: 'body'),
-          notificationId: any(named: 'notificationId'),
-          showOnMobile: any(named: 'showOnMobile'),
-          showOnDesktop: any(named: 'showOnDesktop'),
-          deepLink: any(named: 'deepLink'),
-        ),
-      );
-      verifyNever(
-        () => notificationService.scheduleNotificationAt(
-          title: any(named: 'title'),
-          body: any(named: 'body'),
-          notifyAt: any(named: 'notifyAt'),
-          notificationId: any(named: 'notificationId'),
-          showOnMobile: any(named: 'showOnMobile'),
-          showOnDesktop: any(named: 'showOnDesktop'),
-          deepLink: any(named: 'deepLink'),
-        ),
-      );
-      verifyNever(() => notificationService.cancelNotification(any()));
-    });
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('reconcile-due'),
+          ),
+        ).called(1);
+        verify(
+          () => notificationService.cancelNotification(
+            NotificationScheduler.notificationIdFor('reconcile-upcoming'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => notificationService.showNotificationNow(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationId: any(named: 'notificationId'),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        );
+        verifyNever(
+          () => notificationService.scheduleNotificationAt(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notifyAt: any(named: 'notifyAt'),
+            notificationId: any(named: 'notificationId'),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        );
+      },
+    );
 
     glados.Glados<String>(
       glados.any.letterOrDigits,

@@ -77,23 +77,39 @@ class NotificationMerge {
     if (updatedComparison < 0) return incoming;
     if (updatedComparison > 0) return existing;
 
-    final existingJson = jsonEncode(_tieBreakJson(existing));
-    final incomingJson = jsonEncode(_tieBreakJson(incoming));
+    final existingJson = jsonEncode(_canonicalTieBreakJson(existing));
+    final incomingJson = jsonEncode(_canonicalTieBreakJson(incoming));
     return incomingJson.compareTo(existingJson) > 0 ? incoming : existing;
   }
 
-  static Map<String, dynamic> _tieBreakJson(NotificationEntity entity) {
-    final json =
-        jsonDecode(jsonEncode(entity.toJson())) as Map<String, dynamic>;
-    final meta =
-        Map<String, dynamic>.from(
-            json['meta'] as Map<String, dynamic>,
-          )
-          ..remove('seenAt')
-          ..remove('actedOnAt')
-          ..remove('deletedAt')
-          ..remove('vectorClock');
+  // Builds a canonical map for deterministic tie-breaking when two devices
+  // produce edits with identical updatedAt. Sorting keys recursively makes
+  // the comparison stable across app versions that may differ in JSON key
+  // insertion order. Meta state fields that converge via earliest-non-null
+  // merging are stripped so they never participate in the tie-break.
+  static Map<String, dynamic> _canonicalTieBreakJson(NotificationEntity e) {
+    final json = Map<String, dynamic>.from(e.toJson());
+    final meta = Map<String, dynamic>.from(e.meta.toJson())
+      ..remove('seenAt')
+      ..remove('actedOnAt')
+      ..remove('deletedAt')
+      ..remove('vectorClock');
     json['meta'] = meta;
-    return json;
+    return _canonicalize(json)! as Map<String, dynamic>;
+  }
+
+  static Object? _canonicalize(Object? value) {
+    if (value is Map) {
+      final entries = value.entries.toList()
+        ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
+      return {
+        for (final entry in entries)
+          entry.key.toString(): _canonicalize(entry.value),
+      };
+    }
+    if (value is List) {
+      return value.map(_canonicalize).toList(growable: false);
+    }
+    return value;
   }
 }

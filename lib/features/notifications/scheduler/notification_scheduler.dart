@@ -7,17 +7,25 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 class NotificationScheduler {
+  /// [notificationServiceProvider] is invoked the first time the scheduler
+  /// needs to talk to the OS notification plugin. Wrapping the lookup in a
+  /// thunk keeps `NotificationService` lazy: it is not materialised at app
+  /// startup just to wire up the scheduler, so sandboxed builds (e.g. flatpak)
+  /// where the plugin may fail to register stay startable.
   NotificationScheduler({
     required NotificationsDb notificationsDb,
-    required NotificationService notificationService,
+    required NotificationService Function() notificationServiceProvider,
     required JournalDb journalDb,
   }) : _notificationsDb = notificationsDb,
-       _notificationService = notificationService,
+       _notificationServiceProvider = notificationServiceProvider,
        _journalDb = journalDb;
 
   final NotificationsDb _notificationsDb;
-  final NotificationService _notificationService;
+  final NotificationService Function() _notificationServiceProvider;
   final JournalDb _journalDb;
+
+  NotificationService get _notificationService =>
+      _notificationServiceProvider();
 
   static const int _fnvOffsetBasis32 = 0x811c9dc5;
   static const int _fnvPrime32 = 0x01000193;
@@ -72,15 +80,22 @@ class NotificationScheduler {
 
   Future<void> reconcile({DateTime? now}) async {
     final enabled = await _journalDb.getConfigFlag(enableSyncedAlertsFlag);
-    if (!enabled) return;
-
     final effectiveNow = now ?? DateTime.now();
     final due = await _notificationsDb.dueNow(effectiveNow);
+    final upcoming = await _notificationsDb.upcoming(effectiveNow);
+
+    if (!enabled) {
+      // Flag was turned off after rows were scheduled at the OS level.
+      // Cancel them so stale alerts cannot still fire.
+      for (final entity in [...due, ...upcoming]) {
+        await cancel(entity.id);
+      }
+      return;
+    }
+
     for (final entity in due) {
       await schedule(entity, now: effectiveNow);
     }
-
-    final upcoming = await _notificationsDb.upcoming(effectiveNow);
     for (final entity in upcoming) {
       await schedule(entity, now: effectiveNow);
     }

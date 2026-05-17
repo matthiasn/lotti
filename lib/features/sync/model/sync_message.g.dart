@@ -162,6 +162,10 @@ SyncNotificationStateUpdate _$SyncNotificationStateUpdateFromJson(
   Map<String, dynamic> json,
 ) => SyncNotificationStateUpdate(
   id: json['id'] as String,
+  vectorClock: VectorClock.fromJson(
+    json['vectorClock'] as Map<String, dynamic>,
+  ),
+  originatingHostId: json['originatingHostId'] as String,
   seenAt: json['seenAt'] == null
       ? null
       : DateTime.parse(json['seenAt'] as String),
@@ -171,10 +175,6 @@ SyncNotificationStateUpdate _$SyncNotificationStateUpdateFromJson(
   deletedAt: json['deletedAt'] == null
       ? null
       : DateTime.parse(json['deletedAt'] as String),
-  vectorClock: VectorClock.fromJson(
-    json['vectorClock'] as Map<String, dynamic>,
-  ),
-  originatingHostId: json['originatingHostId'] as String,
   $type: json['runtimeType'] as String?,
 );
 
@@ -182,11 +182,11 @@ Map<String, dynamic> _$SyncNotificationStateUpdateToJson(
   SyncNotificationStateUpdate instance,
 ) => <String, dynamic>{
   'id': instance.id,
+  'vectorClock': instance.vectorClock,
+  'originatingHostId': instance.originatingHostId,
   'seenAt': instance.seenAt?.toIso8601String(),
   'actedOnAt': instance.actedOnAt?.toIso8601String(),
   'deletedAt': instance.deletedAt?.toIso8601String(),
-  'vectorClock': instance.vectorClock,
-  'originatingHostId': instance.originatingHostId,
   'runtimeType': instance.$type,
 };
 

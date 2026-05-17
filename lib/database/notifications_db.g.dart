@@ -814,7 +814,7 @@ abstract class _$NotificationsDb extends GeneratedDatabase {
 
   Selectable<NotificationDbEntity> dueNotificationRows(DateTime now) {
     return customSelect(
-      'SELECT * FROM notifications WHERE scheduled_for <= ?1 AND seen_at IS NULL AND deleted_at IS NULL ORDER BY scheduled_for ASC',
+      'SELECT * FROM notifications WHERE scheduled_for <= ?1 AND seen_at IS NULL AND acted_on_at IS NULL AND deleted_at IS NULL ORDER BY scheduled_for ASC',
       variables: [Variable<DateTime>(now)],
       readsFrom: {notifications},
     ).asyncMap(notifications.mapFromRow);
@@ -822,7 +822,7 @@ abstract class _$NotificationsDb extends GeneratedDatabase {
 
   Selectable<NotificationDbEntity> upcomingNotificationRows(DateTime now) {
     return customSelect(
-      'SELECT * FROM notifications WHERE scheduled_for > ?1 AND seen_at IS NULL AND deleted_at IS NULL ORDER BY scheduled_for ASC',
+      'SELECT * FROM notifications WHERE scheduled_for > ?1 AND seen_at IS NULL AND acted_on_at IS NULL AND deleted_at IS NULL ORDER BY scheduled_for ASC',
       variables: [Variable<DateTime>(now)],
       readsFrom: {notifications},
     ).asyncMap(notifications.mapFromRow);

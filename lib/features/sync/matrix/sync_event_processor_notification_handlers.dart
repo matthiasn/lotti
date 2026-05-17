@@ -17,59 +17,43 @@ extension _NotificationHandlers on SyncEventProcessor {
     required NotificationEntity? resolvedNotification,
   }) async {
     final db = _notificationsDb;
-    if (db == null) {
+    final notification = resolvedNotification;
+
+    if (db != null && notification != null) {
+      final saved = await db.upsertNotification(notification);
+      if (saved != null) {
+        await _notificationScheduler?.schedule(saved);
+        _updateNotifications.notify(
+          {
+            saved.id,
+            if (saved.linkedEntityId != null) saved.linkedEntityId!,
+            inboxNotification,
+          },
+          fromSync: true,
+        );
+        _trace(
+          'apply notification id=${saved.id}',
+          subDomain: 'processor.apply',
+        );
+      }
+    } else if (db == null) {
+      // No notifications DB on this device — still mark received so peers
+      // stop requesting backfill for an event we'll never apply.
       _trace(
         'notification.ignored no database',
         subDomain: 'processor.apply',
       );
-      return;
-    }
-    final notification = resolvedNotification;
-    if (notification == null) return;
-
-    final saved = await db.upsertNotification(notification);
-    if (saved != null) {
-      await _notificationScheduler?.schedule(saved);
-      _updateNotifications.notify(
-        {
-          saved.id,
-          if (saved.linkedEntityId != null) saved.linkedEntityId!,
-          inboxNotification,
-        },
-        fromSync: true,
-      );
+    } else {
+      // db is wired but the JSON payload could not be resolved. Skip the
+      // receipt so the event is retried once the attachment arrives.
       _trace(
-        'apply notification id=${saved.id}',
+        'notification.deferred no resolved payload id=${msg.id}',
         subDomain: 'processor.apply',
       );
+      return;
     }
 
-    if (_sequenceLogService != null && msg.originatingHostId.isNotEmpty) {
-      try {
-        final gaps = await _sequenceLogService.recordReceivedEntry(
-          entryId: msg.id,
-          vectorClock: msg.vectorClock,
-          originatingHostId: msg.originatingHostId,
-          coveredVectorClocks: msg.coveredVectorClocks,
-          payloadType: SyncSequencePayloadType.notification,
-          jsonPath: msg.jsonPath,
-        );
-        if (gaps.isNotEmpty) {
-          _trace(
-            'apply.notification.gapsDetected count=${gaps.length} '
-            'for notification=${msg.id}',
-            subDomain: 'processor.gapDetection',
-          );
-        }
-      } catch (e, st) {
-        _loggingService.captureException(
-          e,
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordReceived',
-          stackTrace: st,
-        );
-      }
-    }
+    await _recordNotificationReceived(msg);
   }
 
   Future<void> _applyNotificationStateUpdateMessage(
@@ -77,10 +61,13 @@ extension _NotificationHandlers on SyncEventProcessor {
   ) async {
     final db = _notificationsDb;
     if (db == null) {
+      // No notifications DB on this device — still mark received so peers
+      // stop requesting backfill for an event we'll never apply.
       _trace(
         'notificationStateUpdate.ignored no database',
         subDomain: 'processor.apply',
       );
+      await _recordNotificationStateUpdateReceived(msg);
       return;
     }
 
@@ -93,6 +80,8 @@ extension _NotificationHandlers on SyncEventProcessor {
       originatingHostId: msg.originatingHostId,
     );
     if (result.isMissing) {
+      // Base notification has not arrived yet — leave the event pending so
+      // the queue retries once the upstream `SyncNotification` lands.
       throw FileSystemException(
         'notification base not yet available',
         msg.id,
@@ -116,29 +105,62 @@ extension _NotificationHandlers on SyncEventProcessor {
       );
     }
 
-    if (_sequenceLogService != null && msg.originatingHostId.isNotEmpty) {
-      try {
-        final gaps = await _sequenceLogService.recordReceivedEntry(
-          entryId: msg.id,
-          vectorClock: msg.vectorClock,
-          originatingHostId: msg.originatingHostId,
-          payloadType: SyncSequencePayloadType.notificationStateUpdate,
-        );
-        if (gaps.isNotEmpty) {
-          _trace(
-            'apply.notificationStateUpdate.gapsDetected count=${gaps.length} '
-            'for notification=${msg.id}',
-            subDomain: 'processor.gapDetection',
-          );
-        }
-      } catch (e, st) {
-        _loggingService.captureException(
-          e,
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'recordReceived',
-          stackTrace: st,
+    await _recordNotificationStateUpdateReceived(msg);
+  }
+
+  Future<void> _recordNotificationReceived(SyncNotification msg) async {
+    if (_sequenceLogService == null || msg.originatingHostId.isEmpty) return;
+    try {
+      final gaps = await _sequenceLogService.recordReceivedEntry(
+        entryId: msg.id,
+        vectorClock: msg.vectorClock,
+        originatingHostId: msg.originatingHostId,
+        coveredVectorClocks: msg.coveredVectorClocks,
+        payloadType: SyncSequencePayloadType.notification,
+        jsonPath: msg.jsonPath,
+      );
+      if (gaps.isNotEmpty) {
+        _trace(
+          'apply.notification.gapsDetected count=${gaps.length} '
+          'for notification=${msg.id}',
+          subDomain: 'processor.gapDetection',
         );
       }
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'recordReceived',
+        stackTrace: st,
+      );
+    }
+  }
+
+  Future<void> _recordNotificationStateUpdateReceived(
+    SyncNotificationStateUpdate msg,
+  ) async {
+    if (_sequenceLogService == null || msg.originatingHostId.isEmpty) return;
+    try {
+      final gaps = await _sequenceLogService.recordReceivedEntry(
+        entryId: msg.id,
+        vectorClock: msg.vectorClock,
+        originatingHostId: msg.originatingHostId,
+        payloadType: SyncSequencePayloadType.notificationStateUpdate,
+      );
+      if (gaps.isNotEmpty) {
+        _trace(
+          'apply.notificationStateUpdate.gapsDetected count=${gaps.length} '
+          'for notification=${msg.id}',
+          subDomain: 'processor.gapDetection',
+        );
+      }
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'recordReceived',
+        stackTrace: st,
+      );
     }
   }
 }

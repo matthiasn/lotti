@@ -98,14 +98,21 @@ class NotificationRepository {
       if (host == null) return null;
 
       final now = _now();
+      // Deterministic IDs (taskSuggestion/taskOverdue) mean re-create calls
+      // for the same linked task land on an existing row. Use the stored
+      // createdAt + vector clock so causality keeps advancing instead of
+      // resetting to the new placeholder's empty clock.
+      final existing = await _notificationsDb.notificationById(entity.id);
+      final previousClock = existing?.meta.vectorClock ??
+          (entity.meta.vectorClock.vclock.isEmpty
+              ? null
+              : entity.meta.vectorClock);
       final vectorClock = await _vectorClockService.getNextVectorClock(
-        previous: entity.meta.vectorClock.vclock.isEmpty
-            ? null
-            : entity.meta.vectorClock,
+        previous: previousClock,
       );
       final enriched = entity.copyWithMeta(
         entity.meta.copyWith(
-          createdAt: entity.meta.createdAt,
+          createdAt: existing?.meta.createdAt ?? entity.meta.createdAt,
           updatedAt: now,
           scheduledFor: entity.meta.scheduledFor,
           vectorClock: vectorClock,

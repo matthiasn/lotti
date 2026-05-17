@@ -32,6 +32,7 @@ dueNotificationRows:
 SELECT * FROM notifications
   WHERE scheduled_for <= :now
     AND seen_at IS NULL
+    AND acted_on_at IS NULL
     AND deleted_at IS NULL
   ORDER BY scheduled_for ASC;
 
@@ -39,6 +40,7 @@ upcomingNotificationRows:
 SELECT * FROM notifications
   WHERE scheduled_for > :now
     AND seen_at IS NULL
+    AND acted_on_at IS NULL
     AND deleted_at IS NULL
   ORDER BY scheduled_for ASC;
 

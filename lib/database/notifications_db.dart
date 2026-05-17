@@ -68,6 +68,7 @@ class NotificationsDb extends _$NotificationsDb {
           FROM notifications
           WHERE scheduled_for <= ?
             AND seen_at IS NULL
+            AND acted_on_at IS NULL
             AND deleted_at IS NULL
           ''',
       variables: [Variable<DateTime>(now)],
@@ -76,22 +77,26 @@ class NotificationsDb extends _$NotificationsDb {
     return row.read<int>('amount');
   }
 
+  // Read-modify-write under a Drift transaction so concurrent callers cannot
+  // interleave and overwrite each other's vector-clock or lifecycle updates.
   Future<NotificationEntity?> upsertNotification(
     NotificationEntity incoming,
-  ) async {
-    final existing = await notificationById(incoming.id);
-    final merged = existing == null
-        ? incoming
-        : NotificationMerge.mergeFull(existing, incoming);
+  ) {
+    return transaction(() async {
+      final existing = await notificationById(incoming.id);
+      final merged = existing == null
+          ? incoming
+          : NotificationMerge.mergeFull(existing, incoming);
 
-    if (existing != null && NotificationMerge.same(existing, merged)) {
-      return null;
-    }
+      if (existing != null && NotificationMerge.same(existing, merged)) {
+        return null;
+      }
 
-    await into(
-      notifications,
-    ).insertOnConflictUpdate(notificationToDbEntity(merged));
-    return merged;
+      await into(
+        notifications,
+      ).insertOnConflictUpdate(notificationToDbEntity(merged));
+      return merged;
+    });
   }
 
   Future<NotificationStateMergeResult> mergeState({
@@ -101,28 +106,30 @@ class NotificationsDb extends _$NotificationsDb {
     DateTime? deletedAt,
     VectorClock? vectorClock,
     String? originatingHostId,
-  }) async {
-    final existing = await notificationById(id);
-    if (existing == null) {
-      return const NotificationStateMergeResult.missing();
-    }
+  }) {
+    return transaction(() async {
+      final existing = await notificationById(id);
+      if (existing == null) {
+        return const NotificationStateMergeResult.missing();
+      }
 
-    final merged = NotificationMerge.mergeState(
-      existing,
-      seenAt: seenAt,
-      actedOnAt: actedOnAt,
-      deletedAt: deletedAt,
-      vectorClock: vectorClock,
-      originatingHostId: originatingHostId,
-    );
-    if (NotificationMerge.same(existing, merged)) {
-      return NotificationStateMergeResult(entity: existing, changed: false);
-    }
+      final merged = NotificationMerge.mergeState(
+        existing,
+        seenAt: seenAt,
+        actedOnAt: actedOnAt,
+        deletedAt: deletedAt,
+        vectorClock: vectorClock,
+        originatingHostId: originatingHostId,
+      );
+      if (NotificationMerge.same(existing, merged)) {
+        return NotificationStateMergeResult(entity: existing, changed: false);
+      }
 
-    await into(
-      notifications,
-    ).insertOnConflictUpdate(notificationToDbEntity(merged));
-    return NotificationStateMergeResult(entity: merged, changed: true);
+      await into(
+        notifications,
+      ).insertOnConflictUpdate(notificationToDbEntity(merged));
+      return NotificationStateMergeResult(entity: merged, changed: true);
+    });
   }
 
   Stream<List<({String id, Map<String, int>? vectorClock})>>
