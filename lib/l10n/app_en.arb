@@ -2302,6 +2302,20 @@
   "noDefaultLanguage": "No default language",
   "noTasksFound": "No tasks found",
   "noTasksToLink": "No tasks available to link",
+  "notificationBellEmptySemantics": "Notifications, no unread alerts",
+  "notificationBellTooltip": "Notifications",
+  "notificationBellUnseenSemantics": "Notifications, {count} unread {count, plural, =1{alert} other{alerts}}",
+  "@notificationBellUnseenSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationInboxDismiss": "Dismiss notification",
+  "notificationInboxEmpty": "You're all caught up.",
+  "notificationInboxError": "Couldn't load notifications.",
+  "notificationInboxTitle": "Notifications",
   "outboxMonitorAttachmentLabel": "Attachment",
   "outboxMonitorDelete": "delete",
   "outboxMonitorDeleteConfirmLabel": "Delete",

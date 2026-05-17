@@ -1901,6 +1901,20 @@
   "noDefaultLanguage": "Žádný výchozí jazyk",
   "noTasksFound": "Nebyly nalezeny žádné úkoly",
   "noTasksToLink": "Žádné dostupné úkoly k propojení",
+  "notificationBellEmptySemantics": "Oznámení, žádná nepřečtená upozornění",
+  "notificationBellTooltip": "Oznámení",
+  "notificationBellUnseenSemantics": "Oznámení, {count} nepřečtených {count, plural, =1{upozornění} other{upozornění}}",
+  "@notificationBellUnseenSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationInboxDismiss": "Zavřít oznámení",
+  "notificationInboxEmpty": "Máš všechno přečtené.",
+  "notificationInboxError": "Oznámení se nepodařilo načíst.",
+  "notificationInboxTitle": "Oznámení",
   "outboxMonitorAttachmentLabel": "Příloha",
   "outboxMonitorDelete": "smazat",
   "outboxMonitorDeleteConfirmLabel": "Smazat",

@@ -4656,6 +4656,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get noTasksToLink => 'Nu sunt sarcini disponibile pentru a fi legate';
 
   @override
+  String get notificationBellEmptySemantics =>
+      'Notificări, nicio alertă necitită';
+
+  @override
+  String get notificationBellTooltip => 'Notificări';
+
+  @override
+  String notificationBellUnseenSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'alerte necitite',
+      one: 'alertă necitită',
+    );
+    return 'Notificări, $count $_temp0';
+  }
+
+  @override
+  String get notificationInboxDismiss => 'Închideți notificarea';
+
+  @override
+  String get notificationInboxEmpty => 'Sunteți la zi.';
+
+  @override
+  String get notificationInboxError => 'Nu s-au putut încărca notificările.';
+
+  @override
+  String get notificationInboxTitle => 'Notificări';
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Atașament';
 
   @override

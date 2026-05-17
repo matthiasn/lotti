@@ -2109,6 +2109,20 @@
   "noDefaultLanguage": "Fără limbă implicită",
   "noTasksFound": "Nu s-au găsit sarcini",
   "noTasksToLink": "Nu sunt sarcini disponibile pentru a fi legate",
+  "notificationBellEmptySemantics": "Notificări, nicio alertă necitită",
+  "notificationBellTooltip": "Notificări",
+  "notificationBellUnseenSemantics": "Notificări, {count} {count, plural, =1{alertă necitită} other{alerte necitite}}",
+  "@notificationBellUnseenSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationInboxDismiss": "Închideți notificarea",
+  "notificationInboxEmpty": "Sunteți la zi.",
+  "notificationInboxError": "Nu s-au putut încărca notificările.",
+  "notificationInboxTitle": "Notificări",
   "outboxMonitorAttachmentLabel": "Atașament",
   "outboxMonitorDelete": "șterge",
   "outboxMonitorDeleteConfirmLabel": "Șterge",

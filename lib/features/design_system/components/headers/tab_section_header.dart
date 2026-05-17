@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 
 /// Compact header used by the Tasks and Projects tabs: a title row (with an
@@ -50,16 +51,7 @@ class TabSectionHeader extends StatelessWidget {
     final highText = tokens.colors.text.highEmphasis;
     final accent = tokens.colors.interactive.enabled;
 
-    final effectiveTitleTrailing =
-        titleTrailing ??
-        SizedBox.square(
-          dimension: 36,
-          child: Icon(
-            Icons.notifications_none_rounded,
-            size: 24,
-            color: highText,
-          ),
-        );
+    final effectiveTitleTrailing = titleTrailing ?? const NotificationBell();
 
     return Padding(
       padding: EdgeInsets.only(top: topPadding),

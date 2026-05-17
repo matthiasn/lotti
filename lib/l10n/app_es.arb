@@ -2109,6 +2109,20 @@
   "noDefaultLanguage": "Sin idioma predeterminado",
   "noTasksFound": "No se encontraron tareas",
   "noTasksToLink": "No hay tareas disponibles para vincular",
+  "notificationBellEmptySemantics": "Notificaciones, sin alertas sin leer",
+  "notificationBellTooltip": "Notificaciones",
+  "notificationBellUnseenSemantics": "Notificaciones, {count} {count, plural, =1{alerta sin leer} other{alertas sin leer}}",
+  "@notificationBellUnseenSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationInboxDismiss": "Descartar notificación",
+  "notificationInboxEmpty": "Estás al día.",
+  "notificationInboxError": "No se pudieron cargar las notificaciones.",
+  "notificationInboxTitle": "Notificaciones",
   "outboxMonitorAttachmentLabel": "Adjunto",
   "outboxMonitorDelete": "eliminar",
   "outboxMonitorDeleteConfirmLabel": "Eliminar",

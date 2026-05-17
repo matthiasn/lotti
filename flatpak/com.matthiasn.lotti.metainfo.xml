@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1003" date="2026-05-18">
+      <description>
+          <p>Synced-notifications bell in the Tasks and Projects tab headers. The icon flips from outlined to filled and shows an unread count badge (capped at 9+) whenever there are unseen alerts, driven by a new Riverpod provider that listens on UpdateNotifications.updateStream so the badge stays in sync with the database. Tapping the bell opens an anchored popover that lists the pending alerts: each row shows the title and body, tapping deep-links into the linked task and marks the alert acted-on, and the dismiss icon (or a long press) retracts the alert. All entry points stay behind the existing enable_synced_alerts master switch and reuse NotificationRepository, so every change syncs to other devices through the existing Matrix sync pipeline.</p>
+      </description>
+    </release>
     <release version="0.9.1002" date="2026-05-17">
       <description>
           <p>Synced notifications data layer: a separate notifications.sqlite store, Freezed notification entities, Matrix sync payloads for full alerts and state updates, backfill coverage, and macOS/iOS scheduler plumbing behind the new enable_synced_alerts flag.</p>

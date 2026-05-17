@@ -4562,6 +4562,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noTasksToLink => 'No tasks available to link';
 
   @override
+  String get notificationBellEmptySemantics =>
+      'Notifications, no unread alerts';
+
+  @override
+  String get notificationBellTooltip => 'Notifications';
+
+  @override
+  String notificationBellUnseenSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'alerts',
+      one: 'alert',
+    );
+    return 'Notifications, $count unread $_temp0';
+  }
+
+  @override
+  String get notificationInboxDismiss => 'Dismiss notification';
+
+  @override
+  String get notificationInboxEmpty => 'You\'re all caught up.';
+
+  @override
+  String get notificationInboxError => 'Couldn\'t load notifications.';
+
+  @override
+  String get notificationInboxTitle => 'Notifications';
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Attachment';
 
   @override

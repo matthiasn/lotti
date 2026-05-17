@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1003]
+### Added
+- Synced-notifications bell in the Tasks and Projects tab headers. The
+  icon flips from outlined to filled and shows an unread count badge
+  (capped at `9+`) whenever there are unseen alerts, driven by a new
+  Riverpod provider that listens on `UpdateNotifications.updateStream`
+  so the badge stays in sync with the database. Tapping the bell opens
+  an anchored popover that lists the pending alerts: each row shows the
+  title and body, tapping deep-links into the linked task and marks the
+  alert acted-on, and the dismiss icon (or a long press) retracts the
+  alert. All entry points stay behind the existing `enable_synced_alerts`
+  master switch and reuse `NotificationRepository`, so every change
+  syncs to other devices through the existing Matrix sync pipeline.
+
 ## [0.9.1002]
 ### Added
 - Synced notifications data layer: a separate `notifications.sqlite` store,

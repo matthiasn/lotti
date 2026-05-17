@@ -2109,6 +2109,20 @@
   "noDefaultLanguage": "Keine Standardsprache",
   "noTasksFound": "Keine Aufgaben gefunden",
   "noTasksToLink": "Keine Aufgaben zum Verknüpfen verfügbar",
+  "notificationBellEmptySemantics": "Mitteilungen, keine ungelesenen Hinweise",
+  "notificationBellTooltip": "Mitteilungen",
+  "notificationBellUnseenSemantics": "Mitteilungen, {count} ungelesene {count, plural, =1{Mitteilung} other{Mitteilungen}}",
+  "@notificationBellUnseenSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationInboxDismiss": "Mitteilung verwerfen",
+  "notificationInboxEmpty": "Du bist auf dem neuesten Stand.",
+  "notificationInboxError": "Mitteilungen konnten nicht geladen werden.",
+  "notificationInboxTitle": "Mitteilungen",
   "outboxMonitorAttachmentLabel": "Anhang",
   "outboxMonitorDelete": "Löschen",
   "outboxMonitorDeleteConfirmLabel": "Löschen",
