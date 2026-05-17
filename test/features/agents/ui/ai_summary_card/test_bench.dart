@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/utils/consts.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -50,6 +51,7 @@ class AgentTestBench {
     MockChangeSetConfirmationService? confirmationService,
     MockUpdateNotifications? updateNotifications,
     MockTaskAgentService? taskAgentService,
+    MlxAudioChannel? mlxAudioChannel,
     MediaQueryData mediaQueryData = desktopMediaQueryData,
   }) : _report = report,
        _suggestions = suggestions,
@@ -61,6 +63,7 @@ class AgentTestBench {
        _confirmationService = confirmationService,
        _updateNotifications = updateNotifications,
        _taskAgentService = taskAgentService,
+       _mlxAudioChannel = mlxAudioChannel,
        _mediaQueryData = mediaQueryData;
 
   static const String taskId = 'task-001';
@@ -75,6 +78,7 @@ class AgentTestBench {
   final MockChangeSetConfirmationService? _confirmationService;
   final MockUpdateNotifications? _updateNotifications;
   final MockTaskAgentService? _taskAgentService;
+  final MlxAudioChannel? _mlxAudioChannel;
   final MediaQueryData _mediaQueryData;
 
   Widget build() {
@@ -115,6 +119,8 @@ class AgentTestBench {
           taskAgentServiceProvider.overrideWith(
             (ref) => _taskAgentService,
           ),
+        if (_mlxAudioChannel != null)
+          mlxAudioChannelProvider.overrideWithValue(_mlxAudioChannel),
       ],
       child: const SingleChildScrollView(
         child: AiSummaryCard(taskId: taskId),

@@ -143,6 +143,7 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
   String? startedModelId;
   String? startedDelayPreset;
   String? doneTextOnStop;
+  Exception? stopError;
   bool stopped = false;
   bool cancelled = false;
 
@@ -168,6 +169,10 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
   @override
   Future<void> stopRealtimeTranscription() async {
     stopped = true;
+    final error = stopError;
+    if (error != null) {
+      throw error;
+    }
     final text = doneTextOnStop;
     if (text != null) {
       scheduleMicrotask(() {
@@ -684,6 +689,41 @@ void main() {
         expect(deltas, ['Hello world', ' again']);
       },
     );
+
+    test('ignores MLX provisional display and stats events', () async {
+      final bench = await _TestBench.create(
+        addConfig: false,
+        addMlxConfig: true,
+      );
+      addTearDown(bench.dispose);
+
+      final deltas = <String>[];
+      await bench.startTranscription(onDelta: deltas.add);
+
+      bench.mlxAudioChannel
+        ..emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.provisional,
+            text: 'draft',
+          ),
+        )
+        ..emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.display,
+            text: 'display',
+          ),
+        )
+        ..emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.stats,
+            encodedWindowCount: 2,
+            totalAudioSeconds: 2.4,
+          ),
+        );
+      await Future<void>.value();
+
+      expect(deltas, isEmpty);
+    });
   });
 
   group('stop', () {
@@ -819,6 +859,37 @@ void main() {
         expect(bench.mlxAudioChannel.cancelled, isTrue);
       },
     );
+
+    test('falls back to confirmed MLX text when native stop fails', () async {
+      final bench = await _TestBench.create(
+        addConfig: false,
+        addMlxConfig: true,
+      );
+      addTearDown(bench.dispose);
+
+      await bench.startTranscription();
+      bench.mlxAudioChannel
+        ..emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'partial local transcript',
+          ),
+        )
+        ..stopError = Exception('native stop failed');
+      await Future<void>.value();
+
+      final result = await bench.service.stop(
+        stopRecorder: () async {},
+        outputPath: '/tmp/rt_mlx_error/output',
+      );
+
+      expect(result.transcript, 'partial local transcript');
+      expect(result.usedTranscriptFallback, isTrue);
+      expect(
+        fakeLogging.exceptions.map((e) => e.toString()),
+        contains(contains('native stop failed')),
+      );
+    });
   });
 
   group('dispose', () {

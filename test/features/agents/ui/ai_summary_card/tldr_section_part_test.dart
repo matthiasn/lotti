@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -119,6 +121,24 @@ void main() {
       expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
     });
 
+    testWidgets('plays the TLDR through the MLX TTS model', (tester) async {
+      final mlxAudioChannel = _RecordingMlxAudioChannel();
+      final bench = AgentTestBench(
+        enableSummaryTts: true,
+        mlxAudioChannel: mlxAudioChannel,
+        report: makeTestReport(tldr: 'Tldr line.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+
+      expect(mlxAudioChannel.spokenTexts, ['Tldr line.']);
+      expect(mlxAudioChannel.modelIds, [mlxAudioDefaultTtsModelId]);
+    });
+
     testWidgets(
       'lays the header out as a Wrap so the leading block and controls '
       'sit in a single run with the controls right-aligned via '
@@ -223,4 +243,19 @@ void main() {
       },
     );
   });
+}
+
+class _RecordingMlxAudioChannel extends MlxAudioChannel {
+  final spokenTexts = <String>[];
+  final modelIds = <String>[];
+
+  @override
+  Future<void> speakText({
+    required String text,
+    required String modelId,
+    String? language,
+  }) async {
+    spokenTexts.add(text);
+    modelIds.add(modelId);
+  }
 }

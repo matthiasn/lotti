@@ -108,6 +108,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -198,6 +199,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream.value(
@@ -326,6 +328,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -411,6 +414,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -550,6 +554,7 @@ void main() {
           maxCompletionTokens: any(named: 'maxCompletionTokens'),
           overrideClient: any(named: 'overrideClient'),
           tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
         ),
       ).thenAnswer(
         (_) => Stream.value(
@@ -593,6 +598,7 @@ void main() {
           maxCompletionTokens: any(named: 'maxCompletionTokens'),
           overrideClient: any(named: 'overrideClient'),
           tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
         ),
       ).captured;
       expect(captured.first, 'gemini-2.5-flash');
@@ -690,6 +696,7 @@ void main() {
           maxCompletionTokens: any(named: 'maxCompletionTokens'),
           overrideClient: any(named: 'overrideClient'),
           tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
         ),
       ).thenAnswer(
         (_) => Stream.value(
@@ -768,6 +775,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -873,6 +881,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([

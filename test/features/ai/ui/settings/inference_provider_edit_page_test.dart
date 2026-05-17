@@ -667,6 +667,87 @@ void main() {
       },
     );
 
+    testWidgets(
+      'create-mode MLX Audio provider shows embedded-runtime hint without URL or API key fields',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 768));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          buildTestWidget(preselectedType: InferenceProviderType.mlxAudio),
+        );
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        expect(
+          find.text(strings.aiProviderEmbeddedRuntimeHint),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            strings.aiProviderConnectFieldBaseUrlLabelOptional.toUpperCase(),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.widgetWithText(
+            TextFormField,
+            strings.aiProviderConnectFieldBaseUrlPlaceholder,
+          ),
+          findsNothing,
+        );
+        expect(
+          find.text(strings.apiKeyInputLabel.toUpperCase()),
+          findsNothing,
+        );
+        expect(
+          find.widgetWithText(TextFormField, strings.apiKeyInputHint),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'edit-mode MLX Audio provider keeps local hint and skips authentication section',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1000));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final mlxProvider = AiConfig.inferenceProvider(
+          id: 'mlx-provider-id',
+          name: 'MLX Audio (local)',
+          baseUrl: '',
+          apiKey: '',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.mlxAudio,
+        );
+        when(
+          () => mockRepository.getConfigById('mlx-provider-id'),
+        ).thenAnswer((_) async => mlxProvider);
+        when(
+          () => mockRepository.watchConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) => Stream.value([]));
+
+        await tester.pumpWidget(
+          buildTestWidget(configId: 'mlx-provider-id'),
+        );
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        expect(
+          find.widgetWithText(TextFormField, 'MLX Audio (local)'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(strings.aiProviderEmbeddedRuntimeHint),
+          findsOneWidget,
+        );
+        expect(find.text(strings.apiKeyAuthenticationTitle), findsNothing);
+        expect(find.text(strings.apiKeyInputLabel), findsNothing);
+        expect(find.text(strings.apiKeyBaseUrlLabel), findsNothing);
+      },
+    );
+
     testWidgets('API key field visibility changes when switching providers', (
       WidgetTester tester,
     ) async {

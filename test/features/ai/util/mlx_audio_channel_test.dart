@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -114,7 +115,250 @@ extension _AnyDownloadProgressScenario on glados.Any {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('MlxAudioChannel', () {
+    test('getModelStatus maps native status payloads', () async {
+      const methodChannel = MethodChannel('test_mlx_audio_status');
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(methodChannel, null),
+      );
+      messenger.setMockMethodCallHandler(methodChannel, (call) async {
+        expect(call.method, 'getModelStatus');
+        expect(call.arguments, {'modelId': 'model-a'});
+        return <String, Object?>{
+          'status': 'downloading',
+          'completedUnitCount': 4,
+          'totalUnitCount': 8,
+        };
+      });
+
+      final progress = await MlxAudioChannel(
+        methodChannel: methodChannel,
+      ).getModelStatus('model-a');
+
+      expect(progress.modelId, 'model-a');
+      expect(progress.status, MlxAudioModelStatus.downloading);
+      expect(progress.percentComplete, 50);
+    });
+
+    test(
+      'getModelStatus reports unsupported when native plugin is absent',
+      () async {
+        const methodChannel = MethodChannel('test_mlx_audio_missing_plugin');
+        final progress = await MlxAudioChannel(
+          methodChannel: methodChannel,
+        ).getModelStatus('model-a');
+
+        expect(progress.modelId, 'model-a');
+        expect(progress.status, MlxAudioModelStatus.unsupported);
+      },
+    );
+
+    test(
+      'getModelStatus converts platform failures into failed progress',
+      () async {
+        const methodChannel = MethodChannel('test_mlx_audio_status_failure');
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        addTearDown(
+          () => messenger.setMockMethodCallHandler(methodChannel, null),
+        );
+        messenger.setMockMethodCallHandler(methodChannel, (_) async {
+          throw PlatformException(
+            code: 'NATIVE_ERROR',
+            message: 'Native status failed',
+          );
+        });
+
+        final progress = await MlxAudioChannel(
+          methodChannel: methodChannel,
+        ).getModelStatus('model-a');
+
+        expect(progress.status, MlxAudioModelStatus.failed);
+        expect(progress.message, 'Native status failed');
+      },
+    );
+
+    test(
+      'forwards native method calls and parses transcription results',
+      () async {
+        const methodChannel = MethodChannel('test_mlx_audio_methods');
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        final calls = <MethodCall>[];
+        addTearDown(
+          () => messenger.setMockMethodCallHandler(methodChannel, null),
+        );
+        messenger.setMockMethodCallHandler(methodChannel, (call) async {
+          calls.add(call);
+          return switch (call.method) {
+            'transcribeFile' || 'transcribeBase64Audio' => <String, Object?>{
+              'text': 'local transcript',
+              'detectedLanguage': 'en',
+              'processingTimeMs': 42,
+              'diarizationStatus': 'disabled',
+            },
+            _ => null,
+          };
+        });
+
+        final channel = MlxAudioChannel(methodChannel: methodChannel);
+
+        await channel.installModel('model-a');
+        final fileResult = await channel.transcribeFile(
+          filePath: '/tmp/audio.wav',
+          modelId: 'model-a',
+          language: 'English',
+          speechDictionaryTerms: const ['Lotti'],
+          enableSpeakerDiarization: true,
+        );
+        final base64Result = await channel.transcribeBase64Audio(
+          audioBase64: 'abc123',
+          modelId: 'model-a',
+        );
+        await channel.speakText(
+          text: 'summary',
+          modelId: 'tts-model',
+          language: 'English',
+        );
+        await channel.stopSpeaking();
+        await channel.startRealtimeTranscription(
+          modelId: 'model-a',
+          language: 'English',
+          delayPreset: 'word',
+        );
+        await channel.appendRealtimePcm(Uint8List.fromList([1, 2, 3, 4]));
+        await channel.stopRealtimeTranscription();
+        await channel.cancelRealtimeTranscription();
+
+        expect(fileResult.text, 'local transcript');
+        expect(fileResult.detectedLanguage, 'en');
+        expect(fileResult.processingTimeMs, 42);
+        expect(fileResult.diarizationStatus, 'disabled');
+        expect(base64Result.text, 'local transcript');
+        expect(
+          calls.map((call) => call.method),
+          [
+            'installModel',
+            'transcribeFile',
+            'transcribeBase64Audio',
+            'speakText',
+            'stopSpeaking',
+            'startRealtimeTranscription',
+            'appendRealtimePcm',
+            'stopRealtimeTranscription',
+            'cancelRealtimeTranscription',
+          ],
+        );
+        final fileArgs = calls[1].arguments! as Map<Object?, Object?>;
+        expect(fileArgs, containsPair('filePath', '/tmp/audio.wav'));
+        expect(fileArgs, containsPair('modelId', 'model-a'));
+        expect(fileArgs['speechDictionaryTerms'], ['Lotti']);
+        expect(fileArgs, containsPair('language', 'English'));
+        expect(fileArgs, containsPair('enableSpeakerDiarization', true));
+
+        final base64Args = calls[2].arguments! as Map<Object?, Object?>;
+        expect(base64Args, containsPair('audioBase64', 'abc123'));
+        expect(base64Args, containsPair('modelId', 'model-a'));
+        expect(base64Args['speechDictionaryTerms'], isEmpty);
+        expect(base64Args, containsPair('language', null));
+        expect(base64Args, containsPair('enableSpeakerDiarization', false));
+
+        final realtimeArgs = calls[5].arguments! as Map<Object?, Object?>;
+        expect(realtimeArgs, containsPair('modelId', 'model-a'));
+        expect(realtimeArgs, containsPair('language', 'English'));
+        expect(realtimeArgs, containsPair('delayPreset', 'word'));
+
+        final pcmArgs = calls[6].arguments! as Map<Object?, Object?>;
+        expect(pcmArgs['pcm16'], isA<Uint8List>());
+        expect(pcmArgs['pcm16']! as Uint8List, [1, 2, 3, 4]);
+      },
+    );
+  });
+
+  group('MlxAudioRealtimeEvent', () {
+    test('maps native event type strings and optional stats fields', () {
+      final cases = <String?, MlxAudioRealtimeEventType>{
+        'transcription.provisional': MlxAudioRealtimeEventType.provisional,
+        'transcription.confirmed': MlxAudioRealtimeEventType.confirmed,
+        'transcription.display': MlxAudioRealtimeEventType.display,
+        'transcription.stats': MlxAudioRealtimeEventType.stats,
+        'transcription.done': MlxAudioRealtimeEventType.done,
+        'transcription.error': MlxAudioRealtimeEventType.error,
+        'unexpected': MlxAudioRealtimeEventType.error,
+        null: MlxAudioRealtimeEventType.error,
+      };
+
+      for (final entry in cases.entries) {
+        final event = MlxAudioRealtimeEvent.fromMap({
+          if (entry.key != null) 'type': entry.key,
+          'text': 'text',
+          'confirmedText': 'confirmed',
+          'provisionalText': 'provisional',
+          'message': 'message',
+          'encodedWindowCount': 3,
+          'totalAudioSeconds': 1.5,
+          'tokensPerSecond': 2.5,
+          'realTimeFactor': 0.75,
+          'peakMemoryGB': 4.25,
+        });
+
+        expect(event.type, entry.value);
+        expect(event.text, 'text');
+        expect(event.confirmedText, 'confirmed');
+        expect(event.provisionalText, 'provisional');
+        expect(event.message, 'message');
+        expect(event.encodedWindowCount, 3);
+        expect(event.totalAudioSeconds, 1.5);
+        expect(event.tokensPerSecond, 2.5);
+        expect(event.realTimeFactor, 0.75);
+        expect(event.peakMemoryGB, 4.25);
+      }
+    });
+  });
+
   group('MlxAudioModelDownloadProgress', () {
+    test('marks only retryable terminal statuses as installable', () {
+      expect(
+        const MlxAudioModelDownloadProgress(
+          modelId: 'model-a',
+          status: MlxAudioModelStatus.notInstalled,
+        ).canInstall,
+        isTrue,
+      );
+      expect(
+        const MlxAudioModelDownloadProgress(
+          modelId: 'model-a',
+          status: MlxAudioModelStatus.failed,
+        ).canInstall,
+        isTrue,
+      );
+      expect(
+        const MlxAudioModelDownloadProgress(
+          modelId: 'model-a',
+          status: MlxAudioModelStatus.installed,
+        ).canInstall,
+        isFalse,
+      );
+      expect(
+        const MlxAudioModelDownloadProgress(
+          modelId: 'model-a',
+          status: MlxAudioModelStatus.downloading,
+        ).canInstall,
+        isFalse,
+      );
+      expect(
+        const MlxAudioModelDownloadProgress(
+          modelId: 'model-a',
+          status: MlxAudioModelStatus.unsupported,
+        ).canInstall,
+        isFalse,
+      );
+    });
+
     test('treats zero-byte downloading events as indeterminate', () {
       final progress = MlxAudioModelDownloadProgress.fromMap({
         'modelId': 'mlx-community/example',

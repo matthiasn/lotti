@@ -150,6 +150,78 @@ void main() {
   });
 
   group('MlxAudioModelDownloadDialog', () {
+    testWidgets('renders measured downloading progress as percent', (
+      tester,
+    ) async {
+      final model = _model(
+        id: 'qwen-17b-8bit',
+        name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+        providerModelId: mlxAudioQwenAsr17B8BitModelId,
+      );
+      final channel = _TerminalMlxAudioChannel(
+        model.providerModelId,
+        MlxAudioModelStatus.downloading,
+        completedUnitCount: 42,
+        totalUnitCount: 100,
+      );
+      addTearDown(channel.close);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MlxAudioModelDownloadDialog(model: model),
+          overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+        ),
+      );
+      await tester.pump();
+      await Future<void>.value();
+      await tester.pump();
+
+      final indicator = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(indicator.value, 0.42);
+      expect(find.text('Downloading 42%'), findsOneWidget);
+    });
+
+    testWidgets('renders installed and not-installed terminal states', (
+      tester,
+    ) async {
+      final model = _model(
+        id: 'qwen-17b-8bit',
+        name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+        providerModelId: mlxAudioQwenAsr17B8BitModelId,
+      );
+
+      for (final statusCase in const [
+        (MlxAudioModelStatus.installed, 1.0, 'Installed'),
+        (MlxAudioModelStatus.notInstalled, 0.0, 'Not installed'),
+      ]) {
+        final channel = _TerminalMlxAudioChannel(
+          model.providerModelId,
+          statusCase.$1,
+        );
+        addTearDown(channel.close);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            MlxAudioModelDownloadDialog(model: model),
+            overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+          ),
+        );
+        await tester.pump();
+        await Future<void>.value();
+        await tester.pump();
+        await Future<void>.value();
+        await tester.pump();
+
+        final indicator = tester.widget<LinearProgressIndicator>(
+          find.byType(LinearProgressIndicator),
+        );
+        expect(indicator.value, statusCase.$2);
+        expect(find.text(statusCase.$3), findsOneWidget);
+      }
+    });
+
     testWidgets(
       'renders terminal failed and unsupported states with determinate progress',
       (tester) async {
@@ -198,10 +270,17 @@ void main() {
 }
 
 class _TerminalMlxAudioChannel extends MlxAudioChannel {
-  _TerminalMlxAudioChannel(this.modelId, this.status);
+  _TerminalMlxAudioChannel(
+    this.modelId,
+    this.status, {
+    this.completedUnitCount,
+    this.totalUnitCount,
+  });
 
   final String modelId;
   final MlxAudioModelStatus status;
+  final int? completedUnitCount;
+  final int? totalUnitCount;
 
   @override
   Stream<MlxAudioModelDownloadProgress> get downloadProgressStream =>
@@ -216,6 +295,8 @@ class _TerminalMlxAudioChannel extends MlxAudioChannel {
     return MlxAudioModelDownloadProgress(
       modelId: modelId,
       status: status,
+      completedUnitCount: completedUnitCount,
+      totalUnitCount: totalUnitCount,
     );
   }
 
