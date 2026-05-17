@@ -30,17 +30,10 @@ class AudioTranscriptionService {
   Future<String> transcribe(
     String filePath, {
     List<String> speechDictionaryTerms = const [],
-  }) async {
-    final buffer = StringBuffer();
-    // ignore: prefer_foreach - await for is required for async stream iteration
-    await for (final chunk in transcribeStream(
-      filePath,
-      speechDictionaryTerms: speechDictionaryTerms,
-    )) {
-      buffer.write(chunk);
-    }
-    return buffer.toString();
-  }
+  }) => transcribeStream(
+    filePath,
+    speechDictionaryTerms: speechDictionaryTerms,
+  ).join();
 
   /// Transcribes audio from a local file at [filePath] with streaming output.
   ///

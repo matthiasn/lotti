@@ -609,6 +609,7 @@ class RealtimeTranscriptionService {
     _mlxDoneCompleter = null;
     _lastMlxConfirmedText = '';
     _detectedLanguage = null;
+    _deltaBuffer.clear();
     if (_activeBackend == _RealtimeBackendKind.mlxAudio) {
       await _mlxAudioChannel.cancelRealtimeTranscription();
     } else {
@@ -618,12 +619,8 @@ class RealtimeTranscriptionService {
   }
 }
 
-bool _isMlxRealtimeModel(String providerModelId) {
-  final normalized = providerModelId.toLowerCase();
-  return normalized == mlxAudioQwenAsrModelId.toLowerCase() ||
-      normalized.contains('qwen3-asr') ||
-      normalized.contains('qwen3_asr');
-}
+bool _isMlxRealtimeModel(String providerModelId) =>
+    isMlxAudioQwenAsrModelId(providerModelId);
 
 final Provider<RealtimeTranscriptionService>
 realtimeTranscriptionServiceProvider = Provider<RealtimeTranscriptionService>((

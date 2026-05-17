@@ -41,19 +41,37 @@ class MlxAudioModelInstallChoiceDialog extends StatefulWidget {
 
 class _MlxAudioModelInstallChoiceDialogState
     extends State<MlxAudioModelInstallChoiceDialog> {
+  late List<AiConfigModel> _orderedModels;
+  late Map<String, AiConfigModel> _modelsById;
   String? _selectedModelId;
 
   @override
   void initState() {
     super.initState();
+    _rebuildIndexes();
     _selectedModelId = _initialModelId;
   }
 
-  List<AiConfigModel> get _orderedModels {
+  @override
+  void didUpdateWidget(covariant MlxAudioModelInstallChoiceDialog oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.models, oldWidget.models) ||
+        widget.recommendedModelId != oldWidget.recommendedModelId) {
+      _rebuildIndexes();
+      if (_selectedModelId == null ||
+          !_modelsById.containsKey(_selectedModelId)) {
+        _selectedModelId = _initialModelId;
+      }
+    }
+  }
+
+  void _rebuildIndexes() {
     final recommended = <AiConfigModel>[];
     final others = <AiConfigModel>[];
+    final byId = <String, AiConfigModel>{};
 
     for (final model in widget.models) {
+      byId[model.providerModelId] = model;
       if (model.providerModelId == widget.recommendedModelId) {
         recommended.add(model);
       } else {
@@ -61,32 +79,22 @@ class _MlxAudioModelInstallChoiceDialogState
       }
     }
 
-    return [...recommended, ...others];
+    _orderedModels = [...recommended, ...others];
+    _modelsById = byId;
   }
 
   String? get _initialModelId {
     if (widget.models.isEmpty) return null;
-
-    for (final model in widget.models) {
-      if (model.providerModelId == widget.recommendedModelId) {
-        return model.providerModelId;
-      }
+    if (_modelsById.containsKey(widget.recommendedModelId)) {
+      return widget.recommendedModelId;
     }
-
     return widget.models.first.providerModelId;
   }
 
   AiConfigModel? get _selectedModel {
     final selectedModelId = _selectedModelId;
     if (selectedModelId == null) return null;
-
-    for (final model in widget.models) {
-      if (model.providerModelId == selectedModelId) {
-        return model;
-      }
-    }
-
-    return null;
+    return _modelsById[selectedModelId];
   }
 
   @override
@@ -94,6 +102,7 @@ class _MlxAudioModelInstallChoiceDialogState
     final tokens = context.designTokens;
     final messages = context.messages;
     final models = _orderedModels;
+    final lastModelId = models.isEmpty ? null : models.last.providerModelId;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -132,7 +141,7 @@ class _MlxAudioModelInstallChoiceDialogState
                               ),
                         ),
                 ),
-                if (model != models.last)
+                if (model.providerModelId != lastModelId)
                   SizedBox(height: tokens.spacing.step2),
               ],
             ],
