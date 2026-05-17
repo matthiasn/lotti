@@ -143,6 +143,8 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
   String? startedModelId;
   String? startedDelayPreset;
   String? doneTextOnStop;
+  Exception? startError;
+  Exception? appendError;
   Exception? stopError;
   bool stopped = false;
   bool cancelled = false;
@@ -157,12 +159,20 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
     String? language,
     String delayPreset = 'subtitle',
   }) async {
+    final error = startError;
+    if (error != null) {
+      throw error;
+    }
     startedModelId = modelId;
     startedDelayPreset = delayPreset;
   }
 
   @override
   Future<void> appendRealtimePcm(Uint8List pcm16) async {
+    final error = appendError;
+    if (error != null) {
+      throw error;
+    }
     appendedPcm.add(Uint8List.fromList(pcm16));
   }
 
@@ -724,6 +734,93 @@ void main() {
 
       expect(deltas, isEmpty);
     });
+
+    test(
+      'cleans up the MLX backend when native realtime startup fails',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+        bench.mlxAudioChannel.startError = Exception('native start failed');
+
+        await expectLater(
+          bench.startTranscription,
+          throwsA(
+            isA<Exception>().having(
+              (error) => error.toString(),
+              'message',
+              contains('native start failed'),
+            ),
+          ),
+        );
+
+        expect(bench.service.isActive, isFalse);
+        expect(bench.mlxAudioChannel.cancelled, isTrue);
+      },
+    );
+
+    test(
+      'logs MLX append failures without dropping the active session',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+        bench.mlxAudioChannel.appendError = Exception('append failed');
+
+        final pcm = await bench.startTranscription();
+        pcm.add(_pcmSilence(64));
+        await Future<void>.value();
+        await Future<void>.value();
+
+        expect(bench.service.isActive, isTrue);
+        expect(bench.mlxAudioChannel.appendedPcm, isEmpty);
+        expect(
+          fakeLogging.exceptions.map((error) => error.toString()),
+          contains(contains('append failed')),
+        );
+      },
+    );
+
+    test(
+      'handles MLX confirmed-text truncation and shared-prefix rewrites',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+
+        final deltas = <String>[];
+        await bench.startTranscription(onDelta: deltas.add);
+
+        bench.mlxAudioChannel
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.confirmed,
+              text: 'Hello world',
+            ),
+          )
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.confirmed,
+              text: 'Hello',
+            ),
+          )
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.confirmed,
+              text: 'Helium',
+            ),
+          );
+        await Future<void>.value();
+
+        expect(deltas, ['Hello world', 'ium']);
+      },
+    );
   });
 
   group('stop', () {
@@ -857,6 +954,39 @@ void main() {
         expect(result.usedTranscriptFallback, isFalse);
         expect(bench.mlxAudioChannel.stopped, isTrue);
         expect(bench.mlxAudioChannel.cancelled, isTrue);
+      },
+    );
+
+    test(
+      'uses accumulated MLX text when done event omits final text',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+
+        final deltas = <String>[];
+        await bench.startTranscription(onDelta: deltas.add);
+        bench.mlxAudioChannel
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.confirmed,
+              text: 'partial local transcript',
+            ),
+          )
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.done,
+            ),
+          );
+        await Future<void>.value();
+
+        final result = await bench.stop();
+
+        expect(result.transcript, 'partial local transcript');
+        expect(result.usedTranscriptFallback, isFalse);
+        expect(deltas, ['partial local transcript']);
       },
     );
 

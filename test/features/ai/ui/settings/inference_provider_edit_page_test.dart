@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
@@ -703,6 +704,75 @@ void main() {
         expect(
           find.widgetWithText(TextFormField, strings.apiKeyInputHint),
           findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'saving a new MLX Audio provider offers only STT models for install',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final savedConfigs = <AiConfig>[];
+        when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
+          savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
+          return Future.value();
+        });
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => savedConfigs.whereType<AiConfigModel>().toList(),
+        );
+
+        final mlxAudioChannel = _InstallRecordingMlxAudioChannel();
+        addTearDown(mlxAudioChannel.close);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            preselectedType: InferenceProviderType.mlxAudio,
+            additionalOverrides: [
+              mlxAudioChannelProvider.overrideWithValue(mlxAudioChannel),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final strings = l10n(tester);
+        final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
+        await tester.ensureVisible(saveButton);
+        await tester.pump();
+        await tester.tap(saveButton);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          savedConfigs.whereType<AiConfigModel>(),
+          hasLength(mlxAudioModels.length),
+        );
+        expect(
+          find.text(strings.aiModelInstallChoiceDescription),
+          findsOneWidget,
+        );
+        expect(find.text('Qwen3 ASR 1.7B (MLX 8-bit)'), findsOneWidget);
+        expect(find.text('Qwen3 TTS 0.6B Base (MLX 8-bit)'), findsNothing);
+
+        await tester.tap(find.text(strings.aiModelInstallChoiceInstallButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+
+        expect(
+          find.textContaining('Install Qwen3 ASR 1.7B (MLX 8-bit)'),
+          findsOneWidget,
+        );
+        expect(
+          find.text(strings.aiModelDownloadStatusInstalled),
+          findsOneWidget,
+        );
+        expect(
+          mlxAudioChannel.installRequests,
+          [mlxAudioRecommendedSttModelId],
         );
       },
     );
@@ -3156,6 +3226,41 @@ void main() {
 /// either returns a canned state synchronously (`.fixed`) or holds the
 /// future open until `completeWith` is called (`.delayed`, for the
 /// Checking-state test that needs to observe the in-flight branch).
+class _InstallRecordingMlxAudioChannel extends MlxAudioChannel {
+  final _progressController =
+      StreamController<MlxAudioModelDownloadProgress>.broadcast();
+  final installRequests = <String>[];
+  final _installedModelIds = <String>{};
+
+  @override
+  Stream<MlxAudioModelDownloadProgress> get downloadProgressStream =>
+      _progressController.stream;
+
+  @override
+  Future<MlxAudioModelDownloadProgress> getModelStatus(String modelId) async {
+    return MlxAudioModelDownloadProgress(
+      modelId: modelId,
+      status: _installedModelIds.contains(modelId)
+          ? MlxAudioModelStatus.installed
+          : MlxAudioModelStatus.notInstalled,
+    );
+  }
+
+  @override
+  Future<void> installModel(String modelId) async {
+    installRequests.add(modelId);
+    _installedModelIds.add(modelId);
+    _progressController.add(
+      MlxAudioModelDownloadProgress(
+        modelId: modelId,
+        status: MlxAudioModelStatus.installed,
+      ),
+    );
+  }
+
+  Future<void> close() => _progressController.close();
+}
+
 class _RecordingProbe implements ConnectionProbe {
   _RecordingProbe._({this.fixedResult, this.delayed = false});
 

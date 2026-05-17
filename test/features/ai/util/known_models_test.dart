@@ -25,6 +25,16 @@ enum _GeneratedKnownModelModalities {
 
 enum _GeneratedKnownModelTokens { absent, small, large }
 
+enum _GeneratedMlxQwenAsrIdShape {
+  canonicalSmall,
+  canonical17B4Bit,
+  canonical17B8Bit,
+  uppercasePrefix,
+  missingMlxPrefix,
+  nonQwenMlx,
+  qwenTts,
+}
+
 String _generatedKnownModelIdPartText(_GeneratedKnownModelIdPart part) {
   return switch (part) {
     _GeneratedKnownModelIdPart.lower => 'alpha',
@@ -65,6 +75,21 @@ int? _generatedKnownModelMaxTokens(_GeneratedKnownModelTokens tokens) {
     _GeneratedKnownModelTokens.absent => null,
     _GeneratedKnownModelTokens.small => 128,
     _GeneratedKnownModelTokens.large => 8192,
+  };
+}
+
+String _generatedMlxQwenAsrId(_GeneratedMlxQwenAsrIdShape shape) {
+  return switch (shape) {
+    _GeneratedMlxQwenAsrIdShape.canonicalSmall => mlxAudioQwenAsrModelId,
+    _GeneratedMlxQwenAsrIdShape.canonical17B4Bit =>
+      mlxAudioQwenAsr17B4BitModelId,
+    _GeneratedMlxQwenAsrIdShape.canonical17B8Bit =>
+      mlxAudioQwenAsr17B8BitModelId,
+    _GeneratedMlxQwenAsrIdShape.uppercasePrefix =>
+      'MLX-COMMUNITY/QWEN3-ASR-1.7B-8BIT',
+    _GeneratedMlxQwenAsrIdShape.missingMlxPrefix => 'Qwen/Qwen3-ASR-1.7B',
+    _GeneratedMlxQwenAsrIdShape.nonQwenMlx => mlxAudioParakeetModelId,
+    _GeneratedMlxQwenAsrIdShape.qwenTts => mlxAudioDefaultTtsModelId,
   };
 }
 
@@ -155,6 +180,9 @@ extension _AnyGeneratedKnownModelScenario on glados.Any {
 
   glados.Generator<_GeneratedKnownModelTokens> get knownModelTokens =>
       glados.AnyUtils(this).choose(_GeneratedKnownModelTokens.values);
+
+  glados.Generator<_GeneratedMlxQwenAsrIdShape> get mlxQwenAsrIdShape =>
+      glados.AnyUtils(this).choose(_GeneratedMlxQwenAsrIdShape.values);
 
   glados.Generator<_GeneratedKnownModelIdScenario> get knownModelIdScenario =>
       glados.CombinableAny(this).combine2(
@@ -622,6 +650,24 @@ void main() {
         expect(sttModelIds, contains(mlxAudioVoxtralRealtime4BitModelId));
         expect(sttModelIds, isNot(contains(mlxAudioDefaultTtsModelId)));
       });
+
+      glados.Glados(
+        glados.any.mlxQwenAsrIdShape,
+        glados.ExploreConfig(numRuns: 80),
+      ).test('recognizes only MLX Qwen3-ASR realtime-capable IDs', (shape) {
+        final modelId = _generatedMlxQwenAsrId(shape);
+        final expected = switch (shape) {
+          _GeneratedMlxQwenAsrIdShape.canonicalSmall ||
+          _GeneratedMlxQwenAsrIdShape.canonical17B4Bit ||
+          _GeneratedMlxQwenAsrIdShape.canonical17B8Bit ||
+          _GeneratedMlxQwenAsrIdShape.uppercasePrefix => true,
+          _GeneratedMlxQwenAsrIdShape.missingMlxPrefix ||
+          _GeneratedMlxQwenAsrIdShape.nonQwenMlx ||
+          _GeneratedMlxQwenAsrIdShape.qwenTts => false,
+        };
+
+        expect(isMlxAudioQwenAsrModelId(modelId), expected);
+      }, tags: 'glados');
     });
 
     group('Ollama Models', () {

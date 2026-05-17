@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -150,6 +152,32 @@ void main() {
   });
 
   group('MlxAudioModelDownloadDialog', () {
+    testWidgets('shows an indeterminate checking state while install starts', (
+      tester,
+    ) async {
+      final model = _model(
+        id: 'qwen-17b-8bit',
+        name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+        providerModelId: mlxAudioQwenAsr17B8BitModelId,
+      );
+      final channel = _PendingStatusMlxAudioChannel(model.providerModelId);
+      addTearDown(channel.close);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          MlxAudioModelDownloadDialog(model: model),
+          overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+        ),
+      );
+
+      final indicator = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(indicator.value, isNull);
+      expect(find.text('Checking model status'), findsOneWidget);
+      expect(channel.installCalls, 1);
+    });
+
     testWidgets('renders measured downloading progress as percent', (
       tester,
     ) async {
@@ -182,6 +210,41 @@ void main() {
       expect(indicator.value, 0.42);
       expect(find.text('Downloading 42%'), findsOneWidget);
     });
+
+    testWidgets(
+      'renders indeterminate downloading progress without a percent',
+      (
+        tester,
+      ) async {
+        final model = _model(
+          id: 'qwen-17b-8bit',
+          name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+          providerModelId: mlxAudioQwenAsr17B8BitModelId,
+        );
+        final channel = _TerminalMlxAudioChannel(
+          model.providerModelId,
+          MlxAudioModelStatus.downloading,
+        );
+        addTearDown(channel.close);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            MlxAudioModelDownloadDialog(model: model),
+            overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+          ),
+        );
+        await tester.pump();
+        await Future<void>.value();
+        await tester.pump();
+
+        final indicator = tester.widget<LinearProgressIndicator>(
+          find.byType(LinearProgressIndicator),
+        );
+        expect(indicator.value, isNull);
+        expect(find.text('Downloading'), findsOneWidget);
+        expect(find.textContaining('%'), findsNothing);
+      },
+    );
 
     testWidgets('renders installed and not-installed terminal states', (
       tester,
@@ -267,6 +330,39 @@ void main() {
       },
     );
   });
+}
+
+class _PendingStatusMlxAudioChannel extends MlxAudioChannel {
+  _PendingStatusMlxAudioChannel(this.modelId);
+
+  final String modelId;
+  final _statusCompleter = Completer<MlxAudioModelDownloadProgress>();
+  int installCalls = 0;
+
+  @override
+  Stream<MlxAudioModelDownloadProgress> get downloadProgressStream =>
+      const Stream.empty();
+
+  @override
+  Future<MlxAudioModelDownloadProgress> getModelStatus(String modelId) {
+    return _statusCompleter.future;
+  }
+
+  @override
+  Future<void> installModel(String modelId) async {
+    installCalls++;
+  }
+
+  Future<void> close() async {
+    if (!_statusCompleter.isCompleted) {
+      _statusCompleter.complete(
+        MlxAudioModelDownloadProgress(
+          modelId: modelId,
+          status: MlxAudioModelStatus.notInstalled,
+        ),
+      );
+    }
+  }
 }
 
 class _TerminalMlxAudioChannel extends MlxAudioChannel {

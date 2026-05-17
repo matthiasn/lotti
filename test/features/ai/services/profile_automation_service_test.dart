@@ -471,6 +471,139 @@ void main() {
         },
       );
 
+      test(
+        'ranks generic MLX speech models ahead of cloud transcription '
+        'fallbacks',
+        () async {
+          final providers = [
+            makeProvider(
+              id: 'provider-openai',
+              type: InferenceProviderType.openAi,
+              apiKey: 'sk-openai',
+            ),
+            makeProvider(
+              id: 'provider-whisper',
+              type: InferenceProviderType.whisper,
+              apiKey: 'sk-whisper',
+            ),
+            makeProvider(
+              id: 'provider-voxtral',
+              type: InferenceProviderType.voxtral,
+              apiKey: 'sk-voxtral',
+            ),
+            makeProvider(
+              id: 'provider-mistral',
+              type: InferenceProviderType.mistral,
+              apiKey: 'sk-mistral',
+            ),
+            makeProvider(
+              id: 'provider-ollama',
+              type: InferenceProviderType.ollama,
+            ),
+            makeProvider(),
+          ];
+          final models = [
+            makeModel(
+              id: 'model-openai',
+              name: 'OpenAI Whisper',
+              providerModelId: 'whisper-1',
+              providerId: 'provider-openai',
+            ),
+            makeModel(
+              id: 'model-whisper',
+              name: 'Whisper Provider',
+              providerModelId: 'whisper-large-v3',
+              providerId: 'provider-whisper',
+            ),
+            makeModel(
+              id: 'model-voxtral',
+              name: 'Voxtral Cloud',
+              providerModelId: 'mistralai/Voxtral-Mini-3B-2507',
+              providerId: 'provider-voxtral',
+            ),
+            makeModel(
+              id: 'model-mistral',
+              name: 'Mistral Voxtral',
+              providerModelId: 'voxtral-mini-latest',
+              providerId: 'provider-mistral',
+            ),
+            makeModel(
+              id: 'model-ollama',
+              name: 'Other Local Audio',
+              providerModelId: 'local-audio-model',
+              providerId: 'provider-ollama',
+            ),
+            makeModel(
+              id: 'model-mlx',
+              name: 'Parakeet MLX',
+              providerModelId: mlxAudioParakeetModelId,
+            ),
+          ];
+
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => models);
+          for (final provider in providers) {
+            when(
+              () => mockAiConfig.getConfigById(provider.id),
+            ).thenAnswer((_) async => provider);
+          }
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(
+            result.resolvedProfile!.transcriptionModelId,
+            mlxAudioParakeetModelId,
+          );
+          expect(
+            result
+                .resolvedProfile!
+                .transcriptionProvider!
+                .inferenceProviderType,
+            InferenceProviderType.mlxAudio,
+          );
+        },
+      );
+
+      test(
+        'sorts same-rank direct transcription fallbacks by model name',
+        () async {
+          final provider = makeProvider();
+          final betaModel = makeModel(
+            id: 'model-beta',
+            name: 'Beta MLX model',
+            providerModelId: mlxAudioParakeetModelId,
+          );
+          final alphaModel = makeModel(
+            id: 'model-alpha',
+            name: 'Alpha MLX model',
+            providerModelId: mlxAudioVoxtralRealtime4BitModelId,
+          );
+
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [betaModel, alphaModel]);
+          when(
+            () => mockAiConfig.getConfigById(provider.id),
+          ).thenAnswer((_) async => provider);
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(
+            result.resolvedProfile!.transcriptionModelId,
+            mlxAudioVoxtralRealtime4BitModelId,
+          );
+        },
+      );
+
       test('returns not-handled when no matching skill type', () async {
         const assignment = SkillAssignment(
           skillId: 'skill-image',
@@ -937,6 +1070,81 @@ void main() {
 
         expect(result, isFalse);
       });
+
+      test(
+        'treats prompt-generation skill types as thinking-model-backed',
+        () async {
+          for (final skillType in [
+            SkillType.promptGeneration,
+            SkillType.imagePromptGeneration,
+          ]) {
+            final skillId = 'skill-${skillType.name}';
+            final profile = makeProfile(
+              skillAssignments: [
+                SkillAssignment(skillId: skillId, automate: true),
+              ],
+            );
+            final skill = makeSkill(id: skillId, skillType: skillType);
+
+            when(
+              () => mockResolver.resolveForTask('task-$skillId'),
+            ).thenAnswer((_) async => profile);
+            when(
+              () => mockAiConfig.getConfigById(skillId),
+            ).thenAnswer((_) async => skill);
+
+            final result = await service.hasAutomatedSkillType(
+              taskId: 'task-$skillId',
+              skillType: skillType,
+            );
+
+            expect(result, isTrue, reason: skillType.name);
+          }
+        },
+      );
+
+      test(
+        'requires an image-generation provider for image-generation skills',
+        () async {
+          const assignment = SkillAssignment(
+            skillId: 'skill-image-gen',
+            automate: true,
+          );
+          final skill = makeSkill(
+            id: 'skill-image-gen',
+            skillType: SkillType.imageGeneration,
+          );
+
+          when(
+            () => mockResolver.resolveForTask('task-image-gen-missing'),
+          ).thenAnswer(
+            (_) async => makeProfile(skillAssignments: [assignment]),
+          );
+          when(
+            () => mockResolver.resolveForTask('task-image-gen-present'),
+          ).thenAnswer(
+            (_) async => makeProfile(
+              skillAssignments: [assignment],
+              withImageGeneration: true,
+            ),
+          );
+          when(
+            () => mockAiConfig.getConfigById('skill-image-gen'),
+          ).thenAnswer((_) async => skill);
+
+          final missingResult = await service.hasAutomatedSkillType(
+            taskId: 'task-image-gen-missing',
+            skillType: SkillType.imageGeneration,
+          );
+          final presentResult = await service.hasAutomatedSkillType(
+            taskId: 'task-image-gen-present',
+            skillType: SkillType.imageGeneration,
+          );
+
+          expect(missingResult, isFalse);
+          expect(presentResult, isTrue);
+        },
+      );
     });
   });
 }

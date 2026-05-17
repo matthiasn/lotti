@@ -139,6 +139,27 @@ void main() {
       expect(mlxAudioChannel.modelIds, [mlxAudioDefaultTtsModelId]);
     });
 
+    testWidgets('shows an error toast when MLX summary playback fails', (
+      tester,
+    ) async {
+      final mlxAudioChannel = _RecordingMlxAudioChannel()
+        ..speakError = Exception('native TTS failed');
+      final bench = AgentTestBench(
+        enableSummaryTts: true,
+        mlxAudioChannel: mlxAudioChannel,
+        report: makeTestReport(tldr: 'Tldr line.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+
+      expect(mlxAudioChannel.spokenTexts, isEmpty);
+      expect(find.text('Error'), findsOneWidget);
+    });
+
     testWidgets(
       'lays the header out as a Wrap so the leading block and controls '
       'sit in a single run with the controls right-aligned via '
@@ -248,6 +269,7 @@ void main() {
 class _RecordingMlxAudioChannel extends MlxAudioChannel {
   final spokenTexts = <String>[];
   final modelIds = <String>[];
+  Exception? speakError;
 
   @override
   Future<void> speakText({
@@ -255,6 +277,10 @@ class _RecordingMlxAudioChannel extends MlxAudioChannel {
     required String modelId,
     String? language,
   }) async {
+    final error = speakError;
+    if (error != null) {
+      throw error;
+    }
     spokenTexts.add(text);
     modelIds.add(modelId);
   }

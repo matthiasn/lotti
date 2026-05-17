@@ -467,6 +467,20 @@ void main() {
       expect(progress.hasMeasuredProgress, isTrue);
     });
 
+    test('ignores non-finite native progress fractions', () {
+      for (final progressValue in [double.nan, double.infinity]) {
+        final progress = MlxAudioModelDownloadProgress.fromMap({
+          'modelId': 'mlx-community/example',
+          'status': 'downloading',
+          'progress': progressValue,
+        });
+
+        expect(progress.normalizedProgress, isNull);
+        expect(progress.percentComplete, isNull);
+        expect(progress.hasMeasuredProgress, isFalse);
+      }
+    });
+
     glados.Glados(
       glados.any.downloadProgressScenario,
       glados.ExploreConfig(numRuns: 160),
@@ -557,6 +571,159 @@ void main() {
     );
 
     test(
+      'records failed progress when a native status refresh throws',
+      () async {
+        final channel = _FakeMlxAudioChannel()
+          ..statusError = Exception('status refresh failed');
+        final container = ProviderContainer(
+          overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+        );
+        addTearDown(container.dispose);
+        addTearDown(channel.close);
+
+        final values = <MlxAudioModelDownloadProgress?>[];
+        final subscription = container.listen(
+          mlxAudioModelProgressProvider('model-a'),
+          (_, next) => values.add(next),
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        await container
+            .read(mlxAudioModelProgressStoreProvider.notifier)
+            .refreshModelStatus('model-a');
+        await container.pump();
+
+        expect(values.last?.status, MlxAudioModelStatus.failed);
+        expect(values.last?.message, contains('status refresh failed'));
+      },
+    );
+
+    test('records failed progress when native model install throws', () async {
+      final channel = _FakeMlxAudioChannel()
+        ..installError = Exception('download failed')
+        ..statusFor = (modelId) => MlxAudioModelDownloadProgress(
+          modelId: modelId,
+          status: MlxAudioModelStatus.failed,
+          message: 'download failed',
+        );
+      final container = ProviderContainer(
+        overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+      );
+      addTearDown(container.dispose);
+      addTearDown(channel.close);
+
+      final values = <MlxAudioModelDownloadProgress?>[];
+      final subscription = container.listen(
+        mlxAudioModelProgressProvider('model-a'),
+        (_, next) => values.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      await container
+          .read(mlxAudioModelProgressStoreProvider.notifier)
+          .installModel('model-a');
+      await container.pump();
+
+      expect(channel.installCalls, 1);
+      expect(values.last?.status, MlxAudioModelStatus.failed);
+      expect(values.last?.message, 'download failed');
+    });
+
+    test('coalesces concurrent install requests for the same model', () async {
+      final installCompleter = Completer<void>();
+      final channel = _FakeMlxAudioChannel()
+        ..installCompleter = installCompleter;
+      final container = ProviderContainer(
+        overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+      );
+      addTearDown(container.dispose);
+      addTearDown(channel.close);
+
+      final store = container.read(mlxAudioModelProgressStoreProvider.notifier);
+      final firstInstall = store.installModel('model-a');
+      final secondInstall = store.installModel('model-a');
+      await container.pump();
+
+      expect(channel.installCalls, 1);
+
+      installCompleter.complete();
+      await firstInstall;
+      await secondInstall;
+      await container.pump();
+
+      expect(channel.installCalls, 1);
+    });
+
+    test('download stream errors do not mutate model progress state', () async {
+      final channel = _FakeMlxAudioChannel();
+      final container = ProviderContainer(
+        overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+      );
+      addTearDown(container.dispose);
+      addTearDown(channel.close);
+
+      final states = <Map<String, MlxAudioModelDownloadProgress>>[];
+      final subscription = container.listen(
+        mlxAudioModelProgressStoreProvider,
+        (_, next) => states.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      expect(
+        container.read(mlxAudioModelProgressStoreProvider),
+        isEmpty,
+      );
+
+      channel.emitError(Exception('event stream failed'));
+      await Future<void>.value();
+      await container.pump();
+
+      expect(
+        container.read(mlxAudioModelProgressStoreProvider),
+        isEmpty,
+      );
+      expect(
+        states,
+        [const <String, MlxAudioModelDownloadProgress>{}],
+      );
+    });
+
+    test('download stream events update the matching model only', () async {
+      final channel = _FakeMlxAudioChannel();
+      final container = ProviderContainer(
+        overrides: [mlxAudioChannelProvider.overrideWithValue(channel)],
+      );
+      addTearDown(container.dispose);
+      addTearDown(channel.close);
+
+      final modelAValues = <MlxAudioModelDownloadProgress?>[];
+      final subscription = container.listen(
+        mlxAudioModelProgressProvider('model-a'),
+        (_, next) => modelAValues.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+
+      channel.emit(
+        const MlxAudioModelDownloadProgress(
+          modelId: 'model-b',
+          status: MlxAudioModelStatus.downloading,
+        ),
+      );
+      await Future<void>.value();
+      await container.pump();
+
+      expect(modelAValues.last?.status, MlxAudioModelStatus.notInstalled);
+      expect(
+        container.read(mlxAudioModelProgressProvider('model-b'))?.status,
+        MlxAudioModelStatus.downloading,
+      );
+    });
+
+    test(
       'does not let a stale status refresh regress an installed model',
       () async {
         final channel = _FakeMlxAudioChannel();
@@ -600,6 +767,11 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
         onListen: () {},
       );
   int downloadProgressListenCount = 0;
+  int installCalls = 0;
+  Exception? statusError;
+  Exception? installError;
+  Completer<void>? installCompleter;
+  MlxAudioModelDownloadProgress Function(String modelId)? statusFor;
 
   @override
   Stream<MlxAudioModelDownloadProgress> get downloadProgressStream {
@@ -609,14 +781,31 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
 
   @override
   Future<MlxAudioModelDownloadProgress> getModelStatus(String modelId) async {
+    final error = statusError;
+    if (error != null) throw error;
+    final customStatus = statusFor;
+    if (customStatus != null) return customStatus(modelId);
     return MlxAudioModelDownloadProgress(
       modelId: modelId,
       status: MlxAudioModelStatus.notInstalled,
     );
   }
 
+  @override
+  Future<void> installModel(String modelId) async {
+    installCalls++;
+    final error = installError;
+    if (error != null) throw error;
+    final completer = installCompleter;
+    if (completer != null) await completer.future;
+  }
+
   void emit(MlxAudioModelDownloadProgress progress) {
     _progressController.add(progress);
+  }
+
+  void emitError(Object error) {
+    _progressController.addError(error, StackTrace.current);
   }
 
   Future<void> close() => _progressController.close();
