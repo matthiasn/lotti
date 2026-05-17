@@ -70,13 +70,22 @@ void main() {
   /// (production lookup is by `providerModelId`, not row primary key).
   final stubbedModels = <String, AiConfigModel>{};
 
+  /// Providers registered alongside the models, keyed by provider id.
+  /// `profileIsLocal` batch-fetches the inference-provider list, so we stub
+  /// the typed call here and let `stubModelWithProvider` populate this map.
+  final stubbedProviders = <String, AiConfigInferenceProvider>{};
+
   setUp(() {
     repo = MockAiConfigRepository();
     stubbedModels.clear();
+    stubbedProviders.clear();
     when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
     when(
       () => repo.getConfigsByType(AiConfigType.model),
     ).thenAnswer((_) async => stubbedModels.values.toList());
+    when(
+      () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+    ).thenAnswer((_) async => stubbedProviders.values.toList());
   });
 
   /// Stubs the repo so the profile slot string `providerModelId` resolves to
@@ -95,9 +104,10 @@ void main() {
       inferenceProviderId: pid,
     );
     stubbedModels[providerModelId] = model;
+    stubbedProviders[pid] = _provider(id: pid, type: providerType);
     when(
       () => repo.getConfigById(pid),
-    ).thenAnswer((_) async => _provider(id: pid, type: providerType));
+    ).thenAnswer((_) async => stubbedProviders[pid]);
   }
 
   group('profileIsLocal — happy path (all populated slots local)', () {
@@ -211,8 +221,8 @@ void main() {
           ],
         );
         when(
-          () => scopedRepo.getConfigById('p'),
-        ).thenAnswer((_) async => _provider(id: 'p', type: type));
+          () => scopedRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [_provider(id: 'p', type: type)]);
 
         expect(
           await profileIsLocal(_profile(), scopedRepo),
@@ -246,7 +256,9 @@ void main() {
             ),
           ],
         );
-        // missing-provider intentionally not stubbed (returns null).
+        // missing-provider intentionally absent from the typed
+        // inference-provider snapshot — providersById lookup returns null,
+        // and the guard trips.
 
         expect(await profileIsLocal(_profile(), repo), isFalse);
       },
@@ -312,12 +324,19 @@ void main() {
             ),
           ],
         );
-        when(() => repo.getConfigById('wrong-shape')).thenAnswer(
-          (_) async => _model(
-            id: 'wrong-shape',
-            providerModelId: 'wrong-shape',
-            inferenceProviderId: 'irrelevant',
-          ),
+        // The typed provider snapshot only carries non-provider rows for
+        // 'wrong-shape', so the `.whereType<AiConfigInferenceProvider>()`
+        // filter drops it and providersById['wrong-shape'] is null.
+        when(
+          () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer(
+          (_) async => [
+            _model(
+              id: 'wrong-shape',
+              providerModelId: 'wrong-shape',
+              inferenceProviderId: 'irrelevant',
+            ),
+          ],
         );
 
         expect(await profileIsLocal(_profile(), repo), isFalse);

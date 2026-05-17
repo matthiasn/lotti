@@ -29,23 +29,35 @@ Future<bool> profileIsLocal(
   AiConfigInferenceProfile profile,
   AiConfigRepository repository,
 ) async {
-  final referencedModelIds = <String>[
+  // Deduplicate via Set so a profile that reuses the same model id across
+  // slots (e.g. the same Ollama thinking model in both the standard and
+  // high-end slot) doesn't hit the lookup maps twice.
+  final referencedModelIds = <String>{
     profile.thinkingModelId,
     if (profile.thinkingHighEndModelId != null) profile.thinkingHighEndModelId!,
     if (profile.imageRecognitionModelId != null)
       profile.imageRecognitionModelId!,
     if (profile.transcriptionModelId != null) profile.transcriptionModelId!,
     if (profile.imageGenerationModelId != null) profile.imageGenerationModelId!,
-  ];
+  };
 
   if (referencedModelIds.isEmpty) return true;
 
-  // Load every model row once; profile slots reference `providerModelId`,
-  // not the row's primary key, so a single scan is the load-bearing lookup.
+  // Load every model + provider row once; profile slots reference
+  // `providerModelId`, not the row's primary key, so a single scan is the
+  // load-bearing lookup. Providers are batch-fetched too so we don't hit
+  // the repository per slot inside the loop below.
   final modelRows = await repository.getConfigsByType(AiConfigType.model);
   final modelsByProviderModelId = <String, AiConfigModel>{
     for (final config in modelRows.whereType<AiConfigModel>())
       config.providerModelId: config,
+  };
+  final providerRows = await repository.getConfigsByType(
+    AiConfigType.inferenceProvider,
+  );
+  final providersById = <String, AiConfigInferenceProvider>{
+    for (final config in providerRows.whereType<AiConfigInferenceProvider>())
+      config.id: config,
   };
 
   for (final providerModelId in referencedModelIds) {
@@ -54,10 +66,8 @@ Future<bool> profileIsLocal(
       // Referenced-but-unresolved model id. Fail closed.
       return false;
     }
-    final providerConfig = await repository.getConfigById(
-      modelConfig.inferenceProviderId,
-    );
-    if (providerConfig is! AiConfigInferenceProvider) {
+    final providerConfig = providersById[modelConfig.inferenceProviderId];
+    if (providerConfig == null) {
       // Referenced-but-unresolved provider config. Fail closed.
       return false;
     }

@@ -238,8 +238,13 @@ class _Bench {
   /// dispatcher's `profileIsLocal` walks `getConfigsByType(AiConfigType.model)`
   /// and matches on `providerModelId`, NOT on the model row's primary key.
   /// Each `_stubModelAndProvider` call registers one (model, provider) pair
-  /// into this map and individually stubs the provider's `getConfigById`.
+  /// into this map and the matching provider into [_stubbedProviders].
   final _stubbedModels = <String, AiConfigModel>{};
+
+  /// Providers indexed by their config id; profileIsLocal batch-fetches the
+  /// typed list once via `getConfigsByType(AiConfigType.inferenceProvider)`,
+  /// so the stub returns whatever is registered here at call time.
+  final _stubbedProviders = <String, AiConfigInferenceProvider>{};
 
   void _stubModelAndProvider({
     required String modelId,
@@ -258,20 +263,27 @@ class _Bench {
               isReasoningModel: false,
             )
             as AiConfigModel;
+    final providerRow =
+        AiConfig.inferenceProvider(
+              id: providerId,
+              baseUrl: '',
+              apiKey: '',
+              name: providerType.name,
+              inferenceProviderType: providerType,
+              createdAt: _kCreatedAt,
+            )
+            as AiConfigInferenceProvider;
     _stubbedModels[modelId] = modelRow;
+    _stubbedProviders[providerId] = providerRow;
     when(
       () => aiConfigRepository.getConfigsByType(AiConfigType.model),
     ).thenAnswer((_) async => _stubbedModels.values.toList());
-    when(() => aiConfigRepository.getConfigById(providerId)).thenAnswer(
-      (_) async => AiConfig.inferenceProvider(
-        id: providerId,
-        baseUrl: '',
-        apiKey: '',
-        name: providerType.name,
-        inferenceProviderType: providerType,
-        createdAt: _kCreatedAt,
-      ),
-    );
+    when(
+      () => aiConfigRepository.getConfigsByType(AiConfigType.inferenceProvider),
+    ).thenAnswer((_) async => _stubbedProviders.values.toList());
+    when(
+      () => aiConfigRepository.getConfigById(providerId),
+    ).thenAnswer((_) async => providerRow);
   }
 
   JournalAudio _makeAudio({

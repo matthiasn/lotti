@@ -94,7 +94,16 @@ class _SyncNodeProfilePageState extends ConsumerState<SyncNodeProfilePage> {
       data: (value) => value,
       orElse: () => null,
     );
-    _seedName(self);
+    // Seed after this build commits so setting the controller text — which
+    // notifies the listener that calls setState — doesn't trigger a
+    // setState-during-build assertion. A no-op on subsequent builds (the
+    // `_lastSeededFromHostId` guard inside `_seedName` short-circuits).
+    if (self != null && _lastSeededFromHostId != self.hostId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _seedName(self);
+      });
+    }
 
     final knownNodes = directoryAsync.maybeWhen<List<SyncNodeProfile>>(
       data: (value) =>

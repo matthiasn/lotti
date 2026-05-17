@@ -56,15 +56,23 @@ class SyncNodeProfileRepository {
   /// hostId for stable iteration in tests and UI.
   Future<List<SyncNodeProfile>> listKnownNodes() async {
     final directory = await _readDirectory();
-    final result = directory.values.toList(growable: false)
-      ..sort((a, b) {
-        final byName = a.displayName.toLowerCase().compareTo(
-          b.displayName.toLowerCase(),
-        );
-        if (byName != 0) return byName;
-        return a.hostId.compareTo(b.hostId);
-      });
-    return result;
+    return _sortedSnapshot(directory);
+  }
+
+  /// Sorts an already-loaded directory map by displayName then hostId, the
+  /// shared ordering rule used by [listKnownNodes] and the stream emissions.
+  /// Pulled out so mutators can publish the new snapshot without re-reading
+  /// (and re-parsing) the settings row they just wrote.
+  List<SyncNodeProfile> _sortedSnapshot(
+    Map<String, SyncNodeProfile> directory,
+  ) {
+    return directory.values.toList(growable: false)..sort((a, b) {
+      final byName = a.displayName.toLowerCase().compareTo(
+        b.displayName.toLowerCase(),
+      );
+      if (byName != 0) return byName;
+      return a.hostId.compareTo(b.hostId);
+    });
   }
 
   /// Looks up a peer profile by host id.
@@ -93,9 +101,8 @@ class SyncNodeProfileRepository {
     }
     directory[profile.hostId] = profile;
     await _writeDirectory(directory);
-    final sorted = await listKnownNodes();
     if (_directoryController.hasListener) {
-      _directoryController.add(sorted);
+      _directoryController.add(_sortedSnapshot(directory));
     }
     return true;
   }
@@ -106,9 +113,8 @@ class SyncNodeProfileRepository {
     if (!directory.containsKey(hostId)) return false;
     directory.remove(hostId);
     await _writeDirectory(directory);
-    final sorted = await listKnownNodes();
     if (_directoryController.hasListener) {
-      _directoryController.add(sorted);
+      _directoryController.add(_sortedSnapshot(directory));
     }
     return true;
   }

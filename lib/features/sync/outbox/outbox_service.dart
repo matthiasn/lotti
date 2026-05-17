@@ -1561,6 +1561,7 @@ class OutboxService {
     );
     return result;
   }
+
   Future<bool> _enqueueSyncNodeProfile({
     required SyncSyncNodeProfile msg,
     required OutboxCompanion commonFields,
