@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -82,6 +83,27 @@ class MatrixMessageSender {
       _loggingService.captureEvent(
         'originatingHostId filled for entryLink id=${message.entryLink.id} '
         'from=${message.entryLink.fromId} to=${message.entryLink.toId} host=$host',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.originatingHostId',
+      );
+      return message.copyWith(originatingHostId: host);
+    }
+
+    if (message is SyncNotification && message.originatingHostId.isEmpty) {
+      _loggingService.captureEvent(
+        'originatingHostId filled for notification id=${message.id} '
+        'jsonPath=${message.jsonPath} host=$host',
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.originatingHostId',
+      );
+      return message.copyWith(originatingHostId: host);
+    }
+
+    if (message is SyncNotificationStateUpdate &&
+        message.originatingHostId.isEmpty) {
+      _loggingService.captureEvent(
+        'originatingHostId filled for notificationStateUpdate '
+        'id=${message.id} host=$host',
         domain: 'MATRIX_SERVICE',
         subDomain: 'sendMatrixMsg.originatingHostId',
       );
@@ -172,6 +194,21 @@ class MatrixMessageSender {
         if (normalized == null) {
           _trace(
             'FAIL journalEntityPayload jsonPath=${outboundMessage.jsonPath} '
+            'id=${outboundMessage.id}',
+            subDomain: 'matrix.send.error',
+          );
+          return false;
+        }
+        outboundMessage = normalized;
+      }
+      if (outboundMessage is SyncNotification) {
+        final normalized = await _sendNotificationPayload(
+          room: room,
+          message: outboundMessage,
+        );
+        if (normalized == null) {
+          _trace(
+            'FAIL notificationPayload jsonPath=${outboundMessage.jsonPath} '
             'id=${outboundMessage.id}',
             subDomain: 'matrix.send.error',
           );
@@ -542,6 +579,107 @@ class MatrixMessageSender {
     return outbound;
   }
 
+  Future<SyncNotification?> _sendNotificationPayload({
+    required Room room,
+    required SyncNotification message,
+  }) async {
+    final relativeJsonPath = p.joinAll(
+      message.jsonPath.split('/').where((part) => part.isNotEmpty),
+    );
+    final jsonFullPath = p.join(_documentsDirectory.path, relativeJsonPath);
+
+    late final Uint8List jsonBytes;
+    try {
+      jsonBytes = await File(jsonFullPath).readAsBytes();
+    } catch (error, stackTrace) {
+      _trace(
+        'EXCEPTION readNotificationJsonFile path=$jsonFullPath '
+        'error=${error.runtimeType}: $error',
+        subDomain: 'matrix.send.error',
+      );
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.notification',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
+    final jsonSent = await _sendFile(
+      room: room,
+      fullPath: jsonFullPath,
+      relativePath: message.jsonPath,
+      bytes: jsonBytes,
+    );
+    if (!jsonSent) return null;
+
+    late final NotificationEntity notification;
+    try {
+      notification = NotificationEntity.fromJson(
+        json.decode(utf8.decode(jsonBytes)) as Map<String, dynamic>,
+      );
+    } catch (error, stackTrace) {
+      _loggingService.captureException(
+        error,
+        domain: 'MATRIX_SERVICE',
+        subDomain: 'sendMatrixMsg.notification.decode',
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+
+    var outbound = message;
+    final jsonVectorClock = notification.meta.vectorClock;
+    final status = VectorClock.compare(jsonVectorClock, message.vectorClock);
+    if (status != VclockStatus.equal) {
+      final covered = VectorClock.mergeUniqueClocks([
+        ...?message.coveredVectorClocks,
+        message.vectorClock,
+        jsonVectorClock,
+      ]);
+      outbound = message.copyWith(
+        vectorClock: jsonVectorClock,
+        coveredVectorClocks: covered,
+      );
+      logVectorClockAssignment(
+        _loggingService,
+        subDomain: 'send.notification.adoptJson',
+        action: 'assign',
+        type: 'SyncNotification',
+        entryId: message.id,
+        jsonPath: message.jsonPath,
+        reason: 'json_mismatch',
+        previous: message.vectorClock,
+        assigned: jsonVectorClock,
+        coveredVectorClocks: covered,
+        extras: {'status': status},
+      );
+    }
+
+    final ensuredCovered = VectorClock.mergeUniqueClocks([
+      ...?outbound.coveredVectorClocks,
+      outbound.vectorClock,
+    ]);
+    if (ensuredCovered != outbound.coveredVectorClocks) {
+      final currentClock = outbound.vectorClock;
+      outbound = outbound.copyWith(coveredVectorClocks: ensuredCovered);
+      logVectorClockAssignment(
+        _loggingService,
+        subDomain: 'send.notification.ensureCovered',
+        action: 'assign',
+        type: 'SyncNotification',
+        entryId: outbound.id,
+        jsonPath: outbound.jsonPath,
+        reason: 'ensure_current_clock_covered',
+        assigned: currentClock,
+        coveredVectorClocks: ensuredCovered,
+      );
+    }
+
+    return outbound;
+  }
+
   /// Builds the dequeue-time outbox bundle's manifest payload (envelope + DB
   /// content for each child), gzip-encodes it, and uploads the bytes as a
   /// single Matrix file event. Returns the stripped [SyncOutboxBundle] (i.e.
@@ -881,6 +1019,12 @@ class MatrixMessageSender {
 
     if (child is SyncAgentLink &&
         child.originatingHostId == null &&
+        host != null) {
+      return child.copyWith(originatingHostId: host);
+    }
+
+    if (child is SyncNotificationStateUpdate &&
+        child.originatingHostId.isEmpty &&
         host != null) {
       return child.copyWith(originatingHostId: host);
     }

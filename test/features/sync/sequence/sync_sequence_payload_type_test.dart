@@ -11,12 +11,14 @@ void main() {
           SyncSequencePayloadType.entryLink,
           SyncSequencePayloadType.agentEntity,
           SyncSequencePayloadType.agentLink,
+          SyncSequencePayloadType.notification,
+          SyncSequencePayloadType.notificationStateUpdate,
         ],
       );
     });
 
-    test('has four values', () {
-      expect(SyncSequencePayloadType.values, hasLength(4));
+    test('has six values', () {
+      expect(SyncSequencePayloadType.values, hasLength(6));
     });
   });
 }

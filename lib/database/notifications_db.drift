@@ -1,0 +1,48 @@
+-- Synced notification database schema (notifications.sqlite)
+-- Separate from journal domain (db.sqlite).
+
+CREATE TABLE notifications (
+  id TEXT NOT NULL PRIMARY KEY,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  scheduled_for DATETIME NOT NULL,
+  seen_at DATETIME,
+  acted_on_at DATETIME,
+  deleted_at DATETIME,
+  linked_entity_id TEXT,
+  type TEXT NOT NULL,
+  category TEXT,
+  vector_clock TEXT NOT NULL,
+  originating_host_id TEXT NOT NULL,
+  serialized TEXT NOT NULL
+) AS NotificationDbEntity;
+
+CREATE INDEX notifications_scheduled_for_idx ON notifications(scheduled_for);
+CREATE INDEX notifications_linked_idx ON notifications(linked_entity_id);
+CREATE INDEX notifications_pending_idx
+  ON notifications(seen_at, deleted_at, scheduled_for);
+
+/* Queries ----------------------------------------------------- */
+
+notificationRowById:
+SELECT * FROM notifications
+  WHERE id = :id;
+
+dueNotificationRows:
+SELECT * FROM notifications
+  WHERE scheduled_for <= :now
+    AND seen_at IS NULL
+    AND deleted_at IS NULL
+  ORDER BY scheduled_for ASC;
+
+upcomingNotificationRows:
+SELECT * FROM notifications
+  WHERE scheduled_for > :now
+    AND seen_at IS NULL
+    AND deleted_at IS NULL
+  ORDER BY scheduled_for ASC;
+
+notificationRowsForLinkedEntity:
+SELECT * FROM notifications
+  WHERE linked_entity_id = :id
+  ORDER BY scheduled_for DESC;

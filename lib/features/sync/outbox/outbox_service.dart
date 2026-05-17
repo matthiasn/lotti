@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
@@ -352,6 +353,64 @@ class OutboxService {
     });
   }
 
+  Future<void> enqueueNotification(
+    NotificationEntity entity, {
+    String? originatingHostId,
+  }) async {
+    final relativePath = relativeNotificationPath(entity.id);
+    final fullPath = _safePayloadFullPath(relativePath);
+    if (fullPath == null) {
+      _loggingService.captureEvent(
+        'enqueue.skip invalid notification payload path: $relativePath',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      return;
+    }
+
+    await _saveJson(fullPath, jsonEncode(entity.toJson()));
+    await enqueueMessage(
+      SyncMessage.notification(
+        id: entity.id,
+        jsonPath: relativePath,
+        vectorClock: entity.meta.vectorClock,
+        originatingHostId: originatingHostId ?? entity.meta.originatingHostId,
+      ),
+    );
+  }
+
+  Future<void> enqueueNotificationStateUpdate({
+    required String id,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+    DateTime? seenAt,
+    DateTime? actedOnAt,
+    DateTime? deletedAt,
+  }) {
+    return enqueueMessage(
+      SyncMessage.notificationStateUpdate(
+        id: id,
+        seenAt: seenAt,
+        actedOnAt: actedOnAt,
+        deletedAt: deletedAt,
+        vectorClock: vectorClock,
+        originatingHostId: originatingHostId,
+      ),
+    );
+  }
+
+  String? _safePayloadFullPath(String relativePath) {
+    final relativeJoined = p.joinAll(
+      relativePath.split('/').where((part) => part.isNotEmpty),
+    );
+    final docsRoot = p.normalize(_documentsDirectory.path);
+    final fullPath = p.normalize(p.join(docsRoot, relativeJoined));
+    if (!p.isWithin(docsRoot, fullPath) && docsRoot != fullPath) {
+      return null;
+    }
+    return fullPath;
+  }
+
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     // Hoisted out of the outer try so the invariant breach surfaces to the
     // caller as a real exception instead of being swallowed and logged as a
@@ -413,6 +472,15 @@ class OutboxService {
           msg: msg,
           commonFields: commonFields,
         ),
+        final SyncNotification msg => _enqueueNotification(
+          msg: msg,
+          commonFields: commonFields,
+        ),
+        final SyncNotificationStateUpdate msg =>
+          _enqueueNotificationStateUpdate(
+            msg: msg,
+            commonFields: commonFields,
+          ),
         final SyncBackfillRequest msg => _enqueueBackfillRequest(
           msg: msg,
           commonFields: commonFields,
@@ -471,6 +539,8 @@ class OutboxService {
       SyncBackfillResponse() => OutboxPriority.normal.index,
       SyncAgentEntity() => OutboxPriority.normal.index,
       SyncAgentLink() => OutboxPriority.normal.index,
+      SyncNotification() => OutboxPriority.normal.index,
+      SyncNotificationStateUpdate() => OutboxPriority.normal.index,
       // Legacy wire variant — never enqueued locally; see enqueueMessage.
       SyncAgentBundle() => OutboxPriority.normal.index,
       SyncThemingSelection() => OutboxPriority.normal.index,
@@ -1413,6 +1483,78 @@ class OutboxService {
         'mode=${msg.themeMode}',
   );
 
+  Future<bool> _enqueueNotification({
+    required SyncNotification msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    final fullPath = _safePayloadFullPath(msg.jsonPath);
+    if (fullPath == null) {
+      _loggingService.captureEvent(
+        'enqueue.skip invalid notification payload path: ${msg.jsonPath}',
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      );
+      return false;
+    }
+
+    var fileLength = 0;
+    try {
+      fileLength = await File(fullPath).length();
+    } catch (_) {
+      fileLength = 0;
+    }
+
+    final covered = VectorClock.mergeUniqueClocks([
+      ...?msg.coveredVectorClocks,
+      msg.vectorClock,
+    ]);
+    final outboxMessage = covered == msg.coveredVectorClocks
+        ? msg
+        : msg.copyWith(coveredVectorClocks: covered);
+    final outboxJson = json.encode(outboxMessage.toJson());
+    final outboxSize = utf8.encode(outboxJson).length + fileLength;
+    await _syncDatabase.addOutboxItem(
+      commonFields.copyWith(
+        subject: Value('notification:${msg.id}'),
+        message: Value(outboxJson),
+        filePath: Value(msg.jsonPath),
+        outboxEntryId: Value(msg.id),
+        payloadSize: Value(outboxSize),
+      ),
+    );
+    _loggingService.captureEvent(
+      'enqueue type=SyncNotification id=${msg.id} attachBytes=$fileLength',
+      domain: 'OUTBOX',
+      subDomain: 'enqueueMessage',
+    );
+
+    await _recordNotificationSent(
+      entryId: msg.id,
+      vectorClock: msg.vectorClock,
+      payloadType: SyncSequencePayloadType.notification,
+    );
+    return false;
+  }
+
+  Future<bool> _enqueueNotificationStateUpdate({
+    required SyncNotificationStateUpdate msg,
+    required OutboxCompanion commonFields,
+  }) async {
+    final result = await _enqueueSimple(
+      commonFields: commonFields,
+      subject: 'notificationStateUpdate:${msg.id}',
+      logMessage:
+          'enqueue type=SyncNotificationStateUpdate '
+          'subject=notificationStateUpdate:${msg.id}',
+    );
+    await _recordNotificationSent(
+      entryId: msg.id,
+      vectorClock: msg.vectorClock,
+      payloadType: SyncSequencePayloadType.notificationStateUpdate,
+    );
+    return result;
+  }
+
   Future<bool> _enqueueBackfillRequest({
     required SyncBackfillRequest msg,
     required OutboxCompanion commonFields,
@@ -1754,6 +1896,28 @@ class OutboxService {
           stackTrace: st,
         );
       }
+    }
+  }
+
+  Future<void> _recordNotificationSent({
+    required String entryId,
+    required VectorClock vectorClock,
+    required SyncSequencePayloadType payloadType,
+  }) async {
+    if (_sequenceLogService == null) return;
+    try {
+      await _sequenceLogService.recordSentEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        payloadType: payloadType,
+      );
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'recordSent',
+        stackTrace: st,
+      );
     }
   }
 

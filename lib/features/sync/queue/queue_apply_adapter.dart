@@ -293,6 +293,7 @@ class QueueApplyAdapter {
         '/attachments/',
         '/agent_entities/',
         '/agent_links/',
+        '/notifications/',
       ];
       for (final prefix in attachmentPrefixes) {
         if (path.contains(prefix)) return true;
@@ -333,6 +334,9 @@ class QueueApplyAdapter {
       aiConfigDelete: (_) => false,
       // settings_db.
       themingSelection: (_) => false,
+      // notifications_db.
+      notification: (_) => false,
+      notificationStateUpdate: (_) => false,
       // backfill handler does its own DB selection; conservatively
       // wrap so any journal-writing branch stays atomic.
       backfillRequest: (_) => true,

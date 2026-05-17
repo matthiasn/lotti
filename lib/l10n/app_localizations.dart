@@ -4501,6 +4501,18 @@ abstract class AppLocalizations {
   /// **'Prompt for a quick session rating when you stop a timer.'**
   String get configFlagEnableSessionRatingsDescription;
 
+  /// No description provided for @configFlagEnableSyncedAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced alerts'**
+  String get configFlagEnableSyncedAlerts;
+
+  /// No description provided for @configFlagEnableSyncedAlertsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync AI and task alerts across devices and allow them to schedule local OS notifications.'**
+  String get configFlagEnableSyncedAlertsDescription;
+
   /// No description provided for @configFlagEnableTooltip.
   ///
   /// In en, this message translates to:
@@ -10254,6 +10266,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Journal entry'**
   String get syncPayloadJournalEntity;
+
+  /// No description provided for @syncPayloadNotification.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification'**
+  String get syncPayloadNotification;
+
+  /// No description provided for @syncPayloadNotificationStateUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification state update'**
+  String get syncPayloadNotificationStateUpdate;
 
   /// No description provided for @syncPayloadOutboxBundle.
   ///

@@ -17,6 +17,7 @@ const enableSyncActorFlag = 'enable_sync_actor';
 const enableProjectsFlag = 'enable_projects';
 const enableEmbeddingsFlag = 'enable_embeddings';
 const enableVectorSearchFlag = 'enable_vector_search';
+const enableSyncedAlertsFlag = 'enable_synced_alerts';
 
 const enableWhatsNewFlag = 'enable_whats_new';
 const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';

@@ -10,6 +10,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -23,6 +24,8 @@ import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
+import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -174,6 +177,7 @@ Future<void> registerSingletons() async {
     ..registerSingleton<SyncActivitySignaler>(SyncActivitySignaler())
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<AgentDatabase>(AgentDatabase())
+    ..registerSingleton<NotificationsDb>(NotificationsDb())
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
@@ -181,6 +185,11 @@ Future<void> registerSingletons() async {
 
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
+
+  _registerLazyServiceSafely<NotificationService>(
+    NotificationService.new,
+    'NotificationService',
+  );
 
   final entitiesCacheService = EntitiesCacheService(
     journalDb: getIt<JournalDb>(),
@@ -201,6 +210,7 @@ Future<void> registerSingletons() async {
   final userActivityService = getIt<UserActivityService>();
   final userActivityGate = getIt<UserActivityGate>();
   final journalDb = getIt<JournalDb>();
+  final notificationsDb = getIt<NotificationsDb>();
   final settingsDb = getIt<SettingsDb>();
   final syncDatabase = getIt<SyncDatabase>();
   final vectorClockService = getIt<VectorClockService>();
@@ -241,6 +251,13 @@ Future<void> registerSingletons() async {
     domainLogger: domainLogger,
   );
 
+  final notificationScheduler = NotificationScheduler(
+    notificationsDb: notificationsDb,
+    notificationService: getIt<NotificationService>(),
+    journalDb: journalDb,
+  );
+  getIt.registerSingleton<NotificationScheduler>(notificationScheduler);
+
   // SyncEventProcessor is constructed first; its `backfillResponseHandler`
   // (a `late final`) is assigned below once BackfillResponseHandler exists.
   // The chain BackfillResponseHandler → OutboxService → MatrixService →
@@ -259,6 +276,8 @@ Future<void> registerSingletons() async {
     sequenceLogService: syncSequenceLogService,
     journalDb: journalDb,
     vectorClockService: vectorClockService,
+    notificationsDb: notificationsDb,
+    notificationScheduler: notificationScheduler,
   );
   final collectSyncMetrics = await journalDb.getConfigFlag(enableLoggingFlag);
 
@@ -357,6 +376,15 @@ Future<void> registerSingletons() async {
 
   // Self-healing sync: create backfill services after OutboxService is available
   final outboxService = getIt<OutboxService>();
+  final notificationRepository = NotificationRepository(
+    notificationsDb: notificationsDb,
+    journalDb: journalDb,
+    vectorClockService: vectorClockService,
+    outboxService: outboxService,
+    updateNotifications: getIt<UpdateNotifications>(),
+    scheduler: notificationScheduler,
+  );
+  getIt.registerSingleton<NotificationRepository>(notificationRepository);
 
   // Proactive VC burn broadcast: when a reservation releases (write rejected,
   // scope threw, commitWhen=false), enqueue a SyncBackfillResponse with
@@ -421,6 +449,7 @@ Future<void> registerSingletons() async {
     loggingService: loggingService,
     vectorClockService: vectorClockService,
     domainLogger: domainLogger,
+    notificationsDb: notificationsDb,
   );
   final backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,
@@ -484,11 +513,6 @@ Future<void> registerSingletons() async {
     ..registerSingleton<NavService>(NavService());
 
   // Register services that might fail in sandboxed environments using lazy loading
-  _registerLazyServiceSafely<NotificationService>(
-    NotificationService.new,
-    'NotificationService',
-  );
-
   _registerLazyServiceSafely<AudioWaveformService>(
     AudioWaveformService.new,
     'AudioWaveformService',

@@ -2654,6 +2654,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Proposer une évaluation rapide de session à l\'arrêt d\'un minuteur.';
 
   @override
+  String get configFlagEnableSyncedAlerts => 'Alertes synchronisées';
+
+  @override
+  String get configFlagEnableSyncedAlertsDescription =>
+      'Synchronise les alertes d\'IA et de tâches entre tes appareils et autorise-les à programmer des notifications système locales.';
+
+  @override
   String get configFlagEnableTooltip => 'Activer les info-bulles';
 
   @override
@@ -6075,6 +6082,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get syncPayloadJournalEntity => 'Entrée de journal';
+
+  @override
+  String get syncPayloadNotification => 'Notification';
+
+  @override
+  String get syncPayloadNotificationStateUpdate =>
+      'Mise à jour d\'état de notification';
 
   @override
   String get syncPayloadOutboxBundle => 'Lot d\'envoi';

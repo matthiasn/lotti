@@ -2606,6 +2606,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Prompt for a quick session rating when you stop a timer.';
 
   @override
+  String get configFlagEnableSyncedAlerts => 'Synced alerts';
+
+  @override
+  String get configFlagEnableSyncedAlertsDescription =>
+      'Sync AI and task alerts across devices and allow them to schedule local OS notifications.';
+
+  @override
   String get configFlagEnableTooltip => 'Enable tooltips';
 
   @override
@@ -5919,6 +5926,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncPayloadJournalEntity => 'Journal entry';
+
+  @override
+  String get syncPayloadNotification => 'Notification';
+
+  @override
+  String get syncPayloadNotificationStateUpdate => 'Notification state update';
 
   @override
   String get syncPayloadOutboxBundle => 'Outbox bundle';

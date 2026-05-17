@@ -14,6 +14,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -119,6 +120,8 @@ enum _GeneratedPriorityMessageKind {
   agentEntity,
   agentLink,
   agentBundle,
+  notification,
+  notificationStateUpdate,
   outboxBundle,
 }
 
@@ -220,6 +223,19 @@ class _GeneratedPriorityScenario {
         agentId: 'agent-$counterSlot',
         wakeRunKey: 'wake-$counterSlot',
       ),
+      _GeneratedPriorityMessageKind.notification => SyncMessage.notification(
+        id: id,
+        jsonPath: '/notifications/$id.json',
+        vectorClock: VectorClock({'hostA': counterSlot}),
+        originatingHostId: 'hostA',
+      ),
+      _GeneratedPriorityMessageKind.notificationStateUpdate =>
+        SyncMessage.notificationStateUpdate(
+          id: id,
+          seenAt: deleted ? DateTime(2024) : null,
+          vectorClock: VectorClock({'hostA': counterSlot}),
+          originatingHostId: 'hostA',
+        ),
       _GeneratedPriorityMessageKind.outboxBundle => SyncMessage.outboxBundle(
         children: [SyncMessage.aiConfigDelete(id: id)],
       ),
@@ -235,6 +251,8 @@ class _GeneratedPriorityScenario {
       _GeneratedPriorityMessageKind.agentEntity ||
       _GeneratedPriorityMessageKind.agentLink ||
       _GeneratedPriorityMessageKind.agentBundle ||
+      _GeneratedPriorityMessageKind.notification ||
+      _GeneratedPriorityMessageKind.notificationStateUpdate ||
       _GeneratedPriorityMessageKind.themingSelection ||
       _GeneratedPriorityMessageKind.outboxBundle => OutboxPriority.normal.index,
       _GeneratedPriorityMessageKind.entityDefinition ||
@@ -641,6 +659,90 @@ void main() {
     );
 
     verifyNever(() => journalDb.journalEntityById(any()));
+  });
+
+  test(
+    'enqueueNotification saves JSON payload and queues notification',
+    () async {
+      final notification = _testNotification(
+        id: 'notification-id',
+        vectorClock: const VectorClock({'hostA': 3}),
+      );
+
+      await service.enqueueNotification(
+        notification,
+        originatingHostId: 'origin-host',
+      );
+
+      final captured = verify(
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
+      expect(captured, hasLength(1));
+
+      final companion = captured.single as OutboxCompanion;
+      expect(companion.subject.value, 'notification:notification-id');
+      expect(companion.filePath.value, '/notifications/notification-id.json');
+      expect(companion.outboxEntryId.value, 'notification-id');
+      expect(companion.priority.value, OutboxPriority.normal.index);
+
+      final queued = SyncMessage.fromJson(
+        jsonDecode(companion.message.value) as Map<String, dynamic>,
+      );
+      expect(queued, isA<SyncNotification>());
+      final syncNotification = queued as SyncNotification;
+      expect(syncNotification.id, 'notification-id');
+      expect(syncNotification.jsonPath, '/notifications/notification-id.json');
+      expect(syncNotification.originatingHostId, 'origin-host');
+      expect(
+        syncNotification.coveredVectorClocks,
+        [
+          const VectorClock({'hostA': 3}),
+        ],
+      );
+
+      final payloadFile = File(
+        '${documentsDirectory.path}/notifications/notification-id.json',
+      );
+      expect(payloadFile.existsSync(), isTrue);
+      final payload = NotificationEntity.fromJson(
+        jsonDecode(payloadFile.readAsStringSync()) as Map<String, dynamic>,
+      );
+      expect(payload, notification);
+    },
+  );
+
+  test('enqueueNotificationStateUpdate queues inline state update', () async {
+    final seenAt = DateTime.utc(2026, 5, 17, 11);
+
+    await service.enqueueNotificationStateUpdate(
+      id: 'notification-id',
+      seenAt: seenAt,
+      vectorClock: const VectorClock({'hostA': 4}),
+      originatingHostId: 'hostA',
+    );
+
+    final captured = verify(
+      () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+    ).captured;
+    expect(captured, hasLength(1));
+
+    final companion = captured.single as OutboxCompanion;
+    expect(
+      companion.subject.value,
+      'notificationStateUpdate:notification-id',
+    );
+    expect(companion.filePath.value, isNull);
+    expect(companion.priority.value, OutboxPriority.normal.index);
+
+    final queued = SyncMessage.fromJson(
+      jsonDecode(companion.message.value) as Map<String, dynamic>,
+    );
+    expect(queued, isA<SyncNotificationStateUpdate>());
+    final stateUpdate = queued as SyncNotificationStateUpdate;
+    expect(stateUpdate.id, 'notification-id');
+    expect(stateUpdate.seenAt, seenAt);
+    expect(stateUpdate.vectorClock, const VectorClock({'hostA': 4}));
+    expect(stateUpdate.originatingHostId, 'hostA');
   });
 
   test('enqueueMessage logs SyncAiConfig', () async {
@@ -5705,4 +5807,25 @@ void main() {
       },
     );
   });
+}
+
+NotificationEntity _testNotification({
+  required String id,
+  required VectorClock vectorClock,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.taskSuggestion(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: vectorClock,
+      originatingHostId: 'hostA',
+    ),
+    linkedTaskId: 'task-$id',
+    suggestionCount: 2,
+    title: 'Review suggestions',
+    body: 'Two tasks need review',
+  );
 }

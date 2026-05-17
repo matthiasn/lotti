@@ -2646,6 +2646,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Po zastavení časovače zobrazit rychlé hodnocení relace.';
 
   @override
+  String get configFlagEnableSyncedAlerts => 'Synchronizovaná upozornění';
+
+  @override
+  String get configFlagEnableSyncedAlertsDescription =>
+      'Synchronizuj upozornění od AI a úkolů mezi zařízeními a dovol jim plánovat místní systémová oznámení.';
+
+  @override
   String get configFlagEnableTooltip => 'Povolit nápovědy';
 
   @override
@@ -6030,6 +6037,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncPayloadJournalEntity => 'Položka deníku';
+
+  @override
+  String get syncPayloadNotification => 'Oznámení';
+
+  @override
+  String get syncPayloadNotificationStateUpdate => 'Aktualizace stavu oznámení';
 
   @override
   String get syncPayloadOutboxBundle => 'Odchozí balíček';

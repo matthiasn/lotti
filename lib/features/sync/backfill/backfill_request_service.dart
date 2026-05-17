@@ -467,6 +467,8 @@ class BackfillRequestService {
           relativePath = relativeAgentEntityPath(entryId);
         } else if (payloadType == SyncSequencePayloadType.agentLink) {
           relativePath = relativeAgentLinkPath(entryId);
+        } else if (payloadType == SyncSequencePayloadType.notification) {
+          relativePath = relativeNotificationPath(entryId);
         }
       }
 

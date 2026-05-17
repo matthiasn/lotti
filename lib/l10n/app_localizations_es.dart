@@ -2652,6 +2652,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solicitar una calificación rápida de sesión al detener un temporizador.';
 
   @override
+  String get configFlagEnableSyncedAlerts => 'Alertas sincronizadas';
+
+  @override
+  String get configFlagEnableSyncedAlertsDescription =>
+      'Sincroniza alertas de IA y tareas entre tus dispositivos y permite que programen notificaciones locales del sistema.';
+
+  @override
   String get configFlagEnableTooltip =>
       'Habilitar información sobre herramientas';
 
@@ -6064,6 +6071,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncPayloadJournalEntity => 'Entrada de diario';
+
+  @override
+  String get syncPayloadNotification => 'Notificación';
+
+  @override
+  String get syncPayloadNotificationStateUpdate =>
+      'Actualización de estado de notificación';
 
   @override
   String get syncPayloadOutboxBundle => 'Paquete de salida';

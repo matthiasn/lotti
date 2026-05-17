@@ -2640,6 +2640,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nach dem Stoppen eines Timers eine schnelle Sitzungsbewertung anzeigen.';
 
   @override
+  String get configFlagEnableSyncedAlerts => 'Synchronisierte Hinweise';
+
+  @override
+  String get configFlagEnableSyncedAlertsDescription =>
+      'Synchronisiere KI- und Aufgabenhinweise zwischen deinen Geräten und erlaube ihnen, lokale Systemmitteilungen zu planen.';
+
+  @override
   String get configFlagEnableTooltip => 'Tooltips aktivieren';
 
   @override
@@ -6001,6 +6008,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncPayloadJournalEntity => 'Journaleintrag';
+
+  @override
+  String get syncPayloadNotification => 'Hinweis';
+
+  @override
+  String get syncPayloadNotificationStateUpdate =>
+      'Hinweisstatus-Aktualisierung';
 
   @override
   String get syncPayloadOutboxBundle => 'Outbox-Bündel';

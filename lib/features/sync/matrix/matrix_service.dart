@@ -385,6 +385,8 @@ class MatrixService {
       aiConfig: (_) => 'aiConfig',
       aiConfigDelete: (_) => 'aiConfigDelete',
       themingSelection: (_) => 'themingSelection',
+      notification: (_) => 'notification',
+      notificationStateUpdate: (_) => 'notificationStateUpdate',
       backfillRequest: (_) => 'backfillRequest',
       backfillResponse: (_) => 'backfillResponse',
       agentEntity: (_) => 'agentEntity',

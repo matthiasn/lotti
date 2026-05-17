@@ -156,6 +156,9 @@ class OutboxListItemViewModel {
         aiConfig: (_) => messages.syncPayloadAiConfig,
         aiConfigDelete: (_) => messages.syncPayloadAiConfigDelete,
         themingSelection: (_) => messages.syncPayloadThemingSelection,
+        notification: (_) => messages.syncPayloadNotification,
+        notificationStateUpdate: (_) =>
+            messages.syncPayloadNotificationStateUpdate,
         backfillRequest: (_) => messages.syncPayloadBackfillRequest,
         backfillResponse: (_) => messages.syncPayloadBackfillResponse,
         agentEntity: (_) => messages.syncPayloadAgentEntity,

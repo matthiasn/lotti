@@ -5,6 +5,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
@@ -422,12 +423,21 @@ class _GeneratedHandleBackfillResponseScenario {
       effectivePayloadType == SyncSequencePayloadType.agentEntity ||
       effectivePayloadType == SyncSequencePayloadType.agentLink;
 
+  bool get isNotificationPayload =>
+      effectivePayloadType == SyncSequencePayloadType.notification ||
+      effectivePayloadType == SyncSequencePayloadType.notificationStateUpdate;
+
   bool get canLoadPayload => !isAgentPayload || agentRepositoryAvailable;
 
   bool get payloadExists =>
       localPayloadShape != _GeneratedLocalPayloadShape.missing;
 
   VectorClock? vectorClockFor(String hostId) {
+    if (localPayloadShape == _GeneratedLocalPayloadShape.withoutVectorClock &&
+        isNotificationPayload) {
+      return const VectorClock({});
+    }
+
     return switch (localPayloadShape) {
       _GeneratedLocalPayloadShape.missing ||
       _GeneratedLocalPayloadShape.withoutVectorClock => null,
@@ -445,7 +455,8 @@ class _GeneratedHandleBackfillResponseScenario {
         effectivePayloadId != null &&
         canLoadPayload &&
         payloadExists &&
-        localPayloadShape != _GeneratedLocalPayloadShape.withoutVectorClock;
+        (localPayloadShape != _GeneratedLocalPayloadShape.withoutVectorClock ||
+            isNotificationPayload);
   }
 
   SyncBackfillResponse response(String hostId) {
@@ -550,6 +561,7 @@ class _GeneratedBackfillResponseBench {
     required this.sequenceService,
     required this.outboxService,
     required this.agentRepository,
+    required this.notificationsDb,
     required this.handler,
   });
 
@@ -564,12 +576,14 @@ class _GeneratedBackfillResponseBench {
     final logging = MockLoggingService();
     final vcService = MockVectorClockService();
     final agentRepository = MockAgentRepository();
+    final notificationsDb = MockNotificationsDb();
     final handler = BackfillResponseHandler(
       journalDb: journalDb,
       sequenceLogService: sequenceService,
       outboxService: outboxService,
       loggingService: logging,
       vectorClockService: vcService,
+      notificationsDb: notificationsDb,
     )..agentRepository = agentRepository;
 
     final bench = _GeneratedBackfillResponseBench._(
@@ -577,6 +591,7 @@ class _GeneratedBackfillResponseBench {
       sequenceService: sequenceService,
       outboxService: outboxService,
       agentRepository: agentRepository,
+      notificationsDb: notificationsDb,
       handler: handler,
     );
 
@@ -661,6 +676,48 @@ class _GeneratedBackfillResponseBench {
         invocation.positionalArguments.single as SyncMessage,
       );
     });
+    when(
+      () => outboxService.enqueueNotification(
+        any(),
+        originatingHostId: any(named: 'originatingHostId'),
+      ),
+    ).thenAnswer((invocation) async {
+      final notification =
+          invocation.positionalArguments.single as NotificationEntity;
+      final originatingHostId =
+          invocation.namedArguments[#originatingHostId] as String?;
+      bench.sentMessages.add(
+        SyncMessage.notification(
+          id: notification.meta.id,
+          jsonPath: '/notifications/${notification.meta.id}.json',
+          vectorClock: notification.meta.vectorClock,
+          originatingHostId:
+              originatingHostId ?? notification.meta.originatingHostId,
+        ),
+      );
+    });
+    when(
+      () => outboxService.enqueueNotificationStateUpdate(
+        id: any(named: 'id'),
+        seenAt: any(named: 'seenAt'),
+        actedOnAt: any(named: 'actedOnAt'),
+        deletedAt: any(named: 'deletedAt'),
+        vectorClock: any(named: 'vectorClock'),
+        originatingHostId: any(named: 'originatingHostId'),
+      ),
+    ).thenAnswer((invocation) async {
+      bench.sentMessages.add(
+        SyncMessage.notificationStateUpdate(
+          id: invocation.namedArguments[#id] as String,
+          seenAt: invocation.namedArguments[#seenAt] as DateTime?,
+          actedOnAt: invocation.namedArguments[#actedOnAt] as DateTime?,
+          deletedAt: invocation.namedArguments[#deletedAt] as DateTime?,
+          vectorClock: invocation.namedArguments[#vectorClock] as VectorClock,
+          originatingHostId:
+              invocation.namedArguments[#originatingHostId] as String,
+        ),
+      );
+    });
 
     return bench;
   }
@@ -669,6 +726,7 @@ class _GeneratedBackfillResponseBench {
   final MockSyncSequenceLogService sequenceService;
   final MockOutboxService outboxService;
   final MockAgentRepository agentRepository;
+  final MockNotificationsDb notificationsDb;
   final BackfillResponseHandler handler;
   final sentMessages = <SyncMessage>[];
   final markedOwnUnresolvable =
@@ -812,7 +870,10 @@ void main() {
   const foreignHostId = 'bob-host-uuid';
   const requesterId = 'requester-uuid';
 
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() {
+    registerAllFallbackValues();
+    registerFallbackValue(DateTime(2024));
+  });
 
   group('BackfillResponseHandler generated decisions', () {
     glados.Glados(
@@ -1121,6 +1182,15 @@ void _stubPayloadByType(
                 vectorClock: vectorClock,
               ),
       );
+    case SyncSequencePayloadType.notification:
+    case SyncSequencePayloadType.notificationStateUpdate:
+      when(
+        () => bench.notificationsDb.notificationById(payloadId),
+      ).thenAnswer(
+        (_) async => vectorClock == null
+            ? null
+            : _createNotification(payloadId, vectorClock: vectorClock),
+      );
   }
 }
 
@@ -1167,6 +1237,15 @@ void _stubVerificationPayload(
       ).thenAnswer(
         (_) async => scenario.payloadExists
             ? makeTestBasicLink(id: payloadId, vectorClock: vectorClock)
+            : null,
+      );
+    case SyncSequencePayloadType.notification:
+    case SyncSequencePayloadType.notificationStateUpdate:
+      when(
+        () => bench.notificationsDb.notificationById(payloadId),
+      ).thenAnswer(
+        (_) async => scenario.payloadExists
+            ? _createNotification(payloadId, vectorClock: vectorClock!)
             : null,
       );
   }
@@ -1292,6 +1371,15 @@ void _expectPayloadMessage(
       final agentLink = message as SyncAgentLink;
       expect(agentLink.agentLink?.id, payloadId);
       expect(agentLink.status, SyncEntryStatus.update);
+    case SyncSequencePayloadType.notification:
+      expect(message, isA<SyncNotification>());
+      final notification = message as SyncNotification;
+      expect(notification.id, payloadId);
+      expect(notification.jsonPath, '/notifications/$payloadId.json');
+    case SyncSequencePayloadType.notificationStateUpdate:
+      expect(message, isA<SyncNotificationStateUpdate>());
+      final stateUpdate = message as SyncNotificationStateUpdate;
+      expect(stateUpdate.id, payloadId);
   }
 }
 
@@ -1344,5 +1432,27 @@ EntryLink _createEntryLink(
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     vectorClock: vectorClock,
+  );
+}
+
+NotificationEntity _createNotification(
+  String id, {
+  required VectorClock vectorClock,
+}) {
+  final timestamp = DateTime(2024);
+  return NotificationEntity.taskSuggestion(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      seenAt: timestamp,
+      vectorClock: vectorClock,
+      originatingHostId: 'host',
+    ),
+    linkedTaskId: 'task-$id',
+    suggestionCount: 1,
+    title: 'Generated notification',
+    body: 'Generated body',
   );
 }

@@ -11,6 +11,7 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -912,6 +913,79 @@ void main() {
     expect(result, isTrue);
     expect(sentEventRegistry.consume(r'$file-event-id'), isTrue);
     expect(sentEventRegistry.consume(r'$text-event-id'), isTrue);
+  });
+
+  test('uploads notification JSON and sends reconciled envelope', () async {
+    MatrixFile? capturedFile;
+    Map<String, dynamic>? capturedExtra;
+    String? capturedText;
+    when(
+      () => room.sendFileEvent(
+        any<MatrixFile>(),
+        extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedFile = invocation.positionalArguments.first as MatrixFile;
+      capturedExtra =
+          invocation.namedArguments[#extraContent] as Map<String, dynamic>?;
+      return r'$notification-file-event-id';
+    });
+    when(
+      () => room.sendTextEvent(
+        any<String>(),
+        msgtype: any<String>(named: 'msgtype'),
+        parseCommands: any<bool>(named: 'parseCommands'),
+        parseMarkdown: any<bool>(named: 'parseMarkdown'),
+      ),
+    ).thenAnswer((invocation) async {
+      capturedText = invocation.positionalArguments.first as String;
+      return r'$notification-text-event-id';
+    });
+
+    final notification = _testNotification(
+      id: 'notification-send',
+      vectorClock: const VectorClock({'hostA': 5}),
+    );
+    final jsonPath = relativeNotificationPath(notification.meta.id);
+    File('${documentsDirectory.path}$jsonPath')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(jsonEncode(notification.toJson()));
+
+    final result = await sender.sendMatrixMessage(
+      message: SyncMessage.notification(
+        id: notification.meta.id,
+        jsonPath: jsonPath,
+        vectorClock: const VectorClock({'hostA': 3}),
+        originatingHostId: 'message-host',
+      ),
+      context: buildContext(),
+      onSent: (_, _) {},
+    );
+
+    expect(result, isTrue);
+    expect(capturedFile?.name, endsWith('.json.gz'));
+    expect(capturedExtra?[attachmentEncodingKey], attachmentEncodingGzip);
+    expect(capturedExtra?['relativePath'], jsonPath);
+    expect(sentEventRegistry.consume(r'$notification-file-event-id'), isTrue);
+    expect(sentEventRegistry.consume(r'$notification-text-event-id'), isTrue);
+
+    final outbound = SyncMessage.fromJson(
+      jsonDecode(utf8.decode(base64.decode(capturedText!)))
+          as Map<String, dynamic>,
+    );
+    expect(outbound, isA<SyncNotification>());
+    final syncNotification = outbound as SyncNotification;
+    expect(syncNotification.id, 'notification-send');
+    expect(syncNotification.jsonPath, jsonPath);
+    expect(syncNotification.originatingHostId, 'message-host');
+    expect(syncNotification.vectorClock, const VectorClock({'hostA': 5}));
+    expect(
+      syncNotification.coveredVectorClocks,
+      [
+        const VectorClock({'hostA': 3}),
+        const VectorClock({'hostA': 5}),
+      ],
+    );
   });
 
   test('adopts descriptor vector clock when message is stale', () async {
@@ -3435,4 +3509,25 @@ void main() {
       },
     );
   });
+}
+
+NotificationEntity _testNotification({
+  required String id,
+  required VectorClock vectorClock,
+}) {
+  final timestamp = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.taskSuggestion(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      scheduledFor: timestamp,
+      vectorClock: vectorClock,
+      originatingHostId: 'hostA',
+    ),
+    linkedTaskId: 'task-$id',
+    suggestionCount: 2,
+    title: 'Review suggestions',
+    body: 'Two tasks need review',
+  );
 }

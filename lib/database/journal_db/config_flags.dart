@@ -172,6 +172,14 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableSyncedAlertsFlag,
+      description: 'Enable synced alerts?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableWhatsNewFlag,
       description: "Enable What's New feature?",
       status: false,
