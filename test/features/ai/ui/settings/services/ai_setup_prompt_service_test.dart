@@ -131,6 +131,26 @@ void main() {
       expect(result, isFalse);
     });
 
+    test('returns false when MLX Audio provider exists', () async {
+      final mlxAudioProvider = AiConfig.inferenceProvider(
+        id: 'mlx-audio-provider',
+        name: 'MLX Audio',
+        baseUrl: '',
+        apiKey: '',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.mlxAudio,
+      );
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [mlxAudioProvider]);
+
+      final container = createContainer();
+      final result = await container.read(aiSetupPromptServiceProvider.future);
+
+      expect(result, isFalse);
+    });
+
     test('returns true when only non-supported provider exists', () async {
       // Ollama provider exists but not Gemini or OpenAI
       final ollamaProvider = AiConfig.inferenceProvider(
@@ -262,6 +282,10 @@ void main() {
                 equals('Google Gemini'),
               );
               expect(
+                AiProviderOption.mlxAudio.displayName(context),
+                equals('MLX Audio (local)'),
+              );
+              expect(
                 AiProviderOption.openAi.displayName(context),
                 equals('OpenAI'),
               );
@@ -296,6 +320,10 @@ void main() {
                 equals(messages.aiProviderSetupOptionGeminiDescription),
               );
               expect(
+                AiProviderOption.mlxAudio.description(context),
+                equals(messages.aiProviderMlxAudioDescription),
+              );
+              expect(
                 AiProviderOption.openAi.description(context),
                 equals(messages.aiProviderSetupOptionOpenAiDescription),
               );
@@ -314,6 +342,10 @@ void main() {
       expect(
         AiProviderOption.gemini.inferenceProviderType,
         equals(InferenceProviderType.gemini),
+      );
+      expect(
+        AiProviderOption.mlxAudio.inferenceProviderType,
+        equals(InferenceProviderType.mlxAudio),
       );
       expect(
         AiProviderOption.openAi.inferenceProviderType,

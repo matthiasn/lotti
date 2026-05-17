@@ -21,6 +21,7 @@ class ProviderConfig {
         'https://generativelanguage.googleapis.com/v1beta/openai',
     InferenceProviderType.genericOpenAi: 'http://localhost:8002/v1',
     InferenceProviderType.mistral: 'https://api.mistral.ai/v1',
+    InferenceProviderType.mlxAudio: '',
     InferenceProviderType.nebiusAiStudio: 'https://api.studio.nebius.com/v1',
     InferenceProviderType.ollama: 'http://localhost:11434',
     InferenceProviderType.openAi: 'https://api.openai.com/v1',
@@ -38,6 +39,7 @@ class ProviderConfig {
     InferenceProviderType.gemini: 'Gemini',
     InferenceProviderType.genericOpenAi: 'AI Proxy (local)',
     InferenceProviderType.mistral: 'Mistral',
+    InferenceProviderType.mlxAudio: 'MLX Audio (local)',
     InferenceProviderType.nebiusAiStudio: 'Nebius AI Studio',
     InferenceProviderType.ollama: 'Ollama (local)',
     InferenceProviderType.openAi: 'OpenAI',
@@ -52,9 +54,18 @@ class ProviderConfig {
   /// These providers run locally and don't require authentication.
   /// They are suitable for privacy-focused applications.
   static const Set<InferenceProviderType> noApiKeyRequired = {
+    InferenceProviderType.mlxAudio,
     InferenceProviderType.ollama,
     InferenceProviderType.voxtral,
     InferenceProviderType.whisper,
+  };
+
+  /// Provider types that do not talk to an HTTP base URL.
+  ///
+  /// MLX Audio is embedded into the Apple app process via a native platform
+  /// channel, so a blank base URL is a valid configured state.
+  static const Set<InferenceProviderType> noBaseUrlRequired = {
+    InferenceProviderType.mlxAudio,
   };
 
   /// Get the default base URL for a provider type
@@ -76,5 +87,10 @@ class ProviderConfig {
   /// Local providers (Ollama, Whisper) don't require API keys.
   static bool requiresApiKey(InferenceProviderType type) {
     return !noApiKeyRequired.contains(type);
+  }
+
+  /// Check if a provider type should expose a base URL field.
+  static bool usesBaseUrl(InferenceProviderType type) {
+    return !noBaseUrlRequired.contains(type);
   }
 }

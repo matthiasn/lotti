@@ -571,6 +571,44 @@
   "aiInferenceErrorTimeoutTitle": "Tiempo de espera agotado",
   "aiInferenceErrorUnknownTitle": "Error",
   "aiInternalsTitle": "Interior del agente",
+  "aiModelDownloadCloseButton": "Cerrar",
+  "aiModelDownloadDialogDescription": "Lotti descargará {modelName} en la caché de MLX Audio y lo usará para procesar voz localmente.",
+  "@aiModelDownloadDialogDescription": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadDialogTitle": "Instalar {modelName}",
+  "@aiModelDownloadDialogTitle": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadInstallTooltip": "Instalar modelo",
+  "aiModelDownloadOpenProgressTooltip": "Mostrar progreso de descarga",
+  "aiModelDownloadStatusChecking": "Comprobando estado del modelo",
+  "aiModelDownloadStatusDownloading": "Descargando {percent} %",
+  "@aiModelDownloadStatusDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "aiModelDownloadStatusDownloadingIndeterminate": "Descargando",
+  "aiModelDownloadStatusFailed": "Descarga fallida",
+  "aiModelDownloadStatusInstalled": "Instalado",
+  "aiModelDownloadStatusNotInstalled": "No instalado",
+  "aiModelDownloadStatusUnsupported": "Requiere Apple Silicon",
+  "aiModelInstallChoiceCancelButton": "Cancelar",
+  "aiModelInstallChoiceDescription": "Elige primero el modelo local de voz a texto que quieres descargar. Puedes instalar los demás más tarde desde la lista de modelos.",
+  "aiModelInstallChoiceInstallButton": "Instalar modelo",
+  "aiModelInstallChoiceRecommended": "Recomendado",
+  "aiModelInstallChoiceTitle": "Elegir modelo de MLX Audio",
   "aiOllamaModelInstalledSuccessfully": "¡Modelo \"{modelName}\" instalado correctamente!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -639,6 +677,7 @@
   "aiProviderConnectBreadcrumbAdd": "Añadir proveedor",
   "aiProviderConnectFieldBaseUrlHint": "Déjalo en blanco para usar el endpoint oficial",
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL base (opcional)",
+  "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Se mostrará en tu lista de proveedores",
   "aiProviderConnectionCheckingLabel": "Comprobando la clave, listando los modelos disponibles…",
   "aiProviderConnectionFailedBadResponseDetail": "Forma de respuesta inesperada: {type}",
@@ -735,12 +774,15 @@
   "aiProviderDetailRemoveDescription": "Elimina el proveedor y todos los modelos que dependen de él. No se puede deshacer.",
   "aiProviderDetailRemoveTitle": "Eliminar este proveedor",
   "aiProviderDetailValueUnset": "Sin definir",
+  "aiProviderEmbeddedRuntimeHint": "Se ejecuta integrado en el proceso de la app de Apple. No hace falta servidor local ni URL base.",
   "aiProviderGeminiDescription": "Modelos AI Gemini de Google",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiDescription": "API compatible con el formato OpenAI",
   "aiProviderGenericOpenAiName": "Compatible con OpenAI",
   "aiProviderMistralDescription": "API en la nube de Mistral AI con transcripción de audio nativa",
   "aiProviderMistralName": "Mistral",
+  "aiProviderMlxAudioDescription": "Modelos MLX Audio integrados para STT y TTS locales en Apple Silicon",
+  "aiProviderMlxAudioName": "MLX Audio (local)",
   "aiProviderNebiusAiStudioDescription": "Modelos de Nebius AI Studio",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaDescription": "Ejecutar inferencia localmente con Ollama",
@@ -755,6 +797,7 @@
   "aiProviderTaglineAlibaba": "Modelos Qwen · multimodal · contexto largo",
   "aiProviderTaglineAnthropic": "Familia Claude · contexto largo",
   "aiProviderTaglineGemini": "Multimodal · transcripción de audio",
+  "aiProviderTaglineMlxAudio": "Integrado · Apple Silicon · audio local",
   "aiProviderTaglineOllama": "Se ejecuta en local · sin llamadas a la nube",
   "aiProviderTaglineOpenAi": "Familia GPT · visión + razonamiento",
   "aiProviderUnknownName": "Proveedor de IA",
@@ -942,6 +985,7 @@
   "aiSetupWizardRunningButton": "Ejecutando...",
   "aiSetupWizardSafeToRunMultiple": "Se puede ejecutar varias veces - los elementos existentes se conservarán",
   "aiSetupWizardTitle": "Asistente de configuración AI",
+  "aiSummarySpeakTooltip": "Leer resumen en voz alta localmente",
   "aiTaskSummaryTitle": "Resumen de tareas de IA",
   "apiKeyAddPageTitle": "Añadir proveedor",
   "apiKeyAuthenticationDescription": "Asegura tu conexión a la API",
@@ -1192,6 +1236,8 @@
   "configFlagAttemptEmbeddingDescription": "Cuando está habilitado, la aplicación intentará generar incrustaciones para tus entradas para mejorar la búsqueda y las sugerencias de contenido relacionado.",
   "configFlagEnableAiStreaming": "Habilitar streaming de IA para acciones de tareas",
   "configFlagEnableAiStreamingDescription": "Transmitir respuestas de IA para acciones relacionadas con tareas. Desactívelo para almacenar respuestas en búfer y mantener la interfaz más fluida.",
+  "configFlagEnableAiSummaryTts": "Reproducción de resúmenes de IA",
+  "configFlagEnableAiSummaryTtsDescription": "Muestra el botón local de texto a voz en los resúmenes de IA de tareas. Requiere un modelo TTS de MLX Audio instalado.",
   "configFlagEnableDailyOs": "Habilitar DailyOS",
   "configFlagEnableDailyOsDescription": "Mostrar DailyOS en la navegación principal.",
   "configFlagEnableDashboardsPage": "Habilitar página Paneles",

@@ -19,8 +19,10 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/gemini_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
 
 part 'cloud_inference_repository.g.dart';
 
@@ -341,13 +343,6 @@ class CloudInferenceRepository {
     List<String>? speechDictionaryTerms,
     String? systemMessage,
   }) {
-    final client =
-        overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
     // For Whisper, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.whisper) {
       return _whisperRepository.transcribeAudio(
@@ -358,6 +353,44 @@ class CloudInferenceRepository {
         maxCompletionTokens: maxCompletionTokens,
       );
     }
+
+    // For MLX Audio, stay inside the app process through the native Swift
+    // bridge. The bridge reports unsupported on x86 macOS and on platforms
+    // where the Swift SDK is not linked.
+    if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
+      return Stream.fromFuture(
+        ref
+            .read(mlxAudioChannelProvider)
+            .transcribeBase64Audio(
+              modelId: model,
+              audioBase64: audioBase64,
+              speechDictionaryTerms: speechDictionaryTerms ?? const [],
+              enableSpeakerDiarization: true,
+            )
+            .then(
+              (result) => CreateChatCompletionStreamResponse(
+                id: 'mlx-audio-${const Uuid().v4()}',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content: result.text,
+                    ),
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 0,
+              ),
+            ),
+      );
+    }
+
+    final client =
+        overrideClient ??
+        OpenAIClient(
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
 
     // For Voxtral, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.voxtral) {
@@ -637,6 +670,7 @@ class CloudInferenceRepository {
       case InferenceProviderType.anthropic:
       case InferenceProviderType.genericOpenAi:
       case InferenceProviderType.mistral:
+      case InferenceProviderType.mlxAudio:
       case InferenceProviderType.nebiusAiStudio:
       case InferenceProviderType.openAi:
       case InferenceProviderType.openRouter:

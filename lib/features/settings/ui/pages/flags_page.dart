@@ -94,6 +94,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     recordLocationFlag,
     enableTooltipFlag,
     enableAiStreamingFlag,
+    enableAiSummaryTtsFlag,
     enableLoggingFlag,
     enableMatrixFlag,
     resendAttachments,
@@ -135,6 +136,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.info_outline_rounded;
       case enableAiStreamingFlag:
         return Icons.bolt_rounded;
+      case enableAiSummaryTtsFlag:
+        return Icons.volume_up_rounded;
       case enableLoggingFlag:
         return Icons.bug_report_rounded;
       case enableMatrixFlag:
@@ -180,6 +183,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableTooltipDescription;
       case enableAiStreamingFlag:
         return context.messages.configFlagEnableAiStreamingDescription;
+      case enableAiSummaryTtsFlag:
+        return context.messages.configFlagEnableAiSummaryTtsDescription;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLoggingDescription;
       case enableMatrixFlag:
@@ -225,6 +230,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableTooltip;
       case enableAiStreamingFlag:
         return context.messages.configFlagEnableAiStreaming;
+      case enableAiSummaryTtsFlag:
+        return context.messages.configFlagEnableAiSummaryTts;
       case enableLoggingFlag:
         return context.messages.configFlagEnableLogging;
       case enableMatrixFlag:

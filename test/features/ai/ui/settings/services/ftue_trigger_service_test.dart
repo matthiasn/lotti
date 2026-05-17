@@ -685,6 +685,7 @@ void main() {
       test('does not contain unsupported types', () {
         for (final type in const [
           InferenceProviderType.genericOpenAi,
+          InferenceProviderType.mlxAudio,
           InferenceProviderType.whisper,
           InferenceProviderType.voxtral,
           InferenceProviderType.nebiusAiStudio,
@@ -738,6 +739,10 @@ void main() {
 
       test('returns null for whisper provider type', () {
         expect(InferenceProviderType.whisper.ftueDisplayName, isNull);
+      });
+
+      test('returns null for mlxAudio provider type', () {
+        expect(InferenceProviderType.mlxAudio.ftueDisplayName, isNull);
       });
 
       test('returns null for voxtral provider type', () {

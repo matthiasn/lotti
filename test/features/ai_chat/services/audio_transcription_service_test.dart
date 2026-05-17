@@ -6,11 +6,33 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class _MockCloudRepo extends Mock implements CloudInferenceRepository {}
+import '../../../mocks/mocks.dart';
+
+class _FakeMlxAudioChannel extends MlxAudioChannel {
+  String? transcribedFilePath;
+  String? transcribedModelId;
+  List<String>? transcribedSpeechDictionaryTerms;
+
+  @override
+  Future<MlxAudioTranscriptionResult> transcribeFile({
+    required String filePath,
+    required String modelId,
+    List<String> speechDictionaryTerms = const [],
+    String? language,
+    bool enableSpeakerDiarization = false,
+  }) async {
+    transcribedFilePath = filePath;
+    transcribedModelId = modelId;
+    transcribedSpeechDictionaryTerms = speechDictionaryTerms;
+    return const MlxAudioTranscriptionResult(text: 'local qwen');
+  }
+}
 
 // Provider IDs used across batch guard tests
 const _pMistral = 'p-mistral-guard';
@@ -74,7 +96,7 @@ void main() {
     await file.writeAsBytes([1, 2, 3, 4]);
 
     // Mock cloud stream returning two chunks
-    final mockCloud = _MockCloudRepo();
+    final mockCloud = MockCloudInferenceRepository();
     when(
       () => mockCloud.generateWithAudio(
         any(),
@@ -86,6 +108,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -164,7 +187,7 @@ void main() {
     final file = File('${dir.path}/b.m4a');
     await file.writeAsBytes([5, 6]);
 
-    final mockCloud = _MockCloudRepo();
+    final mockCloud = MockCloudInferenceRepository();
     when(
       () => mockCloud.generateWithAudio(
         any(),
@@ -176,6 +199,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream.value(
@@ -292,7 +316,7 @@ void main() {
     final file = File('${dir.path}/c.m4a');
     await file.writeAsBytes([7, 8, 9]);
 
-    final mockCloud = _MockCloudRepo();
+    final mockCloud = MockCloudInferenceRepository();
     when(
       () => mockCloud.generateWithAudio(
         any(),
@@ -304,6 +328,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -377,7 +402,7 @@ void main() {
     final file = File('${dir.path}/d.m4a');
     await file.writeAsBytes([10, 11, 12]);
 
-    final mockCloud = _MockCloudRepo();
+    final mockCloud = MockCloudInferenceRepository();
     when(
       () => mockCloud.generateWithAudio(
         any(),
@@ -389,6 +414,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -516,7 +542,7 @@ void main() {
       final file = File('${dir.path}/test.m4a');
       await file.writeAsBytes([1, 2, 3]);
 
-      final mockCloud = _MockCloudRepo();
+      final mockCloud = MockCloudInferenceRepository();
       when(
         () => mockCloud.generateWithAudio(
           any(),
@@ -528,6 +554,7 @@ void main() {
           maxCompletionTokens: any(named: 'maxCompletionTokens'),
           overrideClient: any(named: 'overrideClient'),
           tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
         ),
       ).thenAnswer(
         (_) => Stream.value(
@@ -571,6 +598,7 @@ void main() {
           maxCompletionTokens: any(named: 'maxCompletionTokens'),
           overrideClient: any(named: 'overrideClient'),
           tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
         ),
       ).captured;
       expect(captured.first, 'gemini-2.5-flash');
@@ -656,7 +684,7 @@ void main() {
       final file = File('${dir.path}/test.m4a');
       await file.writeAsBytes([1, 2, 3]);
 
-      final mockCloud = _MockCloudRepo();
+      final mockCloud = MockCloudInferenceRepository();
       when(
         () => mockCloud.generateWithAudio(
           any(),
@@ -668,6 +696,7 @@ void main() {
           maxCompletionTokens: any(named: 'maxCompletionTokens'),
           overrideClient: any(named: 'overrideClient'),
           tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
         ),
       ).thenAnswer(
         (_) => Stream.value(
@@ -734,7 +763,7 @@ void main() {
     final file = File('${dir.path}/null_choices.m4a');
     await file.writeAsBytes([1, 2, 3]);
 
-    final mockCloud = _MockCloudRepo();
+    final mockCloud = MockCloudInferenceRepository();
     when(
       () => mockCloud.generateWithAudio(
         any(),
@@ -746,6 +775,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -839,7 +869,7 @@ void main() {
     final file = File('${dir.path}/e.m4a');
     await file.writeAsBytes([13, 14, 15]);
 
-    final mockCloud = _MockCloudRepo();
+    final mockCloud = MockCloudInferenceRepository();
     when(
       () => mockCloud.generateWithAudio(
         any(),
@@ -851,6 +881,7 @@ void main() {
         maxCompletionTokens: any(named: 'maxCompletionTokens'),
         overrideClient: any(named: 'overrideClient'),
         tools: any(named: 'tools'),
+        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       ),
     ).thenAnswer(
       (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
@@ -908,5 +939,282 @@ void main() {
     expect(chunks[0], 'content');
 
     await dir.delete(recursive: true);
+  });
+
+  group('offline bias-capable model selection', () {
+    test('prefers MLX Qwen and forwards speech dictionary terms', () async {
+      final freshDb = AiConfigDb(inMemoryDatabase: true);
+      addTearDown(freshDb.close);
+      final aiRepo = AiConfigRepository(freshDb);
+
+      await aiRepo.saveConfig(
+        AiConfig.inferenceProvider(
+          id: 'p-gemini-qwen-choice',
+          baseUrl: 'https://api.gemini.test',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inferenceProviderType: InferenceProviderType.gemini,
+        ),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        AiConfig.model(
+          id: 'm-gemini-qwen-choice',
+          name: 'gemini-2.5-flash',
+          providerModelId: 'gemini-2.5-flash',
+          inferenceProviderId: 'p-gemini-qwen-choice',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inputModalities: const [Modality.audio],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        ),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        AiConfig.inferenceProvider(
+          id: 'p-mlx-qwen-choice',
+          baseUrl: '',
+          apiKey: '',
+          name: 'MLX Audio',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inferenceProviderType: InferenceProviderType.mlxAudio,
+        ),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        AiConfig.model(
+          id: 'm-mlx-qwen-choice',
+          name: 'Qwen3 ASR',
+          providerModelId: mlxAudioQwenAsrModelId,
+          inferenceProviderId: 'p-mlx-qwen-choice',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inputModalities: const [Modality.audio],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        ),
+        fromSync: true,
+      );
+
+      final dir = await Directory.systemTemp.createTemp('svc_qwen_bias_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/qwen.m4a');
+      await file.writeAsBytes([1, 2, 3]);
+      final mlxAudioChannel = _FakeMlxAudioChannel();
+
+      final container = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+          mlxAudioChannelProvider.overrideWithValue(mlxAudioChannel),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final svc = container.read(audioTranscriptionServiceProvider);
+      final result = await svc.transcribe(
+        file.path,
+        speechDictionaryTerms: const ['Claude Code', 'macOS'],
+      );
+
+      expect(result, 'local qwen');
+      expect(mlxAudioChannel.transcribedFilePath, file.path);
+      expect(mlxAudioChannel.transcribedModelId, mlxAudioQwenAsrModelId);
+      expect(
+        mlxAudioChannel.transcribedSpeechDictionaryTerms,
+        ['Claude Code', 'macOS'],
+      );
+    });
+
+    test(
+      'uses configured MLX Qwen 1.7B with speech dictionary terms',
+      () async {
+        final freshDb = AiConfigDb(inMemoryDatabase: true);
+        addTearDown(freshDb.close);
+        final aiRepo = AiConfigRepository(freshDb);
+
+        await aiRepo.saveConfig(
+          AiConfig.inferenceProvider(
+            id: 'p-mlx-qwen17-choice',
+            baseUrl: '',
+            apiKey: '',
+            name: 'MLX Audio',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            inferenceProviderType: InferenceProviderType.mlxAudio,
+          ),
+          fromSync: true,
+        );
+        await aiRepo.saveConfig(
+          AiConfig.model(
+            id: 'm-mlx-qwen17-choice',
+            name: 'Qwen3 ASR 1.7B',
+            providerModelId: mlxAudioQwenAsr17B8BitModelId,
+            inferenceProviderId: 'p-mlx-qwen17-choice',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            inputModalities: const [Modality.audio],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          ),
+          fromSync: true,
+        );
+
+        final dir = await Directory.systemTemp.createTemp('svc_qwen17_bias_');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/qwen17.m4a');
+        await file.writeAsBytes([1, 2, 3]);
+        final mlxAudioChannel = _FakeMlxAudioChannel();
+
+        final container = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+            mlxAudioChannelProvider.overrideWithValue(mlxAudioChannel),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final svc = container.read(audioTranscriptionServiceProvider);
+        final result = await svc.transcribe(
+          file.path,
+          speechDictionaryTerms: const ['Brunsberg', 'Seembinderstrasse'],
+        );
+
+        expect(result, 'local qwen');
+        expect(mlxAudioChannel.transcribedFilePath, file.path);
+        expect(
+          mlxAudioChannel.transcribedModelId,
+          mlxAudioQwenAsr17B8BitModelId,
+        );
+        expect(
+          mlxAudioChannel.transcribedSpeechDictionaryTerms,
+          ['Brunsberg', 'Seembinderstrasse'],
+        );
+      },
+    );
+
+    test(
+      'uses Mistral offline context bias when Qwen is unavailable',
+      () async {
+        final freshDb = AiConfigDb(inMemoryDatabase: true);
+        addTearDown(freshDb.close);
+        final aiRepo = AiConfigRepository(freshDb);
+
+        await aiRepo.saveConfig(
+          AiConfig.inferenceProvider(
+            id: 'p-gemini-mistral-choice',
+            baseUrl: 'https://api.gemini.test',
+            apiKey: 'k',
+            name: 'Gemini',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            inferenceProviderType: InferenceProviderType.gemini,
+          ),
+          fromSync: true,
+        );
+        await aiRepo.saveConfig(
+          AiConfig.model(
+            id: 'm-gemini-mistral-choice',
+            name: 'gemini-2.5-flash',
+            providerModelId: 'gemini-2.5-flash',
+            inferenceProviderId: 'p-gemini-mistral-choice',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            inputModalities: const [Modality.audio],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          ),
+          fromSync: true,
+        );
+        await aiRepo.saveConfig(
+          AiConfig.inferenceProvider(
+            id: 'p-mistral-offline-choice',
+            baseUrl: 'https://api.mistral.ai/v1',
+            apiKey: 'mistral-key',
+            name: 'Mistral',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            inferenceProviderType: InferenceProviderType.mistral,
+          ),
+          fromSync: true,
+        );
+        await aiRepo.saveConfig(
+          AiConfig.model(
+            id: 'm-mistral-offline-choice',
+            name: 'Voxtral Mini Transcribe',
+            providerModelId: 'voxtral-mini-latest',
+            inferenceProviderId: 'p-mistral-offline-choice',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            inputModalities: const [Modality.audio],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          ),
+          fromSync: true,
+        );
+
+        final dir = await Directory.systemTemp.createTemp('svc_mistral_bias_');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/mistral.m4a');
+        await file.writeAsBytes([1, 2, 3]);
+
+        final mockCloud = MockCloudInferenceRepository();
+        when(
+          () => mockCloud.generateWithAudio(
+            any(),
+            model: any(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            overrideClient: any(named: 'overrideClient'),
+            tools: any(named: 'tools'),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.value(
+            const CreateChatCompletionStreamResponse(
+              id: '1',
+              object: 'chat.completion.chunk',
+              created: 0,
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'mistral biased',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+            cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final svc = container.read(audioTranscriptionServiceProvider);
+        final result = await svc.transcribe(
+          file.path,
+          speechDictionaryTerms: const ['Claude Code', 'macOS'],
+        );
+
+        expect(result, 'mistral biased');
+        final captured = verify(
+          () => mockCloud.generateWithAudio(
+            any(),
+            model: captureAny(named: 'model'),
+            audioBase64: any(named: 'audioBase64'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            overrideClient: any(named: 'overrideClient'),
+            tools: any(named: 'tools'),
+            speechDictionaryTerms: captureAny(named: 'speechDictionaryTerms'),
+          ),
+        ).captured;
+        expect(captured[0], 'voxtral-mini-latest');
+        expect(captured[1], ['Claude Code', 'macOS']);
+      },
+    );
   });
 }

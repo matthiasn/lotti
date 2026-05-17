@@ -406,6 +406,33 @@ void main() {
       },
     );
 
+    test(
+      'clears baseUrl when switching to a provider that does not use one',
+      () async {
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
+
+        controller
+          ..inferenceProviderTypeChanged(InferenceProviderType.gemini)
+          ..inferenceProviderTypeChanged(InferenceProviderType.mlxAudio);
+
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
+
+        expect(controller.baseUrlController.text, isEmpty);
+        expect(formState?.baseUrl.value, isEmpty);
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.mlxAudio),
+        );
+      },
+    );
+
     test('should set baseUrl when Gemini provider type is selected', () async {
       // Arrange
       final controller = container.read(

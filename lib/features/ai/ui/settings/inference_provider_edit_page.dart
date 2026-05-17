@@ -21,6 +21,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_compo
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -333,7 +334,12 @@ class _InferenceProviderEditPageState
           if (fireFtueWorkflow &&
               context.mounted &&
               config is AiConfigInferenceProvider) {
-            await _offerFtueSetupIfFirstProvider(config);
+            if (config.inferenceProviderType ==
+                InferenceProviderType.mlxAudio) {
+              await _offerMlxAudioInstall(config);
+            } else {
+              await _offerFtueSetupIfFirstProvider(config);
+            }
           }
         } else {
           await controller.updateConfig(config);
@@ -584,6 +590,9 @@ class _InferenceProviderEditPageState
     final needsApiKey = !ProviderConfig.noApiKeyRequired.contains(
       formState.inferenceProviderType,
     );
+    final usesBaseUrl = ProviderConfig.usesBaseUrl(
+      formState.inferenceProviderType,
+    );
     final apiKeySuffix = IconButton(
       icon: Icon(
         _showApiKey ? Icons.visibility_off_rounded : Icons.visibility_rounded,
@@ -655,46 +664,53 @@ class _InferenceProviderEditPageState
                 },
               ),
             ],
-            SizedBox(height: tokens.spacing.step6),
-            _FlatField(
-              label: messages.aiProviderConnectFieldBaseUrlLabelOptional,
-              hintRight: messages.aiProviderConnectFieldBaseUrlHint,
-              child: AiTextField(
-                label: '',
-                hint: 'https://api.example.com',
-                controller: formController.baseUrlController,
-                onChanged: (value) {
-                  formController.baseUrlChanged(value);
-                  _scheduleConnectionVerify(
-                    providerType: formState.inferenceProviderType,
-                    apiKey: formController.apiKeyController.text,
-                    baseUrl: value,
-                  );
-                },
-                validator: (_) => formState.baseUrl.error?.displayMessage,
-                keyboardType: TextInputType.url,
+            if (usesBaseUrl) ...[
+              SizedBox(height: tokens.spacing.step6),
+              _FlatField(
+                label: messages.aiProviderConnectFieldBaseUrlLabelOptional,
+                hintRight: messages.aiProviderConnectFieldBaseUrlHint,
+                child: AiTextField(
+                  label: '',
+                  hint: messages.aiProviderConnectFieldBaseUrlPlaceholder,
+                  controller: formController.baseUrlController,
+                  onChanged: (value) {
+                    formController.baseUrlChanged(value);
+                    _scheduleConnectionVerify(
+                      providerType: formState.inferenceProviderType,
+                      apiKey: formController.apiKeyController.text,
+                      baseUrl: value,
+                    );
+                  },
+                  validator: (_) => formState.baseUrl.error?.displayMessage,
+                  keyboardType: TextInputType.url,
+                ),
               ),
-            ),
-            // Only carve out the gap when the strip below is actually
-            // going to render — when no probe has run, the strip
-            // collapses to `SizedBox.shrink()` and a fixed gap above
-            // it would leave a phantom void of whitespace between the
-            // base-URL field and the privacy hint.
-            if (ref.watch(
-                  connectionVerifierControllerProvider(
-                    formState.inferenceProviderType,
-                  ),
-                )
-                is! ConnectionCheckIdle)
-              SizedBox(height: tokens.spacing.step5),
-            _ConnectionStatusStrip(
-              providerType: formState.inferenceProviderType,
-              onRetest: () => _retryConnectionVerify(
+              // Only carve out the gap when the strip below is actually
+              // going to render — when no probe has run, the strip
+              // collapses to `SizedBox.shrink()` and a fixed gap above
+              // it would leave a phantom void of whitespace between the
+              // base-URL field and the privacy hint.
+              if (ref.watch(
+                    connectionVerifierControllerProvider(
+                      formState.inferenceProviderType,
+                    ),
+                  )
+                  is! ConnectionCheckIdle)
+                SizedBox(height: tokens.spacing.step5),
+              _ConnectionStatusStrip(
                 providerType: formState.inferenceProviderType,
-                apiKey: formController.apiKeyController.text,
-                baseUrl: formController.baseUrlController.text,
+                onRetest: () => _retryConnectionVerify(
+                  providerType: formState.inferenceProviderType,
+                  apiKey: formController.apiKeyController.text,
+                  baseUrl: formController.baseUrlController.text,
+                ),
               ),
-            ),
+            ] else ...[
+              SizedBox(height: tokens.spacing.step6),
+              _EmbeddedProviderHint(
+                providerType: formState.inferenceProviderType,
+              ),
+            ],
           ],
         ),
       );
@@ -726,16 +742,23 @@ class _InferenceProviderEditPageState
                 validator: (_) => formState.name.error?.displayMessage,
                 prefixIcon: Icons.label_outline_rounded,
               ),
-              SizedBox(height: tokens.spacing.step6),
-              AiTextField(
-                label: messages.apiKeyBaseUrlLabel,
-                hint: 'https://api.example.com',
-                controller: formController.baseUrlController,
-                onChanged: formController.baseUrlChanged,
-                validator: (_) => formState.baseUrl.error?.displayMessage,
-                keyboardType: TextInputType.url,
-                prefixIcon: Icons.link_rounded,
-              ),
+              if (usesBaseUrl) ...[
+                SizedBox(height: tokens.spacing.step6),
+                AiTextField(
+                  label: messages.apiKeyBaseUrlLabel,
+                  hint: messages.aiProviderConnectFieldBaseUrlPlaceholder,
+                  controller: formController.baseUrlController,
+                  onChanged: formController.baseUrlChanged,
+                  validator: (_) => formState.baseUrl.error?.displayMessage,
+                  keyboardType: TextInputType.url,
+                  prefixIcon: Icons.link_rounded,
+                ),
+              ] else ...[
+                SizedBox(height: tokens.spacing.step6),
+                _EmbeddedProviderHint(
+                  providerType: formState.inferenceProviderType,
+                ),
+              ],
             ],
           ),
           SizedBox(height: tokens.spacing.step7),
@@ -820,6 +843,28 @@ class _InferenceProviderEditPageState
 
     // Perform FTUE setup for supported provider types
     await _performFtueSetupForProvider(config: config);
+  }
+
+  Future<void> _offerMlxAudioInstall(AiConfigInferenceProvider config) async {
+    if (!mounted) return;
+
+    final repository = ref.read(aiConfigRepositoryProvider);
+    final allModels = await repository.getConfigsByType(AiConfigType.model);
+    final providerModels = allModels
+        .whereType<AiConfigModel>()
+        .where((m) => m.inferenceProviderId == config.id)
+        .where(isMlxAudioSpeechToTextModel)
+        .toList(growable: false);
+    if (providerModels.isEmpty || !mounted) return;
+
+    final model = await MlxAudioModelInstallChoiceDialog.show(
+      context: context,
+      models: providerModels,
+      recommendedModelId: mlxAudioRecommendedSttModelId,
+    );
+    if (model == null || !mounted) return;
+
+    await MlxAudioModelDownloadDialog.show(context: context, model: model);
   }
 
   /// Performs FTUE setup flow for a supported provider.
@@ -990,6 +1035,44 @@ class _ProviderTypeField extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EmbeddedProviderHint extends StatelessWidget {
+  const _EmbeddedProviderHint({required this.providerType});
+
+  final InferenceProviderType providerType;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final visual = aiProviderVisual(
+      type: providerType,
+      tokens: tokens,
+      messages: context.messages,
+    );
+    return Container(
+      padding: EdgeInsets.all(tokens.spacing.step4),
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(color: visual.accent.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.memory_rounded, color: visual.accent),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: Text(
+              context.messages.aiProviderEmbeddedRuntimeHint,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

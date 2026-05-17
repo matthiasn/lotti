@@ -106,7 +106,7 @@ void main() {
         expect(responses.first.id, startsWith('mistral-transcription-'));
       });
 
-      test('includes context_bias field with single-word terms', () async {
+      test('includes context_bias field with dictionary terms', () async {
         http.BaseRequest? capturedRequest;
 
         final mockClient = MockClient.streaming(
@@ -145,7 +145,7 @@ void main() {
         expect(multipart.files.first.filename, equals('audio.m4a'));
       });
 
-      test('splits multi-word terms into individual words', () async {
+      test('preserves multi-word context_bias phrases', () async {
         http.BaseRequest? capturedRequest;
 
         final mockClient = MockClient.streaming(
@@ -173,16 +173,13 @@ void main() {
             .toList();
 
         final multipart = capturedRequest! as http.MultipartRequest;
-        final terms = multipart.fields['context_bias']!.split(',');
-        expect(terms, containsAll(['Claude', 'Code', 'macOS', 'Nano']));
-        expect(terms, containsAll(['Banana', 'Pro']));
-        // Each term should be a single word (no spaces)
-        for (final term in terms) {
-          expect(term, isNot(contains(' ')));
-        }
+        expect(
+          multipart.fields['context_bias'],
+          equals('Claude Code,macOS,Nano Banana Pro'),
+        );
       });
 
-      test('deduplicates words from multi-word terms', () async {
+      test('deduplicates repeated context_bias terms', () async {
         http.BaseRequest? capturedRequest;
 
         final mockClient = MockClient.streaming(
@@ -205,18 +202,51 @@ void main() {
               audioBase64: testAudioBase64,
               baseUrl: testBaseUrl,
               apiKey: testApiKey,
-              contextBias: ['Gemini Pro', 'Gemini Flash'],
+              contextBias: ['Gemini Pro', 'Gemini Pro', 'Gemini Flash'],
             )
             .toList();
 
         final multipart = capturedRequest! as http.MultipartRequest;
         final terms = multipart.fields['context_bias']!.split(',');
-        // "Gemini" appears in both terms but should only appear once
         expect(
-          terms.where((t) => t == 'Gemini').length,
+          terms.where((t) => t == 'Gemini Pro').length,
           equals(1),
         );
-        expect(terms, containsAll(['Gemini', 'Pro', 'Flash']));
+        expect(terms, containsAll(['Gemini Pro', 'Gemini Flash']));
+      });
+
+      test('limits context_bias to 100 terms', () async {
+        http.BaseRequest? capturedRequest;
+
+        final mockClient = MockClient.streaming(
+          (request, _) async {
+            capturedRequest = request;
+            return http.StreamedResponse(
+              Stream.value(
+                utf8.encode(jsonEncode({'text': 'transcribed text'})),
+              ),
+              200,
+            );
+          },
+        );
+
+        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+
+        await repo
+            .transcribeAudio(
+              model: testModel,
+              audioBase64: testAudioBase64,
+              baseUrl: testBaseUrl,
+              apiKey: testApiKey,
+              contextBias: List.generate(101, (index) => 'Term$index'),
+            )
+            .toList();
+
+        final multipart = capturedRequest! as http.MultipartRequest;
+        final terms = multipart.fields['context_bias']!.split(',');
+        expect(terms, hasLength(100));
+        expect(terms.first, 'Term0');
+        expect(terms.last, 'Term99');
       });
 
       test('does not include context_bias field when null', () async {

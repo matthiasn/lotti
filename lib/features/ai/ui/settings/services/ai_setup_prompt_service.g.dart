@@ -55,7 +55,7 @@ final class AiSetupPromptServiceProvider
 }
 
 String _$aiSetupPromptServiceHash() =>
-    r'a393e9e1eb9e17b14c5e9ffedee4625cde3239d7';
+    r'ef1065eb7208b63b7099beb61c5412e88b39f94c';
 
 /// Service that manages the automatic AI setup prompt for new users.
 ///

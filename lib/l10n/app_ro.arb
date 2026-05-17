@@ -571,6 +571,44 @@
   "aiInferenceErrorTimeoutTitle": "Timp de așteptare depășit",
   "aiInferenceErrorUnknownTitle": "Eroare",
   "aiInternalsTitle": "Componente interne ale agentului",
+  "aiModelDownloadCloseButton": "Închideți",
+  "aiModelDownloadDialogDescription": "Lotti va descărca {modelName} în cache-ul MLX Audio și îl va utiliza pentru procesarea vocală locală.",
+  "@aiModelDownloadDialogDescription": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadDialogTitle": "Instalați {modelName}",
+  "@aiModelDownloadDialogTitle": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadInstallTooltip": "Instalați modelul",
+  "aiModelDownloadOpenProgressTooltip": "Afișați progresul descărcării",
+  "aiModelDownloadStatusChecking": "Se verifică starea modelului",
+  "aiModelDownloadStatusDownloading": "Se descarcă {percent} %",
+  "@aiModelDownloadStatusDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "aiModelDownloadStatusDownloadingIndeterminate": "Se descarcă",
+  "aiModelDownloadStatusFailed": "Descărcarea a eșuat",
+  "aiModelDownloadStatusInstalled": "Instalat",
+  "aiModelDownloadStatusNotInstalled": "Neinstalat",
+  "aiModelDownloadStatusUnsupported": "Apple Silicon necesar",
+  "aiModelInstallChoiceCancelButton": "Anulați",
+  "aiModelInstallChoiceDescription": "Alegeți mai întâi modelul local speech-to-text de descărcat. Puteți instala celelalte modele mai târziu din lista de modele.",
+  "aiModelInstallChoiceInstallButton": "Instalați modelul",
+  "aiModelInstallChoiceRecommended": "Recomandat",
+  "aiModelInstallChoiceTitle": "Alegeți modelul MLX Audio",
   "aiOllamaModelInstalledSuccessfully": "Modelul „{modelName}” a fost instalat cu succes!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -639,6 +677,7 @@
   "aiProviderConnectBreadcrumbAdd": "Adăugați furnizor",
   "aiProviderConnectFieldBaseUrlHint": "Lăsați necompletat pentru a folosi punctul final implicit",
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL de bază (opțional)",
+  "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Apare în lista dvs. de furnizori",
   "aiProviderConnectionCheckingLabel": "Se verifică cheia, se listează modelele disponibile…",
   "aiProviderConnectionFailedBadResponseDetail": "Formă de răspuns neașteptată: {type}",
@@ -735,12 +774,15 @@
   "aiProviderDetailRemoveDescription": "Șterge furnizorul și toate modelele care depind de el. Acțiune ireversibilă.",
   "aiProviderDetailRemoveTitle": "Eliminați acest furnizor",
   "aiProviderDetailValueUnset": "Nesetat",
+  "aiProviderEmbeddedRuntimeHint": "Rulează integrat în procesul aplicației Apple. Nu este necesar un server local sau un URL de bază.",
   "aiProviderGeminiDescription": "Modele AI Gemini de la Google",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiDescription": "API compatibil cu formatul OpenAI",
   "aiProviderGenericOpenAiName": "Compatibil OpenAI",
   "aiProviderMistralDescription": "API cloud Mistral AI cu transcriere audio nativă",
   "aiProviderMistralName": "Mistral",
+  "aiProviderMlxAudioDescription": "Modele MLX Audio integrate pentru STT și TTS locale pe Apple Silicon",
+  "aiProviderMlxAudioName": "MLX Audio (local)",
   "aiProviderNebiusAiStudioDescription": "Modele Nebius AI Studio",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaDescription": "Rulează inferența local cu Ollama",
@@ -755,6 +797,7 @@
   "aiProviderTaglineAlibaba": "Modele Qwen · multimodal · context lung",
   "aiProviderTaglineAnthropic": "Familia Claude · context lung",
   "aiProviderTaglineGemini": "Multimodal · transcriere audio",
+  "aiProviderTaglineMlxAudio": "Integrat · Apple Silicon · audio local",
   "aiProviderTaglineOllama": "Rulează local · fără apeluri în cloud",
   "aiProviderTaglineOpenAi": "Familia GPT · vision + raționament",
   "aiProviderUnknownName": "Furnizor AI",
@@ -942,6 +985,7 @@
   "aiSetupWizardRunningButton": "Se rulează...",
   "aiSetupWizardSafeToRunMultiple": "Poate fi rulat de mai multe ori - elementele existente vor fi păstrate",
   "aiSetupWizardTitle": "Asistent de configurare AI",
+  "aiSummarySpeakTooltip": "Citiți rezumatul local cu voce tare",
   "aiTaskSummaryTitle": "Rezumatul sarcinii AI",
   "apiKeyAddPageTitle": "Adaugă furnizor",
   "apiKeyAuthenticationDescription": "Securizați conexiunea API",
@@ -1192,6 +1236,8 @@
   "configFlagAttemptEmbeddingDescription": "Când este activată, aplicația va încerca să genereze încorporări pentru intrările dvs. pentru a îmbunătăți căutarea și sugestiile de conținut corelat.",
   "configFlagEnableAiStreaming": "Activează streamingul AI pentru acțiunile legate de sarcini",
   "configFlagEnableAiStreamingDescription": "Transmite răspunsurile AI pentru acțiunile legate de sarcini. Dezactivați pentru a stoca răspunsurile în buffer și a menține interfața mai fluidă.",
+  "configFlagEnableAiSummaryTts": "Redare rezumate AI",
+  "configFlagEnableAiSummaryTtsDescription": "Afișează butonul local text-to-speech pentru rezumatele AI ale sarcinilor. Necesită un model TTS MLX Audio instalat.",
   "configFlagEnableDailyOs": "Activează DailyOS",
   "configFlagEnableDailyOsDescription": "Afișează DailyOS în navigarea principală.",
   "configFlagEnableDashboardsPage": "Activează pagina Tablouri de bord",

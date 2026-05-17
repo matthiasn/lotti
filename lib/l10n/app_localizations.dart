@@ -2299,6 +2299,108 @@ abstract class AppLocalizations {
   /// **'Agent internals'**
   String get aiInternalsTitle;
 
+  /// No description provided for @aiModelDownloadCloseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get aiModelDownloadCloseButton;
+
+  /// No description provided for @aiModelDownloadDialogDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti will download {modelName} into the MLX Audio cache and use it for local speech processing.'**
+  String aiModelDownloadDialogDescription(String modelName);
+
+  /// No description provided for @aiModelDownloadDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install {modelName}'**
+  String aiModelDownloadDialogTitle(String modelName);
+
+  /// No description provided for @aiModelDownloadInstallTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Install model'**
+  String get aiModelDownloadInstallTooltip;
+
+  /// No description provided for @aiModelDownloadOpenProgressTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show download progress'**
+  String get aiModelDownloadOpenProgressTooltip;
+
+  /// No description provided for @aiModelInstallChoiceCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get aiModelInstallChoiceCancelButton;
+
+  /// No description provided for @aiModelInstallChoiceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the local speech-to-text model to download first. You can install the others later from the model list.'**
+  String get aiModelInstallChoiceDescription;
+
+  /// No description provided for @aiModelInstallChoiceInstallButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Install model'**
+  String get aiModelInstallChoiceInstallButton;
+
+  /// No description provided for @aiModelInstallChoiceRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get aiModelInstallChoiceRecommended;
+
+  /// No description provided for @aiModelInstallChoiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose MLX Audio model'**
+  String get aiModelInstallChoiceTitle;
+
+  /// No description provided for @aiModelDownloadStatusChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking model status'**
+  String get aiModelDownloadStatusChecking;
+
+  /// No description provided for @aiModelDownloadStatusDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {percent}%'**
+  String aiModelDownloadStatusDownloading(int percent);
+
+  /// No description provided for @aiModelDownloadStatusDownloadingIndeterminate.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading'**
+  String get aiModelDownloadStatusDownloadingIndeterminate;
+
+  /// No description provided for @aiModelDownloadStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Download failed'**
+  String get aiModelDownloadStatusFailed;
+
+  /// No description provided for @aiModelDownloadStatusInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get aiModelDownloadStatusInstalled;
+
+  /// No description provided for @aiModelDownloadStatusNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Not installed'**
+  String get aiModelDownloadStatusNotInstalled;
+
+  /// No description provided for @aiModelDownloadStatusUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple Silicon required'**
+  String get aiModelDownloadStatusUnsupported;
+
   /// No description provided for @aiOllamaModelInstalledSuccessfully.
   ///
   /// In en, this message translates to:
@@ -2478,6 +2580,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Base URL (optional)'**
   String get aiProviderConnectFieldBaseUrlLabelOptional;
+
+  /// No description provided for @aiProviderConnectFieldBaseUrlPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'https://api.example.com'**
+  String get aiProviderConnectFieldBaseUrlPlaceholder;
 
   /// No description provided for @aiProviderConnectFieldDisplayNameHint.
   ///
@@ -2725,6 +2833,12 @@ abstract class AppLocalizations {
   /// **'Not set'**
   String get aiProviderDetailValueUnset;
 
+  /// No description provided for @aiProviderEmbeddedRuntimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs embedded in the Apple app process. No local server or Base URL is required.'**
+  String get aiProviderEmbeddedRuntimeHint;
+
   /// No description provided for @aiProviderGeminiDescription.
   ///
   /// In en, this message translates to:
@@ -2760,6 +2874,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mistral'**
   String get aiProviderMistralName;
+
+  /// No description provided for @aiProviderMlxAudioDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedded MLX Audio models for local STT and TTS on Apple Silicon'**
+  String get aiProviderMlxAudioDescription;
+
+  /// No description provided for @aiProviderMlxAudioName.
+  ///
+  /// In en, this message translates to:
+  /// **'MLX Audio (local)'**
+  String get aiProviderMlxAudioName;
 
   /// No description provided for @aiProviderNebiusAiStudioDescription.
   ///
@@ -2844,6 +2970,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Multimodal · audio transcription'**
   String get aiProviderTaglineGemini;
+
+  /// No description provided for @aiProviderTaglineMlxAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Embedded · Apple Silicon · local audio'**
+  String get aiProviderTaglineMlxAudio;
 
   /// No description provided for @aiProviderTaglineOllama.
   ///
@@ -3312,6 +3444,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Setup Wizard'**
   String get aiSetupWizardTitle;
+
+  /// No description provided for @aiSummarySpeakTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Read summary aloud locally'**
+  String get aiSummarySpeakTooltip;
 
   /// No description provided for @aiTaskSummaryTitle.
   ///
@@ -4224,6 +4362,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.'**
   String get configFlagAttemptEmbeddingDescription;
+
+  /// No description provided for @configFlagEnableAiSummaryTts.
+  ///
+  /// In en, this message translates to:
+  /// **'AI summary playback'**
+  String get configFlagEnableAiSummaryTts;
+
+  /// No description provided for @configFlagEnableAiSummaryTtsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the local text-to-speech button on task AI summaries. Requires an installed MLX Audio TTS model.'**
+  String get configFlagEnableAiSummaryTtsDescription;
 
   /// No description provided for @configFlagEnableAiStreaming.
   ///

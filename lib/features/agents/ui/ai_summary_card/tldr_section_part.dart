@@ -10,6 +10,7 @@ class _TldrHeader extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.onAgentTap,
+    required this.onSpeak,
     required this.isRunning,
     required this.showCountdown,
     required this.nextWakeAt,
@@ -23,6 +24,7 @@ class _TldrHeader extends StatelessWidget {
   final bool expanded;
   final VoidCallback onToggle;
   final VoidCallback onAgentTap;
+  final VoidCallback? onSpeak;
   final bool isRunning;
   final bool showCountdown;
   final DateTime? nextWakeAt;
@@ -143,6 +145,12 @@ class _TldrHeader extends StatelessWidget {
             compact: true,
           ),
         ],
+        if (onSpeak != null)
+          _IconAffordance(
+            icon: Icons.volume_up_rounded,
+            tooltip: messages.aiSummarySpeakTooltip,
+            onPressed: onSpeak!,
+          ),
         if (hasMore) _ReadMorePill(expanded: expanded, onPressed: onToggle),
       ];
     }

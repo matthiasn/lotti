@@ -113,9 +113,10 @@ void main() {
       },
     );
 
-    test(
+    testWidgets(
       'in desktop mode, buildPages resets the desktop task detail stack',
-      () {
+      (tester) async {
+        await tester.pumpWidget(const SizedBox.shrink());
         final taskId = const Uuid().v4();
 
         when(() => mockNavService.isDesktopMode).thenReturn(true);
@@ -137,13 +138,17 @@ void main() {
 
         location.buildPages(mockBuildContext, newBeamState);
 
+        verifyNever(() => mockNavService.resetDesktopTaskDetail(any()));
+        await tester.pump();
+
         verify(() => mockNavService.resetDesktopTaskDetail(taskId)).called(1);
       },
     );
 
-    test(
+    testWidgets(
       'in desktop mode without a task id, buildPages clears the stack',
-      () {
+      (tester) async {
+        await tester.pumpWidget(const SizedBox.shrink());
         when(() => mockNavService.isDesktopMode).thenReturn(true);
         when(
           () => mockNavService.resetDesktopTaskDetail(any()),
@@ -154,6 +159,9 @@ void main() {
         final beamState = BeamState.fromRouteInformation(routeInformation);
 
         location.buildPages(mockBuildContext, beamState);
+
+        verifyNever(() => mockNavService.resetDesktopTaskDetail(any()));
+        await tester.pump();
 
         verify(() => mockNavService.resetDesktopTaskDetail(null)).called(1);
       },

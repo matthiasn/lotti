@@ -133,7 +133,7 @@ bool isProviderDraft(AiConfigInferenceProvider provider) {
 
 /// Returns the **bare host** of the public console where the user
 /// can obtain an API key for [type], or `null` when no such page
-/// exists (Ollama runs locally; whisper/voxtral are local-only).
+/// exists (Ollama/MLX Audio run locally; whisper/voxtral are local-only).
 ///
 /// Powers the "Get a key at …" hint rendered next to the API-key
 /// field on the connect form. The host-only form is intentional:
@@ -170,6 +170,7 @@ IconData aiProviderIcon(InferenceProviderType? type) {
     InferenceProviderType.anthropic => Icons.psychology_rounded,
     InferenceProviderType.ollama => Icons.computer_rounded,
     InferenceProviderType.mistral => Icons.air_rounded,
+    InferenceProviderType.mlxAudio => Icons.memory_rounded,
     InferenceProviderType.alibaba => Icons.cloud_rounded,
     _ => Icons.smart_toy_rounded,
   };
@@ -190,6 +191,7 @@ String aiProviderDisplayName({
     InferenceProviderType.anthropic => messages.aiProviderAnthropicName,
     InferenceProviderType.ollama => messages.aiProviderOllamaName,
     InferenceProviderType.mistral => messages.aiProviderMistralName,
+    InferenceProviderType.mlxAudio => messages.aiProviderMlxAudioName,
     InferenceProviderType.alibaba => messages.aiProviderAlibabaName,
     InferenceProviderType.openRouter => messages.aiProviderOpenRouterName,
     InferenceProviderType.nebiusAiStudio =>
@@ -202,11 +204,9 @@ String aiProviderDisplayName({
 }
 
 /// One-line tagline shown under the display name on the provider
-/// cards + quick-add tiles. Matches the design copy: "Free tier ·
-/// multimodal · audio transcription" for Gemini, etc. Returns an
-/// empty string for provider types that haven't been given a tagline
-/// in the redesign yet (and for `null`) — callers should
-/// `if (tagline.isNotEmpty)` before rendering.
+/// cards + quick-add tiles. Returns an empty string for provider types
+/// that haven't been given a tagline in the redesign yet (and for `null`) —
+/// callers should `if (tagline.isNotEmpty)` before rendering.
 String aiProviderTagline({
   required InferenceProviderType? type,
   required AppLocalizations messages,
@@ -216,6 +216,7 @@ String aiProviderTagline({
     InferenceProviderType.openAi => messages.aiProviderTaglineOpenAi,
     InferenceProviderType.anthropic => messages.aiProviderTaglineAnthropic,
     InferenceProviderType.ollama => messages.aiProviderTaglineOllama,
+    InferenceProviderType.mlxAudio => messages.aiProviderTaglineMlxAudio,
     InferenceProviderType.alibaba => messages.aiProviderTaglineAlibaba,
     _ => '',
   };

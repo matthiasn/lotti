@@ -58,7 +58,7 @@ final class InferenceProviderFormControllerProvider
 }
 
 String _$inferenceProviderFormControllerHash() =>
-    r'29cb044ee00273e51b41177ea43827d6865284f2';
+    r'c5b2ad8a1710e89e31858d2fe6d9cde414fb4aa9';
 
 final class InferenceProviderFormControllerFamily extends $Family
     with

@@ -435,7 +435,7 @@ void main() {
     expect(cancelCalled, isTrue);
   });
 
-  testWidgets('mode toggle switches between realtime and batch', (
+  testWidgets('hides realtime mode toggle while realtime UI is disabled', (
     tester,
   ) async {
     final mockRealtime = _realtimeServiceWithConfig();
@@ -452,14 +452,8 @@ void main() {
 
     await tester.pump();
 
-    expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
     expect(find.byIcon(Icons.mic), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.graphic_eq));
-    await tester.pumpAndSettle();
-
-    expect(find.byIcon(Icons.mic), findsOneWidget);
-    expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
+    expect(find.byIcon(Icons.graphic_eq), findsNothing);
   });
 
   testWidgets('text field has send action configured', (tester) async {
@@ -493,7 +487,9 @@ void main() {
     expect(textField.onSubmitted, isNull);
   });
 
-  testWidgets('shows realtime mode toggle when available', (tester) async {
+  testWidgets('keeps batch mic when realtime model is configured', (
+    tester,
+  ) async {
     final mockRealtime = _realtimeServiceWithConfig();
 
     await tester.pumpWidget(
@@ -509,10 +505,13 @@ void main() {
     await tester.pump();
 
     expect(find.byIcon(Icons.mic), findsOneWidget);
-    expect(find.byIcon(Icons.graphic_eq), findsOneWidget);
+    expect(find.byIcon(Icons.graphic_eq), findsNothing);
   });
 
-  testWidgets('mic tap in realtime mode calls startRealtime', (tester) async {
+  testWidgets('mic tap starts batch while realtime UI is disabled', (
+    tester,
+  ) async {
+    var startCalled = false;
     var startRealtimeCalled = false;
     final mockRealtime = _realtimeServiceWithConfig();
 
@@ -522,6 +521,7 @@ void main() {
         overrides: [
           chatRecorderControllerProvider.overrideWith(
             () => _IdleControllerWithCallbacks(
+              onStartCalled: () => startCalled = true,
               onStartRealtimeCalled: () => startRealtimeCalled = true,
             ),
           ),
@@ -532,15 +532,11 @@ void main() {
 
     await tester.pump();
 
-    // Toggle to realtime mode
-    await tester.tap(find.byIcon(Icons.graphic_eq));
+    await tester.tap(find.byIcon(Icons.mic));
     await tester.pumpAndSettle();
 
-    // In realtime mode the filled button shows graphic_eq icon
-    await tester.tap(find.byIcon(Icons.graphic_eq).last);
-    await tester.pumpAndSettle();
-
-    expect(startRealtimeCalled, isTrue);
+    expect(startCalled, isTrue);
+    expect(startRealtimeCalled, isFalse);
   });
 
   testWidgets('escape key during realtime recording calls cancel', (
@@ -754,9 +750,11 @@ class _ProcessingRecorderController extends ChatRecorderController {
 /// Test controller that starts idle and tracks startRealtime calls
 class _IdleControllerWithCallbacks extends ChatRecorderController {
   _IdleControllerWithCallbacks({
+    this.onStartCalled,
     this.onStartRealtimeCalled,
   });
 
+  final VoidCallback? onStartCalled;
   final VoidCallback? onStartRealtimeCalled;
 
   @override
@@ -773,7 +771,9 @@ class _IdleControllerWithCallbacks extends ChatRecorderController {
   }
 
   @override
-  Future<void> start() async {}
+  Future<void> start() async {
+    onStartCalled?.call();
+  }
 }
 
 /// Test controller that can emit a transcript to trigger the subscription

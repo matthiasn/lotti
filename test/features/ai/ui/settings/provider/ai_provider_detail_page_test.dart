@@ -438,6 +438,61 @@ void main() {
     );
 
     testWidgets(
+      'active profile summary resolves slots against every configured model',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 1600));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final mlxProvider = buildProvider(
+          type: InferenceProviderType.mlxAudio,
+          name: 'MLX Audio',
+          apiKey: '',
+          baseUrl: '',
+        );
+        final transcriptionModel = buildModel(
+          id: 'm-stt',
+          providerId: mlxProvider.id,
+          name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+          providerModelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+        );
+        final thinkingModel = buildModel(
+          id: 'm-thinking',
+          providerId: 'provider-ollama',
+          name: 'Qwen 3.6 35B-A3B Coding (NVFP4)',
+          providerModelId: 'qwen3.6:35b-a3b-coding',
+        );
+        final profile = buildProfile(
+          id: 'p-local',
+          name: 'Local (Ollama)',
+          isDefault: true,
+          thinking: thinkingModel.providerModelId,
+          transcription: transcriptionModel.providerModelId,
+        );
+
+        await pumpWith(
+          tester: tester,
+          provider: mlxProvider,
+          models: [transcriptionModel, thinkingModel],
+          profiles: [profile],
+        );
+
+        expect(find.text('Active profile'), findsOneWidget);
+        expect(find.text('Local (Ollama)'), findsOneWidget);
+        expect(find.text('Qwen 3.6 35B-A3B Coding (NVFP4)'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AiProfileCard),
+            matching: find.text('Qwen3 ASR 1.7B (MLX 8-bit)'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('missing'), findsNothing);
+
+        await settleTimers(tester);
+      },
+    );
+
+    testWidgets(
       'active profile section is omitted when no profile references any of '
       "the provider's models",
       (tester) async {

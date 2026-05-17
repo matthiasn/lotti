@@ -11,6 +11,13 @@
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		4016230B4975ED50F0A482EF /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 92D91E266C343C8D4FB2CAB2 /* Pods_Runner.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		5A4D00032D00000100000001 /* MlxAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A4D00022D00000100000001 /* MlxAudio.swift */; };
+		5A4D02012D00000200000001 /* MLXAudioCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D02112D00000200000001 /* MLXAudioCore */; };
+		5A4D02022D00000200000001 /* MLXAudioSTT in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D02122D00000200000001 /* MLXAudioSTT */; };
+		5A4D02042D00000200000001 /* MLXAudioVAD in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D02142D00000200000001 /* MLXAudioVAD */; };
+		5A4D02052D00000200000001 /* MLXAudioG2P in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D02152D00000200000001 /* MLXAudioG2P */; };
+		5A4D02062D00000200000001 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D02162D00000200000001 /* MLX */; };
+		5A4D02072D00000200000001 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D02172D00000200000001 /* HuggingFace */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
@@ -48,6 +55,7 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA0000001ED2DC5600515810 /* AudioConverter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioConverter.swift; sourceTree = "<group>"; };
+		5A4D00022D00000100000001 /* MlxAudio.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MlxAudio.swift; sourceTree = "<group>"; };
 		AD0869BB271438AF00225DF9 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = Flutter/Base.xcconfig; sourceTree = "<group>"; };
 		ADAEC2742738A8F200996377 /* RunnerRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerRelease.entitlements; sourceTree = "<group>"; };
 		ADB650B5270B3C4300B98C66 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
@@ -62,6 +70,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A4D02012D00000200000001 /* MLXAudioCore in Frameworks */,
+				5A4D02022D00000200000001 /* MLXAudioSTT in Frameworks */,
+				5A4D02042D00000200000001 /* MLXAudioVAD in Frameworks */,
+				5A4D02052D00000200000001 /* MLXAudioG2P in Frameworks */,
+				5A4D02062D00000200000001 /* MLX in Frameworks */,
+				5A4D02072D00000200000001 /* HuggingFace in Frameworks */,
 				ADB650B7270B3C4300B98C66 /* HealthKit.framework in Frameworks */,
 				4016230B4975ED50F0A482EF /* Pods_Runner.framework in Frameworks */,
 			);
@@ -124,6 +138,7 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				AA0000001ED2DC5600515810 /* AudioConverter.swift */,
+				5A4D00022D00000100000001 /* MlxAudio.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
@@ -161,6 +176,14 @@
 			dependencies = (
 			);
 			name = Runner;
+			packageProductDependencies = (
+				5A4D02112D00000200000001 /* MLXAudioCore */,
+				5A4D02122D00000200000001 /* MLXAudioSTT */,
+				5A4D02142D00000200000001 /* MLXAudioVAD */,
+				5A4D02152D00000200000001 /* MLXAudioG2P */,
+				5A4D02162D00000200000001 /* MLX */,
+				5A4D02172D00000200000001 /* HuggingFace */,
+			);
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
@@ -189,6 +212,11 @@
 				Base,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
+			packageReferences = (
+				5A4D02212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */,
+				5A4D02222D00000200000001 /* XCRemoteSwiftPackageReference "mlx-swift" */,
+				5A4D02232D00000200000001 /* XCRemoteSwiftPackageReference "swift-huggingface" */,
+			);
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -309,6 +337,7 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				AA0000011ED2DC5600515810 /* AudioConverter.swift in Sources */,
+				5A4D00032D00000100000001 /* MlxAudio.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -333,6 +362,66 @@
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5A4D02212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Blaizzy/mlx-audio-swift.git";
+			requirement = {
+				kind = revision;
+				revision = 7734cd1fbbe86460083c1d24199737a24cadfcc8;
+			};
+		};
+		5A4D02222D00000200000001 /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.30.6;
+			};
+		};
+		5A4D02232D00000200000001 /* XCRemoteSwiftPackageReference "swift-huggingface" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-huggingface.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.8.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5A4D02112D00000200000001 /* MLXAudioCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D02212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioCore;
+		};
+		5A4D02122D00000200000001 /* MLXAudioSTT */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D02212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioSTT;
+		};
+		5A4D02142D00000200000001 /* MLXAudioVAD */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D02212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioVAD;
+		};
+		5A4D02152D00000200000001 /* MLXAudioG2P */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D02212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioG2P;
+		};
+		5A4D02162D00000200000001 /* MLX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D02222D00000200000001 /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLX;
+		};
+		5A4D02172D00000200000001 /* HuggingFace */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D02232D00000200000001 /* XCRemoteSwiftPackageReference "swift-huggingface" */;
+			productName = HuggingFace;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
@@ -378,7 +467,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -398,7 +487,7 @@
 				DEVELOPMENT_TEAM = SS586VG7L7;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -465,7 +554,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -516,7 +605,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -540,7 +629,7 @@
 				DEVELOPMENT_TEAM = SS586VG7L7;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -573,7 +662,7 @@
 				DEVELOPMENT_TEAM = SS586VG7L7;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

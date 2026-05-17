@@ -77,6 +77,11 @@ final expectedFlags = <ConfigFlag>{
     status: true,
   ),
   const ConfigFlag(
+    name: enableAiSummaryTtsFlag,
+    description: 'Enable local AI summary playback?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: resendAttachments,
     description: 'Resend Attachments',
     status: false,

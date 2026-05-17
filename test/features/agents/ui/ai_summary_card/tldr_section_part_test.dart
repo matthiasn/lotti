@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -26,6 +29,9 @@ Widget _narrowScope({required double width, DateTime? nextWakeAt}) {
     overrides: [
       taskAgentProvider.overrideWith(
         (ref, id) async => makeTestIdentity(),
+      ),
+      configFlagProvider.overrideWith(
+        (ref, flagName) => Stream.value(false),
       ),
       agentReportProvider.overrideWith(
         (ref, agentId) async => makeTestReport(tldr: 'Tldr line.'),
@@ -87,6 +93,72 @@ void main() {
         expect(find.byIcon(Icons.refresh_rounded), findsNothing);
       },
     );
+
+    testWidgets('hides the summary playback affordance while the flag is off', (
+      tester,
+    ) async {
+      final bench = AgentTestBench(
+        report: makeTestReport(tldr: 'Tldr line.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+    });
+
+    testWidgets('shows the summary playback affordance when the flag is on', (
+      tester,
+    ) async {
+      final bench = AgentTestBench(
+        enableSummaryTts: true,
+        report: makeTestReport(tldr: 'Tldr line.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+    });
+
+    testWidgets('plays the TLDR through the MLX TTS model', (tester) async {
+      final mlxAudioChannel = _RecordingMlxAudioChannel();
+      final bench = AgentTestBench(
+        enableSummaryTts: true,
+        mlxAudioChannel: mlxAudioChannel,
+        report: makeTestReport(tldr: 'Tldr line.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+
+      expect(mlxAudioChannel.spokenTexts, ['Tldr line.']);
+      expect(mlxAudioChannel.modelIds, [mlxAudioDefaultTtsModelId]);
+    });
+
+    testWidgets('shows an error toast when MLX summary playback fails', (
+      tester,
+    ) async {
+      final mlxAudioChannel = _RecordingMlxAudioChannel()
+        ..speakError = Exception('native TTS failed');
+      final bench = AgentTestBench(
+        enableSummaryTts: true,
+        mlxAudioChannel: mlxAudioChannel,
+        report: makeTestReport(tldr: 'Tldr line.'),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.volume_up_rounded));
+      await tester.pump();
+
+      expect(mlxAudioChannel.spokenTexts, isEmpty);
+      expect(find.text('Error'), findsOneWidget);
+    });
 
     testWidgets(
       'lays the header out as a Wrap so the leading block and controls '
@@ -192,4 +264,24 @@ void main() {
       },
     );
   });
+}
+
+class _RecordingMlxAudioChannel extends MlxAudioChannel {
+  final spokenTexts = <String>[];
+  final modelIds = <String>[];
+  Exception? speakError;
+
+  @override
+  Future<void> speakText({
+    required String text,
+    required String modelId,
+    String? language,
+  }) async {
+    final error = speakError;
+    if (error != null) {
+      throw error;
+    }
+    spokenTexts.add(text);
+    modelIds.add(modelId);
+  }
 }

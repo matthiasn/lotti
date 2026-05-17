@@ -175,6 +175,17 @@ Resolution for `resolveForCategory`:
 
 Only the thinking slot is fatal. Optional slots resolve best-effort.
 
+Recording-triggered transcription has a direct fallback in
+`ProfileAutomationService`: it first tries the profile automation path above,
+then scans configured audio-to-text model rows when no profile handles
+transcription. The fallback builds an ephemeral `ResolvedProfile` around the
+selected model and the built-in `Transcribe (Task Context)` skill; it does not
+persist a profile. Candidate ranking prefers the recommended MLX Audio
+Qwen3-ASR model, then other MLX Qwen3-ASR rows, then other configured STT
+providers that have the required API key. This keeps local/mobile STT available
+when the user has installed MLX Audio but the desktop-only local profile is not
+available on that device.
+
 ```mermaid
 flowchart TD
   Trigger["triggerSkillProvider"] --> HasTask{"linkedTaskId != null?"}
@@ -248,17 +259,72 @@ Implementation details that matter:
 
 ## Provider Routing
 
-`CloudInferenceRepository` is the central router despite its name; it also handles local providers such as Ollama, Whisper, and Voxtral.
+`CloudInferenceRepository` is the central router despite its name; it also handles local providers such as Ollama, Whisper, Voxtral, and MLX Audio.
 
 | Operation | Dedicated branches | Fallback |
 | --- | --- | --- |
 | `generate()` | Ollama, Gemini, Mistral | OpenAI-compatible chat streaming |
 | `generateWithImages()` | Ollama | OpenAI-compatible multimodal chat |
-| `generateWithAudio()` | Whisper, Voxtral, OpenAI transcription endpoint, Mistral transcription endpoint | OpenAI-compatible audio chat completions |
+| `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, OpenAI transcription endpoint, Mistral transcription endpoint | OpenAI-compatible audio chat completions |
 | `generateWithMessages()` | Gemini, Ollama, Mistral | OpenAI-compatible full-history chat |
 | `generateImage()` | Gemini, Alibaba DashScope | Unsupported for all other provider types |
 
 This routing is implemented in code, not inferred from documentation. If a provider type is not branched explicitly for an operation, it falls through to the compatibility client or throws `UnsupportedError`.
+
+MLX Audio is intentionally not a localhost provider. Flutter owns provider/model
+configuration and progress state, while `MlxAudioChannel` talks to platform
+Swift over `com.matthiasn.lotti/mlx_audio`. The Swift files compile without the
+MLX package and return `unsupported` unless the MLX Audio SDK is linked on
+Apple Silicon; that keeps Intel macOS builds working with the feature disabled.
+The seeded MLX Audio catalog includes Voxtral Realtime, Qwen3-ASR 0.6B,
+Qwen3-ASR 1.7B 4-bit and 8-bit, Parakeet, and Qwen3-TTS.
+The setup flow asks which STT model to install first, with Qwen3-ASR 1.7B
+8-bit preselected because it is much faster than Voxtral Realtime in
+post-recording use. Voxtral remains available as an explicit comparison model.
+
+Download status is centralized in `MlxAudioModelProgressStore`. The store owns
+the single native EventChannel subscription, keeps the latest payload by model
+id, and exposes `mlxAudioModelProgressProvider(modelId)` to cards and dialogs.
+This prevents provider/model overview rows from stealing the native stream from
+the modal, and lets a running download be reopened from the model row.
+
+Inference does not implicitly download MLX models. `installModel` is the only
+path that downloads from Hugging Face; transcription and realtime start first
+verify that the cache contains a complete model and otherwise return a
+not-installed failure. This keeps a recording-triggered STT run from starting a
+multi-GB background download or loading a partial cache. The Swift bridge also
+logs resource snapshots at `transcribe.request`, model load, audio preparation,
+and generation stages so native crash reports can be matched to the last MLX
+step that ran.
+
+```mermaid
+flowchart LR
+  UI["AI setup / model cards"] --> Config["AiConfig provider + models"]
+  Config --> Progress["mlxAudioModelProgressProvider"]
+  Progress --> Native["MlxAudio Swift bridge"]
+  Native -->|Apple Silicon + SDK linked| MLX["MLX Audio Swift"]
+  Native -->|x86 macOS or SDK absent| Unsupported["unsupported status"]
+  Audio["generateWithAudio()"] --> Installed{"model installed?"}
+  Installed -->|yes| Native
+  Installed -->|no| Missing["not-installed error"]
+  Summary["Summary speak button (enable_ai_summary_tts)"] --> Native
+```
+
+AI-summary TTS remains wired through the native MLX Audio channel on macOS, but
+the task card button is hidden unless `enable_ai_summary_tts` is enabled in
+config flags. The default is off while local TTS model quality and runtime
+behavior are still being evaluated. iOS does not link the upstream
+`MLXAudioTTS` product yet because its Moss TTS target is not archive-safe on
+iOS; the iOS `speakText` method returns `unsupported` while STT remains linked.
+
+For speech dictionary support, `UnifiedAiInferenceRepository` and
+`SkillInferenceRunner` still resolve category dictionary terms through
+`PromptBuilderHelper.getSpeechDictionaryTerms()`. The MLX Audio branch forwards
+those terms across the channel with the transcription request. Qwen3-ASR uses
+that list as prompt context for post-recording transcription today; Mistral
+continues to use its dedicated `context_bias` parameter. Decoder-level
+dictionary/G2P integration remains a separate native bridge follow-up once that
+SDK surface is stable.
 
 ## Embeddings and Semantic Search
 
@@ -333,7 +399,8 @@ The prompt-generation and image-generation skills accept any text-bearing entry 
 - Automatic profile-driven handling currently covers only transcription and image analysis.
 - `imagePromptGeneration` is seeded but not wired for execution in `triggerSkillProvider`.
 - Image generation is currently implemented only for Gemini and Alibaba providers.
-- Data residency is not enforced by code. The actual request destination is whatever `baseUrl` is configured on the selected provider.
+- Data residency is not enforced by code. Most request destinations are whatever `baseUrl` is configured on the selected provider; MLX Audio is the exception and stays inside the app process when supported.
+- MLX Audio model inference is compile-gated in Swift. x86 macOS reports the models as unsupported instead of loading Apple Silicon-only libraries.
 
 ## Reading Guide
 

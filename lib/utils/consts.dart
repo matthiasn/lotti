@@ -4,6 +4,7 @@ const recordLocationFlag = 'record_location';
 const enableMatrixFlag = 'enable_matrix';
 const enableTooltipFlag = 'enable_tooltip';
 const enableAiStreamingFlag = 'enable_ai_streaming';
+const enableAiSummaryTtsFlag = 'enable_ai_summary_tts';
 const resendAttachments = 'resend_attachments';
 const enableLoggingFlag = 'enable_logging';
 

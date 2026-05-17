@@ -42,8 +42,8 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   /// speaker labels (e.g., `[Speaker 1]`, `[Speaker 2]`).
   ///
   /// [contextBias] is a list of words/phrases (up to 100) that the model
-  /// should pay special attention to. Sent as comma-separated single-word
-  /// terms in the `context_bias` multipart form field.
+  /// should pay special attention to. Sent as comma-separated terms in the
+  /// `context_bias` multipart form field.
   Stream<CreateChatCompletionStreamResponse> transcribeAudio({
     required String model,
     required String audioBase64,
@@ -108,17 +108,17 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
             ..fields['timestamp_granularities'] = 'segment';
 
           if (contextBias != null && contextBias.isNotEmpty) {
-            // Mistral requires each context_bias term to be a single word
-            // (pattern: ^[^,\s]+$). Split multi-word terms and deduplicate.
-            // Sent as comma-separated values — Mistral's multipart form
-            // parser splits on commas to build the array.
-            final singleWordTerms = contextBias
-                .expand((term) => term.split(RegExp(r'\s+')))
-                .where((word) => word.isNotEmpty)
+            // Mistral documents context_bias as up to 100 words or phrases.
+            // Preserve phrase boundaries so names like "Claude Code" remain
+            // useful bias terms instead of being reduced to unrelated words.
+            final terms = contextBias
+                .map((term) => term.trim())
+                .where((term) => term.isNotEmpty)
                 .toSet()
+                .take(100)
                 .toList();
-            if (singleWordTerms.isNotEmpty) {
-              request.fields['context_bias'] = singleWordTerms.join(',');
+            if (terms.isNotEmpty) {
+              request.fields['context_bias'] = terms.join(',');
             }
           }
 

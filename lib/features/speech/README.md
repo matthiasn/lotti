@@ -156,7 +156,10 @@ The persisted `JournalAudio` is created from `AudioData` and stored through
 ## Realtime Recording
 
 Realtime recording is a separate transport path. It does not reuse
-`AudioRecorderRepository`.
+`AudioRecorderRepository`. The implementation remains in the controller and
+service layer, but the product toggle is currently hidden because
+`realtimeTranscriptionUiEnabled` is `false`; the active user-facing path is
+post-recording transcription with dictionary/context biasing.
 
 `AudioRecorderController.recordRealtime()`:
 
@@ -168,7 +171,9 @@ Realtime recording is a separate transport path. It does not reuse
 - accumulates transcript deltas into `partialTranscript`
 
 The realtime toggle in `AudioRecordingModal` is only shown when
-`realtimeAvailableProvider` resolves to `true`.
+`realtimeAvailableProvider` resolves to `true`. With the current feature gate
+that provider always resolves to `false`, even if a realtime-capable model is
+configured.
 
 ```mermaid
 sequenceDiagram

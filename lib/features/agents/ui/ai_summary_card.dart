@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
@@ -17,12 +18,15 @@ import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/consts.dart';
 
 part 'ai_summary_card/assign_agent_cta_part.dart';
 part 'ai_summary_card/proposal_kind_part.dart';
@@ -155,6 +159,31 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     }
   }
 
+  Future<void> _speakSummary(String text) async {
+    try {
+      await ref
+          .read(mlxAudioChannelProvider)
+          .speakText(
+            text: text,
+            modelId: mlxAudioDefaultTtsModelId,
+          );
+    } catch (error, stackTrace) {
+      developer.log(
+        'MLX summary playback failed',
+        name: 'AiSummaryCard',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+          clearQueue: true,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -187,6 +216,8 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final subtitle = templateName != null && templateName.isNotEmpty
         ? templateName
         : widget.identity.displayName;
+    final summaryTtsEnabled =
+        ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
 
     final agentStateAsync = ref.watch(agentStateProvider(agentId));
     final nextWakeAt = agentStateAsync.value?.mapOrNull(
@@ -243,6 +274,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               expanded: _expanded,
               onToggle: () => setState(() => _expanded = !_expanded),
               onAgentTap: () => _openInternals(agentName: subtitle),
+              onSpeak: summaryTtsEnabled && tldr.isNotEmpty
+                  ? () => _speakSummary(tldr)
+                  : null,
               isRunning: isRunning,
               showCountdown: showCountdown,
               nextWakeAt: nextWakeAt,

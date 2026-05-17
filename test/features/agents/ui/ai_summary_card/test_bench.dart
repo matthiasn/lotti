@@ -10,6 +10,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:lotti/utils/consts.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
@@ -44,20 +46,24 @@ class AgentTestBench {
     bool isRunning = false,
     AgentStateEntity? state,
     bool enableAgents = true,
+    bool enableSummaryTts = false,
     AgentTemplateEntity? template,
     MockChangeSetConfirmationService? confirmationService,
     MockUpdateNotifications? updateNotifications,
     MockTaskAgentService? taskAgentService,
+    MlxAudioChannel? mlxAudioChannel,
     MediaQueryData mediaQueryData = desktopMediaQueryData,
   }) : _report = report,
        _suggestions = suggestions,
        _isRunning = isRunning,
        _state = state,
        _enableAgents = enableAgents,
+       _enableSummaryTts = enableSummaryTts,
        _template = template,
        _confirmationService = confirmationService,
        _updateNotifications = updateNotifications,
        _taskAgentService = taskAgentService,
+       _mlxAudioChannel = mlxAudioChannel,
        _mediaQueryData = mediaQueryData;
 
   static const String taskId = 'task-001';
@@ -67,10 +73,12 @@ class AgentTestBench {
   final bool _isRunning;
   final AgentStateEntity? _state;
   final bool _enableAgents;
+  final bool _enableSummaryTts;
   final AgentTemplateEntity? _template;
   final MockChangeSetConfirmationService? _confirmationService;
   final MockUpdateNotifications? _updateNotifications;
   final MockTaskAgentService? _taskAgentService;
+  final MlxAudioChannel? _mlxAudioChannel;
   final MediaQueryData _mediaQueryData;
 
   Widget build() {
@@ -79,7 +87,11 @@ class AgentTestBench {
       mediaQueryData: _mediaQueryData,
       overrides: [
         configFlagProvider.overrideWith(
-          (ref, flagName) => Stream.value(_enableAgents),
+          (ref, flagName) => Stream.value(
+            flagName == enableAiSummaryTtsFlag
+                ? _enableSummaryTts
+                : _enableAgents,
+          ),
         ),
         taskAgentProvider.overrideWith((ref, id) async => identity),
         agentReportProvider.overrideWith((ref, agentId) async => _report),
@@ -107,6 +119,8 @@ class AgentTestBench {
           taskAgentServiceProvider.overrideWith(
             (ref) => _taskAgentService,
           ),
+        if (_mlxAudioChannel != null)
+          mlxAudioChannelProvider.overrideWithValue(_mlxAudioChannel),
       ],
       child: const SingleChildScrollView(
         child: AiSummaryCard(taskId: taskId),

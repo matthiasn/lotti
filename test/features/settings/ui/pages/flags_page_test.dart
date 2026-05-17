@@ -68,6 +68,11 @@ void main() {
             status: false,
           ),
           const ConfigFlag(
+            name: enableAiSummaryTtsFlag,
+            description: 'Enable local AI summary playback?',
+            status: false,
+          ),
+          const ConfigFlag(
             name: enableEmbeddingsFlag,
             description: 'Generate Embeddings?',
             status: false,
@@ -122,8 +127,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 10 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+      // 11 flags in the mock data.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(11));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -132,7 +137,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsIcon), findsNWidgets(10));
+      expect(find.byType(SettingsIcon), findsNWidgets(11));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -245,6 +250,7 @@ void main() {
       expect(find.byIcon(Icons.lock_outline_rounded), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.event_rounded), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.bolt_rounded), findsAtLeastNWidgets(1));
+      expect(find.byIcon(Icons.volume_up_rounded), findsAtLeastNWidgets(1));
       expect(
         find.byIcon(Icons.calendar_today_rounded),
         findsAtLeastNWidgets(1),
@@ -309,7 +315,7 @@ void main() {
         DesignSystemListItem,
         context.messages.configFlagEnableWhatsNew,
       );
-      // The whats-new row sits at the bottom of the 9-row list and
+      // The whats-new row sits toward the bottom of the 11-row list and
       // is offscreen under the testable wrapper's bounded
       // SingleChildScrollView. `ensureVisible` walks the target's
       // ancestor chain to find the right scrollable and drives the
@@ -325,6 +331,73 @@ void main() {
       const expected = ConfigFlag(
         name: enableWhatsNewFlag,
         description: "Enable What's New feature?",
+        status: true,
+      );
+      verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
+    });
+  });
+
+  group('FlagsPage — AI summary TTS flag', () {
+    testWidgets(
+      'renders the AI summary TTS flag with localized title, description, '
+      'and volume icon',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(FlagsPage));
+        await tester.enterText(
+          find.byType(DesignSystemSearch),
+          context.messages.configFlagEnableAiSummaryTts,
+        );
+        await tester.pumpAndSettle();
+
+        final ttsItem = find.widgetWithText(
+          DesignSystemListItem,
+          context.messages.configFlagEnableAiSummaryTts,
+        );
+        expect(ttsItem, findsOneWidget);
+        expect(
+          find.text(context.messages.configFlagEnableAiSummaryTtsDescription),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: ttsItem,
+            matching: find.byIcon(Icons.volume_up_rounded),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('toggling persists the AI summary TTS flag', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const FlagsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(FlagsPage));
+      await tester.enterText(
+        find.byType(DesignSystemSearch),
+        context.messages.configFlagEnableAiSummaryTts,
+      );
+      await tester.pumpAndSettle();
+
+      final ttsItem = find.widgetWithText(
+        DesignSystemListItem,
+        context.messages.configFlagEnableAiSummaryTts,
+      );
+      await tester.tap(
+        find.descendant(of: ttsItem, matching: find.byType(Switch)),
+      );
+      await tester.pump();
+
+      const expected = ConfigFlag(
+        name: enableAiSummaryTtsFlag,
+        description: 'Enable local AI summary playback?',
         status: true,
       );
       verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
@@ -571,7 +644,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pumpAndSettle();
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
       },
     );
 
@@ -592,7 +665,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pumpAndSettle();
-        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
       },
     );
 
@@ -609,7 +682,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(10));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(11));
       },
     );
   });

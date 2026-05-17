@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 
@@ -406,6 +407,157 @@ void main() {
         expect(find.byType(Switch), findsNothing);
       },
     );
+
+    testWidgets('shows MLX download progress and opens the progress action', (
+      tester,
+    ) async {
+      var installTaps = 0;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          AiModelCard(
+            model: _model(
+              providerId: 'mlx-provider',
+              name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+              providerModelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+              isReasoning: false,
+              inputModalities: const [Modality.audio],
+            ),
+            providerType: InferenceProviderType.mlxAudio,
+            modelDownloadProgress: const MlxAudioModelDownloadProgress(
+              modelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+              status: MlxAudioModelStatus.downloading,
+              completedUnitCount: 42,
+              totalUnitCount: 100,
+            ),
+            onTap: () {},
+            onInstallModel: () => installTaps++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Downloading 42%'), findsOneWidget);
+      expect(find.byTooltip('Show download progress'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Show download progress'));
+      await tester.pump();
+
+      expect(installTaps, 1);
+    });
+
+    testWidgets(
+      'shows the indeterminate MLX downloading label when no percent is known',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiModelCard(
+              model: _model(
+                providerId: 'mlx-provider',
+                name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+                providerModelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+                isReasoning: false,
+                inputModalities: const [Modality.audio],
+              ),
+              providerType: InferenceProviderType.mlxAudio,
+              modelDownloadProgress: const MlxAudioModelDownloadProgress(
+                modelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+                status: MlxAudioModelStatus.downloading,
+              ),
+              onTap: () {},
+              onInstallModel: () {},
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Downloading'), findsOneWidget);
+        expect(find.textContaining('%'), findsNothing);
+      },
+    );
+
+    testWidgets('shows the MLX install action when a model is missing', (
+      tester,
+    ) async {
+      var installTaps = 0;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          AiModelCard(
+            model: _model(
+              providerId: 'mlx-provider',
+              providerModelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+              isReasoning: false,
+              inputModalities: const [Modality.audio],
+            ),
+            providerType: InferenceProviderType.mlxAudio,
+            modelDownloadProgress: const MlxAudioModelDownloadProgress(
+              modelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+              status: MlxAudioModelStatus.notInstalled,
+            ),
+            onTap: () {},
+            onInstallModel: () => installTaps++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Not installed'), findsOneWidget);
+      expect(find.byTooltip('Install model'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Install model'));
+      await tester.pump();
+
+      expect(installTaps, 1);
+    });
+
+    testWidgets('renders MLX terminal and unknown download states', (
+      tester,
+    ) async {
+      for (final statusCase in const [
+        (null, 'Checking model status', null),
+        (MlxAudioModelStatus.installed, 'Installed', null),
+        (MlxAudioModelStatus.unsupported, 'Apple Silicon required', null),
+        (MlxAudioModelStatus.failed, 'Download failed', 'Install model'),
+      ]) {
+        var installTaps = 0;
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            AiModelCard(
+              model: _model(
+                providerId: 'mlx-provider',
+                providerModelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+                isReasoning: false,
+                inputModalities: const [Modality.audio],
+              ),
+              providerType: InferenceProviderType.mlxAudio,
+              modelDownloadProgress: statusCase.$1 == null
+                  ? null
+                  : MlxAudioModelDownloadProgress(
+                      modelId: 'mlx-community/Qwen3-ASR-1.7B-8bit',
+                      status: statusCase.$1!,
+                    ),
+              onTap: () {},
+              onInstallModel: () => installTaps++,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(statusCase.$2), findsOneWidget);
+        final tooltip = statusCase.$3;
+        if (tooltip == null) {
+          expect(find.byTooltip('Install model'), findsNothing);
+          expect(find.byTooltip('Show download progress'), findsNothing);
+        } else {
+          expect(find.byTooltip(tooltip), findsOneWidget);
+          await tester.tap(find.byTooltip(tooltip));
+          await tester.pump();
+          expect(installTaps, 1);
+        }
+      }
+    });
   });
 
   group('AiProfileCard rendering', () {

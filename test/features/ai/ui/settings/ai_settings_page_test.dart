@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -19,6 +20,8 @@ import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_mo
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -148,10 +151,14 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  Widget buildHarness({List<NavigatorObserver> navigatorObservers = const []}) {
+  Widget buildHarness({
+    List<NavigatorObserver> navigatorObservers = const [],
+    List<Override> additionalOverrides = const [],
+  }) {
     return ProviderScope(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockRepository),
+        ...additionalOverrides,
       ],
       child: MaterialApp(
         navigatorObservers: navigatorObservers,
@@ -182,9 +189,13 @@ void main() {
     required List<AiConfig> models,
     required List<AiConfig> profiles,
     List<NavigatorObserver> navigatorObservers = const [],
+    List<Override> additionalOverrides = const [],
   }) async {
     await tester.pumpWidget(
-      buildHarness(navigatorObservers: navigatorObservers),
+      buildHarness(
+        navigatorObservers: navigatorObservers,
+        additionalOverrides: additionalOverrides,
+      ),
     );
     // First pump: providers stream emits. The page rebuilds out of
     // the loading branch and only THEN subscribes to the models +
@@ -326,6 +337,60 @@ void main() {
         await settleTimers(tester);
       },
     );
+
+    testWidgets('MLX model install action opens the shared download dialog', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final mlxAudioChannel = _PageMlxAudioChannel();
+      addTearDown(mlxAudioChannel.close);
+
+      await pumpWith(
+        tester: tester,
+        providers: [
+          buildProvider(
+            id: 'mlx-provider',
+            type: InferenceProviderType.mlxAudio,
+            name: 'MLX Audio',
+            apiKey: '',
+            baseUrl: '',
+          ),
+        ],
+        models: [
+          buildModel(
+            id: 'mlx-model',
+            providerId: 'mlx-provider',
+            name: 'Qwen3 ASR 1.7B (MLX 8-bit)',
+            providerModelId: mlxAudioQwenAsr17B8BitModelId,
+            inputs: const [Modality.audio, Modality.text],
+          ),
+        ],
+        profiles: const <AiConfig>[],
+        additionalOverrides: [
+          mlxAudioChannelProvider.overrideWithValue(mlxAudioChannel),
+        ],
+      );
+
+      await tester.tap(find.text('Models'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      expect(find.text('Not installed'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Install model'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      expect(
+        find.textContaining('Install Qwen3 ASR 1.7B (MLX 8-bit)'),
+        findsOneWidget,
+      );
+      expect(find.text('Downloading 12%'), findsNWidgets(2));
+      expect(mlxAudioChannel.installRequests, [mlxAudioQwenAsr17B8BitModelId]);
+    });
 
     testWidgets(
       'switching to the Profiles tab renders one AiProfileCard per profile '
@@ -1557,4 +1622,37 @@ class _PushSpy extends NavigatorObserver {
     pushed.add(route);
     super.didPush(route, previousRoute);
   }
+}
+
+class _PageMlxAudioChannel extends MlxAudioChannel {
+  final _progressController =
+      StreamController<MlxAudioModelDownloadProgress>.broadcast();
+  final installRequests = <String>[];
+
+  @override
+  Stream<MlxAudioModelDownloadProgress> get downloadProgressStream =>
+      _progressController.stream;
+
+  @override
+  Future<MlxAudioModelDownloadProgress> getModelStatus(String modelId) async {
+    return MlxAudioModelDownloadProgress(
+      modelId: modelId,
+      status: MlxAudioModelStatus.notInstalled,
+    );
+  }
+
+  @override
+  Future<void> installModel(String modelId) async {
+    installRequests.add(modelId);
+    _progressController.add(
+      MlxAudioModelDownloadProgress(
+        modelId: modelId,
+        status: MlxAudioModelStatus.downloading,
+        completedUnitCount: 12,
+        totalUnitCount: 100,
+      ),
+    );
+  }
+
+  Future<void> close() => _progressController.close();
 }

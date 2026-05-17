@@ -1,15 +1,27 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 
 const _logTag = 'ProfileAutomationService';
+const _fallbackTranscriptionAssignment = SkillAssignment(
+  skillId: skillTranscribeContextId,
+  automate: true,
+);
 
-/// Result of a profile-driven automation attempt.
+typedef _TranscriptionFallbackCandidate = ({
+  AiConfigModel model,
+  AiConfigInferenceProvider provider,
+});
+
+/// Result of an automation attempt.
 ///
 /// When [handled] is `true`, the caller should skip the legacy prompt path.
 /// When `false`, the caller should fall through to the existing
@@ -26,6 +38,10 @@ class AutomationResult {
   final bool handled;
 
   /// The resolved profile (available when [handled] is `true`).
+  ///
+  /// Direct transcription fallback creates an ephemeral profile-shaped value
+  /// so the existing skill runner can keep using its profile/model contract
+  /// without persisting a new profile row.
   final ResolvedProfile? resolvedProfile;
 
   /// The skill definition (available when [handled] is `true`).
@@ -44,9 +60,14 @@ class AutomationResult {
 /// [AutomationResult] that tells the caller whether the profile-driven
 /// path handled the request.
 ///
-/// The actual inference invocation is left to the caller (e.g., the
-/// trigger in Phase 5), which uses the returned skill and profile to
-/// build prompts via `SkillPromptBuilder` and invoke inference.
+/// Speech recognition has one extra path: if no profile path handles
+/// transcription, the service can fall back to a configured audio-to-text model
+/// row directly. That keeps mobile/local recording usable when the user has an
+/// MLX Audio model configured but cannot pick a desktop-only local profile.
+///
+/// The actual inference invocation is left to the caller, which uses the
+/// returned skill and profile to build prompts via `SkillPromptBuilder` and
+/// invoke inference.
 class ProfileAutomationService {
   const ProfileAutomationService({
     required ProfileAutomationResolver resolver,
@@ -76,10 +97,13 @@ class ProfileAutomationService {
       return AutomationResult.notHandled;
     }
 
-    return _tryAutomateSkillType(
+    final profileResult = await _tryAutomateSkillType(
       taskId: taskId,
       skillType: SkillType.transcription,
     );
+    if (profileResult.handled) return profileResult;
+
+    return _tryDirectTranscriptionFallback();
   }
 
   /// Attempts profile-driven image analysis for a task.
@@ -179,7 +203,102 @@ class ProfileAutomationService {
       taskId: taskId,
       skillType: skillType,
     );
-    return result.handled;
+    if (result.handled) return true;
+    if (skillType != SkillType.transcription) return false;
+
+    final fallbackResult = await _tryDirectTranscriptionFallback();
+    return fallbackResult.handled;
+  }
+
+  /// Finds a configured audio-to-text model that can run transcription without
+  /// requiring the task to resolve to an inference profile.
+  Future<AutomationResult> _tryDirectTranscriptionFallback() async {
+    final skill = findBuiltInSkill(skillTranscribeContextId);
+    if (skill == null) return AutomationResult.notHandled;
+
+    final modelConfigs = await _aiConfigRepository.getConfigsByType(
+      AiConfigType.model,
+    );
+    final candidates = <_TranscriptionFallbackCandidate>[];
+
+    for (final model in modelConfigs.whereType<AiConfigModel>()) {
+      if (!_isSpeechToTextModel(model)) continue;
+
+      final providerConfig = await _aiConfigRepository.getConfigById(
+        model.inferenceProviderId,
+      );
+      if (providerConfig is! AiConfigInferenceProvider) continue;
+      if (_requiresMissingApiKey(providerConfig)) continue;
+
+      candidates.add((model: model, provider: providerConfig));
+    }
+
+    if (candidates.isEmpty) return AutomationResult.notHandled;
+    candidates.sort(_compareFallbackCandidates);
+
+    final selected = candidates.first;
+    developer.log(
+      'Using direct transcription fallback model '
+      '${selected.model.providerModelId}',
+      name: _logTag,
+    );
+
+    return AutomationResult(
+      handled: true,
+      resolvedProfile: ResolvedProfile(
+        // The transcription runner only consumes the transcription slot. Keep
+        // the required thinking fields populated with the same provider so the
+        // profile-shaped contract remains valid without creating a DB profile.
+        thinkingModelId: selected.model.providerModelId,
+        thinkingProvider: selected.provider,
+        transcriptionModelId: selected.model.providerModelId,
+        transcriptionProvider: selected.provider,
+        skillAssignments: const [_fallbackTranscriptionAssignment],
+      ),
+      skill: skill,
+      skillAssignment: _fallbackTranscriptionAssignment,
+    );
+  }
+
+  bool _isSpeechToTextModel(AiConfigModel model) {
+    return model.inputModalities.contains(Modality.audio) &&
+        model.outputModalities.contains(Modality.text);
+  }
+
+  bool _requiresMissingApiKey(AiConfigInferenceProvider provider) {
+    return ProviderConfig.requiresApiKey(provider.inferenceProviderType) &&
+        provider.apiKey.trim().isEmpty;
+  }
+
+  int _compareFallbackCandidates(
+    _TranscriptionFallbackCandidate left,
+    _TranscriptionFallbackCandidate right,
+  ) {
+    final rankComparison = _fallbackCandidateRank(
+      left,
+    ).compareTo(_fallbackCandidateRank(right));
+    if (rankComparison != 0) return rankComparison;
+    return left.model.name.compareTo(right.model.name);
+  }
+
+  int _fallbackCandidateRank(_TranscriptionFallbackCandidate candidate) {
+    final type = candidate.provider.inferenceProviderType;
+    final providerModelId = candidate.model.providerModelId;
+
+    if (type == InferenceProviderType.mlxAudio &&
+        providerModelId == mlxAudioRecommendedSttModelId) {
+      return 0;
+    }
+    if (type == InferenceProviderType.mlxAudio &&
+        isMlxAudioQwenAsrModelId(providerModelId)) {
+      return 1;
+    }
+    if (type == InferenceProviderType.mlxAudio) return 2;
+    if (type == InferenceProviderType.mistral) return 3;
+    if (type == InferenceProviderType.openAi) return 4;
+    if (type == InferenceProviderType.whisper) return 5;
+    if (type == InferenceProviderType.voxtral) return 6;
+    return 10;
   }
 
   /// Checks whether the resolved profile has a model slot populated for

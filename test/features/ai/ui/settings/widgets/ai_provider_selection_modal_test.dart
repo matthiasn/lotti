@@ -42,10 +42,47 @@ MaterialApp _appWithOpenButton(WidgetBuilder buttonBuilder) {
 
 String _geminiDescription(BuildContext context) =>
     AppLocalizations.of(context)!.aiProviderSetupOptionGeminiDescription;
+String _mlxAudioDescription(BuildContext context) =>
+    AppLocalizations.of(context)!.aiProviderMlxAudioDescription;
 String _openAiDescription(BuildContext context) =>
     AppLocalizations.of(context)!.aiProviderSetupOptionOpenAiDescription;
 String _mistralDescription(BuildContext context) =>
     AppLocalizations.of(context)!.aiProviderSetupOptionMistralDescription;
+
+Future<void> _expectSelectionResult(
+  WidgetTester tester, {
+  required String providerLabel,
+  required InferenceProviderType expectedType,
+}) async {
+  InferenceProviderType? selectedType;
+
+  await tester.pumpWidget(
+    _appWithOpenButton(
+      (context) => ElevatedButton(
+        onPressed: () async {
+          await AiProviderSelectionModal.show(
+            context,
+            onProviderSelected: (type) => selectedType = type,
+            onDismiss: () {},
+          );
+        },
+        child: const Text('Open Modal'),
+      ),
+    ),
+  );
+
+  await tester.tap(find.text('Open Modal'));
+  await tester.pumpAndSettle();
+
+  await tester.ensureVisible(find.text(providerLabel));
+  await tester.tap(find.text(providerLabel));
+  await tester.pumpAndSettle();
+
+  await tester.tap(find.text('Continue'));
+  await tester.pumpAndSettle();
+
+  expect(selectedType, equals(expectedType));
+}
 
 void main() {
   group('AiProviderSelectionModal', () {
@@ -60,6 +97,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Google Gemini'), findsOneWidget);
+      expect(find.text('MLX Audio (local)'), findsOneWidget);
       expect(find.text('OpenAI'), findsOneWidget);
       expect(find.text('Mistral'), findsOneWidget);
     });
@@ -71,6 +109,7 @@ void main() {
 
       final context = tester.element(find.byType(AiProviderSelectionModal));
       expect(find.text(_geminiDescription(context)), findsOneWidget);
+      expect(find.text(_mlxAudioDescription(context)), findsOneWidget);
       expect(find.text(_openAiDescription(context)), findsOneWidget);
       expect(find.text(_mistralDescription(context)), findsOneWidget);
     });
@@ -106,106 +145,35 @@ void main() {
       expect(continueButton.onPressed, isNotNull);
     });
 
-    testWidgets('calls onProviderSelected with gemini when Gemini selected', (
+    testWidgets('calls onProviderSelected for each supported provider', (
       tester,
     ) async {
-      InferenceProviderType? selectedType;
-
-      await tester.pumpWidget(
-        _appWithOpenButton(
-          (context) => ElevatedButton(
-            onPressed: () async {
-              await AiProviderSelectionModal.show(
-                context,
-                onProviderSelected: (type) => selectedType = type,
-                onDismiss: () {},
-              );
-            },
-            child: const Text('Open Modal'),
-          ),
+      final cases = <({String label, InferenceProviderType expectedType})>[
+        (
+          label: 'Google Gemini',
+          expectedType: InferenceProviderType.gemini,
         ),
-      );
-
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
-
-      // Select Gemini
-      await tester.tap(find.text('Google Gemini'));
-      await tester.pumpAndSettle();
-
-      // Tap Continue
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-
-      expect(selectedType, equals(InferenceProviderType.gemini));
-    });
-
-    testWidgets('calls onProviderSelected with openAi when OpenAI selected', (
-      tester,
-    ) async {
-      InferenceProviderType? selectedType;
-
-      await tester.pumpWidget(
-        _appWithOpenButton(
-          (context) => ElevatedButton(
-            onPressed: () async {
-              await AiProviderSelectionModal.show(
-                context,
-                onProviderSelected: (type) => selectedType = type,
-                onDismiss: () {},
-              );
-            },
-            child: const Text('Open Modal'),
-          ),
+        (
+          label: 'MLX Audio (local)',
+          expectedType: InferenceProviderType.mlxAudio,
         ),
-      );
-
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
-
-      // Select OpenAI
-      await tester.tap(find.text('OpenAI'));
-      await tester.pumpAndSettle();
-
-      // Tap Continue
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-
-      expect(selectedType, equals(InferenceProviderType.openAi));
-    });
-
-    testWidgets('calls onProviderSelected with mistral when Mistral selected', (
-      tester,
-    ) async {
-      InferenceProviderType? selectedType;
-
-      await tester.pumpWidget(
-        _appWithOpenButton(
-          (context) => ElevatedButton(
-            onPressed: () async {
-              await AiProviderSelectionModal.show(
-                context,
-                onProviderSelected: (type) => selectedType = type,
-                onDismiss: () {},
-              );
-            },
-            child: const Text('Open Modal'),
-          ),
+        (
+          label: 'OpenAI',
+          expectedType: InferenceProviderType.openAi,
         ),
-      );
+        (
+          label: 'Mistral',
+          expectedType: InferenceProviderType.mistral,
+        ),
+      ];
 
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
-
-      // Select Mistral
-      await tester.tap(find.text('Mistral'));
-      await tester.pumpAndSettle();
-
-      // Tap Continue
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-
-      expect(selectedType, equals(InferenceProviderType.mistral));
+      for (final testCase in cases) {
+        await _expectSelectionResult(
+          tester,
+          providerLabel: testCase.label,
+          expectedType: testCase.expectedType,
+        );
+      }
     });
 
     testWidgets("calls onDismiss when Don't Show Again tapped", (tester) async {

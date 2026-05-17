@@ -411,6 +411,44 @@
   "aiInferenceErrorTimeoutTitle": "Požadavek vypršel",
   "aiInferenceErrorUnknownTitle": "Chyba",
   "aiInternalsTitle": "Interní informace agenta",
+  "aiModelDownloadCloseButton": "Zavřít",
+  "aiModelDownloadDialogDescription": "Lotti stáhne {modelName} do cache MLX Audio a použije ho pro lokální zpracování řeči.",
+  "@aiModelDownloadDialogDescription": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadDialogTitle": "Instalovat {modelName}",
+  "@aiModelDownloadDialogTitle": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadInstallTooltip": "Instalovat model",
+  "aiModelDownloadOpenProgressTooltip": "Zobrazit průběh stahování",
+  "aiModelDownloadStatusChecking": "Kontroluje se stav modelu",
+  "aiModelDownloadStatusDownloading": "Stahování {percent} %",
+  "@aiModelDownloadStatusDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "aiModelDownloadStatusDownloadingIndeterminate": "Stahování",
+  "aiModelDownloadStatusFailed": "Stahování selhalo",
+  "aiModelDownloadStatusInstalled": "Nainstalováno",
+  "aiModelDownloadStatusNotInstalled": "Nenainstalováno",
+  "aiModelDownloadStatusUnsupported": "Vyžaduje Apple Silicon",
+  "aiModelInstallChoiceCancelButton": "Zrušit",
+  "aiModelInstallChoiceDescription": "Nejdřív vyber lokální model pro převod řeči na text, který se má stáhnout. Ostatní můžeš nainstalovat později ze seznamu modelů.",
+  "aiModelInstallChoiceInstallButton": "Instalovat model",
+  "aiModelInstallChoiceRecommended": "Doporučeno",
+  "aiModelInstallChoiceTitle": "Vybrat model MLX Audio",
   "aiOllamaModelInstalledSuccessfully": "Model „{modelName}“ byl úspěšně nainstalován",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -479,6 +517,7 @@
   "aiProviderConnectBreadcrumbAdd": "Přidat poskytovatele",
   "aiProviderConnectFieldBaseUrlHint": "Ponech prázdné pro použití oficiálního koncového bodu",
   "aiProviderConnectFieldBaseUrlLabelOptional": "Základní URL (volitelné)",
+  "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Zobrazí se v tvém seznamu poskytovatelů",
   "aiProviderConnectionCheckingLabel": "Ověřuji klíč, načítám dostupné modely…",
   "aiProviderConnectionFailedBadResponseDetail": "Neočekávaný tvar odpovědi: {type}",
@@ -575,12 +614,15 @@
   "aiProviderDetailRemoveDescription": "Smaže poskytovatele a všechny modely, které jej používají. Tuto akci nelze vrátit.",
   "aiProviderDetailRemoveTitle": "Odstranit tohoto poskytovatele",
   "aiProviderDetailValueUnset": "Nenastaveno",
+  "aiProviderEmbeddedRuntimeHint": "Běží přímo v procesu aplikace Apple. Není potřeba lokální server ani základní URL.",
   "aiProviderGeminiDescription": "Google Gemini AI modely",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiDescription": "API kompatibilní s formátem OpenAI",
   "aiProviderGenericOpenAiName": "Kompatibilní s OpenAI",
   "aiProviderMistralDescription": "Mistral AI cloudové API s nativním přepisem zvuku",
   "aiProviderMistralName": "Mistral",
+  "aiProviderMlxAudioDescription": "Vestavěné modely MLX Audio pro lokální STT a TTS na Apple Silicon",
+  "aiProviderMlxAudioName": "MLX Audio (lokálně)",
   "aiProviderNebiusAiStudioDescription": "Modely Nebius AI Studia",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaDescription": "Spouštějte inferenci lokálně s Ollama",
@@ -595,6 +637,7 @@
   "aiProviderTaglineAlibaba": "Modely Qwen · multimodální · dlouhý kontext",
   "aiProviderTaglineAnthropic": "Rodina Claude · dlouhý kontext",
   "aiProviderTaglineGemini": "Multimodální · přepis zvuku",
+  "aiProviderTaglineMlxAudio": "Vestavěné · Apple Silicon · lokální audio",
   "aiProviderTaglineOllama": "Běží lokálně · bez cloudových volání",
   "aiProviderTaglineOpenAi": "Rodina GPT · vize + uvažování",
   "aiProviderUnknownName": "AI poskytovatel",
@@ -782,6 +825,7 @@
   "aiSetupWizardRunningButton": "Probíhá...",
   "aiSetupWizardSafeToRunMultiple": "Bezpečné spustit vícekrát - existující položky budou zachovány",
   "aiSetupWizardTitle": "Průvodce nastavením AI",
+  "aiSummarySpeakTooltip": "Přečíst souhrn nahlas lokálně",
   "aiTaskSummaryTitle": "Shrnutí úkolu AI",
   "apiKeyAddPageTitle": "Přidat poskytovatele",
   "apiKeyAuthenticationDescription": "Zabezpeč své připojení k API",
@@ -1001,6 +1045,8 @@
   "configFlagAttemptEmbeddingDescription": "Pokud je povoleno, aplikace se pokusí generovat vektory pro vaše položky, aby zlepšila vyhledávání a návrhy souvisejícího obsahu.",
   "configFlagEnableAiStreaming": "Povolit AI streamování pro akce úkolů",
   "configFlagEnableAiStreamingDescription": "Streamujte AI odpovědi pro akce související s úkoly. Vypněte, pokud chcete odpovědi bufferovat a udržet plynulejší rozhraní.",
+  "configFlagEnableAiSummaryTts": "Přehrávání AI souhrnů",
+  "configFlagEnableAiSummaryTtsDescription": "Zobrazí tlačítko místního převodu textu na řeč u AI souhrnů úkolů. Vyžaduje nainstalovaný model MLX Audio TTS.",
   "configFlagEnableDailyOs": "Povolit DailyOS",
   "configFlagEnableDailyOsDescription": "Zobrazit DailyOS v hlavní navigaci.",
   "configFlagEnableDashboardsPage": "Povolit stránku Dashboardů",

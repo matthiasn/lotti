@@ -24,6 +24,14 @@
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
 		33CC10F30000AC000003C045 /* AudioConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F20000AC000003C045 /* AudioConverter.swift */; };
+		5A4D00012D00000100000001 /* MlxAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A4D00002D00000100000001 /* MlxAudio.swift */; };
+		5A4D01012D00000200000001 /* MLXAudioCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01112D00000200000001 /* MLXAudioCore */; };
+		5A4D01022D00000200000001 /* MLXAudioSTT in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01122D00000200000001 /* MLXAudioSTT */; };
+		5A4D01032D00000200000001 /* MLXAudioTTS in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01132D00000200000001 /* MLXAudioTTS */; };
+		5A4D01042D00000200000001 /* MLXAudioVAD in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01142D00000200000001 /* MLXAudioVAD */; };
+		5A4D01052D00000200000001 /* MLXAudioG2P in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01152D00000200000001 /* MLXAudioG2P */; };
+		5A4D01062D00000200000001 /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01162D00000200000001 /* MLX */; };
+		5A4D01072D00000200000001 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01172D00000200000001 /* HuggingFace */; };
 		33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F22044A3C60003C045 /* Assets.xcassets */; };
 		33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 33CC10F42044A3C60003C045 /* MainMenu.xib */; };
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
@@ -62,6 +70,7 @@
 		33CC10F52044A3C60003C045 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		33CC10F72044A3C60003C045 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Runner/Info.plist; sourceTree = "<group>"; };
 		33CC10F20000AC000003C045 /* AudioConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioConverter.swift; sourceTree = "<group>"; };
+		5A4D00002D00000100000001 /* MlxAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MlxAudio.swift; sourceTree = "<group>"; };
 		33CC11122044BFA00003C045 /* MainFlutterWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainFlutterWindow.swift; sourceTree = "<group>"; };
 		33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Debug.xcconfig"; sourceTree = "<group>"; };
 		33CEB47422A05771004F2AC0 /* Flutter-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Release.xcconfig"; sourceTree = "<group>"; };
@@ -83,6 +92,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A4D01012D00000200000001 /* MLXAudioCore in Frameworks */,
+				5A4D01022D00000200000001 /* MLXAudioSTT in Frameworks */,
+				5A4D01032D00000200000001 /* MLXAudioTTS in Frameworks */,
+				5A4D01042D00000200000001 /* MLXAudioVAD in Frameworks */,
+				5A4D01052D00000200000001 /* MLXAudioG2P in Frameworks */,
+				5A4D01062D00000200000001 /* MLX in Frameworks */,
+				5A4D01072D00000200000001 /* HuggingFace in Frameworks */,
 				7E2335674AA28E31A7EEBE87 /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -148,6 +164,7 @@
 				AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */,
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC10F20000AC000003C045 /* AudioConverter.swift */,
+				5A4D00002D00000100000001 /* MlxAudio.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
@@ -196,6 +213,15 @@
 				33CC11202044C79F0003C045 /* PBXTargetDependency */,
 			);
 			name = Runner;
+			packageProductDependencies = (
+				5A4D01112D00000200000001 /* MLXAudioCore */,
+				5A4D01122D00000200000001 /* MLXAudioSTT */,
+				5A4D01132D00000200000001 /* MLXAudioTTS */,
+				5A4D01142D00000200000001 /* MLXAudioVAD */,
+				5A4D01152D00000200000001 /* MLXAudioG2P */,
+				5A4D01162D00000200000001 /* MLX */,
+				5A4D01172D00000200000001 /* HuggingFace */,
+			);
 			productName = Runner;
 			productReference = 33CC10ED2044A3C60003C045 /* LottiDev.app */;
 			productType = "com.apple.product-type.application";
@@ -234,6 +260,11 @@
 				Base,
 			);
 			mainGroup = 33CC10E42044A3C60003C045;
+			packageReferences = (
+				5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */,
+				5A4D01222D00000200000001 /* XCRemoteSwiftPackageReference "mlx-swift" */,
+				5A4D01232D00000200000001 /* XCRemoteSwiftPackageReference "swift-huggingface" */,
+			);
 			productRefGroup = 33CC10EE2044A3C60003C045 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -341,6 +372,7 @@
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F30000AC000003C045 /* AudioConverter.swift in Sources */,
+				5A4D00012D00000100000001 /* MlxAudio.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 			);
@@ -367,6 +399,71 @@
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Blaizzy/mlx-audio-swift.git";
+			requirement = {
+				kind = revision;
+				revision = 7734cd1fbbe86460083c1d24199737a24cadfcc8;
+			};
+		};
+		5A4D01222D00000200000001 /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.30.6;
+			};
+		};
+		5A4D01232D00000200000001 /* XCRemoteSwiftPackageReference "swift-huggingface" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-huggingface.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.8.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5A4D01112D00000200000001 /* MLXAudioCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioCore;
+		};
+		5A4D01122D00000200000001 /* MLXAudioSTT */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioSTT;
+		};
+		5A4D01132D00000200000001 /* MLXAudioTTS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioTTS;
+		};
+		5A4D01142D00000200000001 /* MLXAudioVAD */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioVAD;
+		};
+		5A4D01152D00000200000001 /* MLXAudioG2P */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D01212D00000200000001 /* XCRemoteSwiftPackageReference "mlx-audio-swift" */;
+			productName = MLXAudioG2P;
+		};
+		5A4D01162D00000200000001 /* MLX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D01222D00000200000001 /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLX;
+		};
+		5A4D01172D00000200000001 /* HuggingFace */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5A4D01232D00000200000001 /* XCRemoteSwiftPackageReference "swift-huggingface" */;
+			productName = HuggingFace;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		338D0CE9231458BD00FA5F75 /* Profile */ = {
@@ -407,7 +504,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -437,7 +534,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",
@@ -501,7 +598,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -548,7 +645,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -578,7 +675,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",
@@ -613,7 +710,7 @@
 					"$(PROJECT_DIR)/Runner",
 					"$(PROJECT_DIR)",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				OTHER_CFLAGS = (
 					"-O3",
 					"-DNDEBUG",

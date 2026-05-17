@@ -8,9 +8,20 @@ import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/util/audio_converter_channel.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai/util/pcm_amplitude.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+
+enum _RealtimeBackendKind { mistral, mlxAudio }
+
+/// UI gate for live transcription.
+///
+/// Keep the realtime pipeline available behind the service/controller APIs, but
+/// hide it from product surfaces until local realtime transcription can use the
+/// same dictionary/context biasing as the batch path.
+const realtimeTranscriptionUiEnabled = false;
 
 /// Orchestrates real-time transcription: connects WebSocket, streams PCM
 /// audio, accumulates audio for WAV/M4A file output, and computes amplitude.
@@ -21,12 +32,15 @@ class RealtimeTranscriptionService {
   RealtimeTranscriptionService(
     this._ref, {
     MistralRealtimeTranscriptionRepository? repository,
+    MlxAudioChannel? mlxAudioChannel,
     Duration doneTimeout = const Duration(seconds: 10),
   }) : _repository = repository ?? MistralRealtimeTranscriptionRepository(),
+       _mlxAudioChannel = mlxAudioChannel ?? MlxAudioChannel(),
        _doneTimeout = doneTimeout;
 
   final Ref _ref;
   final MistralRealtimeTranscriptionRepository _repository;
+  final MlxAudioChannel _mlxAudioChannel;
   final Duration _doneTimeout;
   final _pcmBuffer = BytesBuilder(copy: false);
   final _amplitudeController = StreamController<double>.broadcast();
@@ -40,7 +54,11 @@ class RealtimeTranscriptionService {
   StreamSubscription<Uint8List>? _pcmSubscription;
   StreamSubscription<String>? _deltaSubscription;
   StreamSubscription<String>? _languageSubscription;
+  StreamSubscription<MlxAudioRealtimeEvent>? _mlxEventSubscription;
+  Completer<RealtimeTranscriptionDone>? _mlxDoneCompleter;
   String? _detectedLanguage;
+  String _lastMlxConfirmedText = '';
+  _RealtimeBackendKind? _activeBackend;
   bool _isActive = false;
 
   /// Stream of amplitude values (dBFS) computed from PCM chunks.
@@ -49,10 +67,10 @@ class RealtimeTranscriptionService {
   /// Whether a real-time transcription session is active.
   bool get isActive => _isActive;
 
-  /// Resolves a Mistral provider with a configured real-time model.
+  /// Resolves a configured real-time model.
   ///
-  /// Returns the first matching model/provider pair found (iteration order
-  /// is not guaranteed). Returns `null` if no real-time model is configured.
+  /// MLX Qwen3-ASR is preferred when configured because it keeps audio local.
+  /// Mistral remains the fallback for cloud realtime transcription.
   Future<({AiConfigInferenceProvider provider, AiConfigModel model})?>
   resolveRealtimeConfig() async {
     final aiRepo = _ref.read(aiConfigRepositoryProvider);
@@ -64,6 +82,23 @@ class RealtimeTranscriptionService {
     final providers = await providersFuture;
 
     final allProviders = providers.whereType<AiConfigInferenceProvider>();
+
+    for (final model in models.whereType<AiConfigModel>()) {
+      if (!model.inputModalities.contains(Modality.audio)) continue;
+      if (!_isMlxRealtimeModel(model.providerModelId)) continue;
+
+      final provider = allProviders
+          .where(
+            (p) =>
+                p.id == model.inferenceProviderId &&
+                p.inferenceProviderType == InferenceProviderType.mlxAudio,
+          )
+          .firstOrNull;
+
+      if (provider != null) {
+        return (provider: provider, model: model);
+      }
+    }
 
     for (final model in models.whereType<AiConfigModel>()) {
       if (!model.inputModalities.contains(Modality.audio)) continue;
@@ -99,7 +134,23 @@ class RealtimeTranscriptionService {
   }) async {
     final config = await resolveRealtimeConfig();
     if (config == null) {
-      throw StateError('No Mistral realtime transcription model configured');
+      throw StateError('No realtime transcription model configured');
+    }
+
+    _isActive = true;
+    _pcmBuffer.clear();
+    _deltaBuffer.clear();
+    _detectedLanguage = null;
+    _lastMlxConfirmedText = '';
+
+    if (config.provider.inferenceProviderType ==
+        InferenceProviderType.mlxAudio) {
+      await _startMlxRealtimeTranscription(
+        config: config,
+        pcmStream: pcmStream,
+        onDelta: onDelta,
+      );
+      return;
     }
 
     await _repository.connect(
@@ -108,44 +159,11 @@ class RealtimeTranscriptionService {
       model: config.model.providerModelId,
     );
 
-    _isActive = true;
-    _pcmBuffer.clear();
-    _deltaBuffer.clear();
-    _detectedLanguage = null;
-
     // Subscribe to PCM stream: send to WebSocket + accumulate + compute dBFS
     _pcmSubscription = pcmStream.listen(
       (chunk) {
         _repository.sendAudioChunk(chunk);
-
-        // Cap buffer to prevent OOM on long recordings. The WebSocket still
-        // receives all audio for transcription — the buffer is only used for
-        // the saved audio file. When the buffer is full, trim oldest bytes
-        // so the saved file contains the most recent audio.
-        final newTotal = _pcmBuffer.length + chunk.length;
-        if (newTotal > _maxPcmBufferBytes) {
-          final existing = _pcmBuffer.takeBytes();
-          if (chunk.length >= _maxPcmBufferBytes) {
-            // Single chunk exceeds max — keep only the tail of the chunk.
-            _pcmBuffer.add(
-              chunk.sublist(chunk.length - _maxPcmBufferBytes),
-            );
-          } else {
-            final excess = newTotal - _maxPcmBufferBytes;
-            final kept = existing.length - excess;
-            final merged = Uint8List(kept + chunk.length)
-              ..setRange(0, kept, existing, excess)
-              ..setRange(kept, kept + chunk.length, chunk);
-            _pcmBuffer.add(merged);
-          }
-        } else {
-          _pcmBuffer.add(chunk);
-        }
-
-        if (!_amplitudeController.isClosed) {
-          final dbfs = computeDbfsFromPcm16(chunk);
-          _amplitudeController.add(dbfs);
-        }
+        _bufferPcmAndAmplitude(chunk);
       },
       onError: (Object error) {
         getIt<LoggingService>().captureException(
@@ -170,6 +188,7 @@ class RealtimeTranscriptionService {
         _detectedLanguage = language;
       },
     );
+    _activeBackend = _RealtimeBackendKind.mistral;
   }
 
   /// Stops the real-time transcription session.
@@ -185,6 +204,13 @@ class RealtimeTranscriptionService {
     required Future<void> Function() stopRecorder,
     required String outputPath,
   }) async {
+    if (_activeBackend == _RealtimeBackendKind.mlxAudio) {
+      return _stopMlxRealtimeTranscription(
+        stopRecorder: stopRecorder,
+        outputPath: outputPath,
+      );
+    }
+
     // Subscribe to the broadcast stream BEFORE cleanup so we don't miss
     // a transcription.done event that arrives while we're cancelling
     // subscriptions and signalling end-of-audio. Use a Completer +
@@ -262,8 +288,228 @@ class RealtimeTranscriptionService {
     _deltaSubscription = null;
     await _languageSubscription?.cancel();
     _languageSubscription = null;
+    await _mlxEventSubscription?.cancel();
+    _mlxEventSubscription = null;
 
     await _cleanup();
+  }
+
+  Future<void> _startMlxRealtimeTranscription({
+    required ({AiConfigInferenceProvider provider, AiConfigModel model}) config,
+    required Stream<Uint8List> pcmStream,
+    required void Function(String delta) onDelta,
+  }) async {
+    _activeBackend = _RealtimeBackendKind.mlxAudio;
+    _mlxDoneCompleter = Completer<RealtimeTranscriptionDone>();
+
+    _mlxEventSubscription = _mlxAudioChannel.realtimeTranscriptionEvents.listen(
+      (event) {
+        switch (event.type) {
+          case MlxAudioRealtimeEventType.confirmed:
+            _appendMlxConfirmedText(event.text ?? '', onDelta);
+          case MlxAudioRealtimeEventType.done:
+            final text = event.text ?? _deltaBuffer.toString();
+            _appendMlxConfirmedText(text, onDelta);
+            final completer = _mlxDoneCompleter;
+            if (completer != null && !completer.isCompleted) {
+              completer.complete(RealtimeTranscriptionDone(text: text));
+            }
+          case MlxAudioRealtimeEventType.error:
+            final completer = _mlxDoneCompleter;
+            final error = StateError(
+              event.message ?? 'MLX realtime transcription failed',
+            );
+            if (completer != null && !completer.isCompleted) {
+              completer.completeError(error);
+            }
+            getIt<LoggingService>().captureException(
+              error,
+              domain: 'RealtimeTranscriptionService',
+              subDomain: 'mlxAudio.error',
+            );
+          case MlxAudioRealtimeEventType.provisional:
+          case MlxAudioRealtimeEventType.display:
+          case MlxAudioRealtimeEventType.stats:
+            break;
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        final completer = _mlxDoneCompleter;
+        if (completer != null && !completer.isCompleted) {
+          completer.completeError(error, stackTrace);
+        }
+      },
+    );
+
+    try {
+      await _mlxAudioChannel.startRealtimeTranscription(
+        modelId: config.model.providerModelId,
+      );
+    } catch (_) {
+      await _cleanup();
+      rethrow;
+    }
+
+    _pcmSubscription = pcmStream.listen(
+      (chunk) {
+        unawaited(
+          _mlxAudioChannel.appendRealtimePcm(chunk).catchError((
+            Object error,
+            StackTrace stackTrace,
+          ) {
+            getIt<LoggingService>().captureException(
+              error,
+              domain: 'RealtimeTranscriptionService',
+              subDomain: 'mlxAudio.appendPcm',
+              stackTrace: stackTrace,
+            );
+          }),
+        );
+        _bufferPcmAndAmplitude(chunk);
+      },
+      onError: (Object error) {
+        getIt<LoggingService>().captureException(
+          error,
+          domain: 'RealtimeTranscriptionService',
+          subDomain: 'pcmStream.error',
+        );
+      },
+    );
+  }
+
+  Future<RealtimeStopResult> _stopMlxRealtimeTranscription({
+    required Future<void> Function() stopRecorder,
+    required String outputPath,
+  }) async {
+    final doneCompleter =
+        _mlxDoneCompleter ?? Completer<RealtimeTranscriptionDone>();
+
+    String transcript;
+    var usedFallback = false;
+
+    try {
+      await _pcmSubscription?.cancel();
+      _pcmSubscription = null;
+
+      await stopRecorder();
+      await _mlxAudioChannel.stopRealtimeTranscription();
+
+      final done = await doneCompleter.future.timeout(_doneTimeout);
+      transcript = done.text;
+    } on TimeoutException {
+      transcript = _deltaBuffer.toString();
+      usedFallback = true;
+      getIt<LoggingService>().captureEvent(
+        'MLX transcription.done timed out, using accumulated confirmed text '
+        '(${transcript.length} chars)',
+        domain: 'RealtimeTranscriptionService',
+        subDomain: 'mlxAudio.stop.timeout',
+      );
+    } catch (error, stackTrace) {
+      transcript = _deltaBuffer.toString();
+      usedFallback = true;
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'RealtimeTranscriptionService',
+        subDomain: 'mlxAudio.stop',
+        stackTrace: stackTrace,
+      );
+    }
+
+    final audioFilePath = await _saveAudio(outputPath);
+    await _cleanup();
+
+    return RealtimeStopResult(
+      transcript: transcript,
+      audioFilePath: audioFilePath,
+      usedTranscriptFallback: usedFallback,
+      detectedLanguage: _detectedLanguage,
+    );
+  }
+
+  void _appendMlxConfirmedText(
+    String text,
+    void Function(String delta) onDelta,
+  ) {
+    if (text.isEmpty || text == _lastMlxConfirmedText) {
+      return;
+    }
+
+    final delta = _confirmedTextDelta(
+      previous: _lastMlxConfirmedText,
+      next: text,
+    );
+    _lastMlxConfirmedText = text;
+    if (delta.isEmpty) return;
+    _deltaBuffer.write(delta);
+    onDelta(delta);
+  }
+
+  String _confirmedTextDelta({
+    required String previous,
+    required String next,
+  }) {
+    if (previous.isEmpty || next.startsWith(previous)) {
+      return next.substring(previous.length);
+    }
+    if (previous.startsWith(next)) {
+      return '';
+    }
+
+    final overlapLength = _suffixPrefixOverlapLength(previous, next);
+    if (overlapLength > 0) {
+      return next.substring(overlapLength);
+    }
+
+    return next.substring(_commonPrefixLength(previous, next));
+  }
+
+  int _suffixPrefixOverlapLength(String previous, String next) {
+    final maxLength = previous.length < next.length
+        ? previous.length
+        : next.length;
+    for (var length = maxLength; length > 0; length--) {
+      if (previous.endsWith(next.substring(0, length))) {
+        return length;
+      }
+    }
+    return 0;
+  }
+
+  int _commonPrefixLength(String a, String b) {
+    final maxLength = a.length < b.length ? a.length : b.length;
+    for (var i = 0; i < maxLength; i++) {
+      if (a.codeUnitAt(i) != b.codeUnitAt(i)) {
+        return i;
+      }
+    }
+    return maxLength;
+  }
+
+  void _bufferPcmAndAmplitude(Uint8List chunk) {
+    final newTotal = _pcmBuffer.length + chunk.length;
+    if (newTotal > _maxPcmBufferBytes) {
+      final existing = _pcmBuffer.takeBytes();
+      if (chunk.length >= _maxPcmBufferBytes) {
+        _pcmBuffer.add(
+          chunk.sublist(chunk.length - _maxPcmBufferBytes),
+        );
+      } else {
+        final excess = newTotal - _maxPcmBufferBytes;
+        final kept = existing.length - excess;
+        final merged = Uint8List(kept + chunk.length)
+          ..setRange(0, kept, existing, excess)
+          ..setRange(kept, kept + chunk.length, chunk);
+        _pcmBuffer.add(merged);
+      }
+    } else {
+      _pcmBuffer.add(chunk);
+    }
+
+    if (!_amplitudeController.isClosed) {
+      final dbfs = computeDbfsFromPcm16(chunk);
+      _amplitudeController.add(dbfs);
+    }
   }
 
   Future<String?> _saveAudio(String outputPath) async {
@@ -358,10 +604,23 @@ class RealtimeTranscriptionService {
     _deltaSubscription = null;
     await _languageSubscription?.cancel();
     _languageSubscription = null;
+    await _mlxEventSubscription?.cancel();
+    _mlxEventSubscription = null;
+    _mlxDoneCompleter = null;
+    _lastMlxConfirmedText = '';
     _detectedLanguage = null;
-    await _repository.disconnect();
+    _deltaBuffer.clear();
+    if (_activeBackend == _RealtimeBackendKind.mlxAudio) {
+      await _mlxAudioChannel.cancelRealtimeTranscription();
+    } else {
+      await _repository.disconnect();
+    }
+    _activeBackend = null;
   }
 }
+
+bool _isMlxRealtimeModel(String providerModelId) =>
+    isMlxAudioQwenAsrModelId(providerModelId);
 
 final Provider<RealtimeTranscriptionService>
 realtimeTranscriptionServiceProvider = Provider<RealtimeTranscriptionService>((
@@ -376,6 +635,10 @@ realtimeTranscriptionServiceProvider = Provider<RealtimeTranscriptionService>((
 /// whether to show the realtime mode toggle.
 // ignore: specify_nonobvious_property_types
 final realtimeAvailableProvider = FutureProvider.autoDispose<bool>((ref) async {
+  if (!realtimeTranscriptionUiEnabled) {
+    return false;
+  }
+
   final service = ref.watch(realtimeTranscriptionServiceProvider);
   final config = await service.resolveRealtimeConfig();
   return config != null;

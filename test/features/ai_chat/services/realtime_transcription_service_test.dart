@@ -12,6 +12,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -130,6 +132,81 @@ class _FakeWebSocketSink implements WebSocketSink {
 const _providerId = 'p-rt-svc';
 const _modelId = 'm-rt-svc';
 const _providerModelId = 'voxtral-mini-transcribe-realtime-2602';
+const _mlxProviderId = 'p-mlx-rt-svc';
+const _mlxModelId = 'm-mlx-rt-svc';
+
+class _FakeMlxAudioChannel extends MlxAudioChannel {
+  final eventsController = StreamController<MlxAudioRealtimeEvent>.broadcast(
+    sync: true,
+  );
+  final appendedPcm = <Uint8List>[];
+  String? startedModelId;
+  String? startedDelayPreset;
+  String? doneTextOnStop;
+  Exception? startError;
+  Exception? appendError;
+  Exception? stopError;
+  bool stopped = false;
+  bool cancelled = false;
+
+  @override
+  Stream<MlxAudioRealtimeEvent> get realtimeTranscriptionEvents =>
+      eventsController.stream;
+
+  @override
+  Future<void> startRealtimeTranscription({
+    required String modelId,
+    String? language,
+    String delayPreset = 'subtitle',
+  }) async {
+    final error = startError;
+    if (error != null) {
+      throw error;
+    }
+    startedModelId = modelId;
+    startedDelayPreset = delayPreset;
+  }
+
+  @override
+  Future<void> appendRealtimePcm(Uint8List pcm16) async {
+    final error = appendError;
+    if (error != null) {
+      throw error;
+    }
+    appendedPcm.add(Uint8List.fromList(pcm16));
+  }
+
+  @override
+  Future<void> stopRealtimeTranscription() async {
+    stopped = true;
+    final error = stopError;
+    if (error != null) {
+      throw error;
+    }
+    final text = doneTextOnStop;
+    if (text != null) {
+      scheduleMicrotask(() {
+        emit(
+          MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.done,
+            text: text,
+          ),
+        );
+      });
+    }
+  }
+
+  @override
+  Future<void> cancelRealtimeTranscription() async {
+    cancelled = true;
+  }
+
+  void emit(MlxAudioRealtimeEvent event) {
+    eventsController.add(event);
+  }
+
+  Future<void> close() => eventsController.close();
+}
 
 /// Encapsulates all the shared state and helpers for realtime transcription
 /// service tests.
@@ -138,11 +215,13 @@ class _TestBench {
     required this.container,
     required this.channel,
     required this.service,
+    required this.mlxAudioChannel,
   });
 
   final ProviderContainer container;
   final _FakeWebSocketChannel channel;
   final RealtimeTranscriptionService service;
+  final _FakeMlxAudioChannel mlxAudioChannel;
 
   /// PCM controller for feeding audio data — created lazily per
   /// [startTranscription] call so each test gets a fresh one.
@@ -151,6 +230,7 @@ class _TestBench {
   /// Creates a fully wired test bench with config in the DB.
   static Future<_TestBench> create({
     bool addConfig = true,
+    bool addMlxConfig = false,
     Duration doneTimeout = const Duration(seconds: 10),
   }) async {
     final db = AiConfigDb(inMemoryDatabase: true);
@@ -182,8 +262,35 @@ class _TestBench {
         fromSync: true,
       );
     }
+    if (addMlxConfig) {
+      await aiRepo.saveConfig(
+        AiConfig.inferenceProvider(
+          id: _mlxProviderId,
+          baseUrl: '',
+          apiKey: '',
+          name: 'MLX Audio',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.mlxAudio,
+        ),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        AiConfig.model(
+          id: _mlxModelId,
+          name: 'Qwen3 ASR',
+          providerModelId: mlxAudioQwenAsrModelId,
+          inferenceProviderId: _mlxProviderId,
+          createdAt: DateTime(2024),
+          inputModalities: const [Modality.audio],
+          outputModalities: const [Modality.text],
+          isReasoningModel: false,
+        ),
+        fromSync: true,
+      );
+    }
 
     final fakeChannel = _FakeWebSocketChannel();
+    final fakeMlxAudioChannel = _FakeMlxAudioChannel();
 
     final repo = MistralRealtimeTranscriptionRepository(
       channelFactory: (_, _) {
@@ -205,6 +312,7 @@ class _TestBench {
           (ref) => RealtimeTranscriptionService(
             ref,
             repository: repo,
+            mlxAudioChannel: fakeMlxAudioChannel,
             doneTimeout: doneTimeout,
           ),
         ),
@@ -217,6 +325,7 @@ class _TestBench {
       container: container,
       channel: fakeChannel,
       service: service,
+      mlxAudioChannel: fakeMlxAudioChannel,
     );
   }
 
@@ -289,6 +398,7 @@ class _TestBench {
 
   void dispose() {
     _pcmController?.close();
+    unawaited(mlxAudioChannel.close());
     container.dispose();
   }
 }
@@ -322,6 +432,21 @@ void main() {
       expect(config, isNotNull);
       expect(config!.provider.id, _providerId);
       expect(config.model.providerModelId, _providerModelId);
+    });
+
+    test('prefers local MLX Qwen3-ASR when configured', () async {
+      final bench = await _TestBench.create(addMlxConfig: true);
+      addTearDown(bench.dispose);
+
+      final config = await bench.service.resolveRealtimeConfig();
+
+      expect(config, isNotNull);
+      expect(config!.provider.id, _mlxProviderId);
+      expect(
+        config.provider.inferenceProviderType,
+        InferenceProviderType.mlxAudio,
+      );
+      expect(config.model.providerModelId, mlxAudioQwenAsrModelId);
     });
 
     test('returns null when no realtime model configured', () async {
@@ -506,6 +631,333 @@ void main() {
         expect(deltas, ['Hello ', 'world']);
       });
     });
+
+    test(
+      'uses MLX Qwen streaming channel when local model is configured',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+
+        final deltas = <String>[];
+        await bench.startTranscription(onDelta: deltas.add);
+
+        expect(bench.mlxAudioChannel.startedModelId, mlxAudioQwenAsrModelId);
+        expect(bench.mlxAudioChannel.startedDelayPreset, 'subtitle');
+
+        await bench.sendPcm(_pcmSilence(64));
+        expect(bench.mlxAudioChannel.appendedPcm, hasLength(1));
+        expect(bench.mlxAudioChannel.appendedPcm.single, hasLength(64));
+
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'Hello ',
+          ),
+        );
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'Hello world',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(deltas, ['Hello ', 'world']);
+      },
+    );
+
+    test(
+      'deduplicates MLX confirmed text when the backend drops old context',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+
+        final deltas = <String>[];
+        await bench.startTranscription(onDelta: deltas.add);
+
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'Hello world',
+          ),
+        );
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'world again',
+          ),
+        );
+        await Future<void>.value();
+        await Future<void>.value();
+
+        expect(deltas, ['Hello world', ' again']);
+      },
+    );
+
+    test('ignores MLX provisional display and stats events', () async {
+      final bench = await _TestBench.create(
+        addConfig: false,
+        addMlxConfig: true,
+      );
+      addTearDown(bench.dispose);
+
+      final deltas = <String>[];
+      await bench.startTranscription(onDelta: deltas.add);
+
+      bench.mlxAudioChannel
+        ..emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.provisional,
+            text: 'draft',
+          ),
+        )
+        ..emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.display,
+            text: 'display',
+          ),
+        )
+        ..emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.stats,
+            encodedWindowCount: 2,
+            totalAudioSeconds: 2.4,
+          ),
+        );
+      await Future<void>.value();
+
+      expect(deltas, isEmpty);
+    });
+
+    test(
+      'cleans up the MLX backend when native realtime startup fails',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+        bench.mlxAudioChannel.startError = Exception('native start failed');
+
+        await expectLater(
+          bench.startTranscription,
+          throwsA(
+            isA<Exception>().having(
+              (error) => error.toString(),
+              'message',
+              contains('native start failed'),
+            ),
+          ),
+        );
+
+        expect(bench.service.isActive, isFalse);
+        expect(bench.mlxAudioChannel.cancelled, isTrue);
+      },
+    );
+
+    test(
+      'logs MLX append failures without dropping the active session',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+        bench.mlxAudioChannel.appendError = Exception('append failed');
+
+        final pcm = await bench.startTranscription();
+        pcm.add(_pcmSilence(64));
+        await Future<void>.value();
+        await Future<void>.value();
+
+        expect(bench.service.isActive, isTrue);
+        expect(bench.mlxAudioChannel.appendedPcm, isEmpty);
+        expect(
+          fakeLogging.exceptions.map((error) => error.toString()),
+          contains(contains('append failed')),
+        );
+      },
+    );
+
+    test(
+      'handles MLX confirmed-text truncation and shared-prefix rewrites',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+
+        final deltas = <String>[];
+        await bench.startTranscription(onDelta: deltas.add);
+
+        bench.mlxAudioChannel
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.confirmed,
+              text: 'Hello world',
+            ),
+          )
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.confirmed,
+              text: 'Hello',
+            ),
+          )
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.confirmed,
+              text: 'Helium',
+            ),
+          );
+        await Future<void>.value();
+
+        expect(deltas, ['Hello world', 'ium']);
+      },
+    );
+
+    test(
+      'records detected language from Mistral transcription.language events',
+      () async {
+        final bench = await _TestBench.create();
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        bench.channel.simulateServerMessage({
+          'type': 'transcription.language',
+          'language': 'en',
+        });
+        bench.scheduleDone('hello');
+
+        final result = await bench.stop();
+
+        expect(result.detectedLanguage, 'en');
+        expect(result.transcript, 'hello');
+      },
+    );
+
+    test(
+      'logs and surfaces MLX error events through the done completer',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+          doneTimeout: const Duration(seconds: 5),
+        );
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'before crash',
+          ),
+        );
+        final dir = await Directory.systemTemp.createTemp('rt_mlx_err_');
+        addTearDown(() async {
+          if (dir.existsSync()) await dir.delete(recursive: true);
+        });
+
+        unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 20)).then((_) {
+            bench.mlxAudioChannel.emit(
+              const MlxAudioRealtimeEvent(
+                type: MlxAudioRealtimeEventType.error,
+                message: 'inference crashed',
+              ),
+            );
+          }),
+        );
+        final result = await bench.service.stop(
+          stopRecorder: () async {},
+          outputPath: '${dir.path}/output',
+        );
+
+        expect(result.usedTranscriptFallback, isTrue);
+        expect(result.transcript, 'before crash');
+        expect(
+          fakeLogging.exceptions
+              .map((error) => error.toString())
+              .where((message) => message.contains('inference crashed')),
+          isNotEmpty,
+        );
+      },
+    );
+
+    test(
+      'logs MLX realtime event stream errors via the outer onError handler',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+          doneTimeout: const Duration(seconds: 5),
+        );
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        final dir = await Directory.systemTemp.createTemp('rt_mlx_stream_err_');
+        addTearDown(() async {
+          if (dir.existsSync()) await dir.delete(recursive: true);
+        });
+        unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 20)).then((_) {
+            bench.mlxAudioChannel.eventsController.addError(
+              Exception('event stream broken'),
+            );
+          }),
+        );
+        final result = await bench.service.stop(
+          stopRecorder: () async {},
+          outputPath: '${dir.path}/output',
+        );
+
+        expect(result.usedTranscriptFallback, isTrue);
+        expect(
+          fakeLogging.exceptions.map((error) => error.toString()),
+          contains(contains('event stream broken')),
+        );
+      },
+    );
+
+    test(
+      'logs MLX PCM stream errors and keeps the session active',
+      () {
+        fakeAsync((async) {
+          late _TestBench bench;
+          _TestBench.create(
+            addConfig: false,
+            addMlxConfig: true,
+          ).then((b) => bench = b);
+          async.flushMicrotasks();
+          addTearDown(bench.dispose);
+
+          late StreamController<Uint8List> pcm;
+          bench.startTranscription().then((c) => pcm = c);
+          async
+            ..flushMicrotasks()
+            ..elapse(Duration.zero)
+            ..flushMicrotasks();
+
+          pcm.addError(Exception('mlx microphone disconnected'));
+          async.flushMicrotasks();
+
+          expect(
+            fakeLogging.exceptions.map((error) => error.toString()),
+            contains(contains('mlx microphone disconnected')),
+          );
+          expect(bench.service.isActive, isTrue);
+
+          bench.service.dispose();
+          async.flushMicrotasks();
+        });
+      },
+    );
   });
 
   group('stop', () {
@@ -618,6 +1070,129 @@ void main() {
       final result = await bench.stop();
 
       expect(result.audioFilePath, isNull);
+    });
+
+    test(
+      'stops MLX Qwen streaming and returns final native transcript',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        await bench.sendPcm(_pcmSilence(64));
+        bench.mlxAudioChannel.doneTextOnStop = 'Local final transcript';
+
+        final result = await bench.stop();
+
+        expect(result.transcript, 'Local final transcript');
+        expect(result.usedTranscriptFallback, isFalse);
+        expect(bench.mlxAudioChannel.stopped, isTrue);
+        expect(bench.mlxAudioChannel.cancelled, isTrue);
+      },
+    );
+
+    test(
+      'uses accumulated MLX text when done event omits final text',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+        );
+        addTearDown(bench.dispose);
+
+        final deltas = <String>[];
+        await bench.startTranscription(onDelta: deltas.add);
+        bench.mlxAudioChannel
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.confirmed,
+              text: 'partial local transcript',
+            ),
+          )
+          ..emit(
+            const MlxAudioRealtimeEvent(
+              type: MlxAudioRealtimeEventType.done,
+            ),
+          );
+        await Future<void>.value();
+
+        final result = await bench.stop();
+
+        expect(result.transcript, 'partial local transcript');
+        expect(result.usedTranscriptFallback, isFalse);
+        expect(deltas, ['partial local transcript']);
+      },
+    );
+
+    test(
+      'falls back to accumulated MLX confirmed text when stop times out',
+      () async {
+        final bench = await _TestBench.create(
+          addConfig: false,
+          addMlxConfig: true,
+          doneTimeout: const Duration(milliseconds: 10),
+        );
+        addTearDown(bench.dispose);
+
+        await bench.startTranscription();
+        bench.mlxAudioChannel.emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'timeout fallback transcript',
+          ),
+        );
+        await Future<void>.value();
+
+        final result = await bench.service.stop(
+          stopRecorder: () async {},
+          outputPath: (await Directory.systemTemp.createTemp(
+            'rt_mlx_timeout_',
+          )).path,
+        );
+
+        expect(result.transcript, 'timeout fallback transcript');
+        expect(result.usedTranscriptFallback, isTrue);
+        expect(
+          fakeLogging.events,
+          contains(
+            contains('MLX transcription.done timed out'),
+          ),
+        );
+      },
+    );
+
+    test('falls back to confirmed MLX text when native stop fails', () async {
+      final bench = await _TestBench.create(
+        addConfig: false,
+        addMlxConfig: true,
+      );
+      addTearDown(bench.dispose);
+
+      await bench.startTranscription();
+      bench.mlxAudioChannel
+        ..emit(
+          const MlxAudioRealtimeEvent(
+            type: MlxAudioRealtimeEventType.confirmed,
+            text: 'partial local transcript',
+          ),
+        )
+        ..stopError = Exception('native stop failed');
+      await Future<void>.value();
+
+      final result = await bench.service.stop(
+        stopRecorder: () async {},
+        outputPath: '/tmp/rt_mlx_error/output',
+      );
+
+      expect(result.transcript, 'partial local transcript');
+      expect(result.usedTranscriptFallback, isTrue);
+      expect(
+        fakeLogging.exceptions.map((e) => e.toString()),
+        contains(contains('native stop failed')),
+      );
     });
   });
 

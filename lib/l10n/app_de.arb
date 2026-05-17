@@ -571,6 +571,44 @@
   "aiInferenceErrorTimeoutTitle": "Zeitüberschreitung",
   "aiInferenceErrorUnknownTitle": "Fehler",
   "aiInternalsTitle": "Agent-Internes",
+  "aiModelDownloadCloseButton": "Schließen",
+  "aiModelDownloadDialogDescription": "Lotti lädt {modelName} in den MLX-Audio-Cache und nutzt es für lokale Sprachverarbeitung.",
+  "@aiModelDownloadDialogDescription": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadDialogTitle": "{modelName} installieren",
+  "@aiModelDownloadDialogTitle": {
+    "placeholders": {
+      "modelName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiModelDownloadInstallTooltip": "Modell installieren",
+  "aiModelDownloadOpenProgressTooltip": "Download-Fortschritt anzeigen",
+  "aiModelDownloadStatusChecking": "Modellstatus wird geprüft",
+  "aiModelDownloadStatusDownloading": "Download läuft {percent} %",
+  "@aiModelDownloadStatusDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "aiModelDownloadStatusDownloadingIndeterminate": "Download läuft",
+  "aiModelDownloadStatusFailed": "Download fehlgeschlagen",
+  "aiModelDownloadStatusInstalled": "Installiert",
+  "aiModelDownloadStatusNotInstalled": "Nicht installiert",
+  "aiModelDownloadStatusUnsupported": "Apple Silicon erforderlich",
+  "aiModelInstallChoiceCancelButton": "Abbrechen",
+  "aiModelInstallChoiceDescription": "Wähle zuerst das lokale Speech-to-Text-Modell aus, das heruntergeladen werden soll. Die anderen kannst du später über die Modellliste installieren.",
+  "aiModelInstallChoiceInstallButton": "Modell installieren",
+  "aiModelInstallChoiceRecommended": "Empfohlen",
+  "aiModelInstallChoiceTitle": "MLX-Audio-Modell wählen",
   "aiOllamaModelInstalledSuccessfully": "Modell \"{modelName}\" erfolgreich installiert!",
   "@aiOllamaModelInstalledSuccessfully": {
     "placeholders": {
@@ -639,6 +677,7 @@
   "aiProviderConnectBreadcrumbAdd": "Anbieter hinzufügen",
   "aiProviderConnectFieldBaseUrlHint": "Leer lassen, um den offiziellen Endpunkt zu verwenden",
   "aiProviderConnectFieldBaseUrlLabelOptional": "Basis-URL (optional)",
+  "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Wird in deiner Anbieterliste angezeigt",
   "aiProviderConnectionCheckingLabel": "Schlüssel wird geprüft, verfügbare Modelle werden geladen…",
   "aiProviderConnectionFailedBadResponseDetail": "Unerwartete Antwortform: {type}",
@@ -735,12 +774,15 @@
   "aiProviderDetailRemoveDescription": "Löscht den Anbieter und alle Modelle, die ihn nutzen. Das lässt sich nicht rückgängig machen.",
   "aiProviderDetailRemoveTitle": "Diesen Anbieter entfernen",
   "aiProviderDetailValueUnset": "Nicht gesetzt",
+  "aiProviderEmbeddedRuntimeHint": "Läuft eingebettet im Apple-App-Prozess. Kein lokaler Server und keine Basis-URL nötig.",
   "aiProviderGeminiDescription": "Googles Gemini AI-Modelle",
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiDescription": "API kompatibel mit OpenAI-Format",
   "aiProviderGenericOpenAiName": "OpenAI-kompatibel",
   "aiProviderMistralDescription": "Mistral AI Cloud-API mit nativer Audio-Transkription",
   "aiProviderMistralName": "Mistral",
+  "aiProviderMlxAudioDescription": "Eingebettete MLX-Audio-Modelle für lokale STT und TTS auf Apple Silicon",
+  "aiProviderMlxAudioName": "MLX Audio (lokal)",
   "aiProviderNebiusAiStudioDescription": "Modelle von Nebius AI Studio",
   "aiProviderNebiusAiStudioName": "Nebius AI Studio",
   "aiProviderOllamaDescription": "Lokale Inferenz mit Ollama",
@@ -755,6 +797,7 @@
   "aiProviderTaglineAlibaba": "Qwen-Modelle · multimodal · langer Kontext",
   "aiProviderTaglineAnthropic": "Claude-Familie · langer Kontext",
   "aiProviderTaglineGemini": "Multimodal · Audiotranskription",
+  "aiProviderTaglineMlxAudio": "Eingebettet · Apple Silicon · lokales Audio",
   "aiProviderTaglineOllama": "Läuft lokal · keine Cloud-Aufrufe",
   "aiProviderTaglineOpenAi": "GPT-Familie · Vision + Reasoning",
   "aiProviderUnknownName": "KI-Anbieter",
@@ -942,6 +985,7 @@
   "aiSetupWizardRunningButton": "Wird ausgeführt...",
   "aiSetupWizardSafeToRunMultiple": "Kann mehrfach ausgeführt werden - vorhandene Elemente werden beibehalten",
   "aiSetupWizardTitle": "KI-Einrichtungsassistent",
+  "aiSummarySpeakTooltip": "Zusammenfassung lokal vorlesen",
   "aiTaskSummaryTitle": "KI-Aufgabenzusammenfassung",
   "apiKeyAddPageTitle": "Anbieter hinzufügen",
   "apiKeyAuthenticationDescription": "Sichere deine API-Verbindung",
@@ -1192,6 +1236,8 @@
   "configFlagAttemptEmbeddingDescription": "Wenn aktiviert, versucht die App, Einbettungen für deine Einträge zu generieren, um die Suche und Vorschläge für verwandte Inhalte zu verbessern.",
   "configFlagEnableAiStreaming": "AI-Streaming für Aufgabenaktionen aktivieren",
   "configFlagEnableAiStreamingDescription": "Streame AI-Antworten für aufgabenbezogene Aktionen. Deaktivieren, um Antworten zu puffern und die UI flüssiger zu halten.",
+  "configFlagEnableAiSummaryTts": "AI-Zusammenfassung vorlesen",
+  "configFlagEnableAiSummaryTtsDescription": "Zeigt die lokale Text-to-Speech-Schaltfläche in AI-Zusammenfassungen von Aufgaben. Erfordert ein installiertes MLX-Audio-TTS-Modell.",
   "configFlagEnableDailyOs": "DailyOS aktivieren",
   "configFlagEnableDailyOsDescription": "DailyOS in der Hauptnavigation anzeigen.",
   "configFlagEnableDashboardsPage": "Seite Dashboards aktivieren",

@@ -35,6 +35,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableAiSummaryTtsFlag,
+      description: 'Enable local AI summary playback?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: recordLocationFlag,
       description: 'Record geolocation?',
       status: false,

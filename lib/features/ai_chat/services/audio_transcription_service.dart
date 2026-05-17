@@ -1,11 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 
 const _kDefaultAudioModel = 'gemini-2.5-flash';
 const _kTranscriptionPrompt = 'Transcribe the audio to natural text.';
@@ -23,14 +27,13 @@ class AudioTranscriptionService {
   /// Returns the full transcription as a single concatenated string by
   /// consuming [transcribeStream]. Tests rely on this convenience entry
   /// point; UI code uses the streaming variant directly.
-  Future<String> transcribe(String filePath) async {
-    final buffer = StringBuffer();
-    // ignore: prefer_foreach - await for is required for async stream iteration
-    await for (final chunk in transcribeStream(filePath)) {
-      buffer.write(chunk);
-    }
-    return buffer.toString();
-  }
+  Future<String> transcribe(
+    String filePath, {
+    List<String> speechDictionaryTerms = const [],
+  }) => transcribeStream(
+    filePath,
+    speechDictionaryTerms: speechDictionaryTerms,
+  ).join();
 
   /// Transcribes audio from a local file at [filePath] with streaming output.
   ///
@@ -40,7 +43,10 @@ class AudioTranscriptionService {
   /// For providers that support chunk-by-chunk streaming (like Voxtral),
   /// each yield represents a portion of the audio (e.g., 60-second segments).
   /// For other providers, the entire transcription may come as a single chunk.
-  Stream<String> transcribeStream(String filePath) async* {
+  Stream<String> transcribeStream(
+    String filePath, {
+    List<String> speechDictionaryTerms = const [],
+  }) async* {
     final aiRepo = ref.read(aiConfigRepositoryProvider);
     // Fetch models and providers in parallel to reduce I/O latency
     final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
@@ -75,10 +81,9 @@ class AudioTranscriptionService {
       throw Exception('No audio-capable models configured');
     }
 
-    // Try to find a model matching the default, otherwise use the first available
-    final model = audioModels.firstWhere(
-      (m) => m.providerModelId.contains(_kDefaultAudioModel),
-      orElse: () => audioModels.first,
+    final model = _selectBatchAudioModel(
+      audioModels,
+      allProviders,
     );
 
     // Get the provider for the selected model
@@ -88,6 +93,20 @@ class AudioTranscriptionService {
           (p) => p.id == model.inferenceProviderId,
           orElse: () => throw Exception('Provider not found for audio model'),
         );
+
+    if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
+      final result = await ref
+          .read(mlxAudioChannelProvider)
+          .transcribeFile(
+            filePath: filePath,
+            modelId: model.providerModelId,
+            speechDictionaryTerms: speechDictionaryTerms,
+          );
+      if (result.text.isNotEmpty) {
+        yield result.text;
+      }
+      return;
+    }
 
     final bytes = await File(filePath).readAsBytes();
     final audioBase64 = base64Encode(bytes);
@@ -101,6 +120,7 @@ class AudioTranscriptionService {
       apiKey: provider.apiKey,
       provider: provider,
       maxCompletionTokens: model.maxCompletionTokens,
+      speechDictionaryTerms: speechDictionaryTerms,
     );
 
     await for (final chunk in stream) {
@@ -110,6 +130,52 @@ class AudioTranscriptionService {
       }
     }
   }
+}
+
+AiConfigModel _selectBatchAudioModel(
+  List<AiConfigModel> audioModels,
+  Iterable<AiConfigInferenceProvider> providers,
+) {
+  final providersById = {
+    for (final provider in providers) provider.id: provider,
+  };
+
+  bool hasProviderType(AiConfigModel model, InferenceProviderType type) {
+    return providersById[model.inferenceProviderId]?.inferenceProviderType ==
+        type;
+  }
+
+  final mlxQwen = audioModels.firstWhereOrNull(
+    (model) =>
+        isMlxAudioQwenAsrModelId(model.providerModelId) &&
+        hasProviderType(model, InferenceProviderType.mlxAudio),
+  );
+  if (mlxQwen != null) {
+    return mlxQwen;
+  }
+
+  final mistralOffline = audioModels.firstWhereOrNull(
+    (model) =>
+        hasProviderType(model, InferenceProviderType.mistral) &&
+        MistralTranscriptionRepository.isMistralTranscriptionModel(
+          model.providerModelId,
+        ),
+  );
+  if (mistralOffline != null) {
+    return mistralOffline;
+  }
+
+  final mistralBatch = audioModels.firstWhereOrNull(
+    (model) => hasProviderType(model, InferenceProviderType.mistral),
+  );
+  if (mistralBatch != null) {
+    return mistralBatch;
+  }
+
+  return audioModels.firstWhere(
+    (model) => model.providerModelId.contains(_kDefaultAudioModel),
+    orElse: () => audioModels.first,
+  );
 }
 
 final Provider<AudioTranscriptionService> audioTranscriptionServiceProvider =
