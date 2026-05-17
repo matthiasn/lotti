@@ -40,22 +40,44 @@ private enum MlxAudioBridgeError: LocalizedError {
 }
 
 private actor MlxAudioAsyncSemaphore {
+    private struct Waiter {
+        let id: UUID
+        let continuation: CheckedContinuation<Void, Error>
+    }
+
     private var availablePermits: Int
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var waiters: [Waiter] = []
 
     init(value: Int) {
         availablePermits = value
     }
 
-    func wait() async {
+    func wait() async throws {
         if availablePermits > 0 {
             availablePermits -= 1
             return
         }
 
-        await withCheckedContinuation { continuation in
-            waiters.append(continuation)
+        let id = UUID()
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                if Task.isCancelled {
+                    continuation.resume(throwing: CancellationError())
+                } else {
+                    waiters.append(Waiter(id: id, continuation: continuation))
+                }
+            }
+        } onCancel: {
+            Task { await self.cancelWaiter(id: id) }
         }
+    }
+
+    private func cancelWaiter(id: UUID) {
+        guard let index = waiters.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        let waiter = waiters.remove(at: index)
+        waiter.continuation.resume(throwing: CancellationError())
     }
 
     func signal() {
@@ -64,7 +86,7 @@ private actor MlxAudioAsyncSemaphore {
             return
         }
 
-        waiters.removeFirst().resume()
+        waiters.removeFirst().continuation.resume()
     }
 }
 
@@ -282,7 +304,8 @@ final class MlxAudio: NSObject {
         let appCeiling = UInt64(32) * gibibyte
         let systemCeiling = physicalBytes * 3 / 4
         let lowerBound = UInt64(8) * gibibyte
-        return Int(max(lowerBound, min(appCeiling, systemCeiling)))
+        let preferred = max(lowerBound, min(appCeiling, systemCeiling))
+        return Int(min(preferred, systemCeiling))
     }
     #endif
 
@@ -964,7 +987,7 @@ final class MlxAudio: NSObject {
         operation: () async throws -> T
     ) async throws -> T {
         configureMlxMemoryLimitsIfNeeded()
-        await Self.mlxInferenceGate.wait()
+        try await Self.mlxInferenceGate.wait()
         Memory.peakMemory = 0
         logResourceSnapshot(stage: "\(stage).enter", modelId: modelId, audioURL: audioURL)
 
@@ -1025,7 +1048,11 @@ final class MlxAudio: NSObject {
     }
 
     private func evictCachedSTTModelIfIdle(modelId: String) async {
-        await Self.mlxInferenceGate.wait()
+        do {
+            try await Self.mlxInferenceGate.wait()
+        } catch {
+            return
+        }
 
         if cachedSTTModelId == modelId,
            let lastUsedAt = cachedSTTModelLastUsedAt,
