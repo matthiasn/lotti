@@ -39,24 +39,28 @@ Future<void> captureManualScreenshot({
   final image = await boundary.toImage(
     pixelRatio: tester.view.devicePixelRatio,
   );
-  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  try {
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
-  if (byteData == null) {
-    throw StateError('Could not encode screenshot "$name" as PNG');
+    if (byteData == null) {
+      throw StateError('Could not encode screenshot "$name" as PNG');
+    }
+
+    final outputDir = _screenshotDirFromDartDefine.isNotEmpty
+        ? _screenshotDirFromDartDefine
+        : Platform.environment['LOTTI_SCREENSHOT_DIR'] ??
+              p.join('screenshots', 'manual');
+    final safeName = name.replaceAll(RegExp('[^A-Za-z0-9_.-]'), '_');
+    final file = File(p.join(outputDir, '$safeName.png'));
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(
+      byteData.buffer.asUint8List(
+        byteData.offsetInBytes,
+        byteData.lengthInBytes,
+      ),
+      flush: true,
+    );
+  } finally {
+    image.dispose();
   }
-
-  final outputDir = _screenshotDirFromDartDefine.isNotEmpty
-      ? _screenshotDirFromDartDefine
-      : Platform.environment['LOTTI_SCREENSHOT_DIR'] ??
-            p.join('screenshots', 'manual');
-  final safeName = name.replaceAll(RegExp('[^A-Za-z0-9_.-]'), '_');
-  final file = File(p.join(outputDir, '$safeName.png'));
-  await file.parent.create(recursive: true);
-  await file.writeAsBytes(
-    byteData.buffer.asUint8List(
-      byteData.offsetInBytes,
-      byteData.lengthInBytes,
-    ),
-    flush: true,
-  );
 }
