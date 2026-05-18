@@ -16,9 +16,6 @@ import Flutter
         if let audioConverterRegistrar = self.registrar(forPlugin: "AudioConverter") {
             AudioConverter.register(with: audioConverterRegistrar)
         }
-        if let mlxAudioRegistrar = self.registrar(forPlugin: "MlxAudio") {
-            MlxAudio.register(with: mlxAudioRegistrar)
-        }
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
