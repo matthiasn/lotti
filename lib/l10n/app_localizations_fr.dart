@@ -4668,6 +4668,52 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noTasksToLink => 'Aucune tâche disponible à lier';
 
   @override
+  String get notificationBellEmptySemantics =>
+      'Notifications, aucune alerte non lue';
+
+  @override
+  String get notificationBellTooltip => 'Notifications';
+
+  @override
+  String notificationBellUnseenSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'alertes non lues',
+      one: 'alerte non lue',
+    );
+    return 'Notifications, $count $_temp0';
+  }
+
+  @override
+  String get notificationInboxDismiss => 'Ignorer la notification';
+
+  @override
+  String get notificationInboxEmpty => 'Tu es à jour.';
+
+  @override
+  String get notificationInboxError =>
+      'Impossible de charger les notifications.';
+
+  @override
+  String get notificationInboxTitle => 'Notifications';
+
+  @override
+  String get notificationSuggestionAttentionBodyFallback =>
+      'Ouvre la tâche pour la passer en revue.';
+
+  @override
+  String notificationSuggestionAttentionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count suggestions ont besoin de ton attention',
+      one: '1 suggestion a besoin de ton attention',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Pièce jointe';
 
   @override

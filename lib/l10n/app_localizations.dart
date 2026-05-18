@@ -8002,6 +8002,60 @@ abstract class AppLocalizations {
   /// **'No tasks available to link'**
   String get noTasksToLink;
 
+  /// No description provided for @notificationBellEmptySemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications, no unread alerts'**
+  String get notificationBellEmptySemantics;
+
+  /// No description provided for @notificationBellTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationBellTooltip;
+
+  /// No description provided for @notificationBellUnseenSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications, {count} unread {count, plural, =1{alert} other{alerts}}'**
+  String notificationBellUnseenSemantics(int count);
+
+  /// No description provided for @notificationInboxDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss notification'**
+  String get notificationInboxDismiss;
+
+  /// No description provided for @notificationInboxEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up.'**
+  String get notificationInboxEmpty;
+
+  /// No description provided for @notificationInboxError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load notifications.'**
+  String get notificationInboxError;
+
+  /// No description provided for @notificationInboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationInboxTitle;
+
+  /// No description provided for @notificationSuggestionAttentionBodyFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the task to review.'**
+  String get notificationSuggestionAttentionBodyFallback;
+
+  /// No description provided for @notificationSuggestionAttentionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 suggestion needs your attention} other{{count} suggestions need your attention}}'**
+  String notificationSuggestionAttentionTitle(int count);
+
   /// No description provided for @outboxMonitorAttachmentLabel.
   ///
   /// In en, this message translates to:

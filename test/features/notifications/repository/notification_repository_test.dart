@@ -89,6 +89,61 @@ void main() {
 
   group('NotificationRepository.create', () {
     test(
+      'createTaskSuggestion uses linkedTaskId-derived id by default',
+      () async {
+        final saved = await repository.createTaskSuggestion(
+          linkedTaskId: 'task-default',
+          suggestionCount: 1,
+          title: 'Look',
+          body: 'b',
+        );
+
+        expect(
+          saved!.meta.id,
+          repository.notificationIdForTaskSuggestion('task-default'),
+        );
+      },
+    );
+
+    test(
+      'createTaskSuggestion seeds the row id from idSeed when provided so a '
+      'fresh agent wave does not collide with an already-acted-on row for '
+      'the same task',
+      () async {
+        final first = await repository.createTaskSuggestion(
+          linkedTaskId: 'task-X',
+          suggestionCount: 1,
+          title: 'First wave',
+          body: 'b',
+          idSeed: 'change-set-1',
+        );
+        final second = await repository.createTaskSuggestion(
+          linkedTaskId: 'task-X',
+          suggestionCount: 1,
+          title: 'Second wave',
+          body: 'b',
+          idSeed: 'change-set-2',
+        );
+
+        // Different seeds → different inbox rows.
+        expect(first!.meta.id, isNot(second!.meta.id));
+        // The seeded id matches the same derivation the producer would use
+        // if it called the helper directly.
+        expect(
+          first.meta.id,
+          repository.notificationIdForTaskSuggestion('change-set-1'),
+        );
+        expect(
+          second.meta.id,
+          repository.notificationIdForTaskSuggestion('change-set-2'),
+        );
+        // Both rows still deep-link to the underlying task.
+        expect(first.linkedEntityId, 'task-X');
+        expect(second.linkedEntityId, 'task-X');
+      },
+    );
+
+    test(
       'createTaskSuggestion enriches meta, persists, enqueues and notifies',
       () async {
         final saved = await repository.createTaskSuggestion(

@@ -4639,6 +4639,53 @@ class AppLocalizationsCs extends AppLocalizations {
   String get noTasksToLink => 'Žádné dostupné úkoly k propojení';
 
   @override
+  String get notificationBellEmptySemantics =>
+      'Oznámení, žádná nepřečtená upozornění';
+
+  @override
+  String get notificationBellTooltip => 'Oznámení';
+
+  @override
+  String notificationBellUnseenSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Oznámení, $count nepřečtených upozornění',
+      few: 'Oznámení, $count nepřečtená upozornění',
+      one: 'Oznámení, 1 nepřečtené upozornění',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationInboxDismiss => 'Zavřít oznámení';
+
+  @override
+  String get notificationInboxEmpty => 'Máš všechno přečtené.';
+
+  @override
+  String get notificationInboxError => 'Oznámení se nepodařilo načíst.';
+
+  @override
+  String get notificationInboxTitle => 'Oznámení';
+
+  @override
+  String get notificationSuggestionAttentionBodyFallback =>
+      'Otevři úkol a zkontroluj jej.';
+
+  @override
+  String notificationSuggestionAttentionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count návrhů potřebuje tvou pozornost',
+      few: '$count návrhy potřebují tvou pozornost',
+      one: '1 návrh potřebuje tvou pozornost',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Příloha';
 
   @override

@@ -4656,6 +4656,53 @@ class AppLocalizationsRo extends AppLocalizations {
   String get noTasksToLink => 'Nu sunt sarcini disponibile pentru a fi legate';
 
   @override
+  String get notificationBellEmptySemantics =>
+      'Notificări, nicio alertă necitită';
+
+  @override
+  String get notificationBellTooltip => 'Notificări';
+
+  @override
+  String notificationBellUnseenSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de alerte necitite',
+      few: '$count alerte necitite',
+      one: '1 alertă necitită',
+    );
+    return 'Notificări, $_temp0';
+  }
+
+  @override
+  String get notificationInboxDismiss => 'Închideți notificarea';
+
+  @override
+  String get notificationInboxEmpty => 'Sunteți la zi.';
+
+  @override
+  String get notificationInboxError => 'Nu s-au putut încărca notificările.';
+
+  @override
+  String get notificationInboxTitle => 'Notificări';
+
+  @override
+  String get notificationSuggestionAttentionBodyFallback =>
+      'Deschideți sarcina pentru a o revizui.';
+
+  @override
+  String notificationSuggestionAttentionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sugestii necesită atenția dvs.',
+      few: '$count sugestii necesită atenția dvs.',
+      one: '1 sugestie necesită atenția dvs.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Atașament';
 
   @override

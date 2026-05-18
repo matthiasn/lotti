@@ -2109,6 +2109,29 @@
   "noDefaultLanguage": "Aucune langue par défaut",
   "noTasksFound": "Aucune tâche trouvée",
   "noTasksToLink": "Aucune tâche disponible à lier",
+  "notificationBellEmptySemantics": "Notifications, aucune alerte non lue",
+  "notificationBellTooltip": "Notifications",
+  "notificationBellUnseenSemantics": "Notifications, {count} {count, plural, =1{alerte non lue} other{alertes non lues}}",
+  "@notificationBellUnseenSemantics": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationInboxDismiss": "Ignorer la notification",
+  "notificationInboxEmpty": "Tu es à jour.",
+  "notificationInboxError": "Impossible de charger les notifications.",
+  "notificationInboxTitle": "Notifications",
+  "notificationSuggestionAttentionBodyFallback": "Ouvre la tâche pour la passer en revue.",
+  "notificationSuggestionAttentionTitle": "{count, plural, =1{1 suggestion a besoin de ton attention} other{{count} suggestions ont besoin de ton attention}}",
+  "@notificationSuggestionAttentionTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "outboxMonitorAttachmentLabel": "Pièce jointe",
   "outboxMonitorDelete": "supprimer",
   "outboxMonitorDeleteConfirmLabel": "Supprimer",

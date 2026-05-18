@@ -4623,6 +4623,52 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noTasksToLink => 'Keine Aufgaben zum Verknüpfen verfügbar';
 
   @override
+  String get notificationBellEmptySemantics =>
+      'Mitteilungen, keine ungelesenen Mitteilungen';
+
+  @override
+  String get notificationBellTooltip => 'Mitteilungen';
+
+  @override
+  String notificationBellUnseenSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mitteilungen',
+      one: 'Mitteilung',
+    );
+    return 'Mitteilungen, $count ungelesene $_temp0';
+  }
+
+  @override
+  String get notificationInboxDismiss => 'Mitteilung verwerfen';
+
+  @override
+  String get notificationInboxEmpty => 'Du bist auf dem neuesten Stand.';
+
+  @override
+  String get notificationInboxError =>
+      'Mitteilungen konnten nicht geladen werden.';
+
+  @override
+  String get notificationInboxTitle => 'Mitteilungen';
+
+  @override
+  String get notificationSuggestionAttentionBodyFallback =>
+      'Öffne die Aufgabe zur Prüfung.';
+
+  @override
+  String notificationSuggestionAttentionTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Vorschläge brauchen deine Aufmerksamkeit',
+      one: '1 Vorschlag braucht deine Aufmerksamkeit',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Anhang';
 
   @override

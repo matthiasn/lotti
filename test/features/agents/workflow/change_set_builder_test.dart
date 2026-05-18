@@ -5,10 +5,14 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+import '../../projects/test_utils.dart';
 import '../test_utils.dart';
 
 class _GeneratedFollowUpScenario {
@@ -1631,6 +1635,169 @@ void main() {
         humanSummary: 'test',
       );
       expect(builder.hasItems, isTrue);
+    });
+  });
+
+  group('build → notification fire-and-forget', () {
+    late MockNotificationRepository notificationRepository;
+    late MockJournalDb journalDb;
+
+    setUp(() async {
+      notificationRepository = MockNotificationRepository();
+      // setUpTestGetIt already registers a MockJournalDb; capture it as the
+      // local handle so the test's `when(...)` stubs land on the same
+      // instance the production code looks up via getIt.
+      final mocks = await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<NotificationRepository>(
+            notificationRepository,
+          );
+        },
+      );
+      journalDb = mocks.journalDb;
+
+      when(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: any(named: 'linkedTaskId'),
+          suggestionCount: any(named: 'suggestionCount'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          scheduledFor: any(named: 'scheduledFor'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      ).thenAnswer((_) async => null);
+      // setUpTestGetIt already returns null for journalEntityById; the
+      // individual tests override per-id stubs.
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    test(
+      'fires one createTaskSuggestion per build with the pending count, task '
+      'title in the body, and the change-set id as the inbox row seed',
+      () async {
+        // Resolve the task so the body reads as the task title.
+        when(() => journalDb.journalEntityById('task-001')).thenAnswer(
+          (_) async => makeTestTask(id: 'task-001', title: 'Tidy backlog'),
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 30},
+          humanSummary: 'Set estimate to 30 minutes',
+        );
+        await builder.addItem(
+          toolName: 'set_task_title',
+          args: {'title': 'Tidy backlog (revised)'},
+          humanSummary: 'Rename to Tidy backlog (revised)',
+        );
+
+        final entity = await builder.build(mockSyncService);
+
+        expect(entity, isNotNull);
+        // idSeed must be the change-set id so a fresh wave (a new change set
+        // after the previous one was resolved) lands on a fresh inbox row,
+        // even when the user already tapped through the prior alert.
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 2,
+            title: '2 suggestions need your attention',
+            body: 'Tidy backlog',
+            category: any(named: 'category'),
+            idSeed: entity!.id,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'singularizes the title when only one item is pending',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 15},
+          humanSummary: 'Set estimate to 15 minutes',
+        );
+
+        await builder.build(mockSyncService);
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: '1 suggestion needs your attention',
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'falls back to a generic body when the task title cannot be resolved',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 5},
+          humanSummary: '5 minutes',
+        );
+
+        await builder.build(mockSyncService);
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: 'Open the task to review.',
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('skips the notification entirely when build() returns null', () async {
+      // No items added — build short-circuits before any side effects.
+      final result = await builder.build(mockSyncService);
+
+      expect(result, isNull);
+      verifyNever(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: any(named: 'linkedTaskId'),
+          suggestionCount: any(named: 'suggestionCount'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      );
+    });
+
+    test('swallows repository failures without breaking build()', () async {
+      when(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: any(named: 'linkedTaskId'),
+          suggestionCount: any(named: 'suggestionCount'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          scheduledFor: any(named: 'scheduledFor'),
+          category: any(named: 'category'),
+        ),
+      ).thenThrow(StateError('notify-boom'));
+
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 45},
+        humanSummary: 'Set estimate to 45 minutes',
+      );
+
+      // Builds successfully even though the notification side road threw.
+      final entity = await builder.build(mockSyncService);
+      expect(entity, isNotNull);
     });
   });
 

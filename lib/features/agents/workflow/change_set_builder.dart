@@ -1,9 +1,16 @@
+import 'dart:ui' as ui;
+
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
@@ -472,6 +479,7 @@ class ChangeSetBuilder {
         }
       }
 
+      await _notifyTaskNeedsAttention(merged);
       return merged;
     }
 
@@ -491,7 +499,68 @@ class ChangeSetBuilder {
             as ChangeSetEntity;
 
     await syncService.upsertEntity(entity);
+    await _notifyTaskNeedsAttention(entity);
     return entity;
+  }
+
+  /// Fires (or refreshes) a `taskSuggestion` row in the synced-notifications
+  /// inbox so the bell badge surfaces the proposals that need user attention.
+  ///
+  /// The notification id is keyed on the **change-set id**, not the task id.
+  /// `ChangeSetBuilder.build` already consolidates concurrent pending sets
+  /// into a single survivor, so at any given moment there is at most one
+  /// active change set per task — and therefore at most one inbox row per
+  /// task. The reason this is keyed on the change set rather than the task:
+  /// the merge in `NotificationsDb.upsertNotification` keeps the earliest
+  /// non-null `actedOnAt`/`deletedAt` (the sync convergence contract), so
+  /// once the user taps or dismisses the inbox row, the same id can never
+  /// re-surface. Using the change-set id means a fresh wave (a new
+  /// change-set id, produced by the next wake after the prior set was
+  /// resolved) lands on a fresh inbox row, even if the user already acted
+  /// on the previous row for the same task.
+  ///
+  /// The repository short-circuits when the `enable_synced_alerts` flag is
+  /// off, so this is a no-op for users who haven't opted into the surface.
+  Future<void> _notifyTaskNeedsAttention(ChangeSetEntity entity) async {
+    // Count only the items the user actually needs to act on; previously
+    // confirmed/rejected/retracted items don't warrant a fresh alert.
+    final pendingCount = entity.items
+        .where((i) => i.status == ChangeItemStatus.pending)
+        .length;
+    if (pendingCount == 0) return;
+
+    if (!getIt.isRegistered<NotificationRepository>()) return;
+    if (!getIt.isRegistered<JournalDb>()) return;
+
+    try {
+      final task = await getIt<JournalDb>().journalEntityById(taskId);
+      final taskTitle = task is Task ? task.data.title : null;
+      // No BuildContext here — the builder runs from agent wake. Pull the
+      // current platform locale and resolve a synchronous AppLocalizations
+      // instance so the inbox row honors the user's language.
+      final messages = lookupAppLocalizations(
+        ui.PlatformDispatcher.instance.locale,
+      );
+      final body = taskTitle == null || taskTitle.trim().isEmpty
+          ? messages.notificationSuggestionAttentionBodyFallback
+          : taskTitle;
+      await getIt<NotificationRepository>().createTaskSuggestion(
+        linkedTaskId: taskId,
+        suggestionCount: pendingCount,
+        title: messages.notificationSuggestionAttentionTitle(pendingCount),
+        body: body,
+        category: task is Task ? task.meta.categoryId : null,
+        idSeed: entity.id,
+      );
+    } catch (e, st) {
+      domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Failed to fire change-set notification for task $taskId',
+        error: e,
+        stackTrace: st,
+        subDomain: 'ChangeSetBuilder',
+      );
+    }
   }
 
   /// Returns items from [proposed] that do not already exist in [existing],
