@@ -1,17 +1,20 @@
 # Getting Started with Lotti AI
 
-This guide walks you through setting up AI features in Lotti. You have two paths to choose from:
+This guide walks you through setting up AI features in Lotti. The First-Time User Experience (FTUE) picks the provider, seeds models, an inference profile, and a starter category, wires those up to Lotti's built-in skills (transcription, image analysis, image generation, prompt builders), and lands you in a result modal you can dismiss to start using AI right away.
 
 | Path | Best For | Requirements |
 |------|----------|--------------|
 | **Gemini (Cloud)** | Quick setup, powerful models | Google account, internet connection |
-| **Ollama (Local)** | Privacy-focused, offline use | macOS/Linux, 8-16GB RAM |
+| **Ollama (Local)** | Privacy-focused, offline use | macOS/Linux desktop, 32GB+ RAM |
+| **MLX Audio (Local)** | Speech recognition on Apple Silicon | macOS on Apple Silicon |
+| **Voxtral (Local)** | Local speech-to-text server | Desktop, Voxtral running on `localhost:11344` |
+| **Alibaba (Cloud)** | Qwen models, multimodal, long context | Alibaba Cloud account |
 
 ---
 
 ## Part 1: Cloud Setup with Google Gemini
 
-Gemini offers the fastest way to get started with AI features in Lotti. Within minutes, you'll have access to audio transcription, image analysis, checklist generation, and task summaries.
+Gemini is the quickest path. Within a minute or two you'll have audio transcription, image analysis, checklist generation, and task summaries wired up.
 
 ### Step 1: Get a Gemini API Key
 
@@ -20,102 +23,110 @@ Gemini offers the fastest way to get started with AI features in Lotti. Within m
 3. Click **Create API Key**
 4. Copy the generated key (it starts with `AIza...`)
 
-> **Note:** Gemini offers a generous free tier. For most personal use, you won't need to pay anything.
+> **Note:** Gemini's API has a free usage tier (limits apply); see Google AI Studio for current quotas.
 
-<!-- Screenshot: Google AI Studio API key page -->
-![Get API Key](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/gemini_api_key.png)
+![Get API Key](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/gemini_api_key.png)
 
 ### Step 2: Open AI Settings in Lotti
 
 1. Launch Lotti on your desktop
-2. Navigate to **Settings** (gear icon in the sidebar)
-3. Select **AI Settings**
+2. Navigate to **Settings** → **AI Settings**
 
-When you first open AI Settings, you'll see an empty state:
+The empty state shows a card explaining what AI Settings does and an **Add provider** button:
 
-<!-- Screenshot: Empty AI Settings page showing "No AI providers configured" -->
-![Empty State](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/ai_settings_empty.png)
+![Empty State](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/ai_settings_empty.png)
 
-### Step 3: Add the Gemini Provider
+### Step 3: Pick a Provider
 
-1. Tap the **+** button in the bottom right corner
-2. Select **Gemini** from the provider type list
-3. Fill in the form:
-   - **Display Name:** `Gemini` (or any name you prefer)
-   - **Base URL:** Leave as default (`https://generativelanguage.googleapis.com/v1beta`)
-   - **API Key:** Paste your API key from Step 1
-4. Tap **Save**
+Tap **Add provider**. The pick-provider modal opens with one tile per supported provider:
 
-<!-- Screenshot: Provider edit page with Gemini selected -->
-![Add Gemini Provider](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/add_gemini_provider.png)
+- **Gemini** (Recommended)
+- **OpenAI**
+- **Anthropic** (NEW)
+- **Alibaba** (NEW)
+- **MLX Audio** (NEW, macOS / Apple Silicon)
+- **Ollama** (Desktop only)
+- **Voxtral** (Desktop only)
 
-### Step 4: Automatic Model Configuration
+![Pick Provider Modal](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/pick_provider_modal.png)
 
-After saving, Lotti automatically configures the following Gemini models for you:
+Pick **Gemini**.
+
+### Step 4: Connect
+
+The connect form opens preselected to Gemini, with the base URL prefilled:
+
+- **Display Name:** `Gemini` (or any name you prefer)
+- **Base URL:** leave as default (`https://generativelanguage.googleapis.com/v1beta`)
+- **API Key:** paste the key from Step 1
+
+As soon as you stop typing in **API Key** or **Base URL**, Lotti checks the credentials against Gemini's API and shows a status strip below the Base URL:
+
+- spinner while the check runs
+- green confirmation with the number of models the key can see + response time
+- warning row if the key is invalid / network failed / host unreachable (with a Retry button)
+
+![Connect Gemini](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/add_gemini_provider.png)
+
+Tap **Save** once the verifier is green.
+
+### Step 5: Models Seeded Automatically
+
+On save, Lotti seeds Gemini's headline models so you don't have to add them by hand:
 
 | Model | Best For | Capabilities |
 |-------|----------|--------------|
-| **Gemini 3 Pro Preview** | Complex reasoning tasks | Text, images, audio + advanced reasoning |
-| **Gemini 2.5 Pro** | General purpose tasks | Text, images, audio + reasoning |
-| **Gemini 2.5 Flash** | Fast audio transcription | Text, images, audio + reasoning (fast) |
+| **Gemini 3.1 Pro Preview** | Complex reasoning | Text, image, audio in → text out; reasoning + function calling |
+| **Gemini 3 Flash Preview** | Fast multimodal tasks | Text, image, audio in → text out; reasoning + function calling |
+| **Gemini 3 Pro Image (Nano Banana Pro)** | Image generation | Text + image in → text + image out (cover art, visual mnemonics) |
 
-You can view these in the **Models** tab:
+Visible in the **Models** tab:
 
-<!-- Screenshot: Models tab showing auto-populated Gemini models -->
-![Gemini Models](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/gemini_models.png)
+![Gemini Models](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/gemini_models.png)
 
-### Step 5: Set Up Default Prompts
+### Step 6: Start Using AI
 
-Immediately after saving your provider, Lotti offers to create ready-to-use prompts:
+Saving the provider also seeds an inference profile and a starter category, and wires them to Lotti's built-in **skills**. The result modal summarizes what was created and offers a single **Start using AI** CTA:
 
-<!-- Screenshot: "Set Up Default Prompts?" dialog -->
-![Setup Prompts Dialog](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/setup_prompts_dialog.png)
+![Start Using AI](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/start_using_ai.png)
 
-Click **Set Up Prompts** to create these four AI capabilities:
+Skills are hardcoded in the app — you don't manage them as data, you pick which model each one runs on. The headline skills:
 
-| Prompt | Model Used | What It Does |
-|--------|------------|--------------|
-| **Audio Transcript** | Gemini Flash | Converts voice recordings to text |
-| **Image Analysis** | Gemini Pro | Analyzes images in task context |
-| **Checklist Updates** | Gemini Pro | Generates and updates task checklists |
-| **Task Summary** | Gemini Pro | Creates comprehensive task overviews |
+| Skill | What It Does |
+|-------|--------------|
+| **Transcribe Audio** | Converts voice recordings to text |
+| **Analyze Image** | Describes images and extracts task-relevant detail |
+| **Generate Cover Art** | Generates images for tasks via Nano Banana Pro |
+| **Generate Coding Prompt** | Builds structured coding prompts from task context |
 
-A success message confirms the prompts were created:
+More skills (image-prompt, design-prompt, research-prompt, task-context variants) are wired up to each inference profile. Review or rewire them under **AI Settings** → **Profiles**:
 
-<!-- Screenshot: Success snackbar "4 prompts created successfully!" -->
-![Prompts Created](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/prompts_created.png)
-
-### Step 6: You're Ready!
-
-Navigate to the **Prompts** tab to see your new AI capabilities:
-
-<!-- Screenshot: Prompts tab showing the 4 created prompts -->
-![Prompts List](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/prompts_list.png)
+![Profiles Tab](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/prompts_list.png)
 
 **What you can now do:**
 
-- **Voice notes:** Record audio and have it automatically transcribed
-- **Image analysis:** Add images to tasks and get AI-powered insights
-- **Smart checklists:** Speak or type and let AI create actionable checklist items
-- **Task summaries:** Get comprehensive overviews of long-running tasks
+- **Voice notes:** record audio and have it automatically transcribed
+- **Image analysis:** add images to tasks and get AI-powered insights
+- **Smart checklists:** speak or type and let AI create actionable checklist items
+- **Task summaries:** get comprehensive overviews of long-running tasks
 
 ---
 
 ## Part 2: Local Setup with Ollama
 
-Ollama lets you run AI models entirely on your device. Your data never leaves your machine, making it ideal for sensitive information.
+Ollama runs models entirely on your device. Your data never leaves the machine — ideal for sensitive information.
 
 ### Prerequisites
 
-- **macOS** or **Linux** (Windows support via WSL)
-- **8GB RAM minimum** (16GB recommended for larger models)
-- **~10GB disk space** for models
+- **macOS** or **Linux** desktop
+- **32GB+ RAM** (the headline `Local Power` profile uses a 35B MoE thinking model)
+- **~30GB disk space** for models
 
 ### Step 1: Install Ollama
 
 1. Visit [ollama.com](https://ollama.com)
 2. Download and install Ollama for your platform
-3. Open Terminal and verify installation:
+3. Verify in Terminal:
 
 ```bash
 ollama --version
@@ -123,113 +134,116 @@ ollama --version
 
 ### Step 2: Start the Ollama Service
 
-Ollama runs as a background service. Start it with:
-
 ```bash
 ollama serve
 ```
 
 > **Tip:** On macOS, you can set Ollama to start automatically at login.
 
-### Step 3: Add Ollama Provider in Lotti
+### Step 3: Pick Ollama in Lotti
 
-1. Open **Settings** > **AI Settings** in Lotti
-2. Tap the **+** button
-3. Select **Ollama** from the provider list
-4. Fill in the form:
-   - **Display Name:** `Ollama Local`
-   - **Base URL:** `http://localhost:11434` (default)
-   - **API Key:** Leave empty (not required for local)
-5. Tap **Save**
+Open **Settings** → **AI Settings** → **Add provider**, then pick the **Ollama** tile:
 
-<!-- Screenshot: Add Ollama provider form -->
-![Add Ollama Provider](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/add_ollama_provider.png)
+![Ollama Tile](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/ollama_tile.png)
 
-### Step 4: Automatic Model Installation
+### Step 4: Connect
 
-Lotti automatically sets up these local models:
+The connect form opens with Ollama preselected, the default base URL prefilled, and no API key required:
 
-| Model | Size | Best For |
-|-------|------|----------|
-| **Gemma 3 4B** | ~4GB | Image analysis, general tasks |
-| **Gemma 3 12B** | ~12GB | Higher quality responses |
-| **DeepSeek R1 8B** | ~8GB | Complex reasoning tasks |
-| **Qwen3 8B** | ~8GB | Reasoning with function calling |
+- **Display Name:** `Ollama Local`
+- **Base URL:** `http://localhost:11434`
+- **API Key:** not required
 
-When you first use a model, Lotti will download it automatically. You'll see a progress indicator:
+![Connect Ollama](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/add_ollama_provider.png)
 
-<!-- Screenshot: Model download progress -->
-![Model Download](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/ollama_model_download.png)
+Tap **Save**.
 
-> **Note:** First-time model downloads can take several minutes depending on your internet speed.
+### Step 5: Models and Profiles Seeded
 
-### Step 5: Configure Prompts
+Lotti seeds several inference profiles you can choose from:
 
-After the provider is saved, set up prompts the same way as with Gemini. Lotti will:
+| Profile | Thinking Model | Image Model | Notes |
+|---------|---------------|-------------|-------|
+| **Local (Ollama)** | `qwen3.5:9b` | `qwen3.5:9b` | Lighter, runs on more hardware |
+| **Local Power (Ollama)** | `qwen3.6:35b-a3b-coding-nvfp4` (35B MoE / ~3B active, NVFP4) | `qwen3.5:27b` | Headline profile when hardware allows |
+| **Local Gemma 4 (Ollama)** | `gemma4:26b` | `gemma4:26b` | Gemma 4 alternative |
+| **Local Gemma 4 Power (Ollama)** | `gemma4:31b` | `gemma4:31b` | Larger Gemma 4 |
 
-1. Show the prompt setup dialog
-2. Select appropriate local models (e.g., Gemma for images, DeepSeek for reasoning)
-3. Create the four default prompts
+The first time a model is needed, Ollama downloads it automatically.
 
-### Step 6: You're Ready for Offline AI!
+> **Note:** First-time model downloads can take several minutes depending on your internet speed and the chosen model.
 
-Your local AI setup is complete. All processing happens on your device:
+### Step 6: You're Ready for Offline AI
 
-- No internet required after model download
-- Data stays private
-- Works offline (airplane mode, no WiFi areas)
+After the result modal closes you're done. All inference happens on your device — no internet required once the model is downloaded.
+
+---
+
+## Other Local Options
+
+### MLX Audio (macOS, Apple Silicon)
+
+On-device speech recognition on macOS Apple Silicon — no separate server to run. Picking the **MLX Audio** tile opens a first-run model picker; **Qwen3-ASR 1.7B 8-bit** is preselected because it's materially faster than Voxtral Realtime for post-recording transcription.
+
+![MLX Audio Setup](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/mlx_audio_first_run.png)
+
+### Voxtral (Local Server)
+
+If you're running a Voxtral server locally, pick the **Voxtral** tile. The connect form prefills `http://localhost:11344` and skips the API key field.
+
+![Voxtral Tile](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/voxtral_tile.png)
+
+### Alibaba Cloud (Qwen)
+
+Qwen models — multimodal, long context. Pick the **Alibaba** tile and connect with your Alibaba Cloud key.
+
+![Alibaba Tile](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/0.9.1002/alibaba_tile.png)
 
 ---
 
 ## Configuring Categories for AI
 
-Once you have providers and prompts set up, you can configure which AI prompts are available for specific categories.
+Once a provider is connected, you can wire categories to a default inference profile so the built-in skills run against the right model on content in that category.
 
-### Assign Automatic Prompts to Categories
-
-1. Go to **Settings** > **Categories**
+1. Go to **Settings** → **Categories**
 2. Select or create a category (e.g., "Work Tasks")
-3. Scroll to **AI Configuration**
-4. Set automatic prompts for each response type:
-   - **Task Summary:** Choose your summary prompt
-   - **Image Analysis:** Choose your image prompt
-   - **Audio Transcription:** Choose your transcription prompt
-   - **Checklist Updates:** Choose your checklist prompt
+3. Open the **Default inference profile** picker and pick the profile you want to use for that category's audio, image, and task content
 
-<!-- Screenshot: Category AI configuration -->
-![Category AI Config](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/getting_started/category_ai_config.png)
+Standalone audio / text / image entries that have no parent task fall back to the category's default profile, so you can use Transcribe / Analyze actions on any entry in that category.
 
 ---
 
 ## Troubleshooting
 
-### Gemini Issues
+### Gemini
 
 | Problem | Solution |
 |---------|----------|
 | "API key invalid" | Double-check the key; ensure no extra spaces |
 | "Quota exceeded" | Wait 24 hours or upgrade your Google Cloud billing |
-| Slow responses | Try Gemini Flash models for faster processing |
+| Slow responses | Use Gemini 3 Flash Preview for faster processing |
 
-### Ollama Issues
+### Ollama
 
 | Problem | Solution |
 |---------|----------|
 | "Connection refused" | Ensure `ollama serve` is running |
 | Model download stuck | Check internet connection; restart Ollama |
-| Slow inference | Close other apps; try smaller models (4B variants) |
-| Out of memory | Use quantized models (QAT variants) |
+| Slow inference | Close other apps; try smaller models |
+| Out of memory | Use a smaller profile (`Local (Ollama)`) or quantized variants |
+
+### Live verifier shows "Unreachable host"
+
+The verifier hits the provider's models endpoint from your machine. If you're behind a proxy or firewall and the call can't reach the host, you'll see this error. Save anyway — Lotti will surface the same error the next time it actually calls the model.
 
 ---
 
 ## Next Steps
 
-Now that AI is set up, explore these features:
-
-- **Voice Journal:** Record voice notes and get instant transcriptions
-- **Photo Analysis:** Add screenshots or photos to tasks for AI insights
-- **Smart Checklists:** Dictate tasks and let AI organize them
-- **Weekly Reviews:** Generate AI summaries of your accomplishments
+- **Voice Journal:** record voice notes and get instant transcriptions
+- **Photo Analysis:** add screenshots or photos to tasks for AI insights
+- **Smart Checklists:** dictate tasks and let AI organize them
+- **Weekly Reviews:** generate AI summaries of your accomplishments
 
 **Ready to start using voice-to-checklist?** Follow the [Basic Task Management Guide](docs/BASIC_TASK_MANAGEMENT.md) for a step-by-step walkthrough.
 
@@ -237,4 +251,4 @@ Now that AI is set up, explore these features:
 
 ---
 
-*This guide covers Lotti version 0.9.751 and later. UI may vary slightly between versions.*
+*This guide covers Lotti version 0.9.1002 and later. UI may vary slightly between versions.*
