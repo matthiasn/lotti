@@ -35,6 +35,36 @@ void main() {
     }
   });
 
+  group('resolvePopoverWidth', () {
+    test('returns the preferred width on a roomy desktop window', () {
+      expect(
+        NotificationBell.resolvePopoverWidth(1400),
+        NotificationBell.popoverPreferredWidth,
+      );
+    });
+
+    test(
+      'shrinks to fit a mobile portrait screen with margins on each side',
+      () {
+        // iPhone 13 mini portrait — should drop below the preferred width
+        // but stay above the floor, with the configured margin on each side.
+        expect(
+          NotificationBell.resolvePopoverWidth(375),
+          375 - NotificationBell.popoverScreenMargin * 2,
+        );
+      },
+    );
+
+    test('snaps to the floor on absurdly narrow viewports', () {
+      // A 280 px viewport would push the available width below the floor;
+      // the resolver pins to popoverMinWidth so the layout stays legible.
+      expect(
+        NotificationBell.resolvePopoverWidth(280),
+        NotificationBell.popoverMinWidth,
+      );
+    });
+  });
+
   testWidgets(
     'renders the empty bell icon when no unseen notifications are pending',
     (tester) async {

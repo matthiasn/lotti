@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/notification_entity.dart';
@@ -20,9 +22,25 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class NotificationBell extends ConsumerStatefulWidget {
   const NotificationBell({super.key});
 
-  /// Width of the popover panel. Wide enough for two-line task titles on
-  /// desktop, narrow enough not to overflow a typical mobile portrait view.
-  static const double popoverWidth = 340;
+  /// Preferred popover width on desktop. Two-line task titles read
+  /// comfortably here without cramping the row content.
+  static const double popoverPreferredWidth = 440;
+
+  /// Floor so the layout doesn't collapse on a freakishly narrow window.
+  static const double popoverMinWidth = 320;
+
+  /// Horizontal margin between the popover and the screen edges. Keeps the
+  /// menu off the bezel on mobile portrait.
+  static const double popoverScreenMargin = 16;
+
+  /// Resolves the popover width against the surrounding screen so mobile
+  /// portrait shrinks to fit while desktop gets the preferred width.
+  static double resolvePopoverWidth(double screenWidth) {
+    final available = screenWidth - popoverScreenMargin * 2;
+    if (available <= popoverMinWidth) return popoverMinWidth;
+    if (available >= popoverPreferredWidth) return popoverPreferredWidth;
+    return available;
+  }
 
   @override
   ConsumerState<NotificationBell> createState() => _NotificationBellState();
@@ -43,24 +61,50 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
         ? Icons.notifications_active_rounded
         : Icons.notifications_none_rounded;
 
+    // Capture the bell's own context so a row tap can navigate even after
+    // the popover overlay (and therefore the row's own context) is torn down
+    // by `_menu.close`. Without this, the row's `_handleTap` would close the
+    // menu, await markActedOn, then find `context.mounted == false` and
+    // silently skip the navigation.
+    final bellContext = context;
     return MenuAnchor(
       controller: _menu,
       style: MenuStyle(
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(tokens.radii.m),
+            side: BorderSide(
+              color: tokens.colors.decorative.level02,
+            ),
           ),
         ),
+        // level02 sits one notch above the page chrome (level01) so the
+        // popover reads as a raised surface in both light and dark mode.
+        // Without this, the popover was indistinguishable from the
+        // scaffold background.
         backgroundColor: WidgetStatePropertyAll(
-          tokens.colors.background.level01,
+          tokens.colors.background.level02,
         ),
+        elevation: const WidgetStatePropertyAll(6),
         padding: const WidgetStatePropertyAll(EdgeInsets.zero),
       ),
       menuChildren: [
-        SizedBox(
-          width: NotificationBell.popoverWidth,
+        ConstrainedBox(
+          constraints: BoxConstraints.tightFor(
+            width: NotificationBell.resolvePopoverWidth(
+              MediaQuery.sizeOf(context).width,
+            ),
+          ),
           child: _InboxPanel(
             onDismiss: _menu.close,
+            onSelectTask: (linkedTaskId) {
+              _menu.close();
+              if (!bellContext.mounted) return;
+              openLinkedTaskDetail(
+                context: bellContext,
+                taskId: linkedTaskId,
+              );
+            },
           ),
         ),
       ],
@@ -144,9 +188,17 @@ class _UnseenBadge extends StatelessWidget {
 }
 
 class _InboxPanel extends ConsumerWidget {
-  const _InboxPanel({required this.onDismiss});
+  const _InboxPanel({
+    required this.onDismiss,
+    required this.onSelectTask,
+  });
 
   final VoidCallback onDismiss;
+
+  /// Called when the user taps a row whose `linkedEntityId` is non-null.
+  /// The callback owns both popover dismissal and the navigation so it can
+  /// run from the bell's stable context — see comment in [NotificationBell].
+  final void Function(String linkedTaskId) onSelectTask;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -193,6 +245,7 @@ class _InboxPanel extends ConsumerWidget {
                           key: ValueKey(entry.id),
                           entity: entry,
                           onDismiss: onDismiss,
+                          onSelectTask: onSelectTask,
                         ),
                     ],
                   ),
@@ -246,11 +299,13 @@ class _InboxRow extends StatelessWidget {
   const _InboxRow({
     required this.entity,
     required this.onDismiss,
+    required this.onSelectTask,
     super.key,
   });
 
   final NotificationEntity entity;
   final VoidCallback onDismiss;
+  final void Function(String linkedTaskId) onSelectTask;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +314,7 @@ class _InboxRow extends StatelessWidget {
     final linkedId = entity.linkedEntityId;
 
     return InkWell(
-      onTap: linkedId == null ? null : () => _handleTap(context, linkedId),
+      onTap: linkedId == null ? null : () => _handleTap(linkedId),
       onLongPress: () => _handleRetract(context),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -320,24 +375,25 @@ class _InboxRow extends StatelessWidget {
     );
   }
 
-  Future<void> _handleTap(BuildContext context, String linkedId) async {
-    // Dismiss the popover before awaiting the database write so navigation
-    // feels instantaneous — the markActedOn round-trip can take tens of ms
-    // on cold reads. The inbox stream will catch up when the write lands.
-    onDismiss();
-    final navigatorContext = context;
-    try {
-      await getIt<NotificationRepository>().markActedOn(entity.id);
-    } catch (error, stackTrace) {
-      // Surface the failure to the zone error handler so it lands in the
-      // logging pipeline, but keep navigating — the user already committed
-      // to opening the task.
-      FlutterError.reportError(
-        FlutterErrorDetails(exception: error, stack: stackTrace),
-      );
-    }
-    if (!navigatorContext.mounted) return;
-    openLinkedTaskDetail(context: navigatorContext, taskId: linkedId);
+  void _handleTap(String linkedId) {
+    // Navigation runs against the bell's stable context (captured by
+    // `onSelectTask` in [NotificationBell.build]) — using the row's own
+    // context here would fail mid-flight because closing the menu
+    // unmounts the popover overlay first.
+    onSelectTask(linkedId);
+    // Fire markActedOn after navigation so the badge clears as the task
+    // opens. Errors land in the zone error handler without blocking.
+    unawaited(
+      getIt<NotificationRepository>().markActedOn(entity.id).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        FlutterError.reportError(
+          FlutterErrorDetails(exception: error, stack: stackTrace),
+        );
+        return null;
+      }),
+    );
   }
 
   Future<void> _handleRetract(BuildContext context) async {
