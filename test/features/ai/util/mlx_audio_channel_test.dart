@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -121,6 +122,140 @@ extension _AnyDownloadProgressScenario on glados.Any {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // MlxAudioChannel short-circuits to "unsupported" on non-macOS hosts so the
+  // native bridge is never invoked from iOS / Android / Linux / Windows
+  // builds. The bulk of the suite exercises the macOS path; flip the flag for
+  // those tests and restore it for each so the cross-platform CI runners
+  // (Linux + Windows) keep exercising the real channel behaviour.
+  late bool originalIsMacOS;
+
+  setUp(() {
+    originalIsMacOS = platform.isMacOS;
+    platform.isMacOS = true;
+  });
+
+  tearDown(() {
+    platform.isMacOS = originalIsMacOS;
+  });
+
+  group('MlxAudioChannel platform gate', () {
+    test(
+      'getModelStatus returns unsupported on non-macOS without hitting channel',
+      () async {
+        platform.isMacOS = false;
+        const methodChannel = MethodChannel('test_mlx_audio_gate_status');
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        var invocations = 0;
+        addTearDown(
+          () => messenger.setMockMethodCallHandler(methodChannel, null),
+        );
+        messenger.setMockMethodCallHandler(methodChannel, (_) async {
+          invocations += 1;
+          return null;
+        });
+
+        final progress = await MlxAudioChannel(
+          methodChannel: methodChannel,
+        ).getModelStatus('model-a');
+
+        expect(progress.status, MlxAudioModelStatus.unsupported);
+        expect(progress.modelId, 'model-a');
+        expect(invocations, 0);
+      },
+    );
+
+    test(
+      'throwing methods raise UNSUPPORTED PlatformException on non-macOS',
+      () async {
+        platform.isMacOS = false;
+        const methodChannel = MethodChannel('test_mlx_audio_gate_methods');
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        var invocations = 0;
+        addTearDown(
+          () => messenger.setMockMethodCallHandler(methodChannel, null),
+        );
+        messenger.setMockMethodCallHandler(methodChannel, (_) async {
+          invocations += 1;
+          return null;
+        });
+
+        final channel = MlxAudioChannel(methodChannel: methodChannel);
+
+        Matcher unsupported() => isA<PlatformException>().having(
+          (e) => e.code,
+          'code',
+          'UNSUPPORTED',
+        );
+
+        await expectLater(
+          () => channel.installModel('model-a'),
+          throwsA(unsupported()),
+        );
+        await expectLater(
+          () => channel.transcribeFile(filePath: '/tmp/x.wav', modelId: 'm'),
+          throwsA(unsupported()),
+        );
+        await expectLater(
+          () => channel.transcribeBase64Audio(audioBase64: 'ab', modelId: 'm'),
+          throwsA(unsupported()),
+        );
+        await expectLater(
+          () => channel.speakText(text: 'hi', modelId: 'tts'),
+          throwsA(unsupported()),
+        );
+        await expectLater(
+          () => channel.startRealtimeTranscription(modelId: 'm'),
+          throwsA(unsupported()),
+        );
+        expect(invocations, 0);
+      },
+    );
+
+    test('no-op methods complete silently on non-macOS', () async {
+      platform.isMacOS = false;
+      const methodChannel = MethodChannel('test_mlx_audio_gate_noop');
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      var invocations = 0;
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(methodChannel, null),
+      );
+      messenger.setMockMethodCallHandler(methodChannel, (_) async {
+        invocations += 1;
+        return null;
+      });
+
+      final channel = MlxAudioChannel(methodChannel: methodChannel);
+
+      await channel.stopSpeaking();
+      await channel.appendRealtimePcm(Uint8List.fromList([1, 2]));
+      await channel.stopRealtimeTranscription();
+      await channel.cancelRealtimeTranscription();
+
+      expect(invocations, 0);
+    });
+
+    test('event streams emit no events on non-macOS', () async {
+      platform.isMacOS = false;
+      const downloadEventChannel = EventChannel(
+        'test_mlx_audio_gate_download_events',
+      );
+      const realtimeEventChannel = EventChannel(
+        'test_mlx_audio_gate_realtime_events',
+      );
+
+      final channel = MlxAudioChannel(
+        eventChannel: downloadEventChannel,
+        realtimeEventChannel: realtimeEventChannel,
+      );
+
+      expect(await channel.downloadProgressStream.toList(), isEmpty);
+      expect(await channel.realtimeTranscriptionEvents.toList(), isEmpty);
+    });
+  });
 
   group('MlxAudioChannel', () {
     test('getModelStatus maps native status payloads', () async {

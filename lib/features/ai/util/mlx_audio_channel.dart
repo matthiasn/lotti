@@ -5,13 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 
-/// Native bridge for MLX Audio on Apple platforms.
+/// Native bridge for MLX Audio on macOS.
 ///
 /// The channel is intentionally small and data-oriented: Flutter owns the
 /// provider/model configuration and progress UI, while Swift owns MLX model
 /// loading, Hugging Face downloads, AVFoundation decoding, and audio playback.
-/// Non-Apple platforms and x86 macOS return [MlxAudioModelStatus.unsupported].
+/// The native bridge ships only on macOS — iOS, Android, Linux, and Windows
+/// do not register the plugin, and every method short-circuits to an
+/// `unsupported` result so callers never see a [MissingPluginException]. On
+/// Intel macOS the plugin is registered but the Swift side reports
+/// [MlxAudioModelStatus.unsupported] for each model.
 class MlxAudioChannel {
   MlxAudioChannel({
     MethodChannel? methodChannel,
@@ -36,7 +41,24 @@ class MlxAudioChannel {
   final EventChannel _eventChannel;
   final EventChannel _realtimeEventChannel;
 
+  /// True when this build can run the native MLX Audio bridge.
+  ///
+  /// The bridge ships only on macOS; every other platform short-circuits to
+  /// `unsupported` so the channel never raises [MissingPluginException]. The
+  /// flag reads through [platform.isMacOS] so tests can flip it.
+  bool get _isPlatformSupported => platform.isMacOS;
+
+  PlatformException _unsupportedPlatformException() {
+    return PlatformException(
+      code: 'UNSUPPORTED',
+      message: 'MLX Audio is only supported on macOS.',
+    );
+  }
+
   Stream<MlxAudioModelDownloadProgress> get downloadProgressStream {
+    if (!_isPlatformSupported) {
+      return const Stream<MlxAudioModelDownloadProgress>.empty();
+    }
     return _eventChannel.receiveBroadcastStream().map((event) {
       final map = Map<String, Object?>.from(event as Map);
       return MlxAudioModelDownloadProgress.fromMap(map);
@@ -44,6 +66,9 @@ class MlxAudioChannel {
   }
 
   Stream<MlxAudioRealtimeEvent> get realtimeTranscriptionEvents {
+    if (!_isPlatformSupported) {
+      return const Stream<MlxAudioRealtimeEvent>.empty();
+    }
     return _realtimeEventChannel.receiveBroadcastStream().map((event) {
       final map = Map<String, Object?>.from(event as Map);
       return MlxAudioRealtimeEvent.fromMap(map);
@@ -51,6 +76,9 @@ class MlxAudioChannel {
   }
 
   Future<MlxAudioModelDownloadProgress> getModelStatus(String modelId) async {
+    if (!_isPlatformSupported) {
+      return MlxAudioModelDownloadProgress.unsupported(modelId);
+    }
     try {
       final result = await _methodChannel.invokeMapMethod<String, Object?>(
         'getModelStatus',
@@ -73,6 +101,9 @@ class MlxAudioChannel {
   }
 
   Future<void> installModel(String modelId) async {
+    if (!_isPlatformSupported) {
+      throw _unsupportedPlatformException();
+    }
     await _methodChannel.invokeMethod<void>(
       'installModel',
       {'modelId': modelId},
@@ -86,6 +117,9 @@ class MlxAudioChannel {
     String? language,
     bool enableSpeakerDiarization = false,
   }) async {
+    if (!_isPlatformSupported) {
+      throw _unsupportedPlatformException();
+    }
     final result = await _methodChannel.invokeMapMethod<String, Object?>(
       'transcribeFile',
       {
@@ -106,6 +140,9 @@ class MlxAudioChannel {
     String? language,
     bool enableSpeakerDiarization = false,
   }) async {
+    if (!_isPlatformSupported) {
+      throw _unsupportedPlatformException();
+    }
     final result = await _methodChannel.invokeMapMethod<String, Object?>(
       'transcribeBase64Audio',
       {
@@ -124,6 +161,9 @@ class MlxAudioChannel {
     required String modelId,
     String? language,
   }) async {
+    if (!_isPlatformSupported) {
+      throw _unsupportedPlatformException();
+    }
     await _methodChannel.invokeMethod<void>(
       'speakText',
       {
@@ -135,6 +175,9 @@ class MlxAudioChannel {
   }
 
   Future<void> stopSpeaking() async {
+    if (!_isPlatformSupported) {
+      return;
+    }
     await _methodChannel.invokeMethod<void>('stopSpeaking');
   }
 
@@ -143,6 +186,9 @@ class MlxAudioChannel {
     String? language,
     String delayPreset = 'subtitle',
   }) async {
+    if (!_isPlatformSupported) {
+      throw _unsupportedPlatformException();
+    }
     await _methodChannel.invokeMethod<void>(
       'startRealtimeTranscription',
       {
@@ -154,6 +200,9 @@ class MlxAudioChannel {
   }
 
   Future<void> appendRealtimePcm(Uint8List pcm16) async {
+    if (!_isPlatformSupported) {
+      return;
+    }
     await _methodChannel.invokeMethod<void>(
       'appendRealtimePcm',
       {'pcm16': pcm16},
@@ -161,10 +210,16 @@ class MlxAudioChannel {
   }
 
   Future<void> stopRealtimeTranscription() async {
+    if (!_isPlatformSupported) {
+      return;
+    }
     await _methodChannel.invokeMethod<void>('stopRealtimeTranscription');
   }
 
   Future<void> cancelRealtimeTranscription() async {
+    if (!_isPlatformSupported) {
+      return;
+    }
     await _methodChannel.invokeMethod<void>('cancelRealtimeTranscription');
   }
 

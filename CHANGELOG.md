@@ -5,6 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1003]
+### Changed
+- MLX Audio is now macOS-only. The iOS Runner no longer links
+  `mlx-swift`, `mlx-audio-swift`, or `swift-huggingface` and no longer
+  registers the `MlxAudio` plugin, which strips the on-device STT
+  runtime that triggered immediate OOM with the 1.7B Qwen3-ASR model
+  on iPhone hardware and shrinks the iOS bundle. iOS now reports MLX
+  models as `unsupported` the same way Android and Linux already did.
+  Audio recorded on iOS still reaches MLX through the existing
+  synced-audio auto-trigger flow on a paired macOS desktop — the
+  sync-node capability probe already gates the `mlxAudio` capability
+  on `Platform.isMacOS`, so deferred inference continues to work
+  unchanged.
+
 ### Added
 - Synced-notifications bell in the Tasks and Projects tab headers. The
   icon flips from outlined to filled and shows an unread count badge

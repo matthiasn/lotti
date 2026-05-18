@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -198,8 +199,16 @@ void main() {
   late MockProfileAutomationResolver mockResolver;
   late MockAiConfigRepository mockAiConfig;
   late ProfileAutomationService service;
+  // The fallback ranker demotes MLX Audio rows on non-macOS so iOS / Android /
+  // Linux / Windows never route mobile audio to the local MLX bridge that
+  // ships only on macOS. Force the flag on for the existing suite (which
+  // exercises the macOS ranking) and restore it for each test. A dedicated
+  // test below pins the non-macOS demotion behaviour.
+  late bool originalIsMacOS;
 
   setUp(() {
+    originalIsMacOS = platform.isMacOS;
+    platform.isMacOS = true;
     mockResolver = MockProfileAutomationResolver();
     mockAiConfig = MockAiConfigRepository();
     service = ProfileAutomationService(
@@ -209,6 +218,10 @@ void main() {
     when(
       () => mockAiConfig.getConfigsByType(AiConfigType.model),
     ).thenAnswer((_) async => const <AiConfig>[]);
+  });
+
+  tearDown(() {
+    platform.isMacOS = originalIsMacOS;
   });
 
   /// Creates a resolved profile with optional transcription/image providers.
@@ -565,6 +578,54 @@ void main() {
                 .transcriptionProvider!
                 .inferenceProviderType,
             InferenceProviderType.mlxAudio,
+          );
+        },
+      );
+
+      test(
+        'demotes MLX Audio rows on non-macOS so cloud STT wins direct fallback',
+        () async {
+          platform.isMacOS = false;
+          final providers = [
+            makeProvider(),
+            makeProvider(
+              id: 'provider-openai',
+              type: InferenceProviderType.openAi,
+              apiKey: 'sk-test',
+            ),
+          ];
+          final models = [
+            makeModel(),
+            makeModel(
+              id: 'model-openai',
+              name: 'OpenAI Whisper',
+              providerModelId: 'whisper-1',
+              providerId: 'provider-openai',
+            ),
+          ];
+
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiConfig.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => models);
+          for (final provider in providers) {
+            when(
+              () => mockAiConfig.getConfigById(provider.id),
+            ).thenAnswer((_) async => provider);
+          }
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(
+            result
+                .resolvedProfile!
+                .transcriptionProvider!
+                .inferenceProviderType,
+            InferenceProviderType.openAi,
+            reason: 'On non-macOS the cloud STT must win over the MLX row.',
           );
         },
       );

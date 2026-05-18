@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
@@ -85,13 +86,15 @@ class _AiProviderSelectionModalState extends State<AiProviderSelectionModal> {
                 icon: Icons.auto_awesome,
                 color: ftueGeminiColor,
               ),
-              const SizedBox(height: 12),
-              _buildProviderOption(
-                context,
-                option: AiProviderOption.mlxAudio,
-                icon: Icons.memory,
-                color: ftueMlxAudioColor,
-              ),
+              if (platform.isMacOS) ...[
+                const SizedBox(height: 12),
+                _buildProviderOption(
+                  context,
+                  option: AiProviderOption.mlxAudio,
+                  icon: Icons.memory,
+                  color: ftueMlxAudioColor,
+                ),
+              ],
               const SizedBox(height: 12),
               _buildProviderOption(
                 context,

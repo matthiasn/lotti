@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 const _localizationsDelegates = <LocalizationsDelegate<dynamic>>[
@@ -85,7 +86,41 @@ Future<void> _expectSelectionResult(
 }
 
 void main() {
+  // The MLX Audio FTUE tile only renders on macOS. Force the flag so the
+  // existing tests keep exercising the four-provider layout on every CI
+  // runner (macOS + Linux + Windows); a dedicated test below pins the
+  // non-macOS behaviour where the tile must be hidden.
+  late bool originalIsMacOS;
+
+  setUp(() {
+    originalIsMacOS = platform.isMacOS;
+    platform.isMacOS = true;
+  });
+
+  tearDown(() {
+    platform.isMacOS = originalIsMacOS;
+  });
+
   group('AiProviderSelectionModal', () {
+    testWidgets(
+      'hides MLX Audio option on non-macOS platforms',
+      (tester) async {
+        platform.isMacOS = false;
+
+        await tester.pumpWidget(
+          _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),
+        );
+
+        expect(find.text('Google Gemini'), findsOneWidget);
+        expect(find.text('OpenAI'), findsOneWidget);
+        expect(find.text('Mistral'), findsOneWidget);
+        expect(find.text('MLX Audio (local)'), findsNothing);
+
+        final context = tester.element(find.byType(AiProviderSelectionModal));
+        expect(find.text(_mlxAudioDescription(context)), findsNothing);
+      },
+    );
+
     testWidgets('displays title and provider options', (tester) async {
       await tester.pumpWidget(
         _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),

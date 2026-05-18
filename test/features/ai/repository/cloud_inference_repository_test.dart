@@ -17,6 +17,7 @@ import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/utils/uuid.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -332,6 +333,15 @@ void main() {
     );
 
     test('generateWithAudio routes MLX Audio through native channel', () async {
+      // MlxAudioChannel short-circuits on non-macOS hosts. This test exercises
+      // the macOS routing path through the real channel, so force the flag and
+      // restore it after the test (the Linux + Windows CI runners would
+      // otherwise see the channel throw UNSUPPORTED before reaching the mock
+      // method handler).
+      final originalIsMacOS = platform.isMacOS;
+      platform.isMacOS = true;
+      addTearDown(() => platform.isMacOS = originalIsMacOS);
+
       const methodChannel = MethodChannel('com.matthiasn.lotti/mlx_audio');
       final messenger =
           TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;

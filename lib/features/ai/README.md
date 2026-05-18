@@ -308,9 +308,23 @@ This routing is implemented in code, not inferred from documentation. If a provi
 
 MLX Audio is intentionally not a localhost provider. Flutter owns provider/model
 configuration and progress state, while `MlxAudioChannel` talks to platform
-Swift over `com.matthiasn.lotti/mlx_audio`. The Swift files compile without the
-MLX package and return `unsupported` unless the MLX Audio SDK is linked on
-Apple Silicon; that keeps Intel macOS builds working with the feature disabled.
+Swift over `com.matthiasn.lotti/mlx_audio`. The native bridge ships **only on
+macOS**: the Swift file compiles without the MLX package and returns
+`unsupported` on Intel macOS, and iOS / Android / Linux / Windows do not
+register the plugin at all. The Dart channel short-circuits every method when
+`Platform.isMacOS` is false — `getModelStatus` returns
+`MlxAudioModelStatus.unsupported`, mutation methods (`installModel`,
+`transcribeFile`, `startRealtimeTranscription`, `speakText`) throw
+`PlatformException(code: 'UNSUPPORTED')`, no-op methods (`stopSpeaking`,
+`appendRealtimePcm`, `stopRealtimeTranscription`,
+`cancelRealtimeTranscription`) silently return, and the event streams emit
+nothing. The FTUE provider picker hides the MLX Audio tile on non-macOS, the
+direct-fallback transcription ranker
+(`ProfileAutomationService._fallbackCandidateRank`) demotes MLX rows past
+every cloud and local non-MLX candidate on non-macOS, and the sync-node
+capability probe — also gated on `Platform.isMacOS` — refuses to advertise
+`mlxAudio`. Mobile devices therefore defer audio inference to a capable
+desktop via the synced-audio auto-trigger path described below.
 The seeded MLX Audio catalog includes Voxtral Realtime, Qwen3-ASR 0.6B,
 Qwen3-ASR 1.7B 4-bit and 8-bit, Parakeet, and Qwen3-TTS.
 The setup flow asks which STT model to install first, with Qwen3-ASR 1.7B
@@ -336,9 +350,10 @@ step that ran.
 flowchart LR
   UI["AI setup / model cards"] --> Config["AiConfig provider + models"]
   Config --> Progress["mlxAudioModelProgressProvider"]
-  Progress --> Native["MlxAudio Swift bridge"]
-  Native -->|Apple Silicon + SDK linked| MLX["MLX Audio Swift"]
-  Native -->|x86 macOS or SDK absent| Unsupported["unsupported status"]
+  Progress --> Native["MlxAudio Swift bridge (macOS only)"]
+  Native -->|Apple Silicon macOS| MLX["MLX Audio Swift"]
+  Native -->|Intel macOS| Unsupported["unsupported status"]
+  Progress -->|iOS / Android / Linux / Windows| NoPlugin["unsupported<br/>(no plugin registered)"]
   Audio["generateWithAudio()"] --> Installed{"model installed?"}
   Installed -->|yes| Native
   Installed -->|no| Missing["not-installed error"]
@@ -348,9 +363,13 @@ flowchart LR
 AI-summary TTS remains wired through the native MLX Audio channel on macOS, but
 the task card button is hidden unless `enable_ai_summary_tts` is enabled in
 config flags. The default is off while local TTS model quality and runtime
-behavior are still being evaluated. iOS does not link the upstream
-`MLXAudioTTS` product yet because its Moss TTS target is not archive-safe on
-iOS; the iOS `speakText` method returns `unsupported` while STT remains linked.
+behavior are still being evaluated. iOS does not ship the MLX Audio bridge at
+all: the 1.7B Qwen3-ASR model that gives acceptable accuracy on macOS triggered
+immediate OOM on iPhone hardware, so `ios/Runner` no longer links
+`mlx-swift` / `mlx-audio-swift` / `swift-huggingface` and no longer registers
+the `MlxAudio` plugin. The iOS bundle is correspondingly smaller, and audio
+recorded on iOS reaches MLX via the synced-audio auto-trigger flow on a paired
+desktop.
 
 For speech dictionary support, `UnifiedAiInferenceRepository` and
 `SkillInferenceRunner` still resolve category dictionary terms through
@@ -435,7 +454,7 @@ The prompt-generation and image-generation skills accept any text-bearing entry 
 - `imagePromptGeneration` is seeded but not wired for execution in `triggerSkillProvider`.
 - Image generation is currently implemented only for Gemini and Alibaba providers.
 - Data residency is not enforced by code. Most request destinations are whatever `baseUrl` is configured on the selected provider; MLX Audio is the exception and stays inside the app process when supported.
-- MLX Audio model inference is compile-gated in Swift. x86 macOS reports the models as unsupported instead of loading Apple Silicon-only libraries.
+- MLX Audio model inference ships only on macOS. The iOS / Android / Linux / Windows builds report every model as unsupported; mobile recordings rely on the synced-audio auto-trigger to reach an MLX-capable desktop.
 
 ## Reading Guide
 

@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 
 const _logTag = 'ProfileAutomationService';
 const _fallbackTranscriptionAssignment = SkillAssignment(
@@ -285,15 +286,19 @@ class ProfileAutomationService {
     final type = candidate.provider.inferenceProviderType;
     final providerModelId = candidate.model.providerModelId;
 
-    if (type == InferenceProviderType.mlxAudio &&
-        providerModelId == mlxAudioRecommendedSttModelId) {
-      return 0;
+    if (type == InferenceProviderType.mlxAudio) {
+      // The MLX Audio native bridge ships only on macOS — see
+      // lib/features/ai/util/mlx_audio_channel.dart. Invoking it from any
+      // other platform throws an "unsupported" PlatformException, so demote
+      // MLX rows past every cloud and local non-MLX candidate instead of
+      // letting them top the ranking. Audio recorded on mobile reaches MLX
+      // through the synced-audio auto-trigger on a paired desktop, not via
+      // this direct fallback.
+      if (!platform.isMacOS) return 100;
+      if (providerModelId == mlxAudioRecommendedSttModelId) return 0;
+      if (isMlxAudioQwenAsrModelId(providerModelId)) return 1;
+      return 2;
     }
-    if (type == InferenceProviderType.mlxAudio &&
-        isMlxAudioQwenAsrModelId(providerModelId)) {
-      return 1;
-    }
-    if (type == InferenceProviderType.mlxAudio) return 2;
     if (type == InferenceProviderType.mistral) return 3;
     if (type == InferenceProviderType.openAi) return 4;
     if (type == InferenceProviderType.whisper) return 5;
