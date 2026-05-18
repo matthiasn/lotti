@@ -1830,6 +1830,7 @@
   "fileMenuNewScreenshot": "Capture d'écran",
   "fileMenuNewTask": "Tâche",
   "fileMenuTitle": "Fichier",
+  "filterSelectionNoMatches": "Aucun résultat",
   "generateCoverArt": "Générer une couverture",
   "generateCoverArtSubtitle": "Créer une image à partir de la description vocale",
   "habitActiveFromLabel": "Date de début",

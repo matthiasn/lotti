@@ -3923,6 +3923,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get fileMenuTitle => 'Soubor';
 
   @override
+  String get filterSelectionNoMatches => 'Žádné shody';
+
+  @override
   String get generateCoverArt => 'Vytvořit obálku';
 
   @override

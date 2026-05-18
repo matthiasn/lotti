@@ -20,6 +20,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -70,6 +71,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        theme: resolveTestTheme(),
         localizationsDelegates: const [
           AppLocalizations.delegate,
           FormBuilderLocalizations.delegate,

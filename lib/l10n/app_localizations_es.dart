@@ -3938,6 +3938,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get fileMenuTitle => 'Archivo';
 
   @override
+  String get filterSelectionNoMatches => 'Sin coincidencias';
+
+  @override
   String get generateCoverArt => 'Generar portada';
 
   @override

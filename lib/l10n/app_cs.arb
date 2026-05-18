@@ -1639,6 +1639,7 @@
   "fileMenuNewScreenshot": "Snímek obrazovky",
   "fileMenuNewTask": "Úkol",
   "fileMenuTitle": "Soubor",
+  "filterSelectionNoMatches": "Žádné shody",
   "generateCoverArt": "Vytvořit obálku",
   "generateCoverArtSubtitle": "Vytvořit obrázek z hlasového popisu",
   "habitActiveFromLabel": "Datum začátku",
