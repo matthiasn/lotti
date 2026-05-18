@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 
 class _MockLabelsRepository extends Mock implements LabelsRepository {}
 
@@ -69,8 +70,8 @@ void main() {
         overrides: [
           labelsRepositoryProvider.overrideWithValue(repository),
         ],
-        // ignore: prefer_const_constructors
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             FormBuilderLocalizations.delegate,

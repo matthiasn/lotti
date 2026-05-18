@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_filter_selection_modal.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -433,4 +435,177 @@ void main() {
       expect(result, {'work', 'personal'});
     },
   );
+
+  testWidgets(
+    'renders DesignSystemGlassStrip around the apply action bar',
+    (tester) async {
+      await _openSelectionModal(
+        tester,
+        openerKey: 'open-glass-modal',
+        options: const [
+          DesignSystemTaskFilterOption(id: 'open', label: 'Open'),
+        ],
+        applyLabel: 'Done',
+      );
+
+      // The sticky action bar is wrapped in DesignSystemGlassStrip so list
+      // rows scroll behind the blurred footer.
+      expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
+      // Apply button still tappable as before.
+      expect(
+        find.byKey(
+          const ValueKey('design-system-filter-selection-apply'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  group('with searchHintText', () {
+    testWidgets('renders a DesignSystemSearch above the options', (
+      tester,
+    ) async {
+      await _openSelectionModal(
+        tester,
+        openerKey: 'open-search-modal',
+        options: const [
+          DesignSystemTaskFilterOption(id: 'work', label: 'Work'),
+          DesignSystemTaskFilterOption(id: 'personal', label: 'Personal'),
+        ],
+        searchHintText: 'Search categories',
+      );
+
+      expect(find.byType(DesignSystemSearch), findsOneWidget);
+      final searchWidget = tester.widget<DesignSystemSearch>(
+        find.byType(DesignSystemSearch),
+      );
+      expect(searchWidget.hintText, 'Search categories');
+    });
+
+    testWidgets('filters options by case-insensitive label substring', (
+      tester,
+    ) async {
+      await _openSelectionModal(
+        tester,
+        openerKey: 'open-filter-search-modal',
+        options: const [
+          DesignSystemTaskFilterOption(id: 'work', label: 'Work'),
+          DesignSystemTaskFilterOption(id: 'personal', label: 'Personal'),
+          DesignSystemTaskFilterOption(
+            id: 'side-project',
+            label: 'Side project',
+          ),
+        ],
+        searchHintText: 'Search',
+      );
+
+      // All three options are visible initially.
+      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('Personal'), findsOneWidget);
+      expect(find.text('Side project'), findsOneWidget);
+
+      // Type a query that matches one row (case-insensitive).
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(DesignSystemSearch),
+          matching: find.byType(TextField),
+        ),
+        'PERS',
+      );
+      await tester.pump();
+
+      // Only the matching row is rendered.
+      expect(find.text('Personal'), findsOneWidget);
+      expect(find.text('Work'), findsNothing);
+      expect(find.text('Side project'), findsNothing);
+    });
+
+    testWidgets('shows the no-matches placeholder when nothing matches', (
+      tester,
+    ) async {
+      await _openSelectionModal(
+        tester,
+        openerKey: 'open-no-match-modal',
+        options: const [
+          DesignSystemTaskFilterOption(id: 'work', label: 'Work'),
+          DesignSystemTaskFilterOption(id: 'personal', label: 'Personal'),
+        ],
+        searchHintText: 'Search',
+      );
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(DesignSystemSearch),
+          matching: find.byType(TextField),
+        ),
+        'zzz',
+      );
+      await tester.pump();
+
+      // Rows hidden, placeholder visible.
+      expect(find.text('Work'), findsNothing);
+      expect(find.text('Personal'), findsNothing);
+      expect(find.byType(DesignSystemCheckbox), findsNothing);
+      expect(find.text('No matches'), findsOneWidget);
+    });
+
+    testWidgets('omitting searchHintText hides the search bar', (tester) async {
+      await _openSelectionModal(
+        tester,
+        openerKey: 'open-nosearch-modal',
+        options: const [
+          DesignSystemTaskFilterOption(id: 'open', label: 'Open'),
+        ],
+      );
+
+      expect(find.byType(DesignSystemSearch), findsNothing);
+    });
+  });
+}
+
+/// Pumps a host with a single opener button that calls
+/// [showDesignSystemFilterSelectionModal] with the given parameters, then
+/// taps it and lets the modal animation settle.
+///
+/// Centralises the boilerplate shared by tests that only need to verify
+/// what the modal renders for a given parameter combination.
+Future<void> _openSelectionModal(
+  WidgetTester tester, {
+  required String openerKey,
+  required List<DesignSystemTaskFilterOption> options,
+  Set<String> initialSelectedIds = const <String>{},
+  String? applyLabel,
+  String? searchHintText,
+  ThemeData? themeData,
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidget2(
+      Theme(
+        data: themeData ?? DesignSystemTheme.dark(),
+        child: Scaffold(
+          body: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                key: ValueKey(openerKey),
+                onPressed: () {
+                  showDesignSystemFilterSelectionModal(
+                    context: context,
+                    title: 'Filter',
+                    options: options,
+                    initialSelectedIds: initialSelectedIds,
+                    applyLabel: applyLabel,
+                    searchHintText: searchHintText,
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.tap(find.byKey(ValueKey(openerKey)));
+  await tester.pumpAndSettle();
 }

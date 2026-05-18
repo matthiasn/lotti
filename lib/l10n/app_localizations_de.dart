@@ -3922,6 +3922,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get fileMenuTitle => 'Datei';
 
   @override
+  String get filterSelectionNoMatches => 'Keine Treffer';
+
+  @override
   String get generateCoverArt => 'Cover generieren';
 
   @override

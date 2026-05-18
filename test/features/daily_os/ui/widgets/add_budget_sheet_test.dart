@@ -19,6 +19,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 /// Mock controller that returns fixed unified data.
 class _TestUnifiedController extends UnifiedDailyOsDataController {
@@ -340,6 +341,7 @@ void main() {
               ).overrideWith(() => _TestUnifiedController(unifiedData)),
             ],
             child: MaterialApp(
+              theme: resolveTestTheme(),
               localizationsDelegates: const [
                 AppLocalizations.delegate,
                 FormBuilderLocalizations.delegate,

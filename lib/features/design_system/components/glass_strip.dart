@@ -69,3 +69,50 @@ class DesignSystemGlassStrip extends StatelessWidget {
     );
   }
 }
+
+/// Sticky bottom action bar built on [DesignSystemGlassStrip].
+///
+/// Wraps [child] (typically a single button) in symmetric token-driven
+/// padding and stretches it to fill the available width. Use this whenever
+/// a modal needs a single primary action to float above a scrolling list
+/// behind blurred glass.
+///
+/// Callers that overlay this footer on top of a scrolling region must
+/// reserve [reservedHeight] of bottom inset (or matching bottom padding
+/// inside the scrollable) so the last row of content remains tappable
+/// after scrolling under the glass.
+class DesignSystemGlassActionFooter extends StatelessWidget {
+  const DesignSystemGlassActionFooter({
+    required this.child,
+    super.key,
+  });
+
+  final Widget child;
+
+  /// Reserved bottom inset that lets scrolling content pass behind the
+  /// glass footer without hiding the final rows. Sized for a single
+  /// primary button with `spacing.step4` (~16px) vertical padding on
+  /// both sides plus the 1px divider on top.
+  ///
+  /// Must be kept in sync with the layout produced by [build] — if you
+  /// add a second row inside the footer, update this constant and audit
+  /// every caller that uses it as a bottom inset.
+  static const double reservedHeight = 88;
+
+  @override
+  Widget build(BuildContext context) {
+    final spacing = context.designTokens.spacing;
+    return DesignSystemGlassStrip(
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: spacing.step5,
+          vertical: spacing.step4,
+        ),
+        child: SizedBox(
+          width: double.infinity,
+          child: child,
+        ),
+      ),
+    );
+  }
+}

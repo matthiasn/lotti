@@ -3,8 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/categories/ui/widgets/category_type_card.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -123,31 +126,37 @@ void main() {
     expect(selectedCategories.first?.id, 'cat2');
   });
 
-  testWidgets('displays "clear" option when initialCategoryId is provided', (
-    tester,
-  ) async {
-    final selectedCategories = <CategoryDefinition?>[];
+  testWidgets(
+    'displays localized Clear option in the glass footer when initialCategoryId is provided',
+    (tester) async {
+      final selectedCategories = <CategoryDefinition?>[];
 
-    await tester.pumpWidget(
-      WidgetTestBench(
-        child: CategorySelectionModalContent(
-          onCategorySelected: selectedCategories.add,
-          initialCategoryId: 'cat1',
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySelectionModalContent(
+            onCategorySelected: selectedCategories.add,
+            initialCategoryId: 'cat1',
+          ),
         ),
-      ),
-    );
+      );
 
-    // Verify clear option is displayed
-    expect(find.text('clear'), findsOneWidget);
+      // Clear lives inside the glass footer with the localized label.
+      final glassStrip = find.byType(DesignSystemGlassStrip);
+      expect(glassStrip, findsOneWidget);
+      final clearButton = find.descendant(
+        of: glassStrip,
+        matching: find.widgetWithText(TextButton, 'Clear'),
+      );
+      expect(clearButton, findsOneWidget);
 
-    // Tap on clear
-    await tester.tap(find.text('clear'));
-    await tester.pumpAndSettle();
+      await tester.tap(clearButton);
+      await tester.pumpAndSettle();
 
-    // Verify callback was called with null
-    expect(selectedCategories.length, 1);
-    expect(selectedCategories.first, isNull);
-  });
+      // Callback was called with null to clear the selection.
+      expect(selectedCategories.length, 1);
+      expect(selectedCategories.first, isNull);
+    },
+  );
 
   testWidgets('shows "create category" option when search has no matches', (
     tester,
@@ -651,6 +660,65 @@ void main() {
       final size = tester.getSize(columnFinder);
       expect(size.height, lessThanOrEqualTo(400));
     });
+
+    testWidgets('uses DesignSystemSearch instead of LottiSearchBar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: CategorySelectionModalContent(
+            onCategorySelected: (_) {},
+          ),
+        ),
+      );
+
+      expect(find.byType(DesignSystemSearch), findsOneWidget);
+      expect(find.byType(LottiSearchBar), findsNothing);
+    });
+
+    testWidgets(
+      'shows DesignSystemGlassStrip with Done button in multi-select mode',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Material(
+              child: CategorySelectionModalContent(
+                onCategorySelected: (_) {},
+                multiSelect: true,
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
+        // Done button lives inside the glass strip.
+        final glassStrip = find.byType(DesignSystemGlassStrip);
+        expect(
+          find.descendant(
+            of: glassStrip,
+            matching: find.widgetWithText(FilledButton, 'Done'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'hides DesignSystemGlassStrip when neither Done nor clear is shown',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: CategorySelectionModalContent(
+              onCategorySelected: (_) {},
+            ),
+          ),
+        );
+
+        // Single-select mode with no initialCategoryId — no bottom action,
+        // so the glass strip is suppressed.
+        expect(find.byType(DesignSystemGlassStrip), findsNothing);
+      },
+    );
 
     testWidgets('respects 640px max height on large screens', (tester) async {
       when(

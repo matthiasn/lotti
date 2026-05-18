@@ -1830,6 +1830,7 @@
   "fileMenuNewScreenshot": "Captură de ecran",
   "fileMenuNewTask": "Sarcină",
   "fileMenuTitle": "Fișier",
+  "filterSelectionNoMatches": "Fără rezultate",
   "generateCoverArt": "Generează copertă",
   "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
   "habitActiveFromLabel": "Data de început",

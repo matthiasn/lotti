@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sync-node capability probe already gates the `mlxAudio` capability
   on `Platform.isMacOS`, so deferred inference continues to work
   unchanged.
+- Category pickers now share the same look across the app. The task
+  filter's Category sub-modal gains a search bar at the top (matching
+  the Settings → Categories Definition page), and both the filter
+  sub-modal and the category modal opened from the task definition
+  page now anchor their action button inside a `DesignSystemGlassStrip`
+  footer, so list rows scroll behind the blurred bar instead of being
+  pushed off-screen. The task definition modal also swaps its
+  `LottiSearchBar` (gradient-filled in dark mode) for the flat,
+  border-only `DesignSystemSearch` used by the settings page.
 
 ### Added
 - Synced-notifications bell in the Tasks and Projects tab headers. The

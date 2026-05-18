@@ -2023,6 +2023,7 @@
   "fileMenuNewScreenshot": "Screenshot",
   "fileMenuNewTask": "Task",
   "fileMenuTitle": "File",
+  "filterSelectionNoMatches": "No matches",
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
   "habitActiveFromLabel": "Start Date",

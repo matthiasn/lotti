@@ -6780,6 +6780,12 @@ abstract class AppLocalizations {
   /// **'File'**
   String get fileMenuTitle;
 
+  /// No description provided for @filterSelectionNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get filterSelectionNoMatches;
+
   /// No description provided for @generateCoverArt.
   ///
   /// In en, this message translates to:

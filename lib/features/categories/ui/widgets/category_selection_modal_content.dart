@@ -6,13 +6,14 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_type_card.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
 class CategorySelectionModalContent extends ConsumerStatefulWidget {
   const CategorySelectionModalContent({
@@ -131,13 +132,21 @@ class CategorySelectionModalContentState
     final screenHeight = MediaQuery.of(context).size.height;
     final maxHeight = math.min(screenHeight * 0.9, 640).toDouble();
 
+    final showsClearOption =
+        !widget.multiSelect && widget.initialCategoryId != null;
+    final showsDoneButton = widget.multiSelect && widget.showDoneButton;
+    final showsBottomBar = showsClearOption || showsDoneButton;
+
+    final showsEmptyAddState =
+        filteredCategories.isEmpty && searchQuery.isNotEmpty;
+
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: LottiSearchBar(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: DesignSystemSearch(
               controller: searchController,
               hintText: context.messages.categorySearchPlaceholder,
               onChanged: (value) {
@@ -163,7 +172,7 @@ class CategorySelectionModalContentState
               onTap: () => Navigator.pop(context),
               selected: true,
             ),
-          if (filteredCategories.isEmpty && searchQuery.isNotEmpty)
+          if (showsEmptyAddState)
             SettingsCard(
               onTap: () => _showColorPicker(searchQuery),
               title: searchQuery,
@@ -175,8 +184,14 @@ class CategorySelectionModalContentState
             )
           else
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
+              child: _CategoryListWithOptionalFooter(
+                showsBottomBar: showsBottomBar,
+                footer: showsBottomBar
+                    ? _buildBottomBar(
+                        context: context,
+                        showsDoneButton: showsDoneButton,
+                      )
+                    : null,
                 children: [
                   for (final category in favoriteCategories)
                     CategoryTypeCard(
@@ -197,39 +212,77 @@ class CategorySelectionModalContentState
                 ],
               ),
             ),
-          if (!widget.multiSelect && widget.initialCategoryId != null)
-            SettingsCard(
-              onTap: () => widget.onCategorySelected(null),
-              title: 'clear',
-              titleColor: context.colorScheme.outline,
-              leading: Icon(
-                Icons.clear,
-                color: context.colorScheme.outline,
-              ),
-            ),
-          if (widget.multiSelect && widget.showDoneButton)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () {
-                        final cache = getIt<EntitiesCacheService>();
-                        final categories = selectedIds
-                            .map(cache.getCategoryById)
-                            .whereType<CategoryDefinition>()
-                            .toList();
-                        Navigator.of(context).pop(categories);
-                      },
-                      child: Text(context.messages.doneButton),
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBottomBar({
+    required BuildContext context,
+    required bool showsDoneButton,
+  }) {
+    if (showsDoneButton) {
+      return FilledButton(
+        onPressed: () {
+          final cache = getIt<EntitiesCacheService>();
+          final categories = selectedIds
+              .map(cache.getCategoryById)
+              .whereType<CategoryDefinition>()
+              .toList();
+          Navigator.of(context).pop(categories);
+        },
+        child: Text(context.messages.doneButton),
+      );
+    }
+    return TextButton.icon(
+      onPressed: () => widget.onCategorySelected(null),
+      icon: const Icon(Icons.clear),
+      label: Text(context.messages.clearButton),
+    );
+  }
+}
+
+/// Renders the category list and, when [footer] is non-null, overlays a
+/// [DesignSystemGlassActionFooter] at the bottom with matching list inset
+/// so the last row stays tappable as it scrolls behind the glass.
+///
+/// Skipping the Stack entirely when there is no footer keeps the widget
+/// tree flat for the common single-select case.
+class _CategoryListWithOptionalFooter extends StatelessWidget {
+  const _CategoryListWithOptionalFooter({
+    required this.showsBottomBar,
+    required this.footer,
+    required this.children,
+  });
+
+  final bool showsBottomBar;
+  final Widget? footer;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final list = ListView(
+      padding: EdgeInsets.only(
+        bottom: showsBottomBar
+            ? DesignSystemGlassActionFooter.reservedHeight
+            : 0,
+      ),
+      children: children,
+    );
+    if (footer == null) {
+      return list;
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        list,
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: DesignSystemGlassActionFooter(child: footer!),
+        ),
+      ],
     );
   }
 }

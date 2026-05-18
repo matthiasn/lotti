@@ -3944,6 +3944,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get fileMenuTitle => 'Fișier';
 
   @override
+  String get filterSelectionNoMatches => 'Fără rezultate';
+
+  @override
   String get generateCoverArt => 'Generează copertă';
 
   @override

@@ -1830,6 +1830,7 @@
   "fileMenuNewScreenshot": "Captura de pantalla",
   "fileMenuNewTask": "Tarea",
   "fileMenuTitle": "Archivo",
+  "filterSelectionNoMatches": "Sin coincidencias",
   "generateCoverArt": "Generar portada",
   "generateCoverArtSubtitle": "Crear imagen desde descripción de voz",
   "habitActiveFromLabel": "Fecha de inicio",
