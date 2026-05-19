@@ -18,7 +18,6 @@ import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_loading_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_empty_view.dart';
@@ -251,29 +250,29 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   }
 
   Future<void> _handleAddProvider() async {
-    // Two-tier picker behaviour:
+    // Two-tier picker behaviour, but a single modal widget now:
     //
-    //  - Fresh users (dismiss flag NOT set) see the rich
-    //    [AiPickProviderModal] with branded tiles (Gemini, OpenAI,
-    //    Anthropic, Alibaba, Ollama, Voxtral) — the FTUE-grade flow.
+    //  - Fresh users (dismiss flag NOT set) see [AiPickProviderModal]
+    //    with its FTUE chrome — branded tile lineup (Gemini, OpenAI,
+    //    Anthropic, Alibaba, MLX Audio, Ollama, Voxtral), the
+    //    "Don't show again" button, and the FTUE subtitle/footer.
     //
     //  - Users who tapped "Don't show again" once before see the
-    //    legacy [ProviderTypeSelectionModal] instead. It lists the
-    //    full `InferenceProviderType` enum (including OpenRouter,
-    //    Nebius, generic OpenAI, etc.) so power users can still
-    //    reach every provider type, including Ollama — without
-    //    being re-prompted with the FTUE pitch they've already
-    //    opted out of. Before this routing existed the dismissed
-    //    path landed on the create form pre-filled to
-    //    `genericOpenAi` with no surfaced way to pick a different
-    //    type, which silently blocked the "start with Gemini, then
-    //    add Ollama" workflow.
+    //    same modal in non-FTUE mode via [AiPickProviderModal.showAllTypes],
+    //    which surfaces every `InferenceProviderType` value (the
+    //    branded set plus genericOpenAi / OpenRouter / Nebius /
+    //    Mistral / Whisper) without the FTUE chrome.
+    //
+    //  Both branches funnel through the same widget (one with FTUE
+    //  chrome, one without) so the visual treatment stays
+    //  consistent and every `InferenceProviderType` value remains
+    //  reachable — including the formerly-hidden `genericOpenAi`.
     final settingsDb = getIt<SettingsDb>();
     final dismissed =
         await settingsDb.itemByKey(kAiPickProviderDismissedKey) == 'true';
     if (!mounted) return;
     if (dismissed) {
-      final pickedType = await ProviderTypeSelectionModal.showForResult(
+      final pickedType = await AiPickProviderModal.showAllTypes(
         context: context,
       );
       if (!mounted || pickedType == null) return;
@@ -294,7 +293,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         );
       case AiPickProviderResultKind.dontShowAgain:
         // Persist the suppression flag — next FAB tap routes through
-        // the legacy [ProviderTypeSelectionModal] above instead of
+        // [AiPickProviderModal.showAllTypes] above instead of
         // re-popping this FTUE picker. We do NOT also push the form
         // here: tapping "Don't show again" is a hide-this-prompt
         // action, not an add-a-provider one.

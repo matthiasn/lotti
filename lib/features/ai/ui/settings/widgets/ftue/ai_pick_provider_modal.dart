@@ -42,7 +42,6 @@ class AiPickProviderResult {
 
   bool get isConfirmed => kind == AiPickProviderResultKind.confirmed;
   bool get isDontShowAgain => kind == AiPickProviderResultKind.dontShowAgain;
-  bool get isCancelled => kind == AiPickProviderResultKind.cancelled;
 }
 
 /// Per-row metadata describing one tile rendered inside the modal.
@@ -70,25 +69,27 @@ class AiPickProviderTileSpec {
 
 enum AiPickProviderBadge { recommended, newcomer, desktopOnly }
 
-/// FTUE entry-point modal: "Set up AI features". Centered sheet with
-/// seven provider tiles (Gemini RECOMMENDED / OpenAI / Anthropic NEW /
-/// Alibaba NEW / MLX Audio NEW / Ollama DESKTOP ONLY / Voxtral DESKTOP ONLY), a
-/// Don't-show-again secondary action, and a primary Continue button
-/// that surfaces the user's pick.
+/// Provider-type picker — single modal used for both the FTUE flow
+/// ("Set up AI features", showFtueChrome=true) and the bare type
+/// picker invoked outside the FTUE (showFtueChrome=false). Centered
+/// sheet with provider tiles, an optional Don't-show-again secondary
+/// action, and a primary Continue button that surfaces the user's
+/// pick.
 ///
-/// Replaces the legacy `ProviderTypeSelectionModal` for the FTUE
-/// flow — that modal is still used by the in-form provider type
-/// switcher inside `InferenceProviderEditPage`.
+/// Three entry points:
+///   - [show] — full-control entry, returns [AiPickProviderResult].
+///   - [showAllTypes] — non-FTUE entry, surfaces every
+///     `InferenceProviderType` and returns the picked type or null.
 ///
 /// Usage:
 /// ```dart
 /// final result = await AiPickProviderModal.show(context: context);
 /// switch (result.kind) {
-///   case _AiPickProviderResultKind.confirmed:
+///   case AiPickProviderResultKind.confirmed:
 ///     // route to the edit form preselected to result.providerType
-///   case _AiPickProviderResultKind.dontShowAgain:
+///   case AiPickProviderResultKind.dontShowAgain:
 ///     // persist the suppression flag
-///   case _AiPickProviderResultKind.cancelled:
+///   case AiPickProviderResultKind.cancelled:
 ///     break;
 /// }
 /// ```
@@ -96,6 +97,7 @@ class AiPickProviderModal extends StatefulWidget {
   const AiPickProviderModal({
     required this.tiles,
     required this.initialSelection,
+    this.showFtueChrome = true,
     super.key,
   });
 
@@ -135,15 +137,50 @@ class AiPickProviderModal extends StatefulWidget {
         ),
       ];
 
+  /// Full-coverage tile lineup used when the modal is reused outside
+  /// the FTUE — e.g. the AI Settings "+ Add provider" handler after
+  /// the FTUE has been dismissed, and the in-form provider-type
+  /// switcher inside `InferenceProviderEditPage`. Starts with the
+  /// curated [defaultTiles] (so power users see the same recommended
+  /// surfacing) then appends the advanced types that the FTUE
+  /// intentionally hides — alphabetical, no badges. Every
+  /// `InferenceProviderType` value is reachable here.
+  static const List<AiPickProviderTileSpec> allTypesTiles =
+      <AiPickProviderTileSpec>[
+        ...defaultTiles,
+        AiPickProviderTileSpec(
+          providerType: InferenceProviderType.genericOpenAi,
+        ),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.mistral),
+        AiPickProviderTileSpec(
+          providerType: InferenceProviderType.nebiusAiStudio,
+        ),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.openRouter),
+        AiPickProviderTileSpec(providerType: InferenceProviderType.whisper),
+      ];
+
   final List<AiPickProviderTileSpec> tiles;
   final InferenceProviderType initialSelection;
 
+  /// When `true` (the FTUE default), the modal shows the FTUE-only
+  /// chrome: the "Pick a provider to get started…" subtitle, the
+  /// "You can add more providers later…" footer hint, and the
+  /// "Don't show again" secondary button. When `false`, all three
+  /// are hidden — pure provider-type picker, no FTUE pitch — and
+  /// the modal never produces `dontShowAgain` results.
+  final bool showFtueChrome;
+
   /// Opens the modal and returns the user's choice. Dismissal returns
-  /// [AiPickProviderResult.cancelled].
+  /// [AiPickProviderResult.cancelled]. When [showFtueChrome] is
+  /// `false`, the modal cannot return `dontShowAgain` (the button is
+  /// hidden) — pass [showAllTypes] for that flow if you want the
+  /// `InferenceProviderType?` shape directly.
   static Future<AiPickProviderResult> show({
     required BuildContext context,
     List<AiPickProviderTileSpec> tiles = defaultTiles,
     InferenceProviderType? initialSelection,
+    String? title,
+    bool showFtueChrome = true,
   }) async {
     final seed =
         initialSelection ??
@@ -155,13 +192,51 @@ class AiPickProviderModal extends StatefulWidget {
             .providerType;
     final result = await ModalUtils.showSinglePageModal<AiPickProviderResult>(
       context: context,
-      title: context.messages.aiPickProviderModalTitle,
+      title: title ?? context.messages.aiPickProviderModalTitle,
       builder: (modalCtx) => AiPickProviderModal(
         tiles: tiles,
         initialSelection: seed,
+        showFtueChrome: showFtueChrome,
       ),
     );
     return result ?? const AiPickProviderResult.cancelled();
+  }
+
+  /// Non-FTUE entry point — opens the modal with [allTypesTiles] and
+  /// FTUE chrome hidden, then collapses the three-state result into
+  /// a `Future<InferenceProviderType?>` for call sites that only
+  /// care about the chosen type.
+  ///
+  /// Returns the picked type on Continue, or `null` on any other
+  /// outcome (sheet dismissed, close X, swipe). The "Don't show
+  /// again" button is hidden in this mode, so `dontShowAgain` is
+  /// never produced.
+  ///
+  /// Used by the AI Settings "+ Add provider" handler in the
+  /// dismissed-FTUE path, and the in-form provider-type switcher
+  /// inside `InferenceProviderEditPage`.
+  static Future<InferenceProviderType?> showAllTypes({
+    required BuildContext context,
+    InferenceProviderType? initialSelection,
+    String? title,
+  }) async {
+    final result = await show(
+      context: context,
+      tiles: allTypesTiles,
+      initialSelection: initialSelection,
+      title: title ?? context.messages.aiConfigSelectProviderTypeModalTitle,
+      showFtueChrome: false,
+    );
+    // `showFtueChrome:false` hides the Don't-show-again button, so
+    // the underlying modal cannot emit `dontShowAgain`. Document the
+    // invariant — if a future caller routes a chromed result through
+    // this entry point, the suppression intent would otherwise be
+    // silently dropped.
+    assert(
+      !result.isDontShowAgain,
+      'showAllTypes received dontShowAgain — chrome should hide that button',
+    );
+    return result.isConfirmed ? result.providerType : null;
   }
 
   @override
@@ -190,13 +265,15 @@ class _AiPickProviderModalState extends State<AiPickProviderModal> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          messages.aiPickProviderSubtitle,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
+        if (widget.showFtueChrome) ...[
+          Text(
+            messages.aiPickProviderSubtitle,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
           ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.step5),
+        ],
         for (var i = 0; i < widget.tiles.length; i++) ...[
           if (i > 0) SizedBox(height: tokens.spacing.step3),
           _ProviderTile(
@@ -208,28 +285,34 @@ class _AiPickProviderModalState extends State<AiPickProviderModal> {
           ),
         ],
         SizedBox(height: tokens.spacing.step5),
-        Text(
-          messages.aiPickProviderFooterHint,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+        if (widget.showFtueChrome) ...[
+          Text(
+            messages.aiPickProviderFooterHint,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
           ),
-        ),
-        SizedBox(height: tokens.spacing.step5),
-        // Wrap so the two actions reflow onto a second line on narrow
-        // sheets instead of overflowing the modal width.
+          SizedBox(height: tokens.spacing.step5),
+        ],
+        // Wrap so the two FTUE actions reflow onto a second line on
+        // narrow sheets instead of overflowing the modal width. In
+        // non-FTUE mode this collapses to a single right-aligned
+        // Continue button, which Wrap renders correctly without a
+        // dedicated branch.
         Wrap(
           alignment: WrapAlignment.end,
           spacing: tokens.spacing.step3,
           runSpacing: tokens.spacing.step3,
           children: [
-            DesignSystemButton(
-              label: messages.aiPickProviderDontShowAgainButton,
-              variant: DesignSystemButtonVariant.tertiary,
-              size: DesignSystemButtonSize.large,
-              onPressed: () => Navigator.of(context).pop(
-                const AiPickProviderResult.dontShowAgain(),
+            if (widget.showFtueChrome)
+              DesignSystemButton(
+                label: messages.aiPickProviderDontShowAgainButton,
+                variant: DesignSystemButtonVariant.tertiary,
+                size: DesignSystemButtonSize.large,
+                onPressed: () => Navigator.of(context).pop(
+                  const AiPickProviderResult.dontShowAgain(),
+                ),
               ),
-            ),
             DesignSystemButton(
               label: messages.aiPickProviderContinueButton,
               size: DesignSystemButtonSize.large,

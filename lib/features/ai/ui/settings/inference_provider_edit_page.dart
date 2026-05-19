@@ -19,10 +19,10 @@ import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -806,11 +806,21 @@ class _InferenceProviderEditPageState
     );
   }
 
-  void _showProviderTypeModal(BuildContext context) {
-    ProviderTypeSelectionModal.show(
+  Future<void> _showProviderTypeModal(BuildContext context) async {
+    // Snapshot the type pre-await so the modal opens with the
+    // current selection seeded. Safe to capture before the await
+    // because the field that invokes this handler is only rendered
+    // inside `formContent` (i.e. once `formState` has resolved) —
+    // there is no code path where this fires against a loading
+    // form. If the form is still loading the seed falls back to
+    // the modal's first non-disabled tile.
+    final formState = ref.read(_formProvider).value;
+    final picked = await AiPickProviderModal.showAllTypes(
       context: context,
-      configId: widget.configId,
+      initialSelection: formState?.inferenceProviderType,
     );
+    if (picked == null || !mounted) return;
+    ref.read(_formProvider.notifier).inferenceProviderTypeChanged(picked);
   }
 
   /// Offers FTUE setup if this is the first provider of the given type.
