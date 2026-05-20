@@ -27,7 +27,8 @@ abstract class HabitsRepository {
   /// Fetches habit completions within a date range.
   ///
   /// [rangeStart] is the start of the date range (inclusive).
-  /// Returns all habit completion entries from [rangeStart] to now.
+  /// Returns the latest habit completion entry for each habit/day from
+  /// [rangeStart] to now.
   Future<List<JournalEntity>> getHabitCompletionsInRange({
     required DateTime rangeStart,
   });
@@ -36,6 +37,7 @@ abstract class HabitsRepository {
   ///
   /// [habitId] is the ID of the habit to fetch completions for.
   /// [rangeStart] and [rangeEnd] define the date range (inclusive).
+  /// Returns the latest habit completion entry for each day.
   Future<List<JournalEntity>> getHabitCompletionsByHabitId({
     required String habitId,
     required DateTime rangeStart,
@@ -95,22 +97,18 @@ class HabitsRepositoryImpl implements HabitsRepository {
   @override
   Future<List<JournalEntity>> getHabitCompletionsInRange({
     required DateTime rangeStart,
-  }) {
-    return _journalDb.getHabitCompletionsInRange(rangeStart: rangeStart);
-  }
+  }) => _journalDb.getHabitCompletionsInRange(rangeStart: rangeStart);
 
   @override
   Future<List<JournalEntity>> getHabitCompletionsByHabitId({
     required String habitId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) {
-    return _journalDb.getHabitCompletionsByHabitId(
-      habitId: habitId,
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
-    );
-  }
+  }) => _journalDb.getHabitCompletionsByHabitId(
+    habitId: habitId,
+    rangeStart: rangeStart,
+    rangeEnd: rangeEnd,
+  );
 
   @override
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) {

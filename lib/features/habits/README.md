@@ -105,7 +105,17 @@ That keeps the tab state coherent without turning every card refresh into a full
 - `dateFrom` / `dateTo`
 - optional `completionType`
 
-The important modeling choice is that completion is append-only journal data, not a mutable field on the definition. That makes history cheap to preserve and lets the UI answer range questions without mutating the definition itself.
+The important modeling choice is that completion is append-style journal data, not a mutable field on the definition. A user can still record the same habit/day more than once. The durable contract is **last write wins per habit/day**: read models collapse repeated `HabitCompletionEntry` rows by `(habitId, dateFrom.ymd)` and keep the entry with the newest metadata write timestamp before deriving UI state.
+
+```mermaid
+flowchart LR
+  Raw["Completion rows\nsame habit + same day"] --> Resolve["latestHabitCompletionsByDay"]
+  Resolve --> Latest["One effective row\nper habit/day"]
+  Latest --> TabState["HabitsController maps"]
+  Latest --> CardStrip["HabitCompletionController strip"]
+```
+
+That resolver is intentionally pure and covered by both example tests and Glados properties. It protects the tab-level maps, streak inputs, card history strips, repository reads, and direct `JournalDb` habit completion reads from database row-order differences when multiple writes share the same effective day.
 
 ### Schedule Reality Today
 
@@ -247,6 +257,8 @@ That narrower refresh path is the main reason this controller exists separately 
 The strip itself is synthesized day by day:
 
 - recorded completion entries overwrite the day's status
+- if there are multiple entries for the same habit/day, the newest metadata
+  write timestamp wins
 - active days without a recorded entry stay `open`
 - the final result is a compact history view used both for scanning and for tapping into backfilled completions
 

@@ -14,6 +14,7 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/habits/habit_completion_resolution.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -2555,6 +2556,12 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).toList();
   }
 
+  /// Returns habit completions for [habitId] in the inclusive
+  /// [rangeStart]/[rangeEnd] window.
+  ///
+  /// Raw database rows are converted to journal entities and collapsed with
+  /// [latestHabitCompletionsByDay], so callers get one latest write per day
+  /// instead of every stored completion row.
   Future<List<JournalEntity>> getHabitCompletionsByHabitId({
     required String habitId,
     required DateTime rangeStart,
@@ -2565,14 +2572,19 @@ class JournalDb extends _$JournalDb {
       rangeStart,
       rangeEnd,
     ).get();
-    return res.map(fromDbEntity).toList();
+    return latestHabitCompletionsByDay(res.map(fromDbEntity));
   }
 
+  /// Returns habit completions from [rangeStart] to now.
+  ///
+  /// Raw database rows are converted to journal entities and collapsed with
+  /// [latestHabitCompletionsByDay], so callers get one latest write per
+  /// habit/day instead of every stored completion row.
   Future<List<JournalEntity>> getHabitCompletionsInRange({
     required DateTime rangeStart,
   }) async {
     final res = await habitCompletionsInRange(rangeStart).get();
-    return res.map(fromDbEntity).toList();
+    return latestHabitCompletionsByDay(res.map(fromDbEntity));
   }
 
   Future<DayPlanEntry?> getDayPlanById(String id) async {

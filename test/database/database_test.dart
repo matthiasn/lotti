@@ -3315,6 +3315,51 @@ void main() {
         expect(results.map((e) => e.meta.id), equals(['habit-complete-1']));
       });
 
+      test(
+        'habit completion reads return the latest write for each habit day',
+        () async {
+          final habitId = habitFlossing.id;
+          final day = DateTime(2024, 4, 15, 21);
+          final older = buildHabitCompletionEntry(
+            id: 'habit-complete-older-success',
+            habitId: habitId,
+            timestamp: day,
+            writtenAt: DateTime(2024, 4, 15, 22),
+            completionType: HabitCompletionType.success,
+          );
+          final newer = buildHabitCompletionEntry(
+            id: 'habit-complete-newer-fail',
+            habitId: habitId,
+            timestamp: day,
+            writtenAt: DateTime(2024, 4, 15, 23),
+            completionType: HabitCompletionType.fail,
+          );
+
+          await db!.updateJournalEntity(newer);
+          await db!.updateJournalEntity(older);
+
+          final rangeStart = DateTime(2024, 4);
+          final rangeEnd = DateTime(2024, 4, 30);
+          final byHabit = await db!.getHabitCompletionsByHabitId(
+            habitId: habitId,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          );
+          final inRange = await db!.getHabitCompletionsInRange(
+            rangeStart: rangeStart,
+          );
+
+          for (final results in [byHabit, inRange]) {
+            expect(results, hasLength(1));
+            expect(results.single.meta.id, 'habit-complete-newer-fail');
+            expect(
+              (results.single as HabitCompletionEntry).data.completionType,
+              HabitCompletionType.fail,
+            );
+          }
+        },
+      );
+
       test('getQuantitativeByType filters correctly', () async {
         final weightEntry = buildQuantitativeEntry(
           id: 'weight-1',
@@ -6379,12 +6424,15 @@ JournalEntity buildHabitCompletionEntry({
   required String habitId,
   required DateTime timestamp,
   DateTime? deletedAt,
+  DateTime? writtenAt,
+  HabitCompletionType? completionType,
 }) {
+  final effectiveWrittenAt = writtenAt ?? timestamp;
   return JournalEntity.habitCompletion(
     meta: Metadata(
       id: id,
-      createdAt: timestamp,
-      updatedAt: timestamp,
+      createdAt: effectiveWrittenAt,
+      updatedAt: effectiveWrittenAt,
       dateFrom: timestamp,
       dateTo: timestamp,
       deletedAt: deletedAt,
@@ -6395,6 +6443,7 @@ JournalEntity buildHabitCompletionEntry({
       habitId: habitId,
       dateFrom: timestamp,
       dateTo: timestamp,
+      completionType: completionType,
     ),
   );
 }
