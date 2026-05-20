@@ -66,6 +66,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   syncs to other devices through the existing Matrix sync pipeline.
 
 ### Fixed
+- Agent wakes no longer abort when synced duplicate model rows leave the
+  first `providerModelId` match pointing at a deleted or unusable provider.
+  Provider resolution now skips stale candidates and prefers the usable
+  provider with the known matching provider type, while known-model backfill
+  and FTUE setup stop seeding duplicate rows for the same provider-native model
+  ID unless the existing row is orphaned and needs repair.
 - Task-agent proposal ledgers no longer surface retired suggestions as
   open work. Consolidating multiple pending change sets now marks pending
   items in the retired source sets as `retracted`, and the ledger reader

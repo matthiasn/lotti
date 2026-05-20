@@ -164,6 +164,11 @@ void main() {
         when(
           () => mockRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [existingModel]);
+        when(
+          () => mockRepository.getConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) async => [provider]);
 
         when(
           () => mockRepository.saveConfig(any()),
@@ -195,6 +200,11 @@ void main() {
         when(
           () => mockRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        ).thenAnswer((_) async => [provider]);
 
         when(() => mockRepository.saveConfig(any())).thenAnswer((
           invocation,
@@ -212,6 +222,131 @@ void main() {
         expect(capturedModel!.description, isNotEmpty);
       });
 
+      test(
+        'should skip same-provider models when providerModelId already exists '
+        'with a different row ID',
+        () async {
+          const providerId = 'gemini-provider-id';
+          final provider = AiConfigInferenceProvider(
+            id: providerId,
+            baseUrl: 'https://api.gemini.com',
+            apiKey: 'test-key',
+            name: 'Gemini',
+            createdAt: DateTime(2026, 3, 15),
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+          final existingModel = geminiModels.first.toAiConfigModel(
+            id: 'ftue-uuid-model-id',
+            inferenceProviderId: providerId,
+          );
+
+          when(
+            () => mockRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [existingModel]);
+          when(
+            () => mockRepository.getConfigsByType(
+              AiConfigType.inferenceProvider,
+            ),
+          ).thenAnswer((_) async => [provider]);
+          when(
+            () => mockRepository.saveConfig(any()),
+          ).thenAnswer((_) async => {});
+
+          final result = await service.prepopulateModelsForProvider(provider);
+
+          expect(result, geminiModels.length - 1);
+          verify(
+            () => mockRepository.saveConfig(any()),
+          ).called(geminiModels.length - 1);
+        },
+      );
+
+      test(
+        'should skip same-type duplicate model rows when an existing provider '
+        'is usable',
+        () async {
+          final existingProvider = AiConfigInferenceProvider(
+            id: 'gemini-provider-existing',
+            baseUrl: 'https://api.gemini.com',
+            apiKey: 'existing-key',
+            name: 'Gemini existing',
+            createdAt: DateTime(2026, 3, 15),
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+          final newProvider = AiConfigInferenceProvider(
+            id: 'gemini-provider-new',
+            baseUrl: 'https://api.gemini.com',
+            apiKey: 'new-key',
+            name: 'Gemini new',
+            createdAt: DateTime(2026, 3, 15),
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+          final existingModel = geminiModels.first.toAiConfigModel(
+            id: 'existing-provider-model',
+            inferenceProviderId: existingProvider.id,
+          );
+
+          when(
+            () => mockRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [existingModel]);
+          when(
+            () => mockRepository.getConfigsByType(
+              AiConfigType.inferenceProvider,
+            ),
+          ).thenAnswer((_) async => [existingProvider, newProvider]);
+          when(
+            () => mockRepository.saveConfig(any()),
+          ).thenAnswer((_) async => {});
+
+          final result = await service.prepopulateModelsForProvider(
+            newProvider,
+          );
+
+          expect(result, geminiModels.length - 1);
+          verify(
+            () => mockRepository.saveConfig(any()),
+          ).called(geminiModels.length - 1);
+        },
+      );
+
+      test(
+        'should create models when matching rows only point at deleted '
+        'providers',
+        () async {
+          final provider = AiConfigInferenceProvider(
+            id: 'gemini-provider-live',
+            baseUrl: 'https://api.gemini.com',
+            apiKey: 'test-key',
+            name: 'Gemini',
+            createdAt: DateTime(2026, 3, 15),
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+          final orphanedModel = geminiModels.first.toAiConfigModel(
+            id: 'orphaned-gemini-model',
+            inferenceProviderId: 'deleted-gemini-provider',
+          );
+
+          when(
+            () => mockRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [orphanedModel]);
+          when(
+            () => mockRepository.getConfigsByType(
+              AiConfigType.inferenceProvider,
+            ),
+          ).thenAnswer((_) async => [provider]);
+          when(
+            () => mockRepository.saveConfig(any()),
+          ).thenAnswer((_) async => {});
+
+          final result = await service.prepopulateModelsForProvider(provider);
+
+          expect(result, geminiModels.length);
+          verify(
+            () => mockRepository.saveConfig(any()),
+          ).called(geminiModels.length);
+        },
+      );
+
       glados.Glados(
         glados.any.prepopulationScenario,
         glados.ExploreConfig(numRuns: 120),
@@ -227,6 +362,11 @@ void main() {
           when(
             () => generatedRepository.getConfigsByType(AiConfigType.model),
           ).thenAnswer((_) async => scenario.existingConfigs);
+          when(
+            () => generatedRepository.getConfigsByType(
+              AiConfigType.inferenceProvider,
+            ),
+          ).thenAnswer((_) async => [scenario.provider]);
           when(
             () => generatedRepository.saveConfig(any()),
           ).thenAnswer((invocation) async {

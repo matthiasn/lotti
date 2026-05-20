@@ -1153,6 +1153,9 @@ void main() {
       when(
         () => mockRepository.getConfigsByType(AiConfigType.model),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => []);
 
       // Act
       final controller = container.read(
@@ -1179,6 +1182,9 @@ void main() {
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
         () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
       ).thenAnswer((_) async => []);
 
       // Act

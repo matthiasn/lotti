@@ -73,17 +73,30 @@ class _GeneratedProviderResolutionScenario {
     };
   }
 
-  String? get expectedProviderId {
+  List<String> get matchingProviderIds {
     return switch (modelShape) {
       _GeneratedModelLookupShape.empty ||
-      _GeneratedModelLookupShape.nonMatchingOnly => null,
+      _GeneratedModelLookupShape.nonMatchingOnly => const <String>[],
       _GeneratedModelLookupShape.matchingFirst ||
-      _GeneratedModelLookupShape.matchingSecond ||
-      _GeneratedModelLookupShape.duplicateMatches => 'provider-first',
+      _GeneratedModelLookupShape.matchingSecond => const ['provider-first'],
+      _GeneratedModelLookupShape.duplicateMatches => const [
+        'provider-first',
+        'provider-second',
+      ],
     };
   }
 
-  bool get hasMatchingModel => expectedProviderId != null;
+  String? get expectedProviderId =>
+      resolvesProvider ? matchingProviderIds.first : null;
+
+  bool get hasMatchingModel => matchingProviderIds.isNotEmpty;
+
+  List<String> get expectedLookupProviderIds {
+    if (!hasMatchingModel) return const <String>[];
+    return resolvesProvider
+        ? matchingProviderIds.take(1).toList(growable: false)
+        : matchingProviderIds;
+  }
 
   bool get resolvesProvider {
     return hasMatchingModel &&
@@ -291,6 +304,137 @@ void main() {
       verifyNever(() => mockAiConfig.getConfigById('provider-b'));
     });
 
+    test(
+      'skips stale duplicate model rows and returns later usable provider',
+      () async {
+        final staleModel = testAiModel(
+          id: 'stale-gemini-model',
+          inferenceProviderId: 'deleted-gemini-provider',
+        );
+        final validModel = testAiModel(
+          id: 'valid-gemini-model',
+          inferenceProviderId: 'valid-gemini-provider',
+        );
+
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [staleModel, validModel]);
+        when(
+          () => mockAiConfig.getConfigById('deleted-gemini-provider'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfig.getConfigById('valid-gemini-provider'),
+        ).thenAnswer(
+          (_) async => testInferenceProvider(id: 'valid-gemini-provider'),
+        );
+
+        final provider = await resolveInferenceProvider(
+          modelId: 'models/gemini-3-flash-preview',
+          aiConfigRepository: mockAiConfig,
+        );
+
+        expect(provider, isNotNull);
+        expect(provider!.id, 'valid-gemini-provider');
+        verify(
+          () => mockAiConfig.getConfigById('deleted-gemini-provider'),
+        ).called(1);
+        verify(
+          () => mockAiConfig.getConfigById('valid-gemini-provider'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'continues past unusable duplicate providers before resolving',
+      () async {
+        final noKeyModel = testAiModel(
+          id: 'gemini-no-key-model',
+          inferenceProviderId: 'gemini-no-key-provider',
+        );
+        final validModel = testAiModel(
+          id: 'gemini-valid-model',
+          inferenceProviderId: 'gemini-valid-provider',
+        );
+
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [noKeyModel, validModel]);
+        when(
+          () => mockAiConfig.getConfigById('gemini-no-key-provider'),
+        ).thenAnswer(
+          (_) async => testInferenceProvider(
+            id: 'gemini-no-key-provider',
+            apiKey: ' ',
+          ),
+        );
+        when(
+          () => mockAiConfig.getConfigById('gemini-valid-provider'),
+        ).thenAnswer(
+          (_) async => testInferenceProvider(id: 'gemini-valid-provider'),
+        );
+
+        final provider = await resolveInferenceProvider(
+          modelId: 'models/gemini-3-flash-preview',
+          aiConfigRepository: mockAiConfig,
+        );
+
+        expect(provider, isNotNull);
+        expect(provider!.id, 'gemini-valid-provider');
+        verify(
+          () => mockAiConfig.getConfigById('gemini-no-key-provider'),
+        ).called(1);
+        verify(
+          () => mockAiConfig.getConfigById('gemini-valid-provider'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'prefers the usable provider whose type owns the known providerModelId',
+      () async {
+        final wrongProviderTypeModel = testAiModel(
+          id: 'wrong-provider-type-model',
+          inferenceProviderId: 'openai-provider',
+        );
+        final geminiModel = testAiModel(
+          id: 'gemini-model',
+          inferenceProviderId: 'gemini-provider',
+        );
+        final openAiProvider = AiConfig.inferenceProvider(
+          id: 'openai-provider',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'openai-key',
+          name: 'OpenAI',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [wrongProviderTypeModel, geminiModel],
+        );
+        when(
+          () => mockAiConfig.getConfigById('openai-provider'),
+        ).thenAnswer((_) async => openAiProvider);
+        when(
+          () => mockAiConfig.getConfigById('gemini-provider'),
+        ).thenAnswer(
+          (_) async => testInferenceProvider(id: 'gemini-provider'),
+        );
+
+        final provider = await resolveInferenceProvider(
+          modelId: 'models/gemini-3-flash-preview',
+          aiConfigRepository: mockAiConfig,
+        );
+
+        expect(provider, isNotNull);
+        expect(provider!.id, 'gemini-provider');
+        verify(() => mockAiConfig.getConfigById('openai-provider')).called(1);
+        verify(() => mockAiConfig.getConfigById('gemini-provider')).called(1);
+      },
+    );
+
     glados.Glados(
       glados.any.providerResolutionScenario,
       glados.ExploreConfig(numRuns: 120),
@@ -326,11 +470,11 @@ void main() {
         () => generatedRepository.getConfigsByType(AiConfigType.model),
       ).called(1);
       if (scenario.hasMatchingModel) {
-        verify(
-          () => generatedRepository.getConfigById(
-            scenario.expectedProviderId!,
-          ),
-        ).called(1);
+        for (final providerId in scenario.expectedLookupProviderIds) {
+          verify(
+            () => generatedRepository.getConfigById(providerId),
+          ).called(1);
+        }
       } else {
         verifyNever(() => generatedRepository.getConfigById(any()));
       }

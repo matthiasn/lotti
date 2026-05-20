@@ -2,11 +2,12 @@
 ///
 /// This service automatically creates model configurations for known models
 /// when a new inference provider is created. It checks if models with the
-/// same IDs already exist to avoid duplicates.
+/// same provider-native model IDs already exist to avoid duplicates.
 library;
 
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -26,7 +27,7 @@ class ModelPrepopulationService {
   /// This method:
   /// 1. Looks up known models for the provider type
   /// 2. Generates unique IDs for each model
-  /// 3. Checks if models with those IDs already exist
+  /// 3. Checks if usable rows with those provider-native model IDs exist
   /// 4. Creates only the models that don't exist yet
   ///
   /// Returns the number of models that were created.
@@ -39,14 +40,24 @@ class ModelPrepopulationService {
       return 0;
     }
 
-    // Get existing models to check for duplicates
+    // Get existing models to check for duplicates by provider model identity,
+    // not just by row ID. FTUE uses UUID model IDs while this service uses
+    // deterministic IDs, and synced duplicate providers can otherwise seed
+    // multiple rows for the same providerModelId.
     final existingConfigs = await _repository.getConfigsByType(
       AiConfigType.model,
     );
-    final existingModelIds = existingConfigs
-        .whereType<AiConfigModel>()
-        .map((model) => model.id)
-        .toSet();
+    final existingModels = existingConfigs.whereType<AiConfigModel>().toList(
+      growable: false,
+    );
+    final providerConfigs = await _repository.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
+    final providersById = {
+      for (final provider
+          in providerConfigs.whereType<AiConfigInferenceProvider>())
+        provider.id: provider,
+    };
 
     var modelsCreated = 0;
 
@@ -57,8 +68,16 @@ class ModelPrepopulationService {
         knownModel.providerModelId,
       );
 
-      // Skip if model already exists
-      if (existingModelIds.contains(modelId)) {
+      // Skip if this provider already has the model, or if a usable provider
+      // of the same type already owns the providerModelId. Ignore orphaned
+      // rows whose provider no longer exists so a valid provider can repair
+      // stale synced state by creating a fresh model row.
+      if (_hasConfiguredKnownModel(
+        knownModel.providerModelId,
+        provider: provider,
+        existingModels: existingModels,
+        providersById: providersById,
+      )) {
         continue;
       }
 
@@ -73,6 +92,36 @@ class ModelPrepopulationService {
     }
 
     return modelsCreated;
+  }
+
+  static bool _hasConfiguredKnownModel(
+    String providerModelId, {
+    required AiConfigInferenceProvider provider,
+    required List<AiConfigModel> existingModels,
+    required Map<String, AiConfigInferenceProvider> providersById,
+  }) {
+    for (final model in existingModels) {
+      if (model.providerModelId != providerModelId) {
+        continue;
+      }
+
+      if (model.inferenceProviderId == provider.id) {
+        return true;
+      }
+
+      final existingProvider = providersById[model.inferenceProviderId];
+      if (existingProvider == null ||
+          existingProvider.inferenceProviderType !=
+              provider.inferenceProviderType) {
+        continue;
+      }
+
+      if (existingProvider.isUsable) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /// Backfills newly added known models for all existing inference providers.
