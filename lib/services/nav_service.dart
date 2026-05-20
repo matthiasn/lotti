@@ -301,8 +301,10 @@ class NavService {
   /// Push a linked task onto the desktop detail stack so the right pane
   /// shows it without covering the task list pane.
   void pushDesktopTaskDetail(String taskId) {
+    final current = desktopTaskDetailStack.value;
+    if (current.isNotEmpty && current.last == taskId) return;
     desktopTaskDetailStack.value = <String>[
-      ...desktopTaskDetailStack.value,
+      ...current,
       taskId,
     ];
     desktopSelectedTaskId.value = taskId;

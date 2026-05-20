@@ -53,9 +53,14 @@ part 'ai_summary_card/tldr_section_part.dart';
 ///   token lookup
 /// * `assign_agent_cta_part.dart` — fallback CTA + create flow
 class AiSummaryCard extends ConsumerWidget {
-  const AiSummaryCard({required this.taskId, super.key});
+  const AiSummaryCard({
+    required this.taskId,
+    this.proposalsFocusKey,
+    super.key,
+  });
 
   final String taskId;
+  final GlobalKey? proposalsFocusKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,17 +74,26 @@ class AiSummaryCard extends ConsumerWidget {
       data: (agentEntity) {
         final identity = agentEntity?.mapOrNull(agent: (e) => e);
         if (identity == null) return _AssignAgentCta(taskId: taskId);
-        return _AiSummaryShell(taskId: taskId, identity: identity);
+        return _AiSummaryShell(
+          taskId: taskId,
+          identity: identity,
+          proposalsFocusKey: proposalsFocusKey,
+        );
       },
     );
   }
 }
 
 class _AiSummaryShell extends ConsumerStatefulWidget {
-  const _AiSummaryShell({required this.taskId, required this.identity});
+  const _AiSummaryShell({
+    required this.taskId,
+    required this.identity,
+    required this.proposalsFocusKey,
+  });
 
   final String taskId;
   final AgentIdentityEntity identity;
+  final GlobalKey? proposalsFocusKey;
 
   @override
   ConsumerState<_AiSummaryShell> createState() => _AiSummaryShellState();
@@ -303,6 +317,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             // placeholder during the initial async fetch.
             if (list != null)
               _ProposalsSection(
+                key: widget.proposalsFocusKey,
                 open: list.open,
                 resolved: list.activity,
                 historyOpen: _historyOpen,

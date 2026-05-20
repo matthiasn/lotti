@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:lotti/classes/notification_entity.dart';
@@ -36,20 +37,18 @@ class NotificationRepository {
   final NotificationScheduler _scheduler;
   final DateTime Function() _now;
   final Uuid _uuid = const Uuid();
+  final Map<String, Future<void>> _taskSuggestionMutationTails = {};
 
   /// Creates (or refreshes) a `taskSuggestion` row in the synced inbox.
   ///
-  /// [linkedTaskId] is the task the user opens when they tap the row. By
-  /// default the inbox row id is derived from this so repeated creates for
-  /// the same task update one row in place — but caller-supplied [idSeed]
-  /// overrides the derivation. This matters because `markActedOn` /
-  /// `retract` set monotonic, one-way fields on the meta and the merge
-  /// keeps the earliest non-null timestamp (the sync convergence
-  /// guarantee). Once a notification is acted-on or retracted, the same id
-  /// can never re-surface in the inbox. Producers that have a natural
-  /// "wave" boundary — e.g. a fresh agent change set after the user
-  /// resolved the previous one — should pass that wave's stable id as the
-  /// seed so each wave gets its own inbox row.
+  /// [linkedTaskId] is the task the user opens when they tap the row. A
+  /// caller-supplied [idSeed] lets a fresh agent wave use a fresh durable row
+  /// after an older row was acted-on/retracted (those lifecycle fields are
+  /// monotonic and cannot be cleared). Even with seeded rows, the active inbox
+  /// invariant is task-scoped: task-suggestion mutations are serialized per
+  /// task, and before the new row is written every other open `taskSuggestion`
+  /// row for [linkedTaskId] is retracted so the bell can never show multiple
+  /// suggestion rows for the same task.
   Future<NotificationEntity?> createTaskSuggestion({
     required String linkedTaskId,
     required int suggestionCount,
@@ -105,7 +104,17 @@ class NotificationRepository {
     return create(placeholder);
   }
 
-  Future<NotificationEntity?> create(NotificationEntity entity) async {
+  Future<NotificationEntity?> create(NotificationEntity entity) {
+    if (entity is TaskSuggestionNotification) {
+      return _withTaskSuggestionMutation(
+        entity.linkedTaskId,
+        () => _create(entity),
+      );
+    }
+    return _create(entity);
+  }
+
+  Future<NotificationEntity?> _create(NotificationEntity entity) async {
     final enabled = await _journalDb.getConfigFlag(enableSyncedAlertsFlag);
     if (!enabled) return null;
 
@@ -140,6 +149,14 @@ class NotificationRepository {
       final saved = await _notificationsDb.upsertNotification(enriched);
       if (saved == null) return null;
 
+      if (entity is TaskSuggestionNotification) {
+        await _applyOpenTaskSuggestionStateUnlocked(
+          linkedTaskId: entity.linkedTaskId,
+          deletedAt: now,
+          exceptId: entity.id,
+        );
+      }
+
       await _outboxService.enqueueNotification(saved);
       await _scheduler.schedule(saved, now: now);
       _notify(saved, fromSync: false);
@@ -155,8 +172,32 @@ class NotificationRepository {
     return _applyLocalState(id: id, actedOnAt: _now());
   }
 
+  Future<List<NotificationEntity>> markTaskSuggestionsActedOn(
+    String linkedTaskId,
+  ) {
+    return _withTaskSuggestionMutation(
+      linkedTaskId,
+      () => _applyOpenTaskSuggestionStateUnlocked(
+        linkedTaskId: linkedTaskId,
+        actedOnAt: _now(),
+      ),
+    );
+  }
+
   Future<NotificationEntity?> retract(String id) {
     return _applyLocalState(id: id, deletedAt: _now());
+  }
+
+  Future<List<NotificationEntity>> retractTaskSuggestionsForTask(
+    String linkedTaskId,
+  ) {
+    return _withTaskSuggestionMutation(
+      linkedTaskId,
+      () => _applyOpenTaskSuggestionStateUnlocked(
+        linkedTaskId: linkedTaskId,
+        deletedAt: _now(),
+      ),
+    );
   }
 
   Future<NotificationEntity?> notificationById(String id) {
@@ -243,6 +284,62 @@ class NotificationRepository {
     return (seenAt != null && meta.seenAt == null) ||
         (actedOnAt != null && meta.actedOnAt == null) ||
         (deletedAt != null && meta.deletedAt == null);
+  }
+
+  Future<T> _withTaskSuggestionMutation<T>(
+    String linkedTaskId,
+    Future<T> Function() mutation,
+  ) async {
+    final previous = _taskSuggestionMutationTails[linkedTaskId];
+    final completer = Completer<void>();
+    _taskSuggestionMutationTails[linkedTaskId] = completer.future;
+
+    try {
+      if (previous != null) {
+        await previous;
+      }
+      return await mutation();
+    } finally {
+      completer.complete();
+      if (identical(
+        _taskSuggestionMutationTails[linkedTaskId],
+        completer.future,
+      )) {
+        await _taskSuggestionMutationTails.remove(linkedTaskId);
+      }
+    }
+  }
+
+  Future<List<NotificationEntity>> _applyOpenTaskSuggestionStateUnlocked({
+    required String linkedTaskId,
+    String? exceptId,
+    DateTime? actedOnAt,
+    DateTime? deletedAt,
+  }) async {
+    final openRows = await _openTaskSuggestionsForTask(linkedTaskId);
+    final updated = <NotificationEntity>[];
+    for (final row in openRows) {
+      if (row.id == exceptId) continue;
+      final result = await _applyLocalState(
+        id: row.id,
+        actedOnAt: actedOnAt,
+        deletedAt: deletedAt,
+      );
+      if (result != null) {
+        updated.add(result);
+      }
+    }
+    return updated;
+  }
+
+  Future<List<TaskSuggestionNotification>> _openTaskSuggestionsForTask(
+    String linkedTaskId,
+  ) async {
+    final rows = await _notificationsDb.forLinkedEntity(linkedTaskId);
+    return rows.whereType<TaskSuggestionNotification>().where((row) {
+      final meta = row.meta;
+      return meta.actedOnAt == null && meta.deletedAt == null;
+    }).toList();
   }
 
   void _notify(NotificationEntity entity, {required bool fromSync}) {

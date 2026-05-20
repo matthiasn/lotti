@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -20,6 +22,7 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/services/dev_logger.dart';
 
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
@@ -39,6 +42,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   final void Function() _listener = getIt<UserActivityService>().updateActivity;
   late final void Function() _updateOffsetListener;
   final Map<String, GlobalKey> _entryKeys = {};
+  final GlobalKey<State<StatefulWidget>> _suggestionsKey = GlobalKey(
+    debugLabel: 'task_suggestions',
+  );
+  Timer? _suggestionsRetryTimer;
 
   @override
   void initState() {
@@ -59,6 +66,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   @override
   void dispose() {
     disposeHighlight();
+    _suggestionsRetryTimer?.cancel();
     _scrollController
       ..removeListener(_listener)
       ..removeListener(_updateOffsetListener)
@@ -79,16 +87,33 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 
     void handleFocus(TaskFocusIntent? intent, {bool isInitialLoad = false}) {
       if (intent == null) return;
-      scrollToEntry(
-        intent.entryId,
-        intent.alignment,
-        getEntryKey: _getEntryKey,
-        onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
-        isInitialLoad: isInitialLoad,
-      );
+      switch (intent.target) {
+        case TaskFocusTarget.entry:
+          final entryId = intent.entryId;
+          if (entryId == null) {
+            ref.read(focusProvider.notifier).clearIntent();
+            return;
+          }
+          scrollToEntry(
+            entryId,
+            intent.alignment,
+            getEntryKey: _getEntryKey,
+            onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+            isInitialLoad: isInitialLoad,
+          );
+        case TaskFocusTarget.suggestions:
+          _scrollToSuggestions(
+            intent.alignment,
+            onScrolled: () => ref.read(focusProvider.notifier).clearIntent(),
+            isInitialLoad: isInitialLoad,
+          );
+      }
     }
 
-    ref.listen<TaskFocusIntent?>(focusProvider, (_, next) => handleFocus(next));
+    ref.listen<TaskFocusIntent?>(
+      focusProvider,
+      (previous, next) => handleFocus(next, isInitialLoad: previous == null),
+    );
 
     final provider = entryControllerProvider(id: widget.taskId);
     final asyncTask = ref.watch(provider);
@@ -157,7 +182,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                   right: 15,
                   top: 10,
                 ),
-                child: TaskForm(taskId: widget.taskId),
+                child: TaskForm(
+                  taskId: widget.taskId,
+                  suggestionsFocusKey: _suggestionsKey,
+                ),
               ),
             ),
             SliverToBoxAdapter(
@@ -216,5 +244,79 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       },
       child: body,
     );
+  }
+
+  void _scrollToSuggestions(
+    double alignment, {
+    required VoidCallback onScrolled,
+    required bool isInitialLoad,
+  }) {
+    final delay = isInitialLoad
+        ? initialScrollDelay
+        : const Duration(milliseconds: 100);
+
+    _suggestionsRetryTimer?.cancel();
+    _suggestionsRetryTimer = Timer(delay, () {
+      _scrollToSuggestionsWithRetry(
+        alignment,
+        attempt: 0,
+        onScrolled: onScrolled,
+      );
+    });
+  }
+
+  void _scrollToSuggestionsWithRetry(
+    double alignment, {
+    required int attempt,
+    required VoidCallback onScrolled,
+  }) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      final context = _suggestionsKey.currentContext;
+      if (context != null) {
+        try {
+          await Scrollable.ensureVisible(
+            context,
+            alignment: alignment,
+            duration: scrollDuration,
+            curve: Curves.easeInOut,
+          );
+        } catch (error) {
+          DevLogger.warning(
+            name: 'TaskDetailsPage',
+            message: 'Failed to scroll to task suggestions: $error',
+          );
+        } finally {
+          _suggestionsRetryTimer?.cancel();
+          if (mounted) {
+            onScrolled();
+          }
+        }
+        return;
+      }
+
+      if (attempt < maxScrollRetries - 1) {
+        _suggestionsRetryTimer?.cancel();
+        _suggestionsRetryTimer = Timer(scrollRetryDelay, () {
+          _scrollToSuggestionsWithRetry(
+            alignment,
+            attempt: attempt + 1,
+            onScrolled: onScrolled,
+          );
+        });
+        return;
+      }
+
+      DevLogger.warning(
+        name: 'TaskDetailsPage',
+        message:
+            'Failed to scroll to task suggestions after $maxScrollRetries attempts',
+      );
+      _suggestionsRetryTimer?.cancel();
+      if (mounted) {
+        onScrolled();
+      }
+    });
   }
 }

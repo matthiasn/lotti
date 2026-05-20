@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
@@ -90,6 +91,7 @@ class TaskAgentWorkflow {
     this.embeddingRepository,
     this.taskAgentService,
     this.projectRepository,
+    this.changeSetNotificationService,
   });
 
   final AgentRepository agentRepository;
@@ -122,6 +124,10 @@ class TaskAgentWorkflow {
 
   /// Optional project repository for inheriting projects on follow-up tasks.
   final ProjectRepository? projectRepository;
+
+  /// Optional bridge that keeps task-suggestion notifications aligned with
+  /// agent change-set resolution.
+  final ChangeSetNotificationService? changeSetNotificationService;
 
   static const _uuid = Uuid();
 
@@ -393,6 +399,8 @@ class TaskAgentWorkflow {
         retractionService: SuggestionRetractionService(
           syncService: syncService,
           domainLogger: domainLogger,
+          onChangeSetRetracted:
+              changeSetNotificationService?.syncAfterAgentRetraction,
         ),
         resolveTaskMetadata: () =>
             ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),

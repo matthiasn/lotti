@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/notifications/model/notification_inbox_projection.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -39,7 +40,10 @@ class UnseenNotificationCount extends _$UnseenNotificationCount {
     return _fetch();
   }
 
-  Future<int> _fetch() => getIt<NotificationsDb>().unseenCount(DateTime.now());
+  Future<int> _fetch() async {
+    final due = await getIt<NotificationsDb>().dueNow(DateTime.now());
+    return countUnseenInboxNotifications(due);
+  }
 
   Future<void> _refresh() async {
     final epoch = ++_refreshEpoch;
@@ -86,7 +90,7 @@ class InboxNotifications extends _$InboxNotifications {
     final now = DateTime.now();
     final due = await db.dueNow(now);
     final upcoming = await db.upcoming(now);
-    return [...due, ...upcoming];
+    return deduplicateInboxNotifications([...due, ...upcoming]);
   }
 
   Future<void> _refresh() async {

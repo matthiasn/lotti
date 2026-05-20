@@ -17,6 +17,9 @@ typedef ConfirmedDecisionCallback =
       required ChangeDecisionEntity decision,
     });
 
+typedef ChangeSetResolvedCallback =
+    Future<void> Function(ChangeSetEntity changeSet);
+
 /// Handles user confirmation and rejection of individual change items
 /// within a [ChangeSetEntity].
 ///
@@ -39,17 +42,20 @@ class ChangeSetConfirmationService {
     required LabelsRepository labelsRepository,
     DomainLogger? domainLogger,
     ConfirmedDecisionCallback? onConfirmedDecision,
+    ChangeSetResolvedCallback? onChangeSetResolved,
   }) : _syncService = syncService,
        _toolDispatcher = toolDispatcher,
        _labelsRepository = labelsRepository,
        _domainLogger = domainLogger,
-       _onConfirmedDecision = onConfirmedDecision;
+       _onConfirmedDecision = onConfirmedDecision,
+       _onChangeSetResolved = onChangeSetResolved;
 
   final AgentSyncService _syncService;
   final AgentToolDispatch _toolDispatcher;
   final LabelsRepository _labelsRepository;
   final DomainLogger? _domainLogger;
   final ConfirmedDecisionCallback? _onConfirmedDecision;
+  final ChangeSetResolvedCallback? _onChangeSetResolved;
 
   static const _uuid = Uuid();
   static const _sub = 'ChangeSetConfirmation';
@@ -128,11 +134,18 @@ class ChangeSetConfirmationService {
       humanSummary: item.humanSummary,
       args: item.args,
     );
-    await _updateChangeSetItemStatus(
+    final confirmedSet = await _updateChangeSetItemStatus(
       current,
       itemIndex,
       ChangeItemStatus.confirmed,
     );
+    if (confirmedSet == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Change item could not be updated',
+        errorMessage: 'Concurrent change set update detected',
+      );
+    }
 
     // 2. Execute the tool call. If dispatch fails, revert the status back
     //    to pending so the user can retry.
@@ -192,6 +205,8 @@ class ChangeSetConfirmationService {
       }
     }
 
+    await _notifyChangeSetResolved(confirmedSet);
+
     return result;
   }
 
@@ -243,11 +258,14 @@ class ChangeSetConfirmationService {
     );
 
     // 2. Update the change set item status and overall status.
-    await _updateChangeSetItemStatus(
+    final rejectedSet = await _updateChangeSetItemStatus(
       current,
       itemIndex,
       ChangeItemStatus.rejected,
     );
+    if (rejectedSet == null) {
+      return false;
+    }
 
     // 3. For rejected label assignments, automatically suppress the label
     //    so the agent does not re-propose it in future wakes.
@@ -270,6 +288,8 @@ class ChangeSetConfirmationService {
         await _cascadeRejectMigrationItems(current, placeholderId, reason);
       }
     }
+
+    await _notifyChangeSetResolved(rejectedSet);
 
     return true;
   }
@@ -491,7 +511,7 @@ class ChangeSetConfirmationService {
     return decision;
   }
 
-  Future<void> _updateChangeSetItemStatus(
+  Future<ChangeSetEntity?> _updateChangeSetItemStatus(
     ChangeSetEntity changeSet,
     int itemIndex,
     ChangeItemStatus newStatus,
@@ -501,7 +521,7 @@ class ChangeSetConfirmationService {
     final current = latest is ChangeSetEntity ? latest : changeSet;
 
     if (itemIndex < 0 || itemIndex >= current.items.length) {
-      return;
+      return null;
     }
 
     final updatedItems = List<ChangeItem>.from(current.items);
@@ -516,12 +536,30 @@ class ChangeSetConfirmationService {
       now: clock.now(),
     );
 
-    await _syncService.upsertEntity(
-      current.copyWith(
-        items: updatedItems,
-        status: newSetStatus,
-        resolvedAt: resolvedAt,
-      ),
+    final updated = current.copyWith(
+      items: updatedItems,
+      status: newSetStatus,
+      resolvedAt: resolvedAt,
     );
+    await _syncService.upsertEntity(updated);
+    return updated;
+  }
+
+  Future<void> _notifyChangeSetResolved(ChangeSetEntity fallback) async {
+    final callback = _onChangeSetResolved;
+    if (callback == null) return;
+
+    try {
+      await callback(await _freshChangeSet(fallback));
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Post-resolution notification sync failed for change set '
+        '${fallback.id}',
+        subDomain: _sub,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

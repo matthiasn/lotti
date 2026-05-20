@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/notifications/state/notification_inbox_controller.dart';
 import 'package:lotti/features/notifications/ui/widgets/notification_bell.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -26,7 +31,13 @@ void main() {
     }
     getIt.registerSingleton<NotificationRepository>(repository);
     when(() => repository.markActedOn(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.markTaskSuggestionsActedOn(any()),
+    ).thenAnswer((_) async => const []);
     when(() => repository.retract(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.retractTaskSuggestionsForTask(any()),
+    ).thenAnswer((_) async => const []);
   });
 
   tearDown(() {
@@ -181,7 +192,40 @@ void main() {
       await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pump();
 
-      verify(() => repository.retract('retract-me')).called(1);
+      verify(
+        () => repository.retractTaskSuggestionsForTask('task-retract-me'),
+      ).called(1);
+    },
+  );
+
+  testWidgets(
+    'dismiss icon uses row-level retract for non-suggestion notifications',
+    (tester) async {
+      final entity = _makeOverdueNotification(
+        id: 'overdue-retract',
+        title: 'Overdue',
+        body: '',
+      );
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const NotificationBell(),
+          overrides: [
+            unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+            inboxNotificationsProvider.overrideWith(
+              () => _StaticInbox([entity]),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
+
+      verify(() => repository.retract('overdue-retract')).called(1);
+      verifyNever(() => repository.retractTaskSuggestionsForTask(any()));
     },
   );
 
@@ -231,7 +275,9 @@ void main() {
       await tester.longPress(find.text('Hold to dismiss'));
       await tester.pump();
 
-      verify(() => repository.retract('long-retract')).called(1);
+      verify(
+        () => repository.retractTaskSuggestionsForTask('task-long-retract'),
+      ).called(1);
     },
   );
 
@@ -281,17 +327,20 @@ void main() {
         title: 'Review',
         body: 'Take action',
       );
+      final container = ProviderContainer(
+        overrides: [
+          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+          inboxNotificationsProvider.overrideWith(
+            () => _StaticInbox([entity]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
 
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const NotificationBell(),
+        _makeBellHarness(
+          container: container,
           mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
-          overrides: [
-            unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
-            inboxNotificationsProvider.overrideWith(
-              () => _StaticInbox([entity]),
-            ),
-          ],
         ),
       );
       await tester.pump();
@@ -301,10 +350,74 @@ void main() {
       await tester.tap(find.text('Review'));
       await tester.pump();
 
-      verify(() => repository.markActedOn('act-on-me')).called(1);
+      verify(
+        () => repository.markTaskSuggestionsActedOn('task-act-on-me'),
+      ).called(1);
       verify(
         () => navService.pushDesktopTaskDetail('task-act-on-me'),
       ).called(1);
+      final intent = container.read(
+        taskFocusControllerProvider(id: 'task-act-on-me'),
+      );
+      expect(intent, isNotNull);
+      expect(intent!.target, TaskFocusTarget.suggestions);
+    },
+  );
+
+  testWidgets(
+    'tapping a non-suggestion row marks only that row acted-on',
+    (tester) async {
+      final navService = MockNavService();
+      if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
+      getIt.registerSingleton<NavService>(navService);
+      addTearDown(() {
+        if (getIt.isRegistered<NavService>()) {
+          getIt.unregister<NavService>();
+        }
+      });
+      when(
+        () => navService.pushDesktopTaskDetail(any()),
+      ).thenAnswer((_) {});
+
+      final entity = _makeOverdueNotification(
+        id: 'overdue-act-on-me',
+        title: 'Overdue task',
+        body: 'Open task',
+      );
+      final container = ProviderContainer(
+        overrides: [
+          unseenNotificationCountProvider.overrideWith(() => _CountUnseen(1)),
+          inboxNotificationsProvider.overrideWith(
+            () => _StaticInbox([entity]),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _makeBellHarness(
+          container: container,
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.notifications_active_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Overdue task'));
+      await tester.pump();
+
+      verify(() => repository.markActedOn('overdue-act-on-me')).called(1);
+      verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
+      verify(
+        () => navService.pushDesktopTaskDetail('task-overdue-act-on-me'),
+      ).called(1);
+      expect(
+        container.read(
+          taskFocusControllerProvider(id: 'task-overdue-act-on-me'),
+        ),
+        isNull,
+      );
     },
   );
 
@@ -324,7 +437,7 @@ void main() {
       ).thenAnswer((_) {});
 
       when(
-        () => repository.markActedOn(any()),
+        () => repository.markTaskSuggestionsActedOn(any()),
       ).thenThrow(StateError('mark-acted-boom'));
 
       final entity = _makeNotification(
@@ -356,7 +469,9 @@ void main() {
       await tester.tap(find.text('Will fail'));
       await tester.pump();
 
-      verify(() => repository.markActedOn('mark-failure')).called(1);
+      verify(
+        () => repository.markTaskSuggestionsActedOn('task-mark-failure'),
+      ).called(1);
       // Navigation runs even when markActedOn throws.
       verify(
         () => navService.pushDesktopTaskDetail('task-mark-failure'),
@@ -373,7 +488,7 @@ void main() {
     'retract failure is reported and the popover stays open',
     (tester) async {
       when(
-        () => repository.retract(any()),
+        () => repository.retractTaskSuggestionsForTask(any()),
       ).thenThrow(StateError('retract-boom'));
 
       final entity = _makeNotification(
@@ -404,7 +519,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pump();
 
-      verify(() => repository.retract('retract-failure')).called(1);
+      verify(
+        () => repository.retractTaskSuggestionsForTask('task-retract-failure'),
+      ).called(1);
       expect(
         errors.where((e) => e.exception.toString().contains('retract-boom')),
         isNotEmpty,
@@ -412,6 +529,40 @@ void main() {
       // Popover must still be present — the row text remains findable.
       expect(find.text('Cannot dismiss'), findsOneWidget);
     },
+  );
+}
+
+Widget _makeBellHarness({
+  required ProviderContainer container,
+  required MediaQueryData mediaQueryData,
+}) {
+  return UncontrolledProviderScope(
+    container: container,
+    child: MediaQuery(
+      data: mediaQueryData,
+      child: MaterialApp(
+        theme: resolveTestTheme(),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          FormBuilderLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 800,
+                maxWidth: 800,
+              ),
+              child: const NotificationBell(),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }
 
@@ -432,6 +583,27 @@ NotificationEntity _makeNotification({
     ),
     linkedTaskId: 'task-$id',
     suggestionCount: 1,
+    title: title,
+    body: body,
+  );
+}
+
+NotificationEntity _makeOverdueNotification({
+  required String id,
+  required String title,
+  required String body,
+}) {
+  final now = DateTime.utc(2026, 5, 17, 10);
+  return NotificationEntity.taskOverdue(
+    meta: NotificationMeta(
+      id: id,
+      createdAt: now,
+      updatedAt: now,
+      scheduledFor: now,
+      vectorClock: const VectorClock({'host-A': 1}),
+      originatingHostId: 'host-A',
+    ),
+    linkedTaskId: 'task-$id',
     title: title,
     body: body,
   );

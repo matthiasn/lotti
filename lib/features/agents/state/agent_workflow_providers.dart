@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -72,6 +74,12 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
   final embeddingRepository = getIt.isRegistered<OllamaEmbeddingRepository>()
       ? getIt<OllamaEmbeddingRepository>()
       : null;
+  final notificationService = getIt.isRegistered<NotificationRepository>()
+      ? ChangeSetNotificationService(
+          notificationRepository: getIt<NotificationRepository>(),
+          journalDb: ref.watch(journalDbProvider),
+        )
+      : null;
 
   return TaskAgentWorkflow(
     agentRepository: ref.watch(agentRepositoryProvider),
@@ -91,6 +99,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     embeddingRepository: embeddingRepository,
     taskAgentService: ref.watch(taskAgentServiceProvider),
     projectRepository: ref.watch(projectRepositoryProvider),
+    changeSetNotificationService: notificationService,
   );
 }
 

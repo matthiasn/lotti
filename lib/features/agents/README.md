@@ -541,7 +541,15 @@ mutation boundary (where it would otherwise block legitimate renames).
 
 It also resolves follow-up-task placeholder IDs across later migration items
 and suppresses rejected label assignments so the same label is not proposed
-again immediately.
+again immediately. After a successful user decision, the confirmation service
+hands the fresh change set to `ChangeSetNotificationService`: if pending items
+remain, the seeded task-suggestion notification is refreshed with the new
+count and older open rows for the same task are retracted; if no pending items
+remain, every open suggestion notification for that task is marked acted-on so
+it leaves the inbox and syncs that lifecycle state to other devices. When the
+user taps a task-suggestion notification, navigation also publishes a focus
+intent so the open task detail scrolls to this proposal section instead of
+only selecting the task.
 
 ```mermaid
 sequenceDiagram
@@ -552,6 +560,7 @@ sequenceDiagram
   participant Confirm as ChangeSetConfirmationService
   participant Dispatch as TaskToolDispatcher
   participant Journal as Journal DB
+  participant Inbox as ChangeSetNotificationService
 
   Agent->>Builder: queue deferred tool proposals
   Builder->>Store: persist ChangeSetEntity(pending)
@@ -562,6 +571,7 @@ sequenceDiagram
   Dispatch->>Journal: apply mutation
   Journal-->>Confirm: ToolExecutionResult
   Confirm->>Store: finalize item status
+  Confirm->>Inbox: sync seeded task-suggestion notification
 ```
 
 ### Proposal Ledger and Agent-Autonomous Retraction
@@ -619,6 +629,10 @@ stateDiagram-v2
 `pending`, `rejected`, and `deferred` items sticky. The result: the agent
 can re-propose something it previously retracted if circumstances change,
 but cannot re-propose a user rejection without materially different args.
+`SuggestionRetractionService` also calls `ChangeSetNotificationService` after
+each successful retraction, so a fully retracted change set deletes every open
+suggestion notification for the task and a partially retracted set keeps only
+one row with the remaining pending count visible.
 When several pending change sets are consolidated, the newest set becomes
 the survivor and pending items in the retired source sets are marked
 `retracted` before those source sets are resolved. That keeps the database

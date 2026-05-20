@@ -504,18 +504,15 @@ class ChangeSetBuilder {
   /// Fires (or refreshes) a `taskSuggestion` row in the synced-notifications
   /// inbox so the bell badge surfaces the proposals that need user attention.
   ///
-  /// The notification id is keyed on the **change-set id**, not the task id.
-  /// `ChangeSetBuilder.build` already consolidates concurrent pending sets
-  /// into a single survivor, so at any given moment there is at most one
-  /// active change set per task — and therefore at most one inbox row per
-  /// task. The reason this is keyed on the change set rather than the task:
-  /// the merge in `NotificationsDb.upsertNotification` keeps the earliest
-  /// non-null `actedOnAt`/`deletedAt` (the sync convergence contract), so
-  /// once the user taps or dismisses the inbox row, the same id can never
-  /// re-surface. Using the change-set id means a fresh wave (a new
-  /// change-set id, produced by the next wake after the prior set was
-  /// resolved) lands on a fresh inbox row, even if the user already acted
-  /// on the previous row for the same task.
+  /// The notification id is keyed on the **change-set id**, not the task id,
+  /// because the merge in `NotificationsDb.upsertNotification` keeps the
+  /// earliest non-null `actedOnAt`/`deletedAt` (the sync convergence
+  /// contract). Once the user taps or dismisses one inbox row, that row id
+  /// can never be made active again. Using the change-set id lets a fresh
+  /// agent wave land on a fresh durable row; `NotificationRepository` then
+  /// serializes task-suggestion mutations and retracts every older open row
+  /// for the same task so the bell still exposes at most one active row per
+  /// task.
   ///
   /// The repository short-circuits when the `enable_synced_alerts` flag is
   /// off, so this is a no-op for users who haven't opted into the surface.

@@ -54,6 +54,9 @@ class RetractionResult {
   final String? humanSummary;
 }
 
+typedef ChangeSetRetractionCallback =
+    Future<void> Function(ChangeSetEntity changeSet);
+
 /// Withdraws change items the agent has previously proposed.
 ///
 /// Retraction is agent-autonomous and not gated on user confirmation: the
@@ -71,11 +74,14 @@ class SuggestionRetractionService {
   SuggestionRetractionService({
     required AgentSyncService syncService,
     DomainLogger? domainLogger,
+    ChangeSetRetractionCallback? onChangeSetRetracted,
   }) : _syncService = syncService,
-       _domainLogger = domainLogger;
+       _domainLogger = domainLogger,
+       _onChangeSetRetracted = onChangeSetRetracted;
 
   final AgentSyncService _syncService;
   final DomainLogger? _domainLogger;
+  final ChangeSetRetractionCallback? _onChangeSetRetracted;
 
   static const _uuid = Uuid();
   static const _sub = 'SuggestionRetraction';
@@ -314,12 +320,30 @@ class SuggestionRetractionService {
       now: now,
     );
 
-    await _syncService.upsertEntity(
-      current.copyWith(
-        items: updatedItems,
-        status: newSetStatus,
-        resolvedAt: resolvedAt,
-      ),
+    final updated = current.copyWith(
+      items: updatedItems,
+      status: newSetStatus,
+      resolvedAt: resolvedAt,
     );
+    await _syncService.upsertEntity(updated);
+    await _notifyChangeSetRetracted(updated);
+  }
+
+  Future<void> _notifyChangeSetRetracted(ChangeSetEntity changeSet) async {
+    final callback = _onChangeSetRetracted;
+    if (callback == null) return;
+
+    try {
+      await callback(changeSet);
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Post-retraction notification sync failed for change set '
+        '${changeSet.id}',
+        subDomain: _sub,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

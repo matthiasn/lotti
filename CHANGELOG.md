@@ -87,6 +87,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   see them. `retract_suggestions` also treats fingerprints already present
   in the resolved ledger as `not_open` rather than `not_found`, avoiding
   repeated model retraction loops.
+- Task-agent suggestion notifications now enforce one active bell row per
+  task. Fresh agent waves still get durable change-set-seeded rows, but the
+  repository serializes same-task notification mutations, retracts older open
+  rows before surfacing the latest pending count, and bulk-clears every open
+  suggestion row when the user or agent resolves the proposals. Tapping a
+  suggestion notification now also focuses the task-agent proposals section,
+  including when that task detail is already open.
 
 ## [0.9.1002]
 ### Added

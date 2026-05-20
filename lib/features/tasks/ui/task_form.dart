@@ -11,10 +11,12 @@ import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 class TaskForm extends ConsumerWidget {
   const TaskForm({
     required this.taskId,
+    this.suggestionsFocusKey,
     super.key,
   });
 
   final String taskId;
+  final GlobalKey? suggestionsFocusKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,7 +40,10 @@ class TaskForm extends ConsumerWidget {
           EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
           const SizedBox(height: 10),
         ],
-        AiSummaryCard(taskId: taskId),
+        AiSummaryCard(
+          taskId: taskId,
+          proposalsFocusKey: suggestionsFocusKey,
+        ),
         LinkedTasksWidget(taskId: taskId),
         ChecklistsWidget(entryId: taskId, task: task),
       ],
