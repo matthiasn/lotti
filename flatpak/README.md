@@ -12,16 +12,17 @@ cd flatpak
 
 ## How It Works
 
-The script uses [flatpak-flutter](https://github.com/TheAppgineer/flatpak-flutter) (pinned to v0.10.0) to generate offline build manifests. This replaces the complex 12,000+ line `manifest_tool` Python orchestrator with ~50 lines of bash.
+The script uses [flatpak-flutter](https://github.com/TheAppgineer/flatpak-flutter) (pinned to v0.11.0) to generate offline build manifests. This replaces the complex 12,000+ line `manifest_tool` Python orchestrator with a small bash wrapper plus a local foreign-dependency overlay.
 
 ### What It Does
 
 1. Clones flatpak-flutter if not present
 2. Substitutes commit hash into manifest template
 3. Copies `foreign.json` for custom plugin support
-4. Runs flatpak-flutter to generate all dependency manifests
-5. Outputs everything to `direct-build/output/`
-6. Copies output to `../com.matthiasn.lotti` flathub repo (if present)
+4. Merges `flatpak_flutter_extra/foreign_deps.json` into flatpak-flutter's bundled foreign dependency database
+5. Runs flatpak-flutter to generate all dependency manifests
+6. Outputs everything to `direct-build/output/`
+7. Copies output to `../com.matthiasn.lotti` flathub repo (if present)
 
 ### Output Structure
 
@@ -99,6 +100,29 @@ This file tells flatpak-flutter about plugins not in its built-in database.
 ```bash
 grep -A5 "flutter_vodozemac:" pubspec.lock
 ```
+
+### flatpak_flutter_extra/foreign_deps.json
+
+This overlay extends flatpak-flutter's versioned `foreign_deps.json` without
+forking the tool. Use it when a dependency in `pubspec.lock` needs extra
+offline sources, hashes, or patches and the pinned flatpak-flutter release does
+not know that dependency version yet.
+
+Keep overlay versions exact. `flatpak-flutter` will otherwise reuse the newest
+older entry for a newer locked package version, which is risky for native
+archives and CMake patches because upstream package contents and line endings
+can change.
+
+Run this before tagging or after dependency updates:
+
+```bash
+make check_flatpak_foreign_deps
+```
+
+The check parses `pubspec.lock`, verifies that local overlay entries match the
+locked versions, and dry-runs every Flatpak patch against the actual Pub cache
+package directory. CI runs the same check for pull requests touching Flatpak or
+dependency files.
 
 ### com.matthiasn.lotti.flatpak-flutter.yml
 
@@ -180,7 +204,9 @@ sed -i "s/flutter_vodozemac-[0-9.]*/flutter_vodozemac-$VERSION/g" flatpak/foreig
 | File | Purpose |
 |------|---------|
 | `prepare_flathub_build.sh` | Main script (~50 lines) |
+| `check_foreign_deps.py` | Cheap PR-safe validation for foreign dependency patch drift |
 | `foreign.json` | Custom plugin definitions |
+| `flatpak_flutter_extra/foreign_deps.json` | Versioned overlay for flatpak-flutter's dependency database |
 | `com.matthiasn.lotti.flatpak-flutter.yml` | Manifest template |
 | `flatpak-flutter/` | Cloned tool (gitignored) |
 | `direct-build/` | Work/output directory (gitignored) |

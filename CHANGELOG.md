@@ -66,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   syncs to other devices through the existing Matrix sync pipeline.
 
 ### Fixed
+- Flatpak release generation now carries exact ObjectBox 5.3.2 offline source
+  hashes and a CRLF-tolerant CMake patch, plus a PR-safe validation job that
+  dry-runs Flatpak foreign dependency patches against the locked Pub packages
+  after dependency updates.
 - Agent wakes no longer abort when synced duplicate model rows leave the
   first `providerModelId` match pointing at a deleted or unusable provider.
   Provider resolution now skips stale candidates and prefers the usable

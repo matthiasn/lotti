@@ -1,0 +1,20 @@
+--- a/linux/CMakeLists.txt
++++ b/linux/CMakeLists.txt
+@@ -60,10 +60,17 @@
+     set(OBJECTBOX_ARCH armv6hf)
+ endif ()
+ 
++if (${OBJECTBOX_ARCH} STREQUAL "x64")
++    set(OBJECTBOX_HASH 6dbb5450c36dd11ee9074f16ecc61e79b45ff43c2082934601f3166b39c8a613)
++elseif (${OBJECTBOX_ARCH} STREQUAL "aarch64")
++    set(OBJECTBOX_HASH bdfbfbf4971057e11018ca6645697d8a40ebc7df56ccde63397cbb0e0609c0e8)
++endif ()
++
+ include(FetchContent)
+ FetchContent_Declare(
+     objectbox-download
+     URL https://github.com/objectbox/objectbox-c/releases/download/v${OBJECTBOX_VERSION}/objectbox-linux-${OBJECTBOX_ARCH}.tar.gz
++    URL_HASH SHA256=${OBJECTBOX_HASH}
+ )
+ 
+ FetchContent_GetProperties(objectbox-download)

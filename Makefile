@@ -66,6 +66,10 @@ clean:
 deps:
 	$(FLUTTER_CMD) pub get
 
+.PHONY: check_flatpak_foreign_deps
+check_flatpak_foreign_deps: deps
+	python3 flatpak/check_foreign_deps.py
+
 .PHONY: sort_arb_files
 sort_arb_files:
 	find lib/l10n/ -type f -name '*.arb' -exec $(DART_CMD) run arb_utils sort -i {} \;

@@ -60,6 +60,38 @@
                     }
                 ]
             }
+        },
+        "5.3.2": {
+            "manifest": {
+                "sources": [
+                    {
+                        "type": "file",
+                        "only-arches": [
+                            "x86_64"
+                        ],
+                        "url": "https://github.com/objectbox/objectbox-c/releases/download/v5.3.2/objectbox-linux-x64.tar.gz",
+                        "sha256": "6dbb5450c36dd11ee9074f16ecc61e79b45ff43c2082934601f3166b39c8a613",
+                        "dest": "$APP/build/linux/x64/release/_deps/objectbox-download-subbuild/objectbox-download-populate-prefix/src"
+                    },
+                    {
+                        "type": "file",
+                        "only-arches": [
+                            "aarch64"
+                        ],
+                        "url": "https://github.com/objectbox/objectbox-c/releases/download/v5.3.2/objectbox-linux-aarch64.tar.gz",
+                        "sha256": "bdfbfbf4971057e11018ca6645697d8a40ebc7df56ccde63397cbb0e0609c0e8",
+                        "dest": "$APP/build/linux/arm64/release/_deps/objectbox-download-subbuild/objectbox-download-populate-prefix/src"
+                    },
+                    {
+                        "type": "patch",
+                        "path": "objectbox_flutter_libs/5.3.2-CMakeLists.txt.patch",
+                        "dest": "$PUB_DEV",
+                        "options": [
+                            "-l"
+                        ]
+                    }
+                ]
+            }
         }
     }
 }

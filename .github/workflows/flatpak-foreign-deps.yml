@@ -1,0 +1,41 @@
+name: Flatpak Foreign Dependencies
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/flatpak-foreign-deps.yml"
+      - "flatpak/**"
+      - "pubspec.lock"
+      - "pubspec.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Flatpak foreign dependency patches
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache Pub Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+      - uses: kuhnroyal/flutter-fvm-config-action@v2
+        id: fvm-config-action
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm-config-action.outputs.FLUTTER_VERSION }}
+          channel: ${{ steps.fvm-config-action.outputs.FLUTTER_CHANNEL }}
+          cache: true
+      - name: Get dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Validate Flatpak patches
+        run: python3 flatpak/check_foreign_deps.py
