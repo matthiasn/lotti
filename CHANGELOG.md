@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1003]
 ### Changed
+- "Add Model" from inside a provider's detail page now preselects
+  that provider on the new-model form, so the user no longer has to
+  re-pick the provider they just came from. The top-level
+  "+ Add model" FAB still opens a blank form where the user picks
+  the provider manually. Edit-mode (existing model) is unaffected
+  — the form continues to honor the model's stored
+  `inferenceProviderId` and ignores any stray preselection arg.
 - MLX Audio is now macOS-only. The iOS Runner no longer links
   `mlx-swift`, `mlx-audio-swift`, or `swift-huggingface` and no longer
   registers the `MlxAudio` plugin, which strips the on-device STT
