@@ -222,7 +222,10 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
             models: models,
             allModels: allModels,
             activeProfile: activeProfile,
-            onAddModel: () => _navigationService.navigateToCreateModel(context),
+            onAddModel: () => _navigationService.navigateToCreateModel(
+              context,
+              preselectedProviderId: widget.providerId,
+            ),
             onEdit: () => _openEditForm(focusApiKey: false),
             onModelTap: _openModelEditForm,
             onProfileTap: _openProfileEditForm,

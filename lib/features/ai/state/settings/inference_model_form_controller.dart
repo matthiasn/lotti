@@ -19,6 +19,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
   @override
   Future<InferenceModelFormState?> build({
     required String? configId,
+    String? preselectedProviderId,
   }) async {
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
@@ -55,7 +56,15 @@ class InferenceModelFormController extends _$InferenceModelFormController {
       );
     }
 
-    return InferenceModelFormState();
+    // Create mode — seed the provider id from the optional
+    // [preselectedProviderId] so callers that already have the
+    // provider context (e.g. "Add Model" from a provider's detail
+    // page) skip the otherwise-mandatory provider picker step. The
+    // top-level "+ Add model" FAB calls without this arg and lands
+    // on a blank form where the user must pick a provider.
+    return InferenceModelFormState(
+      inferenceProviderId: preselectedProviderId ?? '',
+    );
   }
 
   void _setAllFields({

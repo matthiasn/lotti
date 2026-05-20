@@ -21,7 +21,7 @@ final class InferenceModelFormControllerProvider
         > {
   InferenceModelFormControllerProvider._({
     required InferenceModelFormControllerFamily super.from,
-    required String? super.argument,
+    required ({String? configId, String? preselectedProviderId}) super.argument,
   }) : super(
          retry: null,
          name: r'inferenceModelFormControllerProvider',
@@ -37,7 +37,7 @@ final class InferenceModelFormControllerProvider
   String toString() {
     return r'inferenceModelFormControllerProvider'
         ''
-        '($argument)';
+        '$argument';
   }
 
   @$internal
@@ -57,7 +57,7 @@ final class InferenceModelFormControllerProvider
 }
 
 String _$inferenceModelFormControllerHash() =>
-    r'bf4f44475c5e2926b14de33c7d4aea0047d1d60e';
+    r'bf7e514042fb4dd95ea7c3c69b3d5a6fe28c6834';
 
 final class InferenceModelFormControllerFamily extends $Family
     with
@@ -66,7 +66,7 @@ final class InferenceModelFormControllerFamily extends $Family
           AsyncValue<InferenceModelFormState?>,
           InferenceModelFormState?,
           FutureOr<InferenceModelFormState?>,
-          String?
+          ({String? configId, String? preselectedProviderId})
         > {
   InferenceModelFormControllerFamily._()
     : super(
@@ -77,8 +77,16 @@ final class InferenceModelFormControllerFamily extends $Family
         isAutoDispose: true,
       );
 
-  InferenceModelFormControllerProvider call({required String? configId}) =>
-      InferenceModelFormControllerProvider._(argument: configId, from: this);
+  InferenceModelFormControllerProvider call({
+    required String? configId,
+    String? preselectedProviderId,
+  }) => InferenceModelFormControllerProvider._(
+    argument: (
+      configId: configId,
+      preselectedProviderId: preselectedProviderId,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'inferenceModelFormControllerProvider';
@@ -86,10 +94,15 @@ final class InferenceModelFormControllerFamily extends $Family
 
 abstract class _$InferenceModelFormController
     extends $AsyncNotifier<InferenceModelFormState?> {
-  late final _$args = ref.$arg as String?;
-  String? get configId => _$args;
+  late final _$args =
+      ref.$arg as ({String? configId, String? preselectedProviderId});
+  String? get configId => _$args.configId;
+  String? get preselectedProviderId => _$args.preselectedProviderId;
 
-  FutureOr<InferenceModelFormState?> build({required String? configId});
+  FutureOr<InferenceModelFormState?> build({
+    required String? configId,
+    String? preselectedProviderId,
+  });
   @$mustCallSuper
   @override
   void runBuild() {
@@ -110,6 +123,12 @@ abstract class _$InferenceModelFormController
               Object?,
               Object?
             >;
-    element.handleCreate(ref, () => build(configId: _$args));
+    element.handleCreate(
+      ref,
+      () => build(
+        configId: _$args.configId,
+        preselectedProviderId: _$args.preselectedProviderId,
+      ),
+    );
   }
 }
