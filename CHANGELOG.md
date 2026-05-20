@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1003]
 ### Changed
+- AI Settings — the legacy "Select Provider Type" sheet has been
+  folded into the modernized "Set up AI features" picker. Power users
+  who previously dismissed the FTUE prompt, and the in-form
+  provider-type switcher inside the provider edit page, now open the
+  same modern modal in a non-FTUE mode that hides the subtitle,
+  footer hint, and "Don't show again" button while surfacing every
+  `InferenceProviderType` — including OpenAI-compatible, OpenRouter,
+  Nebius, Mistral, and Whisper — alongside the curated branded
+  tiles. One widget, one visual language, no provider type
+  unreachable.
 - MLX Audio is now macOS-only. The iOS Runner no longer links
   `mlx-swift`, `mlx-audio-swift`, or `swift-huggingface` and no longer
   registers the `MlxAudio` plugin, which strips the on-device STT

@@ -16,7 +16,6 @@ import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_pick_provider_modal.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/provider_type_selection_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
@@ -1394,22 +1393,23 @@ void main() {
 
     testWidgets(
       'FAB on the Providers tab — when the user previously tapped '
-      "'Don't show again' on the FTUE picker — opens the legacy "
-      'ProviderTypeSelectionModal (which lists every InferenceProviderType '
-      'including Ollama) instead of stranding the user on a '
+      "'Don't show again' on the FTUE picker — opens "
+      'AiPickProviderModal.showAllTypes (which lists every '
+      'InferenceProviderType including the formerly-hidden '
+      'genericOpenAi) instead of stranding the user on a '
       'genericOpenAi-prefilled connect form. Picking Ollama routes to '
       'InferenceProviderEditPage with preselectedType: ollama. Regression '
       'guard for the reported "second provider only offers OpenAI-compatible" '
-      'bug',
+      'bug — now backed by the unified modal post-PR #3183.',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1800));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        // Seed the dismiss flag so the FAB handler short-circuits past
-        // the rich AiPickProviderModal. The default MockSettingsDb stub
-        // returns null for every key; override only the dismiss key so
-        // the rest of the SettingsDb reads in the page continue to
-        // resolve cleanly.
+        // Seed the dismiss flag so the FAB handler routes through the
+        // all-types entry point rather than the FTUE-chrome variant.
+        // The default MockSettingsDb stub returns null for every key;
+        // override only the dismiss key so the rest of the SettingsDb
+        // reads in the page continue to resolve cleanly.
         final mockSettingsDb = getIt<SettingsDb>() as MockSettingsDb;
         when(
           () => mockSettingsDb.itemByKey(kAiPickProviderDismissedKey),
@@ -1433,15 +1433,27 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The legacy type-picker is now visible. The FTUE picker is
-        // NOT — that's the whole point of the dismiss flag.
-        expect(find.byType(ProviderTypeSelectionModal), findsOneWidget);
-        expect(find.byType(AiPickProviderModal), findsNothing);
-        // Sanity: the legacy modal renders every type including the
-        // ones the FTUE picker doesn't surface as branded tiles.
-        expect(find.text('Ollama'), findsOneWidget);
+        // The unified modal is now visible. Sanity: rendering uses
+        // allTypesTiles, so the formerly-hidden OpenAI-compatible
+        // tile is reachable here.
+        expect(find.byType(AiPickProviderModal), findsOneWidget);
+        final messages = AppLocalizations.of(
+          tester.element(find.byType(AiPickProviderModal)),
+        )!;
+        expect(find.text(messages.aiProviderOllamaName), findsOneWidget);
+        expect(find.text(messages.aiProviderGenericOpenAiName), findsOneWidget);
+        // FTUE-only chrome must NOT appear in this all-types entry
+        // point — that's the whole point of [showFtueChrome:false].
+        expect(
+          find.text(messages.aiPickProviderDontShowAgainButton),
+          findsNothing,
+        );
 
-        await tester.tap(find.text('Ollama'));
+        // Unified modal commits on Continue, not on tile tap. Pick
+        // Ollama, then tap Continue to pop the result.
+        await tester.tap(find.text(messages.aiProviderOllamaName));
+        await tester.pump();
+        await tester.tap(find.text(messages.aiPickProviderContinueButton));
         // Drain the pop + the subsequent navigateToCreateProvider push.
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
