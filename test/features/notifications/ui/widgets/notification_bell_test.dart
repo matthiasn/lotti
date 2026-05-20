@@ -30,6 +30,7 @@ void main() {
       getIt.unregister<NotificationRepository>();
     }
     getIt.registerSingleton<NotificationRepository>(repository);
+    when(() => repository.markSeen(any())).thenAnswer((_) async => null);
     when(() => repository.markActedOn(any())).thenAnswer((_) async => null);
     when(
       () => repository.markTaskSuggestionsActedOn(any()),
@@ -305,7 +306,7 @@ void main() {
   );
 
   testWidgets(
-    'tapping a row marks it acted-on and dismisses the popover',
+    'tapping a suggestion row marks it seen and opens suggestions',
     (tester) async {
       // Force desktop layout so `openLinkedTaskDetail` goes through
       // NavService (a registered mock) instead of pushing a MaterialPageRoute
@@ -350,9 +351,9 @@ void main() {
       await tester.tap(find.text('Review'));
       await tester.pump();
 
-      verify(
-        () => repository.markTaskSuggestionsActedOn('task-act-on-me'),
-      ).called(1);
+      verify(() => repository.markSeen('act-on-me')).called(1);
+      verifyNever(() => repository.markActedOn(any()));
+      verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
       verify(
         () => navService.pushDesktopTaskDetail('task-act-on-me'),
       ).called(1);
@@ -365,7 +366,7 @@ void main() {
   );
 
   testWidgets(
-    'tapping a non-suggestion row marks only that row acted-on',
+    'tapping a non-suggestion row marks only that row seen',
     (tester) async {
       final navService = MockNavService();
       if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
@@ -407,7 +408,8 @@ void main() {
       await tester.tap(find.text('Overdue task'));
       await tester.pump();
 
-      verify(() => repository.markActedOn('overdue-act-on-me')).called(1);
+      verify(() => repository.markSeen('overdue-act-on-me')).called(1);
+      verifyNever(() => repository.markActedOn(any()));
       verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
       verify(
         () => navService.pushDesktopTaskDetail('task-overdue-act-on-me'),
@@ -422,7 +424,7 @@ void main() {
   );
 
   testWidgets(
-    'markActedOn failure is reported and navigation still proceeds',
+    'markSeen failure is reported and navigation still proceeds',
     (tester) async {
       final navService = MockNavService();
       if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
@@ -437,19 +439,14 @@ void main() {
       ).thenAnswer((_) {});
 
       when(
-        () => repository.markTaskSuggestionsActedOn(any()),
-      ).thenThrow(StateError('mark-acted-boom'));
+        () => repository.markSeen(any()),
+      ).thenAnswer((_) async => throw StateError('mark-seen-boom'));
 
       final entity = _makeNotification(
         id: 'mark-failure',
         title: 'Will fail',
         body: '',
       );
-
-      final errors = <FlutterErrorDetails>[];
-      final previous = FlutterError.onError;
-      FlutterError.onError = errors.add;
-      addTearDown(() => FlutterError.onError = previous);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -470,17 +467,16 @@ void main() {
       await tester.pump();
 
       verify(
-        () => repository.markTaskSuggestionsActedOn('task-mark-failure'),
+        () => repository.markSeen('mark-failure'),
       ).called(1);
-      // Navigation runs even when markActedOn throws.
+      verifyNever(() => repository.markActedOn(any()));
+      verifyNever(() => repository.markTaskSuggestionsActedOn(any()));
+      // Navigation runs even when markSeen throws.
       verify(
         () => navService.pushDesktopTaskDetail('task-mark-failure'),
       ).called(1);
       // FlutterError.reportError should have been called with the exception.
-      expect(
-        errors.where((e) => e.exception.toString().contains('mark-acted-boom')),
-        isNotEmpty,
-      );
+      expect(tester.takeException().toString(), contains('mark-seen-boom'));
     },
   );
 
@@ -496,11 +492,6 @@ void main() {
         title: 'Cannot dismiss',
         body: '',
       );
-
-      final errors = <FlutterErrorDetails>[];
-      final previous = FlutterError.onError;
-      FlutterError.onError = errors.add;
-      addTearDown(() => FlutterError.onError = previous);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -522,10 +513,7 @@ void main() {
       verify(
         () => repository.retractTaskSuggestionsForTask('task-retract-failure'),
       ).called(1);
-      expect(
-        errors.where((e) => e.exception.toString().contains('retract-boom')),
-        isNotEmpty,
-      );
+      expect(tester.takeException().toString(), contains('retract-boom'));
       // Popover must still be present — the row text remains findable.
       expect(find.text('Cannot dismiss'), findsOneWidget);
     },

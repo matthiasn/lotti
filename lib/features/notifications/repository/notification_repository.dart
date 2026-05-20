@@ -269,7 +269,7 @@ class NotificationRepository {
         );
       }
       await _scheduler.schedule(updated);
-      _notify(updated, fromSync: false);
+      _notifyStateChange(updated);
       return updated;
     }, commitWhen: (result) => result != null);
   }
@@ -351,5 +351,13 @@ class NotificationRepository {
       },
       fromSync: fromSync,
     );
+  }
+
+  void _notifyStateChange(NotificationEntity entity) {
+    _updateNotifications.notifyUiOnly({
+      entity.id,
+      if (entity.linkedEntityId != null) entity.linkedEntityId!,
+      inboxNotification,
+    });
   }
 }
