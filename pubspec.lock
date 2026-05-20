@@ -1102,18 +1102,18 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_secure_storage
-      sha256: "8b302d17096ba88f911b7eb317c71d5e691da60a259549f42b38c658d1776d87"
+      sha256: "6848263f9744072d0977347c383fb8b57d9780319a6bf5238b5a2866a029de62"
       url: "https://pub.dev"
     source: hosted
-    version: "10.1.0"
+    version: "10.2.0"
   flutter_secure_storage_darwin:
     dependency: transitive
     description:
       name: flutter_secure_storage_darwin
-      sha256: "3af15a3cb2bf5b8b776832bd01776f8018766aece55623176e28b406481fb320"
+      sha256: "67cd1ff671add31dc13e45194398187a04bb63804b37fa47866afae296d73fcb"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.0"
+    version: "0.3.1"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
@@ -1794,10 +1794,10 @@ packages:
     dependency: "direct main"
     description:
       name: matrix
-      sha256: "629a0e5cae675c141c6ed14a21850e74327bf0e2c90f60e225d5363cc93a50f7"
+      sha256: "734eae63fa4b707999ee9165e0fc7e1205d1fcb37fef9727bb4f79cda460e1ab"
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.0"
+    version: "7.1.2"
   media_kit:
     dependency: "direct main"
     description:
@@ -1954,26 +1954,26 @@ packages:
     dependency: "direct main"
     description:
       name: objectbox
-      sha256: "83d58e0ab5c4180a2f67086c449a4f2d1475932b31819271923dfc82a76f73c6"
+      sha256: f68d74bfdfa6758cebf4cd319db1f4a4386c79ba8896d19e2e999faf041bac78
       url: "https://pub.dev"
     source: hosted
-    version: "5.3.1"
+    version: "5.3.2"
   objectbox_flutter_libs:
     dependency: "direct main"
     description:
       name: objectbox_flutter_libs
-      sha256: fd4e8ed03e2b2bfeb8aa965435d7c5523ec7e962f1ffecf6e7da6c1f4d170419
+      sha256: "604d26fac4548693449c9ea802e007d4adf7f31e361ae3ebf362ac142295078d"
       url: "https://pub.dev"
     source: hosted
-    version: "5.3.1"
+    version: "5.3.2"
   objectbox_generator:
     dependency: "direct dev"
     description:
       name: objectbox_generator
-      sha256: daa95f21c7140c619ffc1abee2465541d4f0317b8c3bbf2141be1a9e5c507a1d
+      sha256: b5f6b9e6062635689d777ba2b3a16548991eb1e61007baf607022537e3bc0436
       url: "https://pub.dev"
     source: hosted
-    version: "5.3.1"
+    version: "5.3.2"
   octo_image:
     dependency: transitive
     description:
@@ -2808,10 +2808,10 @@ packages:
     dependency: transitive
     description:
       name: sqflite_common
-      sha256: f8a08a13fb8f0f8c590df89d745000bed44a673ed94bac846739e1a016875c21
+      sha256: "1581ffbf7a0e333b380d6a30737d78516b826cb35beb7fb0bf8a3ea0c678b465"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.7"
+    version: "2.5.8"
   sqflite_common_ffi:
     dependency: "direct main"
     description:
@@ -3088,10 +3088,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_android
-      sha256: "3bb000251e55d4a209aa0e2e563309dc9bb2befea2295fd0cec1f51760aac572"
+      sha256: "17bc677f0b301615530dd1d67e0a9828cafa2d0b6b6eae4cd3679b7eac4a273c"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.29"
+    version: "6.3.30"
   url_launcher_ios:
     dependency: transitive
     description:
@@ -3160,10 +3160,10 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics
-      sha256: "6409a25046024f0f8c5d8a59fec314081e81f9d436b66ca4015a8b49772bf445"
+      sha256: "2306c03da2ba81724afeb589c351ebbc0aa7d86005925be8f8735856dbe5e42d"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.2"
   vector_graphics_codec:
     dependency: transitive
     description:
@@ -3176,10 +3176,10 @@ packages:
     dependency: transitive
     description:
       name: vector_graphics_compiler
-      sha256: "06f0c50f88a1a020f95138dcc14ef4d5a039ced3f89b386209e6763dfa2cefa0"
+      sha256: b9b3f391857781aa96acacef96066f2f49b4cd03cf9fce3ca4d8da2ef5ea129e
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "1.2.3"
   vector_math:
     dependency: "direct main"
     description:
@@ -3216,10 +3216,10 @@ packages:
     dependency: transitive
     description:
       name: video_player_avfoundation
-      sha256: a39d6f28f8069564d8cc17396472f958dd9eaddf2d5c8e90aad4d793ac369bf3
+      sha256: "9338f3ec22774f88146b22f13273a446719b1da010fd200c4d1d97802156ac58"
       url: "https://pub.dev"
     source: hosted
-    version: "2.9.6"
+    version: "2.9.7"
   video_player_platform_interface:
     dependency: transitive
     description:
