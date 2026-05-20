@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show CascadeDeletionResult, aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
@@ -776,7 +777,11 @@ void main() {
     );
 
     testWidgets(
-      'tapping the "Add model" button pushes a new route',
+      'tapping the "Add model" button pushes InferenceModelEditPage '
+      'preselected to this provider — surrounding provider context is '
+      'inherited so the user does not have to re-select the provider on '
+      'the new-model form. configId stays null because this is a create '
+      'flow, not an edit of an existing model',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(900, 1600));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -784,7 +789,7 @@ void main() {
         final spy = _PushSpy();
         await pumpWith(
           tester: tester,
-          provider: buildProvider(),
+          provider: buildProvider(id: 'gemini-detail-1'),
           models: const <AiConfig>[],
           profiles: const <AiConfig>[],
           navigatorObservers: [spy],
@@ -796,7 +801,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
+        // A new route was pushed.
         expect(spy.pushed.length, greaterThanOrEqualTo(2));
+        // The pushed page is the model edit page in create mode,
+        // preselected to the provider whose detail page we came from.
+        final pushed = tester.widget<InferenceModelEditPage>(
+          find.byType(InferenceModelEditPage),
+        );
+        expect(pushed.configId, isNull);
+        expect(pushed.preselectedProviderId, 'gemini-detail-1');
         await settleTimers(tester);
       },
     );

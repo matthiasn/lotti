@@ -101,10 +101,20 @@ class AiSettingsNavigationService {
     await Navigator.of(context).push(route);
   }
 
-  /// Navigates to create a new AI model
-  Future<void> navigateToCreateModel(BuildContext context) async {
+  /// Navigates to the model create form. When [preselectedProviderId]
+  /// is supplied, the new form's owning provider is pre-filled — used
+  /// when the call site already has a provider context, e.g. "Add
+  /// Model" from inside a provider's detail page. The top-level
+  /// "+ Add model" FAB calls without an id and the user must pick
+  /// the provider manually.
+  Future<void> navigateToCreateModel(
+    BuildContext context, {
+    String? preselectedProviderId,
+  }) async {
     final route = _createSlideRoute(
-      builder: (context) => const InferenceModelEditPage(),
+      builder: (context) => InferenceModelEditPage(
+        preselectedProviderId: preselectedProviderId,
+      ),
     );
     await Navigator.of(context).push(route);
   }
