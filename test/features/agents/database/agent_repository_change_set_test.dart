@@ -1111,6 +1111,164 @@ void main() {
       },
     );
 
+    test(
+      'keeps active confirmed pending snapshots open for dispatch retry',
+      () async {
+        final retrySet = makeTestChangeSet(
+          id: 'cs-confirmed-retry',
+          taskId: 'task-confirmed-retry',
+          createdAt: kAgentTestDate,
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Set priority to P1',
+            ),
+          ],
+        );
+        final confirmedDecision = makeTestChangeDecision(
+          id: 'cd-confirmed-retry',
+          changeSetId: retrySet.id,
+          toolName: 'update_task_priority',
+          taskId: retrySet.taskId,
+          args: const {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+          createdAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        );
+
+        await repo.upsertEntity(retrySet);
+        await repo.upsertEntity(confirmedDecision);
+
+        final ledger = await repo.getProposalLedger(
+          kTestAgentId,
+          taskId: retrySet.taskId,
+        );
+
+        expect(ledger.open, hasLength(1));
+        expect(ledger.open.single.status, ChangeItemStatus.pending);
+        expect(ledger.open.single.verdict, ChangeDecisionVerdict.confirmed);
+        expect(ledger.resolved, isEmpty);
+        expect(ledger.pendingSets, hasLength(1));
+        expect(
+          ledger.pendingSets.single.items.single.status,
+          ChangeItemStatus.pending,
+        );
+      },
+    );
+
+    test(
+      'uses user decisions to close stale rejected and deferred snapshots',
+      () async {
+        const cases = [
+          (
+            verdict: ChangeDecisionVerdict.rejected,
+            status: ChangeItemStatus.rejected,
+            reason: 'User declined the priority change',
+          ),
+          (
+            verdict: ChangeDecisionVerdict.deferred,
+            status: ChangeItemStatus.deferred,
+            reason: 'User will decide later',
+          ),
+        ];
+
+        for (var i = 0; i < cases.length; i++) {
+          final testCase = cases[i];
+          final changeSetId = 'cs-user-decision-$i';
+          const taskId = 'task-user-decision';
+          await repo.upsertEntity(
+            makeTestChangeSet(
+              id: changeSetId,
+              taskId: taskId,
+              createdAt: kAgentTestDate.add(Duration(minutes: i)),
+              items: [
+                ChangeItem(
+                  toolName: 'update_task_priority',
+                  args: {'priority': 'P${i + 1}'},
+                  humanSummary: 'Set priority to P${i + 1}',
+                ),
+              ],
+            ),
+          );
+          await repo.upsertEntity(
+            makeTestChangeDecision(
+              id: 'cd-user-decision-$i',
+              changeSetId: changeSetId,
+              toolName: 'update_task_priority',
+              verdict: testCase.verdict,
+              taskId: taskId,
+              args: {'priority': 'P${i + 1}'},
+              rejectionReason: testCase.reason,
+              humanSummary: 'Set priority to P${i + 1}',
+              createdAt: kAgentTestDate.add(Duration(minutes: i + 10)),
+            ),
+          );
+        }
+
+        final ledger = await repo.getProposalLedger(
+          kTestAgentId,
+          taskId: 'task-user-decision',
+        );
+
+        expect(ledger.open, isEmpty);
+        expect(ledger.pendingSets, isEmpty);
+        expect(ledger.resolved, hasLength(cases.length));
+        for (final testCase in cases) {
+          final entry = ledger.resolved.singleWhere(
+            (e) => e.verdict == testCase.verdict,
+          );
+          expect(entry.status, testCase.status);
+          expect(entry.resolvedBy, DecisionActor.user);
+          expect(entry.reason, testCase.reason);
+        }
+      },
+    );
+
+    test(
+      'uses confirmed decisions to close resolved-parent pending snapshots',
+      () async {
+        final resolvedPendingSet = makeTestChangeSet(
+          id: 'cs-resolved-confirmed-pending',
+          taskId: 'task-resolved-confirmed-pending',
+          status: ChangeSetStatus.resolved,
+          resolvedAt: kAgentTestDate.add(const Duration(minutes: 6)),
+          createdAt: kAgentTestDate,
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Set priority to P1',
+            ),
+          ],
+        );
+        final confirmedDecision = makeTestChangeDecision(
+          id: 'cd-resolved-confirmed-pending',
+          changeSetId: resolvedPendingSet.id,
+          toolName: 'update_task_priority',
+          taskId: resolvedPendingSet.taskId,
+          args: const {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+          createdAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        );
+
+        await repo.upsertEntity(resolvedPendingSet);
+        await repo.upsertEntity(confirmedDecision);
+
+        final ledger = await repo.getProposalLedger(
+          kTestAgentId,
+          taskId: resolvedPendingSet.taskId,
+        );
+
+        expect(ledger.open, isEmpty);
+        expect(ledger.pendingSets, isEmpty);
+        expect(ledger.resolved, hasLength(1));
+        final entry = ledger.resolved.single;
+        expect(entry.status, ChangeItemStatus.confirmed);
+        expect(entry.verdict, ChangeDecisionVerdict.confirmed);
+        expect(entry.resolvedBy, DecisionActor.user);
+      },
+    );
+
     test('filters change sets from other tasks out of the ledger', () async {
       await repo.upsertEntity(
         makeTestChangeSet(

@@ -817,6 +817,73 @@ void main() {
     );
 
     test(
+      'when resolved ledger contains duplicate fingerprints, the newest '
+      'entry wins (resolved is sorted newest-first)',
+      () async {
+        stubPendingSets([
+          setWith([titleItem]),
+        ]);
+        final fingerprint = ChangeItem.fingerprint(priorityItem);
+        when(
+          () => mockRepository.getProposalLedger(
+            'agent-1',
+            taskId: 'task-xyz',
+            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+            resolvedLimit: any(named: 'resolvedLimit'),
+          ),
+        ).thenAnswer(
+          (_) async => ProposalLedger(
+            open: const [],
+            // Newest-first ordering: the first entry is the canonical one
+            // the LLM should see in the retraction result.
+            resolved: [
+              LedgerEntry(
+                changeSetId: 'cs-newest',
+                itemIndex: 0,
+                toolName: priorityItem.toolName,
+                args: priorityItem.args,
+                humanSummary: 'newest summary',
+                fingerprint: fingerprint,
+                status: ChangeItemStatus.retracted,
+                createdAt: DateTime(2026, 4, 18, 8),
+                resolvedAt: DateTime(2026, 4, 18, 10),
+                resolvedBy: DecisionActor.agent,
+                verdict: ChangeDecisionVerdict.retracted,
+              ),
+              LedgerEntry(
+                changeSetId: 'cs-older',
+                itemIndex: 0,
+                toolName: priorityItem.toolName,
+                args: priorityItem.args,
+                humanSummary: 'older summary',
+                fingerprint: fingerprint,
+                status: ChangeItemStatus.retracted,
+                createdAt: DateTime(2026, 4, 17, 8),
+                resolvedAt: DateTime(2026, 4, 17, 9),
+                resolvedBy: DecisionActor.agent,
+                verdict: ChangeDecisionVerdict.retracted,
+              ),
+            ],
+          ),
+        );
+
+        final results = await service.retract(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: fingerprint,
+              reason: 'check newest wins',
+            ),
+          ],
+        );
+
+        expect(results.single.outcome, RetractionOutcome.notOpen);
+        expect(results.single.humanSummary, 'newest summary');
+      },
+    );
+
+    test(
       'a fingerprint passed twice in the same call is idempotent — second '
       'occurrence reports notOpen',
       () async {

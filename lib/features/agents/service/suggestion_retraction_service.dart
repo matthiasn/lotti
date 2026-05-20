@@ -96,17 +96,23 @@ class SuggestionRetractionService {
     );
 
     final results = <RetractionResult>[];
-    ProposalLedger? ledgerSnapshot;
+    Map<String, LedgerEntry>? resolvedByFingerprint;
 
     Future<LedgerEntry?> resolvedLedgerEntry(String fingerprint) async {
-      ledgerSnapshot ??= await _syncService.repository.getProposalLedger(
-        agentId,
-        taskId: taskId,
-      );
-      for (final entry in ledgerSnapshot!.resolved) {
-        if (entry.fingerprint == fingerprint) return entry;
+      if (resolvedByFingerprint == null) {
+        final ledger = await _syncService.repository.getProposalLedger(
+          agentId,
+          taskId: taskId,
+        );
+        // ledger.resolved is sorted newest-first; keep the first occurrence
+        // per fingerprint so older duplicates don't overwrite newer entries.
+        final byFingerprint = <String, LedgerEntry>{};
+        for (final entry in ledger.resolved) {
+          byFingerprint.putIfAbsent(entry.fingerprint, () => entry);
+        }
+        resolvedByFingerprint = byFingerprint;
       }
-      return null;
+      return resolvedByFingerprint![fingerprint];
     }
 
     // Fingerprints we have already retracted during this call — ensures

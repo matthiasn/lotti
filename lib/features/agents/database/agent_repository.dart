@@ -974,9 +974,14 @@ class AgentRepository {
 
     final open = <LedgerEntry>[];
     final resolved = <LedgerEntry>[];
+    final pendingSetIds = {for (final cs in rawPendingSets) cs.id};
+    final sanitizedItemsBySetId = <String, List<ChangeItem>>{};
 
     for (final set in allSets) {
       final setIsActive = _isPendingLike(set.status);
+      final sanitizedItems = pendingSetIds.contains(set.id)
+          ? <ChangeItem>[]
+          : null;
       for (var i = 0; i < set.items.length; i++) {
         final item = set.items[i];
         final decision = decisionByKey['${set.id}:$i'];
@@ -985,6 +990,13 @@ class AgentRepository {
           item: item,
           decision: decision,
         );
+        if (sanitizedItems != null) {
+          sanitizedItems.add(
+            effectiveStatus == item.status
+                ? item
+                : item.copyWith(status: effectiveStatus),
+          );
+        }
         final isOpen =
             setIsActive && effectiveStatus == ChangeItemStatus.pending;
         final hasResolvedSignal =
@@ -1017,6 +1029,9 @@ class AgentRepository {
           resolved.add(entry);
         }
       }
+      if (sanitizedItems != null) {
+        sanitizedItemsBySetId[set.id] = sanitizedItems;
+      }
     }
 
     open.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -1026,10 +1041,19 @@ class AgentRepository {
       return bResolved.compareTo(aResolved);
     });
 
+    final sanitizedPendingSets = <ChangeSetEntity>[];
+    for (final set in rawPendingSets) {
+      final items = sanitizedItemsBySetId[set.id];
+      if (items == null) continue;
+      if (items.any((i) => i.status == ChangeItemStatus.pending)) {
+        sanitizedPendingSets.add(set.copyWith(items: items));
+      }
+    }
+
     return ProposalLedger(
       open: open,
       resolved: resolved.take(resolvedLimit).toList(),
-      pendingSets: _sanitizePendingSets(rawPendingSets, decisionByKey),
+      pendingSets: sanitizedPendingSets,
     );
   }
 
@@ -1065,32 +1089,6 @@ class AgentRepository {
       ChangeDecisionVerdict.deferred => ChangeItemStatus.deferred,
       ChangeDecisionVerdict.retracted => ChangeItemStatus.retracted,
     };
-  }
-
-  static List<ChangeSetEntity> _sanitizePendingSets(
-    List<ChangeSetEntity> rawPendingSets,
-    Map<String, ChangeDecisionEntity> decisionByKey,
-  ) {
-    return rawPendingSets
-        .map((set) {
-          final items = <ChangeItem>[];
-          for (var i = 0; i < set.items.length; i++) {
-            final item = set.items[i];
-            final status = _effectiveLedgerStatus(
-              setIsActive: true,
-              item: item,
-              decision: decisionByKey['${set.id}:$i'],
-            );
-            items.add(
-              status == item.status ? item : item.copyWith(status: status),
-            );
-          }
-          return set.copyWith(items: items);
-        })
-        .where(
-          (set) => set.items.any((i) => i.status == ChangeItemStatus.pending),
-        )
-        .toList();
   }
 
   /// Fetch change decisions across all instances of [templateId] created on
