@@ -502,17 +502,28 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Select OpenAI from the modal options
+      // Select OpenAI from the modal options. The unified
+      // AiPickProviderModal is a select-then-confirm picker (unlike
+      // the legacy modal which popped on tile tap), so we have to
+      // tap the tile AND the Continue button.
       final openAiOption = find.text('OpenAI').first;
-      // Ensure OpenAI option is visible before tapping
       await tester.ensureVisible(openAiOption);
       await tester.pump();
-
+      await tester.tap(openAiOption);
+      await tester.pump();
+      // The all-types picker renders every InferenceProviderType.
+      // Production wraps the modal in a WoltModalSheetPage which
+      // scrolls its child, so the Continue button is always
+      // reachable on small viewports. The flutter_test surface
+      // does NOT auto-scroll, so we call ensureVisible to mirror
+      // that scroll. Localized lookup keeps the assertion in sync
+      // with the live ARB files.
+      await tester.ensureVisible(
+        find.text(l10n(tester).aiPickProviderContinueButton),
+      );
+      await tester.pump();
       await tester.tap(
-        find.ancestor(
-          of: openAiOption,
-          matching: find.byType(InkWell),
-        ),
+        find.text(l10n(tester).aiPickProviderContinueButton),
       );
       await tester.pumpAndSettle();
 
@@ -840,16 +851,24 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Ensure Ollama option is visible before tapping
+      // Ensure Ollama option is visible before tapping. Unified
+      // picker = tile-select followed by Continue, unlike the
+      // legacy modal which popped on tile tap.
       final ollamaOption = find.text('Ollama');
       await tester.ensureVisible(ollamaOption);
       await tester.pump();
-
+      await tester.tap(ollamaOption);
+      await tester.pump();
+      // WoltModalSheetPage scrolls its child in production; the
+      // flutter_test surface does not, so ensureVisible mirrors the
+      // production scroll. Localized lookup keeps the assertion in
+      // sync with the live ARB files.
+      await tester.ensureVisible(
+        find.text(l10n(tester).aiPickProviderContinueButton),
+      );
+      await tester.pump();
       await tester.tap(
-        find.ancestor(
-          of: ollamaOption,
-          matching: find.byType(InkWell),
-        ),
+        find.text(l10n(tester).aiPickProviderContinueButton),
       );
 
       // Wait for modal to close
@@ -875,16 +894,26 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Ensure OpenAI option is visible before tapping
+      // Ensure OpenAI option is visible before tapping. Unified
+      // picker = tile-select followed by Continue.
       final openAiOption = find.text('OpenAI').first;
       await tester.ensureVisible(openAiOption);
       await tester.pump();
-
+      await tester.tap(openAiOption);
+      await tester.pump();
+      // The all-types picker renders every InferenceProviderType.
+      // Production wraps the modal in a WoltModalSheetPage which
+      // scrolls its child, so the Continue button is always
+      // reachable on small viewports. The flutter_test surface
+      // does NOT auto-scroll, so we call ensureVisible to mirror
+      // that scroll. Localized lookup keeps the assertion in sync
+      // with the live ARB files.
+      await tester.ensureVisible(
+        find.text(l10n(tester).aiPickProviderContinueButton),
+      );
+      await tester.pump();
       await tester.tap(
-        find.ancestor(
-          of: openAiOption,
-          matching: find.byType(InkWell),
-        ),
+        find.text(l10n(tester).aiPickProviderContinueButton),
       );
       await tester.pumpAndSettle();
 
