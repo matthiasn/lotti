@@ -900,11 +900,12 @@ class AgentRepository {
   ///    items and exposes resolved history in a collapsed history toggle
   ///    plus an inline recent-activity footer.
   ///
-  /// Open entries are extracted from pending/partiallyResolved change sets.
-  /// Resolved entries come from all change sets (including resolved and
-  /// expired ones) joined with their [ChangeDecisionEntity] records, and
+  /// Open entries are extracted only from pending/partiallyResolved change
+  /// sets whose effective item status is still pending. Resolved entries come
+  /// from non-pending items and item-level [ChangeDecisionEntity] records, and
   /// are capped at [resolvedLimit] most-recent decisions to keep the LLM
-  /// prompt bounded.
+  /// prompt bounded. Historical rows with a resolved parent but a stale
+  /// embedded pending item and no decision are filtered out entirely.
   Future<ProposalLedger> getProposalLedger(
     String agentId, {
     required String taskId,
@@ -936,7 +937,7 @@ class AgentRepository {
     final recentRows = results[1];
     final decisionRows = results[2];
 
-    final pendingSets = pendingRows
+    final rawPendingSets = pendingRows
         .map(AgentDbConversions.fromEntityRow)
         .whereType<ChangeSetEntity>()
         .where((cs) => cs.taskId == taskId)
@@ -951,7 +952,7 @@ class AgentRepository {
       // Pending wins the union: its rows are freshly queried by status
       // and may reflect state that newer resolved rows have not yet
       // picked up if a confirmation landed between the two scans.
-      for (final cs in pendingSets) cs.id: cs,
+      for (final cs in rawPendingSets) cs.id: cs,
     };
     final allSets = setsById.values.toList();
 
@@ -965,16 +966,48 @@ class AgentRepository {
 
     final decisionByKey = <String, ChangeDecisionEntity>{};
     for (final d in decisions) {
-      decisionByKey['${d.changeSetId}:${d.itemIndex}'] = d;
+      // Rows are newest-first. Keep the newest decision for each item;
+      // older retry/audit rows must not reopen a later rejection or
+      // retraction in the prompt ledger.
+      decisionByKey.putIfAbsent('${d.changeSetId}:${d.itemIndex}', () => d);
     }
 
     final open = <LedgerEntry>[];
     final resolved = <LedgerEntry>[];
+    final pendingSetIds = {for (final cs in rawPendingSets) cs.id};
+    final sanitizedItemsBySetId = <String, List<ChangeItem>>{};
 
     for (final set in allSets) {
+      final setIsActive = _isPendingLike(set.status);
+      final sanitizedItems = pendingSetIds.contains(set.id)
+          ? <ChangeItem>[]
+          : null;
       for (var i = 0; i < set.items.length; i++) {
         final item = set.items[i];
         final decision = decisionByKey['${set.id}:$i'];
+        final effectiveStatus = _effectiveLedgerStatus(
+          setIsActive: setIsActive,
+          item: item,
+          decision: decision,
+        );
+        if (sanitizedItems != null) {
+          sanitizedItems.add(
+            effectiveStatus == item.status
+                ? item
+                : item.copyWith(status: effectiveStatus),
+          );
+        }
+        final isOpen =
+            setIsActive && effectiveStatus == ChangeItemStatus.pending;
+        final hasResolvedSignal =
+            effectiveStatus != ChangeItemStatus.pending || decision != null;
+        if (!isOpen && !hasResolvedSignal) {
+          // Historical consolidation bugs could leave a resolved/expired
+          // parent row with embedded pending items and no decision. Those
+          // rows are neither actionable nor useful history, so keep them
+          // out of the LLM prompt and UI activity strip.
+          continue;
+        }
         final entry = LedgerEntry(
           changeSetId: set.id,
           itemIndex: i,
@@ -982,7 +1015,7 @@ class AgentRepository {
           args: item.args,
           humanSummary: item.humanSummary,
           fingerprint: ChangeItem.fingerprint(item),
-          status: item.status,
+          status: effectiveStatus,
           createdAt: set.createdAt,
           resolvedAt: decision?.createdAt ?? set.resolvedAt,
           resolvedBy: decision?.actor,
@@ -990,11 +1023,14 @@ class AgentRepository {
           reason: decision?.retractionReason ?? decision?.rejectionReason,
           groupId: item.groupId,
         );
-        if (entry.isOpen) {
+        if (isOpen) {
           open.add(entry);
         } else {
           resolved.add(entry);
         }
+      }
+      if (sanitizedItems != null) {
+        sanitizedItemsBySetId[set.id] = sanitizedItems;
       }
     }
 
@@ -1005,11 +1041,54 @@ class AgentRepository {
       return bResolved.compareTo(aResolved);
     });
 
+    final sanitizedPendingSets = <ChangeSetEntity>[];
+    for (final set in rawPendingSets) {
+      final items = sanitizedItemsBySetId[set.id];
+      if (items == null) continue;
+      if (items.any((i) => i.status == ChangeItemStatus.pending)) {
+        sanitizedPendingSets.add(set.copyWith(items: items));
+      }
+    }
+
     return ProposalLedger(
       open: open,
       resolved: resolved.take(resolvedLimit).toList(),
-      pendingSets: pendingSets,
+      pendingSets: sanitizedPendingSets,
     );
+  }
+
+  static bool _isPendingLike(ChangeSetStatus status) {
+    return status == ChangeSetStatus.pending ||
+        status == ChangeSetStatus.partiallyResolved;
+  }
+
+  static ChangeItemStatus _effectiveLedgerStatus({
+    required bool setIsActive,
+    required ChangeItem item,
+    required ChangeDecisionEntity? decision,
+  }) {
+    if (item.status != ChangeItemStatus.pending) return item.status;
+
+    final verdict = decision?.verdict;
+    if (verdict == null) return item.status;
+
+    // Confirmation decisions are written before dispatch. If dispatch later
+    // fails, the item is deliberately reverted to pending so the user can
+    // retry. Rejection, deferral, and retraction have no dispatch retry path,
+    // so their decisions close stale embedded pending items.
+    if (setIsActive && verdict == ChangeDecisionVerdict.confirmed) {
+      return item.status;
+    }
+    return _statusForDecision(verdict);
+  }
+
+  static ChangeItemStatus _statusForDecision(ChangeDecisionVerdict verdict) {
+    return switch (verdict) {
+      ChangeDecisionVerdict.confirmed => ChangeItemStatus.confirmed,
+      ChangeDecisionVerdict.rejected => ChangeItemStatus.rejected,
+      ChangeDecisionVerdict.deferred => ChangeItemStatus.deferred,
+      ChangeDecisionVerdict.retracted => ChangeItemStatus.retracted,
+    };
   }
 
   /// Fetch change decisions across all instances of [templateId] created on

@@ -466,16 +466,14 @@ class ChangeSetBuilder {
       await syncService.upsertEntity(merged);
 
       // Mark all non-survivor sets as resolved so they disappear from
-      // pending queries and the UI.
+      // pending queries and the UI. Pending items in those retired rows are
+      // marked retracted because their actionable copy now lives in the
+      // survivor; leaving embedded `pending` items inside a resolved parent
+      // makes the proposal ledger report stale open suggestions.
       for (final cs in existingPendingSets) {
         if (cs.id != survivor.id) {
           final current = currentExistingSetsById[cs.id] ?? cs;
-          await syncService.upsertEntity(
-            current.copyWith(
-              status: ChangeSetStatus.resolved,
-              resolvedAt: clock.now(),
-            ),
-          );
+          await syncService.upsertEntity(_retireConsolidatedSet(current));
         }
       }
 
@@ -581,6 +579,19 @@ class ChangeSetBuilder {
     return proposed
         .where((item) => !existingHashes.contains(ChangeItem.fingerprint(item)))
         .toList();
+  }
+
+  static ChangeSetEntity _retireConsolidatedSet(ChangeSetEntity set) {
+    return set.copyWith(
+      items: [
+        for (final item in set.items)
+          item.status == ChangeItemStatus.pending
+              ? item.copyWith(status: ChangeItemStatus.retracted)
+              : item,
+      ],
+      status: ChangeSetStatus.resolved,
+      resolvedAt: clock.now(),
+    );
   }
 
   /// Convert batch tool name to a singular form for individual items.

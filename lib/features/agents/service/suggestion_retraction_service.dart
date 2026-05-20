@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -95,6 +96,25 @@ class SuggestionRetractionService {
     );
 
     final results = <RetractionResult>[];
+    Map<String, LedgerEntry>? resolvedByFingerprint;
+
+    Future<LedgerEntry?> resolvedLedgerEntry(String fingerprint) async {
+      if (resolvedByFingerprint == null) {
+        final ledger = await _syncService.repository.getProposalLedger(
+          agentId,
+          taskId: taskId,
+        );
+        // ledger.resolved is sorted newest-first; keep the first occurrence
+        // per fingerprint so older duplicates don't overwrite newer entries.
+        final byFingerprint = <String, LedgerEntry>{};
+        for (final entry in ledger.resolved) {
+          byFingerprint.putIfAbsent(entry.fingerprint, () => entry);
+        }
+        resolvedByFingerprint = byFingerprint;
+      }
+      return resolvedByFingerprint![fingerprint];
+    }
+
     // Fingerprints we have already retracted during this call — ensures
     // the same fingerprint passed twice yields `notOpen` on the second
     // occurrence rather than crashing on a stale snapshot.
@@ -103,6 +123,18 @@ class SuggestionRetractionService {
     for (final request in requests) {
       final matches = _locateAll(pendingSets, request.fingerprint);
       if (matches.isEmpty) {
+        final resolvedEntry = await resolvedLedgerEntry(request.fingerprint);
+        if (resolvedEntry != null) {
+          results.add(
+            RetractionResult(
+              fingerprint: request.fingerprint,
+              outcome: RetractionOutcome.notOpen,
+              toolName: resolvedEntry.toolName,
+              humanSummary: resolvedEntry.humanSummary,
+            ),
+          );
+          continue;
+        }
         results.add(
           RetractionResult(
             fingerprint: request.fingerprint,

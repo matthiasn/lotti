@@ -65,6 +65,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   master switch and reuse `NotificationRepository`, so every change
   syncs to other devices through the existing Matrix sync pipeline.
 
+### Fixed
+- Task-agent proposal ledgers no longer surface retired suggestions as
+  open work. Consolidating multiple pending change sets now marks pending
+  items in the retired source sets as `retracted`, and the ledger reader
+  filters historical resolved-parent/pending-child snapshots plus stale
+  rejection or retraction decisions before the prompt and AI summary card
+  see them. `retract_suggestions` also treats fingerprints already present
+  in the resolved ledger as `not_open` rather than `not_found`, avoiding
+  repeated model retraction loops.
+
 ## [0.9.1002]
 ### Added
 - Synced notifications data layer: a separate `notifications.sqlite` store,

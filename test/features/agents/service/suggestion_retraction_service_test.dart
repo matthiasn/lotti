@@ -4,6 +4,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -241,6 +242,14 @@ void main() {
     // Default: subsequent reads mirror what upsert wrote, but concrete
     // tests stub explicitly when they care about re-read behavior.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => mockRepository.getProposalLedger(
+        any(),
+        taskId: any(named: 'taskId'),
+        changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+        resolvedLimit: any(named: 'resolvedLimit'),
+      ),
+    ).thenAnswer((_) async => const ProposalLedger.empty());
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(
       () => mockDomainLogger.log(
@@ -509,6 +518,14 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => initialSets);
+      when(
+        () => localRepository.getProposalLedger(
+          agentId,
+          taskId: taskId,
+          changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+          resolvedLimit: any(named: 'resolvedLimit'),
+        ),
+      ).thenAnswer((_) async => const ProposalLedger.empty());
       when(() => localRepository.getEntity(any())).thenAnswer((invocation) {
         final id = invocation.positionalArguments.single as String;
         final initial = initialSets.where((set) => set.id == id).firstOrNull;
@@ -743,6 +760,126 @@ void main() {
         expect(results.single.outcome, RetractionOutcome.notFound);
         expect(results.single.toolName, isNull);
         verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'reports notOpen when the fingerprint only exists in resolved ledger',
+      () async {
+        stubPendingSets([
+          setWith([titleItem]),
+        ]);
+        final fingerprint = ChangeItem.fingerprint(priorityItem);
+        when(
+          () => mockRepository.getProposalLedger(
+            'agent-1',
+            taskId: 'task-xyz',
+            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+            resolvedLimit: any(named: 'resolvedLimit'),
+          ),
+        ).thenAnswer(
+          (_) async => ProposalLedger(
+            open: const [],
+            resolved: [
+              LedgerEntry(
+                changeSetId: 'cs-resolved',
+                itemIndex: 0,
+                toolName: priorityItem.toolName,
+                args: priorityItem.args,
+                humanSummary: priorityItem.humanSummary,
+                fingerprint: fingerprint,
+                status: ChangeItemStatus.retracted,
+                createdAt: DateTime(2026, 4, 18, 8),
+                resolvedAt: DateTime(2026, 4, 18, 9),
+                resolvedBy: DecisionActor.agent,
+                verdict: ChangeDecisionVerdict.retracted,
+              ),
+            ],
+          ),
+        );
+
+        final results = await service.retract(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: fingerprint,
+              reason: 'already gone',
+            ),
+          ],
+        );
+
+        expect(results.single.outcome, RetractionOutcome.notOpen);
+        expect(results.single.toolName, priorityItem.toolName);
+        expect(results.single.humanSummary, priorityItem.humanSummary);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'when resolved ledger contains duplicate fingerprints, the newest '
+      'entry wins (resolved is sorted newest-first)',
+      () async {
+        stubPendingSets([
+          setWith([titleItem]),
+        ]);
+        final fingerprint = ChangeItem.fingerprint(priorityItem);
+        when(
+          () => mockRepository.getProposalLedger(
+            'agent-1',
+            taskId: 'task-xyz',
+            changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+            resolvedLimit: any(named: 'resolvedLimit'),
+          ),
+        ).thenAnswer(
+          (_) async => ProposalLedger(
+            open: const [],
+            // Newest-first ordering: the first entry is the canonical one
+            // the LLM should see in the retraction result.
+            resolved: [
+              LedgerEntry(
+                changeSetId: 'cs-newest',
+                itemIndex: 0,
+                toolName: priorityItem.toolName,
+                args: priorityItem.args,
+                humanSummary: 'newest summary',
+                fingerprint: fingerprint,
+                status: ChangeItemStatus.retracted,
+                createdAt: DateTime(2026, 4, 18, 8),
+                resolvedAt: DateTime(2026, 4, 18, 10),
+                resolvedBy: DecisionActor.agent,
+                verdict: ChangeDecisionVerdict.retracted,
+              ),
+              LedgerEntry(
+                changeSetId: 'cs-older',
+                itemIndex: 0,
+                toolName: priorityItem.toolName,
+                args: priorityItem.args,
+                humanSummary: 'older summary',
+                fingerprint: fingerprint,
+                status: ChangeItemStatus.retracted,
+                createdAt: DateTime(2026, 4, 17, 8),
+                resolvedAt: DateTime(2026, 4, 17, 9),
+                resolvedBy: DecisionActor.agent,
+                verdict: ChangeDecisionVerdict.retracted,
+              ),
+            ],
+          ),
+        );
+
+        final results = await service.retract(
+          agentId: 'agent-1',
+          taskId: 'task-xyz',
+          requests: [
+            RetractionRequest(
+              fingerprint: fingerprint,
+              reason: 'check newest wins',
+            ),
+          ],
+        );
+
+        expect(results.single.outcome, RetractionOutcome.notOpen);
+        expect(results.single.humanSummary, 'newest summary');
       },
     );
 
