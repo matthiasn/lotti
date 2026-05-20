@@ -108,10 +108,10 @@ forking the tool. Use it when a dependency in `pubspec.lock` needs extra
 offline sources, hashes, or patches and the pinned flatpak-flutter release does
 not know that dependency version yet.
 
-Keep overlay versions exact. `flatpak-flutter` will otherwise reuse the newest
-older entry for a newer locked package version, which is risky for native
-archives and CMake patches because upstream package contents and line endings
-can change.
+Keep overlay versions exact and ordered from oldest to newest. `flatpak-flutter`
+will otherwise reuse an older compatible entry for a newer locked package
+version, which is risky for native archives and CMake patches because upstream
+package contents and line endings can change.
 
 Run this before tagging or after dependency updates:
 
@@ -123,6 +123,10 @@ The check parses `pubspec.lock`, verifies that local overlay entries match the
 locked versions, and dry-runs every Flatpak patch against the actual Pub cache
 package directory. CI runs the same check for pull requests touching Flatpak or
 dependency files.
+
+Some upstream packages ship patched files with CRLF line endings. Keep those
+patches generated from the upstream file's real line endings so the Flathub
+builder's plain `patch -p1` invocation applies them.
 
 ### com.matthiasn.lotti.flatpak-flutter.yml
 

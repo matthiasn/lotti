@@ -85,10 +85,7 @@
                     {
                         "type": "patch",
                         "path": "objectbox_flutter_libs/5.3.2-CMakeLists.txt.patch",
-                        "dest": "$PUB_DEV",
-                        "options": [
-                            "-l"
-                        ]
+                        "dest": "$PUB_DEV"
                     }
                 ]
             }

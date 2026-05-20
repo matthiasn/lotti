@@ -153,6 +153,15 @@ def _checks_from_versioned_foreign_deps(
             )
             continue
 
+        selected = _flatpak_flutter_selected_version(versions.keys(), locked.version)
+        if selected != locked.version:
+            failures.append(
+                f"{dep_name} is locked at {locked.version}, but flatpak-flutter "
+                f"would select {selected}; keep overlay version keys in ascending "
+                "order"
+            )
+            continue
+
         entry = versions[locked.version]
         pub_dev = pub_cache / "hosted" / "pub.dev" / f"{dep_name}-{locked.version}"
         checks.extend(
@@ -410,11 +419,25 @@ def _latest_compatible_version(
     return max(compatible, key=_version_key)
 
 
-def _version_key(version: str) -> tuple[tuple[int, ...], int, tuple[tuple[int, Any], ...]]:
+def _flatpak_flutter_selected_version(
+    versions: Any,
+    locked_version: str,
+) -> str | None:
+    for version in reversed(list(versions)):
+        if _version_key(str(version)) <= _version_key(locked_version):
+            return str(version)
+    return next(iter(versions), None)
+
+
+def _version_key(
+    version: str,
+) -> tuple[tuple[int, ...], int, tuple[tuple[int, Any], ...]]:
     version = version.split("+", 1)[0]
     release, separator, prerelease = version.partition("-")
     release_key = tuple(int(part) for part in release.split(".") if part.isdigit())
-    prerelease_key = tuple(_prerelease_part(part) for part in re.split(r"[.-]", prerelease))
+    prerelease_key = tuple(
+        _prerelease_part(part) for part in re.split(r"[.-]", prerelease)
+    )
     stable_rank = 1 if not separator else 0
     return release_key, stable_rank, prerelease_key
 
