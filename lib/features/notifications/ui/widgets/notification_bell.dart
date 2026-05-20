@@ -393,26 +393,20 @@ class _InboxRow extends StatelessWidget {
       linkedId,
       focusSuggestions: entity is TaskSuggestionNotification,
     );
-    // Fire markActedOn after navigation so the badge clears as the task
-    // opens. Task-suggestion rows are task-scoped at the inbox level, so a
-    // tap clears every open suggestion alert for that task, including stale
-    // rows left by older app versions.
-    unawaited(
-      _markActedOn(linkedId).catchError((Object error, StackTrace stackTrace) {
-        FlutterError.reportError(
-          FlutterErrorDetails(exception: error, stack: stackTrace),
-        );
-        return null;
-      }),
-    );
+    // Fire markSeen after navigation so the badge clears as the task opens.
+    // Opening the task is not the same as acting on an agent suggestion; the
+    // confirmation/rejection flow owns retraction.
+    unawaited(_markSeen());
   }
 
-  Future<Object?> _markActedOn(String linkedId) {
-    final repository = getIt<NotificationRepository>();
-    if (entity is TaskSuggestionNotification) {
-      return repository.markTaskSuggestionsActedOn(linkedId);
+  Future<void> _markSeen() async {
+    try {
+      await getIt<NotificationRepository>().markSeen(entity.id);
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: error, stack: stackTrace),
+      );
     }
-    return repository.markActedOn(entity.id);
   }
 
   Future<void> _handleRetract() async {

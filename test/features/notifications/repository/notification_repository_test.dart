@@ -519,38 +519,46 @@ void main() {
       return base;
     }
 
-    test('markSeen merges state, enqueues update and notifies', () async {
-      await seed();
-      when(
-        () => vectorClockService.getNextVectorClock(
-          previous: any(named: 'previous'),
-        ),
-      ).thenAnswer((_) async => const VectorClock({'host-a': 2}));
+    test(
+      'markSeen merges state, enqueues update and notifies UI only',
+      () async {
+        await seed();
+        when(
+          () => vectorClockService.getNextVectorClock(
+            previous: any(named: 'previous'),
+          ),
+        ).thenAnswer((_) async => const VectorClock({'host-a': 2}));
 
-      final updated = await repository.markSeen('state-test');
+        final updated = await repository.markSeen('state-test');
 
-      expect(updated, isNotNull);
-      expect(updated!.meta.seenAt, fixedNow);
-      expect(updated.meta.vectorClock, const VectorClock({'host-a': 2}));
+        expect(updated, isNotNull);
+        expect(updated!.meta.seenAt, fixedNow);
+        expect(updated.meta.vectorClock, const VectorClock({'host-a': 2}));
 
-      verify(
-        () => outboxService.enqueueNotificationStateUpdate(
-          id: 'state-test',
-          seenAt: fixedNow,
-          actedOnAt: null,
-          deletedAt: null,
-          vectorClock: const VectorClock({'host-a': 2}),
-          originatingHostId: 'host-a',
-        ),
-      ).called(1);
-      verify(() => scheduler.schedule(updated)).called(1);
-      verify(
-        () => updateNotifications.notify(
-          {'state-test', 'task-state', inboxNotification},
-          fromSync: false,
-        ),
-      ).called(1);
-    });
+        verify(
+          () => outboxService.enqueueNotificationStateUpdate(
+            id: 'state-test',
+            seenAt: fixedNow,
+            actedOnAt: null,
+            deletedAt: null,
+            vectorClock: const VectorClock({'host-a': 2}),
+            originatingHostId: 'host-a',
+          ),
+        ).called(1);
+        verify(() => scheduler.schedule(updated)).called(1);
+        verify(
+          () => updateNotifications.notifyUiOnly(
+            {'state-test', 'task-state', inboxNotification},
+          ),
+        ).called(1);
+        verifyNever(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any(named: 'fromSync'),
+          ),
+        );
+      },
+    );
 
     test('markActedOn forwards actedOnAt only', () async {
       await seed();
@@ -630,15 +638,20 @@ void main() {
           fixedNow,
         );
         verify(
-          () => updateNotifications.notify(
+          () => updateNotifications.notifyUiOnly(
             any(
               that: containsAll(
                 {'task-shared', inboxNotification},
               ),
             ),
-            fromSync: false,
           ),
         ).called(2);
+        verifyNever(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any(named: 'fromSync'),
+          ),
+        );
       },
     );
 
@@ -744,11 +757,16 @@ void main() {
         );
         verify(() => scheduler.schedule(updated)).called(1);
         verify(
-          () => updateNotifications.notify(
+          () => updateNotifications.notifyUiOnly(
             {'state-test', 'task-state', inboxNotification},
-            fromSync: false,
           ),
         ).called(1);
+        verifyNever(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any(named: 'fromSync'),
+          ),
+        );
       },
     );
 

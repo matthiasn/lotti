@@ -74,7 +74,9 @@ Tapping a `taskSuggestion` inbox row publishes a `TaskFocusTarget.suggestions`
 intent before opening the linked task. If the task detail is already mounted,
 it consumes that intent and scrolls directly to the proposals section; if the
 task detail is created by the navigation, it consumes the same intent after the
-proposal widget appears.
+proposal widget appears. The tap marks only the inbox row as seen; it does not
+mark suggestions acted-on and notification lifecycle writes are emitted through
+the UI-only notification stream, so opening the task cannot wake its task agent.
 
 ```mermaid
 flowchart LR
