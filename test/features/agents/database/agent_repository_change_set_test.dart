@@ -1032,6 +1032,85 @@ void main() {
       },
     );
 
+    test(
+      'filters retired resolved-set pending items out of open proposals',
+      () async {
+        final retiredSet = makeTestChangeSet(
+          id: 'cs-retired',
+          taskId: 'task-retired',
+          status: ChangeSetStatus.resolved,
+          resolvedAt: kAgentTestDate.add(const Duration(minutes: 10)),
+          createdAt: kAgentTestDate,
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Set priority to P1',
+            ),
+          ],
+        );
+
+        await repo.upsertEntity(retiredSet);
+
+        final ledger = await repo.getProposalLedger(
+          kTestAgentId,
+          taskId: 'task-retired',
+        );
+
+        expect(ledger.open, isEmpty);
+        expect(ledger.resolved, isEmpty);
+        expect(ledger.pendingSets, isEmpty);
+        expect(ledger.isEmpty, isTrue);
+      },
+    );
+
+    test(
+      'uses retraction decisions to close stale pending item snapshots',
+      () async {
+        final stalePendingSet = makeTestChangeSet(
+          id: 'cs-stale-pending',
+          taskId: 'task-stale-pending',
+          createdAt: kAgentTestDate,
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Set priority to P1',
+            ),
+          ],
+        );
+        final retractionDecision = makeTestChangeDecision(
+          id: 'cd-stale-retract',
+          changeSetId: 'cs-stale-pending',
+          toolName: 'update_task_priority',
+          verdict: ChangeDecisionVerdict.retracted,
+          actor: DecisionActor.agent,
+          taskId: 'task-stale-pending',
+          args: const {'priority': 'P1'},
+          retractionReason: 'Priority is already P1',
+          humanSummary: 'Set priority to P1',
+          createdAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        );
+
+        await repo.upsertEntity(stalePendingSet);
+        await repo.upsertEntity(retractionDecision);
+
+        final ledger = await repo.getProposalLedger(
+          kTestAgentId,
+          taskId: 'task-stale-pending',
+        );
+
+        expect(ledger.open, isEmpty);
+        expect(ledger.pendingSets, isEmpty);
+        expect(ledger.resolved, hasLength(1));
+        final entry = ledger.resolved.single;
+        expect(entry.status, ChangeItemStatus.retracted);
+        expect(entry.verdict, ChangeDecisionVerdict.retracted);
+        expect(entry.resolvedBy, DecisionActor.agent);
+        expect(entry.reason, 'Priority is already P1');
+      },
+    );
+
     test('filters change sets from other tasks out of the ledger', () async {
       await repo.upsertEntity(
         makeTestChangeSet(

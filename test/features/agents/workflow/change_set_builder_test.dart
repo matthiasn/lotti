@@ -793,7 +793,8 @@ class _GeneratedBuildScenario {
       resultItems: [...survivor.items, ...otherItems, ...deduped],
       resolvedSets: [
         for (final spec in existingSets)
-          if (spec.id != survivorSpec.id) spec.currentSet,
+          if (spec.id != survivorSpec.id)
+            _expectedRetiredConsolidatedSet(spec.currentSet),
       ],
     );
   }
@@ -833,6 +834,18 @@ class _ExpectedBuildResult {
 
   bool get shouldBuild => resultItems.isNotEmpty;
   bool get createsNewSet => shouldBuild && survivorId == null;
+}
+
+ChangeSetEntity _expectedRetiredConsolidatedSet(ChangeSetEntity set) {
+  return set.copyWith(
+    items: [
+      for (final item in set.items)
+        item.status == ChangeItemStatus.pending
+            ? item.copyWith(status: ChangeItemStatus.retracted)
+            : item,
+    ],
+    status: ChangeSetStatus.resolved,
+  );
 }
 
 ChangeItem _generatedBuildItem(
@@ -2305,11 +2318,17 @@ void main() {
         expect(survivor.id, 'cs-newer');
         expect(survivor.items, hasLength(3));
 
-        // Second upsert: the surplus set marked as resolved.
+        // Second upsert: the surplus set marked as resolved, with its
+        // original pending items retired so they cannot reappear as open
+        // ledger proposals.
         final resolved = captured[1] as ChangeSetEntity;
         expect(resolved.id, 'cs-older');
         expect(resolved.status, ChangeSetStatus.resolved);
         expect(resolved.resolvedAt, isNotNull);
+        expect(
+          resolved.items.single.status,
+          ChangeItemStatus.retracted,
+        );
       },
     );
 

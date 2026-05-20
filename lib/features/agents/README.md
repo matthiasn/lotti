@@ -587,6 +587,13 @@ one up across the task's pending change sets, transitions the item to
 Retraction is **not user-gated** — the user simply sees the item leave the
 active list and surface in the ledger's resolved slice.
 
+Ledger reads are defensive against stale snapshots. An item is only exposed
+as open when both the parent `ChangeSetEntity` is still `pending` or
+`partiallyResolved` and the effective item state is still `pending`.
+Decision rows for rejections, deferrals, and agent retractions close stale
+embedded item snapshots before the prompt or UI sees them, and retired
+resolved-set rows with no decision are filtered out entirely.
+
 ```mermaid
 stateDiagram-v2
   [*] --> pending: ChangeSetBuilder.build()
@@ -612,6 +619,11 @@ stateDiagram-v2
 `pending`, `rejected`, and `deferred` items sticky. The result: the agent
 can re-propose something it previously retracted if circumstances change,
 but cannot re-propose a user rejection without materially different args.
+When several pending change sets are consolidated, the newest set becomes
+the survivor and pending items in the retired source sets are marked
+`retracted` before those source sets are resolved. That keeps the database
+in the same lifecycle shape that the ledger expects: no resolved parent row
+contains an actionable-looking pending child.
 
 Feedback-extraction heuristics that read the `rejectionReason` slot to
 detect user grievances are explicitly decoupled from the
