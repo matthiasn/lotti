@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1003]
 ### Changed
+- Inference-profile model slot picker now has a search field at the
+  top. Substring match runs against the model display name, the
+  wire-level `providerModelId`, and the resolved provider label —
+  so typing "Google" surfaces every Gemini-owned model even when
+  the row text doesn't start with the provider name. When the query
+  matches nothing, the picker shows the existing "No matches" empty
+  state instead of leaving the list region blank. Clearing the
+  query restores the full slot-filtered list.
 - AI Settings — the legacy "Select Provider Type" sheet has been
   folded into the modernized "Set up AI features" picker. Power users
   who previously dismissed the FTUE prompt, and the in-form

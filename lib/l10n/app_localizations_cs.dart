@@ -1369,6 +1369,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProfileCardActiveBadge => 'Aktivní';
 
   @override
+  String get aiProfileModelPickerSearchHint => 'Hledat modely…';
+
+  @override
   String get aiProfileSlotModelMissing => 'chybí';
 
   @override

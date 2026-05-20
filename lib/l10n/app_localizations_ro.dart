@@ -1382,6 +1382,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProfileCardActiveBadge => 'Activ';
 
   @override
+  String get aiProfileModelPickerSearchHint => 'Căutați modele…';
+
+  @override
   String get aiProfileSlotModelMissing => 'lipsește';
 
   @override

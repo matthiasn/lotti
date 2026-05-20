@@ -626,6 +626,7 @@
   "aiPickProviderModalTitle": "KI-Funktionen einrichten",
   "aiPickProviderSubtitle": "Wähl einen Anbieter zum Loslegen. Wir richten Modelle und ein Startprofil automatisch für dich ein.",
   "aiProfileCardActiveBadge": "Aktiv",
+  "aiProfileModelPickerSearchHint": "Modelle suchen…",
   "aiProfileSlotModelMissing": "fehlt",
   "aiProviderAlibabaDescription": "Alibaba Clouds Qwen-Modellfamilie über die DashScope-API",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",

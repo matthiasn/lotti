@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -585,7 +586,14 @@ class _ModelSlotField extends ConsumerWidget {
   }
 }
 
-class _SlotModelPickerContent extends StatelessWidget {
+/// Body of the slot-picker modal. Stateful so the search field can
+/// filter the list reactively without rebuilding the surrounding
+/// `SelectionModalBase` chrome on every keystroke. The substring
+/// match runs against the model display name, the wire-level
+/// `providerModelId`, and the resolved provider name — so a query
+/// like "gemini" finds every Gemini-owned row even when the model's
+/// display name doesn't start with the provider's name.
+class _SlotModelPickerContent extends StatefulWidget {
   const _SlotModelPickerContent({
     required this.models,
     required this.providers,
@@ -598,84 +606,150 @@ class _SlotModelPickerContent extends StatelessWidget {
   final String? selectedModelId;
   final ValueChanged<String> onSelected;
 
-  String? _providerName(String providerId) {
-    return providers
-        .where((p) => p.id == providerId)
-        .map((p) => p.name)
-        .firstOrNull;
-  }
+  @override
+  State<_SlotModelPickerContent> createState() =>
+      _SlotModelPickerContentState();
+}
+
+class _SlotModelPickerContentState extends State<_SlotModelPickerContent> {
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final queryLower = _query.trim().toLowerCase();
+    // Build the id→name lookup once per build instead of doing a
+    // linear scan of `widget.providers` for every model during the
+    // filter pass and again when rendering each row. Filter runs on
+    // every keystroke, so the prior O(N·M) shape became visible on
+    // longer model lists.
+    final providerNamesById = <String, String>{
+      for (final p in widget.providers) p.id: p.name,
+    };
+
+    final filteredModels = widget.models.where((m) {
+      if (queryLower.isEmpty) return true;
+      if (m.name.toLowerCase().contains(queryLower)) return true;
+      if (m.providerModelId.toLowerCase().contains(queryLower)) return true;
+      final providerLabel = providerNamesById[m.inferenceProviderId];
+      return providerLabel != null &&
+          providerLabel.toLowerCase().contains(queryLower);
+    }).toList();
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: models.map((model) {
-          final providerLabel = _providerName(model.inferenceProviderId);
-          final subtitle = [
-            ?providerLabel,
-            model.providerModelId,
-          ].join(' — ');
-          final isSelected = model.providerModelId == selectedModelId;
+        children: [
+          DesignSystemSearch(
+            hintText: messages.aiProfileModelPickerSearchHint,
+            onChanged: (value) => setState(() => _query = value),
+            onClear: () => setState(() => _query = ''),
+          ),
+          SizedBox(height: tokens.spacing.step5),
+          if (filteredModels.isEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
+              child: Text(
+                messages.filterSelectionNoMatches,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: context.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            )
+          else
+            for (final model in filteredModels)
+              _SlotModelPickerRow(
+                model: model,
+                providerLabel: providerNamesById[model.inferenceProviderId],
+                selected: model.providerModelId == widget.selectedModelId,
+                onTap: () => widget.onSelected(model.providerModelId),
+              ),
+        ],
+      ),
+    );
+  }
+}
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Material(
-              color: isSelected
-                  ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                onTap: () => onSelected(model.providerModelId),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
+/// Single row inside the slot picker. Extracted so the search filter
+/// can rebuild the parent's row list without churning each row's
+/// internal layout — the row only rebuilds when its own props
+/// (selection, provider label) change.
+class _SlotModelPickerRow extends StatelessWidget {
+  const _SlotModelPickerRow({
+    required this.model,
+    required this.providerLabel,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AiConfigModel model;
+  final String? providerLabel;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = [
+      ?providerLabel,
+      model.providerModelId,
+    ].join(' — ');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: selected
+            ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              model.name,
-                              style: context.textTheme.bodyLarge?.copyWith(
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                color: isSelected
-                                    ? context.colorScheme.primary
-                                    : context.colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle,
-                              style: context.textTheme.bodySmall?.copyWith(
-                                color: context.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
-                              ),
-                            ),
-                          ],
+                      Text(
+                        model.name,
+                        style: context.textTheme.bodyLarge?.copyWith(
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                          color: selected
+                              ? context.colorScheme.primary
+                              : context.colorScheme.onSurface,
                         ),
                       ),
-                      if (isSelected)
-                        Icon(
-                          Icons.check_rounded,
-                          color: context.colorScheme.primary,
-                          size: 20,
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: context.textTheme.bodySmall?.copyWith(
+                          color: context.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
+                      ),
                     ],
                   ),
                 ),
-              ),
+                if (selected)
+                  Icon(
+                    Icons.check_rounded,
+                    color: context.colorScheme.primary,
+                    size: 20,
+                  ),
+              ],
             ),
-          );
-        }).toList(),
+          ),
+        ),
       ),
     );
   }
