@@ -97,12 +97,13 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
           ),
           child: _InboxPanel(
             onDismiss: _menu.close,
-            onSelectTask: (linkedTaskId) {
+            onSelectTask: (linkedTaskId, {required focusSuggestions}) {
               _menu.close();
               if (!bellContext.mounted) return;
               openLinkedTaskDetail(
                 context: bellContext,
                 taskId: linkedTaskId,
+                focusSuggestions: focusSuggestions,
               );
             },
           ),
@@ -198,7 +199,11 @@ class _InboxPanel extends ConsumerWidget {
   /// Called when the user taps a row whose `linkedEntityId` is non-null.
   /// The callback owns both popover dismissal and the navigation so it can
   /// run from the bell's stable context — see comment in [NotificationBell].
-  final void Function(String linkedTaskId) onSelectTask;
+  final void Function(
+    String linkedTaskId, {
+    required bool focusSuggestions,
+  })
+  onSelectTask;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -305,7 +310,11 @@ class _InboxRow extends StatelessWidget {
 
   final NotificationEntity entity;
   final VoidCallback onDismiss;
-  final void Function(String linkedTaskId) onSelectTask;
+  final void Function(
+    String linkedTaskId, {
+    required bool focusSuggestions,
+  })
+  onSelectTask;
 
   @override
   Widget build(BuildContext context) {
@@ -315,7 +324,7 @@ class _InboxRow extends StatelessWidget {
 
     return InkWell(
       onTap: linkedId == null ? null : () => _handleTap(linkedId),
-      onLongPress: () => _handleRetract(context),
+      onLongPress: _handleRetract,
       child: Padding(
         padding: EdgeInsets.symmetric(
           horizontal: tokens.spacing.step4,
@@ -367,7 +376,7 @@ class _InboxRow extends StatelessWidget {
                 size: 18,
                 color: tokens.colors.text.lowEmphasis,
               ),
-              onPressed: () => _handleRetract(context),
+              onPressed: _handleRetract,
             ),
           ],
         ),
@@ -380,14 +389,16 @@ class _InboxRow extends StatelessWidget {
     // `onSelectTask` in [NotificationBell.build]) — using the row's own
     // context here would fail mid-flight because closing the menu
     // unmounts the popover overlay first.
-    onSelectTask(linkedId);
+    onSelectTask(
+      linkedId,
+      focusSuggestions: entity is TaskSuggestionNotification,
+    );
     // Fire markActedOn after navigation so the badge clears as the task
-    // opens. Errors land in the zone error handler without blocking.
+    // opens. Task-suggestion rows are task-scoped at the inbox level, so a
+    // tap clears every open suggestion alert for that task, including stale
+    // rows left by older app versions.
     unawaited(
-      getIt<NotificationRepository>().markActedOn(entity.id).catchError((
-        Object error,
-        StackTrace stackTrace,
-      ) {
+      _markActedOn(linkedId).catchError((Object error, StackTrace stackTrace) {
         FlutterError.reportError(
           FlutterErrorDetails(exception: error, stack: stackTrace),
         );
@@ -396,9 +407,22 @@ class _InboxRow extends StatelessWidget {
     );
   }
 
-  Future<void> _handleRetract(BuildContext context) async {
+  Future<Object?> _markActedOn(String linkedId) {
+    final repository = getIt<NotificationRepository>();
+    if (entity is TaskSuggestionNotification) {
+      return repository.markTaskSuggestionsActedOn(linkedId);
+    }
+    return repository.markActedOn(entity.id);
+  }
+
+  Future<void> _handleRetract() async {
     try {
-      await getIt<NotificationRepository>().retract(entity.id);
+      final repository = getIt<NotificationRepository>();
+      if (entity is TaskSuggestionNotification) {
+        await repository.retractTaskSuggestionsForTask(entity.linkedEntityId!);
+      } else {
+        await repository.retract(entity.id);
+      }
     } catch (error, stackTrace) {
       // Swallow the failure: the popover stays open and the user can retry.
       // Reporting keeps the error visible in crash logs without bubbling.

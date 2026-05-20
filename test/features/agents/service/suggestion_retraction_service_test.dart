@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -713,6 +714,80 @@ void main() {
         ).captured.whereType<ChangeSetEntity>().single;
         expect(updated.status, ChangeSetStatus.resolved);
         expect(updated.resolvedAt, DateTime(2026, 4, 18, 9, 30));
+      },
+    );
+
+    test(
+      'notifies post-retraction callback with the updated change set',
+      () async {
+        final cs = setWith([priorityItem]);
+        final notified = <ChangeSetEntity>[];
+        final serviceWithCallback = SuggestionRetractionService(
+          syncService: mockSyncService,
+          domainLogger: mockDomainLogger,
+          onChangeSetRetracted: (changeSet) async {
+            notified.add(changeSet);
+          },
+        );
+        stubPendingSets([cs]);
+
+        await withClock(
+          testClock,
+          () => serviceWithCallback.retract(
+            agentId: 'agent-1',
+            taskId: 'task-xyz',
+            requests: [
+              RetractionRequest(
+                fingerprint: ChangeItem.fingerprint(priorityItem),
+                reason: 'Already done',
+              ),
+            ],
+          ),
+        );
+
+        expect(notified, hasLength(1));
+        expect(notified.single.items.single.status, ChangeItemStatus.retracted);
+        expect(notified.single.status, ChangeSetStatus.resolved);
+      },
+    );
+
+    test(
+      'keeps successful retraction when post-retraction callback fails',
+      () async {
+        final cs = setWith([priorityItem]);
+        final serviceWithCallback = SuggestionRetractionService(
+          syncService: mockSyncService,
+          domainLogger: mockDomainLogger,
+          onChangeSetRetracted: (_) async {
+            throw StateError('notification-sync-boom');
+          },
+        );
+        stubPendingSets([cs]);
+
+        final results = await withClock(
+          testClock,
+          () => serviceWithCallback.retract(
+            agentId: 'agent-1',
+            taskId: 'task-xyz',
+            requests: [
+              RetractionRequest(
+                fingerprint: ChangeItem.fingerprint(priorityItem),
+                reason: 'Already done',
+              ),
+            ],
+          ),
+        );
+
+        expect(results.single.outcome, RetractionOutcome.retracted);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomains.agentWorkflow,
+            any(that: contains('Post-retraction notification sync failed')),
+            subDomain: any(named: 'subDomain'),
+            error: any(named: 'error'),
+            stackTrace: any(named: 'stackTrace'),
+          ),
+        ).called(1);
       },
     );
 

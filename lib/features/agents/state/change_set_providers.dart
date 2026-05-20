@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/agents/workflow/project_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -143,6 +145,12 @@ projectRecommendationsProvider = FutureProvider.autoDispose
 ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
   final labelsRepository = ref.watch(labelsRepositoryProvider);
   final logger = ref.watch(domainLoggerProvider);
+  final notificationService = getIt.isRegistered<NotificationRepository>()
+      ? ChangeSetNotificationService(
+          notificationRepository: getIt<NotificationRepository>(),
+          journalDb: ref.watch(journalDbProvider),
+        )
+      : null;
   return ChangeSetConfirmationService(
     syncService: ref.watch(agentSyncServiceProvider),
     toolDispatcher: TaskToolDispatcher(
@@ -158,6 +166,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
     ).dispatch,
     labelsRepository: labelsRepository,
     domainLogger: logger,
+    onChangeSetResolved: notificationService?.syncAfterUserDecision,
   );
 }
 

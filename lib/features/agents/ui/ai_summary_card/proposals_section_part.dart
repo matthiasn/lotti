@@ -25,6 +25,7 @@ class _ProposalsSection extends StatelessWidget {
     required this.onToggleHistory,
     required this.confirmAllBusy,
     required this.onConfirmAll,
+    super.key,
   });
 
   final List<PendingSuggestion> open;

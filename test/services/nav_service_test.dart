@@ -565,6 +565,15 @@ void main() {
         expect(navService.desktopSelectedTaskId.value, 'linked');
       });
 
+      test('pushDesktopTaskDetail ignores the already visible task', () {
+        final navService = getIt<NavService>()
+          ..resetDesktopTaskDetail('base')
+          ..pushDesktopTaskDetail('base');
+
+        expect(navService.desktopTaskDetailStack.value, ['base']);
+        expect(navService.desktopSelectedTaskId.value, 'base');
+      });
+
       test('popDesktopTaskDetail removes the top and restores selected id', () {
         final navService = getIt<NavService>()
           ..resetDesktopTaskDetail('base')

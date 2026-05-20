@@ -58,6 +58,25 @@ void main() {
     expect(count, 1);
   });
 
+  test('unseen count ignores seen-but-unacted rows', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await db.upsertNotification(
+      _notification(
+        id: 'seen-active',
+        scheduledFor: _farPast,
+        seenAt: DateTime.utc(2026, 5, 17, 9),
+      ),
+    );
+    await db.upsertNotification(
+      _notification(id: 'unseen-active', scheduledFor: _farPast),
+    );
+
+    final count = await container.read(unseenNotificationCountProvider.future);
+    expect(count, 1);
+  });
+
   test('inbox list concatenates due then upcoming rows', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -73,6 +92,63 @@ void main() {
 
     expect(entries.map((e) => e.id).toList(), ['due-row', 'upcoming-row']);
   });
+
+  test('unseen count collapses duplicate task-suggestion rows', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await db.upsertNotification(
+      _notification(
+        id: 'older-wave',
+        linkedTaskId: 'task-dup',
+        scheduledFor: _farPast,
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+      ),
+    );
+    await db.upsertNotification(
+      _notification(
+        id: 'newer-wave',
+        linkedTaskId: 'task-dup',
+        scheduledFor: _farPast,
+        updatedAt: DateTime.utc(2026, 5, 17, 10),
+      ),
+    );
+
+    final count = await container.read(unseenNotificationCountProvider.future);
+    expect(count, 1);
+  });
+
+  test(
+    'inbox list keeps only the latest task-suggestion row per task',
+    () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await db.upsertNotification(
+        _notification(
+          id: 'older-wave',
+          linkedTaskId: 'task-dup',
+          scheduledFor: _farPast,
+          updatedAt: DateTime.utc(2026, 5, 17, 9),
+        ),
+      );
+      await db.upsertNotification(
+        _notification(
+          id: 'newer-wave',
+          linkedTaskId: 'task-dup',
+          scheduledFor: _farPast,
+          updatedAt: DateTime.utc(2026, 5, 17, 10),
+        ),
+      );
+      await db.upsertNotification(
+        _notification(id: 'other-task', scheduledFor: _farPast),
+      );
+
+      final entries = await container.read(inboxNotificationsProvider.future);
+
+      expect(entries.map((e) => e.id).toList(), ['newer-wave', 'other-task']);
+    },
+  );
 
   testWidgets(
     'inboxNotification on UpdateNotifications.updateStream triggers refetch',
@@ -205,18 +281,22 @@ void main() {
 NotificationEntity _notification({
   required String id,
   required DateTime scheduledFor,
+  String? linkedTaskId,
+  DateTime? updatedAt,
+  DateTime? seenAt,
 }) {
   final createdAt = DateTime.utc(2026, 5, 17);
   return NotificationEntity.taskSuggestion(
     meta: NotificationMeta(
       id: id,
       createdAt: createdAt,
-      updatedAt: createdAt,
+      updatedAt: updatedAt ?? createdAt,
       scheduledFor: scheduledFor,
+      seenAt: seenAt,
       vectorClock: const VectorClock({'host-A': 1}),
       originatingHostId: 'host-A',
     ),
-    linkedTaskId: 'task-$id',
+    linkedTaskId: linkedTaskId ?? 'task-$id',
     suggestionCount: 1,
     title: 'Title $id',
     body: 'Body $id',

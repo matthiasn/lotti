@@ -53,6 +53,41 @@ the same field offline, merge keeps the earliest non-null timestamp. Mutable
 content fields use last-writer-wins on `meta.updatedAt`; notifications are
 ephemeral and do not route through the journal conflict UI.
 
+## Agent Proposal Bridge
+
+Task-agent proposal notifications may be seeded with the `ChangeSetEntity.id`
+so a fresh wave can create a new durable row after an older row was acted-on or
+retracted. The active inbox invariant is still task-scoped: before
+`NotificationRepository.createTaskSuggestion` writes a row, it serializes the
+task's notification mutation and retracts every other open `taskSuggestion` row
+for the same linked task. The bell projection also deduplicates by
+`(type: taskSuggestion, linkedTaskId)` so stale rows left by older app versions
+cannot render as duplicate inbox entries or inflate the badge count.
+
+After the user confirms or rejects a proposal,
+`ChangeSetConfirmationService` calls `ChangeSetNotificationService`; after the
+agent retracts stale proposals, `SuggestionRetractionService` calls the same
+bridge. The bridge refreshes the row when pending items remain and clears every
+open suggestion row for the task when the change set has no pending items:
+
+Tapping a `taskSuggestion` inbox row publishes a `TaskFocusTarget.suggestions`
+intent before opening the linked task. If the task detail is already mounted,
+it consumes that intent and scrolls directly to the proposals section; if the
+task detail is created by the navigation, it consumes the same intent after the
+proposal widget appears.
+
+```mermaid
+flowchart LR
+  ChangeSet["ChangeSetEntity\npending items"] --> Bridge["ChangeSetNotificationService"]
+  Bridge -->|pendingCount > 0| Refresh["createTaskSuggestion(..., idSeed: changeSet.id)"]
+  Refresh --> Retire["serialize task mutation\nretract older open rows"]
+  Bridge -->|user resolved all| Acted["markTaskSuggestionsActedOn(linkedTaskId)"]
+  Bridge -->|agent retracted all| Retracted["retractTaskSuggestionsForTask(linkedTaskId)"]
+  Acted --> Updates["UpdateNotifications\ninboxNotification"]
+  Retracted --> Updates
+  Refresh --> Updates
+```
+
 ## Scheduling
 
 `NotificationScheduler` reads pending rows and bridges them to

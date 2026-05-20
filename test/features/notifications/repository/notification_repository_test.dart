@@ -106,9 +106,8 @@ void main() {
     );
 
     test(
-      'createTaskSuggestion seeds the row id from idSeed when provided so a '
-      'fresh agent wave does not collide with an already-acted-on row for '
-      'the same task',
+      'createTaskSuggestion seeds fresh waves by change-set id while '
+      'retiring older open rows for the same task',
       () async {
         final first = await repository.createTaskSuggestion(
           linkedTaskId: 'task-X',
@@ -140,6 +139,179 @@ void main() {
         // Both rows still deep-link to the underlying task.
         expect(first.linkedEntityId, 'task-X');
         expect(second.linkedEntityId, 'task-X');
+        expect(
+          (await notificationsDb.notificationById(first.id))?.meta.deletedAt,
+          fixedNow,
+        );
+        expect(
+          (await notificationsDb.dueNow(fixedNow)).map((row) => row.id),
+          [second.id],
+        );
+      },
+    );
+
+    test(
+      'createTaskSuggestion retires seen-but-unacted rows for the same task',
+      () async {
+        final first = await repository.createTaskSuggestion(
+          linkedTaskId: 'task-seen-open',
+          suggestionCount: 1,
+          title: 'First wave',
+          body: 'b',
+          idSeed: 'seen-change-set-1',
+        );
+        await repository.markSeen(first!.id);
+
+        final second = await repository.createTaskSuggestion(
+          linkedTaskId: 'task-seen-open',
+          suggestionCount: 2,
+          title: 'Second wave',
+          body: 'b',
+          idSeed: 'seen-change-set-2',
+        );
+
+        expect(
+          (await notificationsDb.notificationById(first.id))?.meta.seenAt,
+          fixedNow,
+        );
+        expect(
+          (await notificationsDb.notificationById(first.id))?.meta.deletedAt,
+          fixedNow,
+        );
+        expect(
+          (await notificationsDb.notificationById(second!.id))?.meta.deletedAt,
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'createTaskSuggestion keeps the old row when replacement host is missing',
+      () async {
+        final first = await repository.createTaskSuggestion(
+          linkedTaskId: 'task-host-missing',
+          suggestionCount: 1,
+          title: 'First wave',
+          body: 'b',
+          idSeed: 'host-change-set-1',
+        );
+        when(() => vectorClockService.getHost()).thenAnswer((_) async => null);
+        clearInteractions(updateNotifications);
+        clearInteractions(outboxService);
+        clearInteractions(scheduler);
+
+        final replacement = await repository.createTaskSuggestion(
+          linkedTaskId: 'task-host-missing',
+          suggestionCount: 2,
+          title: 'Second wave',
+          body: 'b',
+          idSeed: 'host-change-set-2',
+        );
+
+        expect(replacement, isNull);
+        expect(
+          (await notificationsDb.notificationById(first!.id))?.meta.deletedAt,
+          isNull,
+        );
+        expect(
+          await notificationsDb.notificationById(
+            repository.notificationIdForTaskSuggestion('host-change-set-2'),
+          ),
+          isNull,
+        );
+        verifyNever(
+          () => outboxService.enqueueNotification(any<NotificationEntity>()),
+        );
+        verifyNever(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any(named: 'fromSync'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'createTaskSuggestion keeps old rows when replacement upsert is no-op',
+      () async {
+        final old = _entityForCreate(
+          id: 'old-open-noop',
+          linkedTaskId: 'task-noop-replacement',
+          createdAt: fixedNow,
+          updatedAt: fixedNow,
+          scheduledFor: fixedNow,
+          vectorClock: const VectorClock({'host-a': 1}),
+          originatingHostId: 'host-a',
+        );
+        final replacement = _entityForCreate(
+          id: 'replacement-noop',
+          linkedTaskId: 'task-noop-replacement',
+          createdAt: fixedNow,
+          updatedAt: fixedNow,
+          scheduledFor: fixedNow,
+          vectorClock: const VectorClock({'host-a': 1}),
+          originatingHostId: 'host-a',
+        );
+        await notificationsDb.upsertNotification(old);
+        await notificationsDb.upsertNotification(replacement);
+        clearInteractions(updateNotifications);
+        clearInteractions(outboxService);
+        clearInteractions(scheduler);
+
+        final result = await repository.create(replacement);
+
+        expect(result, isNull);
+        expect(
+          (await notificationsDb.notificationById(old.id))?.meta.deletedAt,
+          isNull,
+        );
+        verifyNever(
+          () => outboxService.enqueueNotification(any<NotificationEntity>()),
+        );
+        verifyNever(
+          () => updateNotifications.notify(
+            any<Set<String>>(),
+            fromSync: any(named: 'fromSync'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'serializes concurrent task-suggestion creates for the same task',
+      () async {
+        final saved = await Future.wait([
+          for (var i = 0; i < 5; i++)
+            repository.createTaskSuggestion(
+              linkedTaskId: 'task-concurrent',
+              suggestionCount: i + 1,
+              title: 'Wave $i',
+              body: 'Concurrent task',
+              idSeed: 'concurrent-change-set-$i',
+            ),
+        ]);
+
+        final openRows = await notificationsDb.dueNow(fixedNow);
+        final openSuggestions = openRows
+            .whereType<TaskSuggestionNotification>()
+            .where((row) => row.linkedTaskId == 'task-concurrent')
+            .toList();
+
+        expect(openSuggestions, hasLength(1));
+        expect(openSuggestions.single.id, saved.last!.id);
+
+        final allRows = await notificationsDb.forLinkedEntity(
+          'task-concurrent',
+        );
+        expect(
+          allRows.where(
+            (row) =>
+                row.meta.seenAt == null &&
+                row.meta.actedOnAt == null &&
+                row.meta.deletedAt == null,
+          ),
+          hasLength(1),
+        );
       },
     );
 
@@ -411,6 +583,107 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'markTaskSuggestionsActedOn marks every open suggestion row for a task',
+      () async {
+        await notificationsDb.upsertNotification(
+          _entityForCreate(
+            id: 'task-row-1',
+            linkedTaskId: 'task-shared',
+            createdAt: fixedNow,
+            updatedAt: fixedNow,
+            scheduledFor: fixedNow,
+            vectorClock: const VectorClock({'host-a': 1}),
+            originatingHostId: 'host-a',
+            seenAt: fixedNow.subtract(const Duration(minutes: 5)),
+          ),
+        );
+        await notificationsDb.upsertNotification(
+          _entityForCreate(
+            id: 'task-row-2',
+            linkedTaskId: 'task-shared',
+            createdAt: fixedNow,
+            updatedAt: fixedNow,
+            scheduledFor: fixedNow,
+            vectorClock: const VectorClock({'host-a': 1}),
+            originatingHostId: 'host-a',
+          ),
+        );
+        clearInteractions(updateNotifications);
+
+        final updated = await repository.markTaskSuggestionsActedOn(
+          'task-shared',
+        );
+
+        expect(updated, hasLength(2));
+        expect(
+          (await notificationsDb.notificationById(
+            'task-row-1',
+          ))?.meta.actedOnAt,
+          fixedNow,
+        );
+        expect(
+          (await notificationsDb.notificationById(
+            'task-row-2',
+          ))?.meta.actedOnAt,
+          fixedNow,
+        );
+        verify(
+          () => updateNotifications.notify(
+            any(
+              that: containsAll(
+                {'task-shared', inboxNotification},
+              ),
+            ),
+            fromSync: false,
+          ),
+        ).called(2);
+      },
+    );
+
+    test(
+      'retractTaskSuggestionsForTask skips already terminal rows',
+      () async {
+        await notificationsDb.upsertNotification(
+          _entityForCreate(
+            id: 'open-row',
+            linkedTaskId: 'task-shared',
+            createdAt: fixedNow,
+            updatedAt: fixedNow,
+            scheduledFor: fixedNow,
+            vectorClock: const VectorClock({'host-a': 1}),
+            originatingHostId: 'host-a',
+          ),
+        );
+        await notificationsDb.upsertNotification(
+          _entityForCreate(
+            id: 'acted-row',
+            linkedTaskId: 'task-shared',
+            createdAt: fixedNow,
+            updatedAt: fixedNow,
+            scheduledFor: fixedNow,
+            vectorClock: const VectorClock({'host-a': 1}),
+            originatingHostId: 'host-a',
+            actedOnAt: fixedNow.subtract(const Duration(minutes: 5)),
+          ),
+        );
+
+        final updated = await repository.retractTaskSuggestionsForTask(
+          'task-shared',
+        );
+
+        expect(updated.map((row) => row.id), ['open-row']);
+        expect(
+          (await notificationsDb.notificationById('open-row'))?.meta.deletedAt,
+          fixedNow,
+        );
+        expect(
+          (await notificationsDb.notificationById('acted-row'))?.meta.deletedAt,
+          isNull,
+        );
+      },
+    );
 
     test('state mutation returns null when notification is missing', () async {
       final result = await repository.markSeen('does-not-exist');

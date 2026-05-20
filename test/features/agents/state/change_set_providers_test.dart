@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -348,6 +349,73 @@ void main() {
 
       expect(service, isA<ChangeSetConfirmationService>());
     });
+
+    test(
+      'wires notification bridge when notification repository is registered',
+      () async {
+        final mockSyncService = MockAgentSyncService();
+        final mockNotificationRepository = MockNotificationRepository();
+        final mockJournalDb = MockJournalDb();
+        final mockJournalRepository = MockJournalRepository();
+        final mockChecklistRepository = MockChecklistRepository();
+        final mockLabelsRepository = MockLabelsRepository();
+        final changeSet = makeTestChangeSet(
+          taskId: 'task-provider-notifications',
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              args: {'minutes': 30},
+              humanSummary: 'Set estimate',
+            ),
+          ],
+        );
+
+        if (getIt.isRegistered<NotificationRepository>()) {
+          getIt.unregister<NotificationRepository>();
+        }
+        getIt.registerSingleton<NotificationRepository>(
+          mockNotificationRepository,
+        );
+        when(() => mockSyncService.repository).thenReturn(mockRepository);
+        when(() => mockRepository.getEntity(any())).thenAnswer((_) async {
+          return null;
+        });
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockNotificationRepository.markTaskSuggestionsActedOn(any()),
+        ).thenAnswer((_) async => const []);
+
+        final container = ProviderContainer(
+          overrides: [
+            agentSyncServiceProvider.overrideWithValue(mockSyncService),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+            projectRepositoryProvider.overrideWithValue(
+              MockProjectRepository(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final service = container.read(changeSetConfirmationServiceProvider);
+        final applied = await service.rejectItem(changeSet, 0);
+
+        expect(applied, isTrue);
+        verify(
+          () => mockNotificationRepository.markTaskSuggestionsActedOn(
+            'task-provider-notifications',
+          ),
+        ).called(1);
+      },
+    );
 
     test('creates project-scoped service with resolved dependencies', () {
       final mockSyncService = MockAgentSyncService();

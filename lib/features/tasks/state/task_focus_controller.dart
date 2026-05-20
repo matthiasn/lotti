@@ -3,26 +3,46 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'task_focus_controller.g.dart';
 
-/// Intent to focus on a specific entry within a task
+enum TaskFocusTarget {
+  entry,
+  suggestions,
+}
+
+/// Intent to focus a specific surface within a task.
 class TaskFocusIntent {
   TaskFocusIntent({
     required this.taskId,
-    required this.entryId,
+    required String this.entryId,
     this.alignment = 0.0,
-  });
+  }) : target = TaskFocusTarget.entry;
+
+  TaskFocusIntent.suggestions({
+    required this.taskId,
+    this.alignment = 0.1,
+  }) : target = TaskFocusTarget.suggestions,
+       entryId = null;
 
   /// The task ID containing the entry
   final String taskId;
 
+  /// The task detail surface to focus.
+  final TaskFocusTarget target;
+
   /// The entry ID to scroll to
-  final String entryId;
+  final String? entryId;
 
   /// The alignment of the target (0.0 = top, 0.5 = center, 1.0 = bottom)
   final double alignment;
 
   @override
-  String toString() =>
-      'TaskFocusIntent(taskId: $taskId, entryId: $entryId, alignment: $alignment)';
+  String toString() {
+    return switch (target) {
+      TaskFocusTarget.entry =>
+        'TaskFocusIntent(taskId: $taskId, entryId: $entryId, alignment: $alignment)',
+      TaskFocusTarget.suggestions =>
+        'TaskFocusIntent.suggestions(taskId: $taskId, alignment: $alignment)',
+    };
+  }
 }
 
 @riverpod
@@ -47,6 +67,14 @@ class TaskFocusController extends _$TaskFocusController {
     );
   }
 
+  /// Publish a focus intent for the task-agent suggestions section.
+  void publishSuggestionFocus({double alignment = 0.1}) {
+    state = TaskFocusIntent.suggestions(
+      taskId: id,
+      alignment: alignment,
+    );
+  }
+
   /// Clear the current intent (called after consumption to enable re-triggering)
   void clearIntent() {
     state = null;
@@ -66,4 +94,15 @@ void publishTaskFocus({
         entryId: entryId,
         alignment: alignment,
       );
+}
+
+/// Helper function to publish a task-suggestions focus intent.
+void publishTaskSuggestionFocus({
+  required String taskId,
+  required WidgetRef ref,
+  double alignment = 0.1,
+}) {
+  ref
+      .read(taskFocusControllerProvider(id: taskId).notifier)
+      .publishSuggestionFocus(alignment: alignment);
 }

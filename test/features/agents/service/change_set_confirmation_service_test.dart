@@ -436,6 +436,101 @@ void main() {
       });
 
       test(
+        'notifies post-resolution callback with the confirmed change set',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 45},
+                humanSummary: 'Set estimate to 45 minutes',
+              ),
+            ],
+          );
+          final resolvedSets = <ChangeSetEntity>[];
+          final serviceWithCallback = ChangeSetConfirmationService(
+            syncService: mockSyncService,
+            toolDispatcher: mockToolDispatcher.dispatch,
+            labelsRepository: mockLabelsRepository,
+            domainLogger: mockDomainLogger,
+            onChangeSetResolved: (changeSet) async {
+              resolvedSets.add(changeSet);
+            },
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Estimate set to 45 minutes',
+            ),
+          );
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await serviceWithCallback.confirmItem(changeSet, 0);
+
+          expect(resolvedSets, hasLength(1));
+          expect(
+            resolvedSets.single.items.single.status,
+            ChangeItemStatus.confirmed,
+          );
+          expect(resolvedSets.single.status, ChangeSetStatus.resolved);
+        },
+      );
+
+      test(
+        'keeps successful confirmation when post-resolution callback fails',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 45},
+                humanSummary: 'Set estimate to 45 minutes',
+              ),
+            ],
+          );
+          final serviceWithCallback = ChangeSetConfirmationService(
+            syncService: mockSyncService,
+            toolDispatcher: mockToolDispatcher.dispatch,
+            labelsRepository: mockLabelsRepository,
+            domainLogger: mockDomainLogger,
+            onChangeSetResolved: (_) async {
+              throw StateError('notification-sync-boom');
+            },
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Estimate set to 45 minutes',
+            ),
+          );
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final result = await serviceWithCallback.confirmItem(changeSet, 0);
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockDomainLogger.error(
+              LogDomains.agentWorkflow,
+              any(that: contains('Post-resolution notification sync failed')),
+              subDomain: any(named: 'subDomain'),
+              error: any(named: 'error'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'reverts item to pending when post-confirm callback fails',
         () async {
           final changeSet = makeChangeSetWith(
@@ -612,6 +707,42 @@ void main() {
         });
       });
 
+      test(
+        'aborts dispatch when concurrent shape change removes confirmed item',
+        () async {
+          final changeSet = makeChangeSetWith();
+          final changedSet = changeSet.copyWith(items: [changeSet.items.first]);
+          var reads = 0;
+
+          when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
+            _,
+          ) async {
+            reads += 1;
+            return reads == 1 ? changeSet : changedSet;
+          });
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 1);
+
+            expect(result.success, isFalse);
+            expect(
+              result.errorMessage,
+              'Concurrent change set update detected',
+            );
+            verifyNever(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            );
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(captured.single, isA<ChangeDecisionEntity>());
+          });
+        },
+      );
+
       test('marks set as resolved when last item is confirmed', () async {
         final changeSet = makeTestChangeSet(
           items: const [
@@ -702,6 +833,49 @@ void main() {
           );
         });
       });
+
+      test(
+        'notifies post-resolution callback with the rejected change set',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: 'set_task_title',
+                args: {'title': 'Skip'},
+                humanSummary: 'Set title to "Skip"',
+              ),
+            ],
+          );
+          final resolvedSets = <ChangeSetEntity>[];
+          final serviceWithCallback = ChangeSetConfirmationService(
+            syncService: mockSyncService,
+            toolDispatcher: mockToolDispatcher.dispatch,
+            labelsRepository: mockLabelsRepository,
+            domainLogger: mockDomainLogger,
+            onChangeSetResolved: (changeSet) async {
+              resolvedSets.add(changeSet);
+            },
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final applied = await serviceWithCallback.rejectItem(
+            changeSet,
+            0,
+            reason: 'Not useful',
+          );
+
+          expect(applied, isTrue);
+          expect(resolvedSets, hasLength(1));
+          expect(
+            resolvedSets.single.items.single.status,
+            ChangeItemStatus.rejected,
+          );
+          expect(resolvedSets.single.status, ChangeSetStatus.resolved);
+        },
+      );
     });
 
     group('confirmAll', () {
@@ -1284,6 +1458,35 @@ void main() {
           );
         });
       });
+
+      test(
+        'returns false when concurrent shape change removes rejected item',
+        () async {
+          final changeSet = makeChangeSetWith();
+          final changedSet = changeSet.copyWith(items: [changeSet.items.first]);
+          var reads = 0;
+
+          when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
+            _,
+          ) async {
+            reads += 1;
+            return reads == 1 ? changeSet : changedSet;
+          });
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            final applied = await service.rejectItem(changeSet, 1);
+
+            expect(applied, isFalse);
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+            expect(captured.single, isA<ChangeDecisionEntity>());
+          });
+        },
+      );
     });
 
     group('rejectItem - label suppression', () {

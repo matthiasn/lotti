@@ -36,6 +36,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -1308,6 +1309,18 @@ void main() {
 
       expect(workflow.embeddingStore, same(mockEmbeddingStore));
       expect(workflow.embeddingRepository, same(mockEmbeddingRepository));
+    });
+
+    test('wires optional notification bridge from GetIt', () {
+      final mockNotificationRepository = MockNotificationRepository();
+      getIt.registerSingleton<NotificationRepository>(
+        mockNotificationRepository,
+      );
+
+      final container = createTaskWorkflowContainer();
+      final workflow = container.read(taskAgentWorkflowProvider);
+
+      expect(workflow.changeSetNotificationService, isNotNull);
     });
   });
 

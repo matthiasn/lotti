@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -24,8 +25,18 @@ void main() {
       );
 
       expect(intent.taskId, equals(testTaskId));
+      expect(intent.target, TaskFocusTarget.entry);
       expect(intent.entryId, equals(testEntryId));
       expect(intent.alignment, equals(0.0));
+    });
+
+    test('creates suggestions intent with default alignment', () {
+      final intent = TaskFocusIntent.suggestions(taskId: testTaskId);
+
+      expect(intent.taskId, equals(testTaskId));
+      expect(intent.target, TaskFocusTarget.suggestions);
+      expect(intent.entryId, isNull);
+      expect(intent.alignment, equals(0.1));
     });
 
     test('creates intent with custom alignment', () {
@@ -52,6 +63,20 @@ void main() {
         ),
       );
     });
+
+    test('suggestions toString returns formatted string', () {
+      final intent = TaskFocusIntent.suggestions(
+        taskId: testTaskId,
+        alignment: 0.2,
+      );
+
+      expect(
+        intent.toString(),
+        equals(
+          'TaskFocusIntent.suggestions(taskId: $testTaskId, alignment: 0.2)',
+        ),
+      );
+    });
   });
 
   group('TaskFocusController', () {
@@ -74,8 +99,22 @@ void main() {
       final state = container.read(provider);
       expect(state, isNotNull);
       expect(state!.taskId, equals(testTaskId));
+      expect(state.target, TaskFocusTarget.entry);
       expect(state.entryId, equals(testEntryId));
       expect(state.alignment, equals(0.0));
+    });
+
+    test('publishSuggestionFocus sets suggestions intent', () {
+      final provider = taskFocusControllerProvider(id: testTaskId);
+
+      container.read(provider.notifier).publishSuggestionFocus();
+
+      final state = container.read(provider);
+      expect(state, isNotNull);
+      expect(state!.taskId, equals(testTaskId));
+      expect(state.target, TaskFocusTarget.suggestions);
+      expect(state.entryId, isNull);
+      expect(state.alignment, equals(0.1));
     });
 
     test('publishTaskFocus with custom alignment', () {
@@ -179,6 +218,39 @@ void main() {
       // Verify only task1 is cleared
       expect(container.read(provider1), isNull);
       expect(container.read(provider2)!.entryId, equals('entry2'));
+    });
+
+    testWidgets('publishTaskSuggestionFocus helper publishes through ref', (
+      tester,
+    ) async {
+      late WidgetRef capturedRef;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: Consumer(
+            builder: (context, ref, child) {
+              capturedRef = ref;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      publishTaskSuggestionFocus(
+        taskId: testTaskId,
+        ref: capturedRef,
+        alignment: 0.3,
+      );
+
+      final provider = taskFocusControllerProvider(id: testTaskId);
+      final widgetContainer = ProviderScope.containerOf(
+        tester.element(find.byType(SizedBox)),
+      );
+      final state = widgetContainer.read(provider);
+
+      expect(state, isNotNull);
+      expect(state!.target, TaskFocusTarget.suggestions);
+      expect(state.alignment, 0.3);
     });
   });
 }
