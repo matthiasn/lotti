@@ -466,6 +466,7 @@
   "aiPickProviderModalTitle": "Nastav AI funkce",
   "aiPickProviderSubtitle": "Vyber poskytovatele a začni. Modely a počáteční profil nastavíme automaticky.",
   "aiProfileCardActiveBadge": "Aktivní",
+  "aiProfileModelPickerSearchHint": "Hledat modely…",
   "aiProfileSlotModelMissing": "chybí",
   "aiProviderAlibabaDescription": "Rodina modelů Qwen od Alibaba Cloud přes DashScope API",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",

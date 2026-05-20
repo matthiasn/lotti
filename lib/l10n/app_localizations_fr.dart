@@ -1383,6 +1383,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProfileCardActiveBadge => 'Actif';
 
   @override
+  String get aiProfileModelPickerSearchHint => 'Rechercher des modèles…';
+
+  @override
   String get aiProfileSlotModelMissing => 'manquant';
 
   @override

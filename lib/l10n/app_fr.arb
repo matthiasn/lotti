@@ -626,6 +626,7 @@
   "aiPickProviderModalTitle": "Configure les fonctionnalités IA",
   "aiPickProviderSubtitle": "Choisis un fournisseur pour commencer. Nous configurerons automatiquement les modèles et un profil de départ.",
   "aiProfileCardActiveBadge": "Actif",
+  "aiProfileModelPickerSearchHint": "Rechercher des modèles…",
   "aiProfileSlotModelMissing": "manquant",
   "aiProviderAlibabaDescription": "La famille de modèles Qwen d'Alibaba Cloud via l'API DashScope",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",

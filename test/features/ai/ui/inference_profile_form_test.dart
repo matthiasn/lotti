@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 
@@ -606,6 +607,187 @@ void main() {
 
       // Selected model should show a check icon.
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    });
+
+    group('model picker search field', () {
+      // Three thinking-eligible models across two providers — the
+      // shared fixture lets the search tests assert filter narrowing
+      // (one match), filter widening via clear, provider-name match
+      // (cross-row scoping), and the no-match empty state without
+      // re-declaring rows in every test.
+      final flashModel = AiConfig.model(
+        id: 'm-1',
+        name: 'Gemini Flash',
+        providerModelId: 'models/gemini-flash',
+        inferenceProviderId: 'prov-google',
+        createdAt: DateTime(2024),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+        supportsFunctionCalling: true,
+      );
+      final proModel = AiConfig.model(
+        id: 'm-2',
+        name: 'Gemini Pro',
+        providerModelId: 'models/gemini-pro',
+        inferenceProviderId: 'prov-google',
+        createdAt: DateTime(2024),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+        supportsFunctionCalling: true,
+      );
+      final sonnetModel = AiConfig.model(
+        id: 'm-3',
+        name: 'Claude Sonnet',
+        providerModelId: 'models/claude-sonnet',
+        inferenceProviderId: 'prov-anthropic',
+        createdAt: DateTime(2024),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+        supportsFunctionCalling: true,
+      );
+
+      final googleProvider = AiConfig.inferenceProvider(
+        id: 'prov-google',
+        name: 'Google AI',
+        baseUrl: 'https://example.com',
+        apiKey: 'key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+      final anthropicProvider = AiConfig.inferenceProvider(
+        id: 'prov-anthropic',
+        name: 'Anthropic',
+        baseUrl: 'https://example.com',
+        apiKey: 'key',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.anthropic,
+      );
+
+      Future<void> openThinkingPicker(WidgetTester tester) async {
+        await tester.tap(find.byType(InkWell).first);
+        await tester.pumpAndSettle();
+      }
+
+      // Scope the TextField finder to the search field inside the
+      // picker — the underlying profile form also renders TextFields
+      // (name, description, …) which would otherwise satisfy a bare
+      // `find.byType(TextField)` and trip "Too many elements".
+      Finder searchTextField() => find.descendant(
+        of: find.byType(DesignSystemSearch),
+        matching: find.byType(TextField),
+      );
+
+      testWidgets(
+        'typing a query that matches one model by display name '
+        'narrows the list to that row — proves the substring filter '
+        'runs against AiConfigModel.name',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              models: [flashModel, proModel, sonnetModel],
+              providers: [googleProvider, anthropicProvider],
+            ),
+          );
+          await tester.pumpAndSettle();
+          await openThinkingPicker(tester);
+
+          // All three rows visible before any input.
+          expect(find.text('Gemini Flash'), findsOneWidget);
+          expect(find.text('Gemini Pro'), findsOneWidget);
+          expect(find.text('Claude Sonnet'), findsOneWidget);
+
+          await tester.enterText(searchTextField(), 'sonnet');
+          await tester.pump();
+
+          // Only the Sonnet row remains; the Gemini rows are filtered out.
+          expect(find.text('Claude Sonnet'), findsOneWidget);
+          expect(find.text('Gemini Flash'), findsNothing);
+          expect(find.text('Gemini Pro'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'typing a provider name surfaces every model owned by that '
+        'provider — proves the filter widens to the resolved provider '
+        'label, not just the model row text, so users can pivot by '
+        'provider without remembering each model name',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              models: [flashModel, proModel, sonnetModel],
+              providers: [googleProvider, anthropicProvider],
+            ),
+          );
+          await tester.pumpAndSettle();
+          await openThinkingPicker(tester);
+
+          await tester.enterText(searchTextField(), 'Google');
+          await tester.pump();
+
+          // Both Gemini rows match via the Google AI provider label.
+          // Claude Sonnet (Anthropic) is filtered out.
+          expect(find.text('Gemini Flash'), findsOneWidget);
+          expect(find.text('Gemini Pro'), findsOneWidget);
+          expect(find.text('Claude Sonnet'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'a query that matches no model surfaces the localised '
+        '"No matches" empty state instead of leaving the list region '
+        'blank — the user gets explicit feedback that the filter, not '
+        'the data, is responsible for the empty surface',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              models: [flashModel, proModel, sonnetModel],
+              providers: [googleProvider, anthropicProvider],
+            ),
+          );
+          await tester.pumpAndSettle();
+          await openThinkingPicker(tester);
+
+          await tester.enterText(searchTextField(), 'zzz-nope');
+          await tester.pump();
+
+          expect(find.text('No matches'), findsOneWidget);
+          expect(find.text('Gemini Flash'), findsNothing);
+          expect(find.text('Gemini Pro'), findsNothing);
+          expect(find.text('Claude Sonnet'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'clearing the query via the search field clear affordance '
+        'restores every model — proves the filter state resets to the '
+        'unfiltered list rather than leaving stale matches on screen',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              models: [flashModel, proModel, sonnetModel],
+              providers: [googleProvider, anthropicProvider],
+            ),
+          );
+          await tester.pumpAndSettle();
+          await openThinkingPicker(tester);
+
+          await tester.enterText(searchTextField(), 'sonnet');
+          await tester.pump();
+          expect(find.text('Gemini Flash'), findsNothing);
+
+          // DesignSystemSearch renders the clear affordance as
+          // Icons.cancel_rounded inside its decoration.
+          await tester.tap(find.byIcon(Icons.cancel_rounded));
+          await tester.pump();
+
+          expect(find.text('Gemini Flash'), findsOneWidget);
+          expect(find.text('Gemini Pro'), findsOneWidget);
+          expect(find.text('Claude Sonnet'), findsOneWidget);
+        },
+      );
     });
 
     testWidgets('saves profile with description', (tester) async {

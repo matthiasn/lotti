@@ -2461,6 +2461,12 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get aiProfileCardActiveBadge;
 
+  /// No description provided for @aiProfileModelPickerSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search models…'**
+  String get aiProfileModelPickerSearchHint;
+
   /// No description provided for @aiProfileSlotModelMissing.
   ///
   /// In en, this message translates to:
