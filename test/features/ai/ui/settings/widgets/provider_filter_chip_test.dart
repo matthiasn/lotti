@@ -181,6 +181,7 @@ void main() {
         (InferenceProviderType.ollama, 'Ollama'),
         (InferenceProviderType.openRouter, 'OpenRouter'),
         (InferenceProviderType.genericOpenAi, 'Generic OpenAI'),
+        (InferenceProviderType.llmBase, 'LLMBase'),
         (InferenceProviderType.nebiusAiStudio, 'Nebius'),
         (InferenceProviderType.mlxAudio, 'MLX Audio'),
         (InferenceProviderType.whisper, 'Whisper'),

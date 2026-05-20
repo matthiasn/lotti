@@ -83,6 +83,17 @@ void main() {
         expect(color, equals(const Color(0xFFA78BFA))); // Purple dark
       });
 
+      test('returns correct dark color for LLMBase provider', () {
+        const type = InferenceProviderType.llmBase;
+
+        final color = ProviderChipConstants.getProviderColor(
+          type,
+          isDark: true,
+        );
+
+        expect(color, equals(const Color(0xFFFFA726))); // Orange dark
+      });
+
       test('returns correct dark color for NebiusAiStudio provider', () {
         const type = InferenceProviderType.nebiusAiStudio;
 
@@ -196,6 +207,17 @@ void main() {
         );
 
         expect(color, equals(const Color(0xFF9C27B0))); // Purple
+      });
+
+      test('returns correct light color for LLMBase provider', () {
+        const type = InferenceProviderType.llmBase;
+
+        final color = ProviderChipConstants.getProviderColor(
+          type,
+          isDark: false,
+        );
+
+        expect(color, equals(const Color(0xFFFF6D00))); // LLMBase orange
       });
 
       test('returns correct light color for NebiusAiStudio provider', () {

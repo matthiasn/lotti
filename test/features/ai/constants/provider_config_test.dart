@@ -12,6 +12,7 @@ void main() {
             InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
             InferenceProviderType.genericOpenAi,
+            InferenceProviderType.llmBase,
             InferenceProviderType.mistral,
             InferenceProviderType.mlxAudio,
             InferenceProviderType.nebiusAiStudio,
@@ -56,6 +57,13 @@ void main() {
           equals('http://localhost:8002/v1'),
         );
       });
+
+      test('should have correct URL for llmBase', () {
+        expect(
+          ProviderConfig.defaultBaseUrls[InferenceProviderType.llmBase],
+          equals('https://api.llmbase.ai/v1'),
+        );
+      });
     });
 
     group('defaultNames', () {
@@ -66,6 +74,7 @@ void main() {
             InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
             InferenceProviderType.genericOpenAi,
+            InferenceProviderType.llmBase,
             InferenceProviderType.mistral,
             InferenceProviderType.mlxAudio,
             InferenceProviderType.nebiusAiStudio,
@@ -102,6 +111,13 @@ void main() {
           equals('AI Proxy (local)'),
         );
       });
+
+      test('should have correct name for llmBase', () {
+        expect(
+          ProviderConfig.defaultNames[InferenceProviderType.llmBase],
+          equals('LLMBase'),
+        );
+      });
     });
 
     group('noApiKeyRequired', () {
@@ -133,6 +149,10 @@ void main() {
         expect(
           ProviderConfig.noApiKeyRequired,
           isNot(contains(InferenceProviderType.anthropic)),
+        );
+        expect(
+          ProviderConfig.noApiKeyRequired,
+          isNot(contains(InferenceProviderType.llmBase)),
         );
         // genericOpenAi (OpenAI Compatible) requires API key for authentication
         expect(
@@ -216,6 +236,10 @@ void main() {
       test('should return true for cloud providers and genericOpenAi', () {
         expect(
           ProviderConfig.requiresApiKey(InferenceProviderType.alibaba),
+          isTrue,
+        );
+        expect(
+          ProviderConfig.requiresApiKey(InferenceProviderType.llmBase),
           isTrue,
         );
         expect(

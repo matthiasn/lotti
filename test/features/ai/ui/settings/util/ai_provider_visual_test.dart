@@ -71,6 +71,7 @@ void main() {
           InferenceProviderType.openRouter,
           InferenceProviderType.nebiusAiStudio,
           InferenceProviderType.genericOpenAi,
+          InferenceProviderType.llmBase,
         ]) {
           expect(
             aiProviderAccent(type: type, tokens: dsTokensDark),
@@ -188,6 +189,13 @@ void main() {
           messages: messages,
         ),
         equals('MLX Audio (local)'),
+      );
+      expect(
+        aiProviderDisplayName(
+          type: InferenceProviderType.llmBase,
+          messages: messages,
+        ),
+        equals('LLMBase'),
       );
     });
   });
@@ -327,6 +335,10 @@ void main() {
         expect(
           aiProviderKeyConsoleUrl(InferenceProviderType.nebiusAiStudio),
           equals('studio.nebius.ai'),
+        );
+        expect(
+          aiProviderKeyConsoleUrl(InferenceProviderType.llmBase),
+          equals('llmbase.ai'),
         );
       },
     );

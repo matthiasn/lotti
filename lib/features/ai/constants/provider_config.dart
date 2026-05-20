@@ -5,8 +5,9 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 /// This class provides default configurations for various AI inference providers,
 /// including base URLs, display names, and API key requirements.
 ///
-/// Security Note: Local providers (Ollama, Whisper) use localhost URLs and don't
-/// require API keys, making them suitable for privacy-focused applications.
+/// Security Note: Local providers use localhost URLs or embedded native
+/// runtimes and don't require API keys, making them suitable for
+/// privacy-focused applications.
 class ProviderConfig {
   const ProviderConfig._();
 
@@ -20,6 +21,7 @@ class ProviderConfig {
     InferenceProviderType.gemini:
         'https://generativelanguage.googleapis.com/v1beta/openai',
     InferenceProviderType.genericOpenAi: 'http://localhost:8002/v1',
+    InferenceProviderType.llmBase: 'https://api.llmbase.ai/v1',
     InferenceProviderType.mistral: 'https://api.mistral.ai/v1',
     InferenceProviderType.mlxAudio: '',
     InferenceProviderType.nebiusAiStudio: 'https://api.studio.nebius.com/v1',
@@ -38,6 +40,7 @@ class ProviderConfig {
     InferenceProviderType.alibaba: 'Alibaba Cloud (Qwen)',
     InferenceProviderType.gemini: 'Gemini',
     InferenceProviderType.genericOpenAi: 'AI Proxy (local)',
+    InferenceProviderType.llmBase: 'LLMBase',
     InferenceProviderType.mistral: 'Mistral',
     InferenceProviderType.mlxAudio: 'MLX Audio (local)',
     InferenceProviderType.nebiusAiStudio: 'Nebius AI Studio',

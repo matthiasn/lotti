@@ -272,6 +272,62 @@ void main() {
     );
 
     test(
+      'generateWithImages preserves image data URL MIME type',
+      () {
+        // Arrange
+        const pngDataUrl = 'data:image/png;base64,png-image';
+
+        when(
+          () => mockClient.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-id',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'Test image response',
+                  ),
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]),
+        );
+
+        // Act
+        repository.generateWithImages(
+          prompt,
+          model: model,
+          temperature: temperature,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          images: const [pngDataUrl],
+          overrideClient: mockClient,
+        );
+
+        // Assert
+        final captured = verify(
+          () => mockClient.createChatCompletionStream(
+            request: captureAny(named: 'request'),
+          ),
+        ).captured;
+
+        final request = captured.first as CreateChatCompletionRequest;
+        final requestString = request.toString();
+        expect(requestString, contains(pngDataUrl));
+        expect(
+          requestString,
+          isNot(contains('data:image/jpeg;base64,$pngDataUrl')),
+        );
+      },
+    );
+
+    test(
       'generateWithAudio calls OpenAIClient with correct audio parameters',
       () {
         // Arrange

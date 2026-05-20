@@ -978,7 +978,7 @@ void main() {
             model: 'vision-model',
             temperature: null,
             images: [
-              base64Encode([0xFF, 0xD8, 0xFF, 0xE0]),
+              'data:image/jpeg;base64,${base64Encode([0xFF, 0xD8, 0xFF, 0xE0])}',
             ],
             provider: any(named: 'provider'),
             systemMessage: any(named: 'systemMessage'),

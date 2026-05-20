@@ -972,6 +972,8 @@
   "aiProviderGeminiName": "Google Gemini",
   "aiProviderGenericOpenAiDescription": "API compatible with OpenAI format",
   "aiProviderGenericOpenAiName": "OpenAI Compatible",
+  "aiProviderLlmBaseDescription": "European, GDPR-focused OpenAI-compatible inference",
+  "aiProviderLlmBaseName": "LLMBase",
   "aiProviderMistralDescription": "Mistral AI cloud API with native audio transcription",
   "aiProviderMistralName": "Mistral",
   "aiProviderMlxAudioDescription": "Embedded MLX Audio models for local STT and TTS on Apple Silicon",

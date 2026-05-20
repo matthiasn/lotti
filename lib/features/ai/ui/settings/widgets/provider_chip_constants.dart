@@ -75,6 +75,10 @@ class ProviderChipConstants {
       dark: Color(0xFFA78BFA),
       light: Color(0xFF9C27B0), // Purple
     ),
+    InferenceProviderType.llmBase: (
+      dark: Color(0xFFFFA726),
+      light: Color(0xFFFF6D00), // LLMBase orange
+    ),
     InferenceProviderType.nebiusAiStudio: (
       dark: Color(0xFFF06292),
       light: Color(0xFFE91E63), // Pink

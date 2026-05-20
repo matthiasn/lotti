@@ -203,6 +203,7 @@ void main() {
         InferenceProviderType.openRouter,
         InferenceProviderType.nebiusAiStudio,
         InferenceProviderType.genericOpenAi,
+        InferenceProviderType.llmBase,
         InferenceProviderType.alibaba,
       ];
 

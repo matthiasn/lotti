@@ -122,6 +122,7 @@ const Map<InferenceProviderType, ConnectionProbe> _defaultConnectionProbes =
       InferenceProviderType.gemini: _OpenAiCompatibleProbe(),
       InferenceProviderType.openAi: _OpenAiCompatibleProbe(),
       InferenceProviderType.genericOpenAi: _OpenAiCompatibleProbe(),
+      InferenceProviderType.llmBase: _OpenAiCompatibleProbe(),
       InferenceProviderType.openRouter: _OpenAiCompatibleProbe(),
       InferenceProviderType.nebiusAiStudio: _OpenAiCompatibleProbe(),
       InferenceProviderType.mistral: _OpenAiCompatibleProbe(),
@@ -295,6 +296,8 @@ class ConnectionVerifierController extends _$ConnectionVerifierController {
 /// payload (throws on malformed JSON, which surfaces as a network
 /// failure).
 Future<ConnectionCheckState> _runProbe({
+  required String label,
+  required Uri uri,
   required Future<http.Response> Function() request,
   required int Function(Map<String, dynamic> body) parseModels,
   required Duration timeout,
@@ -303,6 +306,12 @@ Future<ConnectionCheckState> _runProbe({
   try {
     final response = await request().timeout(timeout);
     stopwatch.stop();
+    _logProbePayload(
+      label: label,
+      uri: uri,
+      statusCode: response.statusCode,
+      body: response.body,
+    );
     if (response.statusCode >= 200 && response.statusCode < 300) {
       try {
         final decoded = jsonDecode(response.body);
@@ -345,6 +354,39 @@ Future<ConnectionCheckState> _runProbe({
   }
 }
 
+const _probePayloadLogChunkSize = 1600;
+
+void _logProbePayload({
+  required String label,
+  required Uri uri,
+  required int statusCode,
+  required String body,
+}) {
+  if (!kDebugMode) return;
+
+  debugPrint(
+    '[ConnectionVerifier] $label payload from $uri '
+    '(HTTP $statusCode, ${body.length} chars)',
+  );
+  if (body.isEmpty) {
+    debugPrint('[ConnectionVerifier] <empty payload>');
+    return;
+  }
+
+  for (
+    var offset = 0;
+    offset < body.length;
+    offset += _probePayloadLogChunkSize
+  ) {
+    final end = offset + _probePayloadLogChunkSize < body.length
+        ? offset + _probePayloadLogChunkSize
+        : body.length;
+    final chunk = body.substring(offset, end);
+    final chunkNumber = (offset ~/ _probePayloadLogChunkSize) + 1;
+    debugPrint('[ConnectionVerifier] payload chunk $chunkNumber: $chunk');
+  }
+}
+
 /// Best-effort extraction of the provider's error message from a
 /// non-2xx body. Falls back to a snippet of the raw body when the
 /// payload isn't JSON or doesn't carry a recognised error field.
@@ -383,6 +425,8 @@ class _OpenAiCompatibleProbe implements ConnectionProbe {
       path: '${baseUri.path.replaceAll(RegExp(r'/+$'), '')}/models',
     );
     return _runProbe(
+      label: 'OpenAI-compatible models',
+      uri: uri,
       request: () => client.get(
         uri,
         headers: {'Authorization': 'Bearer $apiKey'},
@@ -410,6 +454,8 @@ class _AnthropicProbe implements ConnectionProbe {
       path: '${baseUri.path.replaceAll(RegExp(r'/+$'), '')}/v1/models',
     );
     return _runProbe(
+      label: 'Anthropic models',
+      uri: uri,
       request: () => client.get(
         uri,
         headers: {
@@ -440,6 +486,8 @@ class _OllamaProbe implements ConnectionProbe {
       path: '${baseUri.path.replaceAll(RegExp(r'/+$'), '')}/api/tags',
     );
     return _runProbe(
+      label: 'Ollama tags',
+      uri: uri,
       request: () => client.get(uri),
       parseModels: (body) {
         final models = body['models'];

@@ -30,6 +30,7 @@ import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/utils/checklist_validation.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -436,9 +437,7 @@ class UnifiedAiInferenceRepository {
 
     final fullPath = getFullImagePath(entity);
     final bytes = await File(fullPath).readAsBytes();
-    final base64String = base64Encode(bytes);
-
-    return [base64String];
+    return [imageDataUrlFromBytes(bytes, filePath: fullPath)];
   }
 
   /// Prepare audio if required.

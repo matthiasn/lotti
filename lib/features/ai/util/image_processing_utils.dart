@@ -25,6 +25,75 @@ class ProcessedReferenceImage {
   final String originalId;
 }
 
+/// Detects the MIME type of image bytes using common magic headers first and
+/// the file extension as a fallback.
+String detectImageMimeType(List<int> bytes, {String? filePath}) {
+  if (_startsWith(bytes, const [0xFF, 0xD8, 0xFF])) {
+    return 'image/jpeg';
+  }
+  if (_startsWith(
+    bytes,
+    const [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
+  )) {
+    return 'image/png';
+  }
+  if (_startsWith(bytes, 'GIF87a'.codeUnits) ||
+      _startsWith(bytes, 'GIF89a'.codeUnits)) {
+    return 'image/gif';
+  }
+  if (_isWebP(bytes)) {
+    return 'image/webp';
+  }
+
+  final normalizedPath = filePath?.toLowerCase();
+  if (normalizedPath != null) {
+    if (normalizedPath.endsWith('.png')) return 'image/png';
+    if (normalizedPath.endsWith('.gif')) return 'image/gif';
+    if (normalizedPath.endsWith('.webp')) return 'image/webp';
+    if (normalizedPath.endsWith('.jpg') ||
+        normalizedPath.endsWith('.jpeg') ||
+        normalizedPath.endsWith('.jfif')) {
+      return 'image/jpeg';
+    }
+  }
+
+  return 'image/jpeg';
+}
+
+/// Encodes image bytes as an OpenAI-compatible data URL with the detected MIME
+/// type.
+String imageDataUrlFromBytes(List<int> bytes, {String? filePath}) {
+  final mimeType = detectImageMimeType(bytes, filePath: filePath);
+  return 'data:$mimeType;base64,${base64Encode(bytes)}';
+}
+
+/// Converts a legacy raw Base64 image string to a data URL while preserving
+/// already-normalized data URLs.
+String ensureImageDataUrl(
+  String image, {
+  String fallbackMimeType = 'image/jpeg',
+}) {
+  if (image.startsWith('data:')) return image;
+  return 'data:$fallbackMimeType;base64,$image';
+}
+
+bool _startsWith(List<int> bytes, List<int> prefix) {
+  if (bytes.length < prefix.length) return false;
+  for (var i = 0; i < prefix.length; i++) {
+    if (bytes[i] != prefix[i]) return false;
+  }
+  return true;
+}
+
+bool _isWebP(List<int> bytes) {
+  return bytes.length >= 12 &&
+      _startsWith(bytes, 'RIFF'.codeUnits) &&
+      bytes[8] == 0x57 &&
+      bytes[9] == 0x45 &&
+      bytes[10] == 0x42 &&
+      bytes[11] == 0x50;
+}
+
 /// Processes an image file for use as a reference image.
 ///
 /// - Reads the file from disk

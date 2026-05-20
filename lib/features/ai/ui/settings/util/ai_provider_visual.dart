@@ -155,6 +155,7 @@ String? aiProviderKeyConsoleUrl(InferenceProviderType? type) {
     InferenceProviderType.anthropic => 'console.anthropic.com',
     InferenceProviderType.mistral => 'console.mistral.ai',
     InferenceProviderType.alibaba => 'dashscope.console.aliyun.com',
+    InferenceProviderType.llmBase => 'llmbase.ai',
     InferenceProviderType.openRouter => 'openrouter.ai',
     InferenceProviderType.nebiusAiStudio => 'studio.nebius.ai',
     _ => null,
@@ -172,6 +173,7 @@ IconData aiProviderIcon(InferenceProviderType? type) {
     InferenceProviderType.mistral => Icons.air_rounded,
     InferenceProviderType.mlxAudio => Icons.memory_rounded,
     InferenceProviderType.alibaba => Icons.cloud_rounded,
+    InferenceProviderType.llmBase => Icons.euro_rounded,
     _ => Icons.smart_toy_rounded,
   };
 }
@@ -193,6 +195,7 @@ String aiProviderDisplayName({
     InferenceProviderType.mistral => messages.aiProviderMistralName,
     InferenceProviderType.mlxAudio => messages.aiProviderMlxAudioName,
     InferenceProviderType.alibaba => messages.aiProviderAlibabaName,
+    InferenceProviderType.llmBase => messages.aiProviderLlmBaseName,
     InferenceProviderType.openRouter => messages.aiProviderOpenRouterName,
     InferenceProviderType.nebiusAiStudio =>
       messages.aiProviderNebiusAiStudioName,

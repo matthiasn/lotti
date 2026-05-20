@@ -318,6 +318,15 @@ void main() {
                 'Alibaba model ${model.name} should not have maxCompletionTokens defined',
           );
         }
+
+        for (final model in llmBaseModels) {
+          expect(
+            model.maxCompletionTokens,
+            isNull,
+            reason:
+                'LLMBase model ${model.name} should not have maxCompletionTokens defined',
+          );
+        }
       });
 
       test(
@@ -544,6 +553,7 @@ void main() {
           containsAll([
             InferenceProviderType.alibaba,
             InferenceProviderType.gemini,
+            InferenceProviderType.llmBase,
             InferenceProviderType.nebiusAiStudio,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
@@ -668,6 +678,53 @@ void main() {
 
         expect(isMlxAudioQwenAsrModelId(modelId), expected);
       }, tags: 'glados');
+    });
+
+    group('LLMBase Models', () {
+      test('contains documented tool-capable agent models', () {
+        final modelIds = llmBaseModels.map((m) => m.providerModelId).toSet();
+
+        expect(modelIds, contains('deepseek/deepseek-v4-flash'));
+        expect(modelIds, contains('z-ai/glm-5.1'));
+        expect(modelIds, contains('qwen/qwen3-coder'));
+        expect(modelIds, contains('moonshotai/kimi-k2.6'));
+
+        for (final model in llmBaseModels.where(
+          (m) => {
+            'deepseek/deepseek-v4-flash',
+            'z-ai/glm-5.1',
+            'qwen/qwen3-coder',
+          }.contains(m.providerModelId),
+        )) {
+          expect(
+            model.supportsFunctionCalling,
+            isTrue,
+            reason: '${model.providerModelId} should be usable for agents',
+          );
+        }
+      });
+
+      test('Qwen 3.6 35B A3B is not marked tool-capable', () {
+        final model = llmBaseModels.firstWhere(
+          (m) => m.providerModelId == 'qwen/qwen3.6-35b-a3b',
+        );
+
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isFalse);
+        expect(model.inputModalities, equals([Modality.text]));
+        expect(model.outputModalities, equals([Modality.text]));
+      });
+
+      test('Kimi K2.6 is available for image recognition', () {
+        final model = llmBaseModels.firstWhere(
+          (m) => m.providerModelId == 'moonshotai/kimi-k2.6',
+        );
+
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isFalse);
+        expect(model.inputModalities, contains(Modality.image));
+        expect(model.outputModalities, equals([Modality.text]));
+      });
     });
 
     group('Ollama Models', () {

@@ -28,6 +28,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   border-only `DesignSystemSearch` used by the settings page.
 
 ### Added
+- LLMBase is now a first-class OpenAI-compatible provider with its
+  default API endpoint, localized setup copy, provider visuals, API-key
+  verification, and curated model rows, including Kimi K2.6 for
+  image-recognition profiles. The Qwen3.6 35B A3B row is kept
+  text/reasoning-only so agent workflows do not send unsupported tool
+  calls to it, while documented tool-capable LLMBase models remain
+  available for agent thinking profiles. Image-analysis requests now
+  preserve the stored image MIME type in OpenAI-compatible data URLs
+  instead of labelling every image as JPEG.
 - Synced-notifications bell in the Tasks and Projects tab headers. The
   icon flips from outlined to filled and shows an unread count badge
   (capped at `9+`) whenever there are unseen alerts, driven by a new

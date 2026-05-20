@@ -5,10 +5,11 @@
 /// its provider-specific ID, capabilities, and a brief description.
 ///
 /// The models are organized by provider:
+/// - Alibaba Cloud: Qwen and Wan models via DashScope
 /// - Gemini: Google's models with multi-modal capabilities
-/// - Nebius: High-performance models for text and image tasks
-/// - Ollama: Local models for text processing
-/// - OpenAI: Advanced language and multimodal models
+/// - LLMBase: European OpenAI-compatible inference models
+/// - Local providers: Ollama, MLX Audio, Voxtral, and Whisper
+/// - Mistral, Nebius, OpenAI, OpenRouter, and Anthropic cloud models
 library;
 
 import 'dart:ui';
@@ -64,6 +65,7 @@ class KnownModel {
 const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.alibaba: alibabaModels,
   InferenceProviderType.gemini: geminiModels,
+  InferenceProviderType.llmBase: llmBaseModels,
   InferenceProviderType.mistral: mistralModels,
   InferenceProviderType.mlxAudio: mlxAudioModels,
   InferenceProviderType.nebiusAiStudio: nebiusModels,
@@ -74,6 +76,78 @@ const Map<InferenceProviderType, List<KnownModel>> knownModelsByProvider = {
   InferenceProviderType.whisper: whisperModels,
   InferenceProviderType.voxtral: voxtralModels,
 };
+
+/// LLMBase models - European/GDPR-focused OpenAI-compatible inference.
+///
+/// LLMBase's model registry advertises capabilities per model and returns a
+/// 400 response when a request includes unsupported advanced features such as
+/// `tools`. Keep the tool-calling flags conservative so agent profiles only
+/// offer models that LLMBase documents for agent/tool workflows.
+const List<KnownModel> llmBaseModels = [
+  KnownModel(
+    providerModelId: 'deepseek/deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Efficient long-context model recommended by LLMBase for coding '
+        'agents and tool-calling workflows.',
+  ),
+  KnownModel(
+    providerModelId: 'z-ai/glm-5.1',
+    name: 'GLM 5.1',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Next-generation GLM model recommended by LLMBase for agentic '
+        'engineering, coding performance, and long-context repository work.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen/qwen3-coder',
+    name: 'Qwen3 Coder',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Qwen coding model recommended by LLMBase for coding agents and '
+        'tool-calling workloads.',
+  ),
+  KnownModel(
+    providerModelId: 'moonshotai/kimi-k2.6',
+    name: 'Kimi K2.6',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description:
+        'MoonshotAI multimodal model on LLMBase for image understanding, '
+        'coding-driven UI work, and long-horizon reasoning.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen/qwen3.6-35b-a3b',
+    name: 'Qwen3.6 35B A3B',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description:
+        'Qwen3.6 MoE model for text reasoning, coding, multilingual tasks, '
+        'and everyday inference on LLMBase. LLMBase does not advertise tools '
+        'for this model, so it is not offered as an agent thinking model.',
+  ),
+  KnownModel(
+    providerModelId: 'qwen/qwen3.5-35b-a3b',
+    name: 'Qwen3.5 35B A3B',
+    inputModalities: [Modality.text],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    description:
+        'Mid-sized Qwen MoE model for fast everyday inference on LLMBase.',
+  ),
+];
 
 /// Canonical MLX Audio model identifiers used by the native Apple bridge.
 const mlxAudioVoxtralRealtime4BitModelId =

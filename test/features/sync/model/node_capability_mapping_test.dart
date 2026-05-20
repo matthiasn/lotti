@@ -71,6 +71,7 @@ void main() {
         InferenceProviderType.anthropic,
         InferenceProviderType.gemini,
         InferenceProviderType.genericOpenAi,
+        InferenceProviderType.llmBase,
         InferenceProviderType.mistral,
         InferenceProviderType.nebiusAiStudio,
         InferenceProviderType.openAi,

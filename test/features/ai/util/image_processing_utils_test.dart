@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -109,6 +110,60 @@ void main() {
     test('kMaxReferenceImages is a positive integer', () {
       expect(kMaxReferenceImages, greaterThan(0));
       expect(kMaxReferenceImages, isA<int>());
+    });
+  });
+
+  group('image data URL helpers', () {
+    test('detects PNG from bytes before consulting the file extension', () {
+      final mimeType = detectImageMimeType(
+        _testPngBytes,
+        filePath: '/tmp/not-really-a-jpeg.jpg',
+      );
+
+      expect(mimeType, 'image/png');
+    });
+
+    test('uses file extension when bytes do not contain a known header', () {
+      final mimeType = detectImageMimeType(
+        const [0x00, 0x01, 0x02],
+        filePath: '/tmp/screenshot.webp',
+      );
+
+      expect(mimeType, 'image/webp');
+    });
+
+    test('falls back to JPEG for unknown image bytes and extension', () {
+      final mimeType = detectImageMimeType(
+        const [0x00, 0x01, 0x02],
+        filePath: '/tmp/image.bin',
+      );
+
+      expect(mimeType, 'image/jpeg');
+    });
+
+    test('builds data URL with detected image MIME type', () {
+      final dataUrl = imageDataUrlFromBytes(
+        _testPngBytes,
+        filePath: '/tmp/image.png',
+      );
+
+      expect(
+        dataUrl,
+        'data:image/png;base64,${base64Encode(_testPngBytes)}',
+      );
+    });
+
+    test('preserves existing data URLs', () {
+      const dataUrl = 'data:image/png;base64,abc123';
+
+      expect(ensureImageDataUrl(dataUrl), dataUrl);
+    });
+
+    test('wraps legacy raw base64 as JPEG data URL', () {
+      expect(
+        ensureImageDataUrl('abc123'),
+        'data:image/jpeg;base64,abc123',
+      );
     });
   });
 

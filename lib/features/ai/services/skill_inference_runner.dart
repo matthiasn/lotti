@@ -772,7 +772,7 @@ class SkillInferenceRunner {
     }
 
     final bytes = await file.readAsBytes();
-    return [base64Encode(bytes)];
+    return [imageDataUrlFromBytes(bytes, filePath: fullPath)];
   }
 }
 

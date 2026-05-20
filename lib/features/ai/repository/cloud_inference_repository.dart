@@ -287,7 +287,7 @@ class CloudInferenceRepository {
                   (image) {
                     return ChatCompletionMessageContentPart.image(
                       imageUrl: ChatCompletionMessageImageUrl(
-                        url: 'data:image/jpeg;base64,$image',
+                        url: ensureImageDataUrl(image),
                       ),
                     );
                   },
@@ -669,6 +669,7 @@ class CloudInferenceRepository {
         );
       case InferenceProviderType.anthropic:
       case InferenceProviderType.genericOpenAi:
+      case InferenceProviderType.llmBase:
       case InferenceProviderType.mistral:
       case InferenceProviderType.mlxAudio:
       case InferenceProviderType.nebiusAiStudio:

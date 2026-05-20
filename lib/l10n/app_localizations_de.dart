@@ -1648,6 +1648,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderGenericOpenAiName => 'OpenAI-kompatibel';
 
   @override
+  String get aiProviderLlmBaseDescription =>
+      'Europäische, GDPR-fokussierte OpenAI-kompatible Inferenz';
+
+  @override
+  String get aiProviderLlmBaseName => 'LLMBase';
+
+  @override
   String get aiProviderMistralDescription =>
       'Mistral AI Cloud-API mit nativer Audio-Transkription';
 

@@ -2863,6 +2863,18 @@ abstract class AppLocalizations {
   /// **'OpenAI Compatible'**
   String get aiProviderGenericOpenAiName;
 
+  /// No description provided for @aiProviderLlmBaseDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'European, GDPR-focused OpenAI-compatible inference'**
+  String get aiProviderLlmBaseDescription;
+
+  /// No description provided for @aiProviderLlmBaseName.
+  ///
+  /// In en, this message translates to:
+  /// **'LLMBase'**
+  String get aiProviderLlmBaseName;
+
   /// No description provided for @aiProviderMistralDescription.
   ///
   /// In en, this message translates to:

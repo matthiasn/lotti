@@ -737,6 +737,10 @@ void main() {
         expect(InferenceProviderType.genericOpenAi.ftueDisplayName, isNull);
       });
 
+      test('returns null for llmBase provider type', () {
+        expect(InferenceProviderType.llmBase.ftueDisplayName, isNull);
+      });
+
       test('returns null for whisper provider type', () {
         expect(InferenceProviderType.whisper.ftueDisplayName, isNull);
       });

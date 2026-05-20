@@ -457,6 +457,7 @@ void main() {
           InferenceProviderType.openRouter: Icons.hub,
           InferenceProviderType.ollama: Icons.computer,
           InferenceProviderType.genericOpenAi: Icons.cloud,
+          InferenceProviderType.llmBase: Icons.euro_rounded,
           InferenceProviderType.nebiusAiStudio: Icons.rocket_launch,
           InferenceProviderType.mlxAudio: Icons.memory_rounded,
           InferenceProviderType.whisper: Icons.mic,
