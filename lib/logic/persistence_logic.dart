@@ -233,11 +233,15 @@ class PersistenceLogic {
           data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
           data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
 
-      await createDbEntity(
+      final saved = await createDbEntity(
         habitCompletionEntry,
         linkedId: linkedId,
         shouldAddGeolocation: shouldAddGeolocation,
       );
+
+      if (saved != true) {
+        return null;
+      }
 
       if (habitDefinition != null) {
         await getIt<NotificationService>().scheduleHabitNotification(

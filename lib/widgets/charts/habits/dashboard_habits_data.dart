@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/logic/habits/habit_completion_resolution.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 
@@ -23,7 +24,7 @@ class HabitResult extends Equatable {
   }
 
   @override
-  List<Object?> get props => [dayString];
+  List<Object?> get props => [dayString, completionType];
 }
 
 Color habitCompletionColor(HabitCompletionType completionType) {
@@ -71,16 +72,9 @@ List<HabitResult> habitResultsByDay(
     );
   }
 
-  for (final entity in entities.sortedBy((entity) => entity.meta.dateFrom)) {
+  for (final entity in latestHabitCompletionsByDay(entities)) {
     final dayString = entity.meta.dateFrom.ymd;
-
-    final completionType = entity.maybeMap(
-      habitCompletion: (completion) {
-        final completionType = completion.data.completionType;
-        return completionType;
-      },
-      orElse: () => null,
-    );
+    final completionType = entity.data.completionType;
 
     if (completionType != null) {
       resultsByDay[dayString] = HabitResult(

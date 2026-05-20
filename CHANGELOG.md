@@ -66,6 +66,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   syncs to other devices through the existing Matrix sync pipeline.
 
 ### Fixed
+- Habit completion reads now enforce last-write-wins per habit/day, so
+  repeated success/skip/fail updates on the same date resolve to the newest
+  persisted write instead of depending on database row order.
 - Flatpak release generation now carries exact ObjectBox 5.3.2 offline source
   hashes and a CRLF-tolerant CMake patch, plus a PR-safe validation job that
   dry-runs Flatpak foreign dependency patches against the locked Pub packages

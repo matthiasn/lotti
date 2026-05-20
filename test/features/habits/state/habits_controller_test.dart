@@ -9,6 +9,7 @@ import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/habits/habit_completion_resolution.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
@@ -84,12 +85,14 @@ void main() {
     required String habitId,
     required DateTime date,
     required HabitCompletionType completionType,
+    DateTime? writtenAt,
   }) {
+    final effectiveWrittenAt = writtenAt ?? date;
     return HabitCompletionEntry(
       meta: Metadata(
         id: id,
-        createdAt: date,
-        updatedAt: date,
+        createdAt: effectiveWrittenAt,
+        updatedAt: effectiveWrittenAt,
         dateFrom: date,
         dateTo: date,
         private: false,
@@ -354,6 +357,50 @@ void main() {
       expect(state.successfulToday, isNot(contains('habit-1')));
       expect(state.failedByDay[controllerTodayYmd], contains('habit-1'));
     });
+
+    test(
+      'uses the latest write returned by the repository for repeated same-day completions',
+      () async {
+        final completions = [
+          createCompletion(
+            id: 'newer-fail',
+            habitId: 'habit-1',
+            date: controllerToday,
+            writtenAt: DateTime(2025, 12, 30, 11),
+            completionType: HabitCompletionType.fail,
+          ),
+          createCompletion(
+            id: 'older-success',
+            habitId: 'habit-1',
+            date: controllerToday,
+            writtenAt: DateTime(2025, 12, 30, 10),
+            completionType: HabitCompletionType.success,
+          ),
+        ];
+
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async => latestHabitCompletionsByDay(completions));
+
+        container.read(habitsControllerProvider);
+        await pumpEventQueue();
+
+        definitionsController.add([testHabit1]);
+        await pumpEventQueue();
+
+        final state = container.read(habitsControllerProvider);
+
+        expect(state.completedToday, contains('habit-1'));
+        expect(state.successfulToday, isNot(contains('habit-1')));
+        expect(
+          state.successfulByDay[controllerTodayYmd],
+          isNot(contains('habit-1')),
+        );
+        expect(state.failedByDay[controllerTodayYmd], contains('habit-1'));
+      },
+    );
 
     test('calculates streak counts correctly', () async {
       // Create completions for 4 consecutive days (qualifies for short streak)
