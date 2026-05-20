@@ -26,9 +26,20 @@ import 'package:lotti/widgets/selection/unified_toggle.dart';
 /// modality / provider selection modals, Cmd+S shortcut) is preserved
 /// verbatim — only the rendering layer changed.
 class InferenceModelEditPage extends ConsumerStatefulWidget {
-  const InferenceModelEditPage({this.configId, super.key});
+  const InferenceModelEditPage({
+    this.configId,
+    this.preselectedProviderId,
+    super.key,
+  });
 
   final String? configId;
+
+  /// Pre-fills the new form's owning provider when the page is opened
+  /// from a provider's detail page. Has no effect in edit mode
+  /// (`configId != null`) — existing models always carry their own
+  /// `inferenceProviderId`. Top-level "+ Add model" entry points pass
+  /// nothing, so the user picks the provider manually.
+  final String? preselectedProviderId;
 
   @override
   ConsumerState<InferenceModelEditPage> createState() =>
@@ -39,6 +50,19 @@ class _InferenceModelEditPageState
     extends ConsumerState<InferenceModelEditPage> {
   bool _isSaving = false;
 
+  /// Helper to get the form controller provider with correct parameters.
+  /// Centralised so the watch + read + handleSave call sites can't
+  /// silently disagree on the (`configId`, `preselectedProviderId`)
+  /// tuple — keeping the same tuple end-to-end keeps Riverpod from
+  /// spawning a second controller family instance.
+  InferenceModelFormControllerProvider get _formProvider =>
+      inferenceModelFormControllerProvider(
+        configId: widget.configId,
+        preselectedProviderId: widget.configId == null
+            ? widget.preselectedProviderId
+            : null,
+      );
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -48,9 +72,7 @@ class _InferenceModelEditPageState
         ? const AsyncData<AiConfig?>(null)
         : ref.watch(aiConfigByIdProvider(widget.configId!));
 
-    final formState = ref
-        .watch(inferenceModelFormControllerProvider(configId: widget.configId))
-        .value;
+    final formState = ref.watch(_formProvider).value;
 
     final isFormValid =
         formState != null &&
@@ -65,11 +87,7 @@ class _InferenceModelEditPageState
       setState(() => _isSaving = true);
       try {
         final config = formState.toAiConfig();
-        final controller = ref.read(
-          inferenceModelFormControllerProvider(
-            configId: widget.configId,
-          ).notifier,
-        );
+        final controller = ref.read(_formProvider.notifier);
         if (widget.configId == null) {
           await controller.addConfig(config);
         } else {
@@ -145,9 +163,7 @@ class _InferenceModelEditPageState
     }
     final tokens = context.designTokens;
     final messages = context.messages;
-    final formController = ref.read(
-      inferenceModelFormControllerProvider(configId: widget.configId).notifier,
-    );
+    final formController = ref.read(_formProvider.notifier);
 
     // Resolve the owning provider so the header strip can wear its
     // accent. The form may not have a provider selected yet — we render

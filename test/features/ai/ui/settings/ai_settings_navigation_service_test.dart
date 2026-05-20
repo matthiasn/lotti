@@ -316,13 +316,43 @@ void main() {
       );
 
       testWidgets(
-        'navigateToCreateModel pushes a blank InferenceModelEditPage',
+        'navigateToCreateModel without preselection pushes a blank '
+        'InferenceModelEditPage — the top-level "+ Add model" FAB takes '
+        'this path so the user picks the provider manually',
         (tester) async {
           await tester.pumpWidget(harness());
           final ctx = tester.element(find.byType(Scaffold));
           unawaited(service.navigateToCreateModel(ctx));
           await tester.pumpAndSettle();
           expect(find.byType(InferenceModelEditPage), findsOneWidget);
+          final pushed = tester.widget<InferenceModelEditPage>(
+            find.byType(InferenceModelEditPage),
+          );
+          expect(pushed.configId, isNull);
+          expect(pushed.preselectedProviderId, isNull);
+        },
+      );
+
+      testWidgets(
+        'navigateToCreateModel with preselectedProviderId pushes the page '
+        'with the id forwarded — covers the "Add Model" entry point from '
+        'inside a provider detail page, where the new model should inherit '
+        'the surrounding provider context instead of starting blank',
+        (tester) async {
+          await tester.pumpWidget(harness());
+          final ctx = tester.element(find.byType(Scaffold));
+          unawaited(
+            service.navigateToCreateModel(
+              ctx,
+              preselectedProviderId: 'provider-from-detail',
+            ),
+          );
+          await tester.pumpAndSettle();
+          final pushed = tester.widget<InferenceModelEditPage>(
+            find.byType(InferenceModelEditPage),
+          );
+          expect(pushed.configId, isNull);
+          expect(pushed.preselectedProviderId, 'provider-from-detail');
         },
       );
 

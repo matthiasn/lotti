@@ -277,6 +277,53 @@ void main() {
       verifyNever(() => mockRepository.getConfigById(any()));
     });
 
+    test(
+      'should seed inferenceProviderId from preselectedProviderId in '
+      'create mode — skips the otherwise-mandatory provider picker when '
+      'the caller already has provider context (e.g. "Add Model" from a '
+      'provider detail page). Repository must NOT be hit for create mode',
+      () async {
+        // Act
+        final formState = await container.read(
+          inferenceModelFormControllerProvider(
+            configId: null,
+            preselectedProviderId: 'provider-from-detail',
+          ).future,
+        );
+
+        // Assert
+        expect(formState?.inferenceProviderId, 'provider-from-detail');
+        // Other fields stay blank — preselection is scoped to provider id.
+        expect(formState?.name.value, isEmpty);
+        expect(formState?.providerModelId.value, isEmpty);
+        verifyNever(() => mockRepository.getConfigById(any()));
+      },
+    );
+
+    test(
+      'preselectedProviderId is ignored when configId is non-null — '
+      'existing models carry their own inferenceProviderId, so a stray '
+      'preselection arg should not silently rewrite it on the edit form',
+      () async {
+        when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+          (_) async => testConfig,
+        );
+
+        // Act
+        final formState = await container.read(
+          inferenceModelFormControllerProvider(
+            configId: 'test-id',
+            preselectedProviderId: 'overriding-id-should-be-ignored',
+          ).future,
+        );
+
+        // Assert — form state reflects the stored model's provider id,
+        // not the preselection arg.
+        expect(formState?.inferenceProviderId, testProviderId);
+        verify(() => mockRepository.getConfigById('test-id')).called(1);
+      },
+    );
+
     test('should add a new configuration', () async {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
