@@ -174,6 +174,13 @@ Resolution for `resolveForCategory`:
 2. resolve it through `ProfileResolver.resolveByProfileId`
 
 Only the thinking slot is fatal. Optional slots resolve best-effort.
+Model slots store provider-native `providerModelId` strings, not the local
+model row IDs. When multiple synced model rows share the same
+`providerModelId`, provider resolution walks every candidate and uses the
+first provider row that still exists, has the required credentials, and matches
+the provider type that owns that known model ID. This is intentional sync
+hygiene: an orphaned duplicate row from another device must not abort an agent
+wake when a valid provider/model pair is still configured locally.
 
 Recording-triggered transcription has a direct fallback in
 `ProfileAutomationService`: it first tries the profile automation path above,
@@ -432,6 +439,17 @@ Operational details from the seeded definitions:
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Once a profile exists, the seeder never touches it again — user edits to model slots, the `isDefault` flag, names, descriptions, and skill assignments survive every restart and app upgrade. Updating a bundled default in code (e.g. swapping the Ollama thinking model) therefore only affects fresh installs; existing installs keep whatever the user has.
 
 `upgradeExisting()` is a one-time backfill that adds default `skillAssignments` to existing default profiles whose `skillAssignments` are still empty (legacy installs from before the field existed). It only ever fills empties — non-empty assignment lists are preserved.
+
+`ModelPrepopulationService.backfillNewModels()` seeds known model rows for
+configured providers at startup. Known model identity is the
+`providerModelId`; the local model row ID may be deterministic or a UUID
+depending on whether the row came from FTUE, manual setup, or sync. Backfill
+therefore skips an already-configured provider model ID instead of only checking
+the generated row ID. It only treats rows under the current provider or a
+usable provider of the same type as configured, and ignores orphaned rows whose
+provider has been deleted so a later valid provider can repair stale synced
+state. The FTUE setup and preview modal follow the same provider-native model
+identity rule.
 
 `skills/built_in_skills.dart` currently exposes nine built-in skills:
 

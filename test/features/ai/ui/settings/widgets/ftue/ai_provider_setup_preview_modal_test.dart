@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_modal.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../../../mocks/mocks.dart';
 import '../../../../../../widget_test_utils.dart';
 
 AiConfigModel _existingModel({
   required String providerModelId,
   required String name,
+  String providerId = 'provider-id',
 }) {
   return AiConfigModel(
     id: 'model-$providerModelId',
     name: name,
     providerModelId: providerModelId,
-    inferenceProviderId: 'provider-id',
+    inferenceProviderId: providerId,
     createdAt: DateTime(2024, 3, 15),
     inputModalities: const [Modality.text, Modality.image],
     outputModalities: const [Modality.text],
@@ -134,6 +140,74 @@ void main() {
         isTrue,
       );
     });
+  });
+
+  group('AiProviderSetupPreviewModal.show', () {
+    testWidgets(
+      'treats preset models under a usable synced provider as already '
+      'configured',
+      (tester) async {
+        final repository = MockAiConfigRepository();
+        final geminiPreset = AiProviderSetupPreviewModal.presetFor(
+          InferenceProviderType.gemini,
+        )!;
+        final existingProvider = AiConfig.inferenceProvider(
+          id: 'synced-gemini-provider',
+          name: 'Synced Gemini',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+          apiKey: 'synced-key',
+          createdAt: DateTime(2024, 3, 15),
+          inferenceProviderType: InferenceProviderType.gemini,
+        );
+        final existingModels = [
+          for (final knownModel in geminiPreset.models)
+            _existingModel(
+              providerModelId: knownModel.providerModelId,
+              name: knownModel.name,
+              providerId: 'synced-gemini-provider',
+            ),
+        ];
+
+        when(
+          () => repository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => existingModels);
+        when(
+          () => repository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [existingProvider]);
+
+        AiProviderSetupPreviewResult? result;
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Consumer(
+              builder: (context, ref, _) {
+                return TextButton(
+                  onPressed: () async {
+                    result = await AiProviderSetupPreviewModal.show(
+                      context: context,
+                      ref: ref,
+                      providerType: InferenceProviderType.gemini,
+                      providerId: 'new-gemini-provider',
+                    );
+                  },
+                  child: const Text('open'),
+                );
+              },
+            ),
+            overrides: [
+              aiConfigRepositoryProvider.overrideWithValue(repository),
+            ],
+          ),
+        );
+
+        await tester.tap(find.text('open'));
+        await tester.pump();
+
+        expect(result, isNotNull);
+        expect(result!.confirmed, isTrue);
+        expect(result!.excludedProviderModelIds, isEmpty);
+        expect(find.byType(AiProviderSetupPreviewModal), findsNothing);
+      },
+    );
   });
 
   group('AiProviderSetupPreviewModal widget body', () {

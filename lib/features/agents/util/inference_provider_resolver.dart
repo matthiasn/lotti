@@ -3,13 +3,15 @@ import 'dart:developer' as developer;
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 
 /// Resolves the inference provider for a given [modelId].
 ///
-/// Looks up the configured [AiConfigModel] whose `providerModelId` matches
-/// [modelId], then resolves the associated inference provider. This ensures
-/// the caller uses the correct provider even when multiple providers are
-/// configured.
+/// Looks up configured [AiConfigModel] rows whose `providerModelId` matches
+/// [modelId], then resolves the first usable provider with the known matching
+/// provider type. This keeps the caller resilient to stale synced model rows
+/// that point at a provider deleted on another device while a newer duplicate
+/// row still points at a valid provider.
 ///
 /// Returns `null` if the model is not configured, the provider is missing,
 /// or the provider has no API key set.
@@ -20,12 +22,13 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
 }) async {
   final models = await aiConfigRepository.getConfigsByType(AiConfigType.model);
 
-  // Find the configured model matching the requested model ID.
-  final matchingModel = models.whereType<AiConfigModel>().where(
-    (m) => m.providerModelId == modelId,
-  );
+  // Find configured models matching the requested provider model ID.
+  final matchingModels = models
+      .whereType<AiConfigModel>()
+      .where((m) => m.providerModelId == modelId)
+      .toList(growable: false);
 
-  if (matchingModel.isEmpty) {
+  if (matchingModels.isEmpty) {
     developer.log(
       'Model $modelId not found in configured models',
       name: logTag,
@@ -33,26 +36,67 @@ Future<AiConfigInferenceProvider?> resolveInferenceProvider({
     return null;
   }
 
-  // Resolve the inference provider associated with this model.
-  final providerId = matchingModel.first.inferenceProviderId;
-  final provider = await aiConfigRepository.getConfigById(providerId);
+  final preferredProviderTypes = _providerTypesForKnownModel(modelId);
+  AiConfigInferenceProvider? usableFallback;
 
-  if (provider is! AiConfigInferenceProvider) {
+  for (final model in matchingModels) {
+    final providerId = model.inferenceProviderId;
+    final provider = await aiConfigRepository.getConfigById(providerId);
+
+    if (provider is! AiConfigInferenceProvider) {
+      developer.log(
+        'Skipping provider $providerId for model $modelId: '
+        'not an inference provider',
+        name: logTag,
+      );
+      continue;
+    }
+
+    if (!provider.isUsable) {
+      developer.log(
+        'Skipping provider $providerId for model $modelId: '
+        'API key is not configured',
+        name: logTag,
+      );
+      continue;
+    }
+
+    if (preferredProviderTypes.isEmpty ||
+        preferredProviderTypes.contains(provider.inferenceProviderType)) {
+      return provider;
+    }
+
+    usableFallback ??= provider;
     developer.log(
-      'Provider $providerId for model $modelId is not an inference provider',
+      'Skipping provider $providerId for model $modelId: '
+      'provider type ${provider.inferenceProviderType.name} does not match '
+      'known model provider type(s) '
+      '${preferredProviderTypes.map((type) => type.name).join(', ')}',
       name: logTag,
     );
-    return null;
   }
 
-  if (provider.apiKey.trim().isEmpty &&
-      ProviderConfig.requiresApiKey(provider.inferenceProviderType)) {
+  if (usableFallback != null) {
     developer.log(
-      'Provider $providerId has no API key configured',
+      'No provider with a known matching type configured for model $modelId; '
+      'falling back to usable provider ${usableFallback.id}',
       name: logTag,
     );
-    return null;
+    return usableFallback;
   }
 
-  return provider;
+  developer.log(
+    'No usable provider configured for model $modelId '
+    'across ${matchingModels.length} configured model row(s)',
+    name: logTag,
+  );
+  return null;
+}
+
+Set<InferenceProviderType> _providerTypesForKnownModel(String modelId) {
+  return {
+    for (final entry in knownModelsByProvider.entries)
+      if (entry.value.any((model) => model.providerModelId == modelId))
+        entry.key,
+  };
 }

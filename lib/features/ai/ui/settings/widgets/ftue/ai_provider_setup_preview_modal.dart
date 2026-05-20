@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -120,17 +121,32 @@ class AiProviderSetupPreviewModal extends StatefulWidget {
 
     final repo = ref.read(aiConfigRepositoryProvider);
     final allModels = await repo.getConfigsByType(AiConfigType.model);
-    final existing = allModels
-        .whereType<AiConfigModel>()
-        .where((m) => m.inferenceProviderId == providerId)
-        .toList(growable: false);
+    final allProviders = await repo.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
+    final presetModelIds = preset.models
+        .map((model) => model.providerModelId)
+        .toSet();
+    final providersById = {
+      for (final provider
+          in allProviders.whereType<AiConfigInferenceProvider>())
+        provider.id: provider,
+    };
+    final existing = _filterExistingPresetModels(
+      allModels.whereType<AiConfigModel>(),
+      presetModelIds: presetModelIds,
+      providerId: providerId,
+      providerType: providerType,
+      providersById: providersById,
+    );
 
     if (!context.mounted) {
       return const AiProviderSetupPreviewResult.cancelled();
     }
 
-    // Filter out preset models the user already has — those become
-    // read-only rows in the "already added" section, not editable rows.
+    // Filter out preset models the user already has through this provider or
+    // a usable synced provider of the same type. Those become read-only rows
+    // in the "already added" section, not editable rows.
     final existingPresetIds = existing.map((m) => m.providerModelId).toSet();
     final newModels = preset.models
         .where((km) => !existingPresetIds.contains(km.providerModelId))
@@ -258,6 +274,42 @@ class _AiProviderSetupPreviewModalState
       ],
     );
   }
+}
+
+List<AiConfigModel> _filterExistingPresetModels(
+  Iterable<AiConfigModel> models, {
+  required Set<String> presetModelIds,
+  required String providerId,
+  required InferenceProviderType providerType,
+  required Map<String, AiConfigInferenceProvider> providersById,
+}) {
+  final existing = <AiConfigModel>[];
+  final seenProviderModelIds = <String>{};
+
+  for (final model in models) {
+    if (!presetModelIds.contains(model.providerModelId) ||
+        seenProviderModelIds.contains(model.providerModelId)) {
+      continue;
+    }
+
+    if (model.inferenceProviderId == providerId) {
+      existing.add(model);
+      seenProviderModelIds.add(model.providerModelId);
+      continue;
+    }
+
+    final provider = providersById[model.inferenceProviderId];
+    if (provider == null || provider.inferenceProviderType != providerType) {
+      continue;
+    }
+
+    if (provider.isUsable) {
+      existing.add(model);
+      seenProviderModelIds.add(model.providerModelId);
+    }
+  }
+
+  return existing;
 }
 
 // --------------------------------------------------------------------------

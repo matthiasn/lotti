@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
@@ -133,6 +134,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     final modelResult = await _ensureModelsExist(
       repository: repository,
       providerId: provider.id,
+      providerType: provider.inferenceProviderType,
       modelConfigs: [
         (known: knownModels.flash, id: ftueFlashModelId),
         (known: knownModels.pro, id: ftueProModelId),
@@ -163,20 +165,27 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
 ///
 /// For each preset (known, providerModelId) entry:
 /// - if the user unticked the row, skip it entirely (no save, no count);
-/// - if a row already exists for the provider with that providerModelId,
+/// - if a usable row already exists with that providerModelId,
 ///   mark it `verified`;
 /// - otherwise create a fresh row, save it, and mark it `created`.
 Future<_FtueModelTally> _ensureModelsExist({
   required AiConfigRepository repository,
   required String providerId,
+  required InferenceProviderType providerType,
   required List<({KnownModel known, String id})> modelConfigs,
   Set<String> excludedProviderModelIds = const {},
 }) async {
   final allModels = await repository.getConfigsByType(AiConfigType.model);
-  final providerModels = allModels
-      .whereType<AiConfigModel>()
-      .where((m) => m.inferenceProviderId == providerId)
-      .toList(growable: false);
+  final existingModels = allModels.whereType<AiConfigModel>().toList(
+    growable: false,
+  );
+  final allProviders = await repository.getConfigsByType(
+    AiConfigType.inferenceProvider,
+  );
+  final providersById = {
+    for (final provider in allProviders.whereType<AiConfigInferenceProvider>())
+      provider.id: provider,
+  };
 
   final created = <AiConfigModel>[];
   final verified = <AiConfigModel>[];
@@ -187,8 +196,12 @@ Future<_FtueModelTally> _ensureModelsExist({
       continue;
     }
 
-    final existing = providerModels.firstWhereOrNull(
-      (m) => m.providerModelId == config.id,
+    final existing = _findConfiguredKnownModel(
+      config.id,
+      providerId: providerId,
+      providerType: providerType,
+      existingModels: existingModels,
+      providersById: providersById,
     );
 
     if (existing != null) {
@@ -204,6 +217,35 @@ Future<_FtueModelTally> _ensureModelsExist({
   }
 
   return (created: created, verified: verified);
+}
+
+AiConfigModel? _findConfiguredKnownModel(
+  String providerModelId, {
+  required String providerId,
+  required InferenceProviderType providerType,
+  required List<AiConfigModel> existingModels,
+  required Map<String, AiConfigInferenceProvider> providersById,
+}) {
+  for (final model in existingModels) {
+    if (model.providerModelId != providerModelId) {
+      continue;
+    }
+
+    if (model.inferenceProviderId == providerId) {
+      return model;
+    }
+
+    final provider = providersById[model.inferenceProviderId];
+    if (provider == null || provider.inferenceProviderType != providerType) {
+      continue;
+    }
+
+    if (provider.isUsable) {
+      return model;
+    }
+  }
+
+  return null;
 }
 
 /// Shared "create or reuse the FTUE test category" helper. Looks up an
@@ -297,6 +339,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     final modelResult = await _ensureModelsExist(
       repository: repository,
       providerId: provider.id,
+      providerType: provider.inferenceProviderType,
       modelConfigs: [
         (known: knownModels.flash, id: ftueOpenAiFlashModelId),
         (known: knownModels.reasoning, id: ftueOpenAiReasoningModelId),
@@ -383,6 +426,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     final modelResult = await _ensureModelsExist(
       repository: repository,
       providerId: provider.id,
+      providerType: provider.inferenceProviderType,
       modelConfigs: [
         (known: knownModels.flash, id: ftueMistralFlashModelId),
         (known: knownModels.reasoning, id: ftueMistralReasoningModelId),
@@ -471,6 +515,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     final modelResult = await _ensureModelsExist(
       repository: repository,
       providerId: provider.id,
+      providerType: provider.inferenceProviderType,
       modelConfigs: [
         (known: knownModels.flash, id: ftueAlibabaFlashModelId),
         (known: knownModels.reasoning, id: ftueAlibabaReasoningModelId),
@@ -559,6 +604,7 @@ extension AnthropicFtueSetup on ProviderPromptSetupService {
     final modelResult = await _ensureModelsExist(
       repository: repository,
       providerId: provider.id,
+      providerType: provider.inferenceProviderType,
       modelConfigs: [
         (known: knownModels.reasoning, id: ftueAnthropicReasoningModelId),
         (known: knownModels.flash, id: ftueAnthropicFlashModelId),

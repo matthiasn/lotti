@@ -94,3 +94,17 @@ class ProviderConfig {
     return !noBaseUrlRequired.contains(type);
   }
 }
+
+extension AiConfigInferenceProviderUsability on AiConfigInferenceProvider {
+  /// Whether this provider is usable for inference.
+  ///
+  /// True if either the API key is set, or the provider type does not require
+  /// one (local providers like Ollama) AND — for types that talk to an HTTP
+  /// base URL — the base URL itself is set. A local provider with a cleared
+  /// base URL cannot actually connect, so it is not considered usable.
+  bool get isUsable =>
+      apiKey.trim().isNotEmpty ||
+      (!ProviderConfig.requiresApiKey(inferenceProviderType) &&
+          (!ProviderConfig.usesBaseUrl(inferenceProviderType) ||
+              baseUrl.trim().isNotEmpty));
+}

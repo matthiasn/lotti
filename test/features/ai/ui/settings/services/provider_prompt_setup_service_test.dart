@@ -131,6 +131,9 @@ void main() {
         apiKey: 'test-gemini-key',
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
       );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiProvider]);
     });
 
     Widget createGeminiFtueTestWidget({
@@ -214,6 +217,174 @@ void main() {
             defaultTemplateId: lauraTemplateId,
           ),
         ).called(1);
+      },
+    );
+
+    testWidgets(
+      'verifies globally existing Gemini providerModelIds instead of '
+      'seeding duplicate rows under a second provider',
+      (tester) async {
+        final existingModels = [
+          AiTestDataFactory.createTestModel(
+            id: 'other-gemini-flash',
+            name: 'Gemini Flash',
+            providerModelId: ftueFlashModelId,
+            inferenceProviderId: 'other-gemini-provider',
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'other-gemini-pro',
+            name: 'Gemini Pro',
+            providerModelId: ftueProModelId,
+            inferenceProviderId: 'other-gemini-provider',
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'other-gemini-image',
+            name: 'Gemini Image',
+            providerModelId: ftueImageModelId,
+            inferenceProviderId: 'other-gemini-provider',
+          ),
+        ];
+        final otherGeminiProvider = AiTestDataFactory.createTestProvider(
+          id: 'other-gemini-provider',
+          name: 'Other Gemini',
+          type: InferenceProviderType.gemini,
+          apiKey: 'other-gemini-key',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        );
+
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => existingModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [geminiProvider, otherGeminiProvider]);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer((_) async => <CategoryDefinition>[]);
+        when(
+          () => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            defaultProfileId: any(named: 'defaultProfileId'),
+            defaultTemplateId: any(named: 'defaultTemplateId'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: ftueGeminiCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ),
+        );
+
+        GeminiFtueResult? result;
+        await tester.pumpWidget(
+          createGeminiFtueTestWidget(
+            onPressed: (context, ref) async {
+              return result = await setupService.performGeminiFtueSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Test'));
+        await tester.pump();
+
+        expect(result, isNotNull);
+        expect(result!.modelsCreated, equals(0));
+        expect(result!.modelsVerified, equals(3));
+        verifyNever(() => mockRepository.saveConfig(any()));
+      },
+    );
+
+    testWidgets(
+      'creates fresh Gemini rows when matching providerModelIds only point at '
+      'deleted providers',
+      (tester) async {
+        final orphanedModels = [
+          AiTestDataFactory.createTestModel(
+            id: 'orphaned-gemini-flash',
+            name: 'Gemini Flash',
+            providerModelId: ftueFlashModelId,
+            inferenceProviderId: 'deleted-gemini-provider',
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'orphaned-gemini-pro',
+            name: 'Gemini Pro',
+            providerModelId: ftueProModelId,
+            inferenceProviderId: 'deleted-gemini-provider',
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'orphaned-gemini-image',
+            name: 'Gemini Image',
+            providerModelId: ftueImageModelId,
+            inferenceProviderId: 'deleted-gemini-provider',
+          ),
+        ];
+
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => orphanedModels);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer((_) async => <CategoryDefinition>[]);
+        when(
+          () => mockCategoryRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            defaultProfileId: any(named: 'defaultProfileId'),
+            defaultTemplateId: any(named: 'defaultTemplateId'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryDefinition(
+            id: 'test-category-id',
+            name: ftueGeminiCategoryName,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+            private: false,
+            active: true,
+          ),
+        );
+
+        GeminiFtueResult? result;
+        await tester.pumpWidget(
+          createGeminiFtueTestWidget(
+            onPressed: (context, ref) async {
+              return result = await setupService.performGeminiFtueSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Test'));
+        await tester.pump();
+
+        expect(result, isNotNull);
+        expect(result!.modelsCreated, equals(3));
+        expect(result!.modelsVerified, equals(0));
+        verify(
+          () => mockRepository.saveConfig(
+            any(
+              that: isA<AiConfigModel>().having(
+                (model) => model.inferenceProviderId,
+                'inferenceProviderId',
+                geminiProvider.id,
+              ),
+            ),
+          ),
+        ).called(3);
       },
     );
   });
@@ -313,6 +484,9 @@ void main() {
         apiKey: 'test-openai-key',
         baseUrl: 'https://api.openai.com/v1',
       );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [openAiProvider]);
     });
 
     Widget createOpenAiFtueTestWidget({
@@ -657,6 +831,9 @@ void main() {
         apiKey: 'test-mistral-key',
         baseUrl: 'https://api.mistral.ai/v1',
       );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [mistralProvider]);
     });
 
     Widget createMistralFtueTestWidget({
@@ -1053,6 +1230,9 @@ void main() {
         apiKey: 'test-alibaba-key',
         baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
       );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [alibabaProvider]);
     });
 
     Widget createAlibabaFtueTestWidget({
@@ -1420,6 +1600,9 @@ void main() {
         apiKey: 'sk-ant-test-key',
         baseUrl: 'https://api.anthropic.com',
       );
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [anthropicProvider]);
     });
 
     Widget createAnthropicFtueTestWidget({
