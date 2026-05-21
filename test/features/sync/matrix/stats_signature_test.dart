@@ -1,6 +1,84 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/stats_signature.dart';
+
+enum _GeneratedMetricKeySlot { alpha, beta, gamma, delta, alphaAgain }
+
+String _generatedMetricKey(_GeneratedMetricKeySlot slot) {
+  return switch (slot) {
+    _GeneratedMetricKeySlot.alpha => 'alpha',
+    _GeneratedMetricKeySlot.beta => 'beta',
+    _GeneratedMetricKeySlot.gamma => 'gamma',
+    _GeneratedMetricKeySlot.delta => 'delta',
+    _GeneratedMetricKeySlot.alphaAgain => 'alpha',
+  };
+}
+
+class _GeneratedMetricEntry {
+  const _GeneratedMetricEntry({
+    required this.keySlot,
+    required this.value,
+  });
+
+  final _GeneratedMetricKeySlot keySlot;
+  final int value;
+
+  String get key => _generatedMetricKey(keySlot);
+
+  @override
+  String toString() {
+    return '_GeneratedMetricEntry(key: $key, value: $value)';
+  }
+}
+
+class _GeneratedMetricsScenario {
+  const _GeneratedMetricsScenario({
+    required this.entries,
+    required this.sentCount,
+  });
+
+  final List<_GeneratedMetricEntry> entries;
+  final int sentCount;
+
+  Map<String, int> get map {
+    final out = <String, int>{};
+    for (final entry in entries) {
+      out[entry.key] = entry.value;
+    }
+    return out;
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedMetricsScenario('
+        'entries: $entries, sentCount: $sentCount)';
+  }
+}
+
+extension _AnyGeneratedMetrics on glados.Any {
+  glados.Generator<_GeneratedMetricKeySlot> get metricKeySlot =>
+      glados.AnyUtils(this).choose(_GeneratedMetricKeySlot.values);
+
+  glados.Generator<_GeneratedMetricEntry> get metricEntry =>
+      glados.CombinableAny(this).combine2(
+        metricKeySlot,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (_GeneratedMetricKeySlot keySlot, int value) =>
+            _GeneratedMetricEntry(keySlot: keySlot, value: value),
+      );
+
+  glados.Generator<_GeneratedMetricsScenario> get metricsScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(this).listWithLengthInRange(0, 20, metricEntry),
+        glados.IntAnys(this).intInRange(0, 1000),
+        (List<_GeneratedMetricEntry> entries, int sentCount) =>
+            _GeneratedMetricsScenario(
+              entries: entries,
+              sentCount: sentCount,
+            ),
+      );
+}
 
 void main() {
   group('buildMatrixStatsSignature', () {
@@ -41,6 +119,24 @@ void main() {
         buildMatrixStatsSignature(stats2),
       );
     });
+
+    glados.Glados(
+      glados.any.metricsScenario,
+      glados.ExploreConfig(numRuns: 140),
+    ).test('matches generated metric-map signature with sent prefix', (
+      scenario,
+    ) {
+      final stats = MatrixStats(
+        sentCount: scenario.sentCount,
+        messageCounts: scenario.map,
+      );
+      final expected = _expectedSignature(
+        scenario.map,
+        sentCount: scenario.sentCount,
+      );
+
+      expect(buildMatrixStatsSignature(stats), expected, reason: '$scenario');
+    }, tags: 'glados');
   });
 
   group('matrixStatsSignature', () {
@@ -75,6 +171,39 @@ void main() {
     test('single entry', () {
       expect(buildMetricsMapSignature({'key': 42}), 'key=42;');
     });
+
+    glados.Glados(
+      glados.any.metricsScenario,
+      glados.ExploreConfig(numRuns: 140),
+    ).test(
+      'is deterministic for generated maps regardless of entry order',
+      (
+        scenario,
+      ) {
+        final forward = scenario.map;
+        final sameEntriesDifferentOrder = <String, int>{};
+        for (final entry in forward.entries.toList().reversed) {
+          sameEntriesDifferentOrder[entry.key] = entry.value;
+        }
+
+        expect(
+          buildMetricsMapSignature(forward),
+          _expectedSignature(forward),
+          reason: '$scenario',
+        );
+        expect(
+          buildMetricsMapSignature(sameEntriesDifferentOrder),
+          _expectedSignature(sameEntriesDifferentOrder),
+          reason: '$scenario',
+        );
+        expect(
+          buildMetricsMapSignature(forward),
+          buildMetricsMapSignature(sameEntriesDifferentOrder),
+          reason: '$scenario',
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('metricsMapSignature', () {
@@ -92,4 +221,19 @@ void main() {
       expect(metricsMapSignature(map), buildMetricsMapSignature(map));
     });
   });
+}
+
+String _expectedSignature(
+  Map<String, int> map, {
+  int? sentCount,
+}) {
+  final keys = map.keys.toList()..sort();
+  final buffer = StringBuffer();
+  if (sentCount != null) {
+    buffer.write('sent=$sentCount;');
+  }
+  for (final key in keys) {
+    buffer.write('$key=${map[key]};');
+  }
+  return buffer.toString();
 }

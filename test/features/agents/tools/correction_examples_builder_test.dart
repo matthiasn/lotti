@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
@@ -6,6 +7,143 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+
+enum _GeneratedCorrectionTextShape { plain, quoted, spaced, punctuation }
+
+enum _GeneratedCorrectionDateSlot { none, ancient, early, middle, late, future }
+
+String _generatedCorrectionText({
+  required _GeneratedCorrectionTextShape shape,
+  required String prefix,
+  required int seed,
+}) {
+  return switch (shape) {
+    _GeneratedCorrectionTextShape.plain => '$prefix $seed',
+    _GeneratedCorrectionTextShape.quoted => '$prefix "$seed"',
+    _GeneratedCorrectionTextShape.spaced => '  $prefix $seed  ',
+    _GeneratedCorrectionTextShape.punctuation => '$prefix-$seed!',
+  };
+}
+
+DateTime? _generatedCorrectionDate(_GeneratedCorrectionDateSlot slot) {
+  return switch (slot) {
+    _GeneratedCorrectionDateSlot.none => null,
+    _GeneratedCorrectionDateSlot.ancient => DateTime(1999),
+    _GeneratedCorrectionDateSlot.early => DateTime(2024),
+    _GeneratedCorrectionDateSlot.middle => DateTime(2024, 6),
+    _GeneratedCorrectionDateSlot.late => DateTime(2024, 12),
+    _GeneratedCorrectionDateSlot.future => DateTime(2025),
+  };
+}
+
+class _GeneratedCorrectionExampleSpec {
+  const _GeneratedCorrectionExampleSpec({
+    required this.beforeShape,
+    required this.afterShape,
+    required this.dateSlot,
+    required this.seed,
+  });
+
+  final _GeneratedCorrectionTextShape beforeShape;
+  final _GeneratedCorrectionTextShape afterShape;
+  final _GeneratedCorrectionDateSlot dateSlot;
+  final int seed;
+
+  String get before => _generatedCorrectionText(
+    shape: beforeShape,
+    prefix: 'before',
+    seed: seed,
+  );
+
+  String get after => _generatedCorrectionText(
+    shape: afterShape,
+    prefix: 'after',
+    seed: seed,
+  );
+
+  DateTime? get capturedAt => _generatedCorrectionDate(dateSlot);
+
+  ChecklistCorrectionExample get example => ChecklistCorrectionExample(
+    before: before,
+    after: after,
+    capturedAt: capturedAt,
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedCorrectionExampleSpec('
+        'beforeShape: $beforeShape, afterShape: $afterShape, '
+        'dateSlot: $dateSlot, seed: $seed)';
+  }
+}
+
+class _GeneratedCorrectionExamplesScenario {
+  const _GeneratedCorrectionExamplesScenario({required this.specs});
+
+  final List<_GeneratedCorrectionExampleSpec> specs;
+
+  List<ChecklistCorrectionExample> get examples =>
+      specs.map((spec) => spec.example).toList();
+
+  String get expectedOutput {
+    if (specs.isEmpty) return '';
+
+    final sorted = [...specs]
+      ..sort((a, b) {
+        final aTime = a.capturedAt ?? DateTime(2000);
+        final bTime = b.capturedAt ?? DateTime(2000);
+        return bTime.compareTo(aTime);
+      });
+    final buffer = StringBuffer()
+      ..writeln('## Correction Examples (for this category)')
+      ..writeln(
+        'Use these as reference for fixing transcription errors in '
+        'checklist items:',
+      );
+    for (final spec in sorted.take(CorrectionExamplesBuilder.maxExamples)) {
+      final before = spec.before.replaceAll('"', r'\"');
+      final after = spec.after.replaceAll('"', r'\"');
+      buffer.writeln('- "$before" → "$after"');
+    }
+    buffer.writeln();
+    return buffer.toString();
+  }
+
+  @override
+  String toString() => '_GeneratedCorrectionExamplesScenario($specs)';
+}
+
+extension _AnyGeneratedCorrectionExamples on glados.Any {
+  glados.Generator<_GeneratedCorrectionTextShape> get correctionTextShape =>
+      glados.AnyUtils(this).choose(_GeneratedCorrectionTextShape.values);
+
+  glados.Generator<_GeneratedCorrectionDateSlot> get correctionDateSlot =>
+      glados.AnyUtils(this).choose(_GeneratedCorrectionDateSlot.values);
+
+  glados.Generator<_GeneratedCorrectionExampleSpec> get correctionExampleSpec =>
+      glados.CombinableAny(this).combine4(
+        correctionTextShape,
+        correctionTextShape,
+        correctionDateSlot,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (
+          _GeneratedCorrectionTextShape beforeShape,
+          _GeneratedCorrectionTextShape afterShape,
+          _GeneratedCorrectionDateSlot dateSlot,
+          int seed,
+        ) => _GeneratedCorrectionExampleSpec(
+          beforeShape: beforeShape,
+          afterShape: afterShape,
+          dateSlot: dateSlot,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_GeneratedCorrectionExamplesScenario>
+  get correctionExamplesScenario => glados.ListAnys(this)
+      .listWithLengthInRange(0, 70, correctionExampleSpec)
+      .map((specs) => _GeneratedCorrectionExamplesScenario(specs: specs));
+}
 
 void main() {
   late MockJournalDb mockDb;
@@ -219,6 +357,17 @@ void main() {
       test('maxExamples constant is 50', () {
         expect(CorrectionExamplesBuilder.maxExamples, equals(50));
       });
+
+      glados.Glados(
+        glados.any.correctionExamplesScenario,
+        glados.ExploreConfig(numRuns: 140),
+      ).test('matches the generated formatting model', (scenario) {
+        expect(
+          CorrectionExamplesBuilder.formatExamples(scenario.examples),
+          scenario.expectedOutput,
+          reason: '$scenario',
+        );
+      }, tags: 'glados');
     });
   });
 }

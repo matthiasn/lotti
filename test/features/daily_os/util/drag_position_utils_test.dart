@@ -1,5 +1,100 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os/util/drag_position_utils.dart';
+
+enum _GeneratedSnapGrid { one, five, ten, fifteen, thirty, sixty }
+
+int _gridMinutes(_GeneratedSnapGrid grid) {
+  return switch (grid) {
+    _GeneratedSnapGrid.one => 1,
+    _GeneratedSnapGrid.five => 5,
+    _GeneratedSnapGrid.ten => 10,
+    _GeneratedSnapGrid.fifteen => 15,
+    _GeneratedSnapGrid.thirty => 30,
+    _GeneratedSnapGrid.sixty => 60,
+  };
+}
+
+class _GeneratedDragMathScenario {
+  const _GeneratedDragMathScenario({
+    required this.minutes,
+    required this.grid,
+    required this.deltaQuarterPixels,
+  });
+
+  final int minutes;
+  final _GeneratedSnapGrid grid;
+  final int deltaQuarterPixels;
+
+  int get gridMinutes => _gridMinutes(grid);
+
+  double get deltaY => deltaQuarterPixels / 4;
+
+  @override
+  String toString() {
+    return '_GeneratedDragMathScenario('
+        'minutes: $minutes, grid: $grid, '
+        'deltaQuarterPixels: $deltaQuarterPixels)';
+  }
+}
+
+class _GeneratedDateMinutesScenario {
+  const _GeneratedDateMinutesScenario({
+    required this.dayOffset,
+    required this.hour,
+    required this.minute,
+  });
+
+  final int dayOffset;
+  final int hour;
+  final int minute;
+
+  DateTime get date => DateTime(2026, 1, 15);
+
+  DateTime get time => DateTime(2026, 1, 15 + dayOffset, hour, minute);
+
+  int get expectedMinutes => (dayOffset * kMaxMinutesInDay + hour * 60 + minute)
+      .clamp(0, kMaxMinutesInDay);
+
+  @override
+  String toString() {
+    return '_GeneratedDateMinutesScenario('
+        'dayOffset: $dayOffset, hour: $hour, minute: $minute)';
+  }
+}
+
+extension _AnyGeneratedDragPosition on glados.Any {
+  glados.Generator<_GeneratedSnapGrid> get snapGrid =>
+      glados.AnyUtils(this).choose(_GeneratedSnapGrid.values);
+
+  glados.Generator<_GeneratedDragMathScenario> get dragMathScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(-2880, 2880),
+        snapGrid,
+        glados.IntAnys(this).intInRange(-2000, 2000),
+        (
+          int minutes,
+          _GeneratedSnapGrid grid,
+          int deltaQuarterPixels,
+        ) => _GeneratedDragMathScenario(
+          minutes: minutes,
+          grid: grid,
+          deltaQuarterPixels: deltaQuarterPixels,
+        ),
+      );
+
+  glados.Generator<_GeneratedDateMinutesScenario> get dateMinutesScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(-2, 3),
+        glados.IntAnys(this).intInRange(0, 23),
+        glados.IntAnys(this).intInRange(0, 59),
+        (int dayOffset, int hour, int minute) => _GeneratedDateMinutesScenario(
+          dayOffset: dayOffset,
+          hour: hour,
+          minute: minute,
+        ),
+      );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +186,32 @@ void main() {
       expect(snapToGrid(1438), equals(1440)); // 23:58 -> 24:00
       expect(snapToGrid(1437), equals(1435)); // 23:57 -> 23:55
     });
+
+    glados.Glados(
+      glados.any.dragMathScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('keeps generated snap results bounded and idempotent', (scenario) {
+      final snapped = snapToGrid(
+        scenario.minutes,
+        gridMinutes: scenario.gridMinutes,
+      );
+
+      expect(snapped, inInclusiveRange(0, kMaxMinutesInDay));
+      expect(snapped % scenario.gridMinutes, 0, reason: '$scenario');
+      expect(
+        snapToGrid(snapped, gridMinutes: scenario.gridMinutes),
+        snapped,
+        reason: '$scenario',
+      );
+
+      if (scenario.minutes >= 0 && scenario.minutes <= kMaxMinutesInDay) {
+        expect(
+          (snapped - scenario.minutes).abs(),
+          lessThanOrEqualTo(scenario.gridMinutes / 2),
+          reason: '$scenario',
+        );
+      }
+    }, tags: 'glados');
   });
 
   group('deltaToMinutes', () {
@@ -121,6 +242,19 @@ void main() {
       expect(deltaToMinutes(0.5), equals(1)); // ~0.75 minutes, rounds to 1
       expect(deltaToMinutes(0.3), equals(0)); // ~0.45 minutes, rounds to 0
     });
+
+    glados.Glados(
+      glados.any.dragMathScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('converts generated pixel deltas using the timeline scale', (
+      scenario,
+    ) {
+      expect(
+        deltaToMinutes(scenario.deltaY),
+        (scenario.deltaY / kHourHeight * 60).round(),
+        reason: '$scenario',
+      );
+    }, tags: 'glados');
   });
 
   group('formatMinutesAsTime', () {
@@ -159,6 +293,21 @@ void main() {
       // Edge case: if minutes exceed 1440, still show 24:00
       expect(formatMinutesAsTime(1500), equals('24:00'));
     });
+
+    glados.Glados(
+      glados.any.dragMathScenario,
+      glados.ExploreConfig(numRuns: 160),
+    ).test('formats generated snapped minutes as parseable day times', (
+      scenario,
+    ) {
+      final snapped = snapToGrid(
+        scenario.minutes,
+        gridMinutes: scenario.gridMinutes,
+      );
+      final label = formatMinutesAsTime(snapped);
+
+      expect(_parseTimeLabel(label), snapped, reason: '$scenario');
+    }, tags: 'glados');
   });
 
   group('formatDurationMinutes', () {
@@ -203,6 +352,19 @@ void main() {
     });
   });
 
+  group('minutesFromDate generated scenarios', () {
+    glados.Glados(
+      glados.any.dateMinutesScenario,
+      glados.ExploreConfig(numRuns: 140),
+    ).test('uses calendar day offset and clamps to visible day', (scenario) {
+      expect(
+        minutesFromDate(scenario.date, scenario.time),
+        scenario.expectedMinutes,
+        reason: '$scenario',
+      );
+    }, tags: 'glados');
+  });
+
   group('Integration scenarios', () {
     test('drag move calculation: 30 min move down', () {
       const originalStartMinutes = 9 * 60 + 30; // 9:30
@@ -238,4 +400,9 @@ void main() {
       expect(newDuration, equals(45));
     });
   });
+}
+
+int _parseTimeLabel(String label) {
+  final parts = label.split(':');
+  return int.parse(parts[0]) * 60 + int.parse(parts[1]);
 }
