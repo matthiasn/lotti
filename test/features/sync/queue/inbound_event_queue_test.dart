@@ -1198,6 +1198,48 @@ void main() {
       final stats = await queue.stats();
       expect(stats.total, 1);
     });
+
+    test(
+      'planner uses the active status/room partial index for stranded-room '
+      'maintenance',
+      () async {
+        await queue.enqueueBatch(
+          [
+            for (var i = 0; i < 200; i++)
+              _buildSyncEvent(
+                eventId: '\$stranded-plan-$i',
+                roomId: i.isEven ? roomA : roomB,
+                originTsMs: 1000 + i,
+              ),
+          ],
+          producer: InboundEventProducer.live,
+        );
+        await db.customStatement('ANALYZE');
+
+        final planRows = await db
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'UPDATE inbound_event_queue '
+              "SET status = 'abandoned', "
+              '    abandoned_at = 0, '
+              "    last_error_reason = 'strandedRoom', "
+              '    lease_until = 0 '
+              'WHERE room_id != ? '
+              "  AND status IN ('enqueued', 'leased', 'retrying')",
+              variables: [Variable.withString(roomA)],
+            )
+            .get();
+        final plan = planRows.map((row) => row.data.toString()).join('\n');
+
+        expect(
+          plan,
+          contains('idx_inbound_event_queue_active_status_room'),
+          reason:
+              'the stranded-room UPDATE should scan only active queue rows '
+              'instead of walking the full applied/abandoned ledger',
+        );
+      },
+    );
   });
 
   group('depthChanges', () {

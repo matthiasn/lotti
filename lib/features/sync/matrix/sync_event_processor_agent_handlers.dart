@@ -11,6 +11,32 @@ String _buildAgentIndexKey(String rawPath) =>
 /// messages, plus the shared descriptor-fetch infrastructure (also consumed
 /// by [_OutboxBundleHandler._resolveOutboxBundleManifest]).
 extension _AgentHandlers on SyncEventProcessor {
+  Future<T> _withPrefetchedAgentEntities<T>({
+    required PreparedOutboxSyncBundle bundle,
+    required Future<T> Function(
+      Map<String, AgentDomainEntity?> prefetchedAgentEntitiesById,
+    )
+    apply,
+  }) async {
+    final repository = agentRepository;
+    if (repository == null) return apply(const <String, AgentDomainEntity?>{});
+
+    final ids = <String>{};
+    for (final child in bundle.children) {
+      final entity = child.resolvedAgentEntity;
+      if (entity?.vectorClock != null) {
+        ids.add(entity!.id);
+      }
+    }
+    if (ids.isEmpty) return apply(const <String, AgentDomainEntity?>{});
+
+    final localEntities = await repository.getEntitiesByIds(ids);
+    final prefetchedAgentEntitiesById = <String, AgentDomainEntity?>{
+      for (final id in ids) id: localEntities[id],
+    };
+    return apply(prefetchedAgentEntitiesById);
+  }
+
   /// Resolves an agent payload from a sync message: inline first, then
   /// fetches from [AttachmentIndex] descriptor (like [SmartJournalEntityLoader]
   /// does for journal entities), falling back to disk.
@@ -200,15 +226,30 @@ extension _AgentHandlers on SyncEventProcessor {
         fromJson: AgentLink.fromJson,
         typeName: 'agentLink',
       );
+
   Future<void> _applyAgentEntityMessage({
     required SyncAgentEntity msg,
     required AgentDomainEntity? resolvedEntity,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     if (resolvedEntity == null) {
       return;
     }
     if (agentRepository != null) {
+      if (await _localAgentEntityDominates(
+        incoming: resolvedEntity,
+        jsonPath: msg.jsonPath,
+        prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+      )) {
+        await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
+        return;
+      }
+
       await agentRepository!.upsertEntity(resolvedEntity);
+      if (prefetchedAgentEntitiesById?.containsKey(resolvedEntity.id) ??
+          false) {
+        prefetchedAgentEntitiesById![resolvedEntity.id] = resolvedEntity;
+      }
       // Remove wake subscriptions when an agent is paused or destroyed
       // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
       // locally.
@@ -256,35 +297,7 @@ extension _AgentHandlers on SyncEventProcessor {
         subDomain: 'processor.apply',
       );
 
-      // Record in sequence log for gap detection (self-healing sync)
-      if (_sequenceLogService != null &&
-          resolvedEntity.vectorClock != null &&
-          msg.originatingHostId != null) {
-        try {
-          final gaps = await _sequenceLogService.recordReceivedEntry(
-            entryId: resolvedEntity.id,
-            vectorClock: resolvedEntity.vectorClock!,
-            originatingHostId: msg.originatingHostId!,
-            coveredVectorClocks: msg.coveredVectorClocks,
-            payloadType: SyncSequencePayloadType.agentEntity,
-            jsonPath: msg.jsonPath,
-          );
-          if (gaps.isNotEmpty) {
-            _trace(
-              'apply.agentEntity.gapsDetected count=${gaps.length} '
-              'for entity=${resolvedEntity.id}',
-              subDomain: 'processor.gapDetection',
-            );
-          }
-        } catch (e, st) {
-          _loggingService.captureException(
-            e,
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordReceived',
-            stackTrace: st,
-          );
-        }
-      }
+      await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
     } else {
       _trace(
         'agentEntity.ignored no repository',
@@ -301,6 +314,14 @@ extension _AgentHandlers on SyncEventProcessor {
       return;
     }
     if (agentRepository != null) {
+      if (await _localAgentLinkDominates(
+        incoming: resolvedLink,
+        jsonPath: msg.jsonPath,
+      )) {
+        await _recordReceivedAgentLink(msg: msg, link: resolvedLink);
+        return;
+      }
+
       await agentRepository!.upsertLink(resolvedLink);
       // Mirror remote agent_task link lifecycle in the wake orchestrator.
       // A non-deleted link restores the per-link subscription for active
@@ -340,39 +361,186 @@ extension _AgentHandlers on SyncEventProcessor {
         subDomain: 'processor.apply',
       );
 
-      // Record in sequence log for gap detection (self-healing sync)
-      if (_sequenceLogService != null &&
-          resolvedLink.vectorClock != null &&
-          msg.originatingHostId != null) {
-        try {
-          final gaps = await _sequenceLogService.recordReceivedEntry(
-            entryId: resolvedLink.id,
-            vectorClock: resolvedLink.vectorClock!,
-            originatingHostId: msg.originatingHostId!,
-            coveredVectorClocks: msg.coveredVectorClocks,
-            payloadType: SyncSequencePayloadType.agentLink,
-            jsonPath: msg.jsonPath,
-          );
-          if (gaps.isNotEmpty) {
-            _trace(
-              'apply.agentLink.gapsDetected count=${gaps.length} '
-              'for link=${resolvedLink.id}',
-              subDomain: 'processor.gapDetection',
-            );
-          }
-        } catch (e, st) {
-          _loggingService.captureException(
-            e,
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordReceived',
-            stackTrace: st,
-          );
-        }
-      }
+      await _recordReceivedAgentLink(msg: msg, link: resolvedLink);
     } else {
       _trace(
         'agentLink.ignored no repository',
         subDomain: 'processor.apply',
+      );
+    }
+  }
+
+  Future<bool> _localAgentEntityDominates({
+    required AgentDomainEntity incoming,
+    required String? jsonPath,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+  }) async {
+    final incomingVc = incoming.vectorClock;
+    if (incomingVc == null) return false;
+
+    final local = prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false
+        ? prefetchedAgentEntitiesById![incoming.id]
+        : await agentRepository!.getEntity(incoming.id);
+    final localVc = local?.vectorClock;
+    if (local == null || localVc == null) return false;
+
+    return _localAgentPayloadDominates(
+      localVc: localVc,
+      incomingVc: incomingVc,
+      kind: 'agentEntity',
+      id: incoming.id,
+      jsonPath: jsonPath,
+      restoreLocalJson: () => jsonEncode(local.toJson()),
+    );
+  }
+
+  Future<bool> _localAgentLinkDominates({
+    required AgentLink incoming,
+    required String? jsonPath,
+  }) async {
+    final incomingVc = incoming.vectorClock;
+    if (incomingVc == null) return false;
+
+    final local = await agentRepository!.getLinkById(incoming.id);
+    final localVc = local?.vectorClock;
+    if (local == null || localVc == null) return false;
+
+    return _localAgentPayloadDominates(
+      localVc: localVc,
+      incomingVc: incomingVc,
+      kind: 'agentLink',
+      id: incoming.id,
+      jsonPath: jsonPath,
+      restoreLocalJson: () => jsonEncode(local.toJson()),
+    );
+  }
+
+  Future<bool> _localAgentPayloadDominates({
+    required VectorClock localVc,
+    required VectorClock incomingVc,
+    required String kind,
+    required String id,
+    required String? jsonPath,
+    required String Function() restoreLocalJson,
+  }) async {
+    try {
+      final status = VectorClock.compare(localVc, incomingVc);
+      final localDominates =
+          status == VclockStatus.a_gt_b || status == VclockStatus.equal;
+      if (!localDominates) return false;
+
+      await _restoreDominantAgentCache(
+        jsonPath: jsonPath,
+        kind: kind,
+        id: id,
+        jsonString: restoreLocalJson(),
+      );
+      _trace(
+        'apply.$kind.skippedLocalDominates id=$id status=$status',
+        subDomain: 'processor.apply',
+      );
+      return true;
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'AGENT_SYNC',
+        subDomain: 'apply.$kind.vectorClockCompare',
+        stackTrace: st,
+      );
+      return false;
+    }
+  }
+
+  Future<void> _restoreDominantAgentCache({
+    required String? jsonPath,
+    required String kind,
+    required String id,
+    required String jsonString,
+  }) async {
+    if (jsonPath == null) return;
+    try {
+      final file = resolveJsonCandidateFile(jsonPath);
+      await saveJson(file.path, jsonString);
+    } on FileSystemException catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'AGENT_SYNC',
+        subDomain: 'apply.$kind.restoreDominantCache',
+        stackTrace: st,
+      );
+      _trace(
+        'apply.$kind.restoreDominantCacheFailed id=$id path=$jsonPath',
+        subDomain: 'processor.apply',
+      );
+    }
+  }
+
+  Future<void> _recordReceivedAgentEntity({
+    required SyncAgentEntity msg,
+    required AgentDomainEntity entity,
+  }) async {
+    if (_sequenceLogService == null ||
+        entity.vectorClock == null ||
+        msg.originatingHostId == null) {
+      return;
+    }
+    try {
+      final gaps = await _sequenceLogService.recordReceivedEntry(
+        entryId: entity.id,
+        vectorClock: entity.vectorClock!,
+        originatingHostId: msg.originatingHostId!,
+        coveredVectorClocks: msg.coveredVectorClocks,
+        payloadType: SyncSequencePayloadType.agentEntity,
+        jsonPath: msg.jsonPath,
+      );
+      if (gaps.isNotEmpty) {
+        _trace(
+          'apply.agentEntity.gapsDetected count=${gaps.length} '
+          'for entity=${entity.id}',
+          subDomain: 'processor.gapDetection',
+        );
+      }
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'recordReceived',
+        stackTrace: st,
+      );
+    }
+  }
+
+  Future<void> _recordReceivedAgentLink({
+    required SyncAgentLink msg,
+    required AgentLink link,
+  }) async {
+    if (_sequenceLogService == null ||
+        link.vectorClock == null ||
+        msg.originatingHostId == null) {
+      return;
+    }
+    try {
+      final gaps = await _sequenceLogService.recordReceivedEntry(
+        entryId: link.id,
+        vectorClock: link.vectorClock!,
+        originatingHostId: msg.originatingHostId!,
+        coveredVectorClocks: msg.coveredVectorClocks,
+        payloadType: SyncSequencePayloadType.agentLink,
+        jsonPath: msg.jsonPath,
+      );
+      if (gaps.isNotEmpty) {
+        _trace(
+          'apply.agentLink.gapsDetected count=${gaps.length} '
+          'for link=${link.id}',
+          subDomain: 'processor.gapDetection',
+        );
+      }
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'recordReceived',
+        stackTrace: st,
       );
     }
   }

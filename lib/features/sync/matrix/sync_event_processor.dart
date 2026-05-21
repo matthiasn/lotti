@@ -486,6 +486,7 @@ class SyncEventProcessor {
   Future<SyncApplyDiagnostics?> _applyMessage({
     required PreparedSyncEvent prepared,
     required JournalDb journalDb,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     final event = prepared.event;
     final syncMessage = prepared.syncMessage;
@@ -632,15 +633,15 @@ class SyncEventProcessor {
         // Handle backfill response - another device responded to our request
         await backfillResponseHandler.handleBackfillResponse(syncMessage);
         return null;
-      // Agent entities use last-writer-wins semantics (no vector clock
-      // comparison). Agent state mutations are causally ordered — wakes
-      // run serially and each update overwrites prior state — so
-      // concurrent conflicting edits don't arise in practice.
-      // Maintenance sync serves as catch-up for missed messages.
+      // Agent entities and links are file-backed often enough that stale
+      // descriptors can arrive after a newer local write. The handlers compare
+      // local vs incoming vector clocks before upsert and skip dominated
+      // payloads while still recording the sequence receipt.
       case final SyncAgentEntity msg:
         await _applyAgentEntityMessage(
           msg: msg,
           resolvedEntity: prepared.resolvedAgentEntity,
+          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
         return null;
       case final SyncAgentLink msg:
@@ -666,10 +667,16 @@ class SyncEventProcessor {
       case SyncOutboxBundle():
         final bundle = prepared.resolvedOutboxBundle;
         if (bundle == null) return null;
-        await _outboxBundleUnpacker.apply(
+        await _withPrefetchedAgentEntities(
           bundle: bundle,
-          applyChild: (child) =>
-              _applyMessage(prepared: child, journalDb: journalDb),
+          apply: (prefetchedAgentEntitiesById) => _outboxBundleUnpacker.apply(
+            bundle: bundle,
+            applyChild: (child) => _applyMessage(
+              prepared: child,
+              journalDb: journalDb,
+              prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+            ),
+          ),
         );
         return null;
       case SyncSyncNodeProfile(:final profile):
