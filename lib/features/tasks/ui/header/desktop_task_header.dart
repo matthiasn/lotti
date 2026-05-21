@@ -489,10 +489,9 @@ class _RenderTrailingAlignedWrap extends RenderBox
           _TrailingAlignedWrapParentData
         > {
   _RenderTrailingAlignedWrap({
-    required double spacing,
-    required double runSpacing,
-  }) : _spacing = spacing,
-       _runSpacing = runSpacing;
+    required this._spacing,
+    required this._runSpacing,
+  });
 
   double _spacing;
   double get spacing => _spacing;

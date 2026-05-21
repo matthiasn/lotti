@@ -32,16 +32,12 @@ typedef CategoryProfileLookup = Future<String?> Function(String categoryId);
 /// Returns `null` if no profile can be resolved through any path.
 class ProfileAutomationResolver {
   const ProfileAutomationResolver({
-    required TaskAgentService taskAgentService,
-    required AgentTemplateService templateService,
-    required ProfileResolver profileResolver,
-    TaskProfileLookup? taskProfileLookup,
-    CategoryProfileLookup? categoryProfileLookup,
-  }) : _taskAgentService = taskAgentService,
-       _templateService = templateService,
-       _profileResolver = profileResolver,
-       _taskProfileLookup = taskProfileLookup,
-       _categoryProfileLookup = categoryProfileLookup;
+    required this._taskAgentService,
+    required this._templateService,
+    required this._profileResolver,
+    this._taskProfileLookup,
+    this._categoryProfileLookup,
+  });
 
   final TaskAgentService _taskAgentService;
   final AgentTemplateService _templateService;

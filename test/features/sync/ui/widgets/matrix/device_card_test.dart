@@ -1,7 +1,7 @@
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 

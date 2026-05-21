@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
@@ -27,7 +28,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class DashboardDefinitionPage extends StatefulWidget {
@@ -418,24 +418,25 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                       shrinkWrap: true,
                                       physics:
                                           const NeverScrollableScrollPhysics(),
-                                      onReorder: (int oldIndex, int newIndex) {
-                                        setState(() {
-                                          dirty = true;
+                                      onReorderItem:
+                                          (int oldIndex, int newIndex) {
+                                            setState(() {
+                                              dirty = true;
 
-                                          final movedItem = dashboardItems
-                                              .removeAt(
-                                                oldIndex,
+                                              final movedItem = dashboardItems
+                                                  .removeAt(
+                                                    oldIndex,
+                                                  );
+                                              final insertionIndex =
+                                                  newIndex > oldIndex
+                                                  ? newIndex - 1
+                                                  : newIndex;
+                                              dashboardItems.insert(
+                                                insertionIndex,
+                                                movedItem,
                                               );
-                                          final insertionIndex =
-                                              newIndex > oldIndex
-                                              ? newIndex - 1
-                                              : newIndex;
-                                          dashboardItems.insert(
-                                            insertionIndex,
-                                            movedItem,
-                                          );
-                                        });
-                                      },
+                                            });
+                                          },
                                       children: List.generate(
                                         dashboardItems.length,
                                         (int index) {
@@ -551,7 +552,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                               onPressed: copyDashboard,
                                             ),
                                             IconButton(
-                                              icon: Icon(
+                                              icon: const Icon(
                                                 MdiIcons.trashCanOutline,
                                               ),
                                               iconSize: settingsIconSize,

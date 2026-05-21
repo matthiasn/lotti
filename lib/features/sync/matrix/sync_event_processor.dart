@@ -77,33 +77,21 @@ Map<String, dynamic> _decodeSyncEventPayload(String raw) {
 /// Decodes timeline events from Matrix and persists them locally.
 class SyncEventProcessor {
   SyncEventProcessor({
-    required LoggingService loggingService,
-    required UpdateNotifications updateNotifications,
-    required AiConfigRepository aiConfigRepository,
-    required SettingsDb settingsDb,
-    DomainLogger? domainLogger,
+    required this._loggingService,
+    required this._updateNotifications,
+    required this._aiConfigRepository,
+    required this._settingsDb,
+    this._domainLogger,
     SyncJournalEntityLoader? journalEntityLoader,
-    SyncSequenceLogService? sequenceLogService,
-    AttachmentIndex? attachmentIndex,
-    JournalDb? journalDb,
-    VectorClockService? vectorClockService,
-    NotificationsDb? notificationsDb,
-    NotificationScheduler? notificationScheduler,
-    SyncNodeProfileRepository? syncNodeProfileRepository,
-  }) : _loggingService = loggingService,
-       _domainLogger = domainLogger,
-       _updateNotifications = updateNotifications,
-       _aiConfigRepository = aiConfigRepository,
-       _settingsDb = settingsDb,
-       _journalEntityLoader =
-           journalEntityLoader ?? const FileSyncJournalEntityLoader(),
-       _sequenceLogService = sequenceLogService,
-       _attachmentIndex = attachmentIndex,
-       _journalDb = journalDb,
-       _vectorClockService = vectorClockService,
-       _notificationsDb = notificationsDb,
-       _notificationScheduler = notificationScheduler,
-       _syncNodeProfileRepository = syncNodeProfileRepository;
+    this._sequenceLogService,
+    this._attachmentIndex,
+    this._journalDb,
+    this._vectorClockService,
+    this._notificationsDb,
+    this._notificationScheduler,
+    this._syncNodeProfileRepository,
+  }) : _journalEntityLoader =
+           journalEntityLoader ?? const FileSyncJournalEntityLoader();
 
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;

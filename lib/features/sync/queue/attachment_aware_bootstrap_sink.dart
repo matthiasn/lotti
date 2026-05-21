@@ -29,12 +29,10 @@ import 'package:matrix/matrix.dart';
 /// if pages arrive faster than individual attachments complete.
 class AttachmentAwareBootstrapSink implements BootstrapSink {
   AttachmentAwareBootstrapSink({
-    required BootstrapSink inner,
-    required Future<void> Function(Event event) processAttachment,
+    required this._inner,
+    required this._processAttachment,
     int concurrency = SyncTuning.bootstrapAttachmentConcurrency,
-  }) : _inner = inner,
-       _processAttachment = processAttachment,
-       _concurrency = concurrency < 1 ? 1 : concurrency;
+  }) : _concurrency = concurrency < 1 ? 1 : concurrency;
 
   final BootstrapSink _inner;
   final Future<void> Function(Event event) _processAttachment;

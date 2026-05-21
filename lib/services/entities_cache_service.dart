@@ -8,10 +8,9 @@ import 'package:lotti/services/dev_logger.dart';
 
 class EntitiesCacheService {
   EntitiesCacheService({
-    required JournalDb journalDb,
-    required UpdateNotifications updateNotifications,
-  }) : _journalDb = journalDb,
-       _updateNotifications = updateNotifications;
+    required this._journalDb,
+    required this._updateNotifications,
+  });
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;

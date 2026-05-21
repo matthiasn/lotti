@@ -14,20 +14,14 @@ import 'package:uuid/uuid.dart';
 
 class NotificationRepository {
   NotificationRepository({
-    required NotificationsDb notificationsDb,
-    required JournalDb journalDb,
-    required VectorClockService vectorClockService,
-    required OutboxService outboxService,
-    required UpdateNotifications updateNotifications,
-    required NotificationScheduler scheduler,
+    required this._notificationsDb,
+    required this._journalDb,
+    required this._vectorClockService,
+    required this._outboxService,
+    required this._updateNotifications,
+    required this._scheduler,
     DateTime Function()? now,
-  }) : _notificationsDb = notificationsDb,
-       _journalDb = journalDb,
-       _vectorClockService = vectorClockService,
-       _outboxService = outboxService,
-       _updateNotifications = updateNotifications,
-       _scheduler = scheduler,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final NotificationsDb _notificationsDb;
   final JournalDb _journalDb;

@@ -16,18 +16,13 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// against each other.
 class SyncNodeProfileBroadcaster {
   SyncNodeProfileBroadcaster({
-    required SyncNodeProfileRepository repository,
-    required SyncNodeCapabilityProbe probe,
-    required VectorClockService vectorClockService,
-    required OutboxService outboxService,
-    DomainLogger? domainLogger,
+    required this._repository,
+    required this._probe,
+    required this._vectorClockService,
+    required this._outboxService,
+    this._domainLogger,
     DateTime Function()? clock,
-  }) : _repository = repository,
-       _probe = probe,
-       _vectorClockService = vectorClockService,
-       _outboxService = outboxService,
-       _domainLogger = domainLogger,
-       _clock = clock ?? DateTime.now;
+  }) : _clock = clock ?? DateTime.now;
 
   final SyncNodeProfileRepository _repository;
   final SyncNodeCapabilityProbe _probe;

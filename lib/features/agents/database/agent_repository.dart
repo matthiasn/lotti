@@ -21,8 +21,7 @@ import 'package:sqlite3/sqlite3.dart' show SqliteException;
 /// Wake-run log and saga log rows are plain Drift data classes and are read
 /// and written directly without an intermediate domain conversion.
 class AgentRepository {
-  AgentRepository(this._db, {DomainLogger? domainLogger})
-    : _domainLogger = domainLogger;
+  AgentRepository(this._db, {this._domainLogger});
 
   final AgentDatabase _db;
   final DomainLogger? _domainLogger;

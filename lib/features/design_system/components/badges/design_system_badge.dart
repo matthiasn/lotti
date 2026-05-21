@@ -39,34 +39,31 @@ class DesignSystemBadge extends StatelessWidget {
        _icon = null;
 
   const DesignSystemBadge.filled({
-    required String label,
+    required String this._label,
     this.tone = DesignSystemBadgeTone.primary,
     this.semanticLabel,
     this.excludeFromSemantics = false,
     super.key,
   }) : _type = _DesignSystemBadgeType.filled,
-       _label = label,
        _icon = null;
 
   const DesignSystemBadge.outlined({
-    required String label,
+    required String this._label,
     this.tone = DesignSystemBadgeTone.primary,
     this.semanticLabel,
     this.excludeFromSemantics = false,
     super.key,
   }) : _type = _DesignSystemBadgeType.outlined,
-       _label = label,
        _icon = null;
 
   const DesignSystemBadge.icon({
-    required IconData icon,
+    required IconData this._icon,
     this.tone = DesignSystemBadgeTone.primary,
     this.semanticLabel,
     this.excludeFromSemantics = false,
     super.key,
   }) : _type = _DesignSystemBadgeType.icon,
-       _label = null,
-       _icon = icon;
+       _label = null;
 
   final DesignSystemBadgeTone tone;
   final String? semanticLabel;

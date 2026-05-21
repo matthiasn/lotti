@@ -686,7 +686,7 @@ class _CollapsibleBodyState extends State<_CollapsibleBody>
   Widget build(BuildContext context) {
     return SizeTransition(
       sizeFactor: _sizeAnimation,
-      axisAlignment: -1,
+      alignment: AlignmentGeometry.topStart,
       child: FadeTransition(
         opacity: _opacityAnimation,
         child: widget.child,

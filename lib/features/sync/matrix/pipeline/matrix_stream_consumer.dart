@@ -23,19 +23,14 @@ import 'package:lotti/services/logging_service.dart';
 /// Matrix Stats UI.
 class MatrixStreamConsumer implements SyncPipeline {
   MatrixStreamConsumer({
-    required MatrixSessionManager sessionManager,
-    required SyncRoomManager roomManager,
-    required LoggingService loggingService,
-    required SettingsDb settingsDb,
-    required SyncEventProcessor eventProcessor,
+    required this._sessionManager,
+    required this._roomManager,
+    required this._loggingService,
+    required this._settingsDb,
+    required this._eventProcessor,
     MetricsCounters? metricsCounters,
     bool collectMetrics = false,
-  }) : _sessionManager = sessionManager,
-       _roomManager = roomManager,
-       _loggingService = loggingService,
-       _settingsDb = settingsDb,
-       _eventProcessor = eventProcessor,
-       _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics) {
+  }) : _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics) {
     _processor = MatrixStreamProcessor(
       metricsCounters: _metrics,
       collectMetrics: collectMetrics,

@@ -37,10 +37,10 @@ import 'package:path/path.dart' as p;
 class OutboxService {
   OutboxService({
     required SyncDatabase syncDatabase,
-    required LoggingService loggingService,
-    required VectorClockService vectorClockService,
-    required JournalDb journalDb,
-    required Directory documentsDirectory,
+    required this._loggingService,
+    required this._vectorClockService,
+    required this._journalDb,
+    required this._documentsDirectory,
     required UserActivityService userActivityService,
     UserActivityGate? activityGate,
     OutboxRepository? repository,
@@ -50,19 +50,12 @@ class OutboxService {
     MatrixService? matrixService,
     bool? ownsActivityGate,
     Future<void> Function(String path, String json)? saveJsonHandler,
-    // Optional seams for testing/injection
-    Stream<List<ConnectivityResult>>? connectivityStream,
-    SyncSequenceLogService? sequenceLogService,
-    Duration postDrainSettle = SyncTuning.outboxPostDrainSettle,
-    DomainLogger? domainLogger,
-    SyncActivitySignaler? activitySignaler,
-  }) : _postDrainSettle = postDrainSettle,
-       _activitySignaler = activitySignaler,
-       _syncDatabase = syncDatabase,
-       _loggingService = loggingService,
-       _vectorClockService = vectorClockService,
-       _journalDb = journalDb,
-       _documentsDirectory = documentsDirectory,
+    this._connectivityStream,
+    this._sequenceLogService,
+    this._postDrainSettle = SyncTuning.outboxPostDrainSettle,
+    this._domainLogger,
+    this._activitySignaler,
+  }) : _syncDatabase = syncDatabase,
        _saveJson = saveJsonHandler ?? saveJson,
        _activityGate =
            activityGate ??
@@ -71,10 +64,7 @@ class OutboxService {
              idleThreshold: SyncTuning.outboxIdleThreshold,
            ),
        _ownsActivityGate = ownsActivityGate ?? activityGate == null,
-       _matrixService = matrixService,
-       _connectivityStream = connectivityStream,
-       _sequenceLogService = sequenceLogService,
-       _domainLogger = domainLogger {
+       _matrixService = matrixService {
     // Runtime validation that works in release builds
     if (messageSender == null && matrixService == null) {
       throw ArgumentError(

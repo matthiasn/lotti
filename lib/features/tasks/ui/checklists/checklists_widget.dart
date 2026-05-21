@@ -98,7 +98,7 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           buildDefaultDragHandles: false, // We use custom drag handles
-          onReorder: (int oldIndex, int newIndex) {
+          onReorderItem: (int oldIndex, int newIndex) {
             final itemIds = [...checklistIds];
             final movedItem = itemIds.removeAt(oldIndex);
             final insertionIndex = newIndex > oldIndex

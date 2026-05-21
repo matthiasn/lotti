@@ -80,25 +80,21 @@ class SyncActorCommandHandler {
     GatewayFactory? gatewayFactory,
     MatrixClientFactory? createMatrixClientFactory,
     VodInitializer? vodInitializer,
-    Stream<SyncUpdate> Function(Client)? syncUpdateStreamFactory,
-    Stream<ToDeviceEvent> Function(Client)? toDeviceEventStreamFactory,
-    TimelineEventStreamFactory? timelineEventStreamFactory,
-    int verificationPeerDiscoveryAttempts =
+    this._syncUpdateStreamFactory,
+    this._toDeviceEventStreamFactory,
+    this._timelineEventStreamFactory,
+    this._verificationPeerDiscoveryAttempts =
         _defaultVerificationPeerDiscoveryAttempts,
-    Duration verificationPeerDiscoveryInterval =
+    this._verificationPeerDiscoveryInterval =
         _defaultVerificationPeerDiscoveryInterval,
-    bool enableLogging = true,
+    this._enableLogging = true,
     SyncDatabaseFactory? syncDatabaseFactory,
     OutboundQueueFactory? outboundQueueFactory,
-    Duration retryBaseDelay = const Duration(milliseconds: 250),
-  }) : _retryBaseDelay = retryBaseDelay,
-       _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
+    this._retryBaseDelay = const Duration(milliseconds: 250),
+  }) : _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
        _createMatrixClientFactory =
            createMatrixClientFactory ?? createMatrixClient,
        _vodInitializer = vodInitializer ?? vod.init,
-       _syncUpdateStreamFactory = syncUpdateStreamFactory,
-       _toDeviceEventStreamFactory = toDeviceEventStreamFactory,
-       _timelineEventStreamFactory = timelineEventStreamFactory,
        _syncDatabaseFactory =
            syncDatabaseFactory ??
            ((String dbRootPath) => SyncDatabase(
@@ -106,10 +102,7 @@ class SyncActorCommandHandler {
              tempDirectoryProvider: () async => Directory(dbRootPath),
              background: false,
            )),
-       _outboundQueueFactory = outboundQueueFactory ?? OutboundQueue.new,
-       _verificationPeerDiscoveryAttempts = verificationPeerDiscoveryAttempts,
-       _verificationPeerDiscoveryInterval = verificationPeerDiscoveryInterval,
-       _enableLogging = enableLogging;
+       _outboundQueueFactory = outboundQueueFactory ?? OutboundQueue.new;
 
   late final VerificationHandler _verificationHandler = VerificationHandler(
     onStateChanged: _emitEvent,

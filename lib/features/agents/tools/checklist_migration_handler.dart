@@ -13,12 +13,10 @@ import 'package:lotti/services/domain_logging.dart';
 /// automatically via [ChecklistRepository.createChecklist].
 class ChecklistMigrationHandler {
   ChecklistMigrationHandler({
-    required ChecklistRepository checklistRepository,
-    required JournalDb journalDb,
-    DomainLogger? domainLogger,
-  }) : _checklistRepository = checklistRepository,
-       _journalDb = journalDb,
-       _domainLogger = domainLogger;
+    required this._checklistRepository,
+    required this._journalDb,
+    this._domainLogger,
+  });
 
   final ChecklistRepository _checklistRepository;
   final JournalDb _journalDb;

@@ -1,5 +1,6 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -127,8 +128,8 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
         body: Stack(
           children: [
             CustomScrollView(
+              scrollCacheExtent: const ScrollCacheExtent.pixels(4000),
               controller: _scrollController,
-              cacheExtent: 4000,
               slivers: [
                 JournalSliverAppBar(entryId: widget.itemId),
                 SliverToBoxAdapter(

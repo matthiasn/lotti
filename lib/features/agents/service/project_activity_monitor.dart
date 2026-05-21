@@ -19,17 +19,13 @@ import 'package:lotti/services/domain_logging.dart';
 /// decides whether to spend tokens on a fresh report.
 class ProjectActivityMonitor {
   ProjectActivityMonitor({
-    required UpdateNotifications notifications,
-    required AgentRepository agentRepository,
-    required ProjectRepository projectRepository,
-    required AgentSyncService syncService,
+    required this._notifications,
+    required this._agentRepository,
+    required this._projectRepository,
+    required this._syncService,
     this.domainLogger,
-    Clock clock = const Clock(),
-  }) : _notifications = notifications,
-       _agentRepository = agentRepository,
-       _projectRepository = projectRepository,
-       _syncService = syncService,
-       _clock = clock;
+    this._clock = const Clock(),
+  });
 
   final UpdateNotifications _notifications;
   final AgentRepository _agentRepository;

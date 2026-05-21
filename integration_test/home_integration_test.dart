@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lotti/main.dart' as app;
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 const debug = false;
 

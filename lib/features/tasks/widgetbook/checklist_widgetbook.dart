@@ -488,7 +488,7 @@ class _ItemsColumn extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       buildDefaultDragHandles: false,
       itemCount: items.length,
-      onReorder: onReorder,
+      onReorderItem: onReorder,
       proxyDecorator: (child, index, animation) {
         return AnimatedBuilder(
           animation: animation,

@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';

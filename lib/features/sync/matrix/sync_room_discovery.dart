@@ -59,8 +59,8 @@ class SyncRoomCandidate {
 /// and join an existing sync room instead of waiting for an invite.
 class SyncRoomDiscoveryService {
   SyncRoomDiscoveryService({
-    required LoggingService loggingService,
-  }) : _loggingService = loggingService;
+    required this._loggingService,
+  });
 
   final LoggingService _loggingService;
 

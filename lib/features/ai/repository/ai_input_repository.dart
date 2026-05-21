@@ -42,14 +42,11 @@ part 'ai_input_repository.g.dart';
 class AiInputRepository {
   AiInputRepository(
     this.ref, {
-    required TaskSummaryResolver taskSummaryResolver,
-    required ProjectRepository projectRepository,
-    AgentRepository? agentRepository,
-    DomainLogger? domainLogger,
-  }) : _taskSummaryResolver = taskSummaryResolver,
-       _projectRepository = projectRepository,
-       _agentRepository = agentRepository,
-       _domainLogger = domainLogger;
+    required this._taskSummaryResolver,
+    required this._projectRepository,
+    this._agentRepository,
+    this._domainLogger,
+  });
 
   final JournalDb _db = getIt<JournalDb>();
   final Ref ref;

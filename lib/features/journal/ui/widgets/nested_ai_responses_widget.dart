@@ -145,7 +145,7 @@ class _NestedAiResponsesWidgetState
                     // Animated content
                     SizeTransition(
                       sizeFactor: _expandAnimation,
-                      axisAlignment: -1,
+                      alignment: AlignmentGeometry.topStart,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

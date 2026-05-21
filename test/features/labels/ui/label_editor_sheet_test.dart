@@ -16,9 +16,9 @@ class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 class _FakeLabelEditorController extends LabelEditorController {
   _FakeLabelEditorController(
     super.params, {
-    required LabelEditorState initialState,
+    required this._initialState,
     this.onPrivateChanged,
-  }) : _initialState = initialState;
+  });
 
   final LabelEditorState _initialState;
   final void Function({required bool isPrivate})? onPrivateChanged;

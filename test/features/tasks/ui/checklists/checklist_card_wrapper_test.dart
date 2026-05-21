@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,7 +17,6 @@ import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/correction_undo_snackbar.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';

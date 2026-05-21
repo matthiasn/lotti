@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class TranscriptListItem extends StatefulWidget {
   const TranscriptListItem(
@@ -76,7 +76,7 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                       transcript: widget.transcript,
                     );
                   },
-                  icon: Icon(
+                  icon: const Icon(
                     MdiIcons.trashCanOutline,
                     size: fontSizeMedium,
                   ),

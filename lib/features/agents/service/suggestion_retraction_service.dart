@@ -72,12 +72,10 @@ typedef ChangeSetRetractionCallback =
 /// but both paths leave a decision record.
 class SuggestionRetractionService {
   SuggestionRetractionService({
-    required AgentSyncService syncService,
-    DomainLogger? domainLogger,
-    ChangeSetRetractionCallback? onChangeSetRetracted,
-  }) : _syncService = syncService,
-       _domainLogger = domainLogger,
-       _onChangeSetRetracted = onChangeSetRetracted;
+    required this._syncService,
+    this._domainLogger,
+    this._onChangeSetRetracted,
+  });
 
   final AgentSyncService _syncService;
   final DomainLogger? _domainLogger;

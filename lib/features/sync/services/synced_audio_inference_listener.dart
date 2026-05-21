@@ -16,12 +16,10 @@ import 'package:lotti/services/domain_logging.dart';
 /// contend with itself.
 class SyncedAudioInferenceListener {
   SyncedAudioInferenceListener({
-    required UpdateNotifications updateNotifications,
-    required SyncedAudioInferenceDispatcher dispatcher,
-    DomainLogger? domainLogger,
-  }) : _updateNotifications = updateNotifications,
-       _dispatcher = dispatcher,
-       _domainLogger = domainLogger;
+    required this._updateNotifications,
+    required this._dispatcher,
+    this._domainLogger,
+  });
 
   final UpdateNotifications _updateNotifications;
   final SyncedAudioInferenceDispatcher _dispatcher;

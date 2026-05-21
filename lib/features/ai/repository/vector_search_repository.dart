@@ -33,15 +33,11 @@ class VectorSearchResult {
 /// 4. Resolve results to parent tasks (deduplicating by ID)
 class VectorSearchRepository {
   VectorSearchRepository({
-    required EmbeddingStore embeddingStore,
-    required OllamaEmbeddingRepository embeddingRepository,
-    required JournalDb journalDb,
-    required AiConfigRepository aiConfigRepository,
-  }) : _embeddingStore = embeddingStore,
-
-       _embeddingRepository = embeddingRepository,
-       _journalDb = journalDb,
-       _aiConfigRepository = aiConfigRepository;
+    required this._embeddingStore,
+    required this._embeddingRepository,
+    required this._journalDb,
+    required this._aiConfigRepository,
+  });
 
   final EmbeddingStore _embeddingStore;
   final OllamaEmbeddingRepository _embeddingRepository;

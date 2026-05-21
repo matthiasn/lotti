@@ -20,12 +20,10 @@ import 'package:lotti/services/time_service.dart';
 /// never crosses task boundaries.
 class RunningTimerUpdateHandler {
   RunningTimerUpdateHandler({
-    required PersistenceLogic persistenceLogic,
-    required TimeService timeService,
-    DomainLogger? domainLogger,
-  }) : _persistenceLogic = persistenceLogic,
-       _timeService = timeService,
-       _domainLogger = domainLogger;
+    required this._persistenceLogic,
+    required this._timeService,
+    this._domainLogger,
+  });
 
   final PersistenceLogic _persistenceLogic;
   final TimeService _timeService;

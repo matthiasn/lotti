@@ -14,8 +14,7 @@ import 'package:matrix/matrix.dart';
 /// subscribers — notably `QueuePipelineCoordinator`, which resurrects
 /// abandoned ledger rows on attachment arrival — can react without polling.
 class AttachmentIndex {
-  AttachmentIndex({LoggingService? logging, this.verboseLogging = true})
-    : _logging = logging;
+  AttachmentIndex({this._logging, this.verboseLogging = true});
 
   final LoggingService? _logging;
 

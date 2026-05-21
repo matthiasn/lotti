@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1005]
+### Changed
+- Upgraded Flutter to 3.44.0 and aligned the Flatpak Flathub manifest
+  template with the repository FVM toolchain pin, so source builds submitted
+  to Flathub use the same Flutter SDK as local and CI builds.
+
 ## [0.9.1003]
 ### Changed
 - AI popup menu now opens a model-override picker when you tap

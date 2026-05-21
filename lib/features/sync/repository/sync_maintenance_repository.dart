@@ -49,18 +49,13 @@ class SyncOperation<T> {
 /// and totals helpers used by the controller and Sync modal.
 class SyncMaintenanceRepository {
   SyncMaintenanceRepository({
-    required JournalDb journalDb,
-    required OutboxService outboxService,
-    required LoggingService loggingService,
-    required AiConfigRepository aiConfigRepository,
-    required AgentRepository agentRepository,
-    required VectorClockService vectorClockService,
-  }) : _journalDb = journalDb,
-       _outboxService = outboxService,
-       _loggingService = loggingService,
-       _aiConfigRepository = aiConfigRepository,
-       _agentRepository = agentRepository,
-       _vectorClockService = vectorClockService;
+    required this._journalDb,
+    required this._outboxService,
+    required this._loggingService,
+    required this._aiConfigRepository,
+    required this._agentRepository,
+    required this._vectorClockService,
+  });
 
   final JournalDb _journalDb;
   final OutboxService _outboxService;

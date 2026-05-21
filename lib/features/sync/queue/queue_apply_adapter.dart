@@ -33,12 +33,10 @@ const _logSub = 'queue.apply';
 /// preparing a second time.
 class QueueApplyAdapter {
   QueueApplyAdapter({
-    required SyncEventProcessor processor,
-    required JournalDb journalDb,
-    required LoggingService logging,
-  }) : _processor = processor,
-       _journalDb = journalDb,
-       _logging = logging;
+    required this._processor,
+    required this._journalDb,
+    required this._logging,
+  });
 
   final SyncEventProcessor _processor;
   final JournalDb _journalDb;

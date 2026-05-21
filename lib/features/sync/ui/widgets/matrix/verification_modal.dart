@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class VerificationModal extends ConsumerStatefulWidget {
@@ -263,7 +263,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Icon(
+                    const Icon(
                       MdiIcons.shieldCheck,
                       color: Colors.greenAccent,
                       size: 128,

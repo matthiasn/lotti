@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Summary section at the bottom of the Daily OS view.
 class DaySummary extends ConsumerWidget {

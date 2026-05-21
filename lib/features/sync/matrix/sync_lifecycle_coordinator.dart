@@ -18,20 +18,14 @@ typedef LifecycleCallback = Future<void> Function();
 /// can cleanly restart on the next login.
 class SyncLifecycleCoordinator {
   SyncLifecycleCoordinator({
-    required MatrixSyncGateway gateway,
-    required MatrixSessionManager sessionManager,
-    required SyncRoomManager roomManager,
-    required LoggingService loggingService,
-    required SyncPipeline pipeline,
-    LifecycleCallback? onLogin,
-    LifecycleCallback? onLogout,
-  }) : _gateway = gateway,
-       _sessionManager = sessionManager,
-       _roomManager = roomManager,
-       _loggingService = loggingService,
-       _pipeline = pipeline,
-       _onLogin = onLogin,
-       _onLogout = onLogout;
+    required this._gateway,
+    required this._sessionManager,
+    required this._roomManager,
+    required this._loggingService,
+    required this._pipeline,
+    this._onLogin,
+    this._onLogout,
+  });
 
   final MatrixSyncGateway _gateway;
   final MatrixSessionManager _sessionManager;

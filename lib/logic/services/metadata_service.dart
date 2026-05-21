@@ -14,8 +14,8 @@ import 'package:uuid/uuid.dart';
 /// testability and maintain single responsibility in `PersistenceLogic`.
 class MetadataService {
   MetadataService({
-    required VectorClockService vectorClockService,
-  }) : _vectorClockService = vectorClockService;
+    required this._vectorClockService,
+  });
 
   final VectorClockService _vectorClockService;
   final _uuid = const Uuid();

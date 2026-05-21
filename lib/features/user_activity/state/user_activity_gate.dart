@@ -4,10 +4,9 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 
 class UserActivityGate {
   UserActivityGate({
-    required UserActivityService activityService,
+    required this._activityService,
     this.idleThreshold = const Duration(seconds: 1),
-  }) : _activityService = activityService,
-       _controller = StreamController<bool>.broadcast() {
+  }) : _controller = StreamController<bool>.broadcast() {
     final elapsed = DateTime.now().difference(_activityService.lastActivity);
     final isIdle = elapsed >= idleThreshold;
     _canProcess = isIdle;

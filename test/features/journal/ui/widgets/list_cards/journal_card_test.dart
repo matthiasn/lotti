@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -34,7 +35,6 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:lotti/widgets/events/event_status.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:research_package/model.dart';
 

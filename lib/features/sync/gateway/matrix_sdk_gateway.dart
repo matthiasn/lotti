@@ -9,20 +9,16 @@ import 'package:matrix/matrix.dart';
 class MatrixSdkGateway implements MatrixSyncGateway {
   /// Creates a new [MatrixSdkGateway].
   ///
-  /// The gateway assumes ownership of the provided [client] instance and will
+  /// The gateway assumes ownership of the provided [_client] instance and will
   /// call [Client.dispose] during [dispose]. Callers must not dispose the
   /// client separately once it is passed here.
   MatrixSdkGateway({
-    required Client client,
-    required SentEventRegistry sentEventRegistry,
-    Stream<({String roomId, StrippedStateEvent state})>? roomStateStream,
-    Stream<LoginState>? loginStateStream,
+    required this._client,
+    required this._sentEventRegistry,
+    this._roomStateStream,
+    this._loginStateStream,
     Stream<KeyVerification>? keyVerificationRequestStream,
-  }) : _client = client,
-       _sentEventRegistry = sentEventRegistry,
-       _roomStateStream = roomStateStream,
-       _loginStateStream = loginStateStream,
-       _keyVerificationRequests = keyVerificationRequestStream {
+  }) : _keyVerificationRequests = keyVerificationRequestStream {
     _inviteSubscription = (_roomStateStream ?? _client.onRoomState.stream)
         .listen(
           _handleRoomState,

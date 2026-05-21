@@ -17,14 +17,11 @@ typedef SyncEngineHook = Future<void> Function();
 /// between logged-in and logged-out states.
 class SyncEngine {
   SyncEngine({
-    required MatrixSessionManager sessionManager,
-    required SyncRoomManager roomManager,
-    required SyncLifecycleCoordinator lifecycleCoordinator,
-    required LoggingService loggingService,
-  }) : _sessionManager = sessionManager,
-       _roomManager = roomManager,
-       _lifecycleCoordinator = lifecycleCoordinator,
-       _loggingService = loggingService;
+    required this._sessionManager,
+    required this._roomManager,
+    required this._lifecycleCoordinator,
+    required this._loggingService,
+  });
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;

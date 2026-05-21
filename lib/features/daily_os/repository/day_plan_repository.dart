@@ -42,12 +42,10 @@ abstract class DayPlanRepository {
 /// Default implementation of [DayPlanRepository].
 class DayPlanRepositoryImpl implements DayPlanRepository {
   DayPlanRepositoryImpl({
-    required JournalDb journalDb,
-    required PersistenceLogic persistenceLogic,
-    required UpdateNotifications updateNotifications,
-  }) : _journalDb = journalDb,
-       _persistenceLogic = persistenceLogic,
-       _updateNotifications = updateNotifications;
+    required this._journalDb,
+    required this._persistenceLogic,
+    required this._updateNotifications,
+  });
 
   final JournalDb _journalDb;
   final PersistenceLogic _persistenceLogic;

@@ -9,14 +9,11 @@ import 'package:lotti/features/sync/actor/sync_actor.dart';
 /// asynchronous events from the actor.
 class SyncActorHost {
   SyncActorHost._({
-    required Isolate isolate,
-    required SendPort commandPort,
-    required ReceivePort eventPort,
-    required StreamController<Map<String, Object?>> eventController,
-  }) : _isolate = isolate,
-       _commandPort = commandPort,
-       _eventPort = eventPort,
-       _eventController = eventController;
+    required this._isolate,
+    required this._commandPort,
+    required this._eventPort,
+    required this._eventController,
+  });
 
   final Isolate _isolate;
   final SendPort _commandPort;

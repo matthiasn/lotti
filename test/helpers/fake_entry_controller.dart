@@ -38,10 +38,9 @@ class ToggleCallTracker {
 class FakeEntryController extends EntryController {
   FakeEntryController(
     this._entity, {
-    ToggleCallTracker? tracker,
-    bool showMap = false,
-  }) : _tracker = tracker,
-       _showMap = showMap;
+    this._tracker,
+    this._showMap = false,
+  });
 
   final JournalEntity _entity;
   final ToggleCallTracker? _tracker;

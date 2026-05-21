@@ -21,26 +21,17 @@ const String _syncMessageType = 'com.lotti.sync.message';
 /// UI isolate.
 class OutboundQueue {
   OutboundQueue({
-    required SyncDatabase syncDatabase,
-    required MatrixSdkGateway gateway,
-    required OutboundQueueEventSink emitEvent,
-    Duration leaseDuration = const Duration(minutes: 1),
-    Duration retryDelay = SyncTuning.outboxRetryDelay,
-    Duration errorDelay = SyncTuning.outboxErrorDelay,
-    int maxRetries = SyncTuning.outboxMaxRetriesDiagnostics,
-    Duration sendTimeout = SyncTuning.outboxSendTimeout,
-    bool connected = true,
-    String? syncRoomId,
-  }) : _syncDatabase = syncDatabase,
-       _gateway = gateway,
-       _emitEvent = emitEvent,
-       _leaseDuration = leaseDuration,
-       _retryDelay = retryDelay,
-       _errorDelay = errorDelay,
-       _maxRetries = maxRetries,
-       _sendTimeout = sendTimeout,
-       _connected = connected,
-       _syncRoomId = syncRoomId;
+    required this._syncDatabase,
+    required this._gateway,
+    required this._emitEvent,
+    this._leaseDuration = const Duration(minutes: 1),
+    this._retryDelay = SyncTuning.outboxRetryDelay,
+    this._errorDelay = SyncTuning.outboxErrorDelay,
+    this._maxRetries = SyncTuning.outboxMaxRetriesDiagnostics,
+    this._sendTimeout = SyncTuning.outboxSendTimeout,
+    this._connected = true,
+    this._syncRoomId,
+  });
 
   final SyncDatabase _syncDatabase;
   final MatrixSdkGateway _gateway;

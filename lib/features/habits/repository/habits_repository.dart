@@ -65,13 +65,12 @@ abstract class HabitsRepository {
 class HabitsRepositoryImpl implements HabitsRepository {
   /// Creates a repository instance.
   ///
-  /// [journalDb] is the database for habit data access.
-  /// [updateNotifications] provides the stream of update notifications.
+  /// [_journalDb] is the database for habit data access.
+  /// [_updateNotifications] provides the stream of update notifications.
   HabitsRepositoryImpl({
-    required JournalDb journalDb,
-    required UpdateNotifications updateNotifications,
-  }) : _journalDb = journalDb,
-       _updateNotifications = updateNotifications;
+    required this._journalDb,
+    required this._updateNotifications,
+  });
 
   final JournalDb _journalDb;
   final UpdateNotifications _updateNotifications;

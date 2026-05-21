@@ -21,10 +21,9 @@ class DescriptorDownloadResult {
 class DescriptorDownloader {
   DescriptorDownloader({
     required LoggingService loggingService,
-    required VectorClockValidator validator,
+    required this._validator,
     this.onCachePurge,
-  }) : _logging = loggingService,
-       _validator = validator;
+  }) : _logging = loggingService;
 
   static const int maxDescriptorDownloadAttempts = 2;
 

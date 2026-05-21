@@ -28,22 +28,15 @@ import 'package:meta/meta.dart';
 /// amplification prevention).
 class BackfillResponseHandler {
   BackfillResponseHandler({
-    required JournalDb journalDb,
-    required SyncSequenceLogService sequenceLogService,
-    required OutboxService outboxService,
-    required LoggingService loggingService,
-    required VectorClockService vectorClockService,
-    DomainLogger? domainLogger,
-    NotificationsDb? notificationsDb,
+    required this._journalDb,
+    required this._sequenceLogService,
+    required this._outboxService,
+    required this._loggingService,
+    required this._vectorClockService,
+    this._domainLogger,
+    this._notificationsDb,
     @visibleForTesting Duration? responseCooldown,
-  }) : _journalDb = journalDb,
-       _sequenceLogService = sequenceLogService,
-       _outboxService = outboxService,
-       _loggingService = loggingService,
-       _vectorClockService = vectorClockService,
-       _domainLogger = domainLogger,
-       _notificationsDb = notificationsDb,
-       _responseCooldown =
+  }) : _responseCooldown =
            responseCooldown ?? SyncTuning.backfillResponseCooldown;
 
   final JournalDb _journalDb;

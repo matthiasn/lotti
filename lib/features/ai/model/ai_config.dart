@@ -148,8 +148,8 @@ sealed class AiConfig with _$AiConfig {
 
     /// User-editable prose instructions for the system role.
     /// Does NOT contain placeholders — the prompt builder wraps these
-    /// with the appropriate context based on [skillType] and
-    /// [contextPolicy] at runtime.
+    /// with the appropriate context based on `skillType` and
+    /// `contextPolicy` at runtime.
     required String systemInstructions,
 
     /// User-editable prose instructions for the user message.
