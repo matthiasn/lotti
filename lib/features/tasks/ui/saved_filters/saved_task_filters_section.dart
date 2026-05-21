@@ -128,7 +128,7 @@ class _ReorderableList extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       buildDefaultDragHandles: false,
       itemCount: items.length,
-      onReorder: (oldIndex, newIndex) {
+      onReorderItem: (oldIndex, newIndex) {
         var adjusted = newIndex;
         if (newIndex > oldIndex) adjusted = newIndex - 1;
         if (adjusted == oldIndex) return;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// A single checklist card with the new visual design.
 ///
@@ -750,7 +750,7 @@ class _HeaderMenu extends StatelessWidget {
               value: 'export',
               child: Row(
                 children: [
-                  Icon(MdiIcons.exportVariant, size: 18),
+                  const Icon(MdiIcons.exportVariant, size: 18),
                   SizedBox(width: tokens.spacing.step3),
                   Flexible(
                     child: Text(

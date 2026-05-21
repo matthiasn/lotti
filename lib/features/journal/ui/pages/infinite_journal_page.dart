@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -69,8 +70,8 @@ class _InfiniteJournalPageBodyState
     return RefreshIndicator(
       onRefresh: controller.refreshQuery,
       child: CustomScrollView(
+        scrollCacheExtent: const ScrollCacheExtent.pixels(1500),
         controller: _scrollController,
-        cacheExtent: 1500,
         slivers: <Widget>[
           const JournalSliverAppBar(),
           if (state.pagingController != null)

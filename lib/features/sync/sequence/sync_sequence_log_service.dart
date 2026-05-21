@@ -113,14 +113,11 @@ bool _isResolvedSequenceStatusIndex(int status) =>
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.
 class SyncSequenceLogService {
   SyncSequenceLogService({
-    required SyncDatabase syncDatabase,
-    required VectorClockService vectorClockService,
-    required LoggingService loggingService,
-    DomainLogger? domainLogger,
-  }) : _syncDatabase = syncDatabase,
-       _vectorClockService = vectorClockService,
-       _loggingService = loggingService,
-       _domainLogger = domainLogger;
+    required this._syncDatabase,
+    required this._vectorClockService,
+    required this._loggingService,
+    this._domainLogger,
+  });
 
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;

@@ -33,18 +33,13 @@ typedef MatrixMessageSentCallback =
 /// Handles Matrix message sending including attachments and logging.
 class MatrixMessageSender {
   MatrixMessageSender({
-    required LoggingService loggingService,
-    required JournalDb journalDb,
-    required Directory documentsDirectory,
-    required SentEventRegistry sentEventRegistry,
-    VectorClockService? vectorClockService,
-    DomainLogger? domainLogger,
-  }) : _loggingService = loggingService,
-       _journalDb = journalDb,
-       _documentsDirectory = documentsDirectory,
-       _sentEventRegistry = sentEventRegistry,
-       _vectorClockService = vectorClockService,
-       _domainLogger = domainLogger;
+    required this._loggingService,
+    required this._journalDb,
+    required this._documentsDirectory,
+    required this._sentEventRegistry,
+    this._vectorClockService,
+    this._domainLogger,
+  });
 
   final LoggingService _loggingService;
   final JournalDb _journalDb;

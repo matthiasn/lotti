@@ -36,11 +36,11 @@ class _HeldEvent {
 /// internal timer.
 class PendingDecryptionPen {
   PendingDecryptionPen({
-    required LoggingService logging,
+    required this._logging,
     this.capacity = 256,
     this.maxAttempts = 20,
     this.sweepInterval,
-  }) : _logging = logging;
+  });
 
   final LoggingService _logging;
   final int capacity;

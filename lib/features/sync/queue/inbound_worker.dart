@@ -78,30 +78,19 @@ const _logSub = 'queue.worker';
 ///    exponential backoff.
 class InboundWorker {
   InboundWorker({
-    required InboundQueue queue,
-    required SyncSequenceLogService sequenceLogService,
-    required Future<Room?> Function() resolveRoom,
-    required InboundApplyFn apply,
-    required LoggingService logging,
-    InboundPrepareBatchFn? prepareBatch,
-    UserActivityGate? activityGate,
-    PendingDecryptionPen? decryptionPen,
-    Duration idleTick = const Duration(seconds: 5),
-    Duration initialBackoff = const Duration(milliseconds: 500),
-    Duration maxBackoff = const Duration(seconds: 30),
-    int maxAttempts = 10,
-  }) : _queue = queue,
-       _sequenceLogService = sequenceLogService,
-       _resolveRoom = resolveRoom,
-       _apply = apply,
-       _prepareBatch = prepareBatch,
-       _logging = logging,
-       _activityGate = activityGate,
-       _decryptionPen = decryptionPen,
-       _idleTick = idleTick,
-       _initialBackoff = initialBackoff,
-       _maxBackoff = maxBackoff,
-       _maxAttempts = maxAttempts;
+    required this._queue,
+    required this._sequenceLogService,
+    required this._resolveRoom,
+    required this._apply,
+    required this._logging,
+    this._prepareBatch,
+    this._activityGate,
+    this._decryptionPen,
+    this._idleTick = const Duration(seconds: 5),
+    this._initialBackoff = const Duration(milliseconds: 500),
+    this._maxBackoff = const Duration(seconds: 30),
+    this._maxAttempts = 10,
+  });
 
   final InboundQueue _queue;
   final SyncSequenceLogService _sequenceLogService;

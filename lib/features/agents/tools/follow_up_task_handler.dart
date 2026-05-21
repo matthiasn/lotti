@@ -23,16 +23,12 @@ import 'package:uuid/uuid.dart';
 /// defaults to P2 if not specified.
 class FollowUpTaskHandler {
   FollowUpTaskHandler({
-    required PersistenceLogic persistenceLogic,
-    required JournalDb journalDb,
-    DomainLogger? domainLogger,
-    TaskAgentService? taskAgentService,
-    ProjectRepository? projectRepository,
-  }) : _persistenceLogic = persistenceLogic,
-       _journalDb = journalDb,
-       _domainLogger = domainLogger,
-       _taskAgentService = taskAgentService,
-       _projectRepository = projectRepository;
+    required this._persistenceLogic,
+    required this._journalDb,
+    this._domainLogger,
+    this._taskAgentService,
+    this._projectRepository,
+  });
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;

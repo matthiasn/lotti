@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
@@ -17,7 +18,6 @@ import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HabitDetailsPage extends ConsumerWidget {
   const HabitDetailsPage({
@@ -162,7 +162,7 @@ class HabitDetailsPage extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: IconButton(
-                            icon: Icon(MdiIcons.trashCanOutline),
+                            icon: const Icon(MdiIcons.trashCanOutline),
                             iconSize: settingsIconSize,
                             tooltip:
                                 context.messages.settingsHabitsDeleteTooltip,

@@ -19,15 +19,13 @@ import 'package:lotti/services/domain_logging.dart';
 /// Non-project agents (e.g., improver agents) are always enqueued.
 class ScheduledWakeManager {
   ScheduledWakeManager({
-    required AgentRepository repository,
-    required WakeOrchestrator orchestrator,
-    required AgentSyncService syncService,
+    required this._repository,
+    required this._orchestrator,
+    required this._syncService,
     this.checkInterval = const Duration(hours: 1),
     this.domainLogger,
     this.onPersistedStateChanged,
-  }) : _repository = repository,
-       _orchestrator = orchestrator,
-       _syncService = syncService;
+  });
 
   final AgentRepository _repository;
   final WakeOrchestrator _orchestrator;

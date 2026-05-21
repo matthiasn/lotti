@@ -20,14 +20,12 @@ const _logSub = 'queue.bootstrap';
 /// worker cannot hang the UI thread indefinitely.
 class QueueBootstrapSink implements BootstrapSink {
   QueueBootstrapSink({
-    required InboundQueue queue,
-    required LoggingService logging,
+    required this._queue,
+    required this._logging,
     this.highWater = 1000,
     this.backPressureTimeout = const Duration(seconds: 30),
-    Future<void>? cancelSignal,
-  }) : _queue = queue,
-       _logging = logging,
-       _cancelSignal = cancelSignal {
+    this._cancelSignal,
+  }) {
     // Register the cancel handler eagerly so cancellation that lands
     // between pages (while `_waitForDrain` is not currently awaiting)
     // still flips `_cancelled` before the next `onPage` fires.

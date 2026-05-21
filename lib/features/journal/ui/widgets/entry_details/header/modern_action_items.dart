@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -26,7 +27,6 @@ import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Modern styled toggle starred action item

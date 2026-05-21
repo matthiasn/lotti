@@ -14,12 +14,10 @@ import 'package:matrix/matrix.dart';
 /// previous successful sync for the current sync room.
 class MatrixStreamSignalBinder {
   MatrixStreamSignalBinder({
-    required MatrixSessionManager sessionManager,
-    required SyncRoomManager roomManager,
-    required LoggingService loggingService,
-  }) : _sessionManager = sessionManager,
-       _roomManager = roomManager,
-       _loggingService = loggingService;
+    required this._sessionManager,
+    required this._roomManager,
+    required this._loggingService,
+  });
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;

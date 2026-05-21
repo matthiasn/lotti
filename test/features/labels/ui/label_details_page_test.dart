@@ -23,9 +23,9 @@ import '../../../widget_test_utils.dart';
 class _FakeLabelEditorController extends LabelEditorController {
   _FakeLabelEditorController(
     super.params, {
-    required LabelEditorState initialState,
+    required this._initialState,
     this.onSave,
-  }) : _initialState = initialState;
+  });
 
   final LabelEditorState _initialState;
   final Future<LabelDefinition?> Function()? onSave;

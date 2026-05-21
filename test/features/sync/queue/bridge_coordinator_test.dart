@@ -47,8 +47,7 @@ SyncUpdate _nonLimitedSyncFor(String roomId) {
 /// Minimal bootstrap runner that records invocations. Each call is
 /// an awaitable completer so tests can gate a run mid-flight.
 class _RecordingRunner {
-  _RecordingRunner({bool defaultCompleted = true})
-    : _defaultCompleted = defaultCompleted;
+  _RecordingRunner({this._defaultCompleted = true});
 
   final bool _defaultCompleted;
   final List<_RunnerCall> calls = <_RunnerCall>[];

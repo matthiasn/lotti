@@ -11,12 +11,10 @@ import 'package:matrix/matrix.dart';
 /// persisted sync room is rejoined after successful authentication.
 class MatrixSessionManager {
   MatrixSessionManager({
-    required MatrixSyncGateway gateway,
-    required SyncRoomManager roomManager,
-    required LoggingService loggingService,
-  }) : _gateway = gateway,
-       _roomManager = roomManager,
-       _loggingService = loggingService;
+    required this._gateway,
+    required this._roomManager,
+    required this._loggingService,
+  });
 
   final MatrixSyncGateway _gateway;
   final SyncRoomManager _roomManager;

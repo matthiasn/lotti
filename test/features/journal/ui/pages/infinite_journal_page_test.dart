@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -21,7 +22,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 

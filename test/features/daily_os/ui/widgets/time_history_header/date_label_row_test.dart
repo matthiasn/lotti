@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -7,7 +8,6 @@ import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.d
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/date_label_row.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/day_label_chip.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/today_button.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../../test_helper.dart';
 import 'test_helpers.dart';

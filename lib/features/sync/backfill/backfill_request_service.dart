@@ -23,14 +23,14 @@ import 'package:path/path.dart' as p;
 /// max 250 per host). For full historical backfill, use [processFullBackfill].
 class BackfillRequestService {
   BackfillRequestService({
-    required SyncSequenceLogService sequenceLogService,
-    required SyncDatabase syncDatabase,
-    required OutboxService outboxService,
-    required VectorClockService vectorClockService,
-    required LoggingService loggingService,
+    required this._sequenceLogService,
+    required this._syncDatabase,
+    required this._outboxService,
+    required this._vectorClockService,
+    required this._loggingService,
     this.documentsDirectory,
     this.queueCoordinator,
-    DomainLogger? domainLogger,
+    this._domainLogger,
     Duration? requestInterval,
     int? maxBatchSize,
     int? maxRequestCount,
@@ -38,13 +38,7 @@ class BackfillRequestService {
     Duration? missingDebounce,
     int? maxPerHost,
     Duration? amnestyWindow,
-  }) : _sequenceLogService = sequenceLogService,
-       _syncDatabase = syncDatabase,
-       _outboxService = outboxService,
-       _vectorClockService = vectorClockService,
-       _loggingService = loggingService,
-       _domainLogger = domainLogger,
-       _requestInterval = requestInterval ?? SyncTuning.backfillRequestInterval,
+  }) : _requestInterval = requestInterval ?? SyncTuning.backfillRequestInterval,
        // Use processing batch size for per-cycle limits (smaller to avoid
        // overwhelming the network). backfillBatchSize is for DB fetch limits.
        _maxBatchSize = maxBatchSize ?? SyncTuning.backfillProcessingBatchSize,

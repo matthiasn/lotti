@@ -11,12 +11,11 @@ import 'package:lotti/services/logging_service.dart';
 
 class AutoChecklistService {
   AutoChecklistService({
-    required ChecklistRepository checklistRepository,
+    required this._checklistRepository,
     JournalDb? journalDb,
     LoggingService? loggingService,
   }) : _journalDb = journalDb ?? getIt<JournalDb>(),
-       _loggingService = loggingService ?? getIt<LoggingService>(),
-       _checklistRepository = checklistRepository;
+       _loggingService = loggingService ?? getIt<LoggingService>();
 
   final JournalDb _journalDb;
   final LoggingService _loggingService;

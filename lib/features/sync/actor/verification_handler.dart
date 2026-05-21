@@ -21,9 +21,9 @@ class _VerificationState {
 /// Tracks outgoing and incoming key-verification flows for the actor.
 class VerificationHandler {
   VerificationHandler({
-    required VerificationStateSink onStateChanged,
+    required this._onStateChanged,
     this.pollInterval = const Duration(milliseconds: 100),
-  }) : _onStateChanged = onStateChanged;
+  });
 
   final VerificationStateSink _onStateChanged;
   final Duration pollInterval;

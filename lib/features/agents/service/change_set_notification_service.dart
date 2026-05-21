@@ -18,10 +18,9 @@ import 'package:lotti/l10n/app_localizations.dart';
 /// lifecycle state.
 class ChangeSetNotificationService {
   const ChangeSetNotificationService({
-    required NotificationRepository notificationRepository,
-    required JournalDb journalDb,
-  }) : _notificationRepository = notificationRepository,
-       _journalDb = journalDb;
+    required this._notificationRepository,
+    required this._journalDb,
+  });
 
   final NotificationRepository _notificationRepository;
   final JournalDb _journalDb;

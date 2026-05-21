@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
@@ -8,7 +9,6 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Modal for editing a planned time block.
 class PlannedBlockEditModal extends ConsumerStatefulWidget {

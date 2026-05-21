@@ -1,6 +1,7 @@
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/form_text_field.dart';
@@ -17,7 +18,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class MeasurableDetailsPage extends StatefulWidget {
   const MeasurableDetailsPage({
@@ -193,7 +193,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         IconButton(
-                          icon: Icon(MdiIcons.trashCanOutline),
+                          icon: const Icon(MdiIcons.trashCanOutline),
                           iconSize: settingsIconSize,
                           tooltip:
                               context.messages.settingsMeasurableDeleteTooltip,

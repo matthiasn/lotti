@@ -88,8 +88,8 @@ class DatabaseOutboxRepository implements OutboxRepository {
   DatabaseOutboxRepository(
     this._database, {
     this.maxRetries = 10,
-    SyncActivitySignaler? activitySignaler,
-  }) : _activitySignaler = activitySignaler;
+    this._activitySignaler,
+  });
 
   final SyncDatabase _database;
   final int maxRetries;

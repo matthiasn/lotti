@@ -17,7 +17,7 @@ import 'package:lotti/utils/file_utils.dart';
 /// This service wraps the global entry creation functions to make them
 /// testable via Riverpod provider overrides.
 class EntryCreationService {
-  EntryCreationService({Ref? ref}) : _ref = ref;
+  EntryCreationService({this._ref});
 
   /// Provider container ref captured by [entryCreationServiceProvider].
   /// Optional so the service can still be instantiated bare in

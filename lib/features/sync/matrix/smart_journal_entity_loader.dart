@@ -21,11 +21,10 @@ import 'package:lotti/utils/image_utils.dart';
 /// atomically before parsing.
 class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
-    required AttachmentIndex attachmentIndex,
+    required this._attachmentIndex,
     required LoggingService loggingService,
     void Function()? onCachePurge,
-  }) : _attachmentIndex = attachmentIndex,
-       _logging = loggingService {
+  }) : _logging = loggingService {
     _vectorClockValidator = VectorClockValidator(
       loggingService: loggingService,
     );

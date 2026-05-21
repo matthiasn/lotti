@@ -7,18 +7,16 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 class NotificationScheduler {
-  /// [notificationServiceProvider] is invoked the first time the scheduler
+  /// [_notificationServiceProvider] is invoked the first time the scheduler
   /// needs to talk to the OS notification plugin. Wrapping the lookup in a
   /// thunk keeps `NotificationService` lazy: it is not materialised at app
   /// startup just to wire up the scheduler, so sandboxed builds (e.g. flatpak)
   /// where the plugin may fail to register stay startable.
   NotificationScheduler({
-    required NotificationsDb notificationsDb,
-    required NotificationService Function() notificationServiceProvider,
-    required JournalDb journalDb,
-  }) : _notificationsDb = notificationsDb,
-       _notificationServiceProvider = notificationServiceProvider,
-       _journalDb = journalDb;
+    required this._notificationsDb,
+    required this._notificationServiceProvider,
+    required this._journalDb,
+  });
 
   final NotificationsDb _notificationsDb;
   final NotificationService Function() _notificationServiceProvider;

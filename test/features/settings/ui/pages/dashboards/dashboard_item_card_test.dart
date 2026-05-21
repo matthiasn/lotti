@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
@@ -6,7 +7,6 @@ import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';

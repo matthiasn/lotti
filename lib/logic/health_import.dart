@@ -20,12 +20,11 @@ import 'package:permission_handler/permission_handler.dart';
 class HealthImport {
   HealthImport({
     required this.persistenceLogic,
-    required JournalDb db,
+    required this._db,
     required this.health,
     required this.deviceInfo,
     Future<void> Function()? requestPermissions,
-  }) : _db = db,
-       _requestPermissions = requestPermissions ?? _defaultRequestPermissions {
+  }) : _requestPermissions = requestPermissions ?? _defaultRequestPermissions {
     getPlatform();
   }
   final PersistenceLogic persistenceLogic;

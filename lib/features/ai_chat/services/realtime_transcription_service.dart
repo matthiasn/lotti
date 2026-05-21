@@ -33,10 +33,9 @@ class RealtimeTranscriptionService {
     this._ref, {
     MistralRealtimeTranscriptionRepository? repository,
     MlxAudioChannel? mlxAudioChannel,
-    Duration doneTimeout = const Duration(seconds: 10),
+    this._doneTimeout = const Duration(seconds: 10),
   }) : _repository = repository ?? MistralRealtimeTranscriptionRepository(),
-       _mlxAudioChannel = mlxAudioChannel ?? MlxAudioChannel(),
-       _doneTimeout = doneTimeout;
+       _mlxAudioChannel = mlxAudioChannel ?? MlxAudioChannel();
 
   final Ref _ref;
   final MistralRealtimeTranscriptionRepository _repository;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// Button to navigate back to today.
 class TodayButton extends StatelessWidget {

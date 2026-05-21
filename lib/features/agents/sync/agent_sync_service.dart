@@ -48,12 +48,10 @@ const Symbol _txKey = #AgentSyncService_txKey;
 /// Read operations are delegated to [repository] directly.
 class AgentSyncService {
   AgentSyncService({
-    required AgentRepository repository,
-    required OutboxService outboxService,
-    required VectorClockService vectorClockService,
-  }) : _repository = repository,
-       _outboxService = outboxService,
-       _vectorClockService = vectorClockService;
+    required this._repository,
+    required this._outboxService,
+    required this._vectorClockService,
+  });
 
   final AgentRepository _repository;
   final OutboxService _outboxService;

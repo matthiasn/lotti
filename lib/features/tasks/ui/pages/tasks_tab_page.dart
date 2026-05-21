@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -156,9 +157,9 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                 onRefresh: () =>
                     controller.refreshQuery(preserveVisibleItems: true),
                 child: CustomScrollView(
+                  scrollCacheExtent: const ScrollCacheExtent.pixels(1500),
                   physics: const AlwaysScrollableScrollPhysics(),
                   controller: _scrollController,
-                  cacheExtent: 1500,
                   slivers: [
                     if (state.selectedLabelIds.isNotEmpty)
                       const SliverToBoxAdapter(

@@ -29,24 +29,16 @@ import 'package:lotti/services/vector_clock_service.dart';
 /// returns.
 class SyncedAudioInferenceDispatcher {
   SyncedAudioInferenceDispatcher({
-    required JournalDb journalDb,
-    required VectorClockService vectorClockService,
-    required ProfileAutomationResolver profileAutomationResolver,
-    required ProfileResolver profileResolver,
-    required AiConfigRepository aiConfigRepository,
-    required SkillInferenceRunner skillInferenceRunner,
-    required TaskAgentService taskAgentService,
-    required WakeOrchestrator wakeOrchestrator,
-    DomainLogger? domainLogger,
-  }) : _journalDb = journalDb,
-       _vectorClockService = vectorClockService,
-       _profileAutomationResolver = profileAutomationResolver,
-       _profileResolver = profileResolver,
-       _aiConfigRepository = aiConfigRepository,
-       _skillInferenceRunner = skillInferenceRunner,
-       _taskAgentService = taskAgentService,
-       _wakeOrchestrator = wakeOrchestrator,
-       _domainLogger = domainLogger;
+    required this._journalDb,
+    required this._vectorClockService,
+    required this._profileAutomationResolver,
+    required this._profileResolver,
+    required this._aiConfigRepository,
+    required this._skillInferenceRunner,
+    required this._taskAgentService,
+    required this._wakeOrchestrator,
+    this._domainLogger,
+  });
 
   final JournalDb _journalDb;
   final VectorClockService _vectorClockService;

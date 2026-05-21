@@ -41,30 +41,19 @@ class NoAgentOverrides {
 /// [updateNotifications] / [taskAgentService] to verify dispatch.
 class AgentTestBench {
   AgentTestBench({
-    AgentReportEntity? report,
-    UnifiedSuggestionList suggestions = const UnifiedSuggestionList.empty(),
-    bool isRunning = false,
-    AgentStateEntity? state,
-    bool enableAgents = true,
-    bool enableSummaryTts = false,
-    AgentTemplateEntity? template,
-    MockChangeSetConfirmationService? confirmationService,
-    MockUpdateNotifications? updateNotifications,
-    MockTaskAgentService? taskAgentService,
-    MlxAudioChannel? mlxAudioChannel,
-    MediaQueryData mediaQueryData = desktopMediaQueryData,
-  }) : _report = report,
-       _suggestions = suggestions,
-       _isRunning = isRunning,
-       _state = state,
-       _enableAgents = enableAgents,
-       _enableSummaryTts = enableSummaryTts,
-       _template = template,
-       _confirmationService = confirmationService,
-       _updateNotifications = updateNotifications,
-       _taskAgentService = taskAgentService,
-       _mlxAudioChannel = mlxAudioChannel,
-       _mediaQueryData = mediaQueryData;
+    this._report,
+    this._suggestions = const UnifiedSuggestionList.empty(),
+    this._isRunning = false,
+    this._state,
+    this._enableAgents = true,
+    this._enableSummaryTts = false,
+    this._template,
+    this._confirmationService,
+    this._updateNotifications,
+    this._taskAgentService,
+    this._mlxAudioChannel,
+    this._mediaQueryData = desktopMediaQueryData,
+  });
 
   static const String taskId = 'task-001';
 

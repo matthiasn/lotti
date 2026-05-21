@@ -22,10 +22,9 @@ typedef JournalConfigFlags = ({
 /// keeping the subscription wiring out of the controller class.
 class JournalPageSubscriptions {
   JournalPageSubscriptions({
-    required JournalDb db,
-    required UpdateNotifications updateNotifications,
-  }) : _db = db,
-       _updateNotifications = updateNotifications;
+    required this._db,
+    required this._updateNotifications,
+  });
 
   final JournalDb _db;
   final UpdateNotifications _updateNotifications;

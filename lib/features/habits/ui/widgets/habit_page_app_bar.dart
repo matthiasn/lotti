@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_filter.dart';
 import 'package:lotti/features/habits/ui/widgets/status_segmented_control.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class HabitsSliverAppBar extends ConsumerWidget {
   const HabitsSliverAppBar({

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
@@ -30,7 +31,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/events/event_status.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 /// A modern journal card with gradient styling matching the task and settings design
 class ModernJournalCard extends StatelessWidget {
@@ -358,8 +358,8 @@ class ModernJournalCard extends StatelessWidget {
             ),
           ),
         if (item is! JournalEvent && fromNullableBool(item.meta.starred))
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
+          const Padding(
+            padding: EdgeInsets.only(left: 4),
             child: Icon(
               MdiIcons.star,
               color: starredGold,

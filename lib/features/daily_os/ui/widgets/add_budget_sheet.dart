@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -11,7 +12,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 /// Bottom sheet for adding a new planned block.

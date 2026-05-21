@@ -166,9 +166,8 @@ Future<Waveform> _defaultWaveformExtractor({
 class AudioWaveformService {
   AudioWaveformService({
     AudioWaveformExtractor? extractor,
-    WaveformZoom zoom = _defaultZoom,
-  }) : _extractor = extractor ?? _defaultWaveformExtractor,
-       _zoom = zoom;
+    this._zoom = _defaultZoom,
+  }) : _extractor = extractor ?? _defaultWaveformExtractor;
 
   final AudioWaveformExtractor _extractor;
   final WaveformZoom _zoom;

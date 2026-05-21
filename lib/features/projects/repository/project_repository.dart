@@ -24,16 +24,12 @@ part 'project_repository.g.dart';
 /// A task can belong to at most one project (enforced here).
 class ProjectRepository {
   ProjectRepository({
-    required JournalDb journalDb,
-    required EntitiesCacheService entitiesCacheService,
-    required PersistenceLogic persistenceLogic,
-    required UpdateNotifications updateNotifications,
-    required VectorClockService vectorClockService,
-  }) : _journalDb = journalDb,
-       _entitiesCacheService = entitiesCacheService,
-       _persistenceLogic = persistenceLogic,
-       _updateNotifications = updateNotifications,
-       _vectorClockService = vectorClockService;
+    required this._journalDb,
+    required this._entitiesCacheService,
+    required this._persistenceLogic,
+    required this._updateNotifications,
+    required this._vectorClockService,
+  });
 
   final JournalDb _journalDb;
   final EntitiesCacheService _entitiesCacheService;

@@ -52,16 +52,16 @@ class QueuePipelineCoordinator {
     required SyncDatabase syncDb,
     required SettingsDb settingsDb,
     required JournalDb journalDb,
-    required MatrixSessionManager sessionManager,
-    required SyncRoomManager roomManager,
+    required this._sessionManager,
+    required this._roomManager,
     required SyncEventProcessor eventProcessor,
-    required SyncSequenceLogService sequenceLogService,
-    required UserActivityGate? activityGate,
+    required this._sequenceLogService,
+    required this._activityGate,
     required LoggingService logging,
-    AttachmentIndex? attachmentIndex,
-    UpdateNotifications? updateNotifications,
-    AttachmentIngestor? attachmentIngestor,
-    SentEventRegistry? sentEventRegistry,
+    this._attachmentIndex,
+    this._updateNotifications,
+    this._attachmentIngestor,
+    this._sentEventRegistry,
     SyncActivitySignaler? activitySignaler,
     InboundQueue? queueOverride,
     InboundWorker? workerOverride,
@@ -70,15 +70,7 @@ class QueuePipelineCoordinator {
     QueueMarkerSeeder? seederOverride,
   }) : _syncDb = syncDb,
        _settingsDb = settingsDb,
-       _sessionManager = sessionManager,
-       _roomManager = roomManager,
-       _sequenceLogService = sequenceLogService,
-       _activityGate = activityGate,
        _logging = logging,
-       _attachmentIndex = attachmentIndex,
-       _updateNotifications = updateNotifications,
-       _attachmentIngestor = attachmentIngestor,
-       _sentEventRegistry = sentEventRegistry,
        _queue =
            queueOverride ??
            InboundQueue(
@@ -1255,9 +1247,9 @@ enum _BootstrapOutcome {
 
 class _ProgressForwardingSink implements BootstrapSink {
   _ProgressForwardingSink({
-    required BootstrapSink inner,
+    required this._inner,
     this.onProgress,
-  }) : _inner = inner;
+  });
 
   final BootstrapSink _inner;
   final void Function(BootstrapPageInfo info)? onProgress;

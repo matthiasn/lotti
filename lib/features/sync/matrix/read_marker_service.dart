@@ -14,10 +14,9 @@ class SyncReadMarkerService {
   /// the timeline-level API when a snapshot is available. Updates are gated by
   /// `client.isLogged()` to avoid failures while the SDK is disconnected.
   SyncReadMarkerService({
-    required SettingsDb settingsDb,
-    required LoggingService loggingService,
-  }) : _settingsDb = settingsDb,
-       _loggingService = loggingService;
+    required this._settingsDb,
+    required this._loggingService,
+  });
 
   final SettingsDb _settingsDb;
   final LoggingService _loggingService;

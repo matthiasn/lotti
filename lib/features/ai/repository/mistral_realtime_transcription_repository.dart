@@ -18,16 +18,15 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// since the base class is designed for HTTP request-response, not WebSocket
 /// streams.
 class MistralRealtimeTranscriptionRepository {
-  /// Creates a repository with an optional [channelFactory] for testing.
+  /// Creates a repository with an optional [_channelFactory] for testing.
   ///
   /// In production, [IOWebSocketChannel.connect] is used to support the
   /// `Authorization` header. Tests inject a factory that returns a fake
   /// channel. The factory receives both the URL and the headers map so
   /// custom implementations can forward authentication.
   MistralRealtimeTranscriptionRepository({
-    WebSocketChannel Function(Uri uri, Map<String, String> headers)?
-    channelFactory,
-  }) : _channelFactory = channelFactory;
+    this._channelFactory,
+  });
 
   static const _providerName = 'Mistral Realtime';
   static const _logName = 'MistralRealtimeTranscription';

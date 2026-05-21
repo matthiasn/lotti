@@ -89,11 +89,9 @@ class JournalDb extends _$JournalDb {
     bool background = true,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
-    LoggingService? loggingService,
-    Directory? documentsDirectory,
-  }) : _loggingService = loggingService,
-       _documentsDirectory = documentsDirectory,
-       super(
+    this._loggingService,
+    this._documentsDirectory,
+  }) : super(
          openDbConnection(
            overriddenFilename ?? journalDbFileName,
            inMemoryDatabase: inMemoryDatabase,

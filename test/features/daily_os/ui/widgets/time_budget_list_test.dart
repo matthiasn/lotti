@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/features/daily_os/state/time_budget_progress_controller.da
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_budget_list.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../test_helper.dart';
 

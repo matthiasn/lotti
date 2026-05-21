@@ -691,8 +691,7 @@ class _RealtimeControllerWithCallbacks extends ChatRecorderController {
 
 /// Test controller for realtime recording state
 class _RealtimeRecordingController extends ChatRecorderController {
-  _RealtimeRecordingController({String? partialTranscript})
-    : _partialTranscript = partialTranscript;
+  _RealtimeRecordingController({this._partialTranscript});
 
   final String? _partialTranscript;
 
@@ -723,8 +722,8 @@ class _FakeModel implements AiConfigModel {
 /// partialTranscript
 class _ProcessingRecorderController extends ChatRecorderController {
   _ProcessingRecorderController({
-    required String? partialTranscript,
-  }) : _partialTranscript = partialTranscript;
+    required this._partialTranscript,
+  });
 
   String? _partialTranscript;
 

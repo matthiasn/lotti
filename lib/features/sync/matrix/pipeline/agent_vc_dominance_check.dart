@@ -29,14 +29,11 @@ typedef LocalVcDominatesFn =
 ///      through a subsequent eviction rather than being masked.
 class AgentVcDominanceCheck {
   AgentVcDominanceCheck({
-    required AgentDatabase agentDb,
-    Duration cacheTtl = const Duration(seconds: 5),
-    int cacheCapacity = 256,
+    required this._agentDb,
+    this._cacheTtl = const Duration(seconds: 5),
+    this._cacheCapacity = 256,
     DateTime Function()? now,
-  }) : _agentDb = agentDb,
-       _cacheTtl = cacheTtl,
-       _cacheCapacity = cacheCapacity,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final AgentDatabase _agentDb;
   final Duration _cacheTtl;

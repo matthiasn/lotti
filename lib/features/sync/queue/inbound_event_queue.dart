@@ -201,14 +201,11 @@ const List<String> _peekStatuses = <String>[
 /// `docs/sync/2026-04-21_inbound_event_queue_implementation_plan.md`.
 class InboundQueue {
   InboundQueue({
-    required SyncDatabase db,
-    required LoggingService logging,
+    required this._db,
+    required this._logging,
     Duration? leaseDuration,
-    SyncActivitySignaler? activitySignaler,
-  }) : _db = db,
-       _logging = logging,
-       _activitySignaler = activitySignaler,
-       _leaseDuration = leaseDuration ?? SyncTuning.inboundWorkerLeaseDuration;
+    this._activitySignaler,
+  }) : _leaseDuration = leaseDuration ?? SyncTuning.inboundWorkerLeaseDuration;
 
   final SyncDatabase _db;
   final LoggingService _logging;

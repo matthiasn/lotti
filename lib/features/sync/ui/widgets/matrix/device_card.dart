@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class DeviceCard extends ConsumerWidget {
@@ -43,7 +43,7 @@ class DeviceCard extends ConsumerWidget {
                 padding: const EdgeInsets.all(10),
                 icon: Semantics(
                   label: context.messages.deleteDeviceLabel,
-                  child: Icon(MdiIcons.trashCanOutline),
+                  child: const Icon(MdiIcons.trashCanOutline),
                 ),
                 onPressed: () async {
                   try {

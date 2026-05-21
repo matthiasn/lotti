@@ -1,10 +1,10 @@
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/unverified_devices_page.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/status_indicator.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 

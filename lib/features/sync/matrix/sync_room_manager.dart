@@ -32,14 +32,11 @@ class SyncRoomInvite {
 /// surfaced to the UI and requires explicit confirmation before joining.
 class SyncRoomManager {
   SyncRoomManager({
-    required MatrixSyncGateway gateway,
-    required SettingsDb settingsDb,
-    required LoggingService loggingService,
-    SyncRoomDiscoveryService? discoveryService,
-  }) : _gateway = gateway,
-       _settingsDb = settingsDb,
-       _loggingService = loggingService,
-       _discoveryService = discoveryService {
+    required this._gateway,
+    required this._settingsDb,
+    required this._loggingService,
+    this._discoveryService,
+  }) {
     _inviteSubscription = _gateway.invites.listen(_handleInvite);
   }
 

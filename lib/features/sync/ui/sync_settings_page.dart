@@ -1,5 +1,6 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -9,7 +10,6 @@ import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class SyncSettingsPage extends StatelessWidget {
   const SyncSettingsPage({super.key});

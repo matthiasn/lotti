@@ -66,12 +66,10 @@ class JournalVectorSearchResult {
 /// search, vector search, post-filtering, and sorting.
 class JournalQueryRunner {
   JournalQueryRunner({
-    required JournalDb db,
-    required Fts5Db fts5Db,
-    required EntitiesCacheService entitiesCacheService,
-  }) : _db = db,
-       _fts5Db = fts5Db,
-       _entitiesCacheService = entitiesCacheService;
+    required this._db,
+    required this._fts5Db,
+    required this._entitiesCacheService,
+  });
 
   final JournalDb _db;
   final Fts5Db _fts5Db;

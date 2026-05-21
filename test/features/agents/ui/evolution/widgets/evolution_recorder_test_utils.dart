@@ -81,8 +81,7 @@ class RecordingCallbackController extends ChatRecorderController {
 
 /// Controller that starts in realtime recording state.
 class RealtimeRecordingTestController extends ChatRecorderController {
-  RealtimeRecordingTestController({String? partialTranscript})
-    : _partialTranscript = partialTranscript;
+  RealtimeRecordingTestController({this._partialTranscript});
 
   final String? _partialTranscript;
 
@@ -129,8 +128,7 @@ class RealtimeCallbackController extends ChatRecorderController {
 
 /// Controller that starts in processing state.
 class ProcessingTestController extends ChatRecorderController {
-  ProcessingTestController({required String? partialTranscript})
-    : _partialTranscript = partialTranscript;
+  ProcessingTestController({required this._partialTranscript});
 
   final String? _partialTranscript;
 

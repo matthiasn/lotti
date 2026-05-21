@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/ai_chat_icon.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
@@ -11,7 +12,6 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/search/entry_type_filter.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class JournalSliverAppBar extends ConsumerStatefulWidget {
   const JournalSliverAppBar({
@@ -254,7 +254,7 @@ class JournalFilterIcon extends ConsumerWidget {
             ),
           );
         },
-        icon: Icon(MdiIcons.filterVariant),
+        icon: const Icon(MdiIcons.filterVariant),
       ),
     );
   }

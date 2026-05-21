@@ -14,12 +14,10 @@ import 'package:lotti/services/entities_cache_service.dart';
 /// the count agrees with what the live task list shows.
 class SavedTaskFilterCountRepository {
   SavedTaskFilterCountRepository({
-    required JournalDb db,
-    required EntitiesCacheService cache,
-    required AgentRepository agentRepository,
-  }) : _db = db,
-       _cache = cache,
-       _agentRepository = agentRepository;
+    required this._db,
+    required this._cache,
+    required this._agentRepository,
+  });
 
   final JournalDb _db;
   final EntitiesCacheService _cache;

@@ -19,12 +19,10 @@ const _logSub = 'queue.markerSeed';
 /// value must not regress it.
 class QueueMarkerSeeder {
   QueueMarkerSeeder({
-    required SyncDatabase syncDb,
-    required SettingsDb settingsDb,
-    required LoggingService logging,
-  }) : _syncDb = syncDb,
-       _settingsDb = settingsDb,
-       _logging = logging;
+    required this._syncDb,
+    required this._settingsDb,
+    required this._logging,
+  });
 
   final SyncDatabase _syncDb;
   final SettingsDb _settingsDb;

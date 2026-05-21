@@ -22,8 +22,8 @@ class IsoDateComponents {
   const IsoDateComponents({
     required this.year,
     required this.month,
-    required int daySeed,
-  }) : _daySeed = daySeed;
+    required this._daySeed,
+  });
 
   final int year;
   final int month;

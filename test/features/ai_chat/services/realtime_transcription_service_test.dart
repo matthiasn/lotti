@@ -361,7 +361,7 @@ class _TestBench {
         channel.simulateServerMessage({
           'type': 'transcription.done',
           'text': text,
-          if (extra != null) ...extra,
+          ...?extra,
         });
       }),
     );
@@ -373,7 +373,7 @@ class _TestBench {
     channel.simulateServerMessage({
       'type': 'transcription.done',
       'text': text,
-      if (extra != null) ...extra,
+      ...?extra,
     });
   }
 

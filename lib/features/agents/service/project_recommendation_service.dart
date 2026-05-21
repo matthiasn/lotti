@@ -10,12 +10,10 @@ import 'package:uuid/uuid.dart';
 
 class ProjectRecommendationService {
   ProjectRecommendationService({
-    required AgentSyncService syncService,
-    required UpdateNotifications notifications,
-    DomainLogger? domainLogger,
-  }) : _syncService = syncService,
-       _notifications = notifications,
-       _domainLogger = domainLogger;
+    required this._syncService,
+    required this._notifications,
+    this._domainLogger,
+  });
 
   final AgentSyncService _syncService;
   final UpdateNotifications _notifications;

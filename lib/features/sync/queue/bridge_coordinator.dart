@@ -65,22 +65,15 @@ const _logSub = 'queue.bridge';
 /// flag stored across three collaborators.
 class BridgeCoordinator {
   BridgeCoordinator({
-    required Client client,
-    required String? Function() currentRoomId,
-    required Future<Room?> Function() resolveRoom,
-    required Future<BridgeMarker> Function() readMarker,
-    required BootstrapRunner bootstrapRunner,
-    required LoggingService logging,
-    Duration incompleteRetryDelay = const Duration(seconds: 10),
-    int maxIncompleteRetries = 3,
-  }) : _client = client,
-       _currentRoomId = currentRoomId,
-       _resolveRoom = resolveRoom,
-       _readMarker = readMarker,
-       _bootstrapRunner = bootstrapRunner,
-       _logging = logging,
-       _incompleteRetryDelay = incompleteRetryDelay,
-       _maxIncompleteRetries = maxIncompleteRetries;
+    required this._client,
+    required this._currentRoomId,
+    required this._resolveRoom,
+    required this._readMarker,
+    required this._bootstrapRunner,
+    required this._logging,
+    this._incompleteRetryDelay = const Duration(seconds: 10),
+    this._maxIncompleteRetries = 3,
+  });
 
   final Client _client;
   final String? Function() _currentRoomId;

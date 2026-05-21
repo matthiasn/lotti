@@ -1,7 +1,7 @@
 name: lotti
 description: Achieve your goals and keep your data private with Lotti.
 publish_to: 'none'
-version: 0.9.1004+4086
+version: 0.9.1005+4087
 
 msix_config:
   display_name: LottiApp
@@ -15,7 +15,7 @@ msix_config:
   logo_path: .\assets\icon\app_icon_1024.png
 
 environment:
-  sdk: '>=3.11.0 <4.0.0'
+  sdk: '>=3.12.0 <4.0.0'
 
 dependencies:
   async: ^2.13.0
@@ -55,8 +55,9 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_map: ^8.0.0
+  flutter_material_design_icons: ^3.1.0+7447
   flutter_openssl_crypto: ^0.5.0
-  flutter_quill: ^11.4.2
+  flutter_quill: ^11.5.1
   flutter_quill_extensions: ^11.0.0
   flutter_rating: ^2.0.2
   flutter_riverpod: ^3.1.0
@@ -84,7 +85,6 @@ dependencies:
   just_waveform: ^0.0.7
   latlong2: ^0.9.0
   location: ^8.0.0
-  material_design_icons_flutter: ^7.0.7096
   matrix: ^7.0.0
   media_kit: ^1.0.2
   media_kit_libs_audio: ^1.0.7

@@ -37,18 +37,13 @@ typedef ChangeSetResolvedCallback =
 /// items can resolve the target task ID.
 class ChangeSetConfirmationService {
   ChangeSetConfirmationService({
-    required AgentSyncService syncService,
-    required AgentToolDispatch toolDispatcher,
-    required LabelsRepository labelsRepository,
-    DomainLogger? domainLogger,
-    ConfirmedDecisionCallback? onConfirmedDecision,
-    ChangeSetResolvedCallback? onChangeSetResolved,
-  }) : _syncService = syncService,
-       _toolDispatcher = toolDispatcher,
-       _labelsRepository = labelsRepository,
-       _domainLogger = domainLogger,
-       _onConfirmedDecision = onConfirmedDecision,
-       _onChangeSetResolved = onChangeSetResolved;
+    required this._syncService,
+    required this._toolDispatcher,
+    required this._labelsRepository,
+    this._domainLogger,
+    this._onConfirmedDecision,
+    this._onChangeSetResolved,
+  });
 
   final AgentSyncService _syncService;
   final AgentToolDispatch _toolDispatcher;

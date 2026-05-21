@@ -41,20 +41,14 @@ const _logTag = 'SkillInferenceRunner';
 /// profile-resolved models, bypassing the legacy prompt system entirely.
 class SkillInferenceRunner {
   const SkillInferenceRunner({
-    required Ref ref,
-    required CloudInferenceRepository cloudRepository,
-    required AiInputRepository aiInputRepository,
-    required JournalRepository journalRepository,
-    required LoggingService loggingService,
-    required PromptBuilderHelper promptBuilderHelper,
-    required TaskSummaryResolver taskSummaryResolver,
-  }) : _ref = ref,
-       _cloudRepository = cloudRepository,
-       _aiInputRepository = aiInputRepository,
-       _journalRepository = journalRepository,
-       _loggingService = loggingService,
-       _promptBuilderHelper = promptBuilderHelper,
-       _taskSummaryResolver = taskSummaryResolver;
+    required this._ref,
+    required this._cloudRepository,
+    required this._aiInputRepository,
+    required this._journalRepository,
+    required this._loggingService,
+    required this._promptBuilderHelper,
+    required this._taskSummaryResolver,
+  });
 
   final Ref _ref;
   final CloudInferenceRepository _cloudRepository;

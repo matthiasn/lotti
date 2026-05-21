@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/status_indicator.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../../../../../test_helper.dart';
 

@@ -21,8 +21,8 @@ const _logTag = 'ProfileResolver';
 /// returned and the wake should be aborted. Other slots fail gracefully.
 class ProfileResolver {
   const ProfileResolver({
-    required AiConfigRepository aiConfigRepository,
-  }) : _aiConfigRepository = aiConfigRepository;
+    required this._aiConfigRepository,
+  });
 
   final AiConfigRepository _aiConfigRepository;
 

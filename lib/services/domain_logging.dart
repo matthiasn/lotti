@@ -27,8 +27,7 @@ abstract final class LogDomains {
 ///   `{documentsDir}/logs/{domain}-YYYY-MM-DD.log` so each domain's
 ///   telemetry can be reviewed in isolation.
 class DomainLogger {
-  DomainLogger({required LoggingService loggingService})
-    : _loggingService = loggingService;
+  DomainLogger({required this._loggingService});
 
   final LoggingService _loggingService;
   static final _dateFmt = DateFormat('yyyy-MM-dd');

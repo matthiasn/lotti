@@ -24,13 +24,11 @@ typedef EntityPersister = Future<bool?> Function(JournalEntity entity);
 /// with PersistenceLogic.
 class GeolocationService {
   GeolocationService({
-    required JournalDb journalDb,
-    required LoggingService loggingService,
-    required MetadataService metadataService,
+    required this._journalDb,
+    required this._loggingService,
+    required this._metadataService,
     this.deviceLocation,
-  }) : _journalDb = journalDb,
-       _loggingService = loggingService,
-       _metadataService = metadataService;
+  });
 
   final JournalDb _journalDb;
   final LoggingService _loggingService;

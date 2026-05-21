@@ -71,10 +71,9 @@ class AutomationResult {
 /// invoke inference.
 class ProfileAutomationService {
   const ProfileAutomationService({
-    required ProfileAutomationResolver resolver,
-    required AiConfigRepository aiConfigRepository,
-  }) : _resolver = resolver,
-       _aiConfigRepository = aiConfigRepository;
+    required this._resolver,
+    required this._aiConfigRepository,
+  });
 
   final ProfileAutomationResolver _resolver;
   final AiConfigRepository _aiConfigRepository;

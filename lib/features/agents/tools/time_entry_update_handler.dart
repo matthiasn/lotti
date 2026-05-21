@@ -14,14 +14,11 @@ import 'package:lotti/services/time_service.dart';
 /// must keep using the running-timer-specific path.
 class TimeEntryUpdateHandler {
   TimeEntryUpdateHandler({
-    required PersistenceLogic persistenceLogic,
-    required JournalDb journalDb,
-    required TimeService timeService,
-    DomainLogger? domainLogger,
-  }) : _persistenceLogic = persistenceLogic,
-       _journalDb = journalDb,
-       _timeService = timeService,
-       _domainLogger = domainLogger;
+    required this._persistenceLogic,
+    required this._journalDb,
+    required this._timeService,
+    this._domainLogger,
+  });
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;

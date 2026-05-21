@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1005" date="2026-05-22">
+      <description>
+          <p>Upgraded Flutter to 3.44.0 and aligned the Flatpak Flathub manifest template with the repository FVM toolchain pin, so source builds submitted to Flathub use the same Flutter SDK as local and CI builds.</p>
+      </description>
+    </release>
     <release version="0.9.1003" date="2026-05-18">
       <description>
           <p>AI popup menu now opens a model-override picker when you tap Transcribe on a voice note. The bottom sheet lists every speech-capable model you've configured — the profile's default marked with a (default) badge and a check at the top, alternatives below — so you can route one specific transcription to a different model (e.g. cloud Mistral instead of local Voxtral) without changing the entire inference profile. When only one speech-capable model is configured the picker short-circuits, preserving the one-tap flow for the common case. A stale override falls back to the profile's slot rather than stranding the user.</p>

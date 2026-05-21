@@ -52,11 +52,10 @@ class _Shard {
 /// shards and merge results globally.
 class ShardedEmbeddingStore implements EmbeddingStore {
   ShardedEmbeddingStore._({
-    required String basePath,
-    required ObjectBoxOpsFactory opsFactory,
+    required this._basePath,
+    required this._opsFactory,
     this.distanceCutoff = 0.7,
-  }) : _basePath = basePath,
-       _opsFactory = opsFactory;
+  });
 
   final String _basePath;
   final ObjectBoxOpsFactory _opsFactory;

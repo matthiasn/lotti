@@ -29,21 +29,17 @@ class OutboxProcessingResult {
 
 class OutboxProcessor {
   OutboxProcessor({
-    required OutboxRepository repository,
-    required OutboxMessageSender messageSender,
-    required LoggingService loggingService,
+    required this._repository,
+    required this._messageSender,
+    required this._loggingService,
     Duration? retryDelayOverride,
     Duration? errorDelayOverride,
     int? maxRetriesOverride,
     Duration? sendTimeoutOverride,
     Duration? claimLeaseOverride,
-    DomainLogger? domainLogger,
+    this._domainLogger,
     int? bundleMaxSizeOverride,
-  }) : _repository = repository,
-       _messageSender = messageSender,
-       _loggingService = loggingService,
-       _domainLogger = domainLogger,
-       bundleMaxSize = bundleMaxSizeOverride ?? SyncTuning.outboxBundleMaxSize,
+  }) : bundleMaxSize = bundleMaxSizeOverride ?? SyncTuning.outboxBundleMaxSize,
        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
        maxRetriesForDiagnostics =

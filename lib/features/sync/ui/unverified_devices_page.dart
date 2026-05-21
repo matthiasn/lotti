@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/device_card.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/status_indicator.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class UnverifiedDevices extends ConsumerWidget {
   const UnverifiedDevices({super.key});
@@ -51,7 +51,7 @@ class UnverifiedDevices extends ConsumerWidget {
               IconButton(
                 key: const Key('matrix_list_unverified'),
                 onPressed: refreshList,
-                icon: Icon(MdiIcons.refresh),
+                icon: const Icon(MdiIcons.refresh),
               ),
             ],
           ),
