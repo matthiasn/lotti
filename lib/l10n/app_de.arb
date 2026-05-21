@@ -988,6 +988,8 @@
   "aiSetupWizardTitle": "KI-Einrichtungsassistent",
   "aiSummarySpeakTooltip": "Zusammenfassung lokal vorlesen",
   "aiTaskSummaryTitle": "KI-Aufgabenzusammenfassung",
+  "aiTranscriptionPickerDefaultBadge": "Standard",
+  "aiTranscriptionPickerTitle": "Wähle ein Transkriptionsmodell",
   "apiKeyAddPageTitle": "Anbieter hinzufügen",
   "apiKeyAuthenticationDescription": "Sichere deine API-Verbindung",
   "apiKeyAuthenticationTitle": "Authentifizierung",

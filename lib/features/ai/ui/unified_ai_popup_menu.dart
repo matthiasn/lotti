@@ -7,13 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/ai/ui/widgets/transcription_model_picker_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
+
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/modal/index.dart';
 
@@ -116,6 +120,22 @@ class UnifiedAiModal {
             return;
           }
 
+          // Transcription opens the model-override picker so the user
+          // can route this single voice note to any speech-capable
+          // model (default surfaced first). The picker short-circuits
+          // when only one such model is configured, preserving the
+          // one-tap flow for the common case.
+          if (skill.skillType == SkillType.transcription) {
+            await _handleTranscriptionSkill(
+              context: context,
+              journalEntity: journalEntity,
+              linkedTaskId: linkedTaskId,
+              skill: skill,
+              ref: ref,
+            );
+            return;
+          }
+
           // Trigger the skill inference in the background
           unawaited(
             ref.read(
@@ -124,6 +144,7 @@ class UnifiedAiModal {
                 skillId: skill.id,
                 linkedTaskId: linkedTaskId,
                 referenceImages: null,
+                overrideTranscriptionModelId: null,
               )).future,
             ),
           );
@@ -168,6 +189,100 @@ class UnifiedAiModal {
       linkedTaskId: linkedTask.id,
       categoryId: linkedTask.meta.categoryId,
       ref: ref,
+    );
+  }
+
+  /// Opens the transcription-model picker, then fires the trigger
+  /// with the user's selection threaded as `overrideTranscriptionModelId`.
+  ///
+  /// Profile resolution mirrors [triggerSkillProvider]'s logic: linked
+  /// task uses the task's profile, standalone audio falls back to the
+  /// entry category's `defaultProfileId`. The resolved profile's
+  /// transcription slot (a wire-level `providerModelId` string) is
+  /// translated to an `AiConfigModel.id` by matching against the
+  /// loaded model list, so the picker can highlight that row as the
+  /// default.
+  ///
+  /// When the picker resolves with the same id as the default we
+  /// pass `null` as the override — same semantic as "no override" so
+  /// the runner reads from the profile slot, and a deleted model
+  /// between picker and runner falls back gracefully.
+  static Future<void> _handleTranscriptionSkill({
+    required BuildContext context,
+    required JournalEntity journalEntity,
+    required String? linkedTaskId,
+    required AiConfigSkill skill,
+    required WidgetRef ref,
+  }) async {
+    final resolver = ref.read(profileAutomationResolverProvider);
+    final resolvedProfile = linkedTaskId != null
+        ? await resolver.resolveForTask(linkedTaskId)
+        : (journalEntity.meta.categoryId != null
+              ? await resolver.resolveForCategory(
+                  journalEntity.meta.categoryId!,
+                )
+              : null);
+
+    // Read models via the repository's one-shot `getConfigsByType`
+    // rather than the auto-dispose stream-backed controller. The
+    // controller would dispose mid-await when no widget is watching
+    // it (the popup modal has already popped by the time this
+    // handler runs), starving the picker of its model list. The
+    // repository call is a single Drift query, fast enough for an
+    // on-tap UI gesture.
+    final repo = ref.read(aiConfigRepositoryProvider);
+    final allConfigs = await repo.getConfigsByType(AiConfigType.model);
+    final speechCapable = allConfigs
+        .whereType<AiConfigModel>()
+        .where((m) => m.inputModalities.contains(Modality.audio))
+        .toList();
+
+    // Translate the profile's wire-level providerModelId to the
+    // AiConfigModel.id so the picker can compare rows. A missing
+    // match (deleted model, empty slot) leaves defaultModelId null;
+    // the picker renders the list without a default row.
+    String? defaultModelId;
+    if (resolvedProfile != null) {
+      final providerModelId = resolvedProfile.transcriptionModelId;
+      final providerId = resolvedProfile.transcriptionProvider?.id;
+      if (providerModelId != null && providerId != null) {
+        defaultModelId = speechCapable
+            .where(
+              (m) =>
+                  m.providerModelId == providerModelId &&
+                  m.inferenceProviderId == providerId,
+            )
+            .firstOrNull
+            ?.id;
+      }
+    }
+
+    if (!context.mounted) return;
+    final picked = await TranscriptionModelPickerModal.show(
+      context: context,
+      defaultModelId: defaultModelId,
+      speechCapableModels: speechCapable,
+    );
+    if (picked == null) return;
+    // The widget could have been disposed while the picker was open
+    // (user navigated away, entry deleted). Reading ref on a
+    // deactivated element throws — bail before the trigger fires.
+    if (!context.mounted) return;
+
+    // Same id as default → no override semantic — the runner reads
+    // the profile slot. Different id → forward as override.
+    final overrideId = picked == defaultModelId ? null : picked;
+
+    unawaited(
+      ref.read(
+        triggerSkillProvider((
+          entityId: journalEntity.id,
+          skillId: skill.id,
+          linkedTaskId: linkedTaskId,
+          referenceImages: null,
+          overrideTranscriptionModelId: overrideId,
+        )).future,
+      ),
     );
   }
 

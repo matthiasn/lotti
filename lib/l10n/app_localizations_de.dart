@@ -2011,6 +2011,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiTaskSummaryTitle => 'KI-Aufgabenzusammenfassung';
 
   @override
+  String get aiTranscriptionPickerDefaultBadge => 'Standard';
+
+  @override
+  String get aiTranscriptionPickerTitle => 'Wähle ein Transkriptionsmodell';
+
+  @override
   String get apiKeyAddPageTitle => 'Anbieter hinzufügen';
 
   @override

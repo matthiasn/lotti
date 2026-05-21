@@ -3463,6 +3463,18 @@ abstract class AppLocalizations {
   /// **'AI Task Summary'**
   String get aiTaskSummaryTitle;
 
+  /// No description provided for @aiTranscriptionPickerDefaultBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get aiTranscriptionPickerDefaultBadge;
+
+  /// No description provided for @aiTranscriptionPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a transcription model'**
+  String get aiTranscriptionPickerTitle;
+
   /// No description provided for @apiKeyAddPageTitle.
   ///
   /// In en, this message translates to:

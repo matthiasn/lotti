@@ -2010,6 +2010,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get aiTaskSummaryTitle => 'Resumen de tareas de IA';
 
   @override
+  String get aiTranscriptionPickerDefaultBadge => 'Predeterminado';
+
+  @override
+  String get aiTranscriptionPickerTitle => 'Elige un modelo de transcripción';
+
+  @override
   String get apiKeyAddPageTitle => 'Añadir proveedor';
 
   @override

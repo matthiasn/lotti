@@ -2020,6 +2020,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiTaskSummaryTitle => 'Rezumatul sarcinii AI';
 
   @override
+  String get aiTranscriptionPickerDefaultBadge => 'Implicit';
+
+  @override
+  String get aiTranscriptionPickerTitle =>
+      'Alegeți un model pentru transcriere';
+
+  @override
   String get apiKeyAddPageTitle => 'Adaugă furnizor';
 
   @override

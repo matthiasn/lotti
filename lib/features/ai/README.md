@@ -259,6 +259,43 @@ flowchart TD
 
 The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Task Context)`, `Generate Cover Art`, the coding/design/research prompt generators) are therefore hidden for standalone entries; only their plain counterparts (`Transcribe Audio`, `Analyze Image`) show up. `triggerSkillProvider` also has a defensive guard: a `fullTask` skill triggered without a `linkedTaskId` is captured as an event and aborted — the popup should never offer one in that state, so reaching it is a caller bug.
 
+### Transcription Model Override
+
+When the user taps a transcription skill in the popup menu (`UnifiedAiPopUpMenu._handleTranscriptionSkill`), the flow inserts a `TranscriptionModelPickerModal` step before firing `triggerSkillProvider`. The picker lists every `AiConfigModel` whose `inputModalities` includes `Modality.audio`, with the profile's transcription slot row surfaced first and badged. The user's choice threads through as the optional `overrideTranscriptionModelId` field on `TriggerSkillParams`, which `SkillInferenceRunner.runTranscription` resolves into a `(provider, modelId)` target pair via `_resolveTranscriptionTarget` — preferring the override when it resolves to a real `AiConfigModel` + parent `AiConfigInferenceProvider`, falling back to the profile slot otherwise.
+
+Three short-circuits keep the common case one-tap:
+
+- `speechCapableModels.isEmpty` — picker is not shown; the trigger is not fired (defensive path, the popup audio gate should prevent reaching here).
+- `speechCapableModels.length == 1` — picker is not shown; the trigger fires immediately with the lone model id.
+- `picked == defaultModelId` — the override is collapsed to `null` at the popup callsite, so the runner reads the profile slot and a model deleted between picker and run still falls back gracefully (instead of trying to route to a stale id).
+
+```mermaid
+stateDiagram-v2
+  [*] --> SkillTap: tap transcription skill in popup
+  SkillTap --> ResolveProfile: resolve profile (task or category)
+  ResolveProfile --> LoadModels: read AiConfigModel list via repository
+  LoadModels --> ComputeDefault: map profile.transcriptionModelId + provider id\nto an AiConfigModel.id
+  ComputeDefault --> Empty: speech-capable list empty
+  ComputeDefault --> Single: exactly one speech-capable model
+  ComputeDefault --> Many: 2+ speech-capable models
+  Empty --> [*]: no-op
+  Single --> FireTrigger: overrideTranscriptionModelId = lone id
+  Many --> Picker: TranscriptionModelPickerModal.show
+  Picker --> Dismissed: user cancels / dismisses
+  Picker --> PickedDefault: tap default-badged row
+  Picker --> PickedOther: tap any other row
+  Dismissed --> [*]
+  PickedDefault --> FireTrigger: overrideTranscriptionModelId = null
+  PickedOther --> FireTrigger: overrideTranscriptionModelId = picked id
+  FireTrigger --> Runner: SkillInferenceRunner.runTranscription
+  Runner --> ResolveTarget: _resolveTranscriptionTarget(override)
+  ResolveTarget --> OverrideOk: override resolves to AiConfigModel + provider
+  ResolveTarget --> FallBack: override null / stale model / missing parent provider
+  OverrideOk --> Inference: generateWithAudio(override model + provider)
+  FallBack --> Inference: generateWithAudio(profile slot)
+  Inference --> [*]
+```
+
 ## Conversation and Tool Calling
 
 `ConversationRepository` and `ConversationManager` provide the reusable multi-turn conversation loop used by agent-style tool calling.

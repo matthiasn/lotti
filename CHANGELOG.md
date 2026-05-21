@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1003]
 ### Changed
+- AI popup menu now opens a model-override picker when you tap
+  Transcribe on a voice note. The bottom sheet lists every
+  speech-capable model you've configured — the profile's default
+  marked with a "(default)" badge and a check at the top,
+  alternatives below — so you can route one specific transcription
+  to a different model (e.g. cloud Mistral instead of local
+  Voxtral) without changing the entire inference profile. When
+  only one speech-capable model is configured the picker
+  short-circuits, preserving the one-tap flow for the common case.
+  A stale override (model deleted between picker and run) falls
+  back to the profile's slot rather than stranding the user.
 - Inference-profile model slot picker now has a search field at the
   top. Substring match runs against the model display name, the
   wire-level `providerModelId`, and the resolved provider label —

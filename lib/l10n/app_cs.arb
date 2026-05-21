@@ -828,6 +828,8 @@
   "aiSetupWizardTitle": "Průvodce nastavením AI",
   "aiSummarySpeakTooltip": "Přečíst souhrn nahlas lokálně",
   "aiTaskSummaryTitle": "Shrnutí úkolu AI",
+  "aiTranscriptionPickerDefaultBadge": "Výchozí",
+  "aiTranscriptionPickerTitle": "Vyber model pro přepis",
   "apiKeyAddPageTitle": "Přidat poskytovatele",
   "apiKeyAuthenticationDescription": "Zabezpeč své připojení k API",
   "apiKeyAuthenticationTitle": "Ověření",
