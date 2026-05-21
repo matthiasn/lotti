@@ -488,6 +488,14 @@ silently dropped, the receiver's per-(host, counter) gap detection in
 will pull each child from the originating peer as an individual
 `SyncAgentEntity` / `SyncAgentLink` response.
 
+Inbound agent entities and links are guarded by vector-clock dominance before
+they overwrite the local `AgentRepository` row. If the local row's vector clock
+is equal to or newer than the incoming payload, the processor skips the upsert,
+restores the local JSON cache when the message came through `jsonPath`, and
+still records the sequence-log receipt so backfill does not keep requesting the
+same counter. Incoming-dominant or concurrent clocks continue through the
+normal apply path.
+
 ### Dequeue-Time Outbox Bundling
 
 A second, transport-only bundle layer fires inside `OutboxProcessor` itself.
@@ -495,7 +503,10 @@ When `OutboxRepository.claimNextBatch(maxSize: SyncTuning.outboxBundleMaxSize)`
 returns more than one row, the processor wraps them in a `SyncOutboxBundle`
 and ships the whole batch as one Matrix envelope. Media-attachment rows
 (`filePath != null`) always travel alone — the boundary rule lives in
-`claimNextBatch`, so a bundle never carries audio or image bytes.
+`claimNextBatch`, so a bundle never carries audio or image bytes. The claim
+order is priority first, then `createdAt`, then `id`; user-visible journal
+entities and entry links therefore drain ahead of older normal-priority agent
+or backfill rows while the per-priority order stays stable.
 
 `MatrixMessageSender._sendOutboxBundlePayload` builds the on-the-wire form:
 
@@ -576,7 +587,7 @@ sequenceDiagram
 
 `OutboxProcessor` then:
 
-1. atomically claims the pending head (`pending` → `sending`) via
+1. atomically claims the highest-priority pending head (`pending` → `sending`) via
    `OutboxRepository.claim()`, so in-flight merges fall through to a fresh
    pending row instead of overwriting the claimed row
 2. sends the claimed payload through `MatrixService`
@@ -737,6 +748,12 @@ Components (all under `lib/features/sync/queue/`):
   `lastReadMatrixEventTs`/`Id` into `queue_markers` on first enable.
   Never overwrites an existing row.
 
+Room changes mark active rows from old Matrix rooms as abandoned via
+`InboundQueue.pruneStrandedEntries`. That maintenance query uses literal
+active statuses (`enqueued`, `leased`, `retrying`) so SQLite can prove the
+partial `idx_inbound_event_queue_active_status_room` predicate and scan only
+active queue rows instead of the full applied/abandoned ledger.
+
 ### Lifecycle
 
 ```mermaid
@@ -851,6 +868,10 @@ Important implementation details:
   matters
 - verified covering entries are used as hints when an exact payload is no
   longer the best answer
+- each host's contiguous resolved watermark is persisted in
+  `sync_sequence_watermarks`; migrated hosts warm that row lazily on first
+  `getLastCounterForHost` so startup does not recompute every historic host
+  with the compatibility `ROW_NUMBER` scan
 
 `BackfillRequestService` periodically sends bounded batches of missing
 counters, supports manual full historical backfill, and can re-request entries

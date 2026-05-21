@@ -952,15 +952,12 @@ class InboundQueue {
         '    last_error_reason = ?, '
         '    lease_until = 0 '
         'WHERE room_id != ? '
-        '  AND status IN (?, ?, ?)',
+        "  AND status IN ('enqueued', 'leased', 'retrying')",
         variables: [
           Variable.withString(_statusAbandoned),
           Variable.withInt(nowMs),
           Variable.withString('strandedRoom'),
           Variable.withString(currentRoomId),
-          Variable.withString(_statusEnqueued),
-          Variable.withString(_statusLeased),
-          Variable.withString(_statusRetrying),
         ],
         updates: {_db.inboundEventQueue},
       );

@@ -632,11 +632,10 @@ class SyncEventProcessor {
         // Handle backfill response - another device responded to our request
         await backfillResponseHandler.handleBackfillResponse(syncMessage);
         return null;
-      // Agent entities use last-writer-wins semantics (no vector clock
-      // comparison). Agent state mutations are causally ordered — wakes
-      // run serially and each update overwrites prior state — so
-      // concurrent conflicting edits don't arise in practice.
-      // Maintenance sync serves as catch-up for missed messages.
+      // Agent entities and links are file-backed often enough that stale
+      // descriptors can arrive after a newer local write. The handlers compare
+      // local vs incoming vector clocks before upsert and skip dominated
+      // payloads while still recording the sequence receipt.
       case final SyncAgentEntity msg:
         await _applyAgentEntityMessage(
           msg: msg,
