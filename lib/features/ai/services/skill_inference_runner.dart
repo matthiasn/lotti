@@ -13,6 +13,8 @@ import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart'
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
@@ -134,11 +136,71 @@ class SkillInferenceRunner {
     }
   }
 
+  /// Resolves the `(provider, modelId)` pair that a transcription run
+  /// should target. Prefers [overrideModelId] when it resolves to a
+  /// real `AiConfigModel` + parent `AiConfigInferenceProvider`; falls
+  /// back to the profile's transcription slot when the override is
+  /// null OR unresolvable. The fallback path logs a warning so a
+  /// stale override surfaced in logs, not user-visible stranding.
+  Future<_TranscriptionTarget> _resolveTranscriptionTarget({
+    required ResolvedProfile profile,
+    required String? overrideModelId,
+  }) async {
+    if (overrideModelId == null) {
+      return (
+        provider: profile.transcriptionProvider,
+        modelId: profile.transcriptionModelId,
+      );
+    }
+    final repo = _ref.read(aiConfigRepositoryProvider);
+    final modelConfig = await repo.getConfigById(overrideModelId);
+    if (modelConfig is! AiConfigModel) {
+      developer.log(
+        'Override transcription modelId $overrideModelId did not resolve '
+        'to an AiConfigModel; falling back to profile slot',
+        name: _logTag,
+      );
+      return (
+        provider: profile.transcriptionProvider,
+        modelId: profile.transcriptionModelId,
+      );
+    }
+    final providerConfig = await repo.getConfigById(
+      modelConfig.inferenceProviderId,
+    );
+    if (providerConfig is! AiConfigInferenceProvider) {
+      developer.log(
+        'Override transcription model ${modelConfig.id} has no resolvable '
+        'parent provider ${modelConfig.inferenceProviderId}; falling back '
+        'to profile slot',
+        name: _logTag,
+      );
+      return (
+        provider: profile.transcriptionProvider,
+        modelId: profile.transcriptionModelId,
+      );
+    }
+    return (
+      provider: providerConfig,
+      modelId: modelConfig.providerModelId,
+    );
+  }
+
   /// Run skill-based transcription on an audio entry.
+  ///
+  /// When [overrideTranscriptionModelId] is non-null and resolves to a
+  /// valid `AiConfigModel`, the run uses that model and its parent
+  /// provider instead of the profile's transcription slot. This is the
+  /// per-invocation override path used by the popup-menu picker, so the
+  /// user can route a single voice note to a different model without
+  /// changing the entire profile. A stale or unresolvable override
+  /// falls back to the profile slot (with a warning log) — stranding
+  /// the user is worse than ignoring a stale id.
   Future<void> runTranscription({
     required String audioEntryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
+    String? overrideTranscriptionModelId,
   }) async {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
@@ -148,8 +210,12 @@ class SkillInferenceRunner {
         'skill=${skill != null}, profile=${profile != null}',
       );
     }
-    final provider = profile.transcriptionProvider;
-    final modelId = profile.transcriptionModelId;
+    final target = await _resolveTranscriptionTarget(
+      profile: profile,
+      overrideModelId: overrideTranscriptionModelId,
+    );
+    final provider = target.provider;
+    final modelId = target.modelId;
     if (provider == null || modelId == null) {
       developer.log(
         'Profile missing transcription provider/model for $audioEntryId',
@@ -775,6 +841,16 @@ class SkillInferenceRunner {
     return [base64Encode(bytes)];
   }
 }
+
+/// Resolved (provider, modelId) pair returned by
+/// [SkillInferenceRunner._resolveTranscriptionTarget]. Either field may
+/// be null when the override is unresolvable and the profile slot is
+/// also empty — the caller short-circuits with a "missing
+/// provider/model" log in that case.
+typedef _TranscriptionTarget = ({
+  AiConfigInferenceProvider? provider,
+  String? modelId,
+});
 
 @Riverpod(keepAlive: true)
 SkillInferenceRunner skillInferenceRunner(Ref ref) {

@@ -988,6 +988,8 @@
   "aiSetupWizardTitle": "Asistent de configurare AI",
   "aiSummarySpeakTooltip": "Citiți rezumatul local cu voce tare",
   "aiTaskSummaryTitle": "Rezumatul sarcinii AI",
+  "aiTranscriptionPickerDefaultBadge": "Implicit",
+  "aiTranscriptionPickerTitle": "Alegeți un model pentru transcriere",
   "apiKeyAddPageTitle": "Adaugă furnizor",
   "apiKeyAuthenticationDescription": "Securizați conexiunea API",
   "apiKeyAuthenticationTitle": "Autentificare",

@@ -20,6 +20,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -259,6 +260,7 @@ void main() {
   late MockLoggingService mockLoggingService;
   late MockPromptBuilderHelper mockPromptBuilderHelper;
   late MockTaskSummaryResolver mockTaskSummaryResolver;
+  late MockAiConfigRepository mockAiConfigRepo;
   late SkillInferenceRunner runner;
   late Directory tempDir;
   late ProviderContainer container;
@@ -501,8 +503,13 @@ void main() {
     mockLoggingService = MockLoggingService();
     mockPromptBuilderHelper = MockPromptBuilderHelper();
     mockTaskSummaryResolver = MockTaskSummaryResolver();
+    mockAiConfigRepo = MockAiConfigRepository();
 
-    container = ProviderContainer();
+    container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+      ],
+    );
 
     // Capture a live Ref from a simple provider so we can pass it to the
     // SkillInferenceRunner constructor (needed for status updates).
@@ -807,6 +814,175 @@ void main() {
         ).called(1);
         verify(() => mockTaskSummaryResolver.resolve('task-1')).called(1);
       });
+
+      test(
+        'overrideTranscriptionModelId routes the run to the override '
+        'model + its parent provider instead of the profile slot — the '
+        'popup-menu picker uses this seam to send one voice note to a '
+        'non-default model without mutating the profile',
+        () async {
+          final audioEntity = makeAudioEntity();
+          final audioDir = Directory('${tempDir.path}/audio');
+          await audioDir.create(recursive: true);
+          await File('${audioDir.path}/test.aac').writeAsBytes([0x01]);
+
+          final overrideProvider =
+              AiConfig.inferenceProvider(
+                    id: 'p-override',
+                    baseUrl: 'https://override.example.com',
+                    name: 'Override Provider',
+                    inferenceProviderType: InferenceProviderType.openAi,
+                    apiKey: 'override-key',
+                    createdAt: DateTime(2024),
+                  )
+                  as AiConfigInferenceProvider;
+          final overrideModel = AiConfig.model(
+            id: 'override-model-id',
+            name: 'Mistral Cloud',
+            providerModelId: 'mistral/voxtral-mini',
+            inferenceProviderId: 'p-override',
+            createdAt: DateTime(2024),
+            inputModalities: const [Modality.audio, Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          );
+
+          when(
+            () => mockAiConfigRepo.getConfigById('override-model-id'),
+          ).thenAnswer((_) async => overrideModel);
+          when(
+            () => mockAiConfigRepo.getConfigById('p-override'),
+          ).thenAnswer((_) async => overrideProvider);
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+          ).thenAnswer((_) async => const <String>[]);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).thenAnswer(
+            (_) =>
+                Stream.fromIterable([makeStreamChunk('Override transcript')]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+            overrideTranscriptionModelId: 'override-model-id',
+          );
+
+          // Inference targeted the override model + provider, NOT the
+          // profile slot's `whisper-1` / `p-audio`.
+          verify(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: 'mistral/voxtral-mini',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: 'https://override.example.com',
+              apiKey: any(named: 'apiKey'),
+              provider: overrideProvider,
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).called(1);
+
+          // Saved transcript records the OVERRIDE model id, not the
+          // profile's — important so audit logs reflect what actually
+          // ran for this entry.
+          final captured = verify(
+            () => mockJournalRepo.updateJournalEntity(captureAny()),
+          ).captured;
+          final updated = captured.first as JournalAudio;
+          expect(
+            updated.data.transcripts!.last.model,
+            'mistral/voxtral-mini',
+          );
+        },
+      );
+
+      test(
+        'a stale override modelId (not resolvable to an AiConfigModel) '
+        'falls back to the profile slot — stranding the user with a '
+        '"transcription does nothing" outcome is worse than ignoring '
+        'a deleted-between-picker-and-runner override',
+        () async {
+          final audioEntity = makeAudioEntity();
+          final audioDir = Directory('${tempDir.path}/audio');
+          await audioDir.create(recursive: true);
+          await File('${audioDir.path}/test.aac').writeAsBytes([0x01]);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('stale-id'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+          ).thenAnswer((_) async => const <String>[]);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('Fell back to profile'),
+            ]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+            overrideTranscriptionModelId: 'stale-id',
+          );
+
+          // Inference used the profile slot model (`whisper-1`) — the
+          // stale override was ignored.
+          verify(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: 'whisper-1',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('logs exception on failure', () async {
         when(

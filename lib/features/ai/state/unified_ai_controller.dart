@@ -437,11 +437,19 @@ final hasAvailableSkillsProvider = FutureProvider.autoDispose
     );
 
 /// Record type for trigger skill parameters.
+///
+/// `overrideTranscriptionModelId` is consumed only by
+/// [SkillType.transcription]. Non-transcription skills ignore it. The
+/// popup-menu picker sets it when the user chooses a non-default model
+/// for one specific voice note; the trigger forwards it to
+/// [SkillInferenceRunner.runTranscription], which routes the call to
+/// that model + its parent provider instead of the profile slot.
 typedef TriggerSkillParams = ({
   String entityId,
   String skillId,
   String? linkedTaskId,
   List<ProcessedReferenceImage>? referenceImages,
+  String? overrideTranscriptionModelId,
 });
 
 /// Provider to trigger a skill-based inference run.
@@ -547,6 +555,8 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 audioEntryId: params.entityId,
                 automationResult: automationResult,
                 linkedTaskId: params.linkedTaskId,
+                overrideTranscriptionModelId:
+                    params.overrideTranscriptionModelId,
               );
             case SkillType.imageAnalysis:
               await runner.runImageAnalysis(

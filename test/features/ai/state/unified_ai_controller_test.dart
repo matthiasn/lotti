@@ -1403,6 +1403,7 @@ void main() {
           skillId: 'nonexistent-skill',
           linkedTaskId: 'task-1',
           referenceImages: null,
+          overrideTranscriptionModelId: null,
         )).future,
       );
 
@@ -1462,6 +1463,7 @@ void main() {
             skillId: 'skill-1',
             linkedTaskId: null,
             referenceImages: null,
+            overrideTranscriptionModelId: null,
           )).future,
         );
 
@@ -1505,6 +1507,7 @@ void main() {
           skillId: 'skill-2',
           linkedTaskId: 'task-no-profile',
           referenceImages: null,
+          overrideTranscriptionModelId: null,
         )).future,
       );
 
@@ -1580,6 +1583,7 @@ void main() {
           skillId: 'skill-transcribe',
           linkedTaskId: 'task-1',
           referenceImages: null,
+          overrideTranscriptionModelId: null,
         )).future,
       );
 
@@ -1682,6 +1686,7 @@ void main() {
             skillId: 'skill-transcribe',
             linkedTaskId: null,
             referenceImages: null,
+            overrideTranscriptionModelId: null,
           )).future,
         );
 
@@ -1730,6 +1735,7 @@ void main() {
             skillId: 'skill-cover-art',
             linkedTaskId: null,
             referenceImages: null,
+            overrideTranscriptionModelId: null,
           )).future,
         );
 
@@ -1807,6 +1813,7 @@ void main() {
           skillId: 'skill-image',
           linkedTaskId: 'task-img',
           referenceImages: null,
+          overrideTranscriptionModelId: null,
         )).future,
       );
 
@@ -1875,6 +1882,7 @@ void main() {
           skillId: 'skill-prompt',
           linkedTaskId: 'task-prompt',
           referenceImages: null,
+          overrideTranscriptionModelId: null,
         )).future,
       );
 
@@ -1947,6 +1955,7 @@ void main() {
           skillId: 'skill-imggen',
           linkedTaskId: 'task-imggen',
           referenceImages: null,
+          overrideTranscriptionModelId: null,
         )).future,
       );
 
@@ -2029,6 +2038,7 @@ void main() {
           skillId: 'skill-imggen2',
           linkedTaskId: 'task-imggen2',
           referenceImages: refImages,
+          overrideTranscriptionModelId: null,
         )).future,
       );
 
@@ -2101,6 +2111,7 @@ void main() {
             skillId: 'skill-img-prompt',
             linkedTaskId: 'task-img-prompt',
             referenceImages: null,
+            overrideTranscriptionModelId: null,
           )).future,
         );
 

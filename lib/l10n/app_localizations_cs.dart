@@ -2012,6 +2012,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiTaskSummaryTitle => 'Shrnutí úkolu AI';
 
   @override
+  String get aiTranscriptionPickerDefaultBadge => 'Výchozí';
+
+  @override
+  String get aiTranscriptionPickerTitle => 'Vyber model pro přepis';
+
+  @override
   String get apiKeyAddPageTitle => 'Přidat poskytovatele';
 
   @override

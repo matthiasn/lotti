@@ -1181,6 +1181,8 @@
   "aiSetupWizardTitle": "AI Setup Wizard",
   "aiSummarySpeakTooltip": "Read summary aloud locally",
   "aiTaskSummaryTitle": "AI Task Summary",
+  "aiTranscriptionPickerDefaultBadge": "Default",
+  "aiTranscriptionPickerTitle": "Pick a transcription model",
   "apiKeyAddPageTitle": "Add Provider",
   "apiKeyAuthenticationDescription": "Secure your API connection",
   "apiKeyAuthenticationTitle": "Authentication",

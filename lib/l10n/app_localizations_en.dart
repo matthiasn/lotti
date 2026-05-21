@@ -1986,6 +1986,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiTaskSummaryTitle => 'AI Task Summary';
 
   @override
+  String get aiTranscriptionPickerDefaultBadge => 'Default';
+
+  @override
+  String get aiTranscriptionPickerTitle => 'Pick a transcription model';
+
+  @override
   String get apiKeyAddPageTitle => 'Add Provider';
 
   @override

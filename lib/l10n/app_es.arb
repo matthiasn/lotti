@@ -988,6 +988,8 @@
   "aiSetupWizardTitle": "Asistente de configuración AI",
   "aiSummarySpeakTooltip": "Leer resumen en voz alta localmente",
   "aiTaskSummaryTitle": "Resumen de tareas de IA",
+  "aiTranscriptionPickerDefaultBadge": "Predeterminado",
+  "aiTranscriptionPickerTitle": "Elige un modelo de transcripción",
   "apiKeyAddPageTitle": "Añadir proveedor",
   "apiKeyAuthenticationDescription": "Asegura tu conexión a la API",
   "apiKeyAuthenticationTitle": "Autenticación",

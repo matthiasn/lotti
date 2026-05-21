@@ -2019,6 +2019,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiTaskSummaryTitle => 'Résumé de la tâche IA';
 
   @override
+  String get aiTranscriptionPickerDefaultBadge => 'Par défaut';
+
+  @override
+  String get aiTranscriptionPickerTitle => 'Choisis un modèle de transcription';
+
+  @override
   String get apiKeyAddPageTitle => 'Ajouter un fournisseur';
 
   @override
