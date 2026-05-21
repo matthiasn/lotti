@@ -1,14 +1,13 @@
 {
   "pins" : [
     {
-      "identity" : "eventsource",
+      "identity" : "csqlite",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/mattt/EventSource.git",
+      "location" : "https://github.com/simolus3/CSQLite.git",
       "state" : {
-        "revision" : "a3a85a85214caf642abaa96ae664e4c772a59f6e",
-        "version" : "1.4.1"
+        "revision" : "1ee46d19a4f451a7aa64ffc64fc99b4748131e62"
       }
     }
   ],
-  "version" : 3
+  "version" : 2
 }
