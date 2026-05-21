@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 
 /// Resolves the best available summary for a task by checking multiple sources
@@ -41,6 +42,56 @@ class TaskSummaryResolver {
     return _getLegacySummary(linkedEntities);
   }
 
+  /// Resolve summaries for [taskIds] using one agent-report batch query, then
+  /// falling back to the provided legacy linked entities per task.
+  ///
+  /// The bulk callers already pre-fetch linked entities for all tasks; this
+  /// method keeps agent lookups equally batched instead of issuing
+  /// `getLinksTo(taskId)` + `getLatestReport(agentId)` for every row.
+  Future<Map<String, String>> resolveMany(
+    Iterable<String> taskIds, {
+    Map<String, List<JournalEntity>> linkedEntitiesByTaskId = const {},
+  }) async {
+    final ids = taskIds.toSet().toList(growable: false);
+    if (ids.isEmpty) return {};
+
+    final reportsByTaskId = <String, AgentReportEntity>{};
+    final repo = _agentRepository;
+    if (repo != null) {
+      try {
+        reportsByTaskId.addAll(
+          await repo.getLatestTaskReportsForTaskIds(ids),
+        );
+      } catch (e) {
+        developer.log(
+          'Error fetching agent reports for ${ids.length} tasks: $e',
+          name: 'TaskSummaryResolver',
+        );
+      }
+    }
+
+    final summariesByTaskId = <String, String>{};
+    for (final taskId in ids) {
+      final agentSummary = switch (reportsByTaskId[taskId]) {
+        final AgentReportEntity report => _summaryFromReport(report),
+        null => null,
+      };
+      if (agentSummary != null) {
+        summariesByTaskId[taskId] = agentSummary;
+        continue;
+      }
+
+      final legacySummary = _getLegacySummary(
+        linkedEntitiesByTaskId[taskId] ?? const [],
+      );
+      if (legacySummary != null) {
+        summariesByTaskId[taskId] = legacySummary;
+      }
+    }
+
+    return summariesByTaskId;
+  }
+
   /// Look up the agent assigned to [taskId] and return its latest report
   /// content, or `null` if no agent or report exists.
   Future<String?> _getAgentReportForTask(String taskId) async {
@@ -64,10 +115,8 @@ class TaskSummaryResolver {
       );
       if (report == null) return null;
 
-      final tldr = report.tldr?.trim();
-      final content = report.content.trim();
-      final summary = (tldr != null && tldr.isNotEmpty) ? tldr : content;
-      if (summary.isEmpty) return null;
+      final summary = _summaryFromReport(report);
+      if (summary == null) return null;
 
       developer.log(
         'Found agent report for task $taskId '
@@ -83,6 +132,13 @@ class TaskSummaryResolver {
       );
       return null;
     }
+  }
+
+  String? _summaryFromReport(AgentReportEntity report) {
+    final tldr = report.tldr?.trim();
+    final content = report.content.trim();
+    final summary = (tldr != null && tldr.isNotEmpty) ? tldr : content;
+    return summary.isEmpty ? null : summary;
   }
 
   /// Extract the latest legacy task summary from a list of journal entities.

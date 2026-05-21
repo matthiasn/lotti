@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -35,6 +36,11 @@ class _EmptyAgentRepository extends Fake implements AgentRepository {
   @override
   Future<List<model.AgentLink>> getLinksTo(String toId, {String? type}) async =>
       [];
+
+  @override
+  Future<Map<String, AgentReportEntity>> getLatestTaskReportsForTaskIds(
+    List<String> taskIds,
+  ) async => {};
 }
 
 void main() {

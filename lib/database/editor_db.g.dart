@@ -436,6 +436,10 @@ abstract class _$EditorDb extends GeneratedDatabase {
     'editor_drafts_created_at',
     'CREATE INDEX editor_drafts_created_at ON editor_drafts (created_at)',
   );
+  late final Index editorDraftsLatestDraft = Index(
+    'editor_drafts_latest_draft',
+    'CREATE INDEX editor_drafts_latest_draft ON editor_drafts (entry_id, last_saved, created_at DESC) WHERE status = \'DRAFT\'',
+  );
   Selectable<EditorDraftState> allDrafts() {
     return customSelect(
       'SELECT * FROM editor_drafts WHERE status = \'DRAFT\' ORDER BY created_at DESC',
@@ -462,6 +466,7 @@ abstract class _$EditorDb extends GeneratedDatabase {
     editorDraftsEntryId,
     editorDraftsStatus,
     editorDraftsCreatedAt,
+    editorDraftsLatestDraft,
   ];
 }
 

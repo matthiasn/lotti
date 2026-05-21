@@ -8,7 +8,9 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../test_utils.dart';
 
 enum _GeneratedInstanceKindSlot {
@@ -89,8 +91,48 @@ extension _AnyGeneratedInstanceViewModelScenario on glados.Any {
 }
 
 void main() {
-  Future<List<InstanceVm>> readVms(List<Override> overrides) async {
-    final container = ProviderContainer(overrides: overrides);
+  setUpAll(() {
+    registerFallbackValue(<String>[]);
+  });
+
+  Future<List<InstanceVm>> readVms(
+    List<Override> overrides, {
+    Map<String, AgentTemplateEntity> templatesByAgentId = const {},
+    Map<String, SoulDocumentVersionEntity> soulsByTemplateId = const {},
+  }) async {
+    final templateService = MockAgentTemplateService();
+    when(
+      () => templateService.getTemplatesForAgents(any<Iterable<String>>()),
+    ).thenAnswer((invocation) async {
+      final requested =
+          (invocation.positionalArguments.single as Iterable<String>).toSet();
+      return {
+        for (final entry in templatesByAgentId.entries)
+          if (requested.contains(entry.key)) entry.key: entry.value,
+      };
+    });
+
+    final soulService = MockSoulDocumentService();
+    when(
+      () => soulService.resolveActiveSoulsForTemplates(
+        any<Iterable<String>>(),
+      ),
+    ).thenAnswer((invocation) async {
+      final requested =
+          (invocation.positionalArguments.single as Iterable<String>).toSet();
+      return {
+        for (final entry in soulsByTemplateId.entries)
+          if (requested.contains(entry.key)) entry.key: entry.value,
+      };
+    });
+
+    final container = ProviderContainer(
+      overrides: [
+        agentTemplateServiceProvider.overrideWithValue(templateService),
+        soulDocumentServiceProvider.overrideWithValue(soulService),
+        ...overrides,
+      ],
+    );
     try {
       return await container.read(agentInstanceVmsProvider.future);
     } finally {
@@ -120,17 +162,23 @@ void main() {
       displayName: 'Laura',
     );
 
-    final vms = await readVms([
-      allAgentInstancesProvider.overrideWith(
-        (ref) async => [agent],
-      ),
-      allEvolutionSessionsProvider.overrideWith(
-        (ref) async => <AgentDomainEntity>[],
-      ),
-      templateForAgentProvider.overrideWith((ref, _) async => template),
-      soulForTemplateProvider.overrideWith((ref, _) async => soulVersion),
-      allSoulDocumentsProvider.overrideWith((ref) async => [soulDoc]),
-    ]);
+    final vms = await readVms(
+      [
+        allAgentInstancesProvider.overrideWith(
+          (ref) async => [agent],
+        ),
+        allEvolutionSessionsProvider.overrideWith(
+          (ref) async => <AgentDomainEntity>[],
+        ),
+        allSoulDocumentsProvider.overrideWith((ref) async => [soulDoc]),
+      ],
+      templatesByAgentId: {
+        'agent-1': template,
+      },
+      soulsByTemplateId: {
+        'tpl-laura': soulVersion,
+      },
+    );
 
     expect(vms, hasLength(1));
     final vm = vms.single;
@@ -158,8 +206,6 @@ void main() {
       allEvolutionSessionsProvider.overrideWith(
         (ref) async => <AgentDomainEntity>[],
       ),
-      templateForAgentProvider.overrideWith((ref, _) async => null),
-      soulForTemplateProvider.overrideWith((ref, _) async => null),
       allSoulDocumentsProvider.overrideWith(
         (ref) async => <AgentDomainEntity>[],
       ),
@@ -190,8 +236,6 @@ void main() {
       allEvolutionSessionsProvider.overrideWith(
         (ref) async => [activeSession, completedSession, abandonedSession],
       ),
-      templateForAgentProvider.overrideWith((ref, _) async => null),
-      soulForTemplateProvider.overrideWith((ref, _) async => null),
     ]);
 
     expect(vms, hasLength(3));
@@ -237,8 +281,6 @@ void main() {
         (ref) async => <AgentDomainEntity>[],
       ),
       allEvolutionSessionsProvider.overrideWith((ref) async => sessions),
-      templateForAgentProvider.overrideWith((ref, _) async => null),
-      soulForTemplateProvider.overrideWith((ref, _) async => null),
     ]);
 
     expect(vms, hasLength(scenario.statusSlots.length));

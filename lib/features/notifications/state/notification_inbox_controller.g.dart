@@ -10,28 +10,55 @@ part of 'notification_inbox_controller.dart';
 // ignore_for_file: type=lint, type=warning
 /// Reactive count of unseen notifications that should pulse the bell badge.
 ///
-/// Refreshes whenever an entry in [UpdateNotifications.updateStream] contains
+/// Refreshes whenever an entry in `UpdateNotifications.updateStream` contains
 /// [inboxNotification] — every notification create / state change / sync apply
-/// path already emits that constant via [NotificationRepository._notify] and
+/// path already emits that constant via `NotificationRepository._notify` and
 /// the matrix sync handlers, so the bell stays in step with the database.
+///
+/// `_refresh` guards against two failure modes that bit a previous revision:
+/// 1. **Unhandled async errors** — wrapped in try/catch and surfaced as
+///    `AsyncError` so the consumer (the bell) can render a neutral fallback
+///    instead of crashing the listener.
+/// 2. **Stale completion order** — concurrent stream events can fan out
+///    multiple `_refresh()` calls. An epoch counter discards results from any
+///    refresh that finishes after a newer one started, so the latest fetch
+///    always wins regardless of database latency.
 
 @ProviderFor(UnseenNotificationCount)
 final unseenNotificationCountProvider = UnseenNotificationCountProvider._();
 
 /// Reactive count of unseen notifications that should pulse the bell badge.
 ///
-/// Refreshes whenever an entry in [UpdateNotifications.updateStream] contains
+/// Refreshes whenever an entry in `UpdateNotifications.updateStream` contains
 /// [inboxNotification] — every notification create / state change / sync apply
-/// path already emits that constant via [NotificationRepository._notify] and
+/// path already emits that constant via `NotificationRepository._notify` and
 /// the matrix sync handlers, so the bell stays in step with the database.
+///
+/// `_refresh` guards against two failure modes that bit a previous revision:
+/// 1. **Unhandled async errors** — wrapped in try/catch and surfaced as
+///    `AsyncError` so the consumer (the bell) can render a neutral fallback
+///    instead of crashing the listener.
+/// 2. **Stale completion order** — concurrent stream events can fan out
+///    multiple `_refresh()` calls. An epoch counter discards results from any
+///    refresh that finishes after a newer one started, so the latest fetch
+///    always wins regardless of database latency.
 final class UnseenNotificationCountProvider
     extends $AsyncNotifierProvider<UnseenNotificationCount, int> {
   /// Reactive count of unseen notifications that should pulse the bell badge.
   ///
-  /// Refreshes whenever an entry in [UpdateNotifications.updateStream] contains
+  /// Refreshes whenever an entry in `UpdateNotifications.updateStream` contains
   /// [inboxNotification] — every notification create / state change / sync apply
-  /// path already emits that constant via [NotificationRepository._notify] and
+  /// path already emits that constant via `NotificationRepository._notify` and
   /// the matrix sync handlers, so the bell stays in step with the database.
+  ///
+  /// `_refresh` guards against two failure modes that bit a previous revision:
+  /// 1. **Unhandled async errors** — wrapped in try/catch and surfaced as
+  ///    `AsyncError` so the consumer (the bell) can render a neutral fallback
+  ///    instead of crashing the listener.
+  /// 2. **Stale completion order** — concurrent stream events can fan out
+  ///    multiple `_refresh()` calls. An epoch counter discards results from any
+  ///    refresh that finishes after a newer one started, so the latest fetch
+  ///    always wins regardless of database latency.
   UnseenNotificationCountProvider._()
     : super(
         from: null,
@@ -52,14 +79,23 @@ final class UnseenNotificationCountProvider
 }
 
 String _$unseenNotificationCountHash() =>
-    r'8dc0aae9028f48a30f37dcc76a6edbe1778fb7a9';
+    r'f16cc9183b1f70ca5b9cdd3c2719157cb43641ae';
 
 /// Reactive count of unseen notifications that should pulse the bell badge.
 ///
-/// Refreshes whenever an entry in [UpdateNotifications.updateStream] contains
+/// Refreshes whenever an entry in `UpdateNotifications.updateStream` contains
 /// [inboxNotification] — every notification create / state change / sync apply
-/// path already emits that constant via [NotificationRepository._notify] and
+/// path already emits that constant via `NotificationRepository._notify` and
 /// the matrix sync handlers, so the bell stays in step with the database.
+///
+/// `_refresh` guards against two failure modes that bit a previous revision:
+/// 1. **Unhandled async errors** — wrapped in try/catch and surfaced as
+///    `AsyncError` so the consumer (the bell) can render a neutral fallback
+///    instead of crashing the listener.
+/// 2. **Stale completion order** — concurrent stream events can fan out
+///    multiple `_refresh()` calls. An epoch counter discards results from any
+///    refresh that finishes after a newer one started, so the latest fetch
+///    always wins regardless of database latency.
 
 abstract class _$UnseenNotificationCount extends $AsyncNotifier<int> {
   FutureOr<int> build();
@@ -85,6 +121,9 @@ abstract class _$UnseenNotificationCount extends $AsyncNotifier<int> {
 /// `upcomingNotificationRows` apply at the SQL layer: still unseen, unacted,
 /// and not deleted. The two streams are concatenated due-first then upcoming,
 /// matching the visual ordering users expect (overdue alerts on top).
+///
+/// `_refresh` uses the same epoch + try/catch guard as
+/// [UnseenNotificationCount] — see that class's doc comment for the reasoning.
 
 @ProviderFor(InboxNotifications)
 final inboxNotificationsProvider = InboxNotificationsProvider._();
@@ -95,6 +134,9 @@ final inboxNotificationsProvider = InboxNotificationsProvider._();
 /// `upcomingNotificationRows` apply at the SQL layer: still unseen, unacted,
 /// and not deleted. The two streams are concatenated due-first then upcoming,
 /// matching the visual ordering users expect (overdue alerts on top).
+///
+/// `_refresh` uses the same epoch + try/catch guard as
+/// [UnseenNotificationCount] — see that class's doc comment for the reasoning.
 final class InboxNotificationsProvider
     extends
         $AsyncNotifierProvider<InboxNotifications, List<NotificationEntity>> {
@@ -104,6 +146,9 @@ final class InboxNotificationsProvider
   /// `upcomingNotificationRows` apply at the SQL layer: still unseen, unacted,
   /// and not deleted. The two streams are concatenated due-first then upcoming,
   /// matching the visual ordering users expect (overdue alerts on top).
+  ///
+  /// `_refresh` uses the same epoch + try/catch guard as
+  /// [UnseenNotificationCount] — see that class's doc comment for the reasoning.
   InboxNotificationsProvider._()
     : super(
         from: null,
@@ -124,7 +169,7 @@ final class InboxNotificationsProvider
 }
 
 String _$inboxNotificationsHash() =>
-    r'16a74a352356fb03515724b6a2da148ff4677e83';
+    r'0a446eb06a5c3fce1341e590927346364d25471e';
 
 /// Sorted list of notifications that belong in the inbox popover.
 ///
@@ -132,6 +177,9 @@ String _$inboxNotificationsHash() =>
 /// `upcomingNotificationRows` apply at the SQL layer: still unseen, unacted,
 /// and not deleted. The two streams are concatenated due-first then upcoming,
 /// matching the visual ordering users expect (overdue alerts on top).
+///
+/// `_refresh` uses the same epoch + try/catch guard as
+/// [UnseenNotificationCount] — see that class's doc comment for the reasoning.
 
 abstract class _$InboxNotifications
     extends $AsyncNotifier<List<NotificationEntity>> {

@@ -111,13 +111,13 @@ void main() {
         );
         addTearDown(db.close);
 
-        // Verify schema version is now 6 (latest).
+        // Verify schema version is now latest.
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          8,
+          9,
         );
 
         // Verify the new columns exist by querying them
@@ -229,11 +229,11 @@ void main() {
       );
       addTearDown(db.close);
 
-      // Verify schema version is now 8 (latest).
+      // Verify schema version is now latest.
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        8,
+        9,
       );
 
       // Verify the partial unique index exists.
@@ -482,11 +482,11 @@ void main() {
       );
       addTearDown(db.close);
 
-      // Verify schema version is now 8 (latest).
+      // Verify schema version is now latest.
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        8,
+        9,
       );
 
       // Verify the column exists by selecting it.
@@ -617,7 +617,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          8,
+          9,
         );
 
         final indexes = await db
@@ -754,7 +754,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          8,
+          9,
         );
 
         // Verify wake_run_log soul columns exist and are readable.
@@ -818,6 +818,109 @@ void main() {
         await db.close();
       },
     );
+
+    test('v8 to v9 adds active agent read indexes', () async {
+      final dbFile = path.join(testDirectory.path, agentDbFileName);
+      final rawDb = sqlite3.open(dbFile);
+
+      rawDb
+        ..execute('''
+          CREATE TABLE agent_entities (
+            id TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            subtype TEXT,
+            thread_id TEXT,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            deleted_at DATETIME,
+            serialized TEXT NOT NULL,
+            schema_version INTEGER NOT NULL DEFAULT 1
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE agent_links (
+            id TEXT NOT NULL PRIMARY KEY,
+            from_id TEXT NOT NULL,
+            to_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            deleted_at DATETIME,
+            serialized TEXT NOT NULL,
+            schema_version INTEGER NOT NULL DEFAULT 1,
+            UNIQUE(from_id, to_id, type)
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE wake_run_log (
+            run_key TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            reason_id TEXT,
+            thread_id TEXT NOT NULL,
+            status TEXT NOT NULL,
+            logical_change_key TEXT,
+            created_at DATETIME NOT NULL,
+            started_at DATETIME,
+            completed_at DATETIME,
+            error_message TEXT,
+            template_id TEXT,
+            template_version_id TEXT,
+            resolved_model_id TEXT,
+            soul_id TEXT,
+            soul_version_id TEXT,
+            user_rating REAL,
+            rated_at DATETIME
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE saga_log (
+            operation_id TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            run_key TEXT NOT NULL,
+            phase TEXT NOT NULL,
+            status TEXT NOT NULL,
+            tool_name TEXT NOT NULL,
+            last_error TEXT,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL
+          )
+        ''')
+        ..execute('PRAGMA user_version = 8');
+      rawDb.dispose();
+
+      final db = AgentDatabase(
+        background: false,
+        documentsDirectoryProvider: () async => testDirectory,
+        tempDirectoryProvider: () async => testDirectory,
+      );
+      addTearDown(db.close);
+
+      final versionResult = await db.customSelect('PRAGMA user_version').get();
+      expect(versionResult.first.read<int>('user_version'), 9);
+
+      final indexes = await db.customSelect('''
+            SELECT name FROM sqlite_master WHERE type = 'index'
+            AND name IN (
+              'idx_agent_entities_active_agent_type_created',
+              'idx_agent_entities_active_type_created',
+              'idx_agent_links_active_to_type'
+            )
+            ORDER BY name
+          ''').get();
+
+      expect(
+        indexes.map((row) => row.read<String>('name')).toList(),
+        [
+          'idx_agent_entities_active_agent_type_created',
+          'idx_agent_entities_active_type_created',
+          'idx_agent_links_active_to_type',
+        ],
+      );
+
+      await db.close();
+    });
   });
 
   group('AgentDatabase fresh install', () {
@@ -901,6 +1004,132 @@ void main() {
         );
       },
     );
+
+    test('active agent indexes support slow-query hot paths', () async {
+      final db = AgentDatabase(
+        inMemoryDatabase: true,
+        background: false,
+      );
+      addTearDown(db.close);
+
+      final indexes = await db.customSelect('''
+            SELECT name FROM sqlite_master WHERE type = 'index'
+            AND name IN (
+              'idx_agent_entities_active_agent_type_created',
+              'idx_agent_entities_active_type_created',
+              'idx_agent_links_active_to_type'
+            )
+            ORDER BY name
+          ''').get();
+      expect(
+        indexes.map((row) => row.read<String>('name')).toList(),
+        [
+          'idx_agent_entities_active_agent_type_created',
+          'idx_agent_entities_active_type_created',
+          'idx_agent_links_active_to_type',
+        ],
+      );
+
+      for (var i = 0; i < 80; i++) {
+        final ts =
+            DateTime(
+              2026,
+              5,
+            ).add(Duration(minutes: i)).millisecondsSinceEpoch ~/
+            1000;
+        final type = i.isEven ? 'agent' : 'agentTemplate';
+        final deletedAt = i % 10 == 0 ? ts + 60 : null;
+        await db.customStatement(
+          'INSERT INTO agent_entities '
+          '(id, agent_id, type, created_at, updated_at, deleted_at, '
+          'serialized, schema_version) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?, 1)',
+          [
+            'entity-$i',
+            'agent-${i % 4}',
+            type,
+            ts,
+            ts,
+            deletedAt,
+            '{}',
+          ],
+        );
+        await db.customStatement(
+          'INSERT INTO agent_links '
+          '(id, from_id, to_id, type, created_at, updated_at, deleted_at, '
+          'serialized, schema_version) '
+          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)',
+          [
+            'link-$i',
+            'agent-$i',
+            'task-${i % 4}',
+            'agent_task',
+            ts,
+            ts,
+            deletedAt,
+            '{}',
+          ],
+        );
+      }
+      await db.customStatement('ANALYZE');
+
+      final globalTypePlan = await db
+          .customSelect(
+            'EXPLAIN QUERY PLAN '
+            'SELECT * FROM agent_entities '
+            'WHERE type = ?1 AND deleted_at IS NULL '
+            'ORDER BY created_at DESC',
+            variables: [const Variable<String>('agent')],
+          )
+          .get();
+      final globalTypeDetails = globalTypePlan
+          .map((r) => r.data.toString())
+          .join('\n');
+      expect(
+        globalTypeDetails,
+        contains('idx_agent_entities_active_type_created'),
+      );
+      expect(
+        globalTypeDetails,
+        isNot(contains('USE TEMP B-TREE FOR ORDER BY')),
+      );
+
+      final agentTypePlan = await db
+          .customSelect(
+            'EXPLAIN QUERY PLAN '
+            'SELECT * FROM agent_entities '
+            'WHERE agent_id = ?1 AND type = ?2 AND deleted_at IS NULL '
+            'ORDER BY created_at DESC LIMIT ?3',
+            variables: [
+              const Variable<String>('agent-1'),
+              const Variable<String>('agentTemplate'),
+              const Variable<int>(10),
+            ],
+          )
+          .get();
+      final agentTypeDetails = agentTypePlan
+          .map((r) => r.data.toString())
+          .join('\n');
+      expect(
+        agentTypeDetails,
+        contains('idx_agent_entities_active_agent_type_created'),
+      );
+      expect(agentTypeDetails, isNot(contains('USE TEMP B-TREE FOR ORDER BY')));
+
+      final linkPlan = await db
+          .customSelect(
+            'EXPLAIN QUERY PLAN '
+            'SELECT * FROM agent_links '
+            'WHERE to_id = ?1 AND type = ?2 AND deleted_at IS NULL',
+            variables: [
+              const Variable<String>('task-1'),
+              const Variable<String>('agent_task'),
+            ],
+          )
+          .get();
+      final linkDetails = linkPlan.map((r) => r.data.toString()).join('\n');
+      expect(linkDetails, contains('idx_agent_links_active_to_type'));
+    });
 
     test('creates idx_unique_soul_per_template index on new DB', () async {
       final db = AgentDatabase(

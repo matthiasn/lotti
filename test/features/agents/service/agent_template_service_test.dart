@@ -2269,6 +2269,70 @@ void main() {
     });
   });
 
+  group('getTemplatesForAgents', () {
+    test(
+      'resolves templates through batched links and entity fetches',
+      () async {
+        final older = makeTestTemplateAssignmentLink(
+          id: 'older',
+          fromId: 'tpl-old',
+          toId: 'agent-a',
+          // ignore: avoid_redundant_argument_values
+          createdAt: DateTime(2024, 1, 1),
+        );
+        final newer = makeTestTemplateAssignmentLink(
+          id: 'newer',
+          fromId: 'tpl-new',
+          toId: 'agent-a',
+          createdAt: DateTime(2024, 1, 2),
+        );
+        final template = makeTestTemplate(
+          id: 'tpl-new',
+          agentId: 'tpl-new',
+          displayName: 'Newest template',
+        );
+
+        when(
+          () => mockRepo.getLinksToMultiple(
+            any<List<String>>(),
+            type: AgentLinkTypes.templateAssignment,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'agent-a': [older, newer],
+            'agent-b': [
+              makeTestTemplateAssignmentLink(
+                id: 'broken',
+                fromId: 'missing-template',
+                toId: 'agent-b',
+              ),
+            ],
+          },
+        );
+        when(
+          () => mockRepo.getEntitiesByIds(any<Iterable<String>>()),
+        ).thenAnswer((_) async => {'tpl-new': template});
+
+        final result = await service.getTemplatesForAgents([
+          'agent-a',
+          'agent-b',
+        ]);
+
+        expect(result.keys, ['agent-a']);
+        expect(result['agent-a']?.displayName, 'Newest template');
+        final capturedIds =
+            verify(
+                  () => mockRepo.getLinksToMultiple(
+                    captureAny<List<String>>(),
+                    type: AgentLinkTypes.templateAssignment,
+                  ),
+                ).captured.single
+                as List<String>;
+        expect(capturedIds, ['agent-a', 'agent-b']);
+      },
+    );
+  });
+
   group('getAgentsForTemplate', () {
     test('returns agent entities from links', () async {
       final agentA = makeTestIdentity(id: 'agent-a', agentId: 'agent-a');

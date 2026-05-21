@@ -2955,7 +2955,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   );
   late final Index idxOutboxSendingExpiry = Index(
     'idx_outbox_sending_expiry',
-    'CREATE INDEX idx_outbox_sending_expiry ON outbox (updated_at, created_at, id) WHERE status = 3',
+    'CREATE INDEX idx_outbox_sending_expiry ON outbox (created_at, id, updated_at) WHERE status = 3',
   );
   late final Index idxSyncSequenceLogActionableStatusCreatedAt = Index(
     'idx_sync_sequence_log_actionable_status_created_at',
@@ -2972,6 +2972,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
   late final Index idxSyncSequenceLogHostStatus = Index(
     'idx_sync_sequence_log_host_status',
     'CREATE INDEX idx_sync_sequence_log_host_status ON sync_sequence_log (host_id, status)',
+  );
+  late final Index idxSyncSequenceLogResolvedHostCounter = Index(
+    'idx_sync_sequence_log_resolved_host_counter',
+    'CREATE INDEX idx_sync_sequence_log_resolved_host_counter ON sync_sequence_log (host_id, counter) WHERE status IN (0, 3, 4, 5)',
   );
   late final Index idxSyncSequenceLogPayloadResolution = Index(
     'idx_sync_sequence_log_payload_resolution',
@@ -3040,6 +3044,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     idxSyncSequenceLogActionableStatusUpdatedAt,
     idxSyncSequenceLogActionableStatusLastRequestedAt,
     idxSyncSequenceLogHostStatus,
+    idxSyncSequenceLogResolvedHostCounter,
     idxSyncSequenceLogPayloadResolution,
     idxSyncSequenceLogHostEntryStatusCounter,
     idxInboundEventQueueReady,

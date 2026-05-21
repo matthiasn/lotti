@@ -114,6 +114,99 @@ void main() {
       expect(summary, isNull);
     });
 
+    test('resolveMany batches agent reports and falls back per task', () async {
+      final legacy = _aiResponseEntry(
+        id: 'legacy-2',
+        response: 'legacy task 2',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+      when(
+        () => repo.getLatestTaskReportsForTaskIds([
+          'task-1',
+          'task-2',
+          'task-3',
+        ]),
+      ).thenAnswer(
+        (_) async => {
+          'task-1': _report(
+            id: 'rep-1',
+            agentId: 'agent-1',
+            content: 'full task 1',
+            tldr: 'agent task 1',
+          ),
+          'task-3': _report(
+            id: 'rep-3',
+            agentId: 'agent-3',
+            content: '   ',
+          ),
+        },
+      );
+
+      final resolver = TaskSummaryResolver(repo);
+      final summaries = await resolver.resolveMany(
+        ['task-1', 'task-2', 'task-3', 'task-1'],
+        linkedEntitiesByTaskId: {
+          'task-1': [
+            _aiResponseEntry(
+              id: 'legacy-1',
+              response: 'ignored legacy task 1',
+              dateFrom: DateTime(2026, 4, 9),
+            ),
+          ],
+          'task-2': [legacy],
+          'task-3': [
+            _aiResponseEntry(
+              id: 'legacy-3',
+              response: 'legacy task 3',
+              dateFrom: DateTime(2026, 4, 10),
+            ),
+          ],
+        },
+      );
+
+      expect(
+        summaries,
+        {
+          'task-1': 'agent task 1',
+          'task-2': 'legacy task 2',
+          'task-3': 'legacy task 3',
+        },
+      );
+      verify(
+        () => repo.getLatestTaskReportsForTaskIds([
+          'task-1',
+          'task-2',
+          'task-3',
+        ]),
+      ).called(1);
+      verifyNever(() => repo.getLinksTo(any(), type: any(named: 'type')));
+      verifyNever(() => repo.getLatestReport(any(), any()));
+    });
+
+    test(
+      'resolveMany falls back to legacy when batch report lookup throws',
+      () async {
+        when(
+          () => repo.getLatestTaskReportsForTaskIds(['task-1']),
+        ).thenThrow(StateError('db down'));
+        final legacy = _aiResponseEntry(
+          id: 'legacy-1',
+          response: 'legacy survives',
+          dateFrom: DateTime(2026, 4, 11),
+        );
+
+        final resolver = TaskSummaryResolver(repo);
+        final summaries = await resolver.resolveMany(
+          ['task-1'],
+          linkedEntitiesByTaskId: {
+            'task-1': [legacy],
+          },
+        );
+
+        expect(summaries, {'task-1': 'legacy survives'});
+      },
+    );
+
     test(
       'returns null when there are no agent links and no entities',
       () async {

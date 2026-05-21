@@ -59,7 +59,7 @@ final class TaskFocusControllerProvider
 }
 
 String _$taskFocusControllerHash() =>
-    r'd4cbbcc43d113e00ba4c15624055e02a56c71d9a';
+    r'29fd76886865ad56f1f061c70c7734d2fd9923de';
 
 final class TaskFocusControllerFamily extends $Family
     with

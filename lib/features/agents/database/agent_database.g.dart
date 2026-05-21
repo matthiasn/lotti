@@ -2825,6 +2825,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_agent_entities_thread',
     'CREATE INDEX idx_agent_entities_thread ON agent_entities (agent_id, thread_id, created_at DESC)',
   );
+  late final Index idxAgentEntitiesActiveAgentTypeCreated = Index(
+    'idx_agent_entities_active_agent_type_created',
+    'CREATE INDEX idx_agent_entities_active_agent_type_created ON agent_entities (agent_id, type, created_at DESC) WHERE deleted_at IS NULL',
+  );
+  late final Index idxAgentEntitiesActiveTypeCreated = Index(
+    'idx_agent_entities_active_type_created',
+    'CREATE INDEX idx_agent_entities_active_type_created ON agent_entities (type, created_at DESC) WHERE deleted_at IS NULL',
+  );
   late final Index idxAgentEntitiesTokenUsageSince = Index(
     'idx_agent_entities_token_usage_since',
     'CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities (type, created_at DESC) WHERE type = \'wakeTokenUsage\' AND deleted_at IS NULL',
@@ -2857,6 +2865,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   late final Index idxAgentLinksActiveFromTypeTo = Index(
     'idx_agent_links_active_from_type_to',
     'CREATE INDEX idx_agent_links_active_from_type_to ON agent_links (from_id, type, to_id) WHERE deleted_at IS NULL',
+  );
+  late final Index idxAgentLinksActiveToType = Index(
+    'idx_agent_links_active_to_type',
+    'CREATE INDEX idx_agent_links_active_to_type ON agent_links (to_id, type) WHERE deleted_at IS NULL',
   );
   late final WakeRunLog wakeRunLog = WakeRunLog(this);
   late final Index idxWakeRunLogAgent = Index(
@@ -3486,6 +3498,8 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentEntitiesType,
     idxAgentEntitiesAgentTypeSub,
     idxAgentEntitiesThread,
+    idxAgentEntitiesActiveAgentTypeCreated,
+    idxAgentEntitiesActiveTypeCreated,
     idxAgentEntitiesTokenUsageSince,
     idxAgentEntitiesDueWake,
     agentLinks,
@@ -3495,6 +3509,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxUniqueImproverPerTemplate,
     idxUniqueSoulPerTemplate,
     idxAgentLinksActiveFromTypeTo,
+    idxAgentLinksActiveToType,
     wakeRunLog,
     idxWakeRunLogAgent,
     idxWakeRunLogTemplate,

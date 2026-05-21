@@ -1,6 +1,8 @@
 // ignore_for_file: avoid_redundant_argument_values
 import 'package:drift/drift.dart' hide isNotNull, isNull;
+import 'package:drift/native.dart';
 import 'package:glados/glados.dart';
+import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -959,8 +961,9 @@ void main() {
     );
 
     test(
-      'sending-expiry plan uses the v21 partial index '
-      'idx_outbox_sending_expiry — the same temp-B-tree regression hit '
+      'sending-expiry plan uses the v22 partial index '
+      'idx_outbox_sending_expiry and skips the temp B-tree — the same '
+      'sort regression hit '
       "claimNextOutboxBatch's expired-sending branch "
       '(`WHERE status = 3 AND updated_at < cutoff ORDER BY created_at, '
       'id LIMIT 50`)',
@@ -979,7 +982,7 @@ void main() {
         }
         // Plant a real expired-sending row so the partial index has
         // qualifying rows for the planner to weigh against the
-        // tombstones; then ANALYZE so the v21 partial wins on cost.
+        // tombstones; then ANALYZE so the v22 partial wins on cost.
         await database.addOutboxItem(
           OutboxCompanion(
             status: Value(OutboxStatus.sending.index),
@@ -1006,8 +1009,16 @@ void main() {
           details,
           contains('idx_outbox_sending_expiry'),
           reason:
-              'literal status = 3 + updated_at range must match the v21 '
-              'sending-expiry partial index after ANALYZE',
+              'literal status = 3 + created_at/id ordering must match '
+              'the v22 sending-expiry partial index after ANALYZE',
+        );
+        expect(
+          details,
+          isNot(contains('USE TEMP B-TREE FOR ORDER BY')),
+          reason:
+              'updated_at is a range predicate, so the partial index must '
+              'lead with created_at/id to satisfy the ORDER BY without a '
+              'temp B-tree',
         );
         // See sibling test — `SCAN outbox USING INDEX <partial>` is
         // legitimate; only a base-table scan (`SCAN outbox` without
@@ -1015,6 +1026,64 @@ void main() {
         expect(
           details,
           isNot(matches(RegExp('SCAN outbox(?! USING)'))),
+        );
+      },
+    );
+
+    test(
+      'production outbox claim reads emit literal status SQL so SQLite '
+      'can match the partial-index WHERE clauses',
+      () async {
+        final loggedEntries = <SlowQueryLogEntry>[];
+        SlowQueryLoggingGate.isEnabled = true;
+        addTearDown(SlowQueryLoggingGate.resetForTest);
+
+        final loggedDb = SyncDatabase.connect(
+          DatabaseConnection(
+            NativeDatabase.memory().interceptWith(
+              SlowQueryInterceptor(
+                databaseName: syncDbFileName,
+                threshold: Duration.zero,
+                superSlowThreshold: const Duration(days: 1),
+                reporter: loggedEntries.add,
+              ),
+            ),
+          ),
+        );
+        addTearDown(loggedDb.close);
+
+        await loggedDb.oldestOutboxItems(1);
+        await loggedDb.claimNextOutboxItem(now: DateTime(2024, 1, 1, 12));
+        await loggedDb.claimNextOutboxBatch(
+          maxSize: 50,
+          now: DateTime(2024, 1, 1, 12),
+        );
+
+        final outboxSelects = loggedEntries
+            .map((entry) => entry.formattedStatement)
+            .where((statement) => statement.startsWith('SELECT * FROM outbox'))
+            .toList();
+
+        expect(
+          outboxSelects,
+          contains(
+            'SELECT * FROM outbox WHERE status = 0 '
+            'ORDER BY created_at ASC, id ASC LIMIT ?',
+          ),
+        );
+        expect(
+          outboxSelects,
+          contains(
+            'SELECT * FROM outbox WHERE status = 3 AND updated_at < ? '
+            'ORDER BY created_at ASC, id ASC LIMIT ?',
+          ),
+        );
+        expect(
+          outboxSelects.any((statement) => statement.contains('status = ?')),
+          isFalse,
+          reason:
+              'a bound status value would no longer imply the literal '
+              'partial-index predicate',
         );
       },
     );
@@ -2247,6 +2316,92 @@ void main() {
 
         final lastCounter = await database.getLastCounterForHost(hostId);
         expect(lastCounter, 0);
+      },
+    );
+
+    test(
+      'getLastCounterForHost plan uses the resolved-host partial index '
+      'without sorting through missing/requested rows',
+      () async {
+        final database = db!;
+        const hostId = 'host-plan';
+
+        for (var counter = 1; counter <= 50; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              status: Value(
+                counter.isEven
+                    ? SyncSequenceStatus.received.index
+                    : SyncSequenceStatus.missing.index,
+              ),
+              createdAt: Value(DateTime(2024, 1, 1)),
+              updatedAt: Value(DateTime(2024, 1, 1)),
+            ),
+          );
+        }
+        await database.customStatement('ANALYZE');
+
+        final plan = await database
+            .customSelect(
+              '''
+              EXPLAIN QUERY PLAN
+              WITH resolved_prefix AS (
+                SELECT
+                  counter,
+                  ROW_NUMBER() OVER (ORDER BY counter) AS rn
+                FROM sync_sequence_log
+                WHERE host_id = ?
+                  AND status IN (0, 3, 4, 5)
+              )
+              SELECT CASE
+                WHEN NOT EXISTS (
+                  SELECT 1 FROM sync_sequence_log WHERE host_id = ? LIMIT 1
+                ) THEN NULL
+                ELSE COALESCE(
+                  (
+                    SELECT MAX(counter)
+                    FROM resolved_prefix
+                    WHERE counter = rn
+                  ),
+                  0
+                )
+              END AS last_counter
+              ''',
+              variables: [
+                Variable.withString(hostId),
+                Variable.withString(hostId),
+              ],
+            )
+            .get();
+        final details = plan.map((r) => r.data.toString()).join('\n');
+
+        expect(
+          details,
+          contains('idx_sync_sequence_log_resolved_host_counter'),
+          reason:
+              'the resolved-prefix scan must use the literal-status partial '
+              'index rather than reading every row for the host',
+        );
+        expect(
+          details,
+          isNot(contains('USE TEMP B-TREE FOR ORDER BY')),
+          reason:
+              'the partial index is already ordered by host_id/counter, so '
+              'the window should not need an external sort',
+        );
+      },
+    );
+
+    test(
+      'resolved status literals used by getLastCounterForHost stay aligned '
+      'with SyncSequenceStatus enum indices',
+      () {
+        expect(SyncSequenceStatus.received.index, 0);
+        expect(SyncSequenceStatus.backfilled.index, 3);
+        expect(SyncSequenceStatus.deleted.index, 4);
+        expect(SyncSequenceStatus.unresolvable.index, 5);
       },
     );
 
@@ -4977,8 +5132,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 21', () {
-      expect(db.schemaVersion, 21);
+    test('schema version is 23', () {
+      expect(db.schemaVersion, 23);
     });
 
     test(

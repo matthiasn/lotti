@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/agent_link.dart'
+    show AgentLinkSelection;
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -2484,6 +2486,39 @@ void main() {
         expect(result[otherAgentId]!.id, 'state-b');
         expect(result[otherAgentId]!.revision, 7);
       });
+
+      test(
+        'chunks large agent-id lists without losing later matches',
+        () async {
+          const total = 1005;
+          final requestedIds = [
+            for (var i = 0; i < total; i++) 'state-agent-$i',
+          ];
+
+          for (final index in [0, 901, 1004]) {
+            await repo.upsertEntity(
+              makeAgentState(
+                id: 'state-chunk-$index',
+                agentId: requestedIds[index],
+                revision: index,
+              ),
+            );
+          }
+
+          final result = await repo.getAgentStatesByAgentIds(requestedIds);
+
+          expect(
+            result.keys,
+            unorderedEquals([
+              requestedIds[0],
+              requestedIds[901],
+              requestedIds[1004],
+            ]),
+          );
+          expect(result[requestedIds[901]]?.id, 'state-chunk-901');
+          expect(result[requestedIds[1004]]?.revision, 1004);
+        },
+      );
     });
 
     group('getMessagesByKind', () {
@@ -2860,6 +2895,43 @@ void main() {
         expect(singleResult?.reportId, 'report-new');
         expect(batchResult[testAgentId]?.id, 'report-new');
       });
+
+      test(
+        'chunks large agent-id lists without losing later report heads',
+        () async {
+          const total = 1005;
+          final requestedIds = [
+            for (var i = 0; i < total; i++) 'report-agent-$i',
+          ];
+
+          for (final index in [0, 901, 1004]) {
+            await setupReportWithHead(
+              repo,
+              reportId: 'report-chunk-$index',
+              headId: 'head-chunk-$index',
+              agentId: requestedIds[index],
+              createdAt: testDate.add(Duration(minutes: index)),
+              content: 'chunk report $index',
+            );
+          }
+
+          final result = await repo.getLatestReportsByAgentIds(
+            requestedIds,
+            AgentReportScopes.current,
+          );
+
+          expect(
+            result.keys,
+            unorderedEquals([
+              requestedIds[0],
+              requestedIds[901],
+              requestedIds[1004],
+            ]),
+          );
+          expect(result[requestedIds[901]]?.id, 'report-chunk-901');
+          expect(result[requestedIds[1004]]?.content, 'chunk report 1004');
+        },
+      );
     });
 
     glados.Glados(
@@ -3753,6 +3825,180 @@ void main() {
           unorderedEquals(['task-link-3']),
         );
         expect(result['task-c'], isNull);
+
+        final single = await repo.getLinksTo(
+          'task-a',
+          type: AgentLinkTypes.agentTask,
+        );
+        expect(
+          result['task-a']!.selectPrimary().id,
+          single.selectPrimary().id,
+        );
+      });
+
+      test('chunks large to-id lists without losing later matches', () async {
+        const total = 1005;
+        final requestedIds = [
+          for (var i = 0; i < total; i++) 'chunk-task-$i',
+        ];
+
+        for (final index in [0, 901, 1004]) {
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'chunk-to-link-$index',
+              fromId: 'agent-$index',
+              toId: requestedIds[index],
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+            ),
+          );
+        }
+
+        final result = await repo.getLinksToMultiple(
+          requestedIds,
+          type: AgentLinkTypes.agentTask,
+        );
+
+        expect(
+          result.keys,
+          unorderedEquals([
+            requestedIds[0],
+            requestedIds[901],
+            requestedIds[1004],
+          ]),
+        );
+        expect(result[requestedIds[901]]?.single.id, 'chunk-to-link-901');
+        expect(result[requestedIds[1004]]?.single.fromId, 'agent-1004');
+      });
+    });
+
+    group('getLinksFromMultiple', () {
+      test('returns empty map when no ids are requested', () async {
+        final result = await repo.getLinksFromMultiple(
+          const [],
+          type: AgentLinkTypes.agentTask,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test(
+        'groups matching links by fromId and excludes deleted rows',
+        () async {
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'agent-task-link-1',
+              fromId: 'agent-a',
+              toId: 'task-a',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+            ),
+          );
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'agent-task-link-2',
+              fromId: 'agent-a',
+              toId: 'task-b',
+              createdAt: testDate.add(const Duration(minutes: 1)),
+              updatedAt: testDate.add(const Duration(minutes: 1)),
+              vectorClock: null,
+            ),
+          );
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'agent-task-link-3',
+              fromId: 'agent-b',
+              toId: 'task-c',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+            ),
+          );
+          await repo.upsertLink(
+            model.AgentLink.messagePrev(
+              id: 'wrong-from-type',
+              fromId: 'agent-a',
+              toId: 'message-a',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+            ),
+          );
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'deleted-from-link',
+              fromId: 'agent-b',
+              toId: 'task-deleted',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+              deletedAt: testDate.add(const Duration(hours: 1)),
+            ),
+          );
+
+          final result = await repo.getLinksFromMultiple(
+            ['agent-a', 'agent-b', 'agent-c'],
+            type: AgentLinkTypes.agentTask,
+          );
+
+          expect(result.keys, unorderedEquals(['agent-a', 'agent-b']));
+          expect(
+            result['agent-a']?.map((link) => link.id),
+            unorderedEquals(['agent-task-link-1', 'agent-task-link-2']),
+          );
+          expect(
+            result['agent-b']?.map((link) => link.id),
+            unorderedEquals(['agent-task-link-3']),
+          );
+          expect(result['agent-c'], isNull);
+
+          final single = await repo.getLinksFrom(
+            'agent-a',
+            type: AgentLinkTypes.agentTask,
+          );
+          expect(
+            result['agent-a']!.selectPrimary().id,
+            single.selectPrimary().id,
+          );
+        },
+      );
+
+      test('chunks large from-id lists without losing later matches', () async {
+        const total = 1005;
+        final requestedIds = [
+          for (var i = 0; i < total; i++) 'chunk-agent-$i',
+        ];
+
+        for (final index in [0, 901, 1004]) {
+          await repo.upsertLink(
+            model.AgentLink.agentTask(
+              id: 'chunk-from-link-$index',
+              fromId: requestedIds[index],
+              toId: 'task-$index',
+              createdAt: testDate,
+              updatedAt: testDate,
+              vectorClock: null,
+            ),
+          );
+        }
+
+        final result = await repo.getLinksFromMultiple(
+          requestedIds,
+          type: AgentLinkTypes.agentTask,
+        );
+
+        expect(
+          result.keys,
+          unorderedEquals([
+            requestedIds[0],
+            requestedIds[901],
+            requestedIds[1004],
+          ]),
+        );
+        expect(result[requestedIds[901]]?.single.id, 'chunk-from-link-901');
+        expect(result[requestedIds[1004]]?.single.toId, 'task-1004');
       });
     });
 

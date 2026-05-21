@@ -106,16 +106,18 @@ enum SyncSequenceStatus {
 )
 // Companion partial for `claimNextOutboxBatch`'s expired-`sending`
 // branch (`WHERE status = 3 AND updated_at < cutoff ORDER BY
-// created_at ASC, id ASC LIMIT N`). Leading on `updated_at` lets the
-// `< cutoff` filter cut the partial index to just the expired rows
-// before any sort step; `(created_at, id)` then satisfies the ORDER
-// BY without a temp B-tree. Status literal `3` mirrors
+// created_at ASC, id ASC LIMIT N`). The ORDER BY columns must lead the
+// index: if `updated_at` leads, SQLite can use the partial but still
+// has to materialise a temp B-tree for the global created/id sort after
+// applying the range predicate. Keeping `updated_at` as a trailing key
+// lets the index walk stay in claim order while evaluating the expiry
+// predicate from the index row. Status literal `3` mirrors
 // `_outboxSendingStatus = OutboxStatus.sending.index` — same
 // enum-order assumption the guard test in
 // `test/database/sync_db_test.dart` already enforces.
 @TableIndex.sql(
   'CREATE INDEX idx_outbox_sending_expiry '
-  'ON outbox (updated_at, created_at, id) '
+  'ON outbox (created_at, id, updated_at) '
   'WHERE status = 3',
 )
 class Outbox extends Table {
@@ -195,6 +197,17 @@ class Outbox extends Table {
 @TableIndex.sql(
   'CREATE INDEX idx_sync_sequence_log_host_status '
   'ON sync_sequence_log (host_id, status)',
+)
+// Covers `getLastCounterForHost`. The watermark CTE only needs rows whose
+// status is terminal/resolved (`received`, `backfilled`, `deleted`, or
+// `unresolvable`) ordered by counter for a single host. A literal-status
+// partial index lets SQLite walk exactly that subset in `(host_id, counter)`
+// order instead of scanning every row for the host and filtering
+// `missing/requested` rows out inside the window function.
+@TableIndex.sql(
+  'CREATE INDEX idx_sync_sequence_log_resolved_host_counter '
+  'ON sync_sequence_log (host_id, counter) '
+  'WHERE status IN (0, 3, 4, 5)',
 )
 @TableIndex.sql(
   'CREATE INDEX idx_sync_sequence_log_payload_resolution '
@@ -575,14 +588,72 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   Future<List<OutboxItem>> oldestOutboxItems(int limit) {
-    return (select(outbox)
-          ..where((t) => t.status.equals(OutboxStatus.pending.index))
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.createdAt),
-            (t) => OrderingTerm(expression: t.id),
-          ])
-          ..limit(limit))
-        .get();
+    return _oldestPendingOutboxItems(limit);
+  }
+
+  Future<List<OutboxItem>> _oldestPendingOutboxItems(int limit) {
+    // Keep `status = 0` literal so SQLite can prove this query matches
+    // `idx_outbox_pending_created_id`'s partial WHERE clause. Drift's
+    // generated `status.equals(...)` binds the value as `?`, which is the
+    // slow-query shape that falls back to the priority-leading index.
+    return _selectOutboxItems(
+      'SELECT * FROM outbox '
+      'WHERE status = 0 '
+      'ORDER BY created_at ASC, id ASC '
+      'LIMIT ?',
+      [Variable.withInt(limit)],
+    );
+  }
+
+  Future<List<OutboxItem>> _expiredSendingOutboxItems(
+    int limit,
+    DateTime reclaimWindow,
+  ) {
+    // Same literal-status requirement as `_oldestPendingOutboxItems`, but for
+    // `idx_outbox_sending_expiry` (`WHERE status = 3`).
+    return _selectOutboxItems(
+      'SELECT * FROM outbox '
+      'WHERE status = 3 AND updated_at < ? '
+      'ORDER BY created_at ASC, id ASC '
+      'LIMIT ?',
+      [
+        Variable.withDateTime(reclaimWindow),
+        Variable.withInt(limit),
+      ],
+    );
+  }
+
+  Future<List<OutboxItem>> _selectOutboxItems(
+    String sql,
+    List<Variable<Object>> variables,
+  ) async {
+    final rows = await customSelect(
+      sql,
+      variables: variables,
+      readsFrom: {outbox},
+    ).get();
+    return Future.wait(rows.map(outbox.mapFromRow));
+  }
+
+  Future<List<OutboxItem>> _claimableOutboxCandidates({
+    required int maxSize,
+    required DateTime reclaimWindow,
+  }) async {
+    final pendingRows = await _oldestPendingOutboxItems(maxSize);
+    final expiredSendingRows = await _expiredSendingOutboxItems(
+      maxSize,
+      reclaimWindow,
+    );
+    final candidates = <OutboxItem>[...pendingRows, ...expiredSendingRows]
+      ..sort((a, b) {
+        final created = a.createdAt.compareTo(b.createdAt);
+        if (created != 0) return created;
+        return a.id.compareTo(b.id);
+      });
+    if (candidates.length > maxSize) {
+      candidates.removeRange(maxSize, candidates.length);
+    }
+    return candidates;
   }
 
   Future<OutboxItem?> claimNextOutboxItem({
@@ -593,24 +664,14 @@ class SyncDatabase extends _$SyncDatabase {
     final reclaimWindow = effectiveNow.subtract(leaseDuration);
 
     return transaction(() async {
-      final candidate =
-          await (select(outbox)
-                ..where(
-                  (t) =>
-                      (t.status.equals(OutboxStatus.pending.index)) |
-                      (t.status.equals(_outboxSendingStatus) &
-                          t.updatedAt.isSmallerThanValue(reclaimWindow)),
-                )
-                ..orderBy([
-                  (t) => OrderingTerm(expression: t.createdAt),
-                  (t) => OrderingTerm(expression: t.id),
-                ])
-                ..limit(1))
-              .getSingleOrNull();
-
-      if (candidate == null) {
+      final candidates = await _claimableOutboxCandidates(
+        maxSize: 1,
+        reclaimWindow: reclaimWindow,
+      );
+      if (candidates.isEmpty) {
         return null;
       }
+      final candidate = candidates.first;
 
       final updated =
           await (update(outbox)..where(
@@ -688,39 +749,10 @@ class SyncDatabase extends _$SyncDatabase {
       // ties, picking a stable order keeps the first
       // `filePath != null` boundary deterministic across repeated
       // calls.
-      final pendingRows =
-          await (select(outbox)
-                ..where(
-                  (t) => t.status.equals(OutboxStatus.pending.index),
-                )
-                ..orderBy([
-                  (t) => OrderingTerm(expression: t.createdAt),
-                  (t) => OrderingTerm(expression: t.id),
-                ])
-                ..limit(maxSize))
-              .get();
-      final expiredSendingRows =
-          await (select(outbox)
-                ..where(
-                  (t) =>
-                      t.status.equals(_outboxSendingStatus) &
-                      t.updatedAt.isSmallerThanValue(reclaimWindow),
-                )
-                ..orderBy([
-                  (t) => OrderingTerm(expression: t.createdAt),
-                  (t) => OrderingTerm(expression: t.id),
-                ])
-                ..limit(maxSize))
-              .get();
-      final candidates = <OutboxItem>[...pendingRows, ...expiredSendingRows]
-        ..sort((a, b) {
-          final created = a.createdAt.compareTo(b.createdAt);
-          if (created != 0) return created;
-          return a.id.compareTo(b.id);
-        });
-      if (candidates.length > maxSize) {
-        candidates.removeRange(maxSize, candidates.length);
-      }
+      final candidates = await _claimableOutboxCandidates(
+        maxSize: maxSize,
+        reclaimWindow: reclaimWindow,
+      );
 
       if (candidates.isEmpty) return const <OutboxItem>[];
 
@@ -1063,30 +1095,29 @@ class SyncDatabase extends _$SyncDatabase {
   /// This is intentionally not `MAX(counter)`. Gap detection must not advance
   /// past unresolved earlier counters just because a sparse newer row exists.
   Future<int?> getLastCounterForHost(String hostId) async {
-    final received = SyncSequenceStatus.received.index;
-    final backfilled = SyncSequenceStatus.backfilled.index;
-    final deleted = SyncSequenceStatus.deleted.index;
-    final unresolvable = SyncSequenceStatus.unresolvable.index;
-
-    // Within the resolved subset, `counter == row_number()` only holds while we
-    // still have the contiguous prefix `1..N`. The first hole or unresolved
+    // Within the resolved subset, `counter == row_number()` only holds while
+    // we still have the contiguous prefix `1..N`. The first hole or unresolved
     // status breaks that equality, which is exactly the watermark we need.
+    //
+    // Resolved statuses are inlined as literals (`0, 3, 4, 5`) so the planner
+    // can match `idx_sync_sequence_log_resolved_host_counter`. Binding them as
+    // parameters makes SQLite unable to prove the partial-index implication and
+    // pushes this hot path back toward the all-rows-per-host scan captured in
+    // the desktop slow-query logs.
     final query = customSelect(
       '''
-      WITH host_counters AS (
-        SELECT counter, status
-        FROM sync_sequence_log
-        WHERE host_id = ?
-      ),
-      resolved_prefix AS (
+      WITH resolved_prefix AS (
         SELECT
           counter,
           ROW_NUMBER() OVER (ORDER BY counter) AS rn
-        FROM host_counters
-        WHERE status IN (?, ?, ?, ?)
+        FROM sync_sequence_log
+        WHERE host_id = ?
+          AND status IN (0, 3, 4, 5)
       )
       SELECT CASE
-        WHEN (SELECT COUNT(*) FROM host_counters) = 0 THEN NULL
+        WHEN NOT EXISTS (
+          SELECT 1 FROM sync_sequence_log WHERE host_id = ? LIMIT 1
+        ) THEN NULL
         ELSE COALESCE(
           (
             SELECT MAX(counter)
@@ -1099,10 +1130,7 @@ class SyncDatabase extends _$SyncDatabase {
       ''',
       variables: [
         Variable.withString(hostId),
-        Variable.withInt(received),
-        Variable.withInt(backfilled),
-        Variable.withInt(deleted),
-        Variable.withInt(unresolvable),
+        Variable.withString(hostId),
       ],
       readsFrom: {syncSequenceLog},
     );
@@ -1912,7 +1940,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration {
@@ -2282,7 +2310,11 @@ class SyncDatabase extends _$SyncDatabase {
           // tails reaching 6.0 s. Two literal-status partial indices
           // sized to the actionable rows let the planner walk in
           // (created_at, id) order and stop at LIMIT — no temp
-          // B-tree, no scanning of `sent` tombstones.
+          // B-tree for the pending path, no scanning of `sent`
+          // tombstones. The v22 migration below retunes the
+          // expired-sending index column order after red-team plan
+          // review found that leading on `updated_at` still forced a
+          // temp sort for `ORDER BY created_at, id`.
           await customStatement(
             'CREATE INDEX IF NOT EXISTS '
             'idx_outbox_pending_created_id '
@@ -2294,6 +2326,41 @@ class SyncDatabase extends _$SyncDatabase {
             'idx_outbox_sending_expiry '
             'ON outbox (updated_at, created_at, id) '
             'WHERE status = 3',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 22) {
+          // Retune the v21 expired-sending partial to match the
+          // production query's ORDER BY. The old
+          // `(updated_at, created_at, id)` index could be chosen for
+          // `updated_at < cutoff`, but SQLite still had to build a
+          // temp B-tree because a range on the leading column prevents
+          // the later columns from satisfying the global
+          // `(created_at, id)` order.
+          await customStatement(
+            'DROP INDEX IF EXISTS idx_outbox_sending_expiry',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_outbox_sending_expiry '
+            'ON outbox (created_at, id, updated_at) '
+            'WHERE status = 3',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 23) {
+          // `getLastCounterForHost` only needs terminal/resolved statuses
+          // (`received`, `backfilled`, `deleted`, `unresolvable`) for one host
+          // in counter order. The pre-v23 CTE scanned every row for the host,
+          // including `missing/requested`, then filtered inside the window
+          // function; desktop slow logs captured this as the fourth-largest
+          // cumulative offender and as 10 s tail stalls. Keep the status
+          // literals aligned with [SyncSequenceStatus] via the guard test.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_resolved_host_counter '
+            'ON sync_sequence_log (host_id, counter) '
+            'WHERE status IN (0, 3, 4, 5)',
           );
           await customStatement('ANALYZE');
         }

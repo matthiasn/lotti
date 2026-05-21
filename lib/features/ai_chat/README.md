@@ -179,7 +179,7 @@ Right now the assistant's main structured retrieval tool is `get_task_summaries`
 2. filter for meaningful work spans
 3. resolve linked task relationships
 4. load tasks in bulk
-5. extract AI summaries where they exist
+5. resolve agent reports for all tasks in one batch
 6. build fallback summaries where they do not
 
 ```mermaid
@@ -188,7 +188,7 @@ flowchart TD
   Work --> Filter["Filter by duration and category"]
   Filter --> Links["Resolve linked tasks"]
   Links --> Tasks["Load tasks in bulk"]
-  Tasks --> Summaries["Load AI summaries / build fallback summaries"]
+  Tasks --> Summaries["Batch agent reports, then legacy fallback"]
   Summaries --> ToolResult["Return tool payload to model"]
 ```
 

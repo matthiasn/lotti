@@ -33,7 +33,24 @@ class EditorDb extends _$EditorDb {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration {
+    return MigrationStrategy(
+      onCreate: (m) => m.createAll(),
+      onUpgrade: (m, from, to) async {
+        if (from < 2) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS editor_drafts_latest_draft '
+            'ON editor_drafts (entry_id, last_saved, created_at DESC) '
+            "WHERE status = 'DRAFT'",
+          );
+          await customStatement('ANALYZE');
+        }
+      },
+    );
+  }
 
   /// Inserts a new draft state for an entry.
   ///

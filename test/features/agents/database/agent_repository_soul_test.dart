@@ -609,6 +609,127 @@ void main() {
     });
   });
 
+  group('getActiveSoulDocumentVersionsBySoulIds', () {
+    test('resolves each requested soul through its active head', () async {
+      await repo.upsertEntity(makeVersion());
+      await repo.upsertEntity(makeHead());
+      await repo.upsertEntity(
+        makeVersion(
+          id: 'sv-002',
+          agentId: soulId2,
+          voiceDirective: 'Be direct.',
+        ),
+      );
+      await repo.upsertEntity(
+        makeHead(
+          id: 'head-002',
+          agentId: soulId2,
+          versionId: 'sv-002',
+        ),
+      );
+
+      final result = await repo.getActiveSoulDocumentVersionsBySoulIds([
+        soulId,
+        soulId2,
+        'missing-soul',
+      ]);
+
+      expect(result.keys, unorderedEquals([soulId, soulId2]));
+      expect(result[soulId]?.voiceDirective, 'Be warm.');
+      expect(result[soulId2]?.voiceDirective, 'Be direct.');
+      expect(result['missing-soul'], isNull);
+    });
+
+    test(
+      'chunks large soul-id lists and ignores newer deleted heads',
+      () async {
+        const total = 1005;
+        final requestedIds = [
+          for (var i = 0; i < total; i++) 'chunk-soul-$i',
+        ];
+
+        await repo.upsertEntity(
+          makeVersion(
+            id: 'chunk-version-0',
+            agentId: requestedIds[0],
+            voiceDirective: 'First chunk.',
+          ),
+        );
+        await repo.upsertEntity(
+          makeHead(
+            id: 'chunk-head-0',
+            agentId: requestedIds[0],
+            versionId: 'chunk-version-0',
+          ),
+        );
+
+        await repo.upsertEntity(
+          makeVersion(
+            id: 'chunk-version-901-live',
+            agentId: requestedIds[901],
+            voiceDirective: 'Live head wins.',
+          ),
+        );
+        await repo.upsertEntity(
+          makeHead(
+            id: 'chunk-head-901-live',
+            agentId: requestedIds[901],
+            versionId: 'chunk-version-901-live',
+          ),
+        );
+        await repo.upsertEntity(
+          makeVersion(
+            id: 'chunk-version-901-deleted',
+            agentId: requestedIds[901],
+            voiceDirective: 'Deleted head must not win.',
+          ),
+        );
+        await repo.upsertEntity(
+          makeHead(
+            id: 'chunk-head-901-deleted',
+            agentId: requestedIds[901],
+            versionId: 'chunk-version-901-deleted',
+          ).copyWith(
+            updatedAt: testDate.add(const Duration(hours: 1)),
+            deletedAt: testDate.add(const Duration(hours: 1)),
+          ),
+        );
+
+        await repo.upsertEntity(
+          makeVersion(
+            id: 'chunk-version-1004',
+            agentId: requestedIds[1004],
+            voiceDirective: 'Second chunk.',
+          ),
+        );
+        await repo.upsertEntity(
+          makeHead(
+            id: 'chunk-head-1004',
+            agentId: requestedIds[1004],
+            versionId: 'chunk-version-1004',
+          ),
+        );
+
+        final result = await repo.getActiveSoulDocumentVersionsBySoulIds([
+          ...requestedIds,
+          requestedIds[901],
+        ]);
+
+        expect(
+          result.keys,
+          unorderedEquals([
+            requestedIds[0],
+            requestedIds[901],
+            requestedIds[1004],
+          ]),
+        );
+        expect(result[requestedIds[0]]?.voiceDirective, 'First chunk.');
+        expect(result[requestedIds[901]]?.voiceDirective, 'Live head wins.');
+        expect(result[requestedIds[1004]]?.voiceDirective, 'Second chunk.');
+      },
+    );
+  });
+
   group('getSoulDocumentVersions', () {
     test('returns versions newest first', () async {
       await repo.upsertEntity(makeVersion());
