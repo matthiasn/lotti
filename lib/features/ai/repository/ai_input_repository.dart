@@ -487,9 +487,9 @@ class AiInputRepository {
   /// Build context objects for multiple tasks using batched database queries.
   ///
   /// **N+1 Query Avoidance**: This method fetches all linked entities for all
-  /// tasks in a single database call via [JournalDb.getBulkLinkedEntities].
-  /// Both time spent and latest AI summaries are then derived from this
-  /// pre-fetched data without additional queries.
+  /// tasks in a single database call via [JournalDb.getBulkLinkedEntities],
+  /// then asks [TaskSummaryResolver.resolveMany] to batch agent-report lookups
+  /// before falling back to the pre-fetched legacy AI summary entries.
   ///
   /// For each task, the method:
   /// 1. Calculates time spent by summing durations of non-Task, non-AiResponse
@@ -506,6 +506,10 @@ class AiInputRepository {
 
     // Single bulk query to get all linked entities for all tasks
     final bulkLinkedEntities = await _db.getBulkLinkedEntities(taskIds);
+    final summariesByTaskId = await _taskSummaryResolver.resolveMany(
+      taskIds,
+      linkedEntitiesByTaskId: bulkLinkedEntities,
+    );
 
     // Build context for each task using the pre-fetched data
     final results = <AiLinkedTaskContext>[];
@@ -515,11 +519,8 @@ class AiInputRepository {
       // Calculate time spent from linked entities (non-Task, non-AiResponseEntry)
       final timeSpent = _calculateTimeSpentFromEntities(linkedEntities);
 
-      // Get latest summary: tries agent report first, then legacy AI response
-      final latestSummary = await _taskSummaryResolver.resolve(
-        task.id,
-        linkedEntities: linkedEntities,
-      );
+      // Get latest summary: tries agent report first, then legacy AI response.
+      final latestSummary = summariesByTaskId[task.id];
 
       // Get labels from cache (O(1) per label)
       final labelIds = task.meta.labelIds ?? const <String>[];

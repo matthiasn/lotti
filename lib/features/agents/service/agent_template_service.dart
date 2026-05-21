@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -321,7 +322,40 @@ class AgentTemplateService {
       type: AgentLinkTypes.templateAssignment,
     );
     if (links.isEmpty) return null;
-    return getTemplate(links.first.fromId);
+    return getTemplate(links.selectPrimary().fromId);
+  }
+
+  /// Resolve assigned templates for multiple agents in bulk.
+  ///
+  /// Hydrates list views with two SQL round trips (assignment links, then
+  /// template entities) instead of the per-agent `getTemplateForAgent` chain.
+  Future<Map<String, AgentTemplateEntity>> getTemplatesForAgents(
+    Iterable<String> agentIds,
+  ) async {
+    final idList = agentIds.toSet().toList(growable: false);
+    if (idList.isEmpty) return {};
+
+    final linksByAgentId = await repository.getLinksToMultiple(
+      idList,
+      type: AgentLinkTypes.templateAssignment,
+    );
+
+    final templateIdByAgentId = <String, String>{};
+    for (final entry in linksByAgentId.entries) {
+      final links = entry.value;
+      if (links.isEmpty) continue;
+      templateIdByAgentId[entry.key] = links.selectPrimary().fromId;
+    }
+    if (templateIdByAgentId.isEmpty) return {};
+
+    final entitiesById = await repository.getEntitiesByIds(
+      templateIdByAgentId.values,
+    );
+    return {
+      for (final entry in templateIdByAgentId.entries)
+        if (entitiesById[entry.value] case final AgentTemplateEntity template)
+          entry.key: template,
+    };
   }
 
   /// Reverse lookup: find all agent instances assigned to a template.

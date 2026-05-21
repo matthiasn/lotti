@@ -18,6 +18,8 @@ CREATE INDEX idx_agent_entities_agent_id ON agent_entities(agent_id);
 CREATE INDEX idx_agent_entities_type ON agent_entities(type, agent_id, created_at DESC);
 CREATE INDEX idx_agent_entities_agent_type_sub ON agent_entities(agent_id, type, subtype, created_at DESC);
 CREATE INDEX idx_agent_entities_thread ON agent_entities(agent_id, thread_id, created_at DESC);
+CREATE INDEX idx_agent_entities_active_agent_type_created ON agent_entities(agent_id, type, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_agent_entities_active_type_created ON agent_entities(type, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_agent_entities_token_usage_since ON agent_entities(type, created_at DESC) WHERE type = 'wakeTokenUsage' AND deleted_at IS NULL;
 -- Expression partial for `getDueScheduledAgentStates`. The query
 -- filters `type = 'agentState' AND deleted_at IS NULL AND
@@ -53,6 +55,7 @@ CREATE INDEX idx_agent_links_type ON agent_links(type);
 CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links(to_id) WHERE type = 'improver_target' AND deleted_at IS NULL;
 CREATE UNIQUE INDEX idx_unique_soul_per_template ON agent_links(from_id) WHERE type = 'soul_assignment' AND deleted_at IS NULL;
 CREATE INDEX idx_agent_links_active_from_type_to ON agent_links(from_id, type, to_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_agent_links_active_to_type ON agent_links(to_id, type) WHERE deleted_at IS NULL;
 
 CREATE TABLE wake_run_log (
   run_key TEXT NOT NULL PRIMARY KEY,

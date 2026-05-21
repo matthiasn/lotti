@@ -280,6 +280,80 @@ void main() {
     });
   });
 
+  group('resolveActiveSoulsForTemplates', () {
+    test(
+      'resolves active soul versions through batched link/head fetches',
+      () async {
+        final older = makeTestSoulAssignmentLink(
+          id: 'older',
+          fromId: 'tpl-a',
+          toId: 'soul-old',
+          // ignore: avoid_redundant_argument_values
+          createdAt: DateTime(2024, 1),
+        );
+        final newer = makeTestSoulAssignmentLink(
+          id: 'newer',
+          fromId: 'tpl-a',
+          toId: 'soul-new',
+          createdAt: DateTime(2024, 2),
+        );
+        final version = makeTestSoulDocumentVersion(
+          id: 'soul-new-version',
+          agentId: 'soul-new',
+          voiceDirective: 'New voice',
+        );
+
+        when(
+          () => mockRepo.getLinksFromMultiple(
+            any<List<String>>(),
+            type: AgentLinkTypes.soulAssignment,
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'tpl-a': [older, newer],
+            'tpl-b': [
+              makeTestSoulAssignmentLink(
+                id: 'broken',
+                fromId: 'tpl-b',
+                toId: 'missing-soul',
+              ),
+            ],
+            'tpl-c': [
+              makeTestSoulAssignmentLink(
+                id: 'same-soul',
+                fromId: 'tpl-c',
+                toId: 'soul-new',
+              ),
+            ],
+          },
+        );
+        when(
+          () => mockRepo.getActiveSoulDocumentVersionsBySoulIds(
+            any<List<String>>(),
+          ),
+        ).thenAnswer((_) async => {'soul-new': version});
+
+        final result = await service.resolveActiveSoulsForTemplates([
+          'tpl-a',
+          'tpl-b',
+          'tpl-c',
+        ]);
+
+        expect(result.keys, unorderedEquals(['tpl-a', 'tpl-c']));
+        expect(result['tpl-a']?.voiceDirective, 'New voice');
+        expect(result['tpl-c']?.voiceDirective, 'New voice');
+        final capturedSoulIds =
+            verify(
+                  () => mockRepo.getActiveSoulDocumentVersionsBySoulIds(
+                    captureAny<List<String>>(),
+                  ),
+                ).captured.single
+                as List<String>;
+        expect(capturedSoulIds, unorderedEquals(['soul-new', 'missing-soul']));
+      },
+    );
+  });
+
   group('getTemplatesUsingSoul', () {
     test('returns template IDs from reverse links', () async {
       final link1 = makeTestSoulAssignmentLink(

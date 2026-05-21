@@ -109,8 +109,8 @@ class InstanceVm {
 /// All instances (task agents + evolution sessions), enriched with their
 /// resolved template + soul.
 ///
-/// Resolves per-agent template + soul lookups in parallel via
-/// [Future.wait]; the page treats this provider's result as a single
+/// Resolves template + soul assignments in repository/service batches; the
+/// page treats this provider's result as a single
 /// [AsyncValue] so the toolbar and grouped list render together.
 final FutureProvider<List<InstanceVm>> agentInstanceVmsProvider =
     FutureProvider.autoDispose<List<InstanceVm>>((ref) async {
@@ -124,20 +124,19 @@ final FutureProvider<List<InstanceVm>> agentInstanceVmsProvider =
           .whereType<EvolutionSessionEntity>()
           .toList();
 
-      final templateFutures = identityEntities.map(
-        (a) => ref.watch(templateForAgentProvider(a.agentId).future),
-      );
-      final templates = await Future.wait(templateFutures);
-
-      final soulFutures = templates.map<Future<AgentDomainEntity?>>((t) {
-        final templateEntity = t?.mapOrNull(agentTemplate: (e) => e);
-        if (templateEntity == null) return Future<AgentDomainEntity?>.value();
-        return ref.watch(soulForTemplateProvider(templateEntity.id).future);
-      });
-      final souls = await Future.wait(soulFutures);
+      final templatesByAgentId = await ref
+          .watch(agentTemplateServiceProvider)
+          .getTemplatesForAgents(
+            identityEntities.map((agent) => agent.agentId),
+          );
+      final soulsByTemplateId = await ref
+          .watch(soulDocumentServiceProvider)
+          .resolveActiveSoulsForTemplates(
+            templatesByAgentId.values.map((template) => template.id),
+          );
 
       final soulNameById = <String, String>{};
-      if (souls.isNotEmpty) {
+      if (soulsByTemplateId.isNotEmpty) {
         final allSouls = await ref.watch(allSoulDocumentsProvider.future);
         for (final entity in allSouls) {
           final soul = entity.mapOrNull(soulDocument: (e) => e);
@@ -148,10 +147,11 @@ final FutureProvider<List<InstanceVm>> agentInstanceVmsProvider =
       }
 
       final taskRows = <InstanceVm>[];
-      for (var i = 0; i < identityEntities.length; i++) {
-        final agent = identityEntities[i];
-        final template = templates[i]?.mapOrNull(agentTemplate: (e) => e);
-        final soulVersion = souls[i]?.mapOrNull(soulDocumentVersion: (e) => e);
+      for (final agent in identityEntities) {
+        final template = templatesByAgentId[agent.agentId];
+        final soulVersion = template == null
+            ? null
+            : soulsByTemplateId[template.id];
         final soulId = soulVersion?.agentId;
         final soulName = soulId == null ? null : soulNameById[soulId];
 

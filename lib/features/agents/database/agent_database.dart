@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -152,6 +152,31 @@ class AgentDatabase extends _$AgentDatabase {
           await customStatement(
             'CREATE INDEX IF NOT EXISTS idx_wake_run_log_created_at '
             'ON wake_run_log(created_at DESC)',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 9) {
+          // Partial active-row indexes for the agent.sqlite desktop slow
+          // paths captured on 2026-05-15..21. The older broad indexes can
+          // seek by type/agent but cannot avoid every temp sort or deleted-row
+          // probe in list and batch-hydration queries.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_entities_active_agent_type_created '
+            'ON agent_entities(agent_id, type, created_at DESC) '
+            'WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_entities_active_type_created '
+            'ON agent_entities(type, created_at DESC) '
+            'WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_links_active_to_type '
+            'ON agent_links(to_id, type) '
+            'WHERE deleted_at IS NULL',
           );
           await customStatement('ANALYZE');
         }

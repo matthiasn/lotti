@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/state/token_stats_providers.dart';
 import 'package:lotti/features/agents/ui/agent_instances_list.dart';
 import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
+import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
 import 'package:lotti/features/agents/ui/token_stats_tab.dart';
@@ -28,6 +29,51 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
+
+List<InstanceVm> _makeInstanceVms({
+  required List<AgentDomainEntity> agents,
+  required List<AgentDomainEntity> evolutions,
+}) {
+  final rows = <InstanceVm>[];
+  for (final entity in agents.whereType<AgentIdentityEntity>()) {
+    final type = instanceTypeFromAgentKind(entity.kind);
+    if (type == null) {
+      continue;
+    }
+
+    rows.add(
+      InstanceVm(
+        id: entity.agentId,
+        displayName: entity.displayName,
+        type: type,
+        status: entity.lifecycle,
+        updatedAt: entity.updatedAt,
+        searchKey: [entity.displayName, entity.agentId].join(' '),
+      ),
+    );
+  }
+
+  for (final entity in evolutions.whereType<EvolutionSessionEntity>()) {
+    rows.add(
+      InstanceVm(
+        id: entity.id,
+        displayName: '',
+        sessionNumber: entity.sessionNumber,
+        type: InstanceType.evolution,
+        status: switch (entity.status) {
+          EvolutionSessionStatus.active => AgentLifecycle.active,
+          EvolutionSessionStatus.completed => AgentLifecycle.dormant,
+          EvolutionSessionStatus.abandoned => AgentLifecycle.destroyed,
+        },
+        updatedAt: entity.updatedAt,
+        templateId: entity.templateId,
+        searchKey: 'evolution ${entity.sessionNumber} ${entity.id}',
+      ),
+    );
+  }
+
+  return rows;
+}
 
 void main() {
   setUp(() async {
@@ -72,6 +118,12 @@ void main() {
         ),
         allEvolutionSessionsProvider.overrideWith(
           (ref) async => evolutions,
+        ),
+        agentInstanceVmsProvider.overrideWith(
+          (ref) async => _makeInstanceVms(
+            agents: agents,
+            evolutions: evolutions,
+          ),
         ),
         agentIsRunningProvider.overrideWith(
           (ref, agentId) => Stream.value(false),

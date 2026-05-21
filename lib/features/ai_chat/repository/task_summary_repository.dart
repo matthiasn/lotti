@@ -139,18 +139,18 @@ class TaskSummaryRepository {
 
     final taskIds = tasksToProcess.map((t) => t.meta.id).toSet();
 
-    // Bulk fetch linked entities for all tasks to avoid N+1 queries
+    // Bulk fetch legacy linked entities and agent reports for all tasks to
+    // avoid per-task summary resolution queries.
     final bulkLinkedEntities = await journalDb.getBulkLinkedEntities(taskIds);
+    final summariesByTaskId = await taskSummaryResolver.resolveMany(
+      taskIds,
+      linkedEntitiesByTaskId: bulkLinkedEntities,
+    );
 
     // Process each task: resolve summary via agent report → legacy fallback
     for (final task in tasksToProcess) {
-      final linkedEntitiesForTask = bulkLinkedEntities[task.meta.id] ?? [];
       final statusName = task.data.status.toDbString;
-
-      final summary = await taskSummaryResolver.resolve(
-        task.meta.id,
-        linkedEntities: linkedEntitiesForTask,
-      );
+      final summary = summariesByTaskId[task.meta.id];
 
       results.add(
         TaskSummaryResult(

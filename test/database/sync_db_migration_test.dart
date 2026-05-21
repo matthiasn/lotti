@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 21);
+        expect(db.schemaVersion, 23);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -142,7 +142,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 21);
+      expect(versionResult.first.read<int>('user_version'), 23);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -167,6 +167,7 @@ void main() {
             "'idx_sync_sequence_log_actionable_status_created_at', "
             "'idx_sync_sequence_log_actionable_status_updated_at', "
             "'idx_sync_sequence_log_host_status', "
+            "'idx_sync_sequence_log_resolved_host_counter', "
             "'idx_sync_sequence_log_payload_resolution', "
             "'idx_sync_sequence_log_host_entry_status_counter', "
             "'idx_inbound_event_queue_abandoned_reason')",
@@ -183,6 +184,7 @@ void main() {
           'idx_sync_sequence_log_actionable_status_created_at',
           'idx_sync_sequence_log_actionable_status_updated_at',
           'idx_sync_sequence_log_host_status',
+          'idx_sync_sequence_log_resolved_host_counter',
           'idx_sync_sequence_log_payload_resolution',
           'idx_sync_sequence_log_host_entry_status_counter',
           'idx_inbound_event_queue_abandoned_reason',
@@ -298,7 +300,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 21);
+      expect(versionResult.first.read<int>('user_version'), 23);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -377,7 +379,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 21);
+      expect(versionResult.first.read<int>('user_version'), 23);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -457,7 +459,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 21);
+      expect(versionResult.first.read<int>('user_version'), 23);
 
       final indexResults = await db
           .customSelect(
@@ -549,7 +551,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 21);
+        expect(versionResult.first.read<int>('user_version'), 23);
 
         // v11 replaces the v10 index with the covering variant; when the
         // migration steps v9 → v11 in one run, the v10 index must no longer
@@ -661,7 +663,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 21);
+        expect(versionResult.first.read<int>('user_version'), 23);
 
         final oldIndex = await db
             .customSelect(
@@ -777,7 +779,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 21);
+        expect(versionResult.first.read<int>('user_version'), 23);
 
         final ready = await db
             .customSelect(
@@ -804,8 +806,8 @@ void main() {
     );
 
     test(
-      'v21 migration adds the literal-status outbox partial indices so '
-      'the pending claim path stops using '
+      'v21/v22 migrations add the literal-status outbox partial indices so '
+      'the pending and expired-sending claim paths stop using '
       '`idx_outbox_status_priority_created_at` + `USE TEMP B-TREE FOR '
       'ORDER BY` (2026-05-12 desktop super_slow log: tails up to 6.0 s)',
       () async {
@@ -843,6 +845,22 @@ void main() {
           'ON outbox (outbox_entry_id, created_at) '
           'WHERE status = 0 AND outbox_entry_id IS NOT NULL',
         );
+        sqlite.execute('''
+          CREATE TABLE sync_sequence_log (
+            host_id TEXT NOT NULL,
+            counter INTEGER NOT NULL,
+            entry_id TEXT,
+            payload_type INTEGER NOT NULL DEFAULT 0,
+            originating_host_id TEXT,
+            status INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            request_count INTEGER NOT NULL DEFAULT 0,
+            last_requested_at INTEGER,
+            json_path TEXT,
+            PRIMARY KEY (host_id, counter)
+          )
+        ''');
         sqlite.execute('PRAGMA user_version = 20');
         sqlite.dispose();
 
@@ -851,7 +869,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 21);
+        expect(versionResult.first.read<int>('user_version'), 23);
 
         final pendingIndex = await db
             .customSelect(
@@ -872,8 +890,134 @@ void main() {
             .get();
         expect(sendingIndex, hasLength(1));
         final sendingSql = sendingIndex.first.readNullable<String>('sql');
-        expect(sendingSql, contains('updated_at, created_at, id'));
+        expect(sendingSql, contains('created_at, id, updated_at'));
         expect(sendingSql, contains('WHERE status = 3'));
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v22 migration retunes existing v21 sending-expiry index so the '
+      'expired-sending claim branch can satisfy ORDER BY without a temp '
+      'B-tree',
+      () async {
+        final dbFile = File(
+          path.join(testDirectory!.path, 'test_sync_v22_reindex.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite
+          ..execute('''
+            CREATE TABLE outbox (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL,
+              status INTEGER NOT NULL DEFAULT 0,
+              retries INTEGER NOT NULL DEFAULT 0,
+              message TEXT NOT NULL,
+              subject TEXT NOT NULL,
+              file_path TEXT,
+              outbox_entry_id TEXT,
+              payload_size INTEGER,
+              priority INTEGER NOT NULL DEFAULT 2
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE sync_sequence_log (
+              host_id TEXT NOT NULL,
+              counter INTEGER NOT NULL,
+              entry_id TEXT,
+              payload_type INTEGER NOT NULL DEFAULT 0,
+              originating_host_id TEXT,
+              status INTEGER NOT NULL DEFAULT 0,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL,
+              request_count INTEGER NOT NULL DEFAULT 0,
+              last_requested_at INTEGER,
+              json_path TEXT,
+              PRIMARY KEY (host_id, counter)
+            )
+          ''')
+          ..execute(
+            'CREATE INDEX idx_outbox_sending_expiry '
+            'ON outbox (updated_at, created_at, id) '
+            'WHERE status = 3',
+          )
+          ..execute('PRAGMA user_version = 21')
+          ..dispose();
+
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v22_reindex.db');
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 23);
+
+        final sendingIndex = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_outbox_sending_expiry'",
+            )
+            .get();
+        expect(sendingIndex, hasLength(1));
+        final sendingSql = sendingIndex.first.readNullable<String>('sql');
+        expect(sendingSql, contains('created_at, id, updated_at'));
+        expect(sendingSql, isNot(contains('updated_at, created_at, id')));
+        expect(sendingSql, contains('WHERE status = 3'));
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v23 migration adds the resolved-host partial index used by '
+      'getLastCounterForHost',
+      () async {
+        final dbFile = File(
+          path.join(testDirectory!.path, 'test_sync_v23_watermark.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite
+          ..execute('''
+            CREATE TABLE sync_sequence_log (
+              host_id TEXT NOT NULL,
+              counter INTEGER NOT NULL,
+              entry_id TEXT,
+              payload_type INTEGER NOT NULL DEFAULT 0,
+              originating_host_id TEXT,
+              status INTEGER NOT NULL DEFAULT 0,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL,
+              request_count INTEGER NOT NULL DEFAULT 0,
+              last_requested_at INTEGER,
+              json_path TEXT,
+              PRIMARY KEY (host_id, counter)
+            )
+          ''')
+          ..execute('PRAGMA user_version = 22')
+          ..dispose();
+
+        final db = SyncDatabase(
+          overriddenFilename: 'test_sync_v23_watermark.db',
+        );
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), 23);
+
+        final index = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='index' "
+              "AND name = 'idx_sync_sequence_log_resolved_host_counter'",
+            )
+            .get();
+        expect(index, hasLength(1));
+        final indexSql = index.first.readNullable<String>('sql');
+        expect(indexSql, contains('host_id, counter'));
+        expect(indexSql, contains('WHERE status IN (0, 3, 4, 5)'));
 
         await db.close();
       },

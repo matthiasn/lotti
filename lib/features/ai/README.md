@@ -147,6 +147,12 @@ In practice the builder may also inject:
 - correction examples
 - URL-formatting rules for image analysis
 
+`TaskSummaryResolver` is the shared summary lookup layer for these paths. For
+single-task prompt building it checks the current agent report first, then
+falls back to legacy `AiResponseType.taskSummary` entries. Bulk linked-task
+builders call `resolveMany()` so agent reports are loaded in one batch and the
+already-prefetched legacy entries are used only where no usable report exists.
+
 ## Profile Resolution
 
 `ProfileResolver` is the shared resolution engine for agent wakes. `ProfileAutomationResolver` wraps it for skill execution and offers two entry points:

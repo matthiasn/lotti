@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:path/path.dart' as path;
+import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   late EditorDb db;
@@ -534,6 +539,46 @@ void main() {
       expect(result1!.delta, contains('draft1'));
       expect(result2!.delta, contains('draft2'));
     });
+
+    test('latestDraft plan uses the composite partial index', () async {
+      const entryId = 'test-entry-123';
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+
+      for (var i = 0; i < 100; i++) {
+        await db.insertDraftState(
+          entryId: 'other-entry-$i',
+          lastSaved: testDate,
+          draftDeltaJson: '{"ops":[{"insert":"other $i"}]}',
+        );
+      }
+      await db.insertDraftState(
+        entryId: entryId,
+        lastSaved: testDate,
+        draftDeltaJson: '{"ops":[{"insert":"target"}]}',
+      );
+      await db.customStatement('ANALYZE');
+
+      final plan = await db
+          .customSelect(
+            '''
+            EXPLAIN QUERY PLAN
+            SELECT * FROM editor_drafts
+            WHERE entry_id = ?1
+              AND last_saved = ?2
+              AND status = 'DRAFT'
+            ORDER BY created_at DESC
+            ''',
+            variables: [
+              Variable.withString(entryId),
+              Variable.withDateTime(testDate),
+            ],
+          )
+          .get();
+      final details = plan.map((row) => row.data.toString()).join('\n');
+
+      expect(details, contains('editor_drafts_latest_draft'));
+      expect(details, isNot(contains('USE TEMP B-TREE FOR ORDER BY')));
+    });
   });
 
   group('allDrafts Query Tests', () {
@@ -607,6 +652,75 @@ void main() {
     test('returns empty list when no drafts exist', () async {
       final drafts = await db.allDrafts().get();
       expect(drafts, isEmpty);
+    });
+  });
+
+  group('schema', () {
+    test('schema version is 2', () {
+      expect(db.schemaVersion, 2);
+    });
+
+    test('v2 migration adds latestDraft composite partial index', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'lotti_editor_db_migration_test_',
+      );
+      try {
+        final dbFile = File(path.join(tempDir.path, editorDbFileName));
+        sqlite3.open(dbFile.path)
+          ..execute('''
+            CREATE TABLE editor_drafts (
+              id TEXT NOT NULL,
+              entry_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              created_at INTEGER NOT NULL,
+              last_saved INTEGER NOT NULL,
+              delta TEXT NOT NULL,
+              PRIMARY KEY (id)
+            )
+          ''')
+          ..execute('CREATE INDEX editor_drafts_id ON editor_drafts (id)')
+          ..execute(
+            'CREATE INDEX editor_drafts_entry_id '
+            'ON editor_drafts (entry_id)',
+          )
+          ..execute(
+            'CREATE INDEX editor_drafts_status ON editor_drafts (status)',
+          )
+          ..execute(
+            'CREATE INDEX editor_drafts_created_at '
+            'ON editor_drafts (created_at)',
+          )
+          ..execute('PRAGMA user_version = 1')
+          ..dispose();
+
+        final migratedDb = EditorDb(
+          documentsDirectoryProvider: () async => tempDir,
+          tempDirectoryProvider: () async => tempDir,
+        );
+        try {
+          final versionResult = await migratedDb
+              .customSelect('PRAGMA user_version')
+              .get();
+          expect(versionResult.first.read<int>('user_version'), 2);
+
+          final index = await migratedDb
+              .customSelect(
+                "SELECT sql FROM sqlite_master WHERE type='index' "
+                "AND name = 'editor_drafts_latest_draft'",
+              )
+              .get();
+          expect(index, hasLength(1));
+          final indexSql = index.first.readNullable<String>('sql');
+          expect(indexSql, contains('entry_id, last_saved, created_at DESC'));
+          expect(indexSql, contains("WHERE status = 'DRAFT'"));
+        } finally {
+          await migratedDb.close();
+        }
+      } finally {
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      }
     });
   });
 }

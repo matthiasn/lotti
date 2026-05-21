@@ -173,7 +173,7 @@ final class TaskAgentWorkflowProvider
   }
 }
 
-String _$taskAgentWorkflowHash() => r'bd974a11188e1783248763437a94e15a5adf8a4f';
+String _$taskAgentWorkflowHash() => r'7d158a703cbaa4a2ea1c3b8531fcb16a263a5566';
 
 /// The project agent workflow with all dependencies resolved.
 

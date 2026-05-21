@@ -51,6 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pushed off-screen. The task definition modal also swaps its
   `LottiSearchBar` (gradient-filled in dark mode) for the flat,
   border-only `DesignSystemSearch` used by the settings page.
+- Desktop slow-query hot paths now avoid several major sources of UI stalls:
+  sync outbox claims and sync-sequence watermark reads use SQL shapes that
+  match their partial indexes, editor draft restore has a composite draft
+  lookup index, agent active-row reads gain dedicated partial indexes, and the
+  agent/task summary paths resolve templates, active soul documents, task-agent
+  links, and latest reports in batches instead of issuing per-row link and
+  entity lookups.
 
 ### Added
 - Synced-notifications bell in the Tasks and Projects tab headers. The

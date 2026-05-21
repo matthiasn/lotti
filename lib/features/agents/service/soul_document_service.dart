@@ -479,6 +479,41 @@ class SoulDocumentService {
     return getActiveSoulVersion(soulId);
   }
 
+  /// Resolve active soul versions for multiple templates in bulk.
+  ///
+  /// The result is keyed by template id. Templates with no active assignment or
+  /// a broken head/version chain are omitted.
+  Future<Map<String, SoulDocumentVersionEntity>> resolveActiveSoulsForTemplates(
+    Iterable<String> templateIds,
+  ) async {
+    final idList = templateIds.toSet().toList(growable: false);
+    if (idList.isEmpty) return {};
+
+    final linksByTemplateId = await repository.getLinksFromMultiple(
+      idList,
+      type: AgentLinkTypes.soulAssignment,
+    );
+
+    final soulIdByTemplateId = <String, String>{};
+    for (final entry in linksByTemplateId.entries) {
+      final links = entry.value;
+      if (links.isEmpty) continue;
+      soulIdByTemplateId[entry.key] = links.selectPrimary().toId;
+    }
+    if (soulIdByTemplateId.isEmpty) return {};
+
+    final versionsBySoulId = await repository
+        .getActiveSoulDocumentVersionsBySoulIds(
+          soulIdByTemplateId.values.toSet().toList(growable: false),
+        );
+    return {
+      for (final entry in soulIdByTemplateId.entries)
+        if (versionsBySoulId[entry.value]
+            case final SoulDocumentVersionEntity version)
+          entry.key: version,
+    };
+  }
+
   /// Reverse lookup: find all templates that use a given soul document.
   ///
   /// Returns the template IDs (not full entities) for efficiency.
