@@ -4482,21 +4482,6 @@ void main() {
         expect(retrieved?.meta.dateFrom, isA<DateTime>());
       });
 
-      test(
-        'updateJournalEntity reports rows written, not SQLite rowid',
-        () async {
-          for (var i = 0; i < 3; i++) {
-            await db!.updateJournalEntity(createJournalEntry('Seed $i'));
-          }
-
-          final entry = createJournalEntry('Inserted after seed rows');
-          final result = await db!.updateJournalEntity(entry);
-
-          expect(result.applied, isTrue);
-          expect(result.rowsWritten, 1);
-        },
-      );
-
       test('updateJournalEntity updates existing entity', () async {
         final entry = createJournalEntry('Original text');
         await db!.updateJournalEntity(entry);

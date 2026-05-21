@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 23);
+        expect(db.schemaVersion, 21);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -126,18 +126,6 @@ void main() {
         expect(hostActivitySql, contains('host_id'));
         expect(hostActivitySql, contains('last_seen_at'));
 
-        final watermarkResult = await db
-            .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' "
-              "AND name='sync_sequence_watermarks'",
-            )
-            .get();
-        expect(watermarkResult, hasLength(1));
-        final watermarkSql = watermarkResult.first.read<String>('sql');
-        expect(watermarkSql, contains('sync_sequence_watermarks'));
-        expect(watermarkSql, contains('host_id'));
-        expect(watermarkSql, contains('last_counter'));
-
         // Verify existing outbox data survived the migration
         final outboxItems = await db.oldestOutboxItems(10);
         expect(outboxItems, hasLength(1));
@@ -154,24 +142,21 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 23);
+      expect(versionResult.first.read<int>('user_version'), 21);
 
       // Verify all tables exist
       final tablesResult = await db
           .customSelect(
-            "SELECT name FROM sqlite_master WHERE type='table' "
-            "AND name IN ('outbox', 'sync_sequence_log', "
-            "'sync_sequence_watermarks', 'host_activity')",
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('outbox', 'sync_sequence_log', 'host_activity')",
           )
           .get();
-      expect(tablesResult, hasLength(4));
+      expect(tablesResult, hasLength(3));
 
       final tableNames = tablesResult
           .map((r) => r.read<String>('name'))
           .toSet();
       expect(tableNames, contains('outbox'));
       expect(tableNames, contains('sync_sequence_log'));
-      expect(tableNames, contains('sync_sequence_watermarks'));
       expect(tableNames, contains('host_activity'));
 
       final indexResults = await db
@@ -182,11 +167,9 @@ void main() {
             "'idx_sync_sequence_log_actionable_status_created_at', "
             "'idx_sync_sequence_log_actionable_status_updated_at', "
             "'idx_sync_sequence_log_host_status', "
-            "'idx_sync_sequence_log_host_counter_status', "
             "'idx_sync_sequence_log_payload_resolution', "
             "'idx_sync_sequence_log_host_entry_status_counter', "
-            "'idx_inbound_event_queue_abandoned_reason', "
-            "'idx_inbound_event_queue_active_status_room')",
+            "'idx_inbound_event_queue_abandoned_reason')",
           )
           .get();
       final indexNames = indexResults
@@ -200,25 +183,10 @@ void main() {
           'idx_sync_sequence_log_actionable_status_created_at',
           'idx_sync_sequence_log_actionable_status_updated_at',
           'idx_sync_sequence_log_host_status',
-          'idx_sync_sequence_log_host_counter_status',
           'idx_sync_sequence_log_payload_resolution',
           'idx_sync_sequence_log_host_entry_status_counter',
           'idx_inbound_event_queue_abandoned_reason',
-          'idx_inbound_event_queue_active_status_room',
         }),
-      );
-      expect(
-        await db
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='index' "
-              "AND name = 'idx_outbox_sending_expiry'",
-            )
-            .get(),
-        isEmpty,
-        reason:
-            'fresh v23 databases drop the v21 updated_at-leading sending '
-            'index after createAll so expired-lease reclaim cannot regress '
-            'to a temp-sort plan',
       );
 
       await db.close();
@@ -330,7 +298,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 23);
+      expect(versionResult.first.read<int>('user_version'), 21);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -409,7 +377,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 23);
+      expect(versionResult.first.read<int>('user_version'), 21);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -429,16 +397,15 @@ void main() {
         ),
       );
 
-      // Polling is priority-first, then FIFO by createdAt within each
-      // priority tier. The newly inserted high-priority row should drain
-      // before the older low-priority v5 row, proving the migrated column
-      // participates in dequeue order.
+      // Polling is FIFO by createdAt — the older v5 row comes first,
+      // and the newly inserted v6 row's high priority is round-tripped
+      // through the new column.
       final allItems = await db.oldestOutboxItems(10);
       expect(allItems, hasLength(2));
-      expect(allItems.first.subject, 'v6-high');
-      expect(allItems.first.priority, OutboxPriority.high.index);
-      expect(allItems.last.subject, 'v5-subject');
-      expect(allItems.last.priority, OutboxPriority.low.index);
+      expect(allItems.first.subject, 'v5-subject');
+      expect(allItems.first.priority, OutboxPriority.low.index);
+      expect(allItems.last.subject, 'v6-high');
+      expect(allItems.last.priority, OutboxPriority.high.index);
 
       await db.close();
     });
@@ -490,7 +457,7 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 23);
+      expect(versionResult.first.read<int>('user_version'), 21);
 
       final indexResults = await db
           .customSelect(
@@ -582,7 +549,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 21);
 
         // v11 replaces the v10 index with the covering variant; when the
         // migration steps v9 → v11 in one run, the v10 index must no longer
@@ -694,7 +661,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 21);
 
         final oldIndex = await db
             .customSelect(
@@ -810,7 +777,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 21);
 
         final ready = await db
             .customSelect(
@@ -837,8 +804,8 @@ void main() {
     );
 
     test(
-      'v20 migration keeps the literal-status pending partial index so '
-      'the pending claim path avoids '
+      'v21 migration adds the literal-status outbox partial indices so '
+      'the pending claim path stops using '
       '`idx_outbox_status_priority_created_at` + `USE TEMP B-TREE FOR '
       'ORDER BY` (2026-05-12 desktop super_slow log: tails up to 6.0 s)',
       () async {
@@ -876,22 +843,6 @@ void main() {
           'ON outbox (outbox_entry_id, created_at) '
           'WHERE status = 0 AND outbox_entry_id IS NOT NULL',
         );
-        sqlite.execute('''
-          CREATE TABLE sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            payload_type INTEGER NOT NULL DEFAULT 0,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            json_path TEXT,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
         sqlite.execute('PRAGMA user_version = 20');
         sqlite.dispose();
 
@@ -900,7 +851,7 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
+        expect(versionResult.first.read<int>('user_version'), 21);
 
         final pendingIndex = await db
             .customSelect(
@@ -919,142 +870,10 @@ void main() {
               "AND name = 'idx_outbox_sending_expiry'",
             )
             .get();
-        expect(
-          sendingIndex,
-          isEmpty,
-          reason:
-              'v22 drops the v21 updated_at-leading index because it makes '
-              'SQLite prefer a range scan plus temp sort for expired leases',
-        );
-
-        final sequenceCoveringIndex = await db
-            .customSelect(
-              "SELECT name, sql FROM sqlite_master WHERE type='index' "
-              "AND name = 'idx_sync_sequence_log_host_counter_status'",
-            )
-            .get();
-        expect(sequenceCoveringIndex, hasLength(1));
-        final sequenceCoveringSql = sequenceCoveringIndex.first
-            .readNullable<String>('sql');
-        expect(
-          sequenceCoveringSql,
-          contains('host_id, counter, status'),
-        );
-
-        await db.close();
-      },
-    );
-
-    test(
-      'v21 migration adds the v22/v23 sequence maintenance objects',
-      () async {
-        final dbFile = File(
-          path.join(testDirectory!.path, 'test_sync_v23_from_v21.db'),
-        );
-        final sqlite = sqlite3.open(dbFile.path);
-
-        sqlite.execute('''
-          CREATE TABLE outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            status INTEGER NOT NULL DEFAULT 0,
-            retries INTEGER NOT NULL DEFAULT 0,
-            message TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            file_path TEXT,
-            outbox_entry_id TEXT,
-            payload_size INTEGER,
-            priority INTEGER NOT NULL DEFAULT 2
-          )
-        ''');
-        sqlite.execute(
-          'CREATE INDEX idx_outbox_status_priority_created_at '
-          'ON outbox (status, priority, created_at)',
-        );
-        sqlite.execute(
-          'CREATE INDEX idx_outbox_actionable_priority_created_at '
-          'ON outbox (priority, created_at) '
-          'WHERE status IN (0, 3)',
-        );
-        sqlite.execute(
-          'CREATE INDEX idx_outbox_pending_entry_id_created_at '
-          'ON outbox (outbox_entry_id, created_at) '
-          'WHERE status = 0 AND outbox_entry_id IS NOT NULL',
-        );
-        sqlite.execute(
-          'CREATE INDEX idx_outbox_pending_created_id '
-          'ON outbox (created_at, id) '
-          'WHERE status = 0',
-        );
-        sqlite.execute(
-          'CREATE INDEX idx_outbox_sending_expiry '
-          'ON outbox (updated_at, created_at, id) '
-          'WHERE status = 3',
-        );
-        sqlite.execute('''
-          CREATE TABLE sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            payload_type INTEGER NOT NULL DEFAULT 0,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            json_path TEXT,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
-        sqlite.execute('PRAGMA user_version = 21');
-        sqlite.dispose();
-
-        final db = SyncDatabase(
-          overriddenFilename: 'test_sync_v23_from_v21.db',
-        );
-
-        final versionResult = await db
-            .customSelect('PRAGMA user_version')
-            .get();
-        expect(versionResult.first.read<int>('user_version'), 23);
-
-        final newIndices = await db
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='index' "
-              "AND name IN ("
-              "'idx_sync_sequence_log_host_counter_status')",
-            )
-            .get();
-        expect(
-          newIndices.map((row) => row.read<String>('name')).toSet(),
-          containsAll(<String>{
-            'idx_sync_sequence_log_host_counter_status',
-          }),
-        );
-
-        final watermarkTable = await db
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='table' "
-              "AND name = 'sync_sequence_watermarks'",
-            )
-            .get();
-        expect(watermarkTable, hasLength(1));
-
-        final legacySendingIndex = await db
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='index' "
-              "AND name = 'idx_outbox_sending_expiry'",
-            )
-            .get();
-        expect(
-          legacySendingIndex,
-          isEmpty,
-          reason:
-              'v22 removes the updated_at-leading sending index so the '
-              'priority-ordered reclaim query cannot pick a temp-sort plan',
-        );
+        expect(sendingIndex, hasLength(1));
+        final sendingSql = sendingIndex.first.readNullable<String>('sql');
+        expect(sendingSql, contains('updated_at, created_at, id'));
+        expect(sendingSql, contains('WHERE status = 3'));
 
         await db.close();
       },

@@ -56,22 +56,13 @@ class AgentRepository {
     return AgentDbConversions.fromEntityRow(rows.first);
   }
 
-  /// Maximum number of host variables to bind per `IN (...)` chunk in bulk
-  /// lookup helpers. SQLite's default `SQLITE_MAX_VARIABLE_NUMBER`
+  /// Maximum number of host variables to bind per `IN (...)` chunk in
+  /// [getEntitiesByIds]. SQLite's default `SQLITE_MAX_VARIABLE_NUMBER`
   /// is 999 on the platforms this app targets; chunking at 900 leaves
   /// headroom for the planner without pretending we can pack more.
-  /// A caller passing more ids than this is split into multiple sequential
-  /// queries and the result maps are merged.
-  static const int _bulkLookupChunkSize = 900;
-
-  static Iterable<List<T>> _bulkLookupChunks<T>(List<T> values) sync* {
-    for (var start = 0; start < values.length; start += _bulkLookupChunkSize) {
-      final end = start + _bulkLookupChunkSize > values.length
-          ? values.length
-          : start + _bulkLookupChunkSize;
-      yield values.sublist(start, end);
-    }
-  }
+  /// A caller passing more ids than this is split into multiple
+  /// sequential queries and the result maps are merged.
+  static const int _getEntitiesByIdsChunkSize = 900;
 
   /// Batch-fetch non-deleted entities for every id in [ids]. Returns
   /// the matched entities keyed by their `id` column so the caller can
@@ -79,7 +70,7 @@ class AgentRepository {
   /// row is soft-deleted) are simply absent from the map.
   ///
   /// Issues one `WHERE id IN (?, …)` query per
-  /// [_bulkLookupChunkSize] batch against the primary-key index
+  /// [_getEntitiesByIdsChunkSize] batch against the primary-key index
   /// instead of N per-id round-trips. The 2026-05-10 desktop
   /// slow_queries log captured 2 484 hits/day for `SELECT * FROM
   /// agent_entities WHERE id = ? AND deleted_at IS NULL` — all from
@@ -107,7 +98,15 @@ class AgentRepository {
     final idList = uniqueIds.toList(growable: false);
     final result = <String, AgentDomainEntity>{};
 
-    for (final chunk in _bulkLookupChunks(idList)) {
+    for (
+      var start = 0;
+      start < idList.length;
+      start += _getEntitiesByIdsChunkSize
+    ) {
+      final end = start + _getEntitiesByIdsChunkSize > idList.length
+          ? idList.length
+          : start + _getEntitiesByIdsChunkSize;
+      final chunk = idList.sublist(start, end);
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final rows = await _db
           .customSelect(
@@ -255,58 +254,66 @@ class AgentRepository {
 
   /// Batch-fetch the latest report for each agent in [agentIds] under [scope].
   ///
-  /// Issues chunked bulk SQL queries for heads and reports instead of 2N
+  /// Issues two SQL queries (one for heads, one for reports) instead of 2N
   /// individual lookups. Agents without a report are omitted from the result.
   Future<Map<String, AgentReportEntity>> getLatestReportsByAgentIds(
     List<String> agentIds,
     String scope,
   ) async {
-    final uniqueAgentIds = agentIds.toSet().toList(growable: false);
-    if (uniqueAgentIds.isEmpty) return {};
+    if (agentIds.isEmpty) return {};
 
     // 1. Batch-fetch report heads.
+    final headPlaceholders = List.filled(agentIds.length, '?').join(', ');
+    final headRows = await _db
+        .customSelect(
+          'SELECT * FROM agent_entities '
+          'WHERE agent_id IN ($headPlaceholders) '
+          "AND type = '${AgentEntityTypes.agentReportHead}' "
+          'AND subtype = ? '
+          'AND deleted_at IS NULL '
+          'ORDER BY created_at DESC',
+          variables: [
+            ...agentIds.map(Variable.withString),
+            Variable.withString(scope),
+          ],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+
+    // Map agent_id → report head → reportId.
     final reportIdsByAgentId = <String, String>{};
     final allReportIds = <String>{};
-    for (final chunk in _bulkLookupChunks(uniqueAgentIds)) {
-      final headPlaceholders = List.filled(chunk.length, '?').join(', ');
-      final headRows = await _db
-          .customSelect(
-            'SELECT * FROM agent_entities '
-            'WHERE agent_id IN ($headPlaceholders) '
-            "AND type = '${AgentEntityTypes.agentReportHead}' "
-            'AND subtype = ? '
-            'AND deleted_at IS NULL '
-            'ORDER BY created_at DESC',
-            variables: [
-              ...chunk.map(Variable.withString),
-              Variable.withString(scope),
-            ],
-            readsFrom: {_db.agentEntities},
-          )
-          .get();
-
-      // Map agent_id → report head → reportId. Each chunk is sorted newest
-      // first, and an agent ID appears in only one chunk after deduplication.
-      for (final row in headRows) {
-        final entity = AgentDbConversions.fromEntityRow(
-          await _db.agentEntities.mapFromRow(row),
-        );
-        final head = entity.mapOrNull(agentReportHead: (e) => e);
-        if (head != null) {
-          reportIdsByAgentId.putIfAbsent(head.agentId, () {
-            allReportIds.add(head.reportId);
-            return head.reportId;
-          });
-        }
+    for (final row in headRows) {
+      final entity = AgentDbConversions.fromEntityRow(
+        await _db.agentEntities.mapFromRow(row),
+      );
+      final head = entity.mapOrNull(agentReportHead: (e) => e);
+      if (head != null) {
+        reportIdsByAgentId.putIfAbsent(head.agentId, () {
+          allReportIds.add(head.reportId);
+          return head.reportId;
+        });
       }
     }
 
     if (allReportIds.isEmpty) return {};
 
     // 2. Batch-fetch the actual report entities.
+    final reportPlaceholders = List.filled(allReportIds.length, '?').join(', ');
+    final reportRows = await _db
+        .customSelect(
+          'SELECT * FROM agent_entities '
+          'WHERE id IN ($reportPlaceholders) AND deleted_at IS NULL',
+          variables: allReportIds.map(Variable.withString).toList(),
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+
     final reportsById = <String, AgentReportEntity>{};
-    final entitiesById = await getEntitiesByIds(allReportIds);
-    for (final entity in entitiesById.values) {
+    for (final row in reportRows) {
+      final entity = AgentDbConversions.fromEntityRow(
+        await _db.agentEntities.mapFromRow(row),
+      );
       final report = entity.mapOrNull(agentReport: (e) => e);
       if (report != null) {
         reportsById[report.id] = report;
@@ -1275,38 +1282,33 @@ class AgentRepository {
   /// Batch-fetch non-deleted links pointing to any of [toIds] with a given
   /// [type], returned as a map from `toId` → links.
   ///
-  /// Issues chunked SQL queries with `IN (...)` instead of N separate lookups.
+  /// Issues a single SQL query with `IN (...)` instead of N separate lookups.
   /// IDs not present in the result map have no matching links.
   Future<Map<String, List<model.AgentLink>>> getLinksToMultiple(
     List<String> toIds, {
     required String type,
   }) async {
-    final uniqueToIds = toIds.toSet().toList(growable: false);
-    if (uniqueToIds.isEmpty) return {};
+    if (toIds.isEmpty) return {};
+
+    final placeholders = List.filled(toIds.length, '?').join(', ');
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM agent_links '
+          'WHERE to_id IN ($placeholders) AND type = ? AND deleted_at IS NULL',
+          variables: [
+            ...toIds.map(Variable.withString),
+            Variable.withString(type),
+          ],
+          readsFrom: {_db.agentLinks},
+        )
+        .get();
 
     final result = <String, List<model.AgentLink>>{};
-    for (final chunk in _bulkLookupChunks(uniqueToIds)) {
-      final placeholders = List.filled(chunk.length, '?').join(', ');
-      final rows = await _db
-          .customSelect(
-            'SELECT * FROM agent_links '
-            'WHERE to_id IN ($placeholders) '
-            'AND type = ? '
-            'AND deleted_at IS NULL',
-            variables: [
-              ...chunk.map(Variable.withString),
-              Variable.withString(type),
-            ],
-            readsFrom: {_db.agentLinks},
-          )
-          .get();
-
-      for (final row in rows) {
-        final link = AgentDbConversions.fromLinkRow(
-          await _db.agentLinks.mapFromRow(row),
-        );
-        (result[link.toId] ??= []).add(link);
-      }
+    for (final row in rows) {
+      final link = AgentDbConversions.fromLinkRow(
+        await _db.agentLinks.mapFromRow(row),
+      );
+      (result[link.toId] ??= []).add(link);
     }
     return result;
   }

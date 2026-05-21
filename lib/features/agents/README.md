@@ -208,12 +208,6 @@ The journal database is read on demand during wakes. The agents feature does
 not mirror full task or project state into `agent.sqlite`; it persists the
 agent's own interpretation and review state.
 
-Bulk agent repository lookups keep SQLite's host-variable cap in mind.
-`getEntitiesByIds`, `getLatestReportsByAgentIds`, and `getLinksToMultiple`
-deduplicate inputs and split large `IN (...)` lists into 900-id chunks. This
-keeps linked-task/report context collection on the indexed batch path even when
-sync or wake preparation considers thousands of task, agent, or report ids.
-
 ```mermaid
 flowchart LR
   subgraph Journal["Journal DB"]

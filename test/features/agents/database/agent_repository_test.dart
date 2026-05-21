@@ -2860,46 +2860,6 @@ void main() {
         expect(singleResult?.reportId, 'report-new');
         expect(batchResult[testAgentId]?.id, 'report-new');
       });
-
-      test(
-        'chunks agent-id lookups past 900 entries so large report batches '
-        'do not exceed SQLite host-variable limits',
-        () async {
-          const requestedCount = 1200;
-          final matchedIndexes = [0, 899, 900, 1199];
-
-          for (final index in matchedIndexes) {
-            await setupReportWithHead(
-              repo,
-              reportId: 'bulk-report-$index',
-              headId: 'bulk-head-$index',
-              agentId: 'bulk-agent-$index',
-              scope: 'daily',
-              createdAt: testDate.add(Duration(minutes: index)),
-              updatedAt: testDate.add(Duration(minutes: index)),
-            );
-          }
-
-          final result = await repo.getLatestReportsByAgentIds(
-            [
-              for (var index = 0; index < requestedCount; index++)
-                'bulk-agent-$index',
-              'bulk-agent-900',
-            ],
-            'daily',
-          );
-
-          expect(
-            result.keys,
-            unorderedEquals([
-              for (final index in matchedIndexes) 'bulk-agent-$index',
-            ]),
-          );
-          for (final index in matchedIndexes) {
-            expect(result['bulk-agent-$index']?.id, 'bulk-report-$index');
-          }
-        },
-      );
     });
 
     glados.Glados(
@@ -3794,60 +3754,6 @@ void main() {
         );
         expect(result['task-c'], isNull);
       });
-
-      test(
-        'chunks to-id lookups past 900 entries so large link batches do '
-        'not exceed SQLite host-variable limits',
-        () async {
-          const requestedCount = 1200;
-          final matchedIndexes = [0, 899, 900, 1199];
-
-          for (final index in matchedIndexes) {
-            await repo.upsertLink(
-              model.AgentLink.agentTask(
-                id: 'bulk-task-link-$index',
-                fromId: 'bulk-agent-$index',
-                toId: 'bulk-task-$index',
-                createdAt: testDate.add(Duration(minutes: index)),
-                updatedAt: testDate.add(Duration(minutes: index)),
-                vectorClock: null,
-              ),
-            );
-          }
-          await repo.upsertLink(
-            model.AgentLink.messagePrev(
-              id: 'bulk-wrong-type',
-              fromId: 'bulk-message',
-              toId: 'bulk-task-900',
-              createdAt: testDate,
-              updatedAt: testDate,
-              vectorClock: null,
-            ),
-          );
-
-          final result = await repo.getLinksToMultiple(
-            [
-              for (var index = 0; index < requestedCount; index++)
-                'bulk-task-$index',
-              'bulk-task-900',
-            ],
-            type: AgentLinkTypes.agentTask,
-          );
-
-          expect(
-            result.keys,
-            unorderedEquals([
-              for (final index in matchedIndexes) 'bulk-task-$index',
-            ]),
-          );
-          for (final index in matchedIndexes) {
-            expect(
-              result['bulk-task-$index']?.map((link) => link.id),
-              ['bulk-task-link-$index'],
-            );
-          }
-        },
-      );
     });
 
     glados.Glados(

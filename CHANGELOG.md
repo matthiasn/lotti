@@ -66,22 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   syncs to other devices through the existing Matrix sync pipeline.
 
 ### Fixed
-- Sync outbox polling now uses priority-first send-order paths for
-  pending and expired in-flight rows, avoiding temp B-tree sorts in
-  the hot dequeue loop while letting journal/link updates drain ahead
-  of older agent work. Sequence-log watermarks are now persisted per
-  host after a lazy first read, so hot gap detection reads one primary-key
-  row instead of recomputing the contiguous prefix with a `ROW_NUMBER`
-  scan over the sequence log. Inbound stranded-room pruning now also
-  has a literal-status partial index over active queue rows, and journal
-  sync diagnostics report rows written as a count instead of leaking
-  SQLite rowids.
-- Incoming agent entity/link sync now respects vector-clock dominance
-  before overwriting local agent state, while still recording skipped
-  stale/equal payloads in the sequence log.
-- Agent report and task-link bulk lookups now chunk large `IN` lists, so
-  high-volume sync payload collection no longer risks SQLite host-variable
-  limit failures when thousands of agent/task ids are considered at once.
 - Habit completion reads now enforce last-write-wins per habit/day, so
   repeated success/skip/fail updates on the same date resolve to the newest
   persisted write instead of depending on database row order.

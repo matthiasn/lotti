@@ -696,7 +696,7 @@ class JournalDb extends _$JournalDb {
       _columnExists(table, column);
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
-    await into(journal).insertOnConflictUpdate(entry);
+    final res = await into(journal).insertOnConflictUpdate(entry);
     // insertOnConflictUpdate overwrites every column including project_id
     // (which is not in the serialized payload). Restore it from linked_entries
     // so the denormalized column stays consistent after any upsert.
@@ -704,7 +704,7 @@ class JournalDb extends _$JournalDb {
       'UPDATE journal SET project_id = ($_projectIdSubquery) WHERE id = ?',
       [entry.id],
     );
-    return 1;
+    return res;
   }
 
   Future<void> updateTaskPriorityColumn({
