@@ -1,5 +1,104 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/ui/widgets/conflicts/title_diff.dart';
+
+enum _GeneratedTitleTokenSlot { alpha, beta, gamma, one, two, repeated }
+
+String _generatedTitleToken(_GeneratedTitleTokenSlot slot) {
+  return switch (slot) {
+    _GeneratedTitleTokenSlot.alpha => 'alpha',
+    _GeneratedTitleTokenSlot.beta => 'beta',
+    _GeneratedTitleTokenSlot.gamma => 'gamma',
+    _GeneratedTitleTokenSlot.one => '1',
+    _GeneratedTitleTokenSlot.two => '2',
+    _GeneratedTitleTokenSlot.repeated => 'alpha',
+  };
+}
+
+class _GeneratedTitleDiffScenario {
+  const _GeneratedTitleDiffScenario({
+    required this.localSlots,
+    required this.remoteSlots,
+    required this.localWhitespaceShape,
+    required this.remoteWhitespaceShape,
+  });
+
+  final List<_GeneratedTitleTokenSlot> localSlots;
+  final List<_GeneratedTitleTokenSlot> remoteSlots;
+  final int localWhitespaceShape;
+  final int remoteWhitespaceShape;
+
+  List<String> get localTokens => localSlots.map(_generatedTitleToken).toList();
+
+  List<String> get remoteTokens =>
+      remoteSlots.map(_generatedTitleToken).toList();
+
+  String get localTitle => _joinTitle(localTokens, localWhitespaceShape);
+
+  String get remoteTitle => _joinTitle(remoteTokens, remoteWhitespaceShape);
+
+  @override
+  String toString() {
+    return '_GeneratedTitleDiffScenario('
+        'localTokens: $localTokens, remoteTokens: $remoteTokens, '
+        'localWhitespaceShape: $localWhitespaceShape, '
+        'remoteWhitespaceShape: $remoteWhitespaceShape)';
+  }
+}
+
+extension _AnyGeneratedTitleDiff on glados.Any {
+  glados.Generator<_GeneratedTitleTokenSlot> get titleTokenSlot =>
+      glados.AnyUtils(this).choose(_GeneratedTitleTokenSlot.values);
+
+  glados.Generator<List<_GeneratedTitleTokenSlot>> get titleTokenSlots =>
+      glados.ListAnys(this).listWithLengthInRange(0, 9, titleTokenSlot);
+
+  glados.Generator<_GeneratedTitleDiffScenario> get titleDiffScenario =>
+      glados.CombinableAny(this).combine4(
+        titleTokenSlots,
+        titleTokenSlots,
+        glados.IntAnys(this).intInRange(0, 4),
+        glados.IntAnys(this).intInRange(0, 4),
+        (
+          List<_GeneratedTitleTokenSlot> localSlots,
+          List<_GeneratedTitleTokenSlot> remoteSlots,
+          int localWhitespaceShape,
+          int remoteWhitespaceShape,
+        ) => _GeneratedTitleDiffScenario(
+          localSlots: localSlots,
+          remoteSlots: remoteSlots,
+          localWhitespaceShape: localWhitespaceShape,
+          remoteWhitespaceShape: remoteWhitespaceShape,
+        ),
+      );
+}
+
+String _joinTitle(List<String> tokens, int whitespaceShape) {
+  if (tokens.isEmpty) {
+    return switch (whitespaceShape % 3) {
+      0 => '',
+      1 => '   ',
+      _ => '\n\t',
+    };
+  }
+
+  final separator = switch (whitespaceShape % 4) {
+    0 => ' ',
+    1 => '   ',
+    2 => '\n',
+    _ => '\t ',
+  };
+  final joined = tokens.join(separator);
+  return switch (whitespaceShape % 4) {
+    0 => joined,
+    1 => ' $joined ',
+    2 => '\n$joined\n',
+    _ => '\t$joined ',
+  };
+}
+
+String _segmentsText(Iterable<TitleDiffSegment> segments) =>
+    segments.map((segment) => segment.text).join(' ');
 
 void main() {
   group('computeTitleDiff', () {
@@ -140,5 +239,57 @@ void main() {
         expect(diff.isIdentical, isTrue);
       },
     );
+
+    glados.Glados(
+      glados.any.titleDiffScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test('preserves generated token-side invariants', (scenario) {
+      final diff = computeTitleDiff(scenario.localTitle, scenario.remoteTitle);
+      final localText = scenario.localTokens.join(' ');
+      final remoteText = scenario.remoteTokens.join(' ');
+
+      expect(_segmentsText(diff.local), localText, reason: '$scenario');
+      expect(
+        _segmentsText(
+          diff.remote.where(
+            (segment) => segment.kind != TitleDiffKind.removed,
+          ),
+        ),
+        remoteText,
+        reason: '$scenario',
+      );
+      expect(
+        diff.isIdentical,
+        scenario.localTokens.join('\u0000') ==
+            scenario.remoteTokens.join('\u0000'),
+        reason: '$scenario',
+      );
+      expect(
+        diff.local.map((segment) => segment.kind).toSet(),
+        isNot(contains(TitleDiffKind.removed)),
+        reason: '$scenario',
+      );
+      expect(
+        diff.local.map((segment) => segment.kind).toSet(),
+        isNot(contains(TitleDiffKind.replaced)),
+        reason: '$scenario',
+      );
+      expect(
+        diff.remote.map((segment) => segment.kind).toSet(),
+        isNot(contains(TitleDiffKind.added)),
+        reason: '$scenario',
+      );
+      _expectNoAdjacentSameKind(diff.local, reason: '$scenario local');
+      _expectNoAdjacentSameKind(diff.remote, reason: '$scenario remote');
+    }, tags: 'glados');
   });
+}
+
+void _expectNoAdjacentSameKind(
+  List<TitleDiffSegment> segments, {
+  required String reason,
+}) {
+  for (var i = 1; i < segments.length; i++) {
+    expect(segments[i].kind, isNot(segments[i - 1].kind), reason: reason);
+  }
 }

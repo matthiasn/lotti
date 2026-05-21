@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -9,6 +10,78 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/sync/vector_clock.dart';
+
+enum _GeneratedReportContentShape {
+  string,
+  markdownString,
+  markdownNumber,
+  firstString,
+  firstNumber,
+  emptyMap,
+}
+
+class _GeneratedReportContentScenario {
+  const _GeneratedReportContentScenario({
+    required this.shape,
+    required this.seed,
+  });
+
+  final _GeneratedReportContentShape shape;
+  final int seed;
+
+  Object get content {
+    return switch (shape) {
+      _GeneratedReportContentShape.string => 'report body $seed',
+      _GeneratedReportContentShape.markdownString => {
+        'markdown': '# Report $seed',
+        'html': '<h1>ignored $seed</h1>',
+      },
+      _GeneratedReportContentShape.markdownNumber => {
+        'markdown': seed,
+        'html': '<h1>ignored $seed</h1>',
+      },
+      _GeneratedReportContentShape.firstString => {
+        'html': '<h1>Report $seed</h1>',
+        'plain': 'ignored $seed',
+      },
+      _GeneratedReportContentShape.firstNumber => {
+        'count': seed,
+        'plain': 'ignored $seed',
+      },
+      _GeneratedReportContentShape.emptyMap => <String, dynamic>{},
+    };
+  }
+
+  String get expectedContent {
+    return switch (shape) {
+      _GeneratedReportContentShape.string => 'report body $seed',
+      _GeneratedReportContentShape.markdownString => '# Report $seed',
+      _GeneratedReportContentShape.markdownNumber => '$seed',
+      _GeneratedReportContentShape.firstString => '<h1>Report $seed</h1>',
+      _GeneratedReportContentShape.firstNumber => '$seed',
+      _GeneratedReportContentShape.emptyMap => '',
+    };
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedReportContentScenario('
+        'shape: $shape, seed: $seed)';
+  }
+}
+
+extension _AnyGeneratedReportContent on glados.Any {
+  glados.Generator<_GeneratedReportContentShape> get reportContentShape =>
+      glados.AnyUtils(this).choose(_GeneratedReportContentShape.values);
+
+  glados.Generator<_GeneratedReportContentScenario> get reportContentScenario =>
+      glados.CombinableAny(this).combine2(
+        reportContentShape,
+        glados.IntAnys(this).intInRange(0, 10000),
+        (_GeneratedReportContentShape shape, int seed) =>
+            _GeneratedReportContentScenario(shape: shape, seed: seed),
+      );
+}
 
 void main() {
   const id = 'report-id-1';
@@ -95,6 +168,19 @@ void main() {
       final report = entity as AgentReportEntity;
       expect(report.content, '');
     });
+
+    glados.Glados(
+      glados.any.reportContentScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('migrates generated report content shapes', (scenario) {
+      final row = makeRow(baseReportJson(content: scenario.content));
+
+      final entity = AgentDbConversions.fromEntityRow(row);
+
+      expect(entity, isA<AgentReportEntity>(), reason: '$scenario');
+      final report = entity as AgentReportEntity;
+      expect(report.content, scenario.expectedContent, reason: '$scenario');
+    }, tags: 'glados');
   });
 
   group('AgentDbConversions — unknown entity variant', () {
