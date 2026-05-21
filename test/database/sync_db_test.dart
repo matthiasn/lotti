@@ -886,13 +886,13 @@ void main() {
     });
 
     test(
-      'pending-claim plan uses the v21 partial index '
-      'idx_outbox_pending_created_id and skips the temp B-tree — the '
+      'pending-claim plan uses a priority-leading index and skips the '
+      'temp B-tree — the '
       '2026-05-12 desktop super-slow log captured oldestOutboxItems / '
       'claimNextOutboxBatch as `SEARCH outbox USING INDEX '
       'idx_outbox_status_priority_created_at (status=?)` + `USE TEMP '
-      'B-TREE FOR ORDER BY` at tails up to 6.0 s before the '
-      'literal-status partial index was added',
+      'B-TREE FOR ORDER BY` at tails up to 6.0 s before dequeue order '
+      'was aligned with outbox priority',
       () async {
         final database = db!;
 
@@ -925,25 +925,27 @@ void main() {
             .customSelect(
               'EXPLAIN QUERY PLAN '
               'SELECT * FROM outbox WHERE status = 0 '
-              'ORDER BY created_at ASC, id ASC LIMIT 1',
+              'ORDER BY priority ASC, created_at ASC, id ASC LIMIT 1',
             )
             .get();
         final details = plan.map((r) => r.data.toString()).join('\n');
 
         expect(
           details,
-          contains('idx_outbox_pending_created_id'),
+          anyOf(
+            contains('idx_outbox_status_priority_created_at'),
+            contains('idx_outbox_actionable_priority_created_at'),
+          ),
           reason:
-              'literal status = 0 + (created_at, id) sort must match the '
-              'v21 partial index after ANALYZE; otherwise the planner '
-              'falls back to the priority-leading index and pays a '
-              'temp B-tree sort',
+              'status = 0 + priority/created_at ordering must match an '
+              'outbox priority index after ANALYZE; otherwise the planner '
+              'pays a temp B-tree sort in the dequeue hot path',
         );
         expect(
           details,
           isNot(contains('USE TEMP B-TREE FOR ORDER BY')),
           reason:
-              'partial index sort key already matches the query — no '
+              'priority index sort key already matches the query — no '
               'temp B-tree should appear in the plan',
         );
         // SQLite reports a partial-index walk as `SCAN <table> USING
@@ -961,12 +963,11 @@ void main() {
     );
 
     test(
-      'sending-expiry plan uses the v22 partial index '
-      'idx_outbox_sending_expiry and skips the temp B-tree — the same '
-      'sort regression hit '
+      'sending-expiry plan uses the priority-leading status index and '
+      'skips the temp B-tree — the same temp-B-tree regression hit '
       "claimNextOutboxBatch's expired-sending branch "
-      '(`WHERE status = 3 AND updated_at < cutoff ORDER BY created_at, '
-      'id LIMIT 50`)',
+      '(`WHERE status = 3 AND updated_at < cutoff ORDER BY priority, '
+      'created_at, id LIMIT 50`)',
       () async {
         final database = db!;
 
@@ -980,9 +981,9 @@ void main() {
             ),
           );
         }
-        // Plant a real expired-sending row so the partial index has
-        // qualifying rows for the planner to weigh against the
-        // tombstones; then ANALYZE so the v22 partial wins on cost.
+        // Plant a real expired-sending row, then ANALYZE so the planner
+        // sees the current v23 index set after the legacy expiry index
+        // has been dropped during database creation.
         await database.addOutboxItem(
           OutboxCompanion(
             status: Value(OutboxStatus.sending.index),
@@ -999,7 +1000,7 @@ void main() {
               'EXPLAIN QUERY PLAN '
               'SELECT * FROM outbox '
               'WHERE status = 3 AND updated_at < ?1 '
-              'ORDER BY created_at ASC, id ASC LIMIT 50',
+              'ORDER BY priority ASC, created_at ASC, id ASC LIMIT 50',
               variables: [Variable<DateTime>(DateTime(2024, 1, 2))],
             )
             .get();
@@ -1007,18 +1008,18 @@ void main() {
 
         expect(
           details,
-          contains('idx_outbox_sending_expiry'),
+          contains('idx_outbox_status_priority_created_at'),
           reason:
-              'literal status = 3 + created_at/id ordering must match '
-              'the v22 sending-expiry partial index after ANALYZE',
+              'literal status = 3 + priority/created_at/id ordering must '
+              'match the existing status/priority index after ANALYZE',
         );
         expect(
           details,
           isNot(contains('USE TEMP B-TREE FOR ORDER BY')),
           reason:
-              'updated_at is a range predicate, so the partial index must '
-              'lead with created_at/id to satisfy the ORDER BY without a '
-              'temp B-tree',
+              'the status/priority index is ordered by priority/created_at '
+              'inside status=3, so the expired-lease reclaim path should '
+              'not sort externally',
         );
         // See sibling test — `SCAN outbox USING INDEX <partial>` is
         // legitimate; only a base-table scan (`SCAN outbox` without
@@ -1061,21 +1062,29 @@ void main() {
 
         final outboxSelects = loggedEntries
             .map((entry) => entry.formattedStatement)
+            .map((statement) => statement.replaceAll('"', ''))
             .where((statement) => statement.startsWith('SELECT * FROM outbox'))
             .toList();
 
         expect(
           outboxSelects,
-          contains(
-            'SELECT * FROM outbox WHERE status = 0 '
-            'ORDER BY created_at ASC, id ASC LIMIT ?',
+          anyElement(
+            allOf(
+              contains('WHERE status = 0'),
+              contains('ORDER BY priority ASC, created_at ASC, id ASC'),
+              contains('LIMIT'),
+            ),
           ),
         );
         expect(
           outboxSelects,
-          contains(
-            'SELECT * FROM outbox WHERE status = 3 AND updated_at < ? '
-            'ORDER BY created_at ASC, id ASC LIMIT ?',
+          anyElement(
+            allOf(
+              contains('status = 3'),
+              contains('updated_at < ?'),
+              contains('ORDER BY priority ASC, created_at ASC, id ASC'),
+              contains('LIMIT'),
+            ),
           ),
         );
         expect(
@@ -1217,8 +1226,8 @@ void main() {
       });
 
       test(
-        'claims up to maxSize consecutive text rows in createdAt order '
-        'and transitions each to sending',
+        'claims up to maxSize consecutive same-priority text rows in '
+        'createdAt order and transitions each to sending',
         () async {
           final database = db!;
           for (var i = 0; i < 5; i++) {
@@ -1323,35 +1332,38 @@ void main() {
       );
 
       test(
-        'bundles in createdAt order regardless of priority tier',
+        'bundles in priority order before createdAt order',
         () async {
           final database = db!;
           await database.addOutboxItem(
             OutboxCompanion(
               status: Value(OutboxStatus.pending.index),
-              subject: const Value('high-1'),
+              subject: const Value('normal-old'),
               message: const Value('{}'),
               createdAt: Value(DateTime(2024, 1, 1, 0, 0)),
               updatedAt: Value(DateTime(2024, 1, 1, 0, 0)),
               retries: const Value(0),
-              priority: Value(OutboxPriority.high.index),
+              priority: Value(OutboxPriority.normal.index),
             ),
           );
           await database.addOutboxItem(
             OutboxCompanion(
               status: Value(OutboxStatus.pending.index),
-              subject: const Value('normal-1'),
+              subject: const Value('high-new'),
               message: const Value('{}'),
               createdAt: Value(DateTime(2024, 1, 1, 0, 1)),
               updatedAt: Value(DateTime(2024, 1, 1, 0, 1)),
               retries: const Value(0),
-              priority: Value(OutboxPriority.normal.index),
+              priority: Value(OutboxPriority.high.index),
             ),
           );
 
           final batch = await database.claimNextOutboxBatch(maxSize: 50);
 
-          expect(batch.map((r) => r.id).toList(), [1, 2]);
+          expect(batch.map((r) => r.subject).toList(), [
+            'high-new',
+            'normal-old',
+          ]);
           expect(batch.first.priority, OutboxPriority.high.index);
           expect(batch.last.priority, OutboxPriority.normal.index);
         },
@@ -2247,6 +2259,108 @@ void main() {
       },
     );
 
+    test(
+      'getLastCounterForHost reads the persisted host watermark',
+      () async {
+        final database = db!;
+        const hostId = 'host-1';
+
+        for (var i = 1; i <= 5; i++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(i),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(DateTime(2024, 1, i)),
+              updatedAt: Value(DateTime(2024, 1, i)),
+            ),
+          );
+        }
+        await database.customStatement('ANALYZE');
+
+        final watermarkRows = await database
+            .customSelect(
+              'SELECT last_counter FROM sync_sequence_watermarks '
+              'WHERE host_id = ?',
+              variables: [Variable.withString(hostId)],
+            )
+            .get();
+        expect(watermarkRows, hasLength(1));
+        expect(watermarkRows.first.read<int>('last_counter'), 5);
+        expect(await database.getLastCounterForHost(hostId), 5);
+
+        final plan = await database
+            .customSelect(
+              '''
+              EXPLAIN QUERY PLAN
+              SELECT last_counter
+              FROM sync_sequence_watermarks
+              WHERE host_id = ?
+              ''',
+              variables: [
+                Variable.withString(hostId),
+              ],
+            )
+            .get();
+        final details = plan.map((row) => row.data.toString()).join('\n');
+
+        expect(
+          details,
+          contains('sqlite_autoindex_sync_sequence_watermarks_1'),
+          reason:
+              'the hot watermark path should be a primary-key lookup against '
+              'the persisted watermark table, not a ROW_NUMBER scan over the '
+              'host sequence log',
+        );
+      },
+    );
+
+    test(
+      'getLastCounterForHost lazily warms the persisted watermark for '
+      'pre-v23 rows',
+      () async {
+        final database = db!;
+        const hostId = 'legacy-host';
+
+        for (final counter in [1, 2, 3]) {
+          await database.customUpdate(
+            'INSERT INTO sync_sequence_log '
+            '(host_id, counter, status, created_at, updated_at) '
+            'VALUES (?, ?, ?, ?, ?)',
+            variables: [
+              Variable.withString(hostId),
+              Variable.withInt(counter),
+              Variable.withInt(SyncSequenceStatus.received.index),
+              Variable.withDateTime(DateTime(2024, 1, counter)),
+              Variable.withDateTime(DateTime(2024, 1, counter)),
+            ],
+            updates: {database.syncSequenceLog},
+          );
+        }
+
+        expect(
+          await database
+              .customSelect(
+                'SELECT * FROM sync_sequence_watermarks WHERE host_id = ?',
+                variables: [Variable.withString(hostId)],
+              )
+              .get(),
+          isEmpty,
+        );
+
+        expect(await database.getLastCounterForHost(hostId), 3);
+
+        final watermark = await database
+            .customSelect(
+              'SELECT last_counter FROM sync_sequence_watermarks '
+              'WHERE host_id = ?',
+              variables: [Variable.withString(hostId)],
+            )
+            .getSingle();
+        expect(watermark.read<int>('last_counter'), 3);
+      },
+    );
+
     test('getLastCounterForHost stops at first unresolved gap', () async {
       final database = db!;
       const hostId = 'host-1';
@@ -2291,6 +2405,40 @@ void main() {
       final lastCounter = await database.getLastCounterForHost(hostId);
       expect(lastCounter, 2);
     });
+
+    test(
+      'getLastCounterForHost lowers the persisted watermark when a '
+      'previously resolved row is reopened',
+      () async {
+        final database = db!;
+        const hostId = 'host-reopened';
+
+        for (var counter = 1; counter <= 4; counter++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(DateTime(2024, 1, counter)),
+              updatedAt: Value(DateTime(2024, 1, counter)),
+            ),
+          );
+        }
+        expect(await database.getLastCounterForHost(hostId), 4);
+
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(2),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(DateTime(2024, 1, 2)),
+            updatedAt: Value(DateTime(2024, 1, 5)),
+          ),
+        );
+
+        expect(await database.getLastCounterForHost(hostId), 1);
+      },
+    );
 
     test('getLastCounterForHost returns null for unknown host', () async {
       final database = db!;
@@ -4786,6 +4934,60 @@ void main() {
       },
     );
 
+    test(
+      'findPendingByEntryId uses the pending entry-id partial index',
+      () async {
+        final database = db!;
+
+        for (var i = 0; i < 50; i++) {
+          await database.addOutboxItem(
+            OutboxCompanion(
+              status: Value(OutboxStatus.sent.index),
+              message: Value('{"i":$i}'),
+              subject: Value('sent-$i'),
+              createdAt: Value(DateTime(2024, 1, 1).add(Duration(minutes: i))),
+              updatedAt: Value(DateTime(2024, 1, 1).add(Duration(minutes: i))),
+              outboxEntryId: Value('entry-$i'),
+            ),
+          );
+        }
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            message: const Value('{"version": 1}'),
+            subject: const Value('test-subject'),
+            createdAt: Value(DateTime(2024, 1, 2)),
+            updatedAt: Value(DateTime(2024, 1, 2)),
+            outboxEntryId: const Value('entry-123'),
+          ),
+        );
+        await database.customStatement('ANALYZE');
+
+        final rows = await database
+            .customSelect(
+              'EXPLAIN QUERY PLAN '
+              'SELECT * FROM outbox '
+              'WHERE status = 0 AND outbox_entry_id = ?1 '
+              'ORDER BY created_at DESC LIMIT 1',
+              variables: [const Variable<String>('entry-123')],
+            )
+            .get();
+        final plan = rows.map((row) => row.data.toString()).join('\n');
+
+        expect(
+          plan,
+          contains('idx_outbox_pending_entry_id_created_at'),
+          reason:
+              'literal status = 0 must let SQLite use the pending entry-id '
+              'partial index instead of scanning all pending rows',
+        );
+        expect(
+          plan,
+          isNot(matches(RegExp('SCAN outbox(?! USING)'))),
+        );
+      },
+    );
+
     test('updateOutboxMessage updates message and subject', () async {
       final database = db!;
       final now = DateTime(2024, 1, 1);
@@ -5176,7 +5378,7 @@ void main() {
     });
 
     test(
-      'oldestOutboxItems returns items in createdAt order regardless of priority',
+      'oldestOutboxItems returns items in priority order before createdAt',
       () async {
         // Insert low-priority item first (older)
         await database.addOutboxItem(
@@ -5216,14 +5418,14 @@ void main() {
 
         final items = await database.oldestOutboxItems(10);
         expect(items, hasLength(3));
-        expect(items[0].subject, 'low-old');
+        expect(items[0].subject, 'high-new');
         expect(items[1].subject, 'normal-mid');
-        expect(items[2].subject, 'high-new');
+        expect(items[2].subject, 'low-old');
       },
     );
 
     test(
-      'claimNextOutboxItem claims oldest item first regardless of priority',
+      'claimNextOutboxItem claims high-priority work before older low-priority work',
       () async {
         // Insert low-priority item first (older)
         await database.addOutboxItem(
@@ -5254,7 +5456,7 @@ void main() {
         );
 
         expect(claimed, isNotNull);
-        expect(claimed!.subject, 'low-old');
+        expect(claimed!.subject, 'high-new');
       },
     );
 

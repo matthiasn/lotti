@@ -152,6 +152,13 @@ class SyncEventProcessor {
   final Map<String, Future<String?>> _inFlightDescriptorFetches =
       <String, Future<String?>>{};
 
+  // Scoped cache populated while applying a prepared outbox bundle. Agent
+  // entity dominance still falls back to a single-row lookup for individually
+  // delivered messages, but bundles can seed all local entities up-front via
+  // `AgentRepository.getEntitiesByIds` before the child apply loop starts.
+  final Map<String, AgentDomainEntity?> _prefetchedAgentEntitiesById =
+      <String, AgentDomainEntity?>{};
+
   /// Backfill response handler. Set exactly once during DI boot via the
   /// public setter (declared `late final` so reads before assignment throw
   /// loudly instead of silently no-oping). The set-once assignment, rather
@@ -632,11 +639,10 @@ class SyncEventProcessor {
         // Handle backfill response - another device responded to our request
         await backfillResponseHandler.handleBackfillResponse(syncMessage);
         return null;
-      // Agent entities use last-writer-wins semantics (no vector clock
-      // comparison). Agent state mutations are causally ordered — wakes
-      // run serially and each update overwrites prior state — so
-      // concurrent conflicting edits don't arise in practice.
-      // Maintenance sync serves as catch-up for missed messages.
+      // Agent entities and links are file-backed often enough that stale
+      // descriptors can arrive after a newer local write. The handlers compare
+      // local vs incoming vector clocks before upsert and skip dominated
+      // payloads while still recording the sequence receipt.
       case final SyncAgentEntity msg:
         await _applyAgentEntityMessage(
           msg: msg,
@@ -666,10 +672,13 @@ class SyncEventProcessor {
       case SyncOutboxBundle():
         final bundle = prepared.resolvedOutboxBundle;
         if (bundle == null) return null;
-        await _outboxBundleUnpacker.apply(
+        await _withPrefetchedAgentEntities(
           bundle: bundle,
-          applyChild: (child) =>
-              _applyMessage(prepared: child, journalDb: journalDb),
+          apply: () => _outboxBundleUnpacker.apply(
+            bundle: bundle,
+            applyChild: (child) =>
+                _applyMessage(prepared: child, journalDb: journalDb),
+          ),
         );
         return null;
       case SyncSyncNodeProfile(:final profile):
