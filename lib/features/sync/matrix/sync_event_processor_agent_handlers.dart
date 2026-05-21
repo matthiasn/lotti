@@ -13,10 +13,13 @@ String _buildAgentIndexKey(String rawPath) =>
 extension _AgentHandlers on SyncEventProcessor {
   Future<T> _withPrefetchedAgentEntities<T>({
     required PreparedOutboxSyncBundle bundle,
-    required Future<T> Function() apply,
+    required Future<T> Function(
+      Map<String, AgentDomainEntity?> prefetchedAgentEntitiesById,
+    )
+    apply,
   }) async {
     final repository = agentRepository;
-    if (repository == null) return apply();
+    if (repository == null) return apply(const <String, AgentDomainEntity?>{});
 
     final ids = <String>{};
     for (final child in bundle.children) {
@@ -25,33 +28,13 @@ extension _AgentHandlers on SyncEventProcessor {
         ids.add(entity!.id);
       }
     }
-    if (ids.isEmpty) return apply();
-
-    final previousValues = <String, AgentDomainEntity?>{};
-    final previouslyPresent = <String>{};
-    for (final id in ids) {
-      if (_prefetchedAgentEntitiesById.containsKey(id)) {
-        previouslyPresent.add(id);
-        previousValues[id] = _prefetchedAgentEntitiesById[id];
-      }
-    }
+    if (ids.isEmpty) return apply(const <String, AgentDomainEntity?>{});
 
     final localEntities = await repository.getEntitiesByIds(ids);
-    for (final id in ids) {
-      _prefetchedAgentEntitiesById[id] = localEntities[id];
-    }
-
-    try {
-      return await apply();
-    } finally {
-      for (final id in ids) {
-        if (previouslyPresent.contains(id)) {
-          _prefetchedAgentEntitiesById[id] = previousValues[id];
-        } else {
-          _prefetchedAgentEntitiesById.remove(id);
-        }
-      }
-    }
+    final prefetchedAgentEntitiesById = <String, AgentDomainEntity?>{
+      for (final id in ids) id: localEntities[id],
+    };
+    return apply(prefetchedAgentEntitiesById);
   }
 
   /// Resolves an agent payload from a sync message: inline first, then
@@ -247,6 +230,7 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<void> _applyAgentEntityMessage({
     required SyncAgentEntity msg,
     required AgentDomainEntity? resolvedEntity,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     if (resolvedEntity == null) {
       return;
@@ -255,14 +239,16 @@ extension _AgentHandlers on SyncEventProcessor {
       if (await _localAgentEntityDominates(
         incoming: resolvedEntity,
         jsonPath: msg.jsonPath,
+        prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
       )) {
         await _recordReceivedAgentEntity(msg: msg, entity: resolvedEntity);
         return;
       }
 
       await agentRepository!.upsertEntity(resolvedEntity);
-      if (_prefetchedAgentEntitiesById.containsKey(resolvedEntity.id)) {
-        _prefetchedAgentEntitiesById[resolvedEntity.id] = resolvedEntity;
+      if (prefetchedAgentEntitiesById?.containsKey(resolvedEntity.id) ??
+          false) {
+        prefetchedAgentEntitiesById![resolvedEntity.id] = resolvedEntity;
       }
       // Remove wake subscriptions when an agent is paused or destroyed
       // remotely — mirrors what AgentService.pauseAgent/destroyAgent do
@@ -387,12 +373,13 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<bool> _localAgentEntityDominates({
     required AgentDomainEntity incoming,
     required String? jsonPath,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     final incomingVc = incoming.vectorClock;
     if (incomingVc == null) return false;
 
-    final local = _prefetchedAgentEntitiesById.containsKey(incoming.id)
-        ? _prefetchedAgentEntitiesById[incoming.id]
+    final local = prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false
+        ? prefetchedAgentEntitiesById![incoming.id]
         : await agentRepository!.getEntity(incoming.id);
     final localVc = local?.vectorClock;
     if (local == null || localVc == null) return false;

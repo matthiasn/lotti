@@ -1008,10 +1008,13 @@ void main() {
 
         expect(
           details,
-          contains('idx_outbox_status_priority_created_at'),
+          anyOf(
+            contains('idx_outbox_status_priority_created_at'),
+            contains('idx_outbox_actionable_priority_created_at'),
+          ),
           reason:
               'literal status = 3 + priority/created_at/id ordering must '
-              'match the existing status/priority index after ANALYZE',
+              'match a priority-leading outbox index after ANALYZE',
         );
         expect(
           details,
@@ -2437,6 +2440,14 @@ void main() {
         );
 
         expect(await database.getLastCounterForHost(hostId), 1);
+        final watermark = await database
+            .customSelect(
+              'SELECT last_counter FROM sync_sequence_watermarks '
+              'WHERE host_id = ?',
+              variables: [Variable.withString(hostId)],
+            )
+            .getSingle();
+        expect(watermark.read<int>('last_counter'), 1);
       },
     );
 

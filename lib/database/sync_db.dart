@@ -1021,9 +1021,11 @@ class SyncDatabase extends _$SyncDatabase {
   /// Record or update a sequence log entry.
   /// Uses insertOnConflictUpdate to handle upserts.
   Future<int> recordSequenceEntry(SyncSequenceLogCompanion entry) async {
-    final result = await into(syncSequenceLog).insertOnConflictUpdate(entry);
-    await _refreshSequenceWatermarkAfterMutation(entry);
-    return result;
+    return transaction(() async {
+      final result = await into(syncSequenceLog).insertOnConflictUpdate(entry);
+      await _refreshSequenceWatermarkAfterMutation(entry);
+      return result;
+    });
   }
 
   /// Get the highest contiguous resolved counter for a given host, starting
@@ -1236,24 +1238,47 @@ class SyncDatabase extends _$SyncDatabase {
     int counter,
     SyncSequenceStatus status,
   ) async {
-    final updated =
-        await (update(syncSequenceLog)..where(
-              (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
-            ))
-            .write(
-              SyncSequenceLogCompanion(
-                status: Value(status.index),
-                updatedAt: Value(DateTime.now()),
-              ),
-            );
-    if (updated > 0) {
-      await _refreshSequenceWatermark(
-        hostId: hostId,
-        counter: counter,
-        status: status.index,
-      );
+    return transaction(() async {
+      final updated =
+          await (update(syncSequenceLog)..where(
+                (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
+              ))
+              .write(
+                SyncSequenceLogCompanion(
+                  status: Value(status.index),
+                  updatedAt: Value(DateTime.now()),
+                ),
+              );
+      if (updated > 0) {
+        await _refreshSequenceWatermark(
+          hostId: hostId,
+          counter: counter,
+          status: status.index,
+        );
+      }
+      return updated;
+    });
+  }
+
+  Future<void> _refreshSequenceWatermarksAfterBulkResolved(
+    Iterable<String> hostIds,
+  ) async {
+    for (final hostId in hostIds) {
+      final current = await _readSequenceWatermark(hostId);
+      if (current == null) {
+        await _rebuildSequenceWatermarkForHost(hostId);
+      } else {
+        await _advanceSequenceWatermarkForHost(hostId, current);
+      }
     }
-    return updated;
+  }
+
+  Future<void> _rebuildSequenceWatermarksForHosts(
+    Iterable<String> hostIds,
+  ) async {
+    for (final hostId in hostIds) {
+      await _rebuildSequenceWatermarkForHost(hostId);
+    }
   }
 
   /// Batch increment request counts for multiple entries.
@@ -1438,23 +1463,18 @@ class SyncDatabase extends _$SyncDatabase {
   Future<void> batchInsertSequenceEntries(
     List<SyncSequenceLogCompanion> entries,
   ) async {
-    await batch((b) {
-      b.insertAll(syncSequenceLog, entries, mode: InsertMode.insertOrIgnore);
-    });
     final affectedHosts = <String>{};
     for (final entry in entries) {
       if (entry.hostId.present) {
         affectedHosts.add(entry.hostId.value);
       }
     }
-    for (final hostId in affectedHosts) {
-      final current = await _readSequenceWatermark(hostId);
-      if (current == null) {
-        await _rebuildSequenceWatermarkForHost(hostId);
-      } else {
-        await _advanceSequenceWatermarkForHost(hostId, current);
-      }
-    }
+    await transaction(() async {
+      await batch((b) {
+        b.insertAll(syncSequenceLog, entries, mode: InsertMode.insertOrIgnore);
+      });
+      await _refreshSequenceWatermarksAfterBulkResolved(affectedHosts);
+    });
   }
 
   /// Get backfill statistics grouped by host.
@@ -1834,22 +1854,16 @@ class SyncDatabase extends _$SyncDatabase {
             Variable.withInt(row.read<int>('counter')),
           ],
         ];
-        return customUpdate(
+        final updated = await customUpdate(
           'UPDATE sync_sequence_log '
           'SET status = ?, updated_at = ? '
           'WHERE (host_id, counter) IN (VALUES $placeholders)',
           variables: updateVars,
           updates: {syncSequenceLog},
         );
+        await _refreshSequenceWatermarksAfterBulkResolved(affectedHosts);
+        return updated;
       });
-      for (final hostId in affectedHosts) {
-        final current = await _readSequenceWatermark(hostId);
-        if (current == null) {
-          await _rebuildSequenceWatermarkForHost(hostId);
-        } else {
-          await _advanceSequenceWatermarkForHost(hostId, current);
-        }
-      }
       totalRetired += pageRetired;
       if (pageRetired < pageSize) break;
     }
@@ -1871,25 +1885,25 @@ class SyncDatabase extends _$SyncDatabase {
   ///
   /// Returns the number of rows reset.
   Future<int> resetAllUnresolvableEntries() async {
-    final affectedHosts = await _hostsForSequenceStatus(
-      SyncSequenceStatus.unresolvable.index,
-    );
-    final updated = await customUpdate(
-      'UPDATE sync_sequence_log '
-      'SET status = ?, request_count = 0, '
-      'last_requested_at = NULL, updated_at = ? '
-      'WHERE status = ?',
-      variables: [
-        Variable.withInt(SyncSequenceStatus.missing.index),
-        Variable.withDateTime(DateTime.now()),
-        Variable.withInt(SyncSequenceStatus.unresolvable.index),
-      ],
-      updates: {syncSequenceLog},
-    );
-    for (final hostId in affectedHosts) {
-      await _rebuildSequenceWatermarkForHost(hostId);
-    }
-    return updated;
+    return transaction(() async {
+      final affectedHosts = await _hostsForSequenceStatus(
+        SyncSequenceStatus.unresolvable.index,
+      );
+      final updated = await customUpdate(
+        'UPDATE sync_sequence_log '
+        'SET status = ?, request_count = 0, '
+        'last_requested_at = NULL, updated_at = ? '
+        'WHERE status = ?',
+        variables: [
+          Variable.withInt(SyncSequenceStatus.missing.index),
+          Variable.withDateTime(DateTime.now()),
+          Variable.withInt(SyncSequenceStatus.unresolvable.index),
+        ],
+        updates: {syncSequenceLog},
+      );
+      await _rebuildSequenceWatermarksForHosts(affectedHosts);
+      return updated;
+    });
   }
 
   /// Reset entries that were incorrectly marked as unresolvable back to
@@ -1897,26 +1911,26 @@ class SyncDatabase extends _$SyncDatabase {
   /// a known payload (entryId IS NOT NULL), meaning repopulation found them.
   /// Returns the number of entries reset.
   Future<int> resetUnresolvableWithKnownPayload() async {
-    final affectedHosts = await _hostsForSequenceStatus(
-      SyncSequenceStatus.unresolvable.index,
-      extraWhere: 'AND entry_id IS NOT NULL',
-    );
-    final updated = await customUpdate(
-      'UPDATE sync_sequence_log '
-      'SET status = ?, request_count = 0, '
-      'last_requested_at = NULL, updated_at = ? '
-      'WHERE status = ? AND entry_id IS NOT NULL',
-      variables: [
-        Variable.withInt(SyncSequenceStatus.missing.index),
-        Variable.withDateTime(DateTime.now()),
-        Variable.withInt(SyncSequenceStatus.unresolvable.index),
-      ],
-      updates: {syncSequenceLog},
-    );
-    for (final hostId in affectedHosts) {
-      await _rebuildSequenceWatermarkForHost(hostId);
-    }
-    return updated;
+    return transaction(() async {
+      final affectedHosts = await _hostsForSequenceStatus(
+        SyncSequenceStatus.unresolvable.index,
+        extraWhere: 'AND entry_id IS NOT NULL',
+      );
+      final updated = await customUpdate(
+        'UPDATE sync_sequence_log '
+        'SET status = ?, request_count = 0, '
+        'last_requested_at = NULL, updated_at = ? '
+        'WHERE status = ? AND entry_id IS NOT NULL',
+        variables: [
+          Variable.withInt(SyncSequenceStatus.missing.index),
+          Variable.withDateTime(DateTime.now()),
+          Variable.withInt(SyncSequenceStatus.unresolvable.index),
+        ],
+        updates: {syncSequenceLog},
+      );
+      await _rebuildSequenceWatermarksForHosts(affectedHosts);
+      return updated;
+    });
   }
 
   Future<Set<String>> _hostsForSequenceStatus(

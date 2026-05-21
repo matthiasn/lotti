@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_redundant_argument_values, cascade_invocations
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -227,6 +228,149 @@ void main() {
         verify(() => mockAgentRepo.getEntitiesByIds(any())).called(1);
         verify(() => mockAgentRepo.upsertEntity(incomingNewer)).called(1);
         verifyNever(() => mockAgentRepo.upsertEntity(incomingOlder));
+      },
+    );
+
+    test(
+      'keeps outbox bundle agent prefetch caches isolated across overlaps',
+      () async {
+        final dominantLocal = AgentDomainEntity.agentState(
+          id: 'shared-state',
+          agentId: 'agent-shared',
+          revision: 5,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 19),
+          vectorClock: const VectorClock({'host-A': 5}),
+        );
+        final staleShared = AgentDomainEntity.agentState(
+          id: 'shared-state',
+          agentId: 'agent-shared',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: const VectorClock({'host-A': 1}),
+        );
+        final otherShared = AgentDomainEntity.agentState(
+          id: 'shared-state',
+          agentId: 'agent-shared',
+          revision: 2,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: const VectorClock({'host-A': 2}),
+        );
+        final blockerOne = AgentDomainEntity.agentState(
+          id: 'bundle-one-blocker',
+          agentId: 'agent-blocker',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+        final blockerTwo = AgentDomainEntity.agentState(
+          id: 'bundle-two-blocker',
+          agentId: 'agent-blocker',
+          revision: 1,
+          slots: const AgentSlots(),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+        var prefetchCall = 0;
+        when(
+          () => mockAgentRepo.getEntitiesByIds(any()),
+        ).thenAnswer((invocation) async {
+          final ids = invocation.positionalArguments.single as Iterable<String>;
+          expect(ids.toSet(), {'shared-state'});
+          prefetchCall += 1;
+          if (prefetchCall == 1) {
+            return {'shared-state': dominantLocal};
+          }
+          return const <String, AgentDomainEntity>{};
+        });
+
+        final blockerOneStarted = Completer<void>();
+        final blockerOneRelease = Completer<void>();
+        final blockerTwoStarted = Completer<void>();
+        final blockerTwoRelease = Completer<void>();
+        when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          final entity =
+              invocation.positionalArguments.single as AgentDomainEntity;
+          if (entity.id == blockerOne.id) {
+            if (!blockerOneStarted.isCompleted) {
+              blockerOneStarted.complete();
+            }
+            await blockerOneRelease.future;
+          }
+          if (entity.id == blockerTwo.id) {
+            if (!blockerTwoStarted.isCompleted) {
+              blockerTwoStarted.complete();
+            }
+            await blockerTwoRelease.future;
+          }
+        });
+
+        final eventOne = MockEvent();
+        when(() => eventOne.eventId).thenReturn('event-one');
+        when(() => eventOne.originServerTs).thenReturn(DateTime(2024));
+        when(() => eventOne.text).thenReturn(
+          encodeMessage(
+            SyncMessage.outboxBundle(
+              children: [
+                SyncMessage.agentEntity(
+                  agentEntity: blockerOne,
+                  status: SyncEntryStatus.update,
+                ),
+                SyncMessage.agentEntity(
+                  agentEntity: staleShared,
+                  status: SyncEntryStatus.update,
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final eventTwo = MockEvent();
+        when(() => eventTwo.eventId).thenReturn('event-two');
+        when(() => eventTwo.originServerTs).thenReturn(DateTime(2024));
+        when(() => eventTwo.text).thenReturn(
+          encodeMessage(
+            SyncMessage.outboxBundle(
+              children: [
+                SyncMessage.agentEntity(
+                  agentEntity: blockerTwo,
+                  status: SyncEntryStatus.update,
+                ),
+                SyncMessage.agentEntity(
+                  agentEntity: otherShared,
+                  status: SyncEntryStatus.update,
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final processOne = processor.process(
+          event: eventOne,
+          journalDb: journalDb,
+        );
+        await blockerOneStarted.future;
+
+        final processTwo = processor.process(
+          event: eventTwo,
+          journalDb: journalDb,
+        );
+        await blockerTwoStarted.future;
+
+        blockerOneRelease.complete();
+        await processOne;
+
+        blockerTwoRelease.complete();
+        await processTwo;
+
+        verify(() => mockAgentRepo.getEntitiesByIds(any())).called(2);
+        verifyNever(() => mockAgentRepo.upsertEntity(staleShared));
+        verify(() => mockAgentRepo.upsertEntity(otherShared)).called(1);
       },
     );
 

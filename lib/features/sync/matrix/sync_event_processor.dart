@@ -152,13 +152,6 @@ class SyncEventProcessor {
   final Map<String, Future<String?>> _inFlightDescriptorFetches =
       <String, Future<String?>>{};
 
-  // Scoped cache populated while applying a prepared outbox bundle. Agent
-  // entity dominance still falls back to a single-row lookup for individually
-  // delivered messages, but bundles can seed all local entities up-front via
-  // `AgentRepository.getEntitiesByIds` before the child apply loop starts.
-  final Map<String, AgentDomainEntity?> _prefetchedAgentEntitiesById =
-      <String, AgentDomainEntity?>{};
-
   /// Backfill response handler. Set exactly once during DI boot via the
   /// public setter (declared `late final` so reads before assignment throw
   /// loudly instead of silently no-oping). The set-once assignment, rather
@@ -493,6 +486,7 @@ class SyncEventProcessor {
   Future<SyncApplyDiagnostics?> _applyMessage({
     required PreparedSyncEvent prepared,
     required JournalDb journalDb,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
     final event = prepared.event;
     final syncMessage = prepared.syncMessage;
@@ -647,6 +641,7 @@ class SyncEventProcessor {
         await _applyAgentEntityMessage(
           msg: msg,
           resolvedEntity: prepared.resolvedAgentEntity,
+          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
         );
         return null;
       case final SyncAgentLink msg:
@@ -674,10 +669,13 @@ class SyncEventProcessor {
         if (bundle == null) return null;
         await _withPrefetchedAgentEntities(
           bundle: bundle,
-          apply: () => _outboxBundleUnpacker.apply(
+          apply: (prefetchedAgentEntitiesById) => _outboxBundleUnpacker.apply(
             bundle: bundle,
-            applyChild: (child) =>
-                _applyMessage(prepared: child, journalDb: journalDb),
+            applyChild: (child) => _applyMessage(
+              prepared: child,
+              journalDb: journalDb,
+              prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+            ),
           ),
         );
         return null;
