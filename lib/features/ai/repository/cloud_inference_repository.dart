@@ -61,6 +61,21 @@ class CloudInferenceRepository {
     return null;
   }
 
+  /// Forward [source] and close [owned] when the consumer stops listening or
+  /// the source terminates. Used to clean up [AiInferenceClient] instances
+  /// this repository allocates itself — caller-supplied `overrideClient`s
+  /// are never closed here.
+  Stream<AiStreamChunk> _withOwnedClient(
+    AiInferenceClient owned,
+    Stream<AiStreamChunk> source,
+  ) async* {
+    try {
+      yield* source;
+    } finally {
+      owned.close();
+    }
+  }
+
   Stream<AiStreamChunk> generate(
     String prompt, {
     required String model,
@@ -141,18 +156,19 @@ class CloudInferenceRepository {
       );
     }
 
-    return client
-        .chatCompletionsStream(
-          messages: [
-            if (systemMessage != null) AiSystemMessage(systemMessage),
-            AiUserMessage(AiUserTextContent(prompt)),
-          ],
-          model: model,
-          temperature: temperature,
-          maxCompletionTokens: maxCompletionTokens,
-          tools: tools,
-          toolChoice: _resolveToolChoice(toolChoice, tools),
-        )
+    final source = client.chatCompletionsStream(
+      messages: [
+        if (systemMessage != null) AiSystemMessage(systemMessage),
+        AiUserMessage(AiUserTextContent(prompt)),
+      ],
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: _resolveToolChoice(toolChoice, tools),
+    );
+
+    return (overrideClient == null ? _withOwnedClient(client, source) : source)
         .asBroadcastStream();
   }
 
@@ -170,10 +186,8 @@ class CloudInferenceRepository {
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
   }) {
-    final client =
-        overrideClient ?? AiInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
-
-    // For Ollama, use the dedicated repository
+    // For Ollama, use the dedicated repository (don't allocate an
+    // AiInferenceClient we won't end up using).
     if (provider?.inferenceProviderType == InferenceProviderType.ollama) {
       return _ollamaRepository.generateWithImages(
         prompt: prompt,
@@ -185,6 +199,9 @@ class CloudInferenceRepository {
         systemMessage: systemMessage,
       );
     }
+
+    final client =
+        overrideClient ?? AiInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
 
     // For other providers, use the standard OpenAI-compatible format
     final reasoningEffort =
@@ -203,26 +220,27 @@ class CloudInferenceRepository {
       );
     }
 
-    return client
-        .chatCompletionsStream(
-          messages: [
-            if (systemMessage != null) AiSystemMessage(systemMessage),
-            AiUserMessage(
-              AiUserPartsContent([
-                AiTextPart(prompt),
-                ...images.map(
-                  (image) => AiImagePart('data:image/jpeg;base64,$image'),
-                ),
-              ]),
+    final source = client.chatCompletionsStream(
+      messages: [
+        if (systemMessage != null) AiSystemMessage(systemMessage),
+        AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart(prompt),
+            ...images.map(
+              (image) => AiImagePart('data:image/jpeg;base64,$image'),
             ),
-          ],
-          model: model,
-          temperature: temperature,
-          maxTokens: maxCompletionTokens,
-          tools: tools,
-          toolChoice: _resolveToolChoice(null, tools),
-          reasoningEffort: reasoningEffort,
-        )
+          ]),
+        ),
+      ],
+      model: model,
+      temperature: temperature,
+      maxTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: _resolveToolChoice(null, tools),
+      reasoningEffort: reasoningEffort,
+    );
+
+    return (overrideClient == null ? _withOwnedClient(client, source) : source)
         .asBroadcastStream();
   }
 
@@ -302,9 +320,6 @@ class CloudInferenceRepository {
       );
     }
 
-    final client =
-        overrideClient ?? AiInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
-
     // For Voxtral, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.voxtral) {
       return _voxtralRepository.transcribeAudio(
@@ -355,6 +370,9 @@ class CloudInferenceRepository {
     // For all other providers (OpenAI chat models, Gemini, etc.), use the
     // standard OpenAI-compatible chat completions format with audio content
     // parts.
+    final client =
+        overrideClient ?? AiInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
+
     if (tools != null && tools.isNotEmpty) {
       developer.log(
         'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.name).join(', ')}',
@@ -375,23 +393,24 @@ class CloudInferenceRepository {
           )
         : null;
 
-    return client
-        .chatCompletionsStream(
-          messages: [
-            if (systemMessage != null) AiSystemMessage(systemMessage),
-            AiUserMessage(
-              AiUserPartsContent([
-                AiTextPart(prompt),
-                AiAudioPart(data: effectiveAudioBase64, format: audioFormat),
-              ]),
-            ),
-          ],
-          model: model,
-          maxCompletionTokens: maxCompletionTokens,
-          tools: tools,
-          toolChoice: _resolveToolChoice(null, tools),
-          reasoningEffort: reasoningEffort,
-        )
+    final source = client.chatCompletionsStream(
+      messages: [
+        if (systemMessage != null) AiSystemMessage(systemMessage),
+        AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart(prompt),
+            AiAudioPart(data: effectiveAudioBase64, format: audioFormat),
+          ]),
+        ),
+      ],
+      model: model,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: _resolveToolChoice(null, tools),
+      reasoningEffort: reasoningEffort,
+    );
+
+    return (overrideClient == null ? _withOwnedClient(client, source) : source)
         .asBroadcastStream();
   }
 
@@ -491,7 +510,8 @@ class CloudInferenceRepository {
     }
 
     // For other providers (OpenAI, OpenRouter, Anthropic), use full message
-    // history.
+    // history. This branch always allocates a fresh client, so we always
+    // close it when the stream finishes.
     final client = AiInferenceClient(
       baseUrl: provider.baseUrl,
       apiKey: provider.apiKey,
@@ -504,16 +524,16 @@ class CloudInferenceRepository {
       );
     }
 
-    return client
-        .chatCompletionsStream(
-          messages: messages,
-          model: model,
-          temperature: temperature,
-          maxCompletionTokens: maxCompletionTokens,
-          tools: tools,
-          toolChoice: _resolveToolChoice(toolChoice, tools),
-        )
-        .asBroadcastStream();
+    final source = client.chatCompletionsStream(
+      messages: messages,
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: _resolveToolChoice(toolChoice, tools),
+    );
+
+    return _withOwnedClient(client, source).asBroadcastStream();
   }
 
   GeminiThinkingConfig _resolveGeminiThinkingConfig({

@@ -142,7 +142,7 @@ class ToolCallAccumulator {
       }
       developer.log(
         'Creating tool call ${entry.key}: ${toolCall.functionName} '
-        'with args: ${toolCall.functionArguments}',
+        '(argsLength: ${toolCall.functionArguments.length})',
         name: 'ToolCallAccumulator',
       );
       validToolCalls.add(

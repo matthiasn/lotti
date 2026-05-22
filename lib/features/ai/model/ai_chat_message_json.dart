@@ -92,20 +92,25 @@ extension AiToolChoiceJson on AiToolChoice {
 // Decoders — OpenAI-compatible wire JSON → internal types
 // =============================================================================
 
-/// Parse one streaming chat-completion event. Returns null for events with
-/// no `choices` (e.g. Anthropic-via-OpenRouter ping messages, which the
-/// previous openai_dart implementation had to filter out via error catching).
+/// Parse one streaming chat-completion event.
+///
+/// Returns null for events that carry no meaningful payload (no choices and
+/// no usage) — e.g. Anthropic-via-OpenRouter ping messages, which the previous
+/// openai_dart implementation had to filter out via error catching.
+///
+/// Terminal usage-only events (OpenAI emits one when
+/// `stream_options.include_usage=true`) are preserved with an empty choices
+/// list so callers can extract token accounting from the final chunk.
 AiStreamChunk? aiStreamChunkFromJson(Map<String, dynamic> json) {
-  final choicesJson = json['choices'] as List<dynamic>?;
-  if (choicesJson == null || choicesJson.isEmpty) return null;
-
   final choices = <AiStreamChoice>[];
-  for (final c in choicesJson) {
-    if (c is! Map<String, dynamic>) continue;
-    final choice = _streamChoiceFromJson(c);
-    if (choice != null) choices.add(choice);
+  final choicesJson = json['choices'] as List<dynamic>?;
+  if (choicesJson != null) {
+    for (final c in choicesJson) {
+      if (c is! Map<String, dynamic>) continue;
+      final choice = _streamChoiceFromJson(c);
+      if (choice != null) choices.add(choice);
+    }
   }
-  if (choices.isEmpty) return null;
 
   AiUsage? usage;
   final usageJson = json['usage'] as Map<String, dynamic>?;
@@ -122,6 +127,8 @@ AiStreamChunk? aiStreamChunkFromJson(Map<String, dynamic> json) {
       cachedInputTokens: promptDetails?['cached_tokens'] as int?,
     );
   }
+
+  if (choices.isEmpty && usage == null) return null;
 
   return AiStreamChunk(
     id: json['id'] as String? ?? '',

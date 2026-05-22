@@ -116,17 +116,49 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     ThoughtSignatureCollector? signatureCollector, // Ignored for Ollama
     int? turnIndex, // Ignored for Ollama
   }) {
+    // Resolve tool_call id → function name from prior assistant turns so that
+    // AiToolResultMessage entries can supply the `tool_name` Ollama expects.
+    // Ollama has no `tool_call_id` field — results are matched to calls
+    // positionally via the function name. See
+    // https://docs.ollama.com/capabilities/tool-calling
+    final toolCallIdToName = <String, String>{
+      for (final m in messages.whereType<AiAssistantMessage>())
+        if (m.toolCalls != null)
+          for (final tc in m.toolCalls!) tc.id: tc.name,
+    };
+
     final ollamaMessages = messages.map((msg) {
-      final contentStr = switch (msg) {
-        AiSystemMessage(:final content) => content,
-        AiUserMessage(:final content) =>
-          ContentExtractionHelper.extractTextFromUserContent(content),
-        AiAssistantMessage(:final content) => content ?? '',
-        AiToolResultMessage(:final content) => content,
-      };
-      return <String, dynamic>{
-        'role': msg.role.wire,
-        'content': contentStr,
+      return switch (msg) {
+        AiSystemMessage(:final content) => <String, dynamic>{
+          'role': 'system',
+          'content': content,
+        },
+        AiUserMessage(:final content) => <String, dynamic>{
+          'role': 'user',
+          'content': ContentExtractionHelper.extractTextFromUserContent(
+            content,
+          ),
+        },
+        AiAssistantMessage(:final content, :final toolCalls) =>
+          <String, dynamic>{
+            'role': 'assistant',
+            'content': content ?? '',
+            if (toolCalls != null && toolCalls.isNotEmpty)
+              'tool_calls': toolCalls
+                  .map(
+                    (tc) => {
+                      'type': 'function',
+                      'function': {'name': tc.name, 'arguments': tc.arguments},
+                    },
+                  )
+                  .toList(),
+          },
+        AiToolResultMessage(:final toolCallId, :final content) =>
+          <String, dynamic>{
+            'role': 'tool',
+            'tool_name': toolCallIdToName[toolCallId] ?? toolCallId,
+            'content': content,
+          },
       };
     }).toList();
 

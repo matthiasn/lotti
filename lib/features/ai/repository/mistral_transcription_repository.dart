@@ -219,7 +219,7 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
                 delta: AiStreamDelta(content: text),
               ),
             ],
-            created: 0,
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           );
         } on TranscriptionException {
           rethrow;
