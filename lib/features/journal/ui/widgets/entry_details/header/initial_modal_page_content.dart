@@ -110,6 +110,9 @@ class InitialModalPageContent extends ConsumerWidget {
           linkedFromId: linkedFromId,
         ),
 
+      // Reveal media files in the platform file manager
+      if (isImage || isAudio) ModernShowInFileManagerItem(entryId: entryId),
+
       // Share - only for image/audio entries
       if (isImage || isAudio) ModernShareItem(entryId: entryId),
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
@@ -17,6 +19,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/utils/media_file_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../../helpers/fake_entry_controller.dart';
@@ -64,12 +67,16 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockLinkService mockLinkService;
+  late Directory documentsDirectory;
 
   setUpAll(() {
     mockEditorStateService = MockEditorStateService();
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
     mockLinkService = MockLinkService();
+    documentsDirectory = Directory.systemTemp.createTempSync(
+      'modern_action_items_test_',
+    );
 
     when(
       () => mockUpdateNotifications.updateStream,
@@ -79,11 +86,15 @@ void main() {
       ..registerSingleton<EditorStateService>(mockEditorStateService)
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<LinkService>(mockLinkService);
+      ..registerSingleton<LinkService>(mockLinkService)
+      ..registerSingleton<Directory>(documentsDirectory);
   });
 
   tearDownAll(() async {
     await getIt.reset();
+    if (documentsDirectory.existsSync()) {
+      documentsDirectory.deleteSync(recursive: true);
+    }
   });
 
   JournalEntry buildTextEntry({
@@ -118,7 +129,7 @@ void main() {
       data: ImageData(
         imageId: 'img-uuid',
         imageFile: 'test.jpg',
-        imageDirectory: '/tmp',
+        imageDirectory: '/images/',
         capturedAt: now,
       ),
     );
@@ -135,7 +146,7 @@ void main() {
       ),
       data: AudioData(
         audioFile: 'test.m4a',
-        audioDirectory: '/tmp',
+        audioDirectory: '/audio/',
         dateFrom: now,
         dateTo: now,
         duration: const Duration(seconds: 30),
@@ -427,6 +438,126 @@ void main() {
       await tester.pump();
 
       expect(pageIndexNotifier.value, equals(1));
+    });
+  });
+
+  group('ModernShowInFileManagerItem', () {
+    testWidgets('hidden for text entries', (tester) async {
+      final entry = buildTextEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(entryId: 'entry-1'),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('hidden on unsupported platforms', (tester) async {
+      final entry = buildImageEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.unsupported,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('uses Finder wording on macOS', (tester) async {
+      final entry = buildAudioEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(
+            entryId: 'audio-1',
+            platform: MediaFilePlatform.macos,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
+      expect(find.text('Show in Finder'), findsOneWidget);
+    });
+
+    testWidgets('uses File Explorer wording on Windows', (tester) async {
+      final entry = buildImageEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.windows,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Show in File Explorer'), findsOneWidget);
+    });
+
+    testWidgets('reveals image file path on tap', (tester) async {
+      final entry = buildImageEntry();
+      String? revealedPath;
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(entry)],
+          child: ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.macos,
+            onShowInFileManager: (filePath) async {
+              revealedPath = filePath;
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pump();
+
+      expect(revealedPath, '${documentsDirectory.path}/images/test.jpg');
+    });
+
+    testWidgets('reveals audio file path on tap', (tester) async {
+      final entry = buildAudioEntry();
+      String? revealedPath;
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(entry)],
+          child: ModernShowInFileManagerItem(
+            entryId: 'audio-1',
+            platform: MediaFilePlatform.macos,
+            onShowInFileManager: (filePath) async {
+              revealedPath = filePath;
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pump();
+
+      expect(revealedPath, '${documentsDirectory.path}/audio/test.m4a');
     });
   });
 

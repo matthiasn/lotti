@@ -99,6 +99,8 @@ It composes:
 - [`LinkedEntriesWithTimer`](ui/widgets/linked_entries_with_timer.dart) for outgoing linked entries
 - [`LinkedFromEntriesWidget`](ui/widgets/entry_detail_linked_from.dart) for reverse links
 - checklist-specific linked-from widgets when the current item is a checklist or checklist item
+- media entry Actions menu items for images and audio, including
+  file-manager reveal actions on desktop platforms
 - a floating add action button scoped to the current entry and category and
   lifted above the shared bottom-navigation shell
 - a drag-and-drop target for media import
@@ -342,6 +344,8 @@ Two integration details are worth documenting because they are easy to miss:
 
 - image import and paste flows can trigger automatic image-analysis callbacks supplied by the AI feature
 - creating a timer from a linked context polls for the new linked entry and then publishes a focus intent so the page scrolls to the freshly created timer entry
+- image and audio entries add a desktop-only file-manager reveal action to the
+  existing entry Actions sheet without changing the underlying entity model
 
 ## Repository Responsibilities
 

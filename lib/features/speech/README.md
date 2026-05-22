@@ -232,6 +232,10 @@ The controller subscribes to `media_kit` position, buffer, and completion
 streams. It also exposes `disposeActivePlayer()` so `WindowService` can shut
 the native player down before process exit.
 
+Audio entry-level actions are assembled by the journal Actions sheet. The
+desktop file-manager reveal action resolves persisted `/audio/YYYY-MM-DD/...`
+asset paths through `AudioUtils.getFullAudioPath()`.
+
 ### Actual player state transitions
 
 The player state is simpler than the README used to claim. In the current

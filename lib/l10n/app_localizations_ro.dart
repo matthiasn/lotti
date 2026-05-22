@@ -4515,6 +4515,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get measurableNotFound => 'Masuratoarea nu a fost gasita';
 
   @override
+  String get mediaShowInFileExplorerAction => 'Afișați în Explorer';
+
+  @override
+  String get mediaShowInFilesAction => 'Afișați în Fișiere';
+
+  @override
+  String get mediaShowInFinderAction => 'Afișați în Finder';
+
+  @override
   String get modalityAudioDescription => 'Capacități de procesare audio';
 
   @override

@@ -4478,6 +4478,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get measurableNotFound => 'Messgröße nicht gefunden';
 
   @override
+  String get mediaShowInFileExplorerAction => 'Im Datei-Explorer anzeigen';
+
+  @override
+  String get mediaShowInFilesAction => 'In Dateien anzeigen';
+
+  @override
+  String get mediaShowInFinderAction => 'Im Finder anzeigen';
+
+  @override
   String get modalityAudioDescription => 'Audio-Verarbeitungsfähigkeiten';
 
   @override

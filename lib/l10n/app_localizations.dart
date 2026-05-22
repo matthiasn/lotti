@@ -7756,6 +7756,24 @@ abstract class AppLocalizations {
   /// **'Measurable not found'**
   String get measurableNotFound;
 
+  /// Context menu action that reveals a media file in Windows File Explorer.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in File Explorer'**
+  String get mediaShowInFileExplorerAction;
+
+  /// Context menu action that reveals a media file in the default Linux file manager.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in Files'**
+  String get mediaShowInFilesAction;
+
+  /// Context menu action that reveals a media file in macOS Finder.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in Finder'**
+  String get mediaShowInFinderAction;
+
   /// No description provided for @modalityAudioDescription.
   ///
   /// In en, this message translates to:

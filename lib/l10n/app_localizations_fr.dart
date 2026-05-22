@@ -4517,6 +4517,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get measurableNotFound => 'Élément mesurable introuvable';
 
   @override
+  String get mediaShowInFileExplorerAction =>
+      'Afficher dans l\'Explorateur de fichiers';
+
+  @override
+  String get mediaShowInFilesAction => 'Afficher dans Fichiers';
+
+  @override
+  String get mediaShowInFinderAction => 'Afficher dans le Finder';
+
+  @override
   String get modalityAudioDescription => 'Capacités de traitement audio';
 
   @override

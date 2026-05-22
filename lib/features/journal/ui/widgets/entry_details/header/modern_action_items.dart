@@ -17,17 +17,21 @@ import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/media_file_actions.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:share_plus/share_plus.dart';
+
+typedef MediaFileRevealCallback = Future<void> Function(String filePath);
 
 /// Modern styled toggle starred action item
 class ModernToggleStarredItem extends ConsumerWidget {
@@ -244,6 +248,104 @@ class ModernSpeechItem extends ConsumerWidget {
       onTap: () => pageIndexNotifier.value = 1,
     );
   }
+}
+
+/// Reveals image and audio files in the platform file manager.
+class ModernShowInFileManagerItem extends ConsumerWidget {
+  const ModernShowInFileManagerItem({
+    required this.entryId,
+    this.fileActions = const MediaFileActions(),
+    this.platform,
+    this.onShowInFileManager,
+    super.key,
+  });
+
+  final String entryId;
+  final MediaFileActions fileActions;
+  final MediaFilePlatform? platform;
+  final MediaFileRevealCallback? onShowInFileManager;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provider = entryControllerProvider(id: entryId);
+    final entryState = ref.watch(provider).value;
+    final entry = entryState?.entry;
+    final resolvedPlatform = platform ?? MediaFileActions.currentPlatform();
+
+    if (entryState == null ||
+        entry == null ||
+        entry is! JournalImage && entry is! JournalAudio ||
+        resolvedPlatform == MediaFilePlatform.unsupported) {
+      return const SizedBox.shrink();
+    }
+
+    return ActionMenuListItem(
+      icon: Icons.folder_open_rounded,
+      title: _showInFileManagerTitle(context, resolvedPlatform),
+      onTap: () async {
+        Navigator.of(context).pop();
+
+        try {
+          final filePath = await _resolveMediaFilePath(entry);
+          final callback = onShowInFileManager;
+          if (callback != null) {
+            await callback(filePath);
+          } else {
+            await fileActions.revealInFileManager(
+              filePath,
+              platform: resolvedPlatform,
+            );
+          }
+        } catch (error, stackTrace) {
+          _captureMediaFileActionException(error, stackTrace);
+        }
+      },
+    );
+  }
+
+  String _showInFileManagerTitle(
+    BuildContext context,
+    MediaFilePlatform platform,
+  ) {
+    final messages = context.messages;
+    switch (platform) {
+      case MediaFilePlatform.macos:
+        return messages.mediaShowInFinderAction;
+      case MediaFilePlatform.windows:
+        return messages.mediaShowInFileExplorerAction;
+      case MediaFilePlatform.linux:
+        return messages.mediaShowInFilesAction;
+      case MediaFilePlatform.unsupported:
+        return messages.mediaShowInFilesAction;
+    }
+  }
+}
+
+Future<String> _resolveMediaFilePath(JournalEntity entry) async {
+  if (entry is JournalImage) {
+    return getFullImagePath(entry);
+  }
+  if (entry is JournalAudio) {
+    return AudioUtils.getFullAudioPath(entry);
+  }
+  throw UnsupportedError('Entry does not have a media file path');
+}
+
+void _captureMediaFileActionException(
+  Object error,
+  StackTrace stackTrace,
+) {
+  if (!getIt.isRegistered<LoggingService>()) {
+    debugPrint('Media file action failed: $error');
+    return;
+  }
+
+  getIt<LoggingService>().captureException(
+    error,
+    domain: 'journal',
+    subDomain: 'show_in_file_manager',
+    stackTrace: stackTrace,
+  );
 }
 
 /// Modern styled share action item
