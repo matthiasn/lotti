@@ -23,7 +23,12 @@ sidebarAudioRecordingLinkedEntryProvider = FutureProvider.autoDispose
     });
 
 bool sidebarAudioRecordingHasVisibleContent(WidgetRef ref) {
-  final state = ref.watch(audioRecorderControllerProvider);
+  return ref.watch(
+    audioRecorderControllerProvider.select(_recordingIsVisible),
+  );
+}
+
+bool _recordingIsVisible(AudioRecorderState state) {
   return state.status == AudioRecorderStatus.recording && !state.modalVisible;
 }
 
@@ -46,14 +51,13 @@ class SidebarAudioRecordingSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(audioRecorderControllerProvider);
-    final shouldShow =
-        state.status == AudioRecorderStatus.recording && !state.modalVisible;
+    final shouldShow = ref.watch(
+      audioRecorderControllerProvider.select(_recordingIsVisible),
+    );
 
     final child = shouldShow
-        ? _SidebarAudioRecordingCard(
-            key: const ValueKey('sidebar-audio-recording-card-visible'),
-            state: state,
+        ? const _SidebarAudioRecordingCard(
+            key: ValueKey('sidebar-audio-recording-card-visible'),
           )
         : const SizedBox.shrink(key: _hiddenKey);
 
@@ -72,18 +76,15 @@ class SidebarAudioRecordingSection extends ConsumerWidget {
 }
 
 class _SidebarAudioRecordingCard extends ConsumerWidget {
-  const _SidebarAudioRecordingCard({
-    required this.state,
-    super.key,
-  });
-
-  final AudioRecorderState state;
+  const _SidebarAudioRecordingCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final linkedId = ref.watch(
+      audioRecorderControllerProvider.select((state) => state.linkedId),
+    );
     final tokens = context.designTokens;
     final messages = context.messages;
-    final linkedId = state.linkedId;
     final linkedEntry = linkedId == null
         ? null
         : ref.watch(sidebarAudioRecordingLinkedEntryProvider(linkedId)).value;
@@ -91,14 +92,12 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
       linkedEntry: linkedEntry,
       fallback: messages.taskActionBarAudioRecordingActive,
     );
-    final durationText = formatDuration(state.progress);
 
     return Semantics(
       container: true,
       liveRegion: true,
       label: messages.taskActionBarAudioRecordingActive,
       child: _SignalReactiveCardFrame(
-        dBFS: state.dBFS,
         child: Material(
           key: const Key('sidebar_audio_recording_card'),
           color: Colors.transparent,
@@ -108,7 +107,7 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
             onTap: () => AudioRecordingModal.show(
               context,
               linkedId: linkedId,
-              categoryId: linkedEntry?.meta.categoryId,
+              categoryId: linkedEntry?.categoryId,
               useRootNavigator: false,
             ),
             child: Padding(
@@ -124,11 +123,7 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
                 children: [
                   _RecordingTitleRow(title: title),
                   SizedBox(height: tokens.spacing.step2),
-                  _RecordingBodyRow(
-                    dBFS: state.dBFS,
-                    durationText: durationText,
-                    onStop: () => unawaited(_stop(ref)),
-                  ),
+                  const _RecordingBodyRow(),
                 ],
               ),
             ),
@@ -151,28 +146,20 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
     if (linkedText != null && linkedText.isNotEmpty) return linkedText;
     return fallback;
   }
-
-  Future<void> _stop(WidgetRef ref) async {
-    final controller = ref.read(audioRecorderControllerProvider.notifier);
-    if (state.isRealtimeMode) {
-      await controller.stopRealtime();
-    } else {
-      await controller.stop();
-    }
-  }
 }
 
-class _SignalReactiveCardFrame extends StatelessWidget {
+class _SignalReactiveCardFrame extends ConsumerWidget {
   const _SignalReactiveCardFrame({
-    required this.dBFS,
     required this.child,
   });
 
-  final double dBFS;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dBFS = ref.watch(
+      audioRecorderControllerProvider.select((state) => state.dBFS),
+    );
     final tokens = context.designTokens;
     final signalLevel = AudioRecordingSignalLevel.fromDbfs(dBFS);
     final signal = signalLevel.normalized;
@@ -184,10 +171,8 @@ class _SignalReactiveCardFrame extends StatelessWidget {
     final shadowAlpha = (0.04 + frameSignal * 0.12).clamp(0.0, 0.18);
     final backgroundAlpha = (0.08 + frameSignal * 0.05).clamp(0.0, 0.16);
 
-    return AnimatedContainer(
+    return DecoratedBox(
       key: const Key('sidebar_audio_recording_card_frame'),
-      duration: SidebarAudioRecordingSection.animationDuration,
-      curve: Curves.easeOut,
       decoration: BoxDecoration(
         color: color.withValues(alpha: backgroundAlpha),
         borderRadius: borderRadius,
@@ -228,26 +213,28 @@ class _RecordingTitleRow extends StatelessWidget {
   }
 }
 
-class _RecordingBodyRow extends StatelessWidget {
-  const _RecordingBodyRow({
-    required this.dBFS,
-    required this.durationText,
-    required this.onStop,
-  });
-
-  final double dBFS;
-  final String durationText;
-  final VoidCallback onStop;
+class _RecordingBodyRow extends ConsumerWidget {
+  const _RecordingBodyRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(
+      audioRecorderControllerProvider.select(
+        (state) => (
+          dBFS: state.dBFS,
+          progress: state.progress,
+          isRealtimeMode: state.isRealtimeMode,
+        ),
+      ),
+    );
     final tokens = context.designTokens;
     final errorColor = tokens.colors.alert.error.defaultColor;
+    final durationText = formatDuration(state.progress);
 
     return Row(
       children: [
         AudioRecordingOrb(
-          dBFS: dBFS,
+          dBFS: state.dBFS,
           size: tokens.spacing.step7,
         ),
         SizedBox(width: tokens.spacing.step3),
@@ -260,9 +247,25 @@ class _RecordingBodyRow extends StatelessWidget {
             ),
           ),
         ),
-        _StopAudioRecordingButton(onStop: onStop),
+        _StopAudioRecordingButton(
+          onStop: () => unawaited(
+            _stop(ref, isRealtimeMode: state.isRealtimeMode),
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _stop(
+    WidgetRef ref, {
+    required bool isRealtimeMode,
+  }) async {
+    final controller = ref.read(audioRecorderControllerProvider.notifier);
+    if (isRealtimeMode) {
+      await controller.stopRealtime();
+    } else {
+      await controller.stop();
+    }
   }
 }
 

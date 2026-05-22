@@ -112,10 +112,10 @@ void main() {
 
   BoxDecoration frameDecoration(WidgetTester tester) {
     return tester
-            .widget<AnimatedContainer>(
+            .widget<DecoratedBox>(
               find.byKey(const Key('sidebar_audio_recording_card_frame')),
             )
-            .decoration!
+            .decoration
         as BoxDecoration;
   }
 

@@ -47,6 +47,16 @@ void main() {
       expect(level.normalized, 0);
       expect(level.isClipping, isFalse);
     });
+
+    test('uses value equality for repaint comparisons', () {
+      final first = AudioRecordingSignalLevel.fromDbfs(-30);
+      final second = AudioRecordingSignalLevel.fromDbfs(-30);
+      final third = AudioRecordingSignalLevel.fromDbfs(-12);
+
+      expect(first, second);
+      expect(first.hashCode, second.hashCode);
+      expect(first, isNot(third));
+    });
   });
 
   testWidgets('paints from live dBFS level and advances pulse phase', (

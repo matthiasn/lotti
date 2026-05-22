@@ -45,6 +45,17 @@ class AudioRecordingSignalLevel {
 
   final double normalized;
   final bool isClipping;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is AudioRecordingSignalLevel &&
+            other.normalized == normalized &&
+            other.isClipping == isClipping;
+  }
+
+  @override
+  int get hashCode => Object.hash(normalized, isClipping);
 }
 
 class AudioRecordingOrb extends StatefulWidget {
