@@ -4495,6 +4495,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get measurableNotFound => 'Měřitelný typ nenalezen';
 
   @override
+  String get mediaShowInFileExplorerAction => 'Zobrazit v Průzkumníku souborů';
+
+  @override
+  String get mediaShowInFilesAction => 'Zobrazit v Souborech';
+
+  @override
+  String get mediaShowInFinderAction => 'Zobrazit ve Finderu';
+
+  @override
   String get modalityAudioDescription => 'Schopnosti zpracování zvuku';
 
   @override

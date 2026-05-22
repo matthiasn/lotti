@@ -257,7 +257,7 @@ void main() {
       );
     }
 
-    testWidgets('shows transcription and share items for audio', (
+    testWidgets('shows transcription, reveal, and share items for audio', (
       tester,
     ) async {
       final entry = audioEntry();
@@ -266,6 +266,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.transcribe_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
       expect(find.byIcon(Icons.share_rounded), findsOneWidget);
     });
   });
@@ -312,12 +313,15 @@ void main() {
       );
     }
 
-    testWidgets('shows share and copy items for image', (tester) async {
+    testWidgets('shows reveal, share, and copy items for image', (
+      tester,
+    ) async {
       final entry = imageEntry();
 
       await tester.pumpWidget(buildImageWrapper(entry));
       await tester.pumpAndSettle();
 
+      expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
       expect(find.byIcon(Icons.share_rounded), findsOneWidget);
       expect(find.byIcon(MdiIcons.contentCopy), findsOneWidget);
     });

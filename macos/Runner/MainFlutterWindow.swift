@@ -11,6 +11,8 @@ class MainFlutterWindow: NSWindow {
         
         let registrar = flutterViewController.registrar(forPlugin: "AudioConverter")
         AudioConverter.register(with: registrar)
+        let fileActionsRegistrar = flutterViewController.registrar(forPlugin: "FileActions")
+        FileActions.register(with: fileActionsRegistrar)
         let mlxAudioRegistrar = flutterViewController.registrar(forPlugin: "MlxAudio")
         MlxAudio.register(with: mlxAudioRegistrar)
         RegisterGeneratedPlugins(registry: flutterViewController)

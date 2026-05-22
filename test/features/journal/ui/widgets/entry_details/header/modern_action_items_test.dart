@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
@@ -8,20 +10,19 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_action_items.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:lotti/utils/media_file_actions.dart';
 
 import '../../../../../../helpers/fake_entry_controller.dart';
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_helper.dart';
+import '../../../../../../widget_test_utils.dart';
 
 /// Builds a widget wrapped in a pushed Navigator route so that
 /// Navigator.of(context).pop() can be exercised during tests.
@@ -60,30 +61,28 @@ Widget _buildWithRoute({
 void main() {
   final now = DateTime(2025, 12, 31, 12);
 
-  late MockEditorStateService mockEditorStateService;
-  late MockJournalDb mockJournalDb;
-  late MockUpdateNotifications mockUpdateNotifications;
-  late MockLinkService mockLinkService;
+  late Directory documentsDirectory;
 
-  setUpAll(() {
-    mockEditorStateService = MockEditorStateService();
-    mockJournalDb = MockJournalDb();
-    mockUpdateNotifications = MockUpdateNotifications();
-    mockLinkService = MockLinkService();
+  setUpAll(() async {
+    documentsDirectory = Directory.systemTemp.createTempSync(
+      'modern_action_items_test_',
+    );
 
-    when(
-      () => mockUpdateNotifications.updateStream,
-    ).thenAnswer((_) => const Stream<Set<String>>.empty());
-
-    getIt
-      ..registerSingleton<EditorStateService>(mockEditorStateService)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<LinkService>(mockLinkService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<EditorStateService>(MockEditorStateService())
+          ..registerSingleton<LinkService>(MockLinkService())
+          ..registerSingleton<Directory>(documentsDirectory);
+      },
+    );
   });
 
   tearDownAll(() async {
-    await getIt.reset();
+    await tearDownTestGetIt();
+    if (documentsDirectory.existsSync()) {
+      documentsDirectory.deleteSync(recursive: true);
+    }
   });
 
   JournalEntry buildTextEntry({
@@ -118,7 +117,7 @@ void main() {
       data: ImageData(
         imageId: 'img-uuid',
         imageFile: 'test.jpg',
-        imageDirectory: '/tmp',
+        imageDirectory: '/images/',
         capturedAt: now,
       ),
     );
@@ -135,7 +134,7 @@ void main() {
       ),
       data: AudioData(
         audioFile: 'test.m4a',
-        audioDirectory: '/tmp',
+        audioDirectory: '/audio/',
         dateFrom: now,
         dateTo: now,
         duration: const Duration(seconds: 30),
@@ -427,6 +426,196 @@ void main() {
       await tester.pump();
 
       expect(pageIndexNotifier.value, equals(1));
+    });
+  });
+
+  group('ModernShowInFileManagerItem', () {
+    testWidgets('hidden for text entries', (tester) async {
+      final entry = buildTextEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(entryId: 'entry-1'),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('hidden on unsupported platforms', (tester) async {
+      final entry = buildImageEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.unsupported,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ActionMenuListItem), findsNothing);
+    });
+
+    testWidgets('uses Finder wording on macOS', (tester) async {
+      final entry = buildAudioEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(
+            entryId: 'audio-1',
+            platform: MediaFilePlatform.macos,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.folder_open_rounded), findsOneWidget);
+      expect(find.text('Show in Finder'), findsOneWidget);
+    });
+
+    testWidgets('uses File Explorer wording on Windows', (tester) async {
+      final entry = buildImageEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.windows,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Show in File Explorer'), findsOneWidget);
+    });
+
+    testWidgets('uses Files wording on Linux', (tester) async {
+      final entry = buildImageEntry();
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [createEntryControllerOverride(entry)],
+          child: const ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.linux,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Show in Files'), findsOneWidget);
+    });
+
+    testWidgets('uses MediaFileActions when no callback is injected', (
+      tester,
+    ) async {
+      final entry = buildImageEntry();
+      final runner = _RecordingProcessRunner();
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(entry)],
+          child: ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            fileActions: MediaFileActions(processRunner: runner.call),
+            platform: MediaFilePlatform.windows,
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pump();
+
+      expect(runner.calls, [
+        _ProcessCall(
+          'explorer.exe',
+          ['/select,"${documentsDirectory.path}/images/test.jpg"'],
+        ),
+      ]);
+    });
+
+    testWidgets('reveals image file path on tap', (tester) async {
+      final entry = buildImageEntry();
+      String? revealedPath;
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(entry)],
+          child: ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.macos,
+            onShowInFileManager: (filePath) async {
+              revealedPath = filePath;
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pump();
+
+      expect(revealedPath, '${documentsDirectory.path}/images/test.jpg');
+    });
+
+    testWidgets('reveals audio file path on tap', (tester) async {
+      final entry = buildAudioEntry();
+      String? revealedPath;
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(entry)],
+          child: ModernShowInFileManagerItem(
+            entryId: 'audio-1',
+            platform: MediaFilePlatform.macos,
+            onShowInFileManager: (filePath) async {
+              revealedPath = filePath;
+            },
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pump();
+
+      expect(revealedPath, '${documentsDirectory.path}/audio/test.m4a');
+    });
+
+    testWidgets('captures reveal failures without bubbling to the widget', (
+      tester,
+    ) async {
+      final entry = buildImageEntry();
+
+      await tester.pumpWidget(
+        _buildWithRoute(
+          overrides: [createEntryControllerOverride(entry)],
+          child: ModernShowInFileManagerItem(
+            entryId: 'image-1',
+            platform: MediaFilePlatform.macos,
+            onShowInFileManager: (_) async => throw StateError('boom'),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ActionMenuListItem));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -983,6 +1172,52 @@ void main() {
       },
     );
   });
+}
+
+class _RecordingProcessRunner {
+  final calls = <_ProcessCall>[];
+
+  Future<ProcessResult> call(
+    String executable,
+    List<String> arguments,
+  ) async {
+    calls.add(_ProcessCall(executable, List<String>.from(arguments)));
+    return ProcessResult(calls.length - 1, 0, '', '');
+  }
+}
+
+@immutable
+class _ProcessCall {
+  const _ProcessCall(this.executable, this.arguments);
+
+  final String executable;
+  final List<String> arguments;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ProcessCall &&
+      other.executable == executable &&
+      _listEquals(other.arguments, arguments);
+
+  @override
+  int get hashCode => Object.hash(executable, Object.hashAll(arguments));
+
+  @override
+  String toString() => '_ProcessCall($executable, $arguments)';
+}
+
+bool _listEquals(List<String> a, List<String> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+
+  for (var index = 0; index < a.length; index += 1) {
+    if (a[index] != b[index]) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 class _FakeLinkedEntriesController extends LinkedEntriesController {

@@ -24,6 +24,7 @@
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
 		33CC10F30000AC000003C045 /* AudioConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F20000AC000003C045 /* AudioConverter.swift */; };
+		5A4D00032D00000200000001 /* FileActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A4D00022D00000200000001 /* FileActions.swift */; };
 		5A4D00012D00000100000001 /* MlxAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A4D00002D00000100000001 /* MlxAudio.swift */; };
 		5A4D01012D00000200000001 /* MLXAudioCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01112D00000200000001 /* MLXAudioCore */; };
 		5A4D01022D00000200000001 /* MLXAudioSTT in Frameworks */ = {isa = PBXBuildFile; productRef = 5A4D01122D00000200000001 /* MLXAudioSTT */; };
@@ -71,6 +72,7 @@
 		33CC10F52044A3C60003C045 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		33CC10F72044A3C60003C045 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = Runner/Info.plist; sourceTree = "<group>"; };
 		33CC10F20000AC000003C045 /* AudioConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioConverter.swift; sourceTree = "<group>"; };
+		5A4D00022D00000200000001 /* FileActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileActions.swift; sourceTree = "<group>"; };
 		5A4D00002D00000100000001 /* MlxAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MlxAudio.swift; sourceTree = "<group>"; };
 		33CC11122044BFA00003C045 /* MainFlutterWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainFlutterWindow.swift; sourceTree = "<group>"; };
 		33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Debug.xcconfig"; sourceTree = "<group>"; };
@@ -168,6 +170,7 @@
 				AD4D50B4272DC22C00B0D18C /* RunnerDebug.entitlements */,
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC10F20000AC000003C045 /* AudioConverter.swift */,
+				5A4D00022D00000200000001 /* FileActions.swift */,
 				5A4D00002D00000100000001 /* MlxAudio.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
@@ -378,6 +381,7 @@
 			files = (
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F30000AC000003C045 /* AudioConverter.swift in Sources */,
+				5A4D00032D00000200000001 /* FileActions.swift in Sources */,
 				5A4D00012D00000100000001 /* MlxAudio.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,

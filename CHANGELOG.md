@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1006]
+### Added
+- Audio and image entry Actions menus on desktop can now reveal the backing
+  file in Finder, File Explorer, or Files.
+
 ## [0.9.1005]
 ### Changed
 - AI popup menu now opens a model-override picker when you tap an
