@@ -15,6 +15,7 @@ import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -65,13 +66,7 @@ void main() {
   });
 
   Widget createTestWidget() {
-    return const ProviderScope(
-      child: MaterialApp(
-        home: Scaffold(
-          body: HabitCompletionRateChart(),
-        ),
-      ),
-    );
+    return makeTestableWidgetWithScaffold(const HabitCompletionRateChart());
   }
 
   group('HabitCompletionRateChart', () {
@@ -125,10 +120,9 @@ void main() {
           overrides: [
             habitsControllerProvider.overrideWith(_TestHabitsController.new),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitCompletionRateChart(),
-            ),
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            home: const Scaffold(body: HabitCompletionRateChart()),
           ),
         ),
       );
@@ -147,10 +141,9 @@ void main() {
           overrides: [
             habitsControllerProvider.overrideWith(_EmptyDaysController.new),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitCompletionRateChart(),
-            ),
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            home: const Scaffold(body: HabitCompletionRateChart()),
           ),
         ),
       );
@@ -166,10 +159,9 @@ void main() {
           overrides: [
             habitsControllerProvider.overrideWith(_SingleDayController.new),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitCompletionRateChart(),
-            ),
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            home: const Scaffold(body: HabitCompletionRateChart()),
           ),
         ),
       );
@@ -185,10 +177,9 @@ void main() {
           overrides: [
             habitsControllerProvider.overrideWith(_ZeroBasedController.new),
           ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitCompletionRateChart(),
-            ),
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            home: const Scaffold(body: HabitCompletionRateChart()),
           ),
         ),
       );

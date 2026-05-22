@@ -7,9 +7,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -28,6 +28,10 @@ class HabitCompletionRateChart extends ConsumerWidget
     final state = ref.watch(habitsControllerProvider);
     final controller = ref.read(habitsControllerProvider.notifier);
     final timeSpanDays = state.timeSpanDays;
+    final tokens = context.designTokens;
+    final failColor = tokens.colors.alert.error.defaultColor;
+    final skipColor = tokens.colors.alert.warning.defaultColor;
+    final successColor = tokens.colors.interactive.enabled;
 
     Widget bottomTitleWidgets(double value, TitleMeta meta) {
       var ymd = '';
@@ -139,11 +143,7 @@ class HabitCompletionRateChart extends ConsumerWidget
                 ),
                 borderData: FlBorderData(
                   show: true,
-                  border: Border.all(
-                    color: chartTextColor.withAlpha(
-                      (labelOpacity * 255).floor(),
-                    ),
-                  ),
+                  border: Border.all(color: tokens.colors.decorative.level01),
                 ),
                 minX: 0,
                 maxX: timeSpanDays.toDouble(),
@@ -173,7 +173,7 @@ class HabitCompletionRateChart extends ConsumerWidget
                     showSuccessful: true,
                     showFailed: false,
                     habitDefinitions: state.habitDefinitions,
-                    color: habitSkipColor,
+                    color: skipColor,
                   ),
                   barData(
                     days: state.days,

@@ -5,16 +5,15 @@ import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_page_app_bar.dart';
-import 'package:lotti/features/habits/ui/widgets/habit_streaks.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_summary_line.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_title_row.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class HabitsTabPage extends ConsumerStatefulWidget {
   const HabitsTabPage({super.key});
@@ -36,7 +35,6 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(habitsControllerProvider);
-    final controller = ref.read(habitsControllerProvider.notifier);
 
     final timeSpanDays = state.timeSpanDays;
 
@@ -87,23 +85,14 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         child: CustomScrollView(
           controller: _scrollController,
           slivers: <Widget>[
-            SliverTitleBar(context.messages.settingsHabitsTitle),
+            const SliverToBoxAdapter(child: HabitsTitleRow()),
             const HabitsSliverAppBar(),
+            const SliverToBoxAdapter(child: HabitsSummaryLine()),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 5),
                 child: Column(
                   children: [
-                    if (state.showTimeSpan)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          child: TimeSpanSegmentedControl(
-                            timeSpanDays: timeSpanDays,
-                            onValueChanged: controller.setTimeSpan,
-                          ),
-                        ),
-                      ),
                     if (state.showSearch) const HabitsSearchWidget(),
                     const SizedBox(height: 20),
                     if (showAll)
@@ -161,7 +150,6 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                         );
                       }),
                     const SizedBox(height: 20),
-                    const HabitStreaksCounter(),
                   ],
                 ),
               ),

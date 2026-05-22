@@ -1847,6 +1847,31 @@
   "habitDeleteConfirm": "OUI, SUPPRIMER CETTE HABITUDE",
   "habitDeleteQuestion": "Veux-tu supprimer cette habitude ?",
   "habitPriorityLabel": "Priorité :",
+  "habitsCardLastWeek": "{count}/7 semaine dernière",
+  "@habitsCardLastWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStreakDays": "{count, plural, =1{série de 1 jour} other{série de {count} jours}}",
+  "@habitsCardStreakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripDaysLabel": "{count} j",
+  "@habitsCardStripDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripNowLabel": "auj.",
   "habitsCompletedHeader": "Terminées",
   "habitsFilterAll": "toutes",
   "habitsFilterCompleted": "terminées",
@@ -1856,6 +1881,33 @@
   "habitShowFromLabel": "Afficher de",
   "habitsOpenHeader": "Dues maintenant",
   "habitsPendingLaterHeader": "Plus tard dans la journée",
+  "habitsSummaryCompleted": "{done} habitudes sur {total} terminées aujourd'hui",
+  "@habitsSummaryCompleted": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummaryFailed": "{count} ratées",
+  "@habitsSummaryFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummarySkipped": "{count} ignorées",
+  "@habitsSummarySkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "imageGenerationError": "Échec de la génération d'image",
   "imageGenerationGenerating": "Génération de l'image...",
   "imageGenerationWithReferences": "{count, plural, =0{Aucune image de référence} =1{Avec 1 image de référence} other{Avec {count} images de référence}}",

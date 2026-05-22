@@ -323,11 +323,6 @@ class HabitsController extends _$HabitsController {
     state = state.copyWith(showSearch: !state.showSearch);
   }
 
-  /// Toggles the time span selector visibility.
-  void toggleShowTimeSpan() {
-    state = state.copyWith(showTimeSpan: !state.showTimeSpan);
-  }
-
   /// Toggles a category ID in the selected categories filter.
   void toggleSelectedCategoryIds(String categoryId) {
     final currentIds = state.selectedCategoryIds;

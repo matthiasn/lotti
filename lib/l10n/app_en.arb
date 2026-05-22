@@ -2040,6 +2040,31 @@
   "habitDeleteConfirm": "YES, DELETE THIS HABIT",
   "habitDeleteQuestion": "Do you want to delete this habit?",
   "habitPriorityLabel": "Priority:",
+  "habitsCardLastWeek": "{count}/7 last week",
+  "@habitsCardLastWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStreakDays": "{count, plural, =1{1-day streak} other{{count}-day streak}}",
+  "@habitsCardStreakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripDaysLabel": "{count}d",
+  "@habitsCardStripDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripNowLabel": "now",
   "habitsCompletedHeader": "Completed",
   "habitsFilterAll": "all",
   "habitsFilterCompleted": "done",
@@ -2049,6 +2074,33 @@
   "habitShowFromLabel": "Show from",
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
+  "habitsSummaryCompleted": "{done} of {total} habits completed today",
+  "@habitsSummaryCompleted": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummaryFailed": "{count} failed",
+  "@habitsSummaryFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummarySkipped": "{count} skipped",
+  "@habitsSummarySkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "imageGenerationError": "Failed to generate image",
   "imageGenerationGenerating": "Generating image...",
   "imageGenerationWithReferences": "{count, plural, =0{No reference images} =1{Using 1 reference image} other{Using {count} reference images}}",

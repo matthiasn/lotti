@@ -34,9 +34,6 @@ class MockHabitsController extends HabitsController {
   void toggleShowSearch() {}
 
   @override
-  void toggleShowTimeSpan() {}
-
-  @override
   void toggleSelectedCategoryIds(String categoryId) {}
 
   @override
@@ -142,11 +139,16 @@ void main() {
       await tester.tap(searchButtonFinder);
       await tester.pumpAndSettle();
 
-      final timeSpanButtonFinder = find.byIcon(Icons.calendar_month);
-      expect(timeSpanButtonFinder, findsOneWidget);
-
-      await tester.tap(timeSpanButtonFinder);
-      await tester.pumpAndSettle();
+      // Density picker is now always visible (no toggle). Verify the redesign
+      // segments are wired by reading the widget directly — the per-cell
+      // labels are matched independently in the "changing the density picker"
+      // test below.
+      final picker = tester
+          .widget<TimeSpanSegmentedControl>(
+            find.byType(TimeSpanSegmentedControl),
+          )
+          .segments;
+      expect(picker, const [14, 30, 90]);
 
       final habitCategoryFilterFinder = find.byKey(
         const Key('habit_category_filter'),
@@ -283,21 +285,19 @@ void main() {
     });
 
     testWidgets(
-      'renders TimeSpanSegmentedControl when showTimeSpan is true',
+      'changing the density picker forwards the new value to setTimeSpan',
       (tester) async {
         final testState = HabitsState.initial().copyWith(
           habitDefinitions: [habitFlossing],
           openNow: [habitFlossing],
-          showTimeSpan: true,
           displayFilter: HabitDisplayFilter.openNow,
         );
+        final mockController = MockHabitsController(testState);
 
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
-              ),
+              habitsControllerProvider.overrideWith(() => mockController),
             ],
             child: makeTestableWidgetWithScaffold(
               const HabitsTabPage(),
@@ -308,6 +308,12 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+        // The mobile-width SegmentedButton uses '${days}d' labels.
+        await tester.tap(find.text('90d'));
+        await tester.pumpAndSettle();
+
+        expect(mockController.setTimeSpanCalled, isTrue);
+        expect(mockController.lastTimeSpan, 90);
       },
     );
 

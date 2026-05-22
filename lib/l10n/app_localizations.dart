@@ -6882,6 +6882,30 @@ abstract class AppLocalizations {
   /// **'Priority:'**
   String get habitPriorityLabel;
 
+  /// No description provided for @habitsCardLastWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}/7 last week'**
+  String habitsCardLastWeek(int count);
+
+  /// No description provided for @habitsCardStreakDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1-day streak} other{{count}-day streak}}'**
+  String habitsCardStreakDays(int count);
+
+  /// No description provided for @habitsCardStripDaysLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}d'**
+  String habitsCardStripDaysLabel(int count);
+
+  /// No description provided for @habitsCardStripNowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get habitsCardStripNowLabel;
+
   /// No description provided for @habitsCompletedHeader.
   ///
   /// In en, this message translates to:
@@ -6935,6 +6959,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later today'**
   String get habitsPendingLaterHeader;
+
+  /// No description provided for @habitsSummaryCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} habits completed today'**
+  String habitsSummaryCompleted(int done, int total);
+
+  /// No description provided for @habitsSummaryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} failed'**
+  String habitsSummaryFailed(int count);
+
+  /// No description provided for @habitsSummarySkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} skipped'**
+  String habitsSummarySkipped(int count);
 
   /// No description provided for @imageGenerationError.
   ///

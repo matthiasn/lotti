@@ -1,5 +1,9 @@
 # Habits Feature
 
+The Habits tab follows the Streak Cards redesign (`docs/design/habits_redesign/`): an inline `Habits · YYYY-MM-DD` title, a `due / later / done / all` pill row, a `14 / 30 / 90` day density picker, a stacked-area chart, a single summary line, and one card per active habit. Each card carries always-visible Fail / Skip / Success quick-actions and a Nd → now status strip across the bottom. Tapping the card body opens the completion dialog for backfill, comments, and the same set of actions.
+
+All colors, spacing, typography, and radii on these surfaces resolve through the Lotti design system tokens (`tokens.colors.*`, `tokens.spacing.*`, `tokens.typography.*`, `tokens.radii.*`). The status palette is the same end-to-end: success uses `interactive.enabled` (Lotti teal), fail uses `alert.error.defaultColor`, skip uses `alert.warning.defaultColor`. The `habitCompletionColor(tokens, type)` helper is the single source of truth for cell colors so the chart and the per-card strip cannot drift.
+
 The `habits` feature sits on top of two different records:
 
 - `HabitDefinition`, which describes the recurring thing
@@ -45,11 +49,13 @@ lib/features/habits/
         ├── habit_completion_card.dart           # Habit completion UI card
         ├── habit_completion_color_icon.dart     # Completion status icon
         ├── habit_dashboard.dart                 # Dashboard integration widget
-        ├── habit_page_app_bar.dart              # Habits page app bar
-        ├── habit_streaks.dart                   # Streak tracking display
-        ├── habits_filter.dart                   # Habit filtering controls
-        ├── habits_search.dart                   # Habit search
-        └── status_segmented_control.dart        # Status filter segmented control
+        ├── habit_day_strip.dart                 # 7- / 40-day status strip used by both card and dialog
+        ├── habit_page_app_bar.dart              # Filter pills + density picker + chart
+        ├── habits_filter.dart                   # Habit category filter
+        ├── habits_search.dart                   # Habit name/description search
+        ├── habits_summary_line.dart             # "N of M habits completed today · X failed · Y skipped"
+        ├── habits_title_row.dart                # "Habits · YYYY-MM-DD" top-of-page row
+        └── status_segmented_control.dart        # due / later / done / all pill row
 
 Related code outside this folder:
 lib/features/settings/ui/pages/habits/
@@ -338,7 +344,7 @@ Delete is a soft delete via `deletedAt`, not a hard remove.
 ## Current Constraints And Reality Checks
 
 - The model has `autoCompleteRule`, and the settings controller still has rule-removal helpers, but the autocomplete widget is currently commented out on the details page.
-- `shortStreakCount` and `longStreakCount` are still computed in `HabitsController`, but `HabitStreaksCounter` currently renders only "`X out of Y habits completed today`". The streak text is commented out.
+- `shortStreakCount` and `longStreakCount` are still computed in `HabitsController` but unused by the UI today. The completion summary is now rendered by `HabitsSummaryLine` ("N of M habits completed today · X failed · Y skipped"); the old `HabitStreaksCounter` widget was removed.
 - Text search is local page filtering, not repository querying.
 - The "due now" split is based only on daily `showFrom` and current clock time.
 

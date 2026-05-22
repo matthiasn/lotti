@@ -3926,6 +3926,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitPriorityLabel => 'Priority:';
 
   @override
+  String habitsCardLastWeek(int count) {
+    return '$count/7 last week';
+  }
+
+  @override
+  String habitsCardStreakDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count-day streak',
+      one: '1-day streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitsCardStripDaysLabel(int count) {
+    return '${count}d';
+  }
+
+  @override
+  String get habitsCardStripNowLabel => 'now';
+
+  @override
   String get habitsCompletedHeader => 'Completed';
 
   @override
@@ -3951,6 +3975,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitsPendingLaterHeader => 'Later today';
+
+  @override
+  String habitsSummaryCompleted(int done, int total) {
+    return '$done of $total habits completed today';
+  }
+
+  @override
+  String habitsSummaryFailed(int count) {
+    return '$count failed';
+  }
+
+  @override
+  String habitsSummarySkipped(int count) {
+    return '$count skipped';
+  }
 
   @override
   String get imageGenerationError => 'Failed to generate image';

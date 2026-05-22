@@ -3998,6 +3998,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitPriorityLabel => 'Prioritate:';
 
   @override
+  String habitsCardLastWeek(int count) {
+    return '$count/7 săptămâna trecută';
+  }
+
+  @override
+  String habitsCardStreakDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'serie de $count de zile',
+      few: 'serie de $count zile',
+      one: 'serie de 1 zi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitsCardStripDaysLabel(int count) {
+    return '$count z';
+  }
+
+  @override
+  String get habitsCardStripNowLabel => 'azi';
+
+  @override
   String get habitsCompletedHeader => 'Finalizate';
 
   @override
@@ -4023,6 +4048,21 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitsPendingLaterHeader => 'Mai târziu astăzi';
+
+  @override
+  String habitsSummaryCompleted(int done, int total) {
+    return '$done din $total obiceiuri finalizate astăzi';
+  }
+
+  @override
+  String habitsSummaryFailed(int count) {
+    return '$count eșuate';
+  }
+
+  @override
+  String habitsSummarySkipped(int count) {
+    return '$count omise';
+  }
 
   @override
   String get imageGenerationError => 'Generarea imaginii a eșuat';

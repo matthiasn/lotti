@@ -42,6 +42,7 @@
       <description>
           <p>AI popup menu now opens a model-override picker when you tap an Analyze Image skill, mirroring the existing Transcribe flow — the bottom sheet lists every image-capable model you've configured so you can route one specific photo to a different model without editing the inference profile. Single-model setups short-circuit to preserve the one-tap flow; a stale override falls back to the profile slot.</p>
           <p>Upgraded Flutter to 3.44.0 and aligned the Flatpak Flathub manifest template with the repository FVM toolchain pin, so source builds submitted to Flathub use the same Flutter SDK as local and CI builds.</p>
+          <p>Redesigned the Habits tab as Streak Cards: inline title with today's date, always-visible status pills and density picker (14 / 30 / 90 days, default 30), per-card 40-day strip with always-visible Fail / Skip / Success quick-actions, and a post-chart summary line. The completion dialog now shows a last-7-days mini strip and matches the card's outline-fail / outline-skip / filled-success action bar. All habits surfaces now read colors, spacing, typography, and radii from the Lotti design system tokens.</p>
       </description>
     </release>
     <release version="0.9.1003" date="2026-05-18">

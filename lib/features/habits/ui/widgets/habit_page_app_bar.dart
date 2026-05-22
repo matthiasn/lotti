@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_filter.dart';
 import 'package:lotti/features/habits/ui/widgets/status_segmented_control.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
+import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
 class HabitsSliverAppBar extends ConsumerWidget {
   const HabitsSliverAppBar({
@@ -42,14 +44,11 @@ class HabitsSliverAppBar extends ConsumerWidget {
                         : context.colorScheme.outline,
                   ),
                 ),
-                IconButton(
-                  onPressed: controller.toggleShowTimeSpan,
-                  icon: Icon(
-                    Icons.calendar_month,
-                    color: state.showTimeSpan
-                        ? Theme.of(context).primaryColor
-                        : context.colorScheme.outline,
-                  ),
+                const SizedBox(width: 8),
+                TimeSpanSegmentedControl(
+                  timeSpanDays: state.timeSpanDays,
+                  onValueChanged: controller.setTimeSpan,
+                  segments: habitsDensitySegments,
                 ),
                 if (state.minY > 20)
                   IconButton(

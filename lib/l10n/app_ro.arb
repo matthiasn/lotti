@@ -1847,6 +1847,31 @@
   "habitDeleteConfirm": "DA, ȘTERGEȚI ACEST OBICEI",
   "habitDeleteQuestion": "Doriți să ștergeți acest obicei?",
   "habitPriorityLabel": "Prioritate:",
+  "habitsCardLastWeek": "{count}/7 săptămâna trecută",
+  "@habitsCardLastWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStreakDays": "{count, plural, =1{serie de 1 zi} few{serie de {count} zile} other{serie de {count} de zile}}",
+  "@habitsCardStreakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripDaysLabel": "{count} z",
+  "@habitsCardStripDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripNowLabel": "azi",
   "habitsCompletedHeader": "Finalizate",
   "habitsFilterAll": "toate",
   "habitsFilterCompleted": "finalizate",
@@ -1856,6 +1881,33 @@
   "habitShowFromLabel": "Afișați de la",
   "habitsOpenHeader": "Scadente acum",
   "habitsPendingLaterHeader": "Mai târziu astăzi",
+  "habitsSummaryCompleted": "{done} din {total} obiceiuri finalizate astăzi",
+  "@habitsSummaryCompleted": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummaryFailed": "{count} eșuate",
+  "@habitsSummaryFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummarySkipped": "{count} omise",
+  "@habitsSummarySkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "imageGenerationError": "Generarea imaginii a eșuat",
   "imageGenerationGenerating": "Se generează imaginea...",
   "imageGenerationWithReferences": "{count, plural, =0{Fără imagini de referință} =1{Cu 1 imagine de referință} few{Cu {count} imagini de referință} other{Cu {count} de imagini de referință}}",

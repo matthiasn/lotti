@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/habits/state/habit_completion_controller.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_day_strip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -15,13 +18,11 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class HabitDialog extends StatefulWidget {
+class HabitDialog extends ConsumerStatefulWidget {
   const HabitDialog({
     required this.habitId,
     required this.themeData,
@@ -34,10 +35,10 @@ class HabitDialog extends StatefulWidget {
   final ThemeData themeData;
 
   @override
-  State<HabitDialog> createState() => _HabitDialogState();
+  ConsumerState<HabitDialog> createState() => _HabitDialogState();
 }
 
-class _HabitDialogState extends State<HabitDialog> {
+class _HabitDialogState extends ConsumerState<HabitDialog> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
   final _formKey = GlobalKey<FormBuilderState>();
 
@@ -49,29 +50,30 @@ class _HabitDialogState extends State<HabitDialog> {
     scope: HotKeyScope.inapp,
   );
 
-  Future<void> saveHabit(HabitCompletionType completionType) async {
+  Future<void> _saveHabit(HabitCompletionType completionType) async {
     _formKey.currentState!.save();
     Navigator.pop(context);
 
-    if (validate()) {
-      final formData = _formKey.currentState?.value;
-      final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
-        widget.habitId,
-      );
-
-      final habitCompletion = HabitCompletionData(
-        habitId: widget.habitId,
-        dateTo: !_startReset ? DateTime.now() : _started,
-        dateFrom: _started,
-        completionType: completionType,
-      );
-
-      await persistenceLogic.createHabitCompletionEntry(
-        data: habitCompletion,
-        comment: formData!['comment'] as String,
-        habitDefinition: habitDefinition,
-      );
+    if (!_validate()) {
+      return;
     }
+    final formData = _formKey.currentState?.value;
+    final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
+      widget.habitId,
+    );
+
+    final habitCompletion = HabitCompletionData(
+      habitId: widget.habitId,
+      dateTo: !_startReset ? DateTime.now() : _started,
+      dateFrom: _started,
+      completionType: completionType,
+    );
+
+    await persistenceLogic.createHabitCompletionEntry(
+      data: habitCompletion,
+      comment: formData!['comment'] as String,
+      habitDefinition: habitDefinition,
+    );
   }
 
   @override
@@ -91,7 +93,7 @@ class _HabitDialogState extends State<HabitDialog> {
     if (isDesktop) {
       hotKeyManager.register(
         hotkeyCmdS,
-        keyDownHandler: (hotKey) => saveHabit(HabitCompletionType.success),
+        keyDownHandler: (hotKey) => _saveHabit(HabitCompletionType.success),
       );
     }
   }
@@ -104,9 +106,10 @@ class _HabitDialogState extends State<HabitDialog> {
     }
   }
 
-  bool validate() {
-    if (_formKey.currentState != null) {
-      return _formKey.currentState!.validate();
+  bool _validate() {
+    final formState = _formKey.currentState;
+    if (formState != null) {
+      return formState.validate();
     }
     return false;
   }
@@ -122,16 +125,34 @@ class _HabitDialogState extends State<HabitDialog> {
     if (habitDefinition == null) {
       return const SizedBox.shrink();
     }
-    final timeSpanDays = isDesktop ? 30 : 14;
 
-    final rangeStart = DateTime.now().dayAtMidnight.subtract(
-      Duration(days: timeSpanDays),
+    final tokens = widget.themeData.extension<DsTokens>() ?? dsTokensDark;
+    final themeWithTokens = widget.themeData.extension<DsTokens>() != null
+        ? widget.themeData
+        : widget.themeData.copyWith(
+            extensions: <ThemeExtension<dynamic>>[tokens],
+          );
+
+    final stripRangeStart = DateTime.now().dayAtMidnight.subtract(
+      const Duration(days: 6),
+    );
+    final stripRangeEnd = getEndOfToday();
+    final stripResults = ref
+        .watch(
+          habitCompletionControllerProvider(
+            habitId: widget.habitId,
+            rangeStart: stripRangeStart,
+            rangeEnd: stripRangeEnd,
+          ),
+        )
+        .value;
+
+    final dashboardRangeStart = DateTime.now().dayAtMidnight.subtract(
+      Duration(days: isDesktop ? 30 : 14),
     );
 
-    final rangeEnd = getEndOfToday();
-
     return Theme(
-      data: widget.themeData,
+      data: themeWithTokens,
       child: Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -143,8 +164,8 @@ class _HabitDialogState extends State<HabitDialog> {
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 280),
                   child: DashboardWidget(
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
+                    rangeStart: dashboardRangeStart,
+                    rangeEnd: getEndOfToday(),
                     dashboardId: habitDefinition.dashboardId!,
                   ),
                 ),
@@ -152,20 +173,16 @@ class _HabitDialogState extends State<HabitDialog> {
             Align(
               alignment: Alignment.bottomCenter,
               heightFactor: habitDefinition.dashboardId != null ? 10 : 1,
-              child: Card(
-                margin: EdgeInsets.zero,
-                elevation: 10,
+              child: Material(
+                color: tokens.colors.background.level02,
                 shape: RoundedRectangleBorder(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(tokens.radii.xl),
                   ),
-                  side: BorderSide(
-                    color: (context.textTheme.titleLarge?.color ?? Colors.black)
-                        .withAlpha(127),
-                  ),
+                  side: BorderSide(color: tokens.colors.decorative.level01),
                 ),
-                child: Container(
+                elevation: 10,
+                child: ConstrainedBox(
                   constraints: BoxConstraints(
                     maxWidth: 500,
                     minWidth: isMobile
@@ -173,11 +190,11 @@ class _HabitDialogState extends State<HabitDialog> {
                         : 250,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 30,
-                      top: 5,
-                      right: 10,
-                      bottom: 5,
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spacing.step5,
+                      tokens.spacing.step2,
+                      tokens.spacing.step3,
+                      tokens.spacing.step3,
                     ),
                     child: FormBuilder(
                       key: _formKey,
@@ -187,16 +204,22 @@ class _HabitDialogState extends State<HabitDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
                                 child: Text(
                                   habitDefinition.name,
-                                  style: habitCompletionHeaderStyle,
+                                  style: tokens
+                                      .typography
+                                      .styles
+                                      .subtitle
+                                      .subtitle1
+                                      .copyWith(
+                                        color: tokens.colors.text.highEmphasis,
+                                      ),
                                 ),
                               ),
                               IconButton(
-                                padding: const EdgeInsets.all(10),
+                                padding: EdgeInsets.all(tokens.spacing.step2),
                                 icon: Semantics(
                                   label: 'close habit completion',
                                   child: const Icon(Icons.close_rounded),
@@ -205,94 +228,49 @@ class _HabitDialogState extends State<HabitDialog> {
                               ),
                             ],
                           ),
+                          if (stripResults != null && stripResults.isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: tokens.spacing.step1,
+                                bottom: tokens.spacing.step3,
+                              ),
+                              child: HabitDayStrip(
+                                results: stripResults,
+                                semanticPrefix: habitDefinition.name,
+                              ),
+                            ),
                           if (habitDefinition.description.isNotEmpty)
                             HabitDescription(habitDefinition),
-                          Padding(
-                            padding: const EdgeInsets.only(right: 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                inputSpacerSmall,
-                                DateTimeField(
-                                  dateTime: _started,
-                                  labelText: context.messages.addHabitDateLabel,
-                                  setDateTime: (picked) {
-                                    setState(() {
-                                      _startReset = true;
-                                      _started = picked;
-                                    });
-                                  },
-                                ),
-                                inputSpacerSmall,
-                                FormBuilderTextField(
-                                  initialValue: '',
-                                  key: const Key('habit_comment_field'),
-                                  decoration: createDialogInputDecoration(
-                                    labelText:
-                                        context.messages.addHabitCommentLabel,
-                                    themeData: Theme.of(context),
-                                  ),
-                                  minLines: 1,
-                                  maxLines: 10,
-                                  keyboardAppearance: Theme.of(
-                                    context,
-                                  ).brightness,
-                                  name: 'comment',
-                                ),
-                              ],
-                            ),
+                          SizedBox(height: tokens.spacing.step2),
+                          DateTimeField(
+                            dateTime: _started,
+                            labelText: context.messages.addHabitDateLabel,
+                            setDateTime: (picked) {
+                              setState(() {
+                                _startReset = true;
+                                _started = picked;
+                              });
+                            },
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              left: 20,
-                              right: 20,
-                              top: 5,
+                          SizedBox(height: tokens.spacing.step2),
+                          FormBuilderTextField(
+                            initialValue: '',
+                            key: const Key('habit_comment_field'),
+                            decoration: createDialogInputDecoration(
+                              labelText: context.messages.addHabitCommentLabel,
+                              themeData: Theme.of(context),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: LottiTertiaryButton(
-                                    key: const Key('habit_fail'),
-                                    onPressed: () =>
-                                        saveHabit(HabitCompletionType.fail),
-                                    label: context
-                                        .messages
-                                        .completeHabitFailButton,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: LottiTertiaryButton(
-                                    key: const Key('habit_skip'),
-                                    onPressed: () =>
-                                        saveHabit(HabitCompletionType.skip),
-                                    label: context
-                                        .messages
-                                        .completeHabitSkipButton,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child:
-                                      LottiTertiaryButton(
-                                            key: const Key('habit_save'),
-                                            onPressed: () => saveHabit(
-                                              HabitCompletionType.success,
-                                            ),
-                                            label: context
-                                                .messages
-                                                .completeHabitSuccessButton,
-                                          )
-                                          .animate(autoPlay: true)
-                                          .shimmer(
-                                            delay: 1.seconds,
-                                            duration: .7.seconds,
-                                            color: Theme.of(context).cardColor,
-                                          ),
-                                ),
-                              ],
-                            ),
+                            minLines: 1,
+                            maxLines: 10,
+                            keyboardAppearance: Theme.of(context).brightness,
+                            name: 'comment',
+                          ),
+                          SizedBox(height: tokens.spacing.step3),
+                          _DialogActions(
+                            onFail: () => _saveHabit(HabitCompletionType.fail),
+                            onSkip: () => _saveHabit(HabitCompletionType.skip),
+                            onSuccess: () =>
+                                _saveHabit(HabitCompletionType.success),
                           ),
                         ],
                       ),
@@ -308,16 +286,138 @@ class _HabitDialogState extends State<HabitDialog> {
   }
 }
 
-class HabitDescription extends StatelessWidget {
-  const HabitDescription(
-    this.habitDefinition, {
+class _DialogActions extends StatelessWidget {
+  const _DialogActions({
+    required this.onFail,
+    required this.onSkip,
+    required this.onSuccess,
+  });
+
+  final VoidCallback onFail;
+  final VoidCallback onSkip;
+  final VoidCallback onSuccess;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Row(
+      children: [
+        _OutlineAction(
+          key: const Key('habit_fail'),
+          label: context.messages.completeHabitFailButton,
+          color: tokens.colors.alert.error.defaultColor,
+          onPressed: onFail,
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        _OutlineAction(
+          key: const Key('habit_skip'),
+          label: context.messages.completeHabitSkipButton,
+          color: tokens.colors.alert.warning.defaultColor,
+          onPressed: onSkip,
+        ),
+        const Spacer(),
+        _FilledAction(
+          key: const Key('habit_save'),
+          label: context.messages.completeHabitSuccessButton,
+          onPressed: onSuccess,
+        ),
+      ],
+    );
+  }
+}
+
+class _OutlineAction extends StatelessWidget {
+  const _OutlineAction({
+    required this.label,
+    required this.color,
+    required this.onPressed,
     super.key,
   });
+
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Material(
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        side: BorderSide(color: color, width: 1.2),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step4,
+            vertical: tokens.spacing.step2,
+          ),
+          child: Text(
+            label,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilledAction extends StatelessWidget {
+  const _FilledAction({
+    required this.label,
+    required this.onPressed,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final teal = tokens.colors.interactive.enabled;
+
+    return Material(
+      color: teal,
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step2,
+          ),
+          child: Text(
+            label,
+            style: tokens.typography.styles.body.bodyMedium.copyWith(
+              color: tokens.colors.text.onInteractiveAlert,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class HabitDescription extends StatelessWidget {
+  const HabitDescription(this.habitDefinition, {super.key});
 
   final HabitDefinition? habitDefinition;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
     Future<void> onOpen(LinkableElement link) async {
       final uri = Uri.tryParse(link.url);
 
@@ -337,15 +437,15 @@ class HabitDescription extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: EdgeInsets.only(top: tokens.spacing.step2),
       child: Linkify(
         onOpen: onOpen,
         text: '${habitDefinition?.description}',
-        style: habitCompletionHeaderStyle.copyWith(fontSize: fontSizeMedium),
-        linkStyle: habitCompletionHeaderStyle.copyWith(
-          fontSize: fontSizeMedium,
-          color: Theme.of(context).primaryColor.darken(25),
-          decoration: TextDecoration.none,
+        style: tokens.typography.styles.body.bodyMedium.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+        linkStyle: tokens.typography.styles.body.bodyMedium.copyWith(
+          color: tokens.colors.interactive.enabled,
         ),
       ),
     );

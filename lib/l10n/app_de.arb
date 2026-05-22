@@ -1847,6 +1847,31 @@
   "habitDeleteConfirm": "JA, DIESE GEWOHNHEIT LÖSCHEN",
   "habitDeleteQuestion": "Möchtest du diese Gewohnheit löschen?",
   "habitPriorityLabel": "Priorität:",
+  "habitsCardLastWeek": "{count}/7 letzte Woche",
+  "@habitsCardLastWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStreakDays": "{count, plural, =1{1-Tages-Streak} other{{count}-Tage-Streak}}",
+  "@habitsCardStreakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripDaysLabel": "{count} T",
+  "@habitsCardStripDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripNowLabel": "heute",
   "habitsCompletedHeader": "Abgeschlossen",
   "habitsFilterAll": "alle",
   "habitsFilterCompleted": "erledigt",
@@ -1856,6 +1881,33 @@
   "habitShowFromLabel": "Anzeigen ab",
   "habitsOpenHeader": "Jetzt fällig",
   "habitsPendingLaterHeader": "Später heute",
+  "habitsSummaryCompleted": "{done} von {total} Gewohnheiten heute erledigt",
+  "@habitsSummaryCompleted": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummaryFailed": "{count} verfehlt",
+  "@habitsSummaryFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummarySkipped": "{count} übersprungen",
+  "@habitsSummarySkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "imageGenerationError": "Bildgenerierung fehlgeschlagen",
   "imageGenerationGenerating": "Bild wird generiert...",
   "imageGenerationWithReferences": "{count, plural, =0{Keine Referenzbilder} =1{Mit 1 Referenzbild} other{Mit {count} Referenzbildern}}",

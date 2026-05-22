@@ -6,15 +6,16 @@ import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_day_strip.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class HabitCompletionCard extends ConsumerStatefulWidget {
@@ -37,16 +38,16 @@ class HabitCompletionCard extends ConsumerStatefulWidget {
 }
 
 class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
-  void onTapAdd({String? dateString}) {
-    final height = MediaQuery.of(context).size.height;
-    final maxHeight = height * 0.8;
+  void _openDialog({String? dateString}) {
     final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
       widget.habitId,
     );
-
     if (habitDefinition == null) {
       return;
     }
+
+    final height = MediaQuery.of(context).size.height;
+    final maxHeight = height * 0.8;
 
     ModalUtils.showBottomSheet<void>(
       context: context,
@@ -62,6 +63,26 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
           dateString: dateString,
         );
       },
+    );
+  }
+
+  Future<void> _logCompletion(HabitCompletionType type) async {
+    final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
+      widget.habitId,
+    );
+    if (habitDefinition == null) {
+      return;
+    }
+
+    final now = DateTime.now();
+    await getIt<PersistenceLogic>().createHabitCompletionEntry(
+      data: HabitCompletionData(
+        habitId: habitDefinition.id,
+        dateFrom: now,
+        dateTo: now,
+        completionType: type,
+      ),
+      habitDefinition: habitDefinition,
     );
   }
 
@@ -96,114 +117,296 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
           HabitCompletionType.skip,
         }.contains(results.last.completionType);
 
-    final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
+    final tokens = context.designTokens;
+
+    final categoryName = getIt<EntitiesCacheService>()
+        .getCategoryById(habitDefinition.categoryId)
+        ?.name;
+
+    final streak = _trailingSuccessStreak(results);
+    final lastWeek = _lastWeekSuccessCount(results);
 
     return Opacity(
       opacity: completedToday ? 0.75 : 1,
-      child: Card(
-        child: ListTile(
-          contentPadding: const EdgeInsets.only(
-            left: 10,
-            right: 10,
-          ),
-          title: Column(
-            children: [
-              Row(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
+        child: Material(
+          color: tokens.colors.background.level02,
+          borderRadius: BorderRadius.circular(tokens.radii.l),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: _openDialog,
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.cardPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Visibility(
-                    visible: habitDefinition.priority ?? false,
-                    child: const Padding(
-                      padding: EdgeInsets.only(right: 5),
-                      child: Icon(
-                        Icons.star,
-                        color: starredGold,
+                  Row(
+                    children: [
+                      CategoryIconCompact(
+                        habitDefinition.categoryId,
+                        size: CategoryIconConstants.iconSizeMedium,
                       ),
-                    ),
-                  ),
-                  Flexible(
-                    child: Text(
-                      habitDefinition.name,
-                      style: completedToday
-                          ? habitTitleStyle.copyWith(
-                              decoration: TextDecoration.lineThrough,
-                              decorationColor:
-                                  context.textTheme.titleLarge?.color,
-                              decorationThickness: 2,
-                            )
-                          : habitTitleStyle,
-                      overflow: TextOverflow.fade,
-                      softWrap: false,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ...intersperse(
-                    widget.showGaps
-                        ? SizedBox(
-                            width: days < 20
-                                ? 6
-                                : days < 40
-                                ? 4
-                                : 1,
-                          )
-                        : const SizedBox.shrink(),
-                    results.map((res) {
-                      final daysAgo = DateTime.now()
-                          .difference(DateTime.parse(res.dayString))
-                          .inDays;
-
-                      return Flexible(
-                        child: Tooltip(
-                          excludeFromSemantics: true,
-                          message: chartDateFormatter(res.dayString),
-                          child: GestureDetector(
-                            onTap: () {
-                              onTapAdd(
-                                dateString: DateTime.now().ymd != res.dayString
-                                    ? res.dayString
-                                    : DateTime.now().ymd,
-                              );
-                            },
-                            child: Semantics(
-                              label:
-                                  'Complete ${habitDefinition.name} -$daysAgo',
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  widget.showGaps ? 2 : 0,
-                                ),
-                                child: Container(
-                                  height: 14,
-                                  color: habitCompletionColor(
-                                    res.completionType,
+                      SizedBox(width: tokens.spacing.cardItemSpacing),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                if (habitDefinition.priority ?? false) ...[
+                                  Icon(
+                                    Icons.star_rounded,
+                                    size: 16,
+                                    color: tokens.colors.text.highEmphasis,
+                                    semanticLabel: 'starred',
+                                  ),
+                                  SizedBox(width: tokens.spacing.step1),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    habitDefinition.name,
+                                    style: tokens
+                                        .typography
+                                        .styles
+                                        .subtitle
+                                        .subtitle1
+                                        .copyWith(
+                                          color:
+                                              tokens.colors.text.highEmphasis,
+                                          decoration: completedToday
+                                              ? TextDecoration.lineThrough
+                                              : TextDecoration.none,
+                                          decorationThickness: 2,
+                                          decorationColor:
+                                              tokens.colors.text.lowEmphasis,
+                                        ),
+                                    overflow: TextOverflow.fade,
+                                    softWrap: false,
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ),
+                            SizedBox(height: tokens.spacing.step1),
+                            _HabitMeta(
+                              categoryName: categoryName,
+                              streak: streak,
+                              lastWeek: lastWeek,
+                            ),
+                          ],
                         ),
+                      ),
+                      SizedBox(width: tokens.spacing.step2),
+                      _QuickActions(
+                        onFail: () => _logCompletion(HabitCompletionType.fail),
+                        onSkip: () => _logCompletion(HabitCompletionType.skip),
+                        onSuccess: () =>
+                            _logCompletion(HabitCompletionType.success),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: tokens.spacing.cardItemSpacing),
+                  HabitDayStrip(
+                    results: results,
+                    showGaps: widget.showGaps,
+                    showLabels: true,
+                    semanticPrefix: habitDefinition.name,
+                    onTapDay: (dayString) {
+                      _openDialog(
+                        dateString: DateTime.now().ymd != dayString
+                            ? dayString
+                            : DateTime.now().ymd,
                       );
-                    }),
+                    },
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-          leading: CategoryIconCompact(
-            habitDefinition.categoryId,
-            size: CategoryIconConstants.iconSizeMedium,
-          ),
-          trailing: IconButton(
-            padding: EdgeInsets.zero,
-            onPressed: onTapAdd,
-            icon: Icon(
-              Icons.check_circle_outline,
-              color: oldPrimaryColor,
-              size: 30,
-              semanticLabel: 'Complete ${habitDefinition.name}',
+        ),
+      ),
+    );
+  }
+}
+
+int _trailingSuccessStreak(List<HabitResult> results) {
+  var count = 0;
+  for (var i = results.length - 1; i >= 0; i--) {
+    if (results[i].completionType == HabitCompletionType.success) {
+      count++;
+    } else {
+      break;
+    }
+  }
+  return count;
+}
+
+int _lastWeekSuccessCount(List<HabitResult> results) {
+  final tail = results.length <= 7
+      ? results
+      : results.sublist(results.length - 7);
+  return tail
+      .where((r) => r.completionType == HabitCompletionType.success)
+      .length;
+}
+
+class _HabitMeta extends StatelessWidget {
+  const _HabitMeta({
+    required this.categoryName,
+    required this.streak,
+    required this.lastWeek,
+  });
+
+  final String? categoryName;
+  final int streak;
+  final int lastWeek;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final dotStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+    );
+    final categoryStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.interactive.enabled,
+      fontWeight: FontWeight.w500,
+    );
+    final streakStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.alert.warning.defaultColor,
+      fontWeight: FontWeight.w500,
+    );
+    final neutralStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+
+    final parts = <Widget>[];
+    if (categoryName != null && categoryName!.isNotEmpty) {
+      parts.add(Text(categoryName!, style: categoryStyle));
+    }
+    if (streak > 0) {
+      parts.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.local_fire_department_rounded,
+              size: 14,
+              color: tokens.colors.alert.warning.defaultColor,
+            ),
+            SizedBox(width: tokens.spacing.step1),
+            Text(
+              context.messages.habitsCardStreakDays(streak),
+              style: streakStyle,
+            ),
+          ],
+        ),
+      );
+    }
+    parts.add(
+      Text(context.messages.habitsCardLastWeek(lastWeek), style: neutralStyle),
+    );
+
+    final separated = intersperse(
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step1),
+        child: Text('·', style: dotStyle),
+      ),
+      parts,
+    ).toList();
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: separated,
+    );
+  }
+}
+
+class _QuickActions extends StatelessWidget {
+  const _QuickActions({
+    required this.onFail,
+    required this.onSkip,
+    required this.onSuccess,
+  });
+
+  final VoidCallback onFail;
+  final VoidCallback onSkip;
+  final VoidCallback onSuccess;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _QuickActionButton(
+          icon: Icons.close_rounded,
+          color: tokens.colors.alert.error.defaultColor,
+          filled: false,
+          semanticLabel: context.messages.completeHabitFailButton,
+          onPressed: onFail,
+        ),
+        SizedBox(width: tokens.spacing.step1),
+        _QuickActionButton(
+          icon: Icons.keyboard_double_arrow_right_rounded,
+          color: tokens.colors.alert.warning.defaultColor,
+          filled: false,
+          semanticLabel: context.messages.completeHabitSkipButton,
+          onPressed: onSkip,
+        ),
+        SizedBox(width: tokens.spacing.step1),
+        _QuickActionButton(
+          icon: Icons.check_rounded,
+          color: tokens.colors.interactive.enabled,
+          filled: true,
+          semanticLabel: context.messages.completeHabitSuccessButton,
+          onPressed: onSuccess,
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
+    required this.icon,
+    required this.color,
+    required this.filled,
+    required this.semanticLabel,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final Color color;
+  final bool filled;
+  final String semanticLabel;
+  final VoidCallback onPressed;
+
+  static const double _hitSize = 36;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final onColor = filled ? tokens.colors.text.onInteractiveAlert : color;
+
+    return SizedBox(
+      width: _hitSize,
+      height: _hitSize,
+      child: Material(
+        color: filled ? color : Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+          side: filled ? BorderSide.none : BorderSide(color: color, width: 1.2),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          child: Center(
+            child: Icon(
+              icon,
+              size: 18,
+              color: onColor,
+              semanticLabel: semanticLabel,
             ),
           ),
         ),

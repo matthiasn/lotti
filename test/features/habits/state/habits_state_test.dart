@@ -29,7 +29,7 @@ void main() {
       expect(state.minY, 0);
       expect(state.displayFilter, HabitDisplayFilter.openNow);
       expect(state.showSearch, false);
-      expect(state.showTimeSpan, false);
+      expect(state.timeSpanDays, defaultTimeSpanDays);
       expect(state.searchString, isEmpty);
       expect(state.selectedCategoryIds, isEmpty);
     });

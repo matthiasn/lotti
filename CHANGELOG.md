@@ -25,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgraded Flutter to 3.44.0 and aligned the Flatpak Flathub manifest
   template with the repository FVM toolchain pin, so source builds submitted
   to Flathub use the same Flutter SDK as local and CI builds.
+- Redesigned the Habits tab as Streak Cards: inline `Habits · date` title,
+  always-visible status pills and density picker (14 / 30 / 90 days, default
+  30), per-card 40-day strip with always-visible Fail / Skip / Success
+  quick-actions, and a post-chart summary line `N of M habits completed today
+  · X failed · Y skipped`. The completion dialog now shows a last-7-days mini
+  strip at the top and matches the card's outline-fail / outline-skip /
+  filled-success action bar. All habits surfaces (card, chart, dialog) now
+  read colors, spacing, typography, and radii from the Lotti design system
+  tokens instead of legacy palette constants.
+- Removed the bottom `HabitStreaksCounter` widget (replaced by the
+  `HabitsSummaryLine` at the top of the tab) and the calendar_month toggle
+  icon that previously gated the density picker.
 
 ## [0.9.1003]
 ### Changed

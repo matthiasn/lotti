@@ -1656,6 +1656,31 @@
   "habitDeleteConfirm": "ANO, SMAŽ TENTO ZVYK",
   "habitDeleteQuestion": "Chcete tento zvyk smazat?",
   "habitPriorityLabel": "Priorita:",
+  "habitsCardLastWeek": "{count}/7 minulý týden",
+  "@habitsCardLastWeek": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStreakDays": "{count, plural, =1{1denní série} few{{count}denní série} other{{count}denní série}}",
+  "@habitsCardStreakDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripDaysLabel": "{count} d",
+  "@habitsCardStripDaysLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsCardStripNowLabel": "teď",
   "habitsCompletedHeader": "Dokončeno",
   "habitsFilterAll": "všechny",
   "habitsFilterCompleted": "hotovo",
@@ -1665,6 +1690,33 @@
   "habitShowFromLabel": "Zobrazit od",
   "habitsOpenHeader": "K splnění",
   "habitsPendingLaterHeader": "Později dnes",
+  "habitsSummaryCompleted": "Dnes splněno {done} z {total} návyků",
+  "@habitsSummaryCompleted": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummaryFailed": "{count} nesplněno",
+  "@habitsSummaryFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsSummarySkipped": "{count} přeskočeno",
+  "@habitsSummarySkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "imageGenerationError": "Nepodařilo se vygenerovat obrázek",
   "imageGenerationGenerating": "Generování obrázku...",
   "imageGenerationWithReferences": "{count, plural, =0{Žádné referenční obrázky} =1{Používá se 1 referenční obrázek} other{Používá se {count} referenčních obrázků}}",

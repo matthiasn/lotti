@@ -5,8 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/logic/habits/habit_completion_resolution.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 
 class HabitResult extends Equatable {
@@ -27,14 +27,26 @@ class HabitResult extends Equatable {
   List<Object?> get props => [dayString, completionType];
 }
 
-Color habitCompletionColor(HabitCompletionType completionType) {
-  return completionType == HabitCompletionType.fail
-      ? alarm
-      : completionType == HabitCompletionType.skip
-      ? habitSkipColor.withAlpha(102)
-      : completionType == HabitCompletionType.success
-      ? successColor
-      : failColor.withAlpha(153);
+/// Day-strip cell color for a completion type, driven by DS tokens.
+///
+/// Mirrors the Streak Cards palette: success uses the Lotti interactive teal
+/// (same as the filled "Success" quick-action), fail uses `alert.error`, skip
+/// uses `alert.warning`, and the "open" (no entry recorded) day uses the muted
+/// decorative wash so the row reads as a gap rather than a fail.
+Color habitCompletionColor(
+  DsTokens tokens,
+  HabitCompletionType completionType,
+) {
+  switch (completionType) {
+    case HabitCompletionType.success:
+      return tokens.colors.interactive.enabled;
+    case HabitCompletionType.fail:
+      return tokens.colors.alert.error.defaultColor;
+    case HabitCompletionType.skip:
+      return tokens.colors.alert.warning.defaultColor;
+    case HabitCompletionType.open:
+      return tokens.colors.decorative.level01;
+  }
 }
 
 List<HabitResult> habitResultsByDay(

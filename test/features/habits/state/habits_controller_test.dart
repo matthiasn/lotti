@@ -215,18 +215,6 @@ void main() {
       expect(container.read(habitsControllerProvider).showSearch, false);
     });
 
-    test('toggleShowTimeSpan toggles showTimeSpan', () {
-      final controller = container.read(habitsControllerProvider.notifier);
-
-      expect(container.read(habitsControllerProvider).showTimeSpan, false);
-
-      controller.toggleShowTimeSpan();
-      expect(container.read(habitsControllerProvider).showTimeSpan, true);
-
-      controller.toggleShowTimeSpan();
-      expect(container.read(habitsControllerProvider).showTimeSpan, false);
-    });
-
     test('toggleSelectedCategoryIds adds and removes category IDs', () {
       final controller = container.read(habitsControllerProvider.notifier);
 

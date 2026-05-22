@@ -4,7 +4,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 part 'habits_state.freezed.dart';
@@ -39,7 +38,6 @@ abstract class HabitsState with _$HabitsState {
     required int timeSpanDays,
     required double minY,
     required bool zeroBased,
-    required bool showTimeSpan,
     required bool showSearch,
     required String searchString,
     required HabitDisplayFilter displayFilter,
@@ -54,7 +52,7 @@ abstract class HabitsState with _$HabitsState {
     openNow: [],
     pendingLater: [],
     completed: [],
-    days: getHabitDays(isDesktop ? 14 : 7),
+    days: getHabitDays(defaultTimeSpanDays),
     successfulToday: <String>{},
     successfulByDay: <String, Set<String>>{},
     skippedByDay: <String, Set<String>>{},
@@ -66,16 +64,25 @@ abstract class HabitsState with _$HabitsState {
     failedPercentage: 0,
     shortStreakCount: 0,
     longStreakCount: 0,
-    timeSpanDays: isDesktop ? 14 : 7,
+    timeSpanDays: defaultTimeSpanDays,
     zeroBased: true,
     minY: 0,
     displayFilter: HabitDisplayFilter.openNow,
     showSearch: false,
-    showTimeSpan: false,
     searchString: '',
     selectedCategoryIds: <String>{},
   );
 }
+
+/// Default time span for the habits tab density picker.
+///
+/// Sits in the middle of the [habitsDensitySegments] options so the chart
+/// and per-card strip start at a reasonable density without needing the user
+/// to pick.
+const int defaultTimeSpanDays = 30;
+
+/// Time span options offered by the density picker.
+const List<int> habitsDensitySegments = [14, 30, 90];
 
 /// Calculates the completion rate for a given day.
 int completionRate(

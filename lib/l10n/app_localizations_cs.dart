@@ -3974,6 +3974,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitPriorityLabel => 'Priorita:';
 
   @override
+  String habitsCardLastWeek(int count) {
+    return '$count/7 minulý týden';
+  }
+
+  @override
+  String habitsCardStreakDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '${count}denní série',
+      few: '${count}denní série',
+      one: '1denní série',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitsCardStripDaysLabel(int count) {
+    return '$count d';
+  }
+
+  @override
+  String get habitsCardStripNowLabel => 'teď';
+
+  @override
   String get habitsCompletedHeader => 'Dokončeno';
 
   @override
@@ -3999,6 +4024,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitsPendingLaterHeader => 'Později dnes';
+
+  @override
+  String habitsSummaryCompleted(int done, int total) {
+    return 'Dnes splněno $done z $total návyků';
+  }
+
+  @override
+  String habitsSummaryFailed(int count) {
+    return '$count nesplněno';
+  }
+
+  @override
+  String habitsSummarySkipped(int count) {
+    return '$count přeskočeno';
+  }
 
   @override
   String get imageGenerationError => 'Nepodařilo se vygenerovat obrázek';
