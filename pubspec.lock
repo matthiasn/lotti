@@ -1309,10 +1309,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_fonts
-      sha256: ba03d03bcaa2f6cb7bd920e3b5027181db75ab524f8891c8bc3aa603885b8055
+      sha256: "4e9391085e524954a51e3625b7c9c7e9851dc3f376603208bb45c24b9a66255d"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.3"
+    version: "8.1.0"
   gpt_markdown:
     dependency: "direct main"
     description:

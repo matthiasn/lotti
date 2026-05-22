@@ -144,6 +144,10 @@
 - Do not mention bugfixes in CHANGELOG for bugs that were never released. E.g. when working on a 
   feature that comprises many commits, and the bug was fixed before being merged, then there is 
   no reason to mention that bug in the CHANGELOG.
+- CHANGELOG entries are only required for things a user would actually notice. Skip them for
+  invisible work: dependency bumps with no behavior change, internal refactors, test-only
+  changes, build/CI tweaks, doc updates. If in doubt, ask — but default to "no entry" when the
+  user wouldn't see a difference at runtime.
 - Update the feature README files we touch such that they match reality in the codebase, not only
   for what we touch but in their entirety.
 - Feature READMEs must use an architecture-first documentation style: explain the actual runtime behavior, keep the docs concrete and implementation-backed, prefer code-backed terminology over product fluff, and use Mermaid diagrams generously for flows, architecture, data movement, and lifecycles.

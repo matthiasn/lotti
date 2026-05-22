@@ -70,7 +70,7 @@ dependencies:
   genui: ^0.9.0
   get_it: ^8.0.2
   glass_kit: ^4.0.1
-  google_fonts: ^6.1.0
+  google_fonts: ^8.1.0
   gpt_markdown: ^1.0.20
   graphic: ^2.3.0
   health: ^13.1.0
